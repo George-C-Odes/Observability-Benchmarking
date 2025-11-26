@@ -1,4 +1,4 @@
-# Project structure — full tree (no inline comments)
+# Project Structure
 
 Below is the full repository tree. Descriptions and notes follow after the code block.
 
