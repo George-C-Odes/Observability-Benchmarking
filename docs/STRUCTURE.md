@@ -1,79 +1,141 @@
-# Project structure — annotated
+# Project structure — full tree (no inline comments)
 
-Below is the canonical repository layout and a short note for each top-level folder. Keep this file up-to-date when you add services or change where artifacts are stored.
+Below is the full repository tree. Descriptions and notes follow after the code block.
 
+```
 .
 ├── .github/
-│   ├── workflows/                # CI for building images, running smoke benchmarks and publishing artifacts
-│   └── ISSUE_TEMPLATE.md         # issue templates
-├── charts/                       # (future) Helm charts for k8s deployment
+│   ├── workflows/
+│   └── ISSUE_TEMPLATE.md
+├── charts/
 ├── configs/
-│   ├── otel/                     # OpenTelemetry Collector configs
-│   ├── grafana/                  # Grafana provisioning & datasource files
-│   ├── loki/                     # Loki / promtail config examples
-│   └── pyroscope/                # Pyroscope config snippets
-├── compose/                      # Docker Compose entrypoints / overrides
-│   ├── docker-compose.yml        # main compose for local LGTM + services
+│   ├── otel/
+│   ├── grafana/
+│   ├── loki/
+│   └── pyroscope/
+├── compose/
+│   ├── docker-compose.yml
 │   ├── docker-compose.override.yml
-│   └── docker-compose.ci.yml     # deterministic compose for CI
-├── docker/                       # helper Dockerfiles / base images
+│   └── docker-compose.ci.yml
+├── docker/
 │   └── base-java.Dockerfile
-├── services/                     # implementations (framework/runtime/thread-mode)
+├── services/
 │   ├── spring/
 │   │   ├── jvm/
 │   │   │   ├── platform/
+│   │   │   │   ├── Dockerfile
+│   │   │   │   ├── README.md
+│   │   │   │   └── src/
 │   │   │   ├── virtual/
+│   │   │   │   ├── Dockerfile
+│   │   │   │   ├── README.md
+│   │   │   │   └── src/
 │   │   │   └── reactive/
+│   │   │       ├── Dockerfile
+│   │   │       ├── README.md
+│   │   │       └── src/
 │   ├── quarkus/
 │   │   ├── jvm/
+│   │   │   ├── platform/
+│   │   │   │   ├── Dockerfile
+│   │   │   │   ├── README.md
+│   │   │   │   └── src/
+│   │   │   ├── virtual/
+│   │   │   │   ├── Dockerfile
+│   │   │   │   ├── README.md
+│   │   │   │   └── src/
+│   │   │   └── reactive/
+│   │   │       ├── Dockerfile
+│   │   │       ├── README.md
+│   │   │       └── src/
 │   │   └── native/
-│   └── (future) go/
+│   │       ├── platform/
+│   │       │   ├── Dockerfile
+│   │       │   ├── README.md
+│   │       │   └── src/
+│   │       ├── virtual/
+│   │       │   ├── Dockerfile
+│   │       │   ├── README.md
+│   │       │   └── src/
+│   │       └── reactive/
+│   │           ├── Dockerfile
+│   │           ├── README.md
+│   │           └── src/
+│   └── go/
+│       └── (future)/
 ├── loadgen/
-│   ├── wrk2/                     # wrappers / small binaries for deterministic load generation
-│   └── scripts/                   # helper scripts (benchmark wrappers / collectors)
+│   ├── wrk2/
+│   └── scripts/
 ├── dashboards/
-│   ├── grafana/                  # Grafana JSON dashboard exports (versioned)
-│   └── README.md                 # dashboard usage and import instructions
-├── pyroscope/                    # pyroscope server/agent helpers or docs
-├── alloy/                        # Alloy collector configs (if maintained separately)
-├── results/                      # raw benchmark outputs, CSVs, traces, and metadata
-├── docs/                         # additional docs: HOWTO, troubleshooting, architecture diagrams
-│   ├── STRUCTURE.md              # this file — canonical repo layout
-│   └── HOWTO-BENCHMARK.md
+│   ├── grafana/
+│   └── README.md
+├── pyroscope/
+├── alloy/
+├── results/
+│   └── 2025-11-01/
+├── docs/
+│   ├── STRUCTURE.md
+│   ├── HOWTO-BENCHMARK.md
+│   └── TROUBLESHOOTING.md
 ├── scripts/
 │   ├── build-images.sh
 │   └── reproduce-results.sh
-├── .env.example                   # global env defaults for local runs
+├── .env.example
 ├── README.md
 └── LICENSE
+```
 
-Notes and conventions
-- Services naming
-  - directories: services/<framework>/<distribution>/<thread-mode>
-    - e.g. services/quarkus/jvm/reactive
-  - compose service name: <framework>-<distribution>-<mode>
-    - e.g. quarkus-jvm-reactive
-  - image tag convention: <dockerorg>/observability-benchmarking:<framework>-<distribution>-<mode>-YYYYMMDD
+Folder responsibilities and short notes
 
-- Reproducibility metadata
-  - Always include a small metadata file with each results run in results/<YYYY-MM-DD>:
-    - host specs, container limits, image tags/commit SHAs, JVM_OPTS, wrk2 command
-  - Example: results/2025-11-01/metadata.json
+- .github/
+    - workflows: CI pipelines for building images, smoke benchmarks, and other automation.
+    - ISSUE_TEMPLATE.md: issue templates for contributors.
 
-- Dashboards & provisioning
-  - Store Grafana json exports in dashboards/grafana
-  - Prefer provisioning for automated imports (configs/grafana/)
+- charts/
+    - Helm charts for Kubernetes (future).
 
-- Automation: generating/updating this file
-  - You can generate the tree programmatically (example CLI):
-    - Linux/macOS: tree -a --dirsfirst -I "node_modules|target|build" -L 3 > docs/STRUCTURE.md
-    - Or a small script that expands annotations and inserts the header notes.
-  - Consider a CI job that validates that new top-level folders are listed or that checks for a matching README in service sub-folders.
+- configs/
+    - otel/: OpenTelemetry Collector configs.
+    - grafana/: Grafana provisioning and datasources.
+    - loki/: Loki / promtail examples.
+    - pyroscope/: Pyroscope config snippets.
 
-- Ownership & CONTRIBUTING
-  - Consider adding CODEOWNERS so PRs to service code notify the right reviewers.
-  - Add a CONTRIBUTING.md with expectations for adding services (Dockerfile, .env.example, README, tests, and benchmark script).
+- compose/
+    - docker-compose.yml: local LGTM + service compose.
+    - docker-compose.override.yml: developer overrides.
+    - docker-compose.ci.yml: deterministic compose used in CI.
 
-If you want, I can:
-- Add this docs/STRUCTURE.md to the repo in a follow-up PR, and add a short link in README.md.
-- Provide a small script (Bash/Python) that generates the tree automatically in docs/STRUCTURE.md so it never drifts.
+- docker/
+    - Base image Dockerfiles (pin versions and reproducible builds).
+
+- services/
+    - Organized as services/<framework>/<distribution>/<thread-mode>.
+    - Each leaf folder should contain Dockerfile, README.md, and src/.
+    - Examples included for Spring and Quarkus (JVM + native variants); Go reserved for future.
+
+- loadgen/
+    - wrk2 wrappers and scripts used to run deterministic benchmarks.
+
+- dashboards/
+    - Grafana JSON exports and instructions for importing/provisioning.
+
+- pyroscope/
+    - Helpers, docs and config for profiling.
+
+- alloy/
+    - Alloy/OpenTelemetry collector configs if maintained separately.
+
+- results/
+    - Store raw outputs, CSVs, traces, and a metadata file per run (e.g., results/YYYY-MM-DD/metadata.json).
+
+- docs/
+    - Canonical docs including this STRUCTURE.md, HOWTOs and troubleshooting.
+
+- scripts/
+    - Helper scripts to build images and reproduce results.
+
+- .env.example
+    - Global env defaults for local runs.
+
+- README.md / LICENSE
+    - Top-level project overview and license.

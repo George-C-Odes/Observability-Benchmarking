@@ -1,0 +1,118 @@
+# Java / JVM
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+hs_err_pid*.log
+
+# Build directories
+/target/
+/build/
+/out/
+/dist/
+/tmp/
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Gradle
+.gradle/
+/gradle-app.setting
+!gradle/wrapper/gradle-wrapper.jar
+
+# Quarkus / native-image artifacts
+**/*-runner
+quarkus-app/
+/native-image-output/
+/build/native/
+
+# Node / frontend (if present)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Docker / containers / local compose overrides
+**/.env
+.env.local
+.env.*.local
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.*.local.yml
+docker-compose.*.override.yml
+
+# Pyroscope local data (if you run a local pyroscope server)
+/pyroscope/storage/
+/pyroscope/data/
+
+# Logs and temp files
+*.log
+logs/
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs and editors
+# IntelliJ
+/.idea/
+/*.iml
+/.idea_modules/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/shelf/
+# Eclipse
+.metadata/
+*.classpath
+*.project
+.settings/
+# VS Code
+.vscode/
+.history/
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# Test / coverage
+coverage/
+*.lcov
+.junit_cache/
+test-results/
+*.retry
+
+# Python (if any helpers/scripts)
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+venv.bak/
+
+# Misc
+*.swp
+*~
+*.bak
+*.orig
+
+# Keep results/ in the repo (do not ignore)
+/results/
+
+# Keep docs and .github (explicit, in case of broader ignore rules)
+!/docs/
+!/.github/
