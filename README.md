@@ -104,3 +104,12 @@ SPDX-License-Identifier: Apache-2.0
 
 Contact
 - Repo owner: @George-C-Odes
+
+## Repository layout (short)
+
+This repository is organized to support reproducible, local and CI benchmarking of REST services under the Grafana LGTM stack. For a complete, annotated directory tree and notes about what goes where, see docs/STRUCTURE.md.
+
+Quick links
+- Full project structure and folder responsibilities: docs/STRUCTURE.md
+- How to run: see Quick start section above
+- Contributing: see CONTRIBUTING.md (future)
