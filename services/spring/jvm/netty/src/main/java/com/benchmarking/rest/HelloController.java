@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.jspecify.annotations.NonNull;
 import reactor.core.publisher.Mono;
 
+/**
+ * REST controller providing reactive hello endpoint for Spring WebFlux.
+ * Handles requests using reactive programming with Reactor.
+ */
 @RestController
 @RequestMapping(value = "/hello", produces = MediaType.APPLICATION_JSON_VALUE)
 @Slf4j
@@ -20,6 +24,12 @@ public class HelloController {
     private final Cache<@NonNull String, String> cache;
     private final Counter reactiveCounter;
 
+    /**
+     * Constructs the HelloController with required dependencies.
+     *
+     * @param cache the Caffeine cache instance for storing key-value pairs
+     * @param meterRegistry the Micrometer registry for metrics collection
+     */
     @Autowired
     public HelloController(Cache<@NonNull String, String> cache, MeterRegistry meterRegistry) {
         this.cache = cache;
@@ -27,7 +37,8 @@ public class HelloController {
         for (int i = 50_000; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
-        this.reactiveCounter = Counter.builder("spring.request.count").tag("endpoint", "/hello/reactive").register(meterRegistry);
+        this.reactiveCounter = Counter.builder("spring.request.count")
+                .tag("endpoint", "/hello/reactive").register(meterRegistry);
         log.info("Init thread: {}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
         long maxHeapMB = runtime.maxMemory() / 1024 / 1024;
@@ -36,9 +47,14 @@ public class HelloController {
         log.info("Heap in MB = Max:{}, Total:{}, Free:{}", maxHeapMB, totalHeapMB, freeHeapMB);
     }
 
+    /**
+     * Handles reactive requests returning a Mono response.
+     *
+     * @param sleepSeconds optional sleep duration in seconds for simulating work
+     * @param printLog whether to log thread information
+     * @return Mono containing greeting message with cached value
+     */
     @GetMapping(value = "/reactive")
-//    @Timed(value = "spring.request.time", extraTags = {"endpoint", "/hello/reactive"}, percentiles = {0.5, 0.9, 0.95, 0.99}, histogram = true)
-//    @Counted(value = "spring.request.count", extraTags = {"endpoint", "/hello/reactive"})
     @SuppressWarnings("BlockingMethodInNonBlockingContext")
     public Mono<@NonNull String> reactive(
         @RequestParam(name = "sleep", defaultValue = "0") int sleepSeconds,
@@ -48,12 +64,13 @@ public class HelloController {
             reactiveCounter.increment();
             if (printLog) {
                 log.info("reactive thread: '{}'", Thread.currentThread());
-                //reactor-http-nio-...
             }
             if (sleepSeconds > 0) {
                 try {
                     Thread.sleep(sleepSeconds * 1000L);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                    // Ignored for reactive context
+                }
             }
             String v = cache.getIfPresent("1");
             return "Hello from Boot reactive REST " + v;
