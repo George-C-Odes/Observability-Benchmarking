@@ -11,7 +11,7 @@ hs_err_pid*
 hs_err_pid*.log
 
 # Build directories
-/target/
+**/target/
 /build/
 /out/
 /dist/
