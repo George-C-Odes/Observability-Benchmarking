@@ -104,11 +104,8 @@ ENV JAVA_TOOL_OPTIONS="\
 RUN chown -R quarkus:quarkus /deployments /otel /work \
   && chmod -R g+rX,o-rwx /deployments /otel /work
 
-# Ensure curl available for healthcheck; use a simple HTTP readiness probe
-#HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-#  CMD curl -fsS --connect-timeout 2 http://127.0.0.1:8080/q/health/ready || exit 1
-## non-root user (UID 1001 is OpenShift-friendly)
-#USER 1001
+# Run as non-root user (UID 1001 is OpenShift-friendly)
+USER 1001
 
 ARG PROFILE=stage
 ENV QUARKUS_HTTP_HOST=0.0.0.0

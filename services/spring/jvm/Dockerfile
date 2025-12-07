@@ -47,6 +47,13 @@ RUN mvn -v \
 FROM ${DISTRIBUTION}:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_RUNTIME} AS runtime
 ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
+
+# Create a dedicated non-root user/group (OpenShift-friendly UID/GID 1001)
+RUN dnf install -y --setopt=install_weak_deps=False shadow-utils \
+    && groupadd -g 1001 spring \
+    && useradd -u 1001 -g spring -M -d /nonexistent -s /sbin/nologin spring \
+    && dnf clean all && rm -rf /var/cache/dnf/*
+
 WORKDIR /work
 
 ARG OTEL_PYROSCOPE_VERSION=1.0.4
@@ -60,11 +67,9 @@ RUN chown 1001:1001 /work/opentelemetry-javaagent.jar && chmod 0640 /work/opente
 
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
+RUN chown 1001:1001 /app/app.jar && chmod 0640 /app/app.jar
 
 EXPOSE 8080
-
-#HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-#  CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 ENV JAVA_TOOL_OPTIONS="\
     -javaagent:/work/opentelemetry-javaagent.jar \
@@ -88,5 +93,8 @@ ENV JAVA_TOOL_OPTIONS="\
     -Xlog:gc+exit=info \
     --enable-native-access=ALL-UNNAMED \
     ${JAVA_ARGS}"
+
+# Run as non-root user (UID 1001 is OpenShift-friendly)
+USER 1001
 
 ENTRYPOINT ["java","-jar","app.jar"]

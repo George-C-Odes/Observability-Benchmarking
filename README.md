@@ -12,6 +12,7 @@ Table of contents
 - Results (RPS)
 - Test environment
 - Profiling and observability
+- Code quality and security
 - Future plans
 - Contributing
 - License
@@ -143,6 +144,30 @@ Requests per second on quad-CPU-limited docker containers
   - jvm_memory_used_after_last_gc_bytes -> jvm_memory_pool_name 
 - Track free heap with (PromQL)
   - sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024
+
+### Code Quality and Security
+
+This project implements comprehensive code quality and security practices:
+
+#### Code Quality
+- **Checkstyle**: Enforces Google Java Style Guide with customizations
+- **Javadoc**: All public classes and methods are documented
+- **Consistent formatting**: Line length limits, naming conventions, and code structure rules
+- See [docs/LINTING_AND_CODE_QUALITY.md](docs/LINTING_AND_CODE_QUALITY.md) for details
+
+Run Checkstyle on any module:
+```bash
+cd services/quarkus/jvm
+mvn checkstyle:check
+```
+
+#### Security
+- **Non-root containers**: All services run as non-root users (UID 1001)
+- **Secure file permissions**: Proper ownership and restricted access in containers
+- **No hardcoded secrets**: All sensitive data externalized to environment variables
+- **Multi-stage Docker builds**: Minimal attack surface in production images
+- **Security best practices**: Following OWASP and CIS Docker Benchmark guidelines
+- See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security guidelines
 
 ### Future plans
 - Additional implementations: Micronaut, Helidon, Go, Rust
