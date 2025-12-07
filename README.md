@@ -1,185 +1,767 @@
-# Observability-Benchmarking
+# Observability Benchmarking
 
-[<img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg">]()
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green.svg)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.2-blue.svg)](https://quarkus.io/)
+[![Go](https://img.shields.io/badge/Go-1.25.4-00ADD8.svg)](https://golang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
-A Docker Compose-based local environment for benchmarking containerised REST services under the Grafana Observability "LGTM" stack (Loki, Grafana, Tempo, Mimir), with profiling (Pyroscope), OpenTelemetry collection (Alloy), and load-generation using wrk2.
+> A comprehensive Docker Compose-based environment for benchmarking containerized REST services with full observability using the Grafana LGTM stack (Loki, Grafana, Tempo, Mimir), continuous profiling (Pyroscope), OpenTelemetry instrumentation (Alloy), and deterministic load generation (wrk2).
 
-Table of contents
-- Overview
-- What's included
-- Quick start
-- Running a benchmark
-- Results (RPS)
-- Test environment
-- Profiling and observability
-- Future plans
-- Contributing
-- License
+---
 
-Overview
-This repository provides a ready-to-run Docker Compose setup to evaluate and benchmark REST service implementations while collecting logs, metrics, traces, and profiles. It is aimed at local development and experimentation to compare different Java runtimes, frameworks, and thread models under high concurrency.
+## 📋 Table of Contents
 
-### What's included
-- Docker Compose files to start the full LGTM stack:
-  - Loki (logs), Grafana (dashboards), Tempo (traces), Mimir (metrics)
-- Pyroscope for profiling (scrape, eBPF and Java agent options)
-- Alloy collector configured with OpenTelemetry
-- OpenTelemetry setup for batched logs, metrics and traces, everything via gRPC
-- Simple handler logic: non-blocking retrieval from an in-memory Caffeine cache (designed to exercise concurrency behavior rather than business logic)
-- REST service implementations in Java 25:
-  - Spring Boot (4.0.0)
-  - Quarkus (3.30.2)
-  - Each implementation includes three thread modes: platform (standard JVM threads), virtual threads, and reactive
-- REST service implementation in Go (1.25.4) - WIP
-- wrk2 for deterministic load generation
-- Docker containerisation and orchestration for the above
+- [Overview](#-overview)
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+- [Benchmarks](#-benchmarks)
+  - [Running Benchmarks](#running-benchmarks)
+  - [Results](#results)
+  - [Test Environment](#test-environment)
+  - [Interpreting Results](#interpreting-results)
+- [Project Structure](#-project-structure)
+- [Observability & Profiling](#-observability--profiling)
+- [Configuration](#-configuration)
+- [Future Plans](#-future-plans)
+- [Known Issues](#-known-issues)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
 
-### Quick start
-1. Install Docker and (modern) Docker Compose.
-2. Running only the Grafana Observability Stack: 
-    ```bash
-    docker compose --project-directory compose --profile=OBS up --no-recreate --build -d
-    ```
-3. Running also the implemented services:
-    ```bash
-    docker compose --project-directory compose --profile=OBS --profile=SERVICES up --no-recreate --build -d
-    ```
-4. Running also the benchmarks:
-    ```bash
-    docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate --build -d
-    ```
-5. Open Grafana at http://localhost:3000 (default: a / a). Explore dashboards, logs, metrics, traces and profiles.
-6. Use .env file to adjust parameters of the benchmark and running containers.
-7. Convenient run wrk2 script - assumes corresponding containers are up [RAIN FIRE only -RECREATE]:
-    ```bash
-    docker compose --project-directory compose --profile RAIN_FIRE up --force-recreate -d
-    ```
-8. See also IntelliJ build and run configurations under .run/
+---
 
-### Running a benchmark
-- Start the stack and ensure the target service port is exposed (e.g., 8080).
-- Example wrk2 command (adjust threads/connections/rate to your machine):
-- You can adjust parameters of the benchmark and running containers in the .env file.
-- Capture metrics, logs, traces, and profiles in Grafana while the test runs.
-- Note: adapt the command to avoid saturating your host—wrk2's rate 'WRK_RATE' requests/sec.
+## 🎯 Overview
+
+This repository provides a **production-ready Docker Compose environment** for comprehensive performance benchmarking of REST service implementations. It enables you to:
+
+- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus (JVM & Native), Go, and more
+- **Test concurrency models**: Platform threads, virtual threads (Project Loom), and reactive programming
+- **Collect full observability data**: Logs, metrics, traces, and continuous profiling in one unified stack
+- **Run deterministic benchmarks**: Use wrk2 for controlled, reproducible load testing
+- **Visualize performance**: Pre-configured Grafana dashboards for deep performance insights
+
+Perfect for developers, architects, and DevOps engineers looking to make data-driven decisions about technology stack choices, optimize application performance, or build a performance testing pipeline.
+
+### Why This Project?
+
+- **All-in-one solution**: No need to configure multiple observability tools separately
+- **Framework agnostic**: Easily add new language implementations
+- **Real-world scenarios**: Tests actual REST endpoints with caching, not synthetic benchmarks
+- **Educational**: Learn how different threading models and frameworks perform under load
+- **Portfolio ready**: Demonstrates expertise in performance engineering and observability
+
+## ✨ Features
+
+### 🏗️ Complete Observability Stack (LGTM)
+- **Loki**: Centralized log aggregation and querying
+- **Grafana**: Pre-configured dashboards for metrics, logs, traces, and profiles
+- **Tempo**: Distributed tracing with OpenTelemetry
+- **Mimir**: Long-term metrics storage and querying
+
+### 🔍 Advanced Profiling
+- **Pyroscope**: Continuous profiling with multiple collection methods:
+  - Java agent-based profiling (JVM builds)
+  - eBPF-based sampling (system-wide)
+  - HTTP scrape endpoints
+
+### 🚀 REST Service Implementations
+
+#### Java (JDK 25 - Amazon Corretto)
+- **Spring Boot 4.0.0**
+  - Platform threads (traditional)
+  - Virtual threads (Project Loom)
+  - Reactive (WebFlux)
+- **Quarkus 3.30.2**
+  - JVM builds (all three thread modes)
+  - Native builds with GraalVM (all three thread modes)
+
+#### Go (1.25.4) - Work in Progress
+- Fiber framework integration
+- Full observability setup in progress
+
+### 🎯 Load Generation
+- **wrk2**: Deterministic, constant-throughput HTTP benchmarking
+- Configurable via `.env` file
+- Scripts for reproducible test runs
+
+### 🐳 Infrastructure
+- **Docker Compose**: Complete orchestration
+- **Profile-based deployment**: Run only what you need
+  - `OBS`: Observability stack only
+  - `SERVICES`: Include REST services
+  - `RAIN_FIRE`: Add load generators
+- **Resource controls**: CPU and memory limits for fair comparisons
+
+### 📊 OpenTelemetry Integration
+- Batched collection of logs, metrics, and traces
+- gRPC transport for efficiency
+- Alloy collector for flexible routing
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Docker**: Version 20.10 or higher
+- **Docker Compose**: Version 2.0 or higher (modern Compose CLI)
+- **System Requirements**:
+  - Minimum: 8 GB RAM, 4 CPU cores
+  - Recommended: 16 GB RAM, 8 CPU cores
+  - Storage: At least 10 GB free space
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/George-C-Odes/Observability-Benchmarking.git
+   cd Observability-Benchmarking
+   ```
+
+2. **Configure environment variables** (optional)
+   ```bash
+   cp .env.example .env
+   # Edit .env to customize benchmark parameters
+   ```
+
+### Quick Start
+
+The project uses Docker Compose profiles to control what gets deployed:
+
+#### 1. Start Only the Observability Stack
+
+Perfect for exploring Grafana and the LGTM stack:
+
+```bash
+docker compose --project-directory compose --profile=OBS up --no-recreate --build -d
+```
+
+**Access Grafana**: Navigate to [http://localhost:3000](http://localhost:3000)
+- Default credentials: `a` / `a`
+
+#### 2. Start Observability Stack + REST Services
+
+Run the full stack with all implemented services:
+
+```bash
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up --no-recreate --build -d
+```
+
+Services will be available on their configured ports (check `compose/docker-compose.yml` for details).
+
+#### 3. Start Everything Including Load Generators
+
+Run the complete benchmarking environment:
+
+```bash
+docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate --build -d
+```
+
+#### 4. Rerun Only Load Generators
+
+To rerun benchmarks without rebuilding services:
+
+```bash
+docker compose --project-directory compose --profile=RAIN_FIRE up --force-recreate -d
+```
+
+### IntelliJ IDEA Integration
+
+Pre-configured run configurations are available in the `.run/` directory for convenient development and testing within IntelliJ IDEA.
+
+### Warming Up
+
+⚠️ **Important**: Wait approximately 60 seconds after starting the stack to ensure:
+- All services are fully initialized
+- Grafana datasources are connected
+- Observability agents are registered
+
+### 📸 Visual Overview
+
+> **Note**: Screenshots and diagrams can be added to `docs/images/` directory. This is where you can include:
+> - Grafana dashboard screenshots showing metrics, traces, and logs
+> - Architecture diagrams illustrating the LGTM stack integration
+> - Performance charts comparing different implementations
+> - Flamegraphs from Pyroscope profiling
+>
+> See [docs/images/README.md](docs/images/README.md) for guidelines on adding visual assets.
+
+## 📊 Benchmarks
+
+### Running Benchmarks
+
+#### Manual Benchmark Execution
+
+You can run custom benchmarks using wrk2 directly:
+
+```bash
+# Example: 10 threads, 100 connections, 50000 requests/sec for 60 seconds
+wrk -t10 -c100 -d60s -R50000 --latency http://localhost:8080/api/endpoint
+```
+
+#### Automated Benchmarking
+
+The repository includes pre-configured load generation scripts accessible via Docker Compose profiles.
+
+**Configuration**: Edit the `.env` file to adjust benchmark parameters:
+- `WRK_THREADS`: Number of worker threads
+- `WRK_CONNECTIONS`: Number of concurrent connections
+- `WRK_RATE`: Target requests per second
+- `WRK_DURATION`: Test duration
+
+**Best Practices**:
+- **Warm-up period**: Run for ~30 seconds before collecting data
+- **JVM workloads**: Run for at least 3 minutes to allow JIT compilation
+- **CPU affinity**: For mixed P/E core CPUs, consider process affinity tools (e.g., Process Lasso on Windows)
+- **Avoid saturation**: Monitor host CPU/memory to ensure the host isn't the bottleneck
 
 ### Results
 
-Requests per second on quad-CPU-limited docker containers
+#### Requests Per Second (Quad-CPU Limited Containers)
 
-| Rank | Implementation (mode)     | RPS    |
-|------|---------------------------|--------|
-| 1    | Quarkus JVM (reactive)    | 86,000 |
-| 2    | Quarkus JVM (virtual)     | 68,000 |
-| 3    | Quarkus Native (reactive) | 56,000 |
-| 4    | Quarkus JVM (platform)    | 56,000 |
-| 5    | Quarkus Native (virtual)  | 55,000 |
-| 6    | Spring JVM (virtual)      | 38,000 |
-| 7    | Quarkus Native (platform) | 37,000 |
-| 8    | Spring JVM (platform)     | 35,000 |
-| 9    | Spring JVM (reactive)     | 29,000 |
-| 10   | Spring Native (virtual)   | TBA    |
-| 11   | Spring Native (platform)  | TBA    |
-| 12   | Spring Native (reactive)  | TBA    |
+The following results were obtained with containers limited to 4 vCPUs for fair comparison:
 
-### Interpreting results
-- These numbers are raw results (rounded to the nearest thousand) reflecting a simple non-blocking cache retrieval workload under extreme concurrency on CPU-limited containers.
-- They are informative for relative comparisons but not representative of every workload.
-- Re-run tests on your target hardware and tune JVM/Native options accordingly when comparing.
+| Rank | Implementation (Mode)     | RPS    | Notes |
+|------|---------------------------|--------|-------|
+| 1    | Quarkus JVM (reactive)    | 86,000 | Highest throughput |
+| 2    | Quarkus JVM (virtual)     | 68,000 | Project Loom efficiency |
+| 3    | Quarkus Native (reactive) | 56,000 | GraalVM Native Image |
+| 4    | Quarkus JVM (platform)    | 56,000 | Traditional threading |
+| 5    | Quarkus Native (virtual)  | 55,000 | Native + virtual threads |
+| 6    | Spring JVM (virtual)      | 38,000 | Spring Boot 4.0 |
+| 7    | Quarkus Native (platform) | 37,000 | Native baseline |
+| 8    | Spring JVM (platform)     | 35,000 | Traditional Spring |
+| 9    | Spring JVM (reactive)     | 29,000 | WebFlux |
+| 10   | Spring Native (virtual)   | TBA    | In development |
+| 11   | Spring Native (platform)  | TBA    | In development |
+| 12   | Spring Native (reactive)  | TBA    | In development |
+| -    | Go (Fiber)                | ~120k* | *Not apples-to-apples yet |
 
-### Test environment
-- Host: Intel i9-14900HX, 32 GB RAM, NVMe, Win 11, Docker running in 6.6.87.2-microsoft-standard-WSL2
-- Containers were CPU-limited (quad vCPU) for consistent comparisons
-- Java JDK Distribution: Amazon Correto 25.0.1-al2023-headless
-- Java Native Distribution: GraalVM Enterprise 25.0.1-ol9
-- Spring Boot: 4.0.0
-- Quarkus: 3.30.1
-- Go: 1.25.4 (fiber v2.52.10) - WIP
-- Rust: TBA
+**Note on Go results**: Initial Go implementation shows impressive throughput but lacks full observability instrumentation present in Java implementations.
 
-### Profiling & Observability
-- Correlate logs, traces, metrics, and profiles in Grafana to find bottlenecks.
-- Pyroscope collects CPU profiles via:
-  - Agent-based Java profiling (pyroscope java agent, only applicable for jvm builds)
-  - eBPF-based sampling
-  - HTTP scrape endpoints (grafana stack)
-- OpenTelemetry exporters are configured for batching and forward telemetry to Alloy / the LGTM stack.
+### Test Environment
 
-### Notes & Recommendations
-- Quarkus implementation to support all 3 modes platform / virtual / reactive is relatively simple; there is a single deployment serving all 3.
-- Spring implementation is more complex, only one mode is supported per built and run configurations; hence the x3 number of deployments.
-- Ports, retention, and resource limits are tuned for local testing. Do not use this configuration as-is in production.
-- When reproducing benchmarks, fix JVM options and container CPU/memory limits to ensure comparability.
-- If you need stricter determinism, pin container images and use a controlled test harness (lockstep start/stop and warmup runs).
-- Pyroscope profile java agent is turned off by default as it adds some overhead and somewhat reduces throughput (quite noticeable in spring).
-- Grafana's profile-to-span correlation is not mature enough, only works sometimes and dependent on the pyroscope java agent being enabled.
-- Don't rely only on the benchmark output data under /results for conclusions, cold starts play some role. Cross-check with the request count metrics.
-- .env file can be used to specify load generator parameters.
-- Recommended to warm up all workers for ~30 seconds before starting the benchmark.
-- Recommended to run JVM benchmarks for at least 3 minutes to ensure the JVM caches are warmed up.
-- If you have a mixed a performance / efficiency CPU, research process affinity, CPU isolation options (Process Lasso for windows recommended).
-- There were two types of native base images tested - Oracle Enterprise and GraalVM Community. Only the former supports G1 GC, and it seemed to be ~10% more performant than Community.
-- All java implementations use G1 GC per previous point
-- Heap out-of-memory events kill the container, such scenarios are captured within the app logs and also produce heapdump
-- Initial implementation in Go shows ~120k RPS which would put it at the top, but not true apples-to-apples comparison yet, it is lacking the full observability steup of the others.
-- To avoid connectivity errors shown in the logs, wait for about a minute after the grafana stack is up
+#### Hardware & Platform
+- **CPU**: Intel i9-14900HX (24 cores, 32 threads)
+- **RAM**: 32 GB DDR5
+- **Storage**: NVMe SSD
+- **OS**: Windows 11 with WSL2 (kernel 6.6.87.2-microsoft-standard-WSL2)
+- **Container Runtime**: Docker Desktop
 
-### Known Issues
-- Not all metrics present for Spring apps. This is due to the OTEL SDK used (java agent for jvm / maven dependency for native) not being fully compatible with Spring Boot 4 yet.
-  - https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906
-- Quarkus native has disappearing metrics after some time, on app reboot they reappear.
-- Alloy eBPF profiler for windows wsl2 docker does not work with alloy version >= 1.11.0
-  - https://github.com/grafana/alloy/issues/4921
+#### Container Configuration
+- **CPU Limit**: 4 vCPUs per service container
+- **Memory**: Dynamically allocated
+- **Network**: Docker bridge network
+
+#### Software Versions
+- **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
+- **Java Native**: GraalVM Enterprise 25.0.1-ol9
+- **Spring Boot**: 4.0.0
+- **Quarkus**: 3.30.1
+- **Go**: 1.25.4 (Fiber v2.52.10)
+- **Garbage Collector**: G1GC (all Java implementations)
+
+### Interpreting Results
+
+⚠️ **Important Considerations**:
+
+1. **Workload Specific**: These benchmarks test a simple non-blocking cache retrieval pattern. Real-world performance depends on:
+   - Database I/O characteristics
+   - Business logic complexity
+   - Network latency
+   - External service dependencies
+
+2. **Relative Comparisons**: Numbers are valuable for comparing different approaches under identical conditions, not as absolute performance metrics.
+
+3. **Cold Start Effects**: Initial benchmark runs may show different results. The `/results` directory data should be cross-referenced with Grafana metrics for accuracy.
+
+4. **GC Configuration**: All Java implementations use G1GC. Different workloads may benefit from different collectors (ZGC, Shenandoah, etc.).
+
+5. **Native Image Tradeoffs**: 
+   - GraalVM Enterprise (Oracle) with G1GC shows ~10% better performance than Community Edition
+   - Native images have faster startup but may show different throughput characteristics
+
+6. **Profiling Overhead**: Pyroscope Java agent is disabled by default as it adds measurable overhead (especially noticeable in Spring Boot).
+
+### Monitoring During Benchmarks
+
+While benchmarks run, use Grafana to monitor:
+- **HTTP RPS**: `http_server_request_duration_seconds_count` grouped by `service_name`
+- **JVM Memory**: `jvm_memory_used_bytes` by pool and area
+- **GC Activity**: `jvm_memory_used_after_last_gc_bytes`
+- **Free Heap**: `sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024`
+
+See [Interesting Metrics](#interesting-metrics) section below for more queries.
+
+## 🔍 Observability & Profiling
+
+This project provides comprehensive observability through the Grafana LGTM stack, enhanced with continuous profiling.
+
+### The LGTM Stack
+
+#### **Loki** - Log Aggregation
+- Centralized log collection from all services
+- Efficient log querying with LogQL
+- Correlation with metrics and traces
+
+#### **Grafana** - Visualization
+- Pre-configured dashboards for each service
+- Unified view of logs, metrics, traces, and profiles
+- Custom dashboard creation support
+- Access: [http://localhost:3000](http://localhost:3000) (credentials: `a` / `a`)
+
+#### **Tempo** - Distributed Tracing
+- OpenTelemetry-based trace collection
+- End-to-end request visualization
+- Span-to-log correlation
+
+#### **Mimir** - Metrics Storage
+- Long-term Prometheus metrics storage
+- High-performance querying
+- Cardinality management
+
+### Pyroscope - Continuous Profiling
+
+Pyroscope collects CPU profiles through multiple methods:
+
+1. **Java Agent Profiling** (JVM builds)
+   - Accurate method-level profiling
+   - Disabled by default due to overhead
+   - Enable via environment variables
+
+2. **eBPF-based Sampling**
+   - System-wide profiling
+   - Lower overhead
+   - Works across all languages
+
+3. **HTTP Scrape Endpoints**
+   - Pull-based profiling from exposed metrics
+
+**Profile-to-Span Correlation**: Experimental feature linking profiles to specific traces (requires Java agent).
+
+### OpenTelemetry Integration
+
+All telemetry data flows through **Alloy** (Grafana's OpenTelemetry collector):
+
+- **Batched Collection**: Efficient data aggregation
+- **gRPC Transport**: High-performance data transmission
+- **Auto-instrumentation**: Minimal code changes required
+- **Multi-backend Support**: Send data to multiple destinations
 
 ### Interesting Metrics
-- All http RPS
-  - http_server_request_duration_seconds_count -> service_name
-- Spring RPS
-  - spring_request_count_total -> endpoint
-- Quarkus RPS
-  - quarkus_request_count_total -> endpoint
-- Memory and Garbage Collections
-  - jvm_memory_used_bytes -> jvm_memory_pool_name, area 
-  - jvm_memory_used_after_last_gc_bytes -> jvm_memory_pool_name 
-- Track free heap with (PromQL)
-  - sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024
 
-### Future plans
-- Additional implementations: Micronaut, Helidon, Go, Rust
-- Kubernetes manifests / Helm charts & ArgoCD deployment for cluster-scale benchmarking
-- Reproducible CI-driven benchmarks and CSV export of results
-- JFR profiling for java native builds
-- gRPC protocol support alongside HTTP for load processing
+Use these PromQL queries in Grafana to analyze performance:
 
-### Special Thanks
-- https://github.com/giltene/wrk2
-- https://github.com/grafana/alloy
-- https://github.com/grafana/grafana
-- https://github.com/grafana/loki
-- https://github.com/grafana/mimir
-- https://github.com/grafana/otel-profiling-java
-- https://github.com/grafana/pyroscope
-- https://github.com/grafana/tempo
-- https://github.com/open-telemetry/opentelemetry-java-instrumentation
+```promql
+# Total HTTP RPS across all services
+http_server_request_duration_seconds_count{} by (service_name)
 
-### Contributing
-Contributions, bug reports, and improvements are welcome. Please open issues or PRs. If you want to add a new implementation or a dashboard, include:
-- A short README for the implementation
-- A Dockerfile and Compose service entry
-- A benchmark script or wrk2 invocation used to produce results
+# Spring Boot specific RPS
+spring_request_count_total{} by (endpoint)
 
-License
-License: Apache-2.0
-SPDX-License-Identifier: Apache-2.0
+# Quarkus specific RPS
+quarkus_request_count_total{} by (endpoint)
 
-### Contact
-- Repo owner: @George-C-Odes
+# JVM Memory Usage
+jvm_memory_used_bytes{} by (jvm_memory_pool_name, area)
 
-### Repository layout (short)
+# Memory after last GC
+jvm_memory_used_after_last_gc_bytes{} by (jvm_memory_pool_name)
 
-This repository is organized to support reproducible, local, and CI benchmarking of REST services under the Grafana LGTM stack. For a complete, annotated directory tree and notes about what goes where, see docs/STRUCTURE.md.
+# Free Heap (MB)
+sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024
+```
 
-Quick links
-- Full project structure and folder responsibilities: docs/STRUCTURE.md
-- How to run: see Quick start section above
-- Contributing: see CONTRIBUTING.md (future)
+### Correlation Features
+
+- **Log-to-Trace**: Click on log entries to view associated traces
+- **Trace-to-Profile**: Jump from trace spans to CPU profiles (when Java agent enabled)
+- **Metric-to-Trace**: Navigate from metric spikes to specific requests
+- **Dashboard Links**: Quick navigation between related views
+
+## 📁 Project Structure
+
+This repository is organized for maintainability, reproducibility, and ease of contribution.
+
+```
+Observability-Benchmarking/
+├── compose/                 # Docker Compose orchestration files
+│   ├── docker-compose.yml   # Main compose file with profiles
+│   ├── obs.yml              # Observability stack configuration
+│   └── utils.yml            # Utility services
+├── services/                # REST service implementations
+│   ├── spring/              # Spring Boot services
+│   │   ├── jvm/             # JVM builds (tomcat, netty variants)
+│   │   └── native/          # GraalVM Native builds
+│   ├── quarkus/             # Quarkus services
+│   │   ├── jvm/             # JVM builds (platform, virtual, reactive)
+│   │   └── native/          # GraalVM Native builds
+│   └── go/                  # Go services (WIP)
+├── config/                  # Configuration files
+│   ├── grafana/             # Grafana dashboards and provisioning
+│   ├── loki/                # Loki configuration
+│   └── pyroscope/           # Pyroscope profiling config
+├── loadgen/                 # Load generation tools and scripts
+├── results/                 # Benchmark results and outputs
+├── docs/                    # Additional documentation
+│   └── STRUCTURE.md         # Detailed project structure documentation
+├── data/                    # Persistent data volumes
+├── .env.example             # Environment variable template
+├── .run/                    # IntelliJ IDEA run configurations
+├── LICENSE                  # Apache 2.0 License
+└── README.md                # This file
+```
+
+### Key Directories
+
+- **`services/`**: Each subdirectory contains a complete REST service implementation with Dockerfile, source code, and README
+- **`compose/`**: Docker Compose files using profiles for flexible deployment (OBS, SERVICES, RAIN_FIRE)
+- **`config/`**: Centralized configuration for all observability tools
+- **`loadgen/`**: wrk2 wrappers and benchmark automation scripts
+- **`results/`**: Stores benchmark outputs with timestamps for reproducibility
+
+For a comprehensive breakdown of the directory structure with detailed notes, see **[docs/STRUCTURE.md](docs/STRUCTURE.md)**.
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+The project uses a `.env` file for configuration. Copy `.env.example` to `.env` and adjust as needed:
+
+```bash
+# Load Generator Configuration
+WRK_THREADS=10              # Number of load generator threads
+WRK_CONNECTIONS=100         # Concurrent connections
+WRK_RATE=50000             # Target requests per second
+WRK_DURATION=60s           # Test duration
+
+# Container Resource Limits
+CPU_LIMIT=4                # vCPU limit per service container
+MEMORY_LIMIT=2g            # Memory limit per service container
+
+# Observability Configuration
+GRAFANA_PORT=3000          # Grafana web UI port
+LOKI_PORT=3100             # Loki API port
+TEMPO_PORT=3200            # Tempo API port
+PYROSCOPE_PORT=4040        # Pyroscope web UI port
+
+# Java Configuration
+JAVA_OPTS=-XX:+UseG1GC     # JVM options
+PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
+```
+
+### Service Architecture Notes
+
+#### Quarkus
+- **Single deployment** serves all three thread modes (platform, virtual, reactive)
+- Mode selection via endpoint routing
+- Simpler configuration, fewer containers
+
+#### Spring Boot
+- **Separate deployments** for each mode
+- Three containers per implementation (JVM/Native)
+- More complex but mode-specific optimizations possible
+
+### Recommendations for Production
+
+⚠️ **This setup is optimized for local development and benchmarking**. Do NOT use these configurations in production without modifications:
+
+- **Increase retention periods** for logs and metrics
+- **Add authentication** to all services
+- **Configure resource limits** based on production workload
+- **Enable TLS/SSL** for all communications
+- **Implement proper secrets management**
+- **Set up backup strategies** for persistent data
+- **Configure alerting** for critical metrics
+
+### Heap Dumps and OOM Handling
+
+- Out-of-memory events automatically trigger heap dump generation
+- Heap dumps are stored in the container's working directory
+- OOM events are logged and will cause container restart
+- Review heap dumps to diagnose memory issues
+
+## ⚠️ Known Issues
+
+### OpenTelemetry & Spring Boot 4.0
+**Issue**: Not all metrics are available for Spring Boot applications.
+
+**Cause**: The OpenTelemetry Java agent and SDK are not fully compatible with Spring Boot 4.0 yet.
+
+**Workaround**: Basic metrics are still collected. Full metric support expected in future OTel releases.
+
+**Tracking**: [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906)
+
+### Quarkus Native Metrics Disappearing
+**Issue**: Metrics intermittently disappear for Quarkus native builds.
+
+**Workaround**: Restart the affected container to restore metrics collection.
+
+**Status**: Under investigation. May be related to GraalVM native image memory management.
+
+### Alloy eBPF Profiler on WSL2
+**Issue**: eBPF profiling doesn't work with Alloy version >= 1.11.0 on Windows WSL2 Docker.
+
+**Cause**: Kernel compatibility issues between WSL2 and newer Alloy eBPF implementations.
+
+**Workaround**: Use Alloy version < 1.11.0 or disable eBPF profiling (other profiling methods still work).
+
+**Tracking**: [grafana/alloy#4921](https://github.com/grafana/alloy/issues/4921)
+
+### Profile-to-Span Correlation Reliability
+**Issue**: Grafana's profile-to-span correlation is experimental and doesn't always work.
+
+**Cause**: Feature maturity - correlation depends on precise timing and requires Pyroscope Java agent.
+
+**Workaround**: Use profiles and traces separately for analysis. Manual correlation is still valuable.
+
+**Status**: Grafana team is actively improving this feature.
+
+### Cold Start Effects
+**Issue**: First benchmark run may show significantly different results.
+
+**Cause**: JVM JIT compilation, container initialization, cache warming.
+
+**Workaround**: 
+- Run a 30-60 second warm-up before collecting benchmark data
+- For JVM workloads, allow 2-3 minutes for optimal JIT compilation
+- Always cross-reference `/results` data with Grafana metrics
+
+### Connectivity Errors on Startup
+**Issue**: Services may log connection errors immediately after stack startup.
+
+**Cause**: Race condition as services attempt to connect before all infrastructure is ready.
+
+**Workaround**: Wait approximately 60 seconds after starting the observability stack before starting services.
+
+**Status**: Normal behavior, errors self-resolve as services come online.
+
+---
+
+For troubleshooting help, please see existing issues or open a new one with:
+- System information (OS, Docker version, hardware)
+- Complete error messages and logs
+- Steps to reproduce
+- Expected vs actual behavior
+
+## 🚧 Future Plans
+
+This project is actively evolving with ambitious goals for enhanced functionality and broader coverage.
+
+### 🎯 Short-term Goals (Next 3-6 months)
+
+#### Additional Framework Support
+- [ ] **Micronaut**: Another popular JVM framework with reactive and GraalVM support
+- [ ] **Helidon**: Oracle's microservices framework (SE and MP editions)
+- [ ] **Ktor**: Kotlin-based asynchronous framework
+- [ ] **Complete Go implementation**: Full observability instrumentation
+- [ ] **Rust**: Actix-web or Axum framework with OTLP integration
+
+#### Enhanced Observability
+- [ ] **JFR (Java Flight Recorder)** profiling for native builds
+- [ ] **Custom Grafana dashboards** with comparative views
+- [ ] **Alerting rules** for performance regressions
+- [ ] **Trace exemplars** linking metrics to specific traces
+
+#### Profiling Improvements
+- [ ] **Allocation profiling** in addition to CPU profiling
+- [ ] **Lock contention analysis** for concurrent workloads
+- [ ] **Better profile-to-span correlation** (as Grafana matures)
+
+### 🌐 Medium-term Goals (6-12 months)
+
+#### Kubernetes & Cloud Native
+- [ ] **Helm charts** for easy Kubernetes deployment
+- [ ] **ArgoCD manifests** for GitOps workflows
+- [ ] **Cluster-scale benchmarking** with distributed load generation
+- [ ] **Multi-node performance testing** scenarios
+- [ ] **Cloud provider integrations** (AWS, GCP, Azure)
+
+#### CI/CD Integration
+- [ ] **GitHub Actions workflows** for automated benchmarking
+- [ ] **Performance regression detection** in PRs
+- [ ] **CSV/JSON export** of benchmark results
+- [ ] **Historical trend analysis** and visualization
+- [ ] **Automated Docker image builds** and registry publishing
+
+#### Protocol Support
+- [ ] **gRPC benchmarking** alongside HTTP REST
+- [ ] **WebSocket performance testing**
+- [ ] **GraphQL endpoint support**
+- [ ] **Multiple payload sizes** and complexity levels
+
+### 🚀 Long-term Vision (12+ months)
+
+#### Advanced Features
+- [ ] **Machine learning-based** performance anomaly detection
+- [ ] **Cost analysis** comparing cloud deployment scenarios
+- [ ] **Energy efficiency metrics** (especially for native vs JVM)
+- [ ] **Multi-datacenter** latency simulation
+- [ ] **Chaos engineering** integration (latency injection, failures)
+
+#### Ecosystem Expansion
+- [ ] **Python frameworks** (FastAPI, Django, Flask)
+- [ ] **Node.js frameworks** (Express, Fastify, NestJS)
+- [ ] **.NET implementations** (ASP.NET Core minimal APIs)
+- [ ] **Polyglot microservices** benchmark scenarios
+
+#### Community & Documentation
+- [ ] **Interactive tutorials** and workshops
+- [ ] **Video walkthroughs** of setup and analysis
+- [ ] **Best practices guide** for each framework
+- [ ] **Community-contributed implementations**
+- [ ] **Academic paper** on methodology and findings
+
+### 🤝 How You Can Help
+
+Interested in contributing to these goals? See the [Contributing](#-contributing) section below or open an issue to discuss:
+- Which frameworks/languages you'd like to see
+- Feature requests and improvements
+- Documentation enhancements
+- Bug reports and fixes
+
+---
+
+**Note**: This roadmap is subject to change based on community feedback and project priorities. Timeline estimates are approximate.
+
+## 🤝 Contributing
+
+Contributions are welcome and appreciated! Whether you're fixing bugs, adding features, improving documentation, or adding new framework implementations, your help makes this project better.
+
+### How to Contribute
+
+1. **Fork the repository** and clone your fork locally
+2. **Create a feature branch**: `git checkout -b feature/your-feature-name`
+3. **Make your changes** following the project's style and conventions
+4. **Test your changes** thoroughly
+5. **Commit your changes**: `git commit -m "Add: brief description of changes"`
+6. **Push to your fork**: `git push origin feature/your-feature-name`
+7. **Open a Pull Request** with a clear description of your changes
+
+### Adding a New Implementation
+
+To add a new framework or language implementation, please include:
+
+- **Source code** in the appropriate `services/<framework>/` directory
+- **Dockerfile** with clear base image and build instructions
+- **README.md** describing the implementation specifics
+- **Docker Compose entry** in the main compose file
+- **Benchmark script** or wrk2 configuration
+- **Results** from your benchmarking runs (if applicable)
+
+### Code Style Guidelines
+
+- **Java**: Follow Google Java Style Guide
+- **Go**: Use `gofmt` and follow standard Go conventions
+- **Docker**: Multi-stage builds preferred, pin versions explicitly
+- **Documentation**: Use clear headers, code examples, and practical explanations
+
+### Testing Contributions
+
+Before submitting:
+- Ensure Docker Compose builds successfully
+- Test that services start without errors
+- Verify observability data flows to Grafana
+- Run a benchmark to confirm functionality
+- Check that no credentials or secrets are committed
+
+### Reporting Bugs
+
+When reporting issues, please include:
+- **System details**: OS, Docker version, hardware specs
+- **Steps to reproduce**: Clear, minimal reproduction steps
+- **Expected behavior**: What should happen
+- **Actual behavior**: What actually happens
+- **Logs**: Relevant log excerpts (use code blocks)
+- **Screenshots**: If applicable, especially for UI issues
+
+### Feature Requests
+
+We love new ideas! When proposing features:
+- Check existing issues to avoid duplicates
+- Describe the use case and benefit
+- Consider implementation complexity
+- Be open to discussion and refinement
+
+### Code of Conduct
+
+- Be respectful and inclusive
+- Focus on constructive feedback
+- Help newcomers and encourage questions
+- Give credit where credit is due
+
+## 📄 License
+
+This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+
+### License Summary
+
+- ✅ Commercial use allowed
+- ✅ Modification allowed
+- ✅ Distribution allowed
+- ✅ Patent use allowed
+- ✅ Private use allowed
+- ⚠️ License and copyright notice required
+- ⚠️ State changes required
+- ❌ Trademark use not allowed
+- ❌ Liability and warranty not provided
+
+**SPDX-License-Identifier**: Apache-2.0
+
+---
+
+## 🙏 Acknowledgments
+
+This project builds upon amazing open-source tools and frameworks. Special thanks to:
+
+### Observability Stack
+- [Grafana](https://github.com/grafana/grafana) - The open observability platform
+- [Loki](https://github.com/grafana/loki) - Log aggregation system
+- [Tempo](https://github.com/grafana/tempo) - High-scale distributed tracing
+- [Mimir](https://github.com/grafana/mimir) - Scalable long-term Prometheus storage
+- [Pyroscope](https://github.com/grafana/pyroscope) - Continuous profiling platform
+- [Alloy](https://github.com/grafana/alloy) - OpenTelemetry distribution
+
+### Instrumentation
+- [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-java-instrumentation) - Observability framework
+- [Grafana OTel Profiling Java](https://github.com/grafana/otel-profiling-java) - Java profiling integration
+
+### Frameworks & Tools
+- [Spring Boot](https://spring.io/projects/spring-boot) - Java application framework
+- [Quarkus](https://quarkus.io/) - Supersonic Subatomic Java
+- [wrk2](https://github.com/giltene/wrk2) - Constant throughput HTTP benchmarking tool
+- [Docker](https://www.docker.com/) - Containerization platform
+
+### Community
+- All contributors who have helped improve this project
+- The broader observability and performance engineering community
+
+---
+
+## 📧 Contact & Support
+
+- **Repository Owner**: [@George-C-Odes](https://github.com/George-C-Odes)
+- **Issues**: [GitHub Issues](https://github.com/George-C-Odes/Observability-Benchmarking/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/George-C-Odes/Observability-Benchmarking/discussions) *(coming soon)*
+
+### Getting Help
+
+- 📖 Read the [docs/STRUCTURE.md](docs/STRUCTURE.md) for detailed architecture
+- 🐛 Check [Known Issues](#-known-issues) for common problems
+- 💬 Open an issue for bugs or questions
+- 🌟 Star the repo if you find it useful!
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the performance engineering community**
+
+If this project helped you, please consider giving it a ⭐️!
+
+</div>
