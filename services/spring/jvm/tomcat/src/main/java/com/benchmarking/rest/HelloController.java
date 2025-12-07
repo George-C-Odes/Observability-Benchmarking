@@ -22,16 +22,24 @@ public class HelloController {
     private final Cache<@NonNull String, String> cache;
     private final Counter platformCounter;
     private final Counter virtualCounter;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public HelloController(Cache<@NonNull String, String> cache, MeterRegistry meterRegistry) {
         this.cache = cache;
+        this.meterRegistry = meterRegistry;
         // Pre-populate cache with some entries for testing
         for (int i = 50_000; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
-        this.platformCounter = Counter.builder("spring.request.count").tag("endpoint", "/hello/platform").register(meterRegistry);
-        this.virtualCounter = Counter.builder("spring.request.count").tag("endpoint", "/hello/virtual").register(meterRegistry);
+        this.platformCounter = Counter.builder("spring.request.count")
+            .tag("endpoint", "/hello/platform")
+            .tag("http.method", "GET")
+            .register(meterRegistry);
+        this.virtualCounter = Counter.builder("spring.request.count")
+            .tag("endpoint", "/hello/virtual")
+            .tag("http.method", "GET")
+            .register(meterRegistry);
         log.info("Init thread: {}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
         long maxHeapMB = runtime.maxMemory() / 1024 / 1024;
@@ -51,6 +59,7 @@ public class HelloController {
             throw new IllegalStateException("Virtual threads are enabled");
         }
         platformCounter.increment();
+        recordHttpMetrics("/hello/platform", "GET", 200);
         if (printLog) {
             log.info("platform thread: '{}'", Thread.currentThread());
             //http-nio-...
@@ -73,6 +82,7 @@ public class HelloController {
             throw new IllegalStateException("Virtual threads are disabled");
         }
         virtualCounter.increment();
+        recordHttpMetrics("/hello/virtual", "GET", 200);
         if (printLog) {
             log.info("virtual thread: '{}'", Thread.currentThread());
             //VirtualThread[#...
@@ -82,5 +92,14 @@ public class HelloController {
         }
         String v = cache.getIfPresent("1");
         return "Hello from Boot virtual REST " + v;
+    }
+
+    private void recordHttpMetrics(String endpoint, String method, int statusCode) {
+        Counter.builder("http.server.requests")
+            .tag("http.route", endpoint)
+            .tag("http.method", method)
+            .tag("http.status_code", String.valueOf(statusCode))
+            .register(meterRegistry)
+            .increment();
     }
 }

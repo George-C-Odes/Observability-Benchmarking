@@ -19,15 +19,20 @@ import reactor.core.publisher.Mono;
 public class HelloController {
     private final Cache<@NonNull String, String> cache;
     private final Counter reactiveCounter;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
     public HelloController(Cache<@NonNull String, String> cache, MeterRegistry meterRegistry) {
         this.cache = cache;
+        this.meterRegistry = meterRegistry;
         // Pre-populate cache with some entries for testing
         for (int i = 50_000; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
-        this.reactiveCounter = Counter.builder("spring.request.count").tag("endpoint", "/hello/reactive").register(meterRegistry);
+        this.reactiveCounter = Counter.builder("spring.request.count")
+            .tag("endpoint", "/hello/reactive")
+            .tag("http.method", "GET")
+            .register(meterRegistry);
         log.info("Init thread: {}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
         long maxHeapMB = runtime.maxMemory() / 1024 / 1024;
@@ -46,6 +51,7 @@ public class HelloController {
     ) {
         return Mono.fromSupplier(() -> {
             reactiveCounter.increment();
+            recordHttpMetrics("/hello/reactive", "GET", 200);
             if (printLog) {
                 log.info("reactive thread: '{}'", Thread.currentThread());
                 //reactor-http-nio-...
@@ -58,5 +64,14 @@ public class HelloController {
             String v = cache.getIfPresent("1");
             return "Hello from Boot reactive REST " + v;
         });
+    }
+
+    private void recordHttpMetrics(String endpoint, String method, int statusCode) {
+        Counter.builder("http.server.requests")
+            .tag("http.route", endpoint)
+            .tag("http.method", method)
+            .tag("http.status_code", String.valueOf(statusCode))
+            .register(meterRegistry)
+            .increment();
     }
 }

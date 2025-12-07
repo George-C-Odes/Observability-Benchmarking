@@ -9,12 +9,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/trace"
 
-	_ "go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"google.golang.org/grpc"
 )
@@ -84,7 +85,7 @@ func main() {
 
 	// Create instruments
 	meter := otel.Meter("go-hello-fiber")
-	counter, _ := meter.Int64Counter("go.request.count")
+	counter, _ := meter.Int64Counter("http.server.requests")
 	tracer := otel.Tracer("go-hello-fiber")
 
 	// Fiber app
@@ -95,11 +96,24 @@ func main() {
 		reqCtx, span := tracer.Start(c.Context(), "hello-handler")
 		defer span.End()
 
-		// Record metric
-		counter.Add(reqCtx, 1)
+		// Record metric with OpenTelemetry-compliant attributes
+		counter.Add(reqCtx, 1,
+			metric.WithAttributes(
+				attribute.String("http.route", "/hello/platform"),
+				attribute.String("http.method", "GET"),
+				attribute.Int("http.status_code", 200),
+			),
+		)
 
 		value, ok := numberCache[1]
 		if !ok {
+			counter.Add(reqCtx, 1,
+				metric.WithAttributes(
+					attribute.String("http.route", "/hello/platform"),
+					attribute.String("http.method", "GET"),
+					attribute.Int("http.status_code", 404),
+				),
+			)
 			return c.Status(fiber.StatusNotFound).SendString("value not found")
 		}
 		return c.SendString(fmt.Sprintf("Hello from GO REST %d", value))

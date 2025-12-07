@@ -26,16 +26,28 @@ public class HelloResource {
     private final Counter virtualCounter;
     private final Counter reactiveCounter;
 
+    private final MeterRegistry meterRegistry;
+
     @Inject
     public HelloResource(Cache<@NonNull String, String> cache, MeterRegistry meterRegistry) {
         this.cache = cache;
+        this.meterRegistry = meterRegistry;
         // Pre-populate cache with some entries for testing
         for (int i = 50_000; i > 0; i--) {
             this.cache.put(String.valueOf(i), "value-" + i);
         }
-        this.platformCounter = Counter.builder("quarkus.request.count").tag("endpoint", "/hello/platform").register(meterRegistry);
-        this.virtualCounter = Counter.builder("quarkus.request.count").tag("endpoint", "/hello/virtual").register(meterRegistry);
-        this.reactiveCounter = Counter.builder("quarkus.request.count").tag("endpoint", "/hello/reactive").register(meterRegistry);
+        this.platformCounter = Counter.builder("quarkus.request.count")
+            .tag("endpoint", "/hello/platform")
+            .tag("http.method", "GET")
+            .register(meterRegistry);
+        this.virtualCounter = Counter.builder("quarkus.request.count")
+            .tag("endpoint", "/hello/virtual")
+            .tag("http.method", "GET")
+            .register(meterRegistry);
+        this.reactiveCounter = Counter.builder("quarkus.request.count")
+            .tag("endpoint", "/hello/reactive")
+            .tag("http.method", "GET")
+            .register(meterRegistry);
 
         log.infov("Init thread: {0}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
@@ -57,6 +69,7 @@ public class HelloResource {
 //        String env = propertiesService.getMyEnv();
 //        log.infov("My Env: {0}", env);
         platformCounter.increment();
+        recordHttpMetrics("/hello/platform", "GET", 200);
         if (printLog) {
             log.infov("platform thread: {0}", Thread.currentThread());
             //Thread[#95,executor-thread-1,5,main]
@@ -78,6 +91,7 @@ public class HelloResource {
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) throws InterruptedException {
         virtualCounter.increment();
+        recordHttpMetrics("/hello/virtual", "GET", 200);
         if (printLog) {
             log.infov("virtual thread: {0}", Thread.currentThread());
             //VirtualThread[#813259,vthread-813108]
@@ -99,6 +113,7 @@ public class HelloResource {
     ) {
         return Uni.createFrom().item(() -> {
             reactiveCounter.increment();
+            recordHttpMetrics("/hello/reactive", "GET", 200);
             if (printLog) {
                 log.infov("reactive thread: {0}", Thread.currentThread());
                 //Thread[#119,vert.x-eventloop-thread-15,5,main]
@@ -111,5 +126,14 @@ public class HelloResource {
             String v = cache.getIfPresent("1");
             return "Hello from Quarkus reactive REST " + v;
         });
+    }
+
+    private void recordHttpMetrics(String endpoint, String method, int statusCode) {
+        Counter.builder("http.server.requests")
+            .tag("http.route", endpoint)
+            .tag("http.method", method)
+            .tag("http.status_code", String.valueOf(statusCode))
+            .register(meterRegistry)
+            .increment();
     }
 }
