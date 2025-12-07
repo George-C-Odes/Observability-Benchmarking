@@ -67,7 +67,7 @@ RUN chown 1001:1001 /work/opentelemetry-javaagent.jar && chmod 0640 /work/opente
 
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
-RUN chown 1001:1001 /app/app.jar && chmod 0640 /app/app.jar
+RUN chown 1001:1001 /app/app.jar && chmod 0644 /app/app.jar
 
 EXPOSE 8080
 

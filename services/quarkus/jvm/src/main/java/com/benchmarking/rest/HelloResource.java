@@ -132,8 +132,9 @@ public class HelloResource {
             if (sleepSeconds > 0) {
                 try {
                     Thread.sleep(sleepSeconds * 1000L);
-                } catch (InterruptedException ignored) {
-                    // Ignored for reactive context
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    // Restore interrupt status for reactive context
                 }
             }
             String v = cache.getIfPresent("1");

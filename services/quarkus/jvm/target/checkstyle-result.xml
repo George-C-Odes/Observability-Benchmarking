@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<checkstyle version="10.20.2">
-<file name="/home/runner/work/Observability-Benchmarking/Observability-Benchmarking/services/quarkus/jvm/src/main/java/com/benchmarking/rest/HelloResource.java">
-</file>
-<file name="/home/runner/work/Observability-Benchmarking/Observability-Benchmarking/services/quarkus/jvm/src/main/java/com/benchmarking/config/CacheConfig.java">
-</file>
-<file name="/home/runner/work/Observability-Benchmarking/Observability-Benchmarking/services/quarkus/jvm/src/main/java/com/benchmarking/config/MetricsConfig.java">
-</file>
-</checkstyle>

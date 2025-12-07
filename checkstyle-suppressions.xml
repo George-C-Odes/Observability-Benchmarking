@@ -13,6 +13,6 @@
     <suppress checks="JavadocType" files=".*[\\/]test[\\/].*"/>
     <suppress checks="JavadocVariable" files=".*[\\/]test[\\/].*"/>
     
-    <!-- Suppress checks for Spring Boot Application classes (simple main methods) -->
-    <suppress checks="HideUtilityClassConstructor" files=".*Application\.java"/>
+    <!-- Suppress checks for Spring Boot and Quarkus Application classes (simple main methods) -->
+    <suppress checks="HideUtilityClassConstructor" files=".*[\\/](Tomcat|Netty)Application\.java"/>
 </suppressions>
