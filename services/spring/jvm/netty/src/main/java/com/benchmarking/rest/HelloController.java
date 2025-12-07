@@ -39,7 +39,8 @@ public class HelloController {
     @GetMapping(value = "/reactive")
 //    @Timed(value = "spring.request.time", extraTags = {"endpoint", "/hello/reactive"}, percentiles = {0.5, 0.9, 0.95, 0.99}, histogram = true)
 //    @Counted(value = "spring.request.count", extraTags = {"endpoint", "/hello/reactive"})
-    public Mono<String> reactive(
+    @SuppressWarnings("BlockingMethodInNonBlockingContext")
+    public Mono<@NonNull String> reactive(
         @RequestParam(name = "sleep", defaultValue = "0") int sleepSeconds,
         @RequestParam(name = "log", defaultValue = "false") boolean printLog
     ) {
