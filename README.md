@@ -262,7 +262,7 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 - **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
 - **Java Native**: GraalVM Enterprise 25.0.1-ol9
 - **Spring Boot**: 4.0.0
-- **Quarkus**: 3.30.1
+- **Quarkus**: 3.30.2
 - **Go**: 1.25.4 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
