@@ -1,3 +1,8 @@
+---
+layout: default
+title: Benchmarking Methodology
+---
+
 # Benchmarking Methodology
 
 ## Overview
