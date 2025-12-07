@@ -19,6 +19,9 @@ import reactor.core.publisher.Mono;
 public class HelloController {
     private final Cache<@NonNull String, String> cache;
     private final Counter reactiveCounter;
+    
+    private final Counter httpServerReactiveCounter;
+    
     private final MeterRegistry meterRegistry;
 
     @Autowired
@@ -32,6 +35,13 @@ public class HelloController {
         this.reactiveCounter = Counter.builder("spring.request.count")
             .tag("endpoint", "/hello/reactive")
             .tag("http.method", "GET")
+            .register(meterRegistry);
+        
+        // Register OpenTelemetry-compliant HTTP server metrics
+        this.httpServerReactiveCounter = Counter.builder("http.server.requests")
+            .tag("http.route", "/hello/reactive")
+            .tag("http.method", "GET")
+            .tag("http.status_code", "200")
             .register(meterRegistry);
         log.info("Init thread: {}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
@@ -51,7 +61,7 @@ public class HelloController {
     ) {
         return Mono.fromSupplier(() -> {
             reactiveCounter.increment();
-            recordHttpMetrics("/hello/reactive", "GET", 200);
+            httpServerReactiveCounter.increment();
             if (printLog) {
                 log.info("reactive thread: '{}'", Thread.currentThread());
                 //reactor-http-nio-...
@@ -64,14 +74,5 @@ public class HelloController {
             String v = cache.getIfPresent("1");
             return "Hello from Boot reactive REST " + v;
         });
-    }
-
-    private void recordHttpMetrics(String endpoint, String method, int statusCode) {
-        Counter.builder("http.server.requests")
-            .tag("http.route", endpoint)
-            .tag("http.method", method)
-            .tag("http.status_code", String.valueOf(statusCode))
-            .register(meterRegistry)
-            .increment();
     }
 }

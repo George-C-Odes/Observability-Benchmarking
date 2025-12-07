@@ -96,26 +96,27 @@ func main() {
 		reqCtx, span := tracer.Start(c.Context(), "hello-handler")
 		defer span.End()
 
-		// Record metric with OpenTelemetry-compliant attributes
-		counter.Add(reqCtx, 1,
-			metric.WithAttributes(
-				attribute.String("http.route", "/hello/platform"),
-				attribute.String("http.method", "GET"),
-				attribute.Int("http.status_code", 200),
-			),
-		)
+		// Common metric attributes
+		commonAttrs := []attribute.KeyValue{
+			attribute.String("http.route", "/hello/platform"),
+			attribute.String("http.method", "GET"),
+		}
 
 		value, ok := numberCache[1]
 		if !ok {
+			// Record metric with 404 status
 			counter.Add(reqCtx, 1,
-				metric.WithAttributes(
-					attribute.String("http.route", "/hello/platform"),
-					attribute.String("http.method", "GET"),
-					attribute.Int("http.status_code", 404),
-				),
+				metric.WithAttributes(append(commonAttrs,
+					attribute.Int("http.status_code", 404))...),
 			)
 			return c.Status(fiber.StatusNotFound).SendString("value not found")
 		}
+		
+		// Record metric with 200 status
+		counter.Add(reqCtx, 1,
+			metric.WithAttributes(append(commonAttrs,
+				attribute.Int("http.status_code", 200))...),
+		)
 		return c.SendString(fmt.Sprintf("Hello from GO REST %d", value))
 	})
 
