@@ -1,0 +1,14 @@
+[
+  {
+    "name": "com.github.benmanes.caffeine.cache.SSMSW",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "com.github.benmanes.caffeine.cache.PSWMS",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  }
+]

@@ -45,7 +45,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Docker / containers / local compose overrides
-**/.env
 .env.local
 .env.*.local
 docker-compose.override.yml
@@ -53,15 +52,21 @@ docker-compose.local.yml
 docker-compose.*.local.yml
 docker-compose.*.override.yml
 
-# Pyroscope local data (if you run a local pyroscope server)
-/pyroscope/storage/
-/pyroscope/data/
+/data/tempo/**
+!/data/tempo/.gitkeep
+/data/loki/**
+!/data/loki/.gitkeep
+/data/services/quarkus/native/jfr/
+
+/results/benchmark/**
+!/results/benchmark/.gitkeep
 
 # Logs and temp files
 *.log
 logs/
 *.tmp
 *.temp
+*.hprof
 
 # OS files
 .DS_Store
@@ -110,9 +115,7 @@ venv.bak/
 *.bak
 *.orig
 
-# Keep results/ in the repo (do not ignore)
-/results/
-
 # Keep docs and .github (explicit, in case of broader ignore rules)
 !/docs/
 !/.github/
+/services/spring/native/entrypoint.sh

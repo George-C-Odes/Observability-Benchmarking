@@ -1,0 +1,8 @@
+server:
+  http_listen_port: 4040
+limits:
+  ingestion_rate_mb: 32            # MB per second
+  ingestion_burst_size_mb: 16      # MB burst
+  # Optional if single profiles are big
+  max_profile_size_bytes: 20000000 # 20 MiB
+  max_profile_stacktrace_samples: 128000

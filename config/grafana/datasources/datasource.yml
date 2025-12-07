@@ -1,0 +1,110 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: Mimir
+
+datasources:
+
+- name: Mimir
+  type: prometheus
+  uid: Mimir
+  access: proxy
+  orgId: 1
+  url: http://mimir:9009/prometheus
+  basicAuth: false
+  isDefault: true
+  version: 1
+  editable: true
+  secureJsonData:
+    httpHeaderValue1: 'anonymous'
+  jsonData:
+    timeInterval: '20s'
+    httpHeaderName1: 'X-Scope-OrgID'
+    prometheusType: 'Mimir'
+    exemplarTraceIdDestinations:
+      - name: trace_id
+        datasourceUid: Tempo
+        urlDisplayLabel: 'View Trace'
+        traceIdLabelName: trace_id
+
+- name: Loki
+  type: loki
+  uid: Loki
+  access: proxy
+  orgId: 1
+  url: http://loki:3100
+  basicAuth: false
+  isDefault: false
+  version: 1
+  editable: true
+  jsonData:
+    derivedFields:
+    - datasourceUid: Tempo
+      matcherType: label
+      matcherRegex: traceid
+      name: TraceID
+      url: '$${__value.raw}'
+      urlDisplayLabel: 'View Trace'
+
+- name: Tempo
+  type: tempo
+  uid: Tempo
+  access: proxy
+  orgId: 1
+  url: http://tempo:3200
+  basicAuth: false
+  isDefault: false
+  version: 1
+  editable: true
+  apiVersion: 1
+  jsonData:
+    tracesToLogsV2:
+      datasourceUid: Loki
+      spanStartTimeShift: '-5m'
+      spanEndTimeShift: '5m'
+      tags:
+        - key: 'service_name'
+          value: 'service_name'
+      filterByTraceID: true
+      filterBySpanID: false
+      customQuery: false
+    tracesToMetrics:
+      datasourceUid: Mimir
+      spanStartTimeShift: '-5m'
+      spanEndTimeShift: '5m'
+      tags:
+        - key: 'service_name'
+          value: 'service_name'
+      queries:
+        - name: 'Request Rate'
+          query: 'rate(traces_span_metrics_calls_total{service_name="$${__span.tags["service.name"]}"}[5m])'
+        - name: 'Error Rate'
+          query: 'rate(traces_span_metrics_calls_total{service_name="$${__span.tags["service.name"]}", status_code="STATUS_CODE_ERROR"}[5m])'
+        - name: 'Duration'
+          query: 'histogram_quantile(0.95, rate(traces_span_metrics_duration_milliseconds_bucket{service_name="$${__span.tags["service.name"]}"}[5m]))'
+    tracesToProfiles:
+      datasourceUid: Pyroscope
+      profileTypeId: "process_cpu:cpu:nanoseconds:cpu:nanoseconds"
+      tags:
+        - { key: "service.name",      value: "service_name" }
+      customQuery: true
+      query: '{service_name="agent/$${__span.tags["service.name"]}"}'
+    serviceMap:
+      datasourceUid: Mimir
+    nodeGraph:
+      enabled: true
+    search:
+      hide: false
+    lokiSearch:
+      datasourceUid: Loki
+
+- name: Pyroscope
+  type: grafana-pyroscope-datasource
+  uid: Pyroscope
+  access: proxy
+  orgId: 1
+  url: http://pyroscope:4040/
+  basicAuth: false
+  isDefault: false
+  version: 1
+  editable: true

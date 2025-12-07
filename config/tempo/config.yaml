@@ -1,0 +1,102 @@
+# tempo.yaml — compatible with Tempo 2.9.x
+
+multitenancy_enabled: false
+
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+ingester:
+  lifecycler:
+    ring:
+      # Single node -> 1 replica is fine
+      replication_factor: 1
+  # reasonable flush defaults; omit to use built-ins
+  # trace_idle_period: 5s
+  # trace_live_period: 30s
+  # max_block_bytes: 500MB
+  # max_block_duration: 30m
+  complete_block_timeout: 2m
+
+query_frontend: {
+}
+
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9095
+
+compactor:
+  compaction:
+    # how long to retain compacted blocks (tune as you wish)
+    block_retention: 168h  # 7d
+    compacted_block_retention: 1h
+
+# Memberlist is the default ring backend; no join peers needed in single-node
+memberlist: {}
+
+# Storage for actual traces (TempoDB)
+storage:
+  trace:
+    backend: local
+    blocklist_poll: 30s
+    blocklist_poll_stale_tenant_index: 2m
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# Metrics from traces (enables TraceQL metrics like rate()/sum()/avg())
+metrics_generator:
+  # ring for the metrics-generator workers
+  ring:
+    kvstore:
+      store: memberlist
+  # enable the local_blocks processor and tune it
+  processor:
+    local_blocks:
+      # persist metrics blocks so historical TraceQL metrics work reliably
+      flush_to_storage: true
+      # optional tuning (defaults shown in docs)
+      # flush_check_period: 10s
+      # trace_idle_period: 5s
+      # max_block_duration: 1m
+      # max_block_bytes: 500MB
+      # complete_block_timeout: 1h
+
+  # required paths for the generator
+  # keeps a small WAL of per-tenant trace shards used by local-blocks
+  traces_storage:
+    path: /var/tempo/generator/traces
+
+  # WAL for span-metrics/service-graphs (safe to set even if you don’t remote_write)
+  storage:
+    path: /var/tempo/generator/wal
+    # If later you also want Prometheus metrics from traces, add remote_write endpoints:
+    # remote_write:
+    #   - url: http://mimir:9009/api/v1/push
+
+# Turn on processors for the (single) default tenant.
+# Without this, the generator starts but contributes no workers -> "empty ring".
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - local-blocks
+    # You can also cap cardinality later with:
+    #   max_active_series: 50000
+    ingestion:
+      rate_strategy: local        # or: global
+      rate_limit_bytes: 200000000 # 200 MB/s sustained
+      burst_size_bytes: 400000000 # 400 MB burst
+      # Optional, other useful limits:
+      # max_traces_per_user: 0    # disable live-trace count limit if needed

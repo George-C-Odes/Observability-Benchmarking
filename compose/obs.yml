@@ -1,0 +1,134 @@
+x-default-environment: &default_env
+  TZ: &default_TZ "Europe/Nicosia"
+  performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
+  efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
+
+services:
+  alloy:
+    profiles: ["OBS"]
+    image: grafana/alloy:v1.10.2
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.0
+    container_name: alloy
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - --stability.level=experimental
+    volumes:
+      - ../config/alloy:/etc/alloy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    user: root
+    privileged: true
+    pid: "host"
+    environment:
+      GRAFANA_HOST: "grafana:6060"
+      MIMIR_HOST: "mimir:9009"
+      LOKI_HOST: "loki:3100"
+      TEMPO_GRPC_HOST: "tempo:4317"
+      TEMPO_HOST: "tempo:3200"
+      PYROSCOPE_HOST: "pyroscope:4040"
+      EBPF_ENABLED: true
+    ports:
+      - "12345:12345"
+    cpuset: *default_performance_cores
+    depends_on:
+      - tempo
+      - mimir
+      - loki
+      - grafana
+      - pyroscope
+
+  grafana:
+    profiles: ["OBS"]
+    #12.3.0
+    image: grafana/grafana:12.2.1
+    container_name: grafana
+    entrypoint: ["/bin/bash","-lc"]
+    command:
+      - |
+        exec /usr/share/grafana/bin/grafana server \
+          --homepath=/usr/share/grafana \
+          --config=/etc/grafana-config/grafana.ini \
+          1> >(/bin/grep -vE '"logger":"tsdb\.(pyroscope|tempo|loki|mimir)"') \
+          2> >(/bin/grep -vE '"logger":"tsdb\.(pyroscope|tempo|loki|mimir)"' >&2)
+      # start grafana and strip plugin debug lines from stdout
+    volumes:
+      - ../config/grafana:/etc/grafana-config
+      - ../config/grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "a"
+      GF_SECURITY_ADMIN_PASSWORD: "a"
+      GF_PLUGINS_PREINSTALL_SYNC: "grafana-llm-app"
+      GF_DIAGNOSTICS_PROFILING_ENABLED: true
+      GF_DIAGNOSTICS_PROFILING_ADDR: 0.0.0.0
+      GF_DIAGNOSTICS_PROFILING_PORT: 6060
+      GF_METRICS_ENABLED: true
+      GF_LOG_LEVEL: "warn"
+      GF_LOG_FILTERS: "tsdb.pyroscope:warn tsdb.tempo:warn tsdb.loki:warn tsdb.mimir:warn"
+    env_file:
+      - path: ~/.grafana_dev_datasources
+        required: false
+    cpuset: *default_efficiency_cores
+
+  loki:
+    profiles: ["OBS"]
+    image: grafana/loki:3.6.2
+    container_name: loki
+    volumes:
+      - ../data/loki:/loki
+      - ../config/loki:/etc/loki
+    ports:
+      - "3100:3100"
+    command: >
+      -config.file=/etc/loki/config.yaml
+      -log.level=warn
+    cpuset: *default_efficiency_cores
+
+  mimir:
+    profiles: ["OBS"]
+    #3.0.1
+    image: grafana/mimir:2.17.2
+    container_name: mimir
+    volumes:
+      - ../config/mimir:/etc/mimir-config
+    ports:
+      - "9009:9009"
+    command:
+      - -config.file=/etc/mimir-config/config.yaml
+      - -log.level=warn
+    cpuset: *default_efficiency_cores
+
+  pyroscope:
+    profiles: ["OBS"]
+    image: grafana/pyroscope:1.16.0
+    container_name: pyroscope
+    ports:
+      - "4040:4040"
+    volumes:
+      - ../config/pyroscope/config.yaml:/etc/pyroscope/config.yaml:ro
+    command: >
+      -log.level=warn
+      -config.file=/etc/pyroscope/config.yaml
+      -self-profiling.disable-push=true
+    cpuset: *default_efficiency_cores
+
+  tempo:
+    profiles: ["OBS"]
+    image: grafana/tempo:2.9.0
+    container_name: tempo
+    command:
+      - "-config.file=/etc/tempo-config/config.yaml"
+      - "-auth.enabled=false"            # single-tenant; no X-Scope-OrgID
+      - "-server.http-listen-port=3200"
+      - "-log.level=warn"
+    volumes:
+      - ../config/tempo:/etc/tempo-config:ro
+      - ../data/tempo:/var/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP / API / TraceQL
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    cpuset: *default_performance_cores

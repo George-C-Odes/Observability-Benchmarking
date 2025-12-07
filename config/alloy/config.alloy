@@ -1,0 +1,786 @@
+// This file serves as an example Alloy configuration to interact with the
+// Docker Compose environment.
+//
+// This configuration works whether you are running Alloy locally or within the
+// Docker Compose environment when the `alloy` profile is enabled.
+
+livedebugging {
+  enabled = true
+}
+
+logging {
+	level = "warn"
+	write_to = [loki.process.alloy.receiver]
+}
+
+loki.process "alloy" {
+// Needs version >= 1.11.0 to work properly
+//    stage.logfmt {
+//      mapping = {
+//        "level" = "level",
+//        "msg"   = "msg",
+//        "error" = "error",
+//      }
+//    }
+
+    stage.labels {
+        values = {
+            level = "level",
+            msg   = "msg",
+            error = "error",
+        }
+    }
+
+    stage.match {
+        selector = "{level=~\"(?i)error\"}"
+        stage.drop {
+            source     = "error"
+            expression = "Error response from daemon: No such container"
+        }
+    }
+
+    stage.match {
+        selector = "{level=~\"(?i)debug\"}"
+        stage.drop {
+            source     = "msg"
+            expression = "^(extracted data debug in logfmt stage|extracted data did not contain output source|extracted data did not contain a timestamp|finished node evaluation)$"
+        }
+    }
+
+    stage.match {
+        selector = "{level=~\"(?i)debug\"}"
+        stage.drop {
+            source     = "msg"
+            expression = "found only . out of . configured mappings in logfmt stage"
+        }
+    }
+    forward_to = [loki.relabel.alloy_logs.receiver]
+}
+
+loki.relabel "alloy_logs"{
+	rule {
+		target_label = "instance"
+		replacement = string.format("version%s", constants.version)
+	}
+
+	rule {
+		target_label = "job"
+		replacement = "integrations/self"
+	}
+
+	forward_to = [loki.write.loki.receiver]
+}
+
+tracing {
+	// Write all spans. Don't do this in production!
+	sampling_fraction = 0.2 //20%
+
+	// Forward internal spans to the local Tempo instance.
+	write_to = [otelcol.exporter.otlp.tempo.input]
+}
+
+// Collect metrics from the local running Alloy instance and forward to Prometheus.
+prometheus.exporter.self "alloy" {}
+prometheus.scrape "alloy" {
+	targets    = prometheus.exporter.self.alloy.targets
+	forward_to = [prometheus.relabel.alloy.receiver]
+}
+
+// Normalize Alloy self-scrape labels so Grafana Explore “Metrics” filter by service_name shows "alloy".
+prometheus.relabel "alloy" {
+  rule {
+    target_label = "job"
+    replacement  = "alloy"
+  }
+  rule {
+    target_label = "service_name"
+    replacement  = "alloy"
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.remote_write "mimir" {
+	endpoint {
+		url = string.format(
+			"http://%s/api/v1/push",
+			coalesce(sys.env("MIMIR_HOST"), "localhost:9009"),
+		)
+        headers = {
+          "X-Scope-OrgID" = "anonymous",
+        }
+        send_exemplars = true
+	}
+}
+
+loki.write "loki" {
+	endpoint {
+		url = string.format(
+			"http://%s/loki/api/v1/push",
+			coalesce(sys.env("LOKI_HOST"), "localhost:3100"),
+		)
+	}
+}
+
+otelcol.exporter.otlp "tempo" {
+	client {
+		endpoint = coalesce(sys.env("TEMPO_GRPC_HOST"), "localhost:4317")
+		tls {
+			insecure = true
+		}
+	}
+    // Optimisations for 100k req/s
+    sending_queue {
+        enabled = true
+        num_consumers = 10
+        queue_size = 10000
+    }
+    retry_on_failure {
+        enabled = true
+        initial_interval = "5s"
+        max_interval = "30s"
+        max_elapsed_time = "300s"
+    }
+}
+
+//------eBPF------
+discovery.process "procs" {
+  refresh_interval = "10s"
+  join = discovery.docker.local.targets
+}
+
+discovery.relabel "apps" {
+    targets = discovery.process.procs.targets
+    rule {
+        action = "replace"
+        target_label = "env"
+        replacement = "dev"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["__meta_docker_network_ip", "__meta_docker_port_private"]
+        target_label = "address"
+        separator = ":"
+        replacement = "${1}${2}"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["__meta_process_exe"]
+        target_label = "__meta_process_exe"
+        regex = "^(/usr/lib/jvm/java.*|/opt/java/openjdk/bin/java)$"
+        replacement = "/jvm/"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["__meta_process_exe", "__meta_docker_container_label_com_docker_compose_service"]
+        target_label = "service_name"
+        replacement = "ebpf${1}${2}"
+        separator = "_"
+    }
+    rule {
+        action = "keep"
+        source_labels = ["service_name"]
+        regex = "^(.*go.*|" +
+                ".*alloy.*|" +
+                ".*grafana.*|" +
+                ".*mimir.*|" +
+                ".*tempo.*|" +
+                ".*loki.*|" +
+                ".*pyroscope.*|" +
+                ".*wrk2.*|" +
+                ".*spring-jvm-tomcat-platform.*|" +
+                ".*spring-jvm-tomcat-virtual.*|" +
+                ".*spring-jvm-netty.*|" +
+                ".*spring-native-tomcat-platform.*|" +
+                ".*spring-native-tomcat-virtual.*|" +
+                ".*spring-native-netty.*|" +
+                ".*quarkus-jvm.*|" +
+                ".*quarkus-native.*)$"
+    }
+    rule {
+        action = "drop"
+        source_labels = ["service_name"]
+        regex = "^(ebpf_grafana|ebpf_wrk2|ebpf/bin/bash_wrk2|ebpf/bin/busybox_wrk2)$"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/quarkus-native_quarkus-native$"
+        replacement = "ebpf/native/quarkus-native"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/spring-native-tomcat-platform_spring-native-tomcat-platform$"
+        replacement = "ebpf/native/spring-native-tomcat-platform"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/spring-native-tomcat-virtual_spring-native-tomcat-virtual$"
+        replacement = "ebpf/native/spring-native-tomcat-virtual"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/spring-native-netty_spring-native-netty$"
+        replacement = "ebpf/native/spring-native-netty"
+    }
+    rule {
+        action = "labelkeep"
+        regex = "^(__process_pid__|__meta_process_exe|__meta_docker_container_label_com_docker_compose_service|service_name|env|__meta_docker_container_name|address|__address__|__meta_docker_container_id|__container_id__|__meta_docker_container_label_org_opencontainers_image_title|__meta_process_commandline)$"
+    }
+}
+
+pyroscope.ebpf "apps" {
+    sample_rate = 97
+    collect_interval = "20s"
+    forward_to = [pyroscope.write.pyroscope.receiver]
+    targets = discovery.relabel.apps.output
+//    targets = []
+}
+//------eBPF end------
+
+pyroscope.scrape "default" {
+  scrape_interval = "20s"
+  targets = [
+    {"__address__" = "localhost:12345", "service_name" = "scrape/alloy"},
+    {"__address__" = coalesce(sys.env("PYROSCOPE_HOST"), "pyroscope:4040"), "service_name" = "scrape/pyroscope"},
+    {"__address__" = coalesce(sys.env("TEMPO_HOST"), "tempo:3200"), "service_name" = "scrape/tempo"},
+    {"__address__" = coalesce(sys.env("LOKI_HOST"), "loki:3100"), "service_name" = "scrape/loki"},
+    {"__address__" = coalesce(sys.env("MIMIR_HOST"), "mimir:9009"), "service_name" = "scrape/mimir"},
+    {"__address__" = coalesce(sys.env("GRAFANA_HOST"), "grafana:6060"), "service_name" = "scrape/grafana"},
+  ]
+  forward_to = [pyroscope.write.pyroscope.receiver]
+}
+
+pyroscope.write "pyroscope" {
+	endpoint {
+		url = string.format(
+			"http://%s",
+			coalesce(sys.env("PYROSCOPE_HOST"), "pyroscope:4040"),
+		)
+	}
+}
+
+// =================== OTLP receiver (ingest) ===================
+otelcol.receiver.otlp "ingest" {
+  grpc { endpoint = "0.0.0.0:4317" }
+  http { endpoint = "0.0.0.0:4333" }
+
+  output {
+    logs    = [otelcol.processor.memory_limiter.limit.input]
+    traces  = [otelcol.processor.memory_limiter.limit.input]
+    metrics = [otelcol.processor.memory_limiter.limit.input]
+  }
+}
+
+// =================== Processors ===================
+otelcol.processor.memory_limiter "limit" {
+  limit          = "12GiB"
+  spike_limit    = "2048MiB"
+  check_interval = "3s"
+  output {
+    logs    = [otelcol.processor.transform.normalize_service.input]
+    traces  = [otelcol.processor.transform.normalize_service.input]
+    metrics = [otelcol.processor.transform.normalize_service.input]
+  }
+}
+
+// Normalize service resource and create a service_name attribute used downstream
+otelcol.processor.transform "normalize_service" {
+  error_mode = "ignore"
+  log_statements {
+    context = "resource"
+    statements = [
+      "set(resource.attributes[\"service_name\"], resource.attributes[\"service.name\"])",
+    ]
+  }
+  trace_statements {
+    context = "resource"
+    statements = [
+      "set(resource.attributes[\"service_name\"], resource.attributes[\"service.name\"])",
+    ]
+  }
+  metric_statements {
+    context = "resource"
+    statements = [
+      "set(resource.attributes[\"service_name\"], resource.attributes[\"service.name\"])",
+    ]
+  }
+  output {
+    logs    = [otelcol.processor.batch.batch.input]
+    traces  = [otelcol.processor.batch.batch.input]
+    metrics = [otelcol.processor.batch.batch.input]
+  }
+}
+
+otelcol.processor.batch "batch" {
+  // Optimisations for 100k req/s
+  timeout = "1s"
+  send_batch_size = 4096
+  send_batch_max_size = 8192
+
+  output {
+    // Send logs to the OTLP/HTTP exporter which forwards to a Loki pipeline
+    logs    = [otelcol.exporter.loki.to_loki.input]
+    traces  = [otelcol.exporter.otlp.tempo.input, otelcol.connector.spanmetrics.spanmetrics.input]
+    metrics = [otelcol.exporter.prometheus.to_prometheus.input]
+  }
+}
+
+otelcol.exporter.loki "to_loki" {
+  forward_to = [loki.process.otlp_logs.receiver]
+}
+
+// Add traceID and spanID as labels to the Loki logs
+loki.process "otlp_logs" {
+  stage.json {
+    expressions = {
+      traceID = "traceID",
+      spanID = "spanID",
+      service_name = "resource.service_name",
+    }
+  }
+  stage.match { //quarkus jvm otel agent produces these for some reason
+    selector = "{level=~\"(?i)trace|debug2|debug\"}"
+    action   = "drop"
+  }
+  stage.labels {
+    values = {
+      traceID = "traceID",
+      spanID = "spanID",
+      service_name = "service_name",
+    }
+  }
+  forward_to = [loki.write.loki.receiver]
+}
+
+// Generate span metrics with exemplars to enable metrics↔traces correlation
+otelcol.connector.spanmetrics "spanmetrics" {
+  histogram {
+    explicit {
+      buckets = ["1ms", "5ms", "10ms", "25ms", "50ms", "100ms", "250ms", "500ms", "1s", "2.5s", "5s", "10s"]
+    }
+  }
+  dimension {
+    name = "service_name"
+  }
+  dimension {
+    name = "http.method"
+  }
+  dimension {
+    name = "http.status_code"
+  }
+  exemplars {
+    enabled = true
+  }
+  output {
+    metrics = [otelcol.exporter.prometheus.to_prometheus.input]
+  }
+}
+
+// OTel → Prometheus (metrics)
+otelcol.exporter.prometheus "to_prometheus" {
+  // ensure resource attributes (e.g., service.name, service_name) are turned into Prometheus labels
+  resource_to_telemetry_conversion = true
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ============ TEMPO METRICS ============
+prometheus.scrape "tempo" {
+  targets = [
+    { "__address__" = coalesce(sys.env("TEMPO_HOST"), "tempo:3200") },
+  ]
+  // Scrapes /metrics by default.
+  forward_to = [prometheus.relabel.tempo.receiver]
+}
+
+prometheus.relabel "tempo" {
+  // Normalize labels so Metrics↔Logs correlations in Grafana Explore “just work”.
+  rule {
+    target_label = "job"
+    replacement = "tempo"
+    }
+  rule {
+    target_label = "service_name"
+    replacement = "tempo"
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ============ LOKI METRICS ============
+prometheus.scrape "loki" {
+  targets = [
+    { "__address__" = coalesce(sys.env("LOKI_HOST"), "loki:3100") },
+  ]
+  forward_to = [prometheus.relabel.loki.receiver]
+}
+
+prometheus.relabel "loki" {
+  rule {
+    target_label = "job"
+    replacement = "loki"
+  }
+  rule {
+    target_label = "service_name"
+    replacement = "loki"
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ============ MIMIR METRICS ============
+prometheus.scrape "mimir" {
+  targets = [
+    { "__address__" = coalesce(sys.env("MIMIR_HOST"), "mimir:9009") },
+  ]
+  forward_to = [prometheus.relabel.mimir.receiver]
+}
+
+prometheus.relabel "mimir" {
+  rule {
+    target_label = "job"
+    replacement = "mimir"
+  }
+  rule {
+    target_label = "service_name"
+    replacement = "mimir"
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ============ GRAFANA METRICS ============
+// Assumes Grafana metrics are enabled (GF_METRICS_ENABLED=true). Defaults to grafana:3000.
+prometheus.scrape "grafana" {
+  targets = [
+    { "__address__" = coalesce(sys.env("GRAFANA_METRICS_HOST"), "grafana:3000") },
+  ]
+  forward_to = [prometheus.relabel.grafana.receiver]
+}
+
+prometheus.relabel "grafana" {
+  rule {
+    target_label = "job"
+    replacement = "grafana"
+  }
+  rule {
+    target_label = "service_name"
+    replacement = "grafana"
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ============ PYROSCOPE METRICS ============
+prometheus.scrape "pyroscope" {
+  targets = [
+    { "__address__" = coalesce(sys.env("PYROSCOPE_HOST"), "localhost:4040") },
+  ]
+  // Scrapes /metrics by default.
+  forward_to = [prometheus.relabel.pyroscope.receiver]
+}
+
+prometheus.relabel "pyroscope" {
+  rule {
+    target_label = "job"
+    replacement = "pyroscope"
+  }
+  rule {
+    target_label = "service_name"
+    replacement = "pyroscope"
+  }
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+// ============ TEMPO LOGS (from the Docker container) ============
+// Discover Docker containers (mount /var/run/docker.sock into the Alloy container).
+    discovery.docker "local" {
+        refresh_interval = "20s"
+        host = "unix:///var/run/docker.sock"
+    }
+
+// Keep only the Tempo container and pass those targets to the Docker log source.
+discovery.relabel "tempo_only" {
+  targets = discovery.docker.local.targets
+  // Adjust the regex if your container name differs.
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?tempo.*"
+  }
+}
+
+// Tail Tempo container logs.
+loki.source.docker "tempo" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.tempo_only.output
+  labels     = { job = "tempo", service_name = "tempo" }
+  forward_to = [loki.process.tempo.receiver]
+}
+
+// Parse Tempo’s logfmt-style logs and expose fields for correlations.
+loki.process "tempo" {
+  // Unwrap Docker JSON log envelope.
+  stage.docker {}
+
+  // Parse go-kit/logfmt fields commonly used by Tempo.
+  stage.logfmt {
+    mapping = {
+      "level"   = "level",
+      "caller"  = "caller",
+      "org_id"  = "org_id",
+      "traceid" = "traceID",
+      "msg"     = "msg",
+    }
+  }
+
+  // Fallback extractor: catch 32-hex trace IDs anywhere in the line.
+  stage.regex {
+    expression = "(?i)traceid[=:]\\s*(?P<traceid_re>[0-9a-f]{32})"
+  }
+
+  // Add labels used for Grafana correlations:
+  // - `traceID` enables Loki → Tempo trace linking via a Derived field
+  // - `level`/`component` make filtering & dashboards nicer
+  stage.labels {
+    values = {
+      level      = "level",
+      component  = "caller",
+      org_id     = "org_id",
+      traceID    = "traceid",
+      traceID_re = "traceid_re",
+    }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ LOKI LOGS (from the Docker container) ============
+discovery.relabel "loki_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?loki.*"
+  }
+}
+
+loki.source.docker "loki" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.loki_only.output
+  labels     = {
+    job = "loki",
+    service_name = "loki",
+  }
+  forward_to = [loki.process.loki.receiver]
+}
+
+loki.process "loki" {
+  // Unwrap Docker JSON log envelope.
+  stage.docker {}
+
+  // Parse Loki's logfmt output (go-kit).
+  stage.logfmt {
+    mapping = {
+      "level"     = "level",
+      "caller"    = "caller",
+      "component" = "component",
+      "msg"       = "msg",
+    }
+  }
+
+  // Useful labels for filtering and dashboards.
+  stage.labels {
+    values = {
+      level     = "level",
+      component = "component",
+    }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ PYROSCOPE LOGS (from the Docker container) ============
+discovery.relabel "pyroscope_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?pyroscope.*"
+  }
+}
+
+loki.source.docker "pyroscope" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.pyroscope_only.output
+  labels     = {
+    job          = "pyroscope",
+    service_name = "pyroscope",
+  }
+  forward_to = [loki.process.pyroscope.receiver]
+}
+
+loki.process "pyroscope" {
+  // Unwrap Docker JSON envelope.
+  stage.docker {}
+
+  // Parse Go logfmt style (adjust mappings if Pyroscope fields differ).
+  stage.logfmt {
+    mapping = {
+      "level"     = "level",
+      "caller"    = "caller",
+      "component" = "component",
+      "msg"       = "msg",
+    }
+  }
+
+  // Promote useful fields to labels.
+  stage.labels {
+    values = {
+      level     = "level",
+      component = "component",
+    }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ MIMIR LOGS (from the Docker container) ============
+discovery.relabel "mimir_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?mimir.*"
+  }
+}
+
+loki.source.docker "mimir" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.mimir_only.output
+  labels     = {
+    job          = "mimir",
+    service_name = "mimir",
+  }
+  forward_to = [loki.process.mimir.receiver]
+}
+
+loki.process "mimir" {
+  // Unwrap Docker JSON envelope.
+  stage.docker {}
+
+  // Parse Mimir's logfmt output.
+  stage.logfmt {
+    mapping = {
+      "level"  = "level",
+      "caller" = "caller",
+      "msg"    = "msg",
+    }
+  }
+
+  // Useful labels for filtering and dashboards.
+  stage.labels {
+    values = {
+      level  = "level",
+      caller = "caller",
+    }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ GRAFANA LOGS (from the Docker container) ============
+discovery.relabel "grafana_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?grafana.*"
+  }
+}
+
+loki.source.docker "grafana" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.grafana_only.output
+  labels     = {
+    job          = "grafana",
+    service_name = "grafana",
+  }
+  forward_to = [loki.process.grafana.receiver]
+}
+
+loki.process "grafana" {
+  // Unwrap Docker JSON envelope.
+  stage.docker {}
+
+  // Parse Grafana's logfmt output.
+  stage.logfmt {
+    mapping = {
+      "level"  = "level",
+      "logger" = "logger",
+      "msg"    = "msg",
+    }
+  }
+
+  // Useful labels for filtering and dashboards.
+  stage.labels {
+    values = {
+      level  = "level",
+      logger = "logger",
+    }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ WRK2 LOGS (from the Docker container) ============
+discovery.relabel "wrk2_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?wrk2.*"
+  }
+}
+
+loki.source.docker "wrk2" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.wrk2_only.output
+  labels     = {
+    job          = "wrk2",
+    service_name = "wrk2",
+  }
+  forward_to = [loki.process.wrk2.receiver]
+}
+
+loki.process "wrk2" {
+  stage.docker {}
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ GO LOGS (from the Docker container) ============
+discovery.relabel "go_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?go.*"
+  }
+}
+
+loki.source.docker "go" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.go_only.output
+  labels     = {
+    job          = "go",
+    service_name = "go",
+  }
+  forward_to = [loki.process.go.receiver]
+}
+
+loki.process "go" {
+  stage.docker {}
+  forward_to = [loki.write.loki.receiver]
+}

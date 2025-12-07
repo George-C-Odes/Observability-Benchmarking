@@ -1,0 +1,27 @@
+logging:
+  pattern:
+    level: "%5p [traceId=%X{traceId:-}, spanId=%X{spanId:-}]"
+management:
+  endpoint:
+    health:
+      show-details: never
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,prometheus,metrics,info
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  otlp:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    enabled: true
+spring:
+  application:
+    name: SpringNetty
+  threads:
+    virtual:
+      enabled: false
