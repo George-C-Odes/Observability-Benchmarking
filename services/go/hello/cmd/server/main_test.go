@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,7 +36,7 @@ func setupTestApp() *fiber.App {
 		if !ok {
 			return c.Status(fiber.StatusNotFound).SendString("value not found")
 		}
-		return c.SendString("Hello from GO REST " + string(rune(value)))
+		return c.SendString(fmt.Sprintf("Hello from GO REST %d", value))
 	})
 
 	return app

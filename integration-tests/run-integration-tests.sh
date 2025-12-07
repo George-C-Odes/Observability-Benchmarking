@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Integration Test Runner
 # This script runs integration tests to verify deployment setups and observability mechanisms
 

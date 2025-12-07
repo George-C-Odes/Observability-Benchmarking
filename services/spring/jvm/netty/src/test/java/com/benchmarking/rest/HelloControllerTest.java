@@ -22,8 +22,9 @@ public class HelloControllerTest {
             .expectStatus().isOk()
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody(String.class)
-            .value(body -> {
-                assert body.contains("Hello from Boot reactive REST");
+            .consumeWith(response -> {
+                String body = response.getResponseBody();
+                org.assertj.core.api.Assertions.assertThat(body).contains("Hello from Boot reactive REST");
             });
     }
 
@@ -38,8 +39,9 @@ public class HelloControllerTest {
             .expectStatus().isOk()
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody(String.class)
-            .value(body -> {
-                assert body.contains("Hello from Boot reactive REST");
+            .consumeWith(response -> {
+                String body = response.getResponseBody();
+                org.assertj.core.api.Assertions.assertThat(body).contains("Hello from Boot reactive REST");
             });
     }
 
@@ -54,8 +56,9 @@ public class HelloControllerTest {
             .expectStatus().isOk()
             .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody(String.class)
-            .value(body -> {
-                assert body.contains("Hello from Boot reactive REST");
+            .consumeWith(response -> {
+                String body = response.getResponseBody();
+                org.assertj.core.api.Assertions.assertThat(body).contains("Hello from Boot reactive REST");
             });
     }
 }
