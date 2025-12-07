@@ -144,6 +144,13 @@ Requests per second on quad-CPU-limited docker containers
 - Track free heap with (PromQL)
   - sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024
 
+### Testing
+The project includes comprehensive unit and integration tests:
+- **Unit Tests**: Test REST endpoints for all services (Quarkus, Spring Boot, Go)
+- **Integration Tests**: Verify deployment setup and observability mechanisms (metrics, traces, logs)
+
+See [docs/TESTING.md](docs/TESTING.md) for detailed testing guide.
+
 ### Future plans
 - Additional implementations: Micronaut, Helidon, Go, Rust
 - Kubernetes manifests / Helm charts & ArgoCD deployment for cluster-scale benchmarking
@@ -182,4 +189,5 @@ This repository is organized to support reproducible, local, and CI benchmarking
 Quick links
 - Full project structure and folder responsibilities: docs/STRUCTURE.md
 - How to run: see Quick start section above
+- Testing guide: docs/TESTING.md
 - Contributing: see CONTRIBUTING.md (future)
