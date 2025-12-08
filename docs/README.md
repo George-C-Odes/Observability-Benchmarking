@@ -49,12 +49,15 @@ python3 -m http.server 8000
 
 ### Option 2: Jekyll (for full GitHub Pages simulation)
 ```bash
-# Install Jekyll
-gem install bundler jekyll
+# Install Bundler (one-time setup)
+gem install bundler
+
+# Install project dependencies
+cd docs
+bundle install
 
 # Serve the site
-cd docs
-jekyll serve
+bundle exec jekyll serve
 
 # Visit http://localhost:4000/Observability-Benchmarking/
 ```

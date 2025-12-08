@@ -4,9 +4,6 @@ author: George-C-Odes
 url: https://george-c-odes.github.io
 baseurl: /Observability-Benchmarking
 
-# Theme
-theme: jekyll-theme-minimal
-
 # Build settings
 markdown: kramdown
 plugins:
@@ -17,7 +14,6 @@ plugins:
 exclude:
   - README.md
   - STRUCTURE.md
-  - Gemfile
   - Gemfile.lock
   - node_modules
   - vendor
