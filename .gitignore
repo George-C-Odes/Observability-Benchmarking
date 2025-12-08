@@ -119,3 +119,7 @@ venv.bak/
 !/docs/
 !/.github/
 /services/spring/native/entrypoint.sh
+/docs/_site/
+/docs/Gemfile.lock
+/qodana.yaml
+/services/quarkus/jvm/src/main/resources/META-INF.native-image/
