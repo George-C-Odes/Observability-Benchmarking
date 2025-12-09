@@ -121,19 +121,18 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.6.0</version>
                 <dependencies>
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.20.2</version>
+                        <version>12.2.0</version>
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <configLocation>../../../../checkstyle.xml</configLocation>
-                    <suppressionsLocation>../../../../checkstyle-suppressions.xml</suppressionsLocation>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
                     <includeTestSourceDirectory>false</includeTestSourceDirectory>
-                    <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>false</failsOnError>
                     <failOnViolation>false</failOnViolation>

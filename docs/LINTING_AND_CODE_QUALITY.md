@@ -7,9 +7,15 @@ This document describes the code quality and linting setup for the Observability
 ### Overview
 This project uses [Checkstyle](https://checkstyle.org/) to enforce consistent coding standards across all Java code. The configuration is based on the Google Java Style Guide with some customizations for this project.
 
+### Versions
+- **maven-checkstyle-plugin**: 3.6.0
+- **checkstyle**: 12.2.0
+
 ### Configuration Files
-- **checkstyle.xml**: Main Checkstyle configuration file located at the project root
+Each module contains its own copy of the Checkstyle configuration files to support Docker builds:
+- **checkstyle.xml**: Main Checkstyle configuration file located in each module directory
 - **checkstyle-suppressions.xml**: Suppression rules for specific checks
+- **Root copies**: Master copies are maintained at the project root for reference
 
 ### Running Checkstyle
 
