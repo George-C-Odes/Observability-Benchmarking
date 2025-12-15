@@ -1,7 +1,7 @@
 # Quarkus Native Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.30.2 compiled to a native executable using GraalVM Native Image. This service supports three different thread models in a single deployment, offering fast startup times and low memory footprint.
+A high-performance REST service implementation built with Quarkus 3.30.3 compiled to a native executable using GraalVM Native Image. This service supports three different thread models in a single deployment, offering fast startup times and low memory footprint.
 
 ## Purpose
 - Demonstrate Quarkus native compilation performance benefits
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Quarkus 3.30.2 compile
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.30.2
+- **Framework**: Quarkus 3.30.3
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.1
 - **GC**: G1 Garbage Collector (Enterprise only)
@@ -125,7 +125,7 @@ Same as JVM version - see `services/quarkus/jvm/src/main/resources/application.y
 
 ### Custom Application Metrics
 
-#### `quarkus.request.count` (Counter)
+#### `hello.request.count` (Counter)
 Tracks request count per endpoint.
 
 **Tags**:

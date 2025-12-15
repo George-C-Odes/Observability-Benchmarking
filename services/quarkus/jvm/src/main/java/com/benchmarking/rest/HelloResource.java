@@ -16,6 +16,11 @@ import lombok.extern.jbosslog.JBossLog;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.jspecify.annotations.NonNull;
 
+/**
+ * REST resource providing hello endpoints with different thread models.
+ * Supports platform threads, virtual threads, and reactive programming models.
+ * Used for benchmarking observability and performance characteristics.
+ */
 @JBossLog
 @Path("/hello")
 @Produces(MediaType.APPLICATION_JSON)
@@ -26,6 +31,12 @@ public class HelloResource {
     private final Counter virtualCounter;
     private final Counter reactiveCounter;
 
+    /**
+     * Constructs the HelloResource with required dependencies.
+     *
+     * @param cache the Caffeine cache instance for storing key-value pairs
+     * @param meterRegistry the Micrometer registry for metrics collection
+     */
     @Inject
     public HelloResource(Cache<@NonNull String, String> cache, MeterRegistry meterRegistry) {
         this.cache = cache;
@@ -33,9 +44,12 @@ public class HelloResource {
         for (int i = 50_000; i > 0; i--) {
             this.cache.put(String.valueOf(i), "value-" + i);
         }
-        this.platformCounter = Counter.builder("quarkus.request.count").tag("endpoint", "/hello/platform").register(meterRegistry);
-        this.virtualCounter = Counter.builder("quarkus.request.count").tag("endpoint", "/hello/virtual").register(meterRegistry);
-        this.reactiveCounter = Counter.builder("quarkus.request.count").tag("endpoint", "/hello/reactive").register(meterRegistry);
+        this.platformCounter = Counter.builder("hello.request.count")
+                .tag("endpoint", "/hello/platform").register(meterRegistry);
+        this.virtualCounter = Counter.builder("hello.request.count")
+                .tag("endpoint", "/hello/virtual").register(meterRegistry);
+        this.reactiveCounter = Counter.builder("hello.request.count")
+                .tag("endpoint", "/hello/reactive").register(meterRegistry);
 
         log.infov("Init thread: {0}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
@@ -43,23 +57,27 @@ public class HelloResource {
         long totalHeapMB = runtime.totalMemory() / 1024 / 1024;
         long freeHeapMB = runtime.freeMemory() / 1024 / 1024;
         log.infov("Heap in MB = Max:{0}, Total:{1}, Free:{2}", maxHeapMB, totalHeapMB, freeHeapMB);
+        log.infov("Available Processors:{0}", runtime.availableProcessors());
     }
 
+    /**
+     * Handles requests using platform threads (standard JVM threads).
+     *
+     * @param sleepSeconds optional sleep duration in seconds for simulating work
+     * @param printLog whether to log thread information
+     * @return greeting message with cached value
+     * @throws InterruptedException if the thread sleep is interrupted
+     */
     @GET
     @Blocking
     @Path("/platform")
-//    @Timed(value = "quarkus.request.time", extraTags = {"endpoint", "/hello/platform"}, percentiles = {0.5, 0.9, 0.95, 0.99}, histogram = true)
-//    @Counted(value = "quarkus.request.count", extraTags = {"endpoint", "/hello/platform"})
     public String helloPlatform(
         @QueryParam("sleep") @DefaultValue("0") int sleepSeconds,
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) throws InterruptedException {
-//        String env = propertiesService.getMyEnv();
-//        log.infov("My Env: {0}", env);
         platformCounter.increment();
         if (printLog) {
             log.infov("platform thread: {0}", Thread.currentThread());
-            //Thread[#95,executor-thread-1,5,main]
         }
         if (sleepSeconds > 0) {
             Thread.sleep(sleepSeconds * 1000L);
@@ -68,11 +86,17 @@ public class HelloResource {
         return "Hello from Quarkus platform REST " + v;
     }
 
+    /**
+     * Handles requests using virtual threads (Project Loom).
+     *
+     * @param sleepSeconds optional sleep duration in seconds for simulating work
+     * @param printLog whether to log thread information
+     * @return greeting message with cached value
+     * @throws InterruptedException if the thread sleep is interrupted
+     */
     @GET
     @Path("/virtual")
     @RunOnVirtualThread
-//    @Timed(value = "quarkus.request.time", extraTags = {"endpoint", "/hello/virtual"}, percentiles = {0.5, 0.9, 0.95, 0.99}, histogram = true)
-//    @Counted(value = "quarkus.request.count", extraTags = {"endpoint", "/hello/virtual"})
     public String helloVirtual(
         @QueryParam("sleep") @DefaultValue("0") int sleepSeconds,
         @QueryParam("log") @DefaultValue("false") boolean printLog
@@ -80,7 +104,6 @@ public class HelloResource {
         virtualCounter.increment();
         if (printLog) {
             log.infov("virtual thread: {0}", Thread.currentThread());
-            //VirtualThread[#813259,vthread-813108]
         }
         if (sleepSeconds > 0) {
             Thread.sleep(sleepSeconds * 1000L);
@@ -89,10 +112,15 @@ public class HelloResource {
         return "Hello from Quarkus virtual REST " + v;
     }
 
+    /**
+     * Handles requests using reactive programming model with Mutiny.
+     *
+     * @param sleepSeconds optional sleep duration in seconds (not recommended under load)
+     * @param printLog whether to log thread information
+     * @return Uni with greeting message and cached value
+     */
     @GET
     @Path("/reactive")
-//    @Timed(value = "quarkus.request.time", extraTags = {"endpoint", "/hello/reactive"}, percentiles = {0.5, 0.9, 0.95, 0.99}, histogram = true)
-//    @Counted(value = "quarkus.request.count", extraTags = {"endpoint", "/hello/reactive"})
     public Uni<String> helloReactive(
         @QueryParam("sleep") @DefaultValue("0") int sleepSeconds,
         @QueryParam("log") @DefaultValue("false") boolean printLog
@@ -101,12 +129,14 @@ public class HelloResource {
             reactiveCounter.increment();
             if (printLog) {
                 log.infov("reactive thread: {0}", Thread.currentThread());
-                //Thread[#119,vert.x-eventloop-thread-15,5,main]
             }
-            if (sleepSeconds > 0) { //Not really meant to be used under load
+            if (sleepSeconds > 0) {
                 try {
                     Thread.sleep(sleepSeconds * 1000L);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    // Restore interrupt status for reactive context
+                }
             }
             String v = cache.getIfPresent("1");
             return "Hello from Quarkus reactive REST " + v;

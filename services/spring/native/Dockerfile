@@ -13,6 +13,8 @@ ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ARG PROFILE=default
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
+ARG SPRING_BOOT_VERSION=4.0.0
+ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 WORKDIR /workspace
 
 RUN microdnf install -y curl && microdnf clean all && \
@@ -20,28 +22,30 @@ RUN microdnf install -y curl && microdnf clean all && \
       -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq
 
-COPY native/tomcat/pom.xml ./tomcat/pom.xml
-COPY jvm/tomcat/src ./tomcat/src
-COPY native/netty/pom.xml ./netty/pom.xml
-COPY jvm/netty/src ./netty/src
+COPY spring/native/tomcat/pom.xml ./tomcat/pom.xml
+COPY spring/jvm/tomcat/src ./tomcat/src
+COPY spring/native/netty/pom.xml ./netty/pom.xml
+COPY spring/jvm/netty/src ./netty/src
+COPY checkstyle.xml checkstyle.xml
+COPY checkstyle-suppressions.xml checkstyle-suppressions.xml
 
 # Conditionally select the correct POM and src files
 RUN if [ "$PROFILE" = "netty" ]; then \
-        echo "Preparing NETTY sources for $PROFILE"; \
+        echo "Preparing NETTY sources with PROFILE:$PROFILE and SPRING_BOOT_VERSION:$SPRING_BOOT_VERSION"; \
         cp ./netty/pom.xml pom.xml; \
         cp -r ./netty/src ./src; \
         rm -f ./tomcat/pom.xml; \
         rm -rf ./tomcat/src; \
     else \
-        echo "Preparing TOMCAT sources for $PROFILE"; \
+        echo "Preparing TOMCAT sources with PROFILE:$PROFILE and SPRING_BOOT_VERSION:$SPRING_BOOT_VERSION"; \
         cp ./tomcat/pom.xml pom.xml; \
         cp -r ./tomcat/src ./src; \
         rm -f ./netty/pom.xml; \
         rm -rf ./netty/src; \
     fi
 
-COPY native/.mvn/ .mvn
-COPY native/mvnw ./mvnw
+COPY spring/native/.mvn/ .mvn
+COPY spring/native/mvnw ./mvnw
 RUN chmod +x mvnw
 
 RUN echo "VIRTUAL_ENABLED=$VIRTUAL_ENABLED"
@@ -49,10 +53,15 @@ RUN echo "VIRTUAL_ENABLED=$VIRTUAL_ENABLED"
 RUN yq -i '.spring.threads.virtual.enabled = (env(VIRTUAL_ENABLED) == "true")' \
        src/main/resources/application.yml
 
-ARG NATIVE_BUILD_ARGS="-Pnative -DskipTests native:compile -Dmaven.artifact.threads=16 -Dmaven.compiler.release=${JAVA_RELEASE}"
 RUN ./mvnw -v \
-  && ./mvnw -B -q dependency:go-offline \
-  && ./mvnw -B ${NATIVE_BUILD_ARGS}
+  && ./mvnw -B -q -Dspring-boot.version=${SPRING_BOOT_VERSION} dependency:go-offline \
+  && ./mvnw -B \
+    -Dspring-boot.version=${SPRING_BOOT_VERSION} \
+    -Pnative -DskipTests native:compile \
+    -Dmaven.artifact.threads=16 \
+    -Dmaven.compiler.release=${JAVA_RELEASE} \
+    -Dcheckstyle.config.location=checkstyle.xml \
+    -Dcheckstyle.suppressions.location=checkstyle.xml
 
 # 2) Runtime stage – ultra-small, high-throughput
 FROM debian:13.2-slim AS runner
@@ -65,9 +74,9 @@ COPY --from=builder /workspace/target/${APP_NAME} /native/${APP_NAME}
 ARG VIRTUAL_ENABLED
 
 RUN if [ "$PROFILE" = "netty" ]; then \
-        echo "Renaming $APP_NAME for NETTY with $PROFILE and $VIRTUAL_ENABLED"; \
+        echo "Renaming $APP_NAME for NETTY with PROFILE:$PROFILE and VIRTUAL_ENABLED:$VIRTUAL_ENABLED"; \
     else \
-        echo "Renaming $APP_NAME for TOMCAT with $PROFILE and $VIRTUAL_ENABLED"; \
+        echo "Renaming $APP_NAME for TOMCAT with PROFILE:$PROFILE and VIRTUAL_ENABLED:$VIRTUAL_ENABLED"; \
         if [ "$VIRTUAL_ENABLED" = "false" ]; then \
             mv /native/${APP_NAME} /native/${APP_NAME}-platform; \
         else \

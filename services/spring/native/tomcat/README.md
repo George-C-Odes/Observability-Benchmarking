@@ -93,7 +93,7 @@ Same as JVM version (baked in at compile time):
 
 ### Custom Application Metrics
 
-#### `spring.request.count` (Counter)
+#### `hello.request.count` (Counter)
 Tracks request count per endpoint.
 
 **Tags**:

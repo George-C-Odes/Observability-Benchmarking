@@ -10,18 +10,26 @@ management:
       base-path: /actuator
       exposure:
         include: health,prometheus,metrics,info
-server:
-  tomcat:
-    accept-count: 2000
-    connection-timeout: 5000
-    keep-alive-timeout: 5000
-    max-connections: 20000
-    max-keep-alive-requests: 1000
-    mbeanregistry:
+otel:
+  instrumentation:
+    micrometer:
       enabled: true
+server:
+  http2:
+    enabled: false
+  tomcat:
+    accept-count: 10000
+    connection-timeout: 60s
+    keep-alive-timeout: 60s
+    max-connections: 10000
+    max-keep-alive-requests: -1
+    mbeanregistry:
+      enabled: false
+    processor-cache: -1
     threads:
-      max: 500
-      min-spare: 100
+      max: 80
+      min-spare: 20
+      max-queue-capacity: 10000
 spring:
   application:
     name: SpringTomcat

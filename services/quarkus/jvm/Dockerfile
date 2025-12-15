@@ -16,6 +16,8 @@ ENV JAVA_RELEASE=${JAVA_RELEASE}
 ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
+ARG QUARKUS_VERSION=3.30.3
+ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME}"
 
@@ -24,7 +26,7 @@ RUN groupadd -r maven \
  && mkdir -p /home/maven \
  && chown -R maven:maven /home/maven
 
-COPY --chown=maven:maven pom.xml /code/
+COPY --chown=maven:maven quarkus/jvm/pom.xml /code/
 USER maven
 WORKDIR /code
 
@@ -33,14 +35,22 @@ ENV QUARKUS_PROFILE=${PROFILE}
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=false
 
-RUN MAVEN_CONFIG= mvn -v \
-    && MAVEN_CONFIG= mvn -B -Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 dependency:go-offline
-COPY src /code/src
-RUN MAVEN_CONFIG= mvn -B \
+RUN mvn -v && mvn -B \
+  -Dquarkus.platform.version=${QUARKUS_VERSION} \
+  -Duser.home=${HOME} \
+  -Dmaven.repo.local=${HOME}/.m2 \
+  dependency:go-offline
+COPY quarkus/jvm/src /code/src
+COPY checkstyle.xml /code/checkstyle.xml
+COPY checkstyle-suppressions.xml /code/checkstyle-suppressions.xml
+RUN mvn -B \
+  -Dquarkus.platform.version=${QUARKUS_VERSION} \
   -Duser.home=${HOME} \
   -Dmaven.repo.local=${HOME}/.m2 clean package \
   -Dquarkus.package.jar.type=fast-jar \
-  -Dmaven.compiler.release=${JAVA_RELEASE}
+  -Dmaven.compiler.release=${JAVA_RELEASE} \
+  -Dcheckstyle.config.location=checkstyle.xml \
+  -Dcheckstyle.suppressions.location=checkstyle.xml
 #-DskipTests
 #uber-jar
 
@@ -72,9 +82,28 @@ ADD https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYR
 RUN chown 1001:1001 /work/pyroscope-otel-extension.jar; \
     chmod 0640 /work/pyroscope-otel-extension.jar
 
-ARG OTEL_JAVA_AGENT_VERSION=2.22.0
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/opentelemetry-javaagent.jar /work/opentelemetry-javaagent.jar
-RUN chown 1001:1001 /work/opentelemetry-javaagent.jar && chmod 0640 /work/opentelemetry-javaagent.jar
+ARG OTEL_JAVA_AGENT_VERSION=2.23.0
+ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
+ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
+### Snapshots - prereleased:
+#ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}-20251212.043721-77.jar
+#ARG OTEL_JAVA_AGENT_URL="https://central.sonatype.com/repository/maven-snapshots/io/opentelemetry/javaagent/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}-SNAPSHOT/${OTEL_JAVA_AGENT_FILENAME}"
+RUN --mount=type=cache,target=/otel-agent-cache \
+    set -e; \
+    mkdir -p /work /otel-agent-cache/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}; \
+    LOCAL_JAR="/otel-agent-cache/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"; \
+    IMAGE_JAR="/work/opentelemetry-javaagent.jar"; \
+    if [ -f "$LOCAL_JAR" ]; then \
+      echo "Reusing OpenTelemetry Java agent from BuildKit cache: $LOCAL_JAR"; \
+    else \
+      echo "OpenTelemetry Java agent not found in cache, downloading from ${OTEL_JAVA_AGENT_URL}"; \
+      curl -fsSL --retry 5 --retry-all-errors --http1.1 \
+        -o "$LOCAL_JAR" \
+        "${OTEL_JAVA_AGENT_URL}"; \
+    fi; \
+    cp "$LOCAL_JAR" "$IMAGE_JAR" \
+ && chown 1001:1001 /work/opentelemetry-javaagent.jar \
+ && chmod 0640 /work/opentelemetry-javaagent.jar
 
 EXPOSE 8080
 
@@ -104,11 +133,8 @@ ENV JAVA_TOOL_OPTIONS="\
 RUN chown -R quarkus:quarkus /deployments /otel /work \
   && chmod -R g+rX,o-rwx /deployments /otel /work
 
-# Ensure curl available for healthcheck; use a simple HTTP readiness probe
-#HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-#  CMD curl -fsS --connect-timeout 2 http://127.0.0.1:8080/q/health/ready || exit 1
-## non-root user (UID 1001 is OpenShift-friendly)
-#USER 1001
+# Run as non-root user (UID 1001 is OpenShift-friendly)
+USER 1001
 
 ARG PROFILE=stage
 ENV QUARKUS_HTTP_HOST=0.0.0.0
