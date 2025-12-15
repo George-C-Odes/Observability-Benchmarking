@@ -77,7 +77,7 @@ Same as JVM version - see `services/spring/jvm/netty/src/main/resources/applicat
 
 ### Custom Application Metrics
 
-#### `spring.request.count` (Counter)
+#### `hello.request.count` (Counter)
 Tracks request count for the reactive endpoint.
 
 **Tags**:

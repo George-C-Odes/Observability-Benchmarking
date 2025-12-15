@@ -10,18 +10,26 @@ management:
       base-path: /actuator
       exposure:
         include: health,prometheus,metrics,info
-  metrics:
-    tags:
-      application: ${spring.application.name}
-  otlp:
-    metrics:
-      export:
-        enabled: true
-  tracing:
-    enabled: true
+otel:
+  instrumentation:
+    micrometer:
+      enabled: true
+server:
+  compression:
+    enabled: false
+  http2:
+    enabled: false
+  netty:
+    connection-timeout: 60s
+    idle-timeout: 60s
+    max-keep-alive-requests: -1
+    validate-headers: false
 spring:
   application:
     name: SpringNetty
+  reactor:
+    debug-agent:
+      enabled: false
   threads:
     virtual:
       enabled: false

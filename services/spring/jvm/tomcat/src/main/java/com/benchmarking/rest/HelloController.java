@@ -40,9 +40,9 @@ public class HelloController {
         for (int i = 50_000; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
-        this.platformCounter = Counter.builder("spring.request.count")
+        this.platformCounter = Counter.builder("hello.request.count")
                 .tag("endpoint", "/hello/platform").register(meterRegistry);
-        this.virtualCounter = Counter.builder("spring.request.count")
+        this.virtualCounter = Counter.builder("hello.request.count")
                 .tag("endpoint", "/hello/virtual").register(meterRegistry);
         log.info("Init thread: {}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
@@ -50,6 +50,7 @@ public class HelloController {
         long totalHeapMB = runtime.totalMemory() / 1024 / 1024;
         long freeHeapMB = runtime.freeMemory() / 1024 / 1024;
         log.info("Heap in MB = Max:{}, Total:{}, Free:{}", maxHeapMB, totalHeapMB, freeHeapMB);
+        log.info("Available Processors:{}", runtime.availableProcessors());
     }
 
     /**

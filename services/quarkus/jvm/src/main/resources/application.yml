@@ -5,10 +5,12 @@ quarkus:
     ui-header: "Quarkus"
   http:
     accept-backlog: 10000
+    http2: false
     idle-timeout: 60s
-    io-threads: 16
+    io-threads: 8
     limits:
       max-connections: 10000
+      max-concurrent-streams: 1024
     port: 8080
     read-timeout: 1s
   log:
@@ -23,13 +25,23 @@ quarkus:
     level: INFO
   micrometer:
     binder:
+      enable-all: false
+      grpc-client:
+        enabled: false
+      grpc-server:
+        enabled: false
+      http-client:
+        enabled: false
       http-server:
+        enabled: false
+      jvm: false
+      netty:
         enabled: true
-      jvm: true
+      system: true
+      vertx:
+        enabled: true
       virtual-threads:
         enabled: true
-      vertx:
-        enabled: false
     enabled: true
     export:
       json:
@@ -44,13 +56,23 @@ quarkus:
     container-build: false
     debug:
       enabled: true
+  otel:
+    enabled: true
+    metrics:
+      enabled: true
+    traces:
+      enabled: true
+    logs:
+      enabled: true
+    security-events:
+      enabled: true
   smallrye-health:
     ui:
-      enabled: true
+      enabled: false
   thread-pool:
-    max-threads: 200
+    max-threads: 32
   vertx:
-    event-loops-pool-size: 40
+    event-loops-pool-size: 8
   virtual-threads:
     enabled: true
     name-prefix: "vthread-"

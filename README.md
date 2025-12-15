@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.2-blue.svg)](https://quarkus.io/)
-[![Go](https://img.shields.io/badge/Go-1.25.4-00ADD8.svg)](https://golang.org/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.3-blue.svg)](https://quarkus.io/)
+[![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
 > A comprehensive Docker Compose-based environment for benchmarking containerized REST services with full observability using the Grafana LGTM stack (Loki, Grafana, Tempo, Mimir), continuous profiling (Pyroscope), OpenTelemetry instrumentation (Alloy), and deterministic load generation (wrk2).
@@ -77,11 +77,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.2**
+- **Quarkus 3.30.3**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
-#### Go (1.25.4) - Work in Progress
+#### Go (1.25.5) - Work in Progress
 - Fiber framework integration
 - Full observability setup in progress
 
@@ -263,8 +263,8 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 - **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
 - **Java Native**: GraalVM Enterprise 25.0.1-ol9
 - **Spring Boot**: 4.0.0
-- **Quarkus**: 3.30.2
-- **Go**: 1.25.4 (Fiber v2.52.10)
+- **Quarkus**: 3.30.3
+- **Go**: 1.25.5 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ### Interpreting Results

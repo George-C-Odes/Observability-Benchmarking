@@ -119,7 +119,7 @@ Same as Tomcat variant:
 
 ### Custom Application Metrics
 
-#### `spring.request.count` (Counter)
+#### `hello.request.count` (Counter)
 Tracks request count for the reactive endpoint.
 
 **Tags**:

@@ -44,11 +44,11 @@ public class HelloResource {
         for (int i = 50_000; i > 0; i--) {
             this.cache.put(String.valueOf(i), "value-" + i);
         }
-        this.platformCounter = Counter.builder("quarkus.request.count")
+        this.platformCounter = Counter.builder("hello.request.count")
                 .tag("endpoint", "/hello/platform").register(meterRegistry);
-        this.virtualCounter = Counter.builder("quarkus.request.count")
+        this.virtualCounter = Counter.builder("hello.request.count")
                 .tag("endpoint", "/hello/virtual").register(meterRegistry);
-        this.reactiveCounter = Counter.builder("quarkus.request.count")
+        this.reactiveCounter = Counter.builder("hello.request.count")
                 .tag("endpoint", "/hello/reactive").register(meterRegistry);
 
         log.infov("Init thread: {0}", Thread.currentThread());
@@ -57,6 +57,7 @@ public class HelloResource {
         long totalHeapMB = runtime.totalMemory() / 1024 / 1024;
         long freeHeapMB = runtime.freeMemory() / 1024 / 1024;
         log.infov("Heap in MB = Max:{0}, Total:{1}, Free:{2}", maxHeapMB, totalHeapMB, freeHeapMB);
+        log.infov("Available Processors:{0}", runtime.availableProcessors());
     }
 
     /**

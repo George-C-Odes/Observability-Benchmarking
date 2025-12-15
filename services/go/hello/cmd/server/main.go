@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -63,7 +65,18 @@ func initTracerProvider(ctx context.Context) (*trace.TracerProvider, error) {
 	return tp, nil
 }
 
+func logGoVersion() {
+	runtimeVer := runtime.Version()
+	buildInfo, ok := debug.ReadBuildInfo()
+	if ok {
+		log.Printf("Runtime version: %s | Build version: %s", runtimeVer, buildInfo.GoVersion)
+	} else {
+		log.Printf("Runtime version: %s | Build info not available", runtimeVer)
+	}
+}
+
 func main() {
+	logGoVersion()
 	ctx := context.Background()
 
 	initNumberCache(50000)
