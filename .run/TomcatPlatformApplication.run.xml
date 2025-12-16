@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TomcatApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+  <configuration default="false" name="TomcatPlatformApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="SPRING_THREADS_VIRTUAL_ENABLED" value="false" />
+    </envs>
     <module name="spring-jvm-tomcat" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.benchmarking.TomcatApplication" />
     <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">

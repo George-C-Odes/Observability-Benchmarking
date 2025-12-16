@@ -1,0 +1,711 @@
+# Integration Tests
+
+> Comprehensive integration tests for verifying deployment setup and observability mechanisms for all JVM and Native services.
+
+## Overview
+
+This directory contains integration tests that validate:
+- **JVM Services**: All JVM-based services (Spring Boot, Quarkus, Go)
+- **Native Services**: All GraalVM Native Image services (Spring Native, Quarkus Native)
+- **Observability Stack**: Metrics, traces, and logs are collected properly
+- **Framework Functionality**: Latest framework versions (Quarkus 3.30.3, Spring Boot 4.0.0, Go 1.25.5)
+
+## Quick Start
+
+### Prerequisites
+
+1. **Docker & Docker Compose**
+   ```bash
+   docker --version      # Requires 20.10+
+   docker compose version # Requires 2.0+
+   ```
+
+2. **Command-line Tools**
+   ```bash
+   curl --version
+   bash --version        # Requires 4.0+
+   ```
+
+3. **Port Availability**
+   - 8080-8088: Service ports
+   - 3000: Grafana
+   - 4317-4318: OTLP endpoints
+
+### Running Tests
+
+```bash
+# 1. Start all services (JVM and Native)
+docker compose --project-directory ../compose --profile=OBS --profile=SERVICES up --build -d
+
+# 2. Wait for services to initialize (60-120 seconds for native images)
+sleep 120
+
+# 3. Run integration tests
+./run-integration-tests.sh
+```
+
+## Test Script
+
+### Features
+
+- **Automated Testing**: Tests all JVM and Native services automatically
+- **Colored Output**: Blue headers, Green (✓) for pass, Red (✗) for fail
+- **Exit Codes**: Returns 0 for success, 1 for failures (CI/CD friendly)
+- **Configurable**: Override service URLs via environment variables
+- **Comprehensive**: Tests deployment, metrics, traces, and logs
+- **Resilient**: Continues testing even if individual tests fail
+
+### Configuration
+
+Override default URLs (matches docker-compose.yml port order):
+
+```bash
+# JVM Services
+export SPRING_TOMCAT_PLATFORM_URL=http://localhost:8080
+export SPRING_TOMCAT_VIRTUAL_URL=http://localhost:8081
+export SPRING_NETTY_URL=http://localhost:8082
+
+# Native Services
+export SPRING_NATIVE_TOMCAT_PLATFORM_URL=http://localhost:8083
+export SPRING_NATIVE_TOMCAT_VIRTUAL_URL=http://localhost:8084
+export SPRING_NATIVE_NETTY_URL=http://localhost:8085
+
+# Quarkus Services
+export QUARKUS_JVM_URL=http://localhost:8086
+export QUARKUS_NATIVE_URL=http://localhost:8087
+
+# Go Service
+export GO_URL=http://localhost:8088
+
+# Observability
+export GRAFANA_URL=http://localhost:3000
+
+./run-integration-tests.sh
+```
+
+### Framework Versions
+
+The tests are designed for these specific versions:
+
+| Framework | Version | Notes |
+|-----------|---------|-------|
+| Quarkus | 3.30.3 | OpenTelemetry SDK (not Java agent) |
+| Spring Boot | 4.0.0 | OpenTelemetry Java Agent, no parent POM |
+| Go | 1.25.5 | Fiber v2.52.10, OpenTelemetry Go SDK |
+
+## Service Port Mappings
+
+Port mappings match the order in docker-compose.yml:
+
+| Service | Container Name | Port | Type |
+|---------|---------------|------|------|
+| Spring Boot Tomcat Platform | spring-jvm-tomcat-platform | 8080 | JVM |
+| Spring Boot Tomcat Virtual | spring-jvm-tomcat-virtual | 8081 | JVM |
+| Spring Boot Netty | spring-jvm-netty | 8082 | JVM |
+| Spring Boot Native Tomcat Platform | spring-native-tomcat-platform | 8083 | Native |
+| Spring Boot Native Tomcat Virtual | spring-native-tomcat-virtual | 8084 | Native |
+| Spring Boot Native Netty | spring-native-netty | 8085 | Native |
+| Quarkus JVM | quarkus-jvm | 8086 | JVM |
+| Quarkus Native | quarkus-native | 8087 | Native |
+| Go | go | 8088 | Native (Go binary) |
+
+## Test Scenarios
+
+### JVM Services - Deployment Tests (7 tests)
+
+| Service | Port | Endpoint | Expected Response |
+|---------|------|----------|-------------------|
+| Spring Tomcat Platform | 8080 | `/hello/platform` | Contains "Boot" |
+| Spring Tomcat Virtual | 8081 | `/hello/virtual` | Contains "Boot" |
+| Spring Netty | 8082 | `/hello/reactive` | Contains "Boot" |
+| Quarkus JVM | 8086 | `/hello/platform` | Contains "Quarkus" |
+| Quarkus JVM | 8086 | `/hello/virtual` | Contains "Quarkus" |
+| Quarkus JVM | 8086 | `/hello/reactive` | Contains "Quarkus" |
+
+### Native Services - Deployment Tests (7 tests)
+
+| Service | Port | Endpoint | Expected Response |
+|---------|------|----------|-------------------|
+| Spring Native Tomcat Platform | 8083 | `/hello/platform` | Contains "Boot" |
+| Spring Native Tomcat Virtual | 8084 | `/hello/virtual` | Contains "Boot" |
+| Spring Native Netty | 8085 | `/hello/reactive` | Contains "Boot" |
+| Quarkus Native | 8087 | `/hello/platform` | Contains "Quarkus" |
+| Quarkus Native | 8087 | `/hello/virtual` | Contains "Quarkus" |
+| Quarkus Native | 8087 | `/hello/reactive` | Contains "Quarkus" |
+
+### Go Service - Deployment Test (1 test)
+
+| Service | Port | Endpoint | Expected Response |
+|---------|------|----------|-------------------|
+| Go Fiber | 8088 | `/hello/platform` | Contains "GO" |
+
+### Observability Verification (10+ tests)
+
+Tests that observability mechanisms work:
+
+#### Metrics Collection
+
+- ✅ Spring Boot JVM services metrics (`/actuator/prometheus`)
+- ✅ Spring Boot Native services metrics (`/actuator/prometheus`)
+- ✅ Quarkus JVM metrics (`/q/metrics`)
+- ✅ Quarkus Native metrics (`/q/metrics`)
+- ✅ Custom counters present:
+  - `hello_request_count_total{endpoint="/hello/platform"}` (Java services)
+  - `go_request_count_total` (Go service)
+
+#### Grafana Stack
+
+- ✅ Grafana UI accessible at http://localhost:3000
+- ✅ Health endpoint returns 200 OK
+- ✅ Data sources connected (Prometheus, Loki, Tempo)
+
+#### Trace Generation
+
+- ✅ Sample requests sent to all services (JVM, Native, and Go)
+- ✅ Traces should appear in Grafana Tempo (manual verification)
+- ✅ OTLP endpoints receiving data
+
+#### Log Aggregation
+
+- ✅ Logs collected by Loki (manual verification required)
+- Script provides commands to check logs for all services
+
+## Expected Output
+
+```
+==========================================
+Integration Test Suite
+==========================================
+
+Testing Framework Versions:
+- Quarkus: 3.30.3
+- Spring Boot: 4.0.0
+- Go: 1.25.5
+
+==========================================
+JVM Services - Deployment Tests
+==========================================
+
+--- Spring Boot JVM Tomcat Platform (port 8080) ---
+Testing Spring Tomcat Platform - /hello/platform... ✓ PASSED
+
+--- Spring Boot JVM Tomcat Virtual (port 8081) ---
+Testing Spring Tomcat Virtual - /hello/virtual... ✓ PASSED
+
+--- Spring Boot JVM Netty (port 8082) ---
+Testing Spring Netty - /hello/reactive... ✓ PASSED
+
+--- Quarkus JVM (port 8086) ---
+Testing Quarkus JVM - /hello/platform... ✓ PASSED
+Testing Quarkus JVM - /hello/virtual... ✓ PASSED
+Testing Quarkus JVM - /hello/reactive... ✓ PASSED
+
+==========================================
+Native Services - Deployment Tests
+==========================================
+
+--- Spring Boot Native Tomcat Platform (port 8083) ---
+Testing Spring Native Tomcat Platform - /hello/platform... ✓ PASSED
+
+--- Spring Boot Native Tomcat Virtual (port 8084) ---
+Testing Spring Native Tomcat Virtual - /hello/virtual... ✓ PASSED
+
+--- Spring Boot Native Netty (port 8085) ---
+Testing Spring Native Netty - /hello/reactive... ✓ PASSED
+
+--- Quarkus Native (port 8087) ---
+Testing Quarkus Native - /hello/platform... ✓ PASSED
+Testing Quarkus Native - /hello/virtual... ✓ PASSED
+Testing Quarkus Native - /hello/reactive... ✓ PASSED
+
+==========================================
+Go Service - Deployment Tests
+==========================================
+
+--- Go Fiber (port 8088) ---
+Testing Go - /hello/platform... ✓ PASSED
+
+==========================================
+Observability Mechanism Tests
+==========================================
+
+--- Metrics Collection ---
+Testing Spring Tomcat Platform Metrics... ✓ PASSED
+Testing Spring Tomcat Virtual Metrics... ✓ PASSED
+Testing Spring Netty Metrics... ✓ PASSED
+Testing Spring Native Tomcat Platform Metrics... ✓ PASSED
+Testing Spring Native Tomcat Virtual Metrics... ✓ PASSED
+Testing Spring Native Netty Metrics... ✓ PASSED
+Testing Quarkus JVM Metrics... ✓ PASSED
+Testing Quarkus Native Metrics... ✓ PASSED
+
+--- Grafana Stack Health ---
+Testing Grafana UI... ✓ PASSED
+
+--- Trace Generation (Smoke Test) ---
+Generating sample requests to create traces...
+✓ Sample requests sent for trace generation
+
+--- Log Output Verification ---
+Note: Log verification requires checking container logs manually
+Run: docker compose --project-directory compose logs spring-jvm-tomcat-platform | grep -i 'hello'
+Run: docker compose --project-directory compose logs spring-jvm-tomcat-virtual | grep -i 'hello'
+Run: docker compose --project-directory compose logs spring-jvm-netty | grep -i 'hello'
+Run: docker compose --project-directory compose logs spring-native-tomcat-platform | grep -i 'hello'
+Run: docker compose --project-directory compose logs spring-native-tomcat-virtual | grep -i 'hello'
+Run: docker compose --project-directory compose logs spring-native-netty | grep -i 'hello'
+Run: docker compose --project-directory compose logs quarkus-jvm | grep -i 'hello'
+Run: docker compose --project-directory compose logs quarkus-native | grep -i 'hello'
+Run: docker compose --project-directory compose logs go | grep -i 'hello'
+
+==========================================
+Test Summary
+==========================================
+Tests Passed: 25
+Tests Failed: 0
+==========================================
+
+✅ All tests passed!
+
+Next Steps:
+1. Open Grafana: http://localhost:3000 (credentials: a/a)
+2. View metrics in Explore → Prometheus
+3. View traces in Explore → Tempo
+4. View logs in Explore → Loki
+```
+
+## Troubleshooting
+
+### Services Not Starting
+
+**Problem**: Services don't start or crash immediately
+
+**Solutions**:
+
+```bash
+# Check container status
+docker compose --project-directory ../compose ps
+
+# View logs for specific service
+docker compose --project-directory ../compose logs quarkus-jvm
+
+# Check for port conflicts
+sudo lsof -i :8080
+
+# Rebuild and restart
+docker compose --project-directory ../compose down
+docker compose --project-directory ../compose --profile=OBS --profile=SERVICES up --build -d
+```
+
+### Connection Refused
+
+**Problem**: Tests fail with "Connection refused"
+
+**Solutions**:
+
+```bash
+# Wait longer for services to start (especially native images)
+# Native images may take 60-120 seconds to start
+sleep 120
+./run-integration-tests.sh
+
+# Check if services are listening
+curl http://localhost:8080/hello/platform  # Spring JVM
+curl http://localhost:8083/hello/platform  # Spring Native
+curl http://localhost:8086/hello/platform  # Quarkus JVM
+curl http://localhost:8087/hello/platform  # Quarkus Native
+curl http://localhost:8088/hello/platform  # Go
+
+# Verify Docker network
+docker network ls
+docker network inspect compose_default
+```
+
+### Native Images Taking Long to Start
+
+**Problem**: Native image services (ports 8083-8085, 8087) timeout during tests
+
+**Note**: Native images have faster startup than JVM services but may still take 30-60 seconds depending on system resources.
+
+**Solutions**:
+
+```bash
+# Check native service logs for startup progress
+docker compose --project-directory ../compose logs spring-native-tomcat-platform
+docker compose --project-directory ../compose logs quarkus-native
+
+# Increase wait time before running tests
+sleep 120
+
+# Test native services individually
+curl http://localhost:8083/hello/platform  # Spring Native Tomcat Platform
+curl http://localhost:8084/hello/virtual   # Spring Native Tomcat Virtual
+curl http://localhost:8085/hello/reactive  # Spring Native Netty
+curl http://localhost:8087/hello/platform  # Quarkus Native
+```
+
+### Metrics Not Available
+
+**Problem**: Metrics endpoints return 404
+
+**Solutions**:
+
+```bash
+# Check correct endpoint for each service type
+# Quarkus (JVM and Native):
+curl http://localhost:8086/q/metrics  # Quarkus JVM
+curl http://localhost:8087/q/metrics  # Quarkus Native
+
+# Spring Boot (JVM and Native):
+curl http://localhost:8080/actuator/prometheus  # Spring JVM Tomcat Platform
+curl http://localhost:8083/actuator/prometheus  # Spring Native Tomcat Platform
+
+# Verify metrics are being generated
+curl http://localhost:8086/hello/platform
+sleep 5
+curl http://localhost:8086/q/metrics | grep hello_request_count
+```
+
+### Traces Not Appearing
+
+**Problem**: No traces visible in Grafana Tempo
+
+**Solutions**:
+
+```bash
+# Check Alloy (collector) is running
+docker compose --project-directory ../compose logs alloy
+
+# Check Tempo is running
+docker compose --project-directory ../compose logs tempo
+
+# Generate more requests
+for i in {1..100}; do curl http://localhost:8086/hello/platform; done
+
+# Wait for export (5-10 seconds)
+sleep 10
+
+# Check Grafana Tempo UI
+# Open: http://localhost:3000/explore
+# Select: Tempo
+# Search for recent traces
+```
+
+### Grafana Not Accessible
+
+**Problem**: Cannot access Grafana at http://localhost:3000
+
+**Solutions**:
+
+```bash
+# Check Grafana container status
+docker compose --project-directory ../compose ps grafana
+
+# Check Grafana logs
+docker compose --project-directory ../compose logs grafana
+
+# Verify port is not in use
+sudo lsof -i :3000
+
+# Restart Grafana
+docker compose --project-directory ../compose restart grafana
+```
+
+### Test Failures
+
+**Problem**: One or more tests fail
+
+**Solutions**:
+
+```bash
+# Run test with verbose output
+VERBOSE=true ./run-integration-tests.sh
+
+# Test individual endpoint manually
+curl -v http://localhost:8086/hello/platform
+
+# Check service-specific logs
+docker compose --project-directory ../compose logs quarkus-jvm | tail -50
+
+# Verify Java version in containers
+docker exec -it quarkus-jvm java -version
+
+# Check resource usage
+docker stats --no-stream
+```
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: Integration Tests
+
+on: [push, pull_request]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Start Services
+        run: |
+          docker compose --project-directory compose --profile=OBS --profile=SERVICES up --build -d
+          sleep 60
+      
+      - name: Run Integration Tests
+        run: |
+          cd integration-tests
+          chmod +x run-integration-tests.sh
+          ./run-integration-tests.sh
+      
+      - name: Collect Logs on Failure
+        if: failure()
+        run: |
+          mkdir -p logs
+          docker compose --project-directory compose logs > logs/all-services.log
+      
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-logs
+          path: logs/
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose --project-directory compose down -v
+```
+
+### GitLab CI
+
+```yaml
+integration-tests:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  
+  before_script:
+    - apk add --no-cache docker-compose curl bash
+  
+  script:
+    - docker compose --project-directory compose --profile=OBS --profile=SERVICES up --build -d
+    - sleep 60
+    - cd integration-tests
+    - chmod +x run-integration-tests.sh
+    - ./run-integration-tests.sh
+  
+  after_script:
+    - docker compose --project-directory compose logs > integration-logs.txt
+  
+  artifacts:
+    when: on_failure
+    paths:
+      - integration-logs.txt
+    expire_in: 1 week
+```
+
+### Jenkins
+
+```groovy
+pipeline {
+    agent any
+    
+    stages {
+        stage('Start Services') {
+            steps {
+                sh '''
+                    docker compose --project-directory compose --profile=OBS --profile=SERVICES up --build -d
+                    sleep 60
+                '''
+            }
+        }
+        
+        stage('Run Integration Tests') {
+            steps {
+                sh '''
+                    cd integration-tests
+                    chmod +x run-integration-tests.sh
+                    ./run-integration-tests.sh
+                '''
+            }
+        }
+    }
+    
+    post {
+        failure {
+            sh 'docker compose --project-directory compose logs > integration-logs.txt'
+            archiveArtifacts artifacts: 'integration-logs.txt'
+        }
+        always {
+            sh 'docker compose --project-directory compose down -v'
+        }
+    }
+}
+```
+
+## Manual Verification
+
+After running automated tests, manually verify:
+
+### 1. View Metrics in Grafana
+
+```bash
+# Open Grafana
+open http://localhost:3000  # macOS
+xdg-open http://localhost:3000  # Linux
+
+# Login: a/a
+# Navigate to: Explore → Prometheus
+# Query: hello_request_count_total
+# Expected: See request counts for all services
+```
+
+### 2. View Traces in Grafana
+
+```bash
+# In Grafana: Explore → Tempo
+# Click "Search"
+# Select recent time range (Last 15 minutes)
+# Expected: See traces from all services
+# Click trace to see span details
+```
+
+### 3. View Logs in Grafana
+
+```bash
+# In Grafana: Explore → Loki
+# Query: {service_name="quarkus-jvm"}
+# Expected: See application logs
+# Try filters: |= "INFO" or |= "platform"
+```
+
+### 4. Check Service Dashboards
+
+```bash
+# In Grafana: Dashboards
+# Look for:
+# - JVM Dashboard (memory, GC, threads)
+# - HTTP Request Dashboard (RPS, latency)
+# - Service Overview Dashboard
+```
+
+## Advanced Testing
+
+### Load Testing
+
+Generate significant load to test observability under stress:
+
+```bash
+# Start services
+docker compose --project-directory ../compose --profile=OBS --profile=SERVICES up -d
+
+# Run load test (requires wrk2)
+docker run --rm --network compose_default \
+  williamyeh/wrk2:latest \
+  -t4 -c10 -d60s -R5000 --latency \
+  http://quarkus-jvm:8080/hello/platform
+
+# Run integration tests to verify metrics/traces
+./run-integration-tests.sh
+```
+
+### Chaos Testing
+
+Test system resilience:
+
+```bash
+# Start services
+docker compose --project-directory ../compose --profile=OBS --profile=SERVICES up -d
+
+# Kill a service
+docker kill quarkus-jvm
+
+# Verify other services still work
+./run-integration-tests.sh || true
+
+# Restart service
+docker compose --project-directory ../compose up -d quarkus-jvm
+
+# Wait and verify
+sleep 30
+./run-integration-tests.sh
+```
+
+### Performance Baseline
+
+Establish performance baselines:
+
+```bash
+# Run multiple iterations
+for i in {1..5}; do
+  echo "Iteration $i"
+  docker compose --project-directory ../compose down
+  docker compose --project-directory ../compose --profile=SERVICES up -d
+  sleep 60
+  
+  # Warm up
+  for j in {1..1000}; do
+    curl -s http://localhost:8086/hello/platform > /dev/null
+  done
+  
+  # Measure
+  time for j in {1..1000}; do
+    curl -s http://localhost:8086/hello/platform > /dev/null
+  done
+done
+```
+
+## Continuous Improvement
+
+### Adding New Tests
+
+To add a new test scenario:
+
+1. Add test function to `run-integration-tests.sh`
+2. Use existing helper functions (`test_endpoint`, `test_metrics`)
+3. Update test counters
+4. Document in this README
+
+Example:
+
+```bash
+# Add to script
+test_endpoint "New Service Health" "${NEW_SERVICE_URL}/health" 200 "UP"
+
+# Update documentation
+| New Service | 8090 | `/health` | Contains "UP" |
+```
+
+### Monitoring Test Results
+
+Track test metrics over time:
+
+- **Success Rate**: % of passing tests
+- **Execution Time**: Total test duration
+- **Failure Patterns**: Common failure modes
+- **Coverage**: New features tested
+
+### Best Practices
+
+1. **Run Before Deploy**: Always run integration tests before deploying
+2. **Version Pin**: Keep framework versions in sync with services
+3. **Fast Feedback**: Optimize test execution time (< 2 minutes)
+4. **Clear Output**: Make failures easy to diagnose
+5. **Automate**: Run in CI/CD pipeline automatically
+
+## Additional Resources
+
+- [Main Testing Guide](../docs/TESTING.md)
+- [Project Structure](../docs/STRUCTURE.md)
+- [Docker Compose Configuration](../compose/docker-compose.yml)
+- [Service READMEs](../services/README.md)
+
+---
+
+**Last Updated**: December 2025  
+**Maintainer**: Observability-Benchmarking Team

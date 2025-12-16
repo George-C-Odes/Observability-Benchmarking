@@ -25,6 +25,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencyManagement>
@@ -63,6 +64,11 @@
             <artifactId>lombok</artifactId>
             <version>1.18.42</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
