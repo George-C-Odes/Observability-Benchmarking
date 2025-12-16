@@ -224,11 +224,11 @@ Container → Alloy (eBPF) → Pyroscope Server
 ### Planned Improvements
 1. **Kubernetes Support**: Helm charts and operators
 2. **gRPC - HTTP/2 - HTTP/3**: Additional protocols
-2. **CI/CD Integration**: Automated benchmark runs
-3. **Multi-region**: Distributed load generation
-4. **Service Mesh**: Istio/Linkerd integration
-5. **Chaos Engineering**: Fault injection
-6. **Cost Analysis**: Resource utilization tracking
+3. **CI/CD Integration**: Automated benchmark runs
+4. **Multi-region**: Distributed load generation
+5. **Service Mesh**: Istio/Linkerd integration
+6. **Chaos Engineering**: Fault injection
+7. **Cost Analysis**: Resource utilization tracking
 
 ### Extensibility Points
 - Plugin architecture for new services
