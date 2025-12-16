@@ -10,7 +10,6 @@ import {
   Card,
   CardContent,
   CardActions,
-  Grid,
   Chip,
   Dialog,
   DialogTitle,
@@ -129,9 +128,9 @@ export default function ScriptRunner() {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
         {scripts.map((script) => (
-          <Grid item xs={12} sm={6} md={4} key={script.name}>
+          <Box key={script.name}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box display="flex" alignItems="center" mb={1}>
@@ -169,9 +168,9 @@ export default function ScriptRunner() {
                 </Button>
               </CardActions>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {scripts.length === 0 && !loading && (
         <Box textAlign="center" py={4}>
