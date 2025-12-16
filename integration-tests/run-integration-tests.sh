@@ -15,9 +15,9 @@ TESTS_FAILED=0
 
 # Configuration - Port mappings match docker-compose.yml order
 # JVM Services
-SPRING_TOMCAT_PLATFORM_URL="${SPRING_TOMCAT_PLATFORM_URL:-http://localhost:8080}"
-SPRING_TOMCAT_VIRTUAL_URL="${SPRING_TOMCAT_VIRTUAL_URL:-http://localhost:8081}"
-SPRING_NETTY_URL="${SPRING_NETTY_URL:-http://localhost:8082}"
+SPRING_JVM_TOMCAT_PLATFORM_URL="${SPRING_JVM_TOMCAT_PLATFORM_URL:-http://localhost:8080}"
+SPRING_JVM_TOMCAT_VIRTUAL_URL="${SPRING_JVM_TOMCAT_VIRTUAL_URL:-http://localhost:8081}"
+SPRING_JVM_NETTY_URL="${SPRING_JVM_NETTY_URL:-http://localhost:8082}"
 
 # Native Services
 SPRING_NATIVE_TOMCAT_PLATFORM_URL="${SPRING_NATIVE_TOMCAT_PLATFORM_URL:-http://localhost:8083}"
@@ -71,15 +71,25 @@ test_endpoint() {
     fi
 }
 
-# Helper function to test metrics endpoint
-test_metrics() {
+# Helper functions to test metrics endpoint
+test_spring_metrics() {
+    local name=$1
+    local url=$2
+
+    # Try different metric endpoints
+    test_endpoint "${name} Metrics" "${url}/actuator/metrics" 200 "" || \
+    test_endpoint "${name} Metrics" "${url}/actuator/health/readiness" 200 "" || \
+    test_endpoint "${name} Metrics" "${url}/actuator/health/liveness" 200 ""
+}
+
+test_quarkus_metrics() {
     local name=$1
     local url=$2
     
     # Try different metric endpoints
-    test_endpoint "${name} Metrics" "${url}/q/metrics" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/actuator/prometheus" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/metrics" 200 ""
+    test_endpoint "${name} Metrics" "${url}/q/metrics/json" 200 "" || \
+    test_endpoint "${name} Metrics" "${url}/q/health/ready" 200 "" || \
+    test_endpoint "${name} Metrics" "${url}/q/health/live" 200 ""
 }
 
 echo "=========================================="
@@ -98,15 +108,15 @@ echo "=========================================="
 echo ""
 
 echo -e "${BLUE}--- Spring Boot JVM Tomcat Platform (port 8080) ---${NC}"
-test_endpoint "Spring Tomcat Platform - /hello/platform" "${SPRING_TOMCAT_PLATFORM_URL}/hello/platform" 200 "Boot"
+test_endpoint "Spring Tomcat Platform - /hello/platform" "${SPRING_JVM_TOMCAT_PLATFORM_URL}/hello/platform" 200 "Boot"
 echo ""
 
 echo -e "${BLUE}--- Spring Boot JVM Tomcat Virtual (port 8081) ---${NC}"
-test_endpoint "Spring Tomcat Virtual - /hello/virtual" "${SPRING_TOMCAT_VIRTUAL_URL}/hello/virtual" 200 "Boot"
+test_endpoint "Spring Tomcat Virtual - /hello/virtual" "${SPRING_JVM_TOMCAT_VIRTUAL_URL}/hello/virtual" 200 "Boot"
 echo ""
 
 echo -e "${BLUE}--- Spring Boot JVM Netty (port 8082) ---${NC}"
-test_endpoint "Spring Netty - /hello/reactive" "${SPRING_NETTY_URL}/hello/reactive" 200 "Boot"
+test_endpoint "Spring Netty - /hello/reactive" "${SPRING_JVM_NETTY_URL}/hello/reactive" 200 "Boot"
 echo ""
 
 echo -e "${BLUE}--- Quarkus JVM (port 8086) ---${NC}"
@@ -153,14 +163,14 @@ echo "=========================================="
 echo ""
 
 echo -e "${BLUE}--- Metrics Collection ---${NC}"
-test_metrics "Spring Tomcat Platform" "${SPRING_TOMCAT_PLATFORM_URL}"
-test_metrics "Spring Tomcat Virtual" "${SPRING_TOMCAT_VIRTUAL_URL}"
-test_metrics "Spring Netty" "${SPRING_NETTY_URL}"
-test_metrics "Spring Native Tomcat Platform" "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}"
-test_metrics "Spring Native Tomcat Virtual" "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}"
-test_metrics "Spring Native Netty" "${SPRING_NATIVE_NETTY_URL}"
-test_metrics "Quarkus JVM" "${QUARKUS_JVM_URL}"
-test_metrics "Quarkus Native" "${QUARKUS_NATIVE_URL}"
+test_spring_metrics "Spring Tomcat Platform" "${SPRING_JVM_TOMCAT_PLATFORM_URL}"
+test_spring_metrics "Spring Tomcat Virtual" "${SPRING_JVM_TOMCAT_VIRTUAL_URL}"
+test_spring_metrics "Spring Netty" "${SPRING_JVM_NETTY_URL}"
+test_spring_metrics "Spring Native Tomcat Platform" "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}"
+test_spring_metrics "Spring Native Tomcat Virtual" "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}"
+test_spring_metrics "Spring Native Netty" "${SPRING_NATIVE_NETTY_URL}"
+test_quarkus_metrics "Quarkus JVM" "${QUARKUS_JVM_URL}"
+test_quarkus_metrics "Quarkus Native" "${QUARKUS_NATIVE_URL}"
 echo ""
 
 echo -e "${BLUE}--- Grafana Stack Health ---${NC}"
@@ -168,34 +178,67 @@ test_endpoint "Grafana UI" "${GRAFANA_URL}/api/health" 200 ""
 echo ""
 
 echo -e "${BLUE}--- Trace Generation (Smoke Test) ---${NC}"
-echo "Generating sample requests to create traces..."
-# Generate traces from all services
-for i in {1..3}; do
-    curl -s "${SPRING_TOMCAT_PLATFORM_URL}/hello/platform" > /dev/null 2>&1 || true
-    curl -s "${SPRING_TOMCAT_VIRTUAL_URL}/hello/virtual" > /dev/null 2>&1 || true
-    curl -s "${SPRING_NETTY_URL}/hello/reactive" > /dev/null 2>&1 || true
-    curl -s "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}/hello/platform" > /dev/null 2>&1 || true
-    curl -s "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}/hello/virtual" > /dev/null 2>&1 || true
-    curl -s "${SPRING_NATIVE_NETTY_URL}/hello/reactive" > /dev/null 2>&1 || true
-    curl -s "${QUARKUS_JVM_URL}/hello/platform" > /dev/null 2>&1 || true
-    curl -s "${QUARKUS_NATIVE_URL}/hello/platform" > /dev/null 2>&1 || true
-    curl -s "${GO_URL}/hello/platform" > /dev/null 2>&1 || true
-done
-echo -e "${GREEN}✓${NC} Sample requests sent for trace generation"
-((TESTS_PASSED++))
-echo ""
+echo "Generating request to create trace and verify container log output..."
 
-echo -e "${BLUE}--- Log Output Verification ---${NC}"
-echo -e "${YELLOW}Note: Log verification requires checking container logs manually${NC}"
-echo "Run: docker compose --project-directory compose logs spring-jvm-tomcat-platform | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs spring-jvm-tomcat-virtual | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs spring-jvm-netty | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs spring-native-tomcat-platform | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs spring-native-tomcat-virtual | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs spring-native-netty | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs quarkus-jvm | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs quarkus-native | grep -i 'hello'"
-echo "Run: docker compose --project-directory compose logs go | grep -i 'hello'"
+# Verify last log line contains expected substring (case-insensitive)
+verify_last_log_contains() {
+    local container_name="$1"
+    local expected="$2"
+    local label="$3"
+
+    echo -n "Trace log check ${label} (${container_name})... "
+
+    # Get last log line (don't fail the whole script if container/logs are unavailable)
+    local last_line
+    last_line="$(docker logs --tail 1 "${container_name}" 2>/dev/null || true)"
+
+    if echo "${last_line}" | grep -qi "${expected}"; then
+        echo -e "${GREEN}✓ PASSED${NC} (found '${expected}')"
+        ((TESTS_PASSED++))
+        return 0
+    else
+        echo -e "${RED}✗ FAILED${NC} (missing '${expected}')"
+        echo "  Last log line: ${last_line:-<empty>}"
+        ((TESTS_FAILED++))
+        return 1
+    fi
+}
+
+# Run request then verify logs
+run_trace_and_verify() {
+    local label="$1"
+    local url="$2"
+    local container_name="$3"
+    local expected="$4"
+
+    # Fire request to generate log/trace (don't fail suite on curl failure)
+    curl -s "${url}?log=true" > /dev/null 2>&1 || true
+
+    # Small delay to let the service flush logs
+    sleep 0.2
+
+    verify_last_log_contains "${container_name}" "${expected}" "${label}"
+}
+
+run_trace_and_verify "Spring JVM Tomcat Platform" "${SPRING_JVM_TOMCAT_PLATFORM_URL}/hello/platform" "spring-jvm-tomcat-platform" "http-nio"
+run_trace_and_verify "Spring JVM Tomcat Virtual" "${SPRING_JVM_TOMCAT_VIRTUAL_URL}/hello/virtual" "spring-jvm-tomcat-virtual" "VirtualThread"
+run_trace_and_verify "Spring JVM Netty Reactive" "${SPRING_JVM_NETTY_URL}/hello/reactive" "spring-jvm-netty" "reactor-http"
+
+run_trace_and_verify "Spring Native Tomcat Platform" "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}/hello/platform" "spring-native-tomcat-platform" "http-nio"
+run_trace_and_verify "Spring Native Tomcat Virtual" "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}/hello/virtual" "spring-native-tomcat-virtual" "VirtualThread"
+run_trace_and_verify "Spring Native Netty Reactive" "${SPRING_NATIVE_NETTY_URL}/hello/reactive" "spring-native-netty" "reactor-http"
+
+run_trace_and_verify "Quarkus JVM Platform" "${QUARKUS_JVM_URL}/hello/platform" "quarkus-jvm" "executor-thread"
+run_trace_and_verify "Quarkus JVM Virtual" "${QUARKUS_JVM_URL}/hello/virtual"  "quarkus-jvm" "vthread"
+run_trace_and_verify "Quarkus JVM Reactive" "${QUARKUS_JVM_URL}/hello/reactive" "quarkus-jvm" "vert.x-eventloop-thread"
+
+run_trace_and_verify "Quarkus Native Platform" "${QUARKUS_NATIVE_URL}/hello/platform" "quarkus-native" "executor-thread"
+run_trace_and_verify "Quarkus Native Virtual" "${QUARKUS_NATIVE_URL}/hello/virtual" "quarkus-native" "vthread"
+run_trace_and_verify "Quarkus Native Reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" "quarkus-native" "vert.x-eventloop-thread"
+
+# No mapping was provided for GO container logs; keeping request as a smoke call only:
+curl -s "${GO_URL}/hello/platform?log=true" > /dev/null 2>&1 || true
+
 echo ""
 
 echo "=========================================="

@@ -102,11 +102,11 @@ Port mappings match the order in docker-compose.yml:
 | Spring Boot Tomcat Platform | spring-jvm-tomcat-platform | 8080 | JVM |
 | Spring Boot Tomcat Virtual | spring-jvm-tomcat-virtual | 8081 | JVM |
 | Spring Boot Netty | spring-jvm-netty | 8082 | JVM |
-| **Spring Boot Native Tomcat Platform** | spring-native-tomcat-platform | **8083** | **Native** |
-| **Spring Boot Native Tomcat Virtual** | spring-native-tomcat-virtual | **8084** | **Native** |
-| **Spring Boot Native Netty** | spring-native-netty | **8085** | **Native** |
+| Spring Boot Native Tomcat Platform | spring-native-tomcat-platform | 8083 | Native |
+| Spring Boot Native Tomcat Virtual | spring-native-tomcat-virtual | 8084 | Native |
+| Spring Boot Native Netty | spring-native-netty | 8085 | Native |
 | Quarkus JVM | quarkus-jvm | 8086 | JVM |
-| **Quarkus Native** | quarkus-native | **8087** | **Native** |
+| Quarkus Native | quarkus-native | 8087 | Native |
 | Go | go | 8088 | Native (Go binary) |
 
 ## Test Scenarios
