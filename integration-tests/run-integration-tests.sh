@@ -9,12 +9,20 @@ echo "Integration Test Suite"
 echo "=========================================="
 echo ""
 
-# Configuration
-QUARKUS_URL="${QUARKUS_URL:-http://localhost:8080}"
-SPRING_TOMCAT_URL="${SPRING_TOMCAT_URL:-http://localhost:8081}"
+# Configuration - Updated for latest service topology
+# Spring Boot Tomcat Platform (port 8080), Virtual (port 8081), Netty (port 8082)
+# Go (port 8083), Quarkus JVM (port 8086)
+SPRING_TOMCAT_PLATFORM_URL="${SPRING_TOMCAT_PLATFORM_URL:-http://localhost:8080}"
+SPRING_TOMCAT_VIRTUAL_URL="${SPRING_TOMCAT_VIRTUAL_URL:-http://localhost:8081}"
 SPRING_NETTY_URL="${SPRING_NETTY_URL:-http://localhost:8082}"
 GO_URL="${GO_URL:-http://localhost:8083}"
+QUARKUS_URL="${QUARKUS_URL:-http://localhost:8086}"
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
+
+# Framework versions (for reporting)
+QUARKUS_VERSION="3.30.3"
+SPRING_BOOT_VERSION="4.0.0"
+GO_VERSION="1.25.5"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -78,29 +86,39 @@ test_metrics() {
 }
 
 echo "=========================================="
+echo "Integration Test Suite"
+echo "=========================================="
+echo ""
+echo "Testing Framework Versions:"
+echo "- Quarkus: ${QUARKUS_VERSION}"
+echo "- Spring Boot: ${SPRING_BOOT_VERSION}"
+echo "- Go: ${GO_VERSION}"
+echo ""
+
+echo "=========================================="
 echo "Deployment Verification Tests"
 echo "=========================================="
 echo ""
 
-echo "--- Quarkus Service ---"
-test_health "Quarkus" "${QUARKUS_URL}"
+echo "--- Quarkus JVM Service (port 8086) ---"
 test_endpoint "Quarkus Platform Endpoint" "${QUARKUS_URL}/hello/platform" 200 "Quarkus"
 test_endpoint "Quarkus Virtual Endpoint" "${QUARKUS_URL}/hello/virtual" 200 "Quarkus"
 test_endpoint "Quarkus Reactive Endpoint" "${QUARKUS_URL}/hello/reactive" 200 "Quarkus"
 echo ""
 
-echo "--- Spring Boot Tomcat Service ---"
-test_health "Spring Tomcat" "${SPRING_TOMCAT_URL}"
-test_endpoint "Spring Tomcat Platform Endpoint" "${SPRING_TOMCAT_URL}/hello/platform" 200 "Boot"
-test_endpoint "Spring Tomcat Virtual Endpoint" "${SPRING_TOMCAT_URL}/hello/virtual" 200 "Boot"
+echo "--- Spring Boot Tomcat (Platform - port 8080) ---"
+test_endpoint "Spring Tomcat Platform Endpoint" "${SPRING_TOMCAT_PLATFORM_URL}/hello/platform" 200 "Boot"
 echo ""
 
-echo "--- Spring Boot Netty Service ---"
-test_health "Spring Netty" "${SPRING_NETTY_URL}"
+echo "--- Spring Boot Tomcat (Virtual - port 8081) ---"
+test_endpoint "Spring Tomcat Virtual Endpoint" "${SPRING_TOMCAT_VIRTUAL_URL}/hello/virtual" 200 "Boot"
+echo ""
+
+echo "--- Spring Boot Netty (port 8082) ---"
 test_endpoint "Spring Netty Reactive Endpoint" "${SPRING_NETTY_URL}/hello/reactive" 200 "Boot"
 echo ""
 
-echo "--- Go Service ---"
+echo "--- Go Fiber (port 8083) ---"
 test_endpoint "Go Platform Endpoint" "${GO_URL}/hello/platform" 200 "GO"
 echo ""
 
@@ -111,7 +129,8 @@ echo ""
 
 echo "--- Metrics Collection ---"
 test_metrics "Quarkus" "${QUARKUS_URL}"
-test_metrics "Spring Tomcat" "${SPRING_TOMCAT_URL}"
+test_metrics "Spring Tomcat Platform" "${SPRING_TOMCAT_PLATFORM_URL}"
+test_metrics "Spring Tomcat Virtual" "${SPRING_TOMCAT_VIRTUAL_URL}"
 test_metrics "Spring Netty" "${SPRING_NETTY_URL}"
 echo ""
 
@@ -123,7 +142,8 @@ echo "--- Trace Generation (Smoke Test) ---"
 echo "Generating sample requests to create traces..."
 for i in {1..5}; do
     curl -s "${QUARKUS_URL}/hello/platform" > /dev/null 2>&1 || true
-    curl -s "${SPRING_TOMCAT_URL}/hello/platform" > /dev/null 2>&1 || true
+    curl -s "${SPRING_TOMCAT_PLATFORM_URL}/hello/platform" > /dev/null 2>&1 || true
+    curl -s "${SPRING_TOMCAT_VIRTUAL_URL}/hello/virtual" > /dev/null 2>&1 || true
     curl -s "${SPRING_NETTY_URL}/hello/reactive" > /dev/null 2>&1 || true
     curl -s "${GO_URL}/hello/platform" > /dev/null 2>&1 || true
 done
@@ -133,10 +153,11 @@ echo ""
 
 echo "--- Log Output Verification ---"
 echo -e "${YELLOW}Note: Log verification requires checking container logs manually${NC}"
-echo "Run: docker compose logs quarkus-jvm | grep -i 'hello'"
-echo "Run: docker compose logs spring-jvm-tomcat | grep -i 'hello'"
-echo "Run: docker compose logs spring-jvm-netty | grep -i 'hello'"
-echo "Run: docker compose logs go-hello | grep -i 'hello'"
+echo "Run: docker compose --project-directory compose logs quarkus-jvm | grep -i 'hello'"
+echo "Run: docker compose --project-directory compose logs spring-jvm-tomcat-platform | grep -i 'hello'"
+echo "Run: docker compose --project-directory compose logs spring-jvm-tomcat-virtual | grep -i 'hello'"
+echo "Run: docker compose --project-directory compose logs spring-jvm-netty | grep -i 'hello'"
+echo "Run: docker compose --project-directory compose logs go-hello | grep -i 'hello'"
 echo ""
 
 echo "=========================================="

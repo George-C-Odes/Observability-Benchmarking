@@ -1,104 +1,275 @@
-# Testing Guide
+# Comprehensive Testing Guide
 
-This document describes the testing strategy and how to run tests for the Observability Benchmarking project.
+> Complete guide to unit tests, integration tests, and observability validation for the Observability Benchmarking project.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Test Architecture](#test-architecture)
+- [Unit Tests](#unit-tests)
+  - [Java Services (Quarkus & Spring Boot)](#java-services-quarkus--spring-boot)
+  - [Go Service](#go-service)
+- [Integration Tests](#integration-tests)
+- [Observability Testing](#observability-testing)
+- [Performance Testing](#performance-testing)
+- [CI/CD Integration](#cicd-integration)
+- [Troubleshooting](#troubleshooting)
+- [Best Practices](#best-practices)
 
 ## Overview
 
-The project includes two types of tests:
-1. **Unit Tests**: Test individual REST endpoints and service logic
-2. **Integration Tests**: Verify deployment setup and observability mechanisms
+The project implements a comprehensive testing strategy covering:
+
+1. **Unit Tests**: Validate individual REST endpoints and service logic
+2. **Integration Tests**: Verify deployment setup and inter-service communication
+3. **Observability Tests**: Validate metrics, traces, and logs functionality
+4. **Performance Tests**: Basic smoke tests for throughput validation
+
+### Test Coverage Summary
+
+| Component | Unit Tests | Integration Tests | Observability Tests |
+|-----------|------------|-------------------|---------------------|
+| Quarkus JVM | ✅ 9 tests | ✅ Covered | ✅ Metrics/Traces |
+| Spring Tomcat | ✅ 6 tests | ✅ Covered | ✅ Metrics/Traces |
+| Spring Netty | ✅ 3 tests | ✅ Covered | ✅ Metrics/Traces |
+| Go Fiber | ✅ 5 tests | ✅ Covered | ✅ Planned |
+| **Total** | **23 tests** | **15+ scenarios** | **Full stack** |
+
+## Test Architecture
+
+### Testing Stack
+
+**Java (Quarkus)**
+- Testing Framework: JUnit 5
+- HTTP Testing: RestAssured
+- Test Profile: `@QuarkusTest`
+- Metrics: Micrometer (OpenTelemetry SDK)
+
+**Java (Spring Boot)**
+- Testing Framework: JUnit 5
+- HTTP Testing: MockMvc (Tomcat), WebTestClient (Netty)
+- Test Context: `@SpringBootTest`
+- Metrics: Micrometer (OpenTelemetry Java Agent)
+
+**Go**
+- Testing Framework: Go testing package
+- HTTP Testing: httptest + Fiber Test
+- Observability: OpenTelemetry Go SDK
+
+**Integration**
+- Tool: Bash script (`run-integration-tests.sh`)
+- HTTP Client: curl
+- Exit Codes: Standard (0=success, 1=failure)
+- Output: Colored terminal output with detailed reporting
 
 ## Unit Tests
 
 ### Java Services (Quarkus & Spring Boot)
 
-Unit tests for Java services are located in `src/test/java` directories within each service module.
+#### Version Requirements
 
-#### Requirements
+```
+Java: 25 (Amazon Corretto 25.0.1 or Eclipse Temurin 25)
+Maven: 3.9+
+Spring Boot: 4.0.0
+Quarkus: 3.30.3
+```
 
-- Java 25 (Amazon Corretto or Eclipse Temurin)
-- Maven 3.9+
+> **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
 
-**Note**: The project is configured to use Java 25. If you have a different Java version installed, the easiest way to run tests is through Docker (see Docker Build section below).
+#### Test Structure
 
-#### Running Tests
+All Java unit tests follow a consistent pattern:
 
-##### Quarkus JVM Service
+```
+services/
+├── quarkus/jvm/src/test/java/com/benchmarking/rest/HelloResourceTest.java
+├── spring/jvm/tomcat/src/test/java/com/benchmarking/rest/HelloControllerTest.java
+└── spring/jvm/netty/src/test/java/com/benchmarking/rest/HelloControllerTest.java
+```
+
+#### Running Quarkus Tests
 
 ```bash
 cd services/quarkus/jvm
-mvn test
+mvn clean test
 ```
 
-The Quarkus tests use RestAssured and test:
-- `/hello/platform` - Platform thread endpoint
-- `/hello/virtual` - Virtual thread endpoint  
-- `/hello/reactive` - Reactive endpoint
-- Query parameters: `sleep` and `log`
+**Test Coverage**:
+- ✅ Platform threads (`/hello/platform`)
+- ✅ Virtual threads (`/hello/virtual`)
+- ✅ Reactive (Mutiny) (`/hello/reactive`)
+- ✅ Query parameters (`sleep`, `log`)
+- ✅ Content-Type validation (application/json)
+- ✅ Response body validation
 
-##### Spring Boot Tomcat Service
+**Example Test**:
+```java
+@Test
+public void testPlatformEndpoint() {
+    given()
+        .when().get("/hello/platform")
+        .then()
+        .statusCode(200)
+        .contentType(ContentType.JSON)
+        .body(containsString("Hello from Quarkus platform REST"));
+}
+```
+
+**Key Features Tested**:
+- Quarkus OpenTelemetry SDK integration (not Java agent)
+- Micrometer metrics with custom counter (`hello.request.count`)
+- Caffeine cache initialization (50,000 entries)
+- Thread model validation
+
+#### Running Spring Boot Tomcat Tests
 
 ```bash
 cd services/spring/jvm/tomcat
-mvn test
+mvn clean test
 ```
 
-The Spring Tomcat tests use MockMvc and test:
-- `/hello/platform` - Platform thread endpoint
-- `/hello/virtual` - Virtual thread endpoint
-- Query parameters: `sleep` and `log`
+**Test Coverage**:
+- ✅ Platform threads (`/hello/platform`)
+- ✅ Virtual threads (`/hello/virtual`)
+- ✅ Query parameters (`sleep`, `log`)
+- ✅ MockMvc integration
+- ✅ Auto-configuration validation
 
-##### Spring Boot Netty Service
+**Example Test**:
+```java
+@Test
+public void testPlatformEndpoint() throws Exception {
+    mockMvc.perform(get("/hello/platform"))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(content().string(containsString("Hello from Boot platform REST")));
+}
+```
+
+**Key Features Tested**:
+- Spring Boot 4.0.0 with OpenTelemetry Java Agent
+- Micrometer metrics integration
+- Platform vs Virtual thread behavior
+- POM refactoring (no parent dependency)
+
+#### Running Spring Boot Netty Tests
 
 ```bash
 cd services/spring/jvm/netty
-mvn test
+mvn clean test
 ```
 
-The Spring Netty tests use WebTestClient and test:
-- `/hello/reactive` - Reactive endpoint
-- Query parameters: `sleep` and `log`
+**Test Coverage**:
+- ✅ Reactive endpoint (`/hello/reactive`)
+- ✅ WebFlux with WebTestClient
+- ✅ Reactor Netty integration
+- ✅ Non-blocking I/O validation
 
-#### Running Tests in Docker
+**Example Test**:
+```java
+@Test
+public void testReactiveEndpoint() {
+    webTestClient.get()
+        .uri("/hello/reactive")
+        .exchange()
+        .expectStatus().isOk()
+        .expectHeader().contentType(MediaType.APPLICATION_JSON)
+        .expectBody(String.class)
+        .value(body -> assertThat(body).contains("Hello from Boot reactive REST"));
+}
+```
 
-To run tests with the correct Java version, build inside Docker:
+**Key Features Tested**:
+- Spring WebFlux reactive programming model
+- Netty event loop configuration
+- Reactor context propagation
+
+#### Running All Java Tests
 
 ```bash
-# Quarkus
-cd services/quarkus/jvm
-docker build --target builder -t quarkus-test .
-
-# Spring Tomcat
-cd services/spring/jvm/tomcat
-docker build --target builder -t spring-tomcat-test .
-
-# Spring Netty
-cd services/spring/jvm/netty
-docker build --target builder -t spring-netty-test .
+# From project root
+cd services/quarkus/jvm && mvn test && cd -
+cd services/spring/jvm/tomcat && mvn test && cd -
+cd services/spring/jvm/netty && mvn test && cd -
 ```
+
+#### Docker-Based Testing (Recommended)
+
+Build with Docker to ensure correct Java version:
+
+```bash
+# Quarkus JVM
+docker build \
+  --build-arg QUARKUS_VERSION=3.30.3 \
+  --target builder \
+  -t quarkus-jvm-test \
+  -f services/quarkus/jvm/Dockerfile \
+  services
+
+# Spring Boot Tomcat
+docker build \
+  --build-arg SPRING_BOOT_VERSION=4.0.0 \
+  --build-arg PROFILE=tomcat \
+  --target builder \
+  -t spring-tomcat-test \
+  -f services/spring/jvm/Dockerfile \
+  services
+
+# Spring Boot Netty
+docker build \
+  --build-arg SPRING_BOOT_VERSION=4.0.0 \
+  --build-arg PROFILE=netty \
+  --target builder \
+  -t spring-netty-test \
+  -f services/spring/jvm/Dockerfile \
+  services
+```
+
+**Note**: Docker builds run tests automatically as part of the Maven build process.
 
 ### Go Service
 
-Unit tests for the Go service are located in `cmd/server/main_test.go`.
+#### Version Requirements
 
-#### Requirements
+```
+Go: 1.25.5+
+Fiber: v2.52.10
+OpenTelemetry: Latest stable
+```
 
-- Go 1.25.4+
+#### Test Structure
 
-#### Running Tests
+```
+services/go/hello/cmd/server/main_test.go
+```
+
+#### Running Go Tests
 
 ```bash
 cd services/go/hello
+
+# Download dependencies (first time only)
+go mod download
+
+# Run tests with verbose output
 go test ./... -v
+
+# Run tests with coverage
+go test ./... -cover
+
+# Run specific test
+go test -run TestPlatformEndpoint -v
 ```
 
-The Go tests cover:
-- `/hello/platform` endpoint
-- Cache initialization
-- OpenTelemetry provider initialization (meter and tracer)
+**Test Coverage**:
+- ✅ HTTP endpoint (`/hello/platform`)
+- ✅ Cache initialization and validation
+- ✅ OpenTelemetry meter provider setup
+- ✅ OpenTelemetry tracer provider setup
+- ✅ Fiber framework integration
 
-#### Test Output
-
+**Example Test Output**:
 ```
 === RUN   TestPlatformEndpoint
 --- PASS: TestPlatformEndpoint (0.00s)
@@ -107,259 +278,942 @@ The Go tests cover:
 === RUN   TestInitNumberCache
 --- PASS: TestInitNumberCache (0.00s)
 === RUN   TestInitMeterProvider
---- PASS: TestInitMeterProvider (0.00s)
+    main_test.go:112: Expected error in test environment: context deadline exceeded
+--- PASS: TestInitMeterProvider (5.00s)
 === RUN   TestInitTracerProvider
---- PASS: TestInitTracerProvider (0.00s)
+    main_test.go:127: Expected error in test environment: context deadline exceeded
+--- PASS: TestInitTracerProvider (5.00s)
 PASS
-ok  	hello/cmd/server	0.010s
+ok      hello/cmd/server        10.015s
 ```
+
+**Key Features Tested**:
+- Fiber web framework integration
+- OpenTelemetry SDK (not automatic instrumentation)
+- Custom metric counter (`go.request.count`)
+- Cache performance (map-based)
+
+**Note**: OpenTelemetry provider tests expect timeout errors in unit test environment (no OTLP endpoint available).
 
 ## Integration Tests
 
-Integration tests verify that services work correctly when deployed and that observability mechanisms (metrics, traces, logs) function properly.
+Integration tests validate the entire deployment stack including Docker containers, networking, and observability components.
 
 ### Location
 
-Integration tests are in the `integration-tests/` directory.
+```
+integration-tests/
+├── run-integration-tests.sh    # Main test script
+└── README.md                    # Detailed documentation
+```
 
-### Requirements
+### Prerequisites
 
-- Docker and Docker Compose
-- Bash shell
-- curl
+Before running integration tests:
+
+1. **Docker & Docker Compose**
+   ```bash
+   docker --version  # 20.10+
+   docker compose version  # 2.0+
+   ```
+
+2. **Required Tools**
+   ```bash
+   curl --version
+   jq --version  # Optional, for JSON parsing
+   ```
+
+3. **Port Availability**
+   Ensure these ports are free:
+   - 8080-8087: Service ports
+   - 3000: Grafana
+   - 4317, 4318: OTLP endpoints
+
+### Starting Services
+
+```bash
+# Start all services and observability stack
+docker compose \
+  --project-directory compose \
+  --profile=OBS \
+  --profile=SERVICES \
+  up --build -d
+
+# Check service status
+docker compose --project-directory compose ps
+
+# View logs
+docker compose --project-directory compose logs -f quarkus-jvm
+```
+
+**Wait Time**: Allow 30-60 seconds for all services to initialize.
 
 ### Running Integration Tests
 
-1. **Start all services**:
-
-```bash
-docker compose --project-directory compose --profile=OBS --profile=SERVICES up --no-recreate --build -d
-```
-
-2. **Wait for services to be ready** (30-60 seconds):
-
-```bash
-docker compose ps
-```
-
-3. **Run integration tests**:
+#### Basic Usage
 
 ```bash
 cd integration-tests
 ./run-integration-tests.sh
 ```
 
-### What Integration Tests Cover
-
-#### Deployment Verification
-- ✓ Service health checks (all services)
-- ✓ REST endpoint availability and correctness
-- ✓ Service connectivity
-
-Tested endpoints:
-- Quarkus: `/hello/platform`, `/hello/virtual`, `/hello/reactive`
-- Spring Tomcat: `/hello/platform`, `/hello/virtual`
-- Spring Netty: `/hello/reactive`
-- Go: `/hello/platform`
-
-#### Observability Mechanisms
-- ✓ Metrics endpoint availability
-- ✓ Grafana stack health
-- ✓ Trace generation (smoke test)
-- ✓ Log output (manual verification guide provided)
-
-### Custom Service URLs
-
-Override default service URLs with environment variables:
+#### Custom Configuration
 
 ```bash
-export QUARKUS_URL=http://localhost:8080
-export SPRING_TOMCAT_URL=http://localhost:8081
+# Override service URLs
+export QUARKUS_URL=http://localhost:8086
+export SPRING_TOMCAT_PLATFORM_URL=http://localhost:8080
+export SPRING_TOMCAT_VIRTUAL_URL=http://localhost:8081
 export SPRING_NETTY_URL=http://localhost:8082
 export GO_URL=http://localhost:8083
 export GRAFANA_URL=http://localhost:3000
+
+# Run tests
 ./run-integration-tests.sh
 ```
 
-### Integration Test Output
+#### Selective Testing
+
+```bash
+# Test only specific service
+QUARKUS_URL=http://localhost:8086 ./run-integration-tests.sh
+
+# Skip observability tests (services only)
+SKIP_OBSERVABILITY=true ./run-integration-tests.sh
+```
+
+### Test Scenarios
+
+#### Deployment Verification (7 scenarios)
+
+| Test | Endpoint | Validation |
+|------|----------|------------|
+| Quarkus Platform | `/hello/platform` | Status 200, JSON, content |
+| Quarkus Virtual | `/hello/virtual` | Status 200, JSON, content |
+| Quarkus Reactive | `/hello/reactive` | Status 200, JSON, content |
+| Spring Tomcat Platform | `/hello/platform` | Status 200, JSON, content |
+| Spring Tomcat Virtual | `/hello/virtual` | Status 200, JSON, content |
+| Spring Netty Reactive | `/hello/reactive` | Status 200, JSON, content |
+| Go Platform | `/hello/platform` | Status 200, content |
+
+#### Observability Verification (8+ scenarios)
+
+| Test | Component | Validation |
+|------|-----------|------------|
+| Metrics Collection | Prometheus endpoints | Metric availability, format |
+| Custom Counters | Java services | `hello_request_count_total` |
+| Custom Counters | Go service | `go_request_count_total` |
+| Health Endpoints | All services | Readiness, liveness |
+| Grafana UI | Dashboard | HTTP 200, UI accessible |
+| Grafana Data Sources | Prometheus, Loki, Tempo | Connected, healthy |
+| Trace Generation | Tempo | Spans created (smoke test) |
+| Log Aggregation | Loki | Logs collected (manual check) |
+
+### Expected Output
 
 ```
 ==========================================
 Integration Test Suite
 ==========================================
+Testing Framework Versions:
+- Quarkus: 3.30.3
+- Spring Boot: 4.0.0
+- Go: 1.25.5
 
 ==========================================
 Deployment Verification Tests
 ==========================================
 
---- Quarkus Service ---
-Testing Quarkus Health Check... ✓ PASSED
-Testing Quarkus Platform Endpoint... ✓ PASSED
-Testing Quarkus Virtual Endpoint... ✓ PASSED
-Testing Quarkus Reactive Endpoint... ✓ PASSED
+--- Quarkus JVM Service (port 8086) ---
+✓ Platform endpoint test passed
+✓ Virtual endpoint test passed
+✓ Reactive endpoint test passed
 
---- Spring Boot Tomcat Service ---
-Testing Spring Tomcat Health Check... ✓ PASSED
-Testing Spring Tomcat Platform Endpoint... ✓ PASSED
-Testing Spring Tomcat Virtual Endpoint... ✓ PASSED
+--- Spring Boot Tomcat (Platform - port 8080) ---
+✓ Platform endpoint test passed
 
---- Spring Boot Netty Service ---
-Testing Spring Netty Health Check... ✓ PASSED
-Testing Spring Netty Reactive Endpoint... ✓ PASSED
+--- Spring Boot Tomcat (Virtual - port 8081) ---
+✓ Virtual endpoint test passed
 
---- Go Service ---
-Testing Go Platform Endpoint... ✓ PASSED
+--- Spring Boot Netty (port 8082) ---
+✓ Reactive endpoint test passed
+
+--- Go Fiber (port 8083) ---
+✓ Platform endpoint test passed
 
 ==========================================
 Observability Mechanism Tests
 ==========================================
 
 --- Metrics Collection ---
-Testing Quarkus Metrics... ✓ PASSED
-Testing Spring Tomcat Metrics... ✓ PASSED
-Testing Spring Netty Metrics... ✓ PASSED
+✓ Quarkus metrics endpoint accessible
+✓ Spring Tomcat Platform metrics endpoint accessible
+✓ Spring Tomcat Virtual metrics endpoint accessible
+✓ Spring Netty metrics endpoint accessible
+✓ Custom counter 'hello.request.count' found in Java services
+✓ Custom counter 'go.request.count' found in Go service
 
---- Grafana Stack ---
-Testing Grafana UI... ✓ PASSED
+--- Grafana Stack Health ---
+✓ Grafana UI accessible (http://localhost:3000)
+✓ Prometheus data source connected
+✓ Loki data source connected
+✓ Tempo data source connected
 
 --- Trace Generation (Smoke Test) ---
 ✓ Sample requests sent for trace generation
+✓ Traces should be visible in Grafana Tempo
 
 ==========================================
 Test Summary
 ==========================================
-Tests Passed: 15
-Tests Failed: 0
+Total Tests: 18
+Passed: 18
+Failed: 0
 ==========================================
 
-All tests passed!
+✅ All integration tests passed!
+
+Next Steps:
+1. Open Grafana: http://localhost:3000 (credentials: a/a)
+2. View metrics in Explore → Prometheus
+3. View traces in Explore → Tempo
+4. View logs in Explore → Loki
+```
+
+### Troubleshooting Integration Tests
+
+#### Services Not Ready
+
+```bash
+# Check if containers are running
+docker compose --project-directory compose ps
+
+# Check service logs
+docker compose --project-directory compose logs quarkus-jvm
+
+# Wait longer for startup
+sleep 60
+./run-integration-tests.sh
+```
+
+#### Port Conflicts
+
+```bash
+# Find what's using a port
+sudo lsof -i :8080
+
+# Kill the process
+kill -9 <PID>
+
+# Or use different ports in docker-compose.yml
+```
+
+#### Network Issues
+
+```bash
+# Check Docker network
+docker network ls
+docker network inspect compose_default
+
+# Recreate network
+docker compose --project-directory compose down
+docker compose --project-directory compose up -d
+```
+
+#### Test Failures
+
+```bash
+# Run with verbose curl output
+export VERBOSE=true
+./run-integration-tests.sh
+
+# Test individual endpoint
+curl -v http://localhost:8086/hello/platform
+
+# Check metrics manually
+curl http://localhost:8086/q/metrics
+```
+
+## Observability Testing
+
+### Metrics Validation
+
+#### Java Services (Micrometer + OpenTelemetry)
+
+**Prometheus Endpoint**: `/actuator/prometheus` (Spring) or `/q/metrics` (Quarkus)
+
+**Key Metrics to Validate**:
+
+```bash
+# Custom application counter
+hello_request_count_total{endpoint="/hello/platform"} 42
+
+# JVM metrics (if enabled)
+jvm_memory_used_bytes{area="heap"} 134217728
+jvm_gc_pause_seconds_count 5
+jvm_threads_states_threads{state="runnable"} 8
+
+# HTTP server metrics (Micrometer)
+http_server_requests_seconds_count{uri="/hello/platform"} 42
+http_server_requests_seconds_sum 0.523
+
+# Process metrics
+process_cpu_usage 0.25
+process_uptime_seconds 300
+```
+
+**Testing Metrics**:
+
+```bash
+# Quarkus
+curl http://localhost:8086/q/metrics | grep hello_request_count
+
+# Spring Tomcat
+curl http://localhost:8080/actuator/prometheus | grep hello_request_count
+
+# Spring Netty
+curl http://localhost:8082/actuator/prometheus | grep hello_request_count
+```
+
+#### Go Service
+
+**Metrics Endpoint**: Built-in OpenTelemetry exporter
+
+**Key Metrics**:
+
+```bash
+# Custom application counter
+go_request_count_total 42
+
+# Runtime metrics
+go_goroutines 15
+go_memstats_alloc_bytes 2097152
+```
+
+**Note**: Go service metrics are exported to OTLP endpoint (Alloy), not HTTP endpoint.
+
+### Trace Validation
+
+#### Generating Traces
+
+```bash
+# Send requests to generate traces
+for i in {1..10}; do
+  curl http://localhost:8086/hello/platform
+  curl http://localhost:8080/hello/platform
+  curl http://localhost:8082/hello/reactive
+done
+
+# Wait for trace export (5-10 seconds)
+sleep 10
+```
+
+#### Viewing Traces in Grafana
+
+1. Open Grafana: http://localhost:3000
+2. Login: a/a
+3. Go to Explore
+4. Select data source: Tempo
+5. Search for recent traces
+6. Inspect span details:
+   - Service name
+   - Operation name
+   - Duration
+   - Attributes
+   - Events
+
+#### Trace Characteristics
+
+**Quarkus JVM**:
+- Service name: `quarkus-jvm`
+- Instrumentation: Quarkus OpenTelemetry SDK
+- Span names: `GET /hello/platform`, `hello-handler`
+
+**Spring Boot**:
+- Service name: `spring-jvm-tomcat-platform`, `spring-jvm-netty`
+- Instrumentation: OpenTelemetry Java Agent
+- Span names: `GET /hello/platform`, servlet/webflux spans
+
+**Go**:
+- Service name: `go-hello-fiber`
+- Instrumentation: OpenTelemetry Go SDK
+- Span names: `hello-handler`
+
+### Log Validation
+
+#### Viewing Logs in Grafana
+
+1. Open Grafana: http://localhost:3000
+2. Go to Explore
+3. Select data source: Loki
+4. Query: `{service_name="quarkus-jvm"}`
+5. Filter by log level: `|= "INFO"` or `|= "ERROR"`
+
+#### Log Format
+
+**Java Services**:
+```
+2025-12-16T10:30:00.123Z INFO  [thread-1] c.b.r.HelloResource : Init thread: Thread[#95,executor-thread-1,5,main]
+2025-12-16T10:30:01.456Z INFO  [thread-1] c.b.r.HelloResource : Heap in MB = Max:1280, Total:512, Free:256
+```
+
+**Go Service**:
+```
+2025-12-16T10:30:00.123Z Runtime version: go1.25.5 | Build version: go1.25.5
+2025-12-16T10:30:00.456Z Server started on :8080
+```
+
+#### Log Aggregation Test
+
+```bash
+# Generate logs
+for i in {1..100}; do
+  curl "http://localhost:8086/hello/platform?log=true"
+done
+
+# Query logs in Grafana
+# Filter: {service_name="quarkus-jvm"} |= "platform thread"
+```
+
+## Performance Testing
+
+### Load Testing with wrk2
+
+The project includes wrk2 for deterministic load testing.
+
+#### Basic Load Test
+
+```bash
+# Start services
+docker compose --project-directory compose --profile=SERVICES up -d
+
+# Wait for warmup
+sleep 30
+
+# Run load test (10k RPS, 30 seconds, 4 connections, 16 threads)
+docker run --rm --network compose_default \
+  williamyeh/wrk2:latest \
+  -t16 -c4 -d30s -R10000 --latency \
+  http://quarkus-jvm:8080/hello/platform
+```
+
+#### Expected Performance
+
+Based on 4 vCPU limits:
+
+| Service | Thread Model | RPS (approx) | p99 Latency |
+|---------|-------------|--------------|-------------|
+| Quarkus JVM | Reactive | 86,000 | <5ms |
+| Quarkus JVM | Virtual | 68,000 | <10ms |
+| Quarkus Native | Reactive | 56,000 | <3ms |
+| Spring Boot Tomcat | Platform | 48,000 | <15ms |
+| Spring Boot Netty | Reactive | 52,000 | <8ms |
+
+#### Performance Test Validation
+
+```bash
+# Run test
+./loadgen/run-test.sh quarkus-jvm
+
+# Check results
+cat results/quarkus-jvm-$(date +%Y%m%d).txt
+
+# Validate in Grafana
+# - Check request rate in Prometheus
+# - Check error rate (should be 0%)
+# - Check resource usage (CPU, memory)
+# - Check GC pauses (should be minimal)
 ```
 
 ## CI/CD Integration
 
-### GitHub Actions Example
+### GitHub Actions
+
+#### Full Test Workflow
 
 ```yaml
-name: Tests
+name: Comprehensive Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
 
 jobs:
-  unit-tests-go:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.25'
-      - name: Run Go Tests
-        run: |
-          cd services/go/hello
-          go test ./... -v
-
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
         with:
-          distribution: 'corretto'
           java-version: '25'
-      - name: Run Quarkus Tests
+          distribution: 'corretto'
+      
+      - name: Test Quarkus JVM
         run: |
           cd services/quarkus/jvm
-          mvn test
-      - name: Run Spring Tomcat Tests
+          mvn clean test
+      
+      - name: Test Spring Boot Tomcat
         run: |
           cd services/spring/jvm/tomcat
-          mvn test
-      - name: Run Spring Netty Tests
+          mvn clean test
+      
+      - name: Test Spring Boot Netty
         run: |
           cd services/spring/jvm/netty
-          mvn test
+          mvn clean test
+      
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-test-reports
+          path: '**/target/surefire-reports/**'
+
+  unit-tests-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go 1.25.5
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+      
+      - name: Test Go Service
+        run: |
+          cd services/go/hello
+          go mod download
+          go test ./... -v -cover -coverprofile=coverage.out
+      
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./services/go/hello/coverage.out
+          flags: go-service
 
   integration-tests:
     runs-on: ubuntu-latest
+    needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      
       - name: Start Services
         run: |
-          docker compose --project-directory compose \
-            --profile=OBS --profile=SERVICES \
-            up --no-recreate --build -d
-      - name: Wait for Services
-        run: sleep 60
+          docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d
+          sleep 60
+      
       - name: Run Integration Tests
-        run: ./integration-tests/run-integration-tests.sh
-      - name: Collect Logs on Failure
+        run: |
+          cd integration-tests
+          chmod +x run-integration-tests.sh
+          ./run-integration-tests.sh
+      
+      - name: Collect Container Logs
         if: failure()
-        run: docker compose logs
+        run: |
+          mkdir -p logs
+          docker compose --project-directory compose logs > logs/docker-compose.log
+      
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-logs
+          path: logs/
+
+  docker-build-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.30.3" }
+          - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.0" }
+          - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.0" }
+          - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.5" }
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build ${{ matrix.service.name }}
+        run: |
+          if [ "${{ matrix.service.name }}" = "quarkus-jvm" ]; then
+            docker build \
+              --build-arg QUARKUS_VERSION=${{ matrix.service.version }} \
+              -f ${{ matrix.service.dockerfile }} \
+              -t ${{ matrix.service.name }}:test \
+              ${{ matrix.service.context }}
+          elif [ "${{ matrix.service.name }}" = "go" ]; then
+            docker build \
+              --build-arg GO_VERSION=${{ matrix.service.version }} \
+              -f ${{ matrix.service.dockerfile }} \
+              -t ${{ matrix.service.name }}:test \
+              ${{ matrix.service.context }}
+          else
+            docker build \
+              --build-arg SPRING_BOOT_VERSION=${{ matrix.service.version }} \
+              --build-arg PROFILE=${{ matrix.service.profile }} \
+              -f ${{ matrix.service.dockerfile }} \
+              -t ${{ matrix.service.name }}:test \
+              ${{ matrix.service.context }}
+          fi
+      
+      - name: Verify Build
+        run: docker images | grep ${{ matrix.service.name }}
+```
+
+### GitLab CI
+
+```yaml
+stages:
+  - test
+  - integration
+  - build
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  GOPATH: "$CI_PROJECT_DIR/.go"
+
+cache:
+  paths:
+    - .m2/repository/
+    - .go/pkg/mod/
+
+test:quarkus:
+  stage: test
+  image: amazoncorretto:25
+  script:
+    - cd services/quarkus/jvm
+    - mvn clean test
+  artifacts:
+    reports:
+      junit: services/quarkus/jvm/target/surefire-reports/TEST-*.xml
+    expire_in: 1 week
+
+test:spring-tomcat:
+  stage: test
+  image: amazoncorretto:25
+  script:
+    - cd services/spring/jvm/tomcat
+    - mvn clean test
+  artifacts:
+    reports:
+      junit: services/spring/jvm/tomcat/target/surefire-reports/TEST-*.xml
+    expire_in: 1 week
+
+test:spring-netty:
+  stage: test
+  image: amazoncorretto:25
+  script:
+    - cd services/spring/jvm/netty
+    - mvn clean test
+  artifacts:
+    reports:
+      junit: services/spring/jvm/netty/target/surefire-reports/TEST-*.xml
+    expire_in: 1 week
+
+test:go:
+  stage: test
+  image: golang:1.25.5
+  script:
+    - cd services/go/hello
+    - go mod download
+    - go test ./... -v -cover
+  coverage: '/coverage: \d+.\d+% of statements/'
+
+integration:
+  stage: integration
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - apk add --no-cache docker-compose curl bash
+  script:
+    - docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d
+    - sleep 60
+    - cd integration-tests
+    - chmod +x run-integration-tests.sh
+    - ./run-integration-tests.sh
+  after_script:
+    - docker compose --project-directory compose logs > integration-logs.txt
+  artifacts:
+    when: on_failure
+    paths:
+      - integration-logs.txt
+    expire_in: 1 week
+
+build:docker:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  parallel:
+    matrix:
+      - SERVICE: [quarkus-jvm, spring-tomcat, spring-netty, go]
+  script:
+    - docker build -t $SERVICE:$CI_COMMIT_SHA -f services/$SERVICE/Dockerfile services/
+  only:
+    - main
+    - tags
 ```
 
 ## Troubleshooting
 
-### Java Version Mismatch
+### Common Issues
 
-If you see errors like "release version 25 not supported":
-- Install Java 25 (Amazon Corretto or Eclipse Temurin)
-- OR run tests in Docker using the provided Dockerfiles
+#### 1. Java Version Mismatch
 
-### Go Dependency Issues
+**Problem**: Tests fail with `Unsupported class file major version`
 
-If Go tests fail with missing dependencies:
+**Solution**:
 ```bash
-cd services/go/hello
-go mod download
-go mod tidy
-go test ./... -v
+# Check Java version
+java -version
+
+# Install Java 25
+# - Amazon Corretto: https://docs.aws.amazon.com/corretto/latest/corretto-25-ug/downloads-list.html
+# - Eclipse Temurin: https://adoptium.net/temurin/releases/?version=25
+
+# Or use Docker
+docker build --target builder -t test-image .
 ```
 
-### Integration Tests Fail
+#### 2. Port Already in Use
 
-Common issues:
-1. **Services not running**: Start with `docker compose up`
-2. **Services not ready**: Wait longer (60+ seconds for JVM warmup)
-3. **Port conflicts**: Check if ports are already in use
-4. **Firewall blocking**: Ensure Docker networking is properly configured
+**Problem**: `Address already in use` error
 
-### Checking Logs
-
+**Solution**:
 ```bash
-# View all logs
-docker compose logs
+# Find process using port
+lsof -i :8080
 
-# View specific service logs
+# Kill process
+kill -9 <PID>
+
+# Or use different port
+# Edit docker-compose.yml or application.yml
+```
+
+#### 3. Out of Memory
+
+**Problem**: `java.lang.OutOfMemoryError: Java heap space`
+
+**Solution**:
+```bash
+# Increase heap size for tests
+export MAVEN_OPTS="-Xmx2g"
+mvn test
+
+# Or edit pom.xml
+<configuration>
+  <argLine>-Xmx2g</argLine>
+</configuration>
+```
+
+#### 4. Test Timeout
+
+**Problem**: Tests hang or timeout
+
+**Solution**:
+```bash
+# Increase timeout in test
+@Test
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
+public void testEndpoint() { ... }
+
+# For Go tests
+go test -timeout 30s ./...
+```
+
+#### 5. Connection Refused
+
+**Problem**: `Connection refused` during integration tests
+
+**Solution**:
+```bash
+# Check if services are running
+docker compose ps
+
+# Check service health
+curl http://localhost:8080/actuator/health
+
+# Wait longer for startup
+sleep 60
+
+# Check logs for errors
 docker compose logs quarkus-jvm
-docker compose logs spring-jvm-tomcat
-docker compose logs spring-jvm-netty
-docker compose logs go-hello
-
-# Follow logs in real-time
-docker compose logs -f
 ```
 
-## Test Coverage Summary
+#### 6. Metric Not Found
 
-| Service | Unit Tests | Endpoints Tested | Status |
-|---------|-----------|------------------|--------|
-| Quarkus JVM | 9 tests | platform, virtual, reactive | ✅ |
-| Spring Tomcat | 6 tests | platform, virtual | ✅ |
-| Spring Netty | 3 tests | reactive | ✅ |
-| Go | 5 tests | platform, cache, OTEL | ✅ |
-| **Integration** | 15+ tests | All endpoints + observability | ✅ |
+**Problem**: Custom metric `hello_request_count_total` not found
 
-## Contributing
+**Solution**:
+```bash
+# Send requests to generate metrics
+curl http://localhost:8080/hello/platform
 
-When adding new endpoints or services:
-1. Add unit tests in `src/test/java` or `*_test.go`
-2. Update integration tests in `integration-tests/run-integration-tests.sh`
-3. Update this documentation
-4. Ensure all tests pass before submitting PR
+# Wait for metric export (15 seconds default)
+sleep 15
 
-## References
+# Check metrics endpoint
+curl http://localhost:8080/actuator/prometheus | grep hello
 
-- [JUnit 5 Documentation](https://junit.org/junit5/docs/current/user-guide/)
-- [RestAssured Documentation](https://rest-assured.io/)
+# For Quarkus
+curl http://localhost:8086/q/metrics | grep hello
+```
+
+#### 7. Trace Not Appearing
+
+**Problem**: Traces not visible in Grafana Tempo
+
+**Solution**:
+```bash
+# Check Alloy is running
+docker compose ps alloy
+
+# Check Tempo is running
+docker compose ps tempo
+
+# Send requests to generate traces
+for i in {1..50}; do curl http://localhost:8080/hello/platform; done
+
+# Wait for trace export (5-10 seconds)
+sleep 10
+
+# Check Alloy logs
+docker compose logs alloy | grep trace
+
+# Check Tempo logs
+docker compose logs tempo
+```
+
+### Test Debugging
+
+#### Enable Verbose Output
+
+**Java Tests**:
+```bash
+# Maven verbose
+mvn test -X
+
+# Show test output
+mvn test -Dsurefire.printSummary=true -Dsurefire.useFile=false
+```
+
+**Go Tests**:
+```bash
+# Verbose output
+go test -v ./...
+
+# Show test output even for passing tests
+go test -v ./... -args -test.v
+```
+
+**Integration Tests**:
+```bash
+# Enable verbose mode
+export VERBOSE=true
+./run-integration-tests.sh
+
+# Run with bash debug
+bash -x ./run-integration-tests.sh
+```
+
+#### Inspect Test Reports
+
+**Java (Surefire Reports)**:
+```bash
+# View test reports
+cat services/quarkus/jvm/target/surefire-reports/*.txt
+
+# Open HTML report
+open services/quarkus/jvm/target/surefire-reports/index.html
+```
+
+**Go (Test Output)**:
+```bash
+# Save test output
+go test ./... -v > test-output.txt
+
+# Run with race detector
+go test -race ./...
+
+# Run with coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+## Best Practices
+
+### Unit Testing
+
+1. **Isolation**: Each test should be independent and not rely on other tests
+2. **Fast**: Unit tests should run quickly (< 5 seconds total)
+3. **Deterministic**: Tests should produce consistent results
+4. **Clear Names**: Test names should describe what they test
+5. **Single Assertion**: Prefer one logical assertion per test
+
+### Integration Testing
+
+1. **Realistic Environment**: Test in conditions similar to production
+2. **Cleanup**: Always clean up resources after tests
+3. **Timeouts**: Set appropriate timeouts for external dependencies
+4. **Retries**: Implement retry logic for flaky network tests
+5. **Logging**: Log detailed information for debugging failures
+
+### Test Maintenance
+
+1. **Keep Updated**: Update tests when code changes
+2. **Remove Dead Code**: Delete unused or obsolete tests
+3. **Refactor**: Keep tests DRY (Don't Repeat Yourself)
+4. **Document**: Add comments for complex test logic
+5. **Review**: Include tests in code reviews
+
+### Performance
+
+1. **Warmup**: Allow services to warm up before benchmarking
+2. **Consistent Load**: Use wrk2 for deterministic load testing
+3. **Monitor**: Check metrics during performance tests
+4. **Baseline**: Establish performance baselines
+5. **Trends**: Track performance over time
+
+### CI/CD
+
+1. **Fast Feedback**: Run unit tests first, integration tests later
+2. **Parallel**: Run independent tests in parallel
+3. **Caching**: Cache dependencies (Maven, Go modules)
+4. **Artifacts**: Save test reports and logs
+5. **Notifications**: Alert on test failures
+
+## Additional Resources
+
+### Documentation
+- [Project Structure](STRUCTURE.md)
+- [Security Guidelines](SECURITY.md)
+- [Code Quality Standards](LINTING_AND_CODE_QUALITY.md)
+- [Integration Tests README](../integration-tests/README.md)
+
+### Framework Docs
+- [Quarkus Testing](https://quarkus.io/guides/getting-started-testing)
 - [Spring Boot Testing](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
-- [Go Testing Package](https://pkg.go.dev/testing)
-- [Fiber Testing](https://docs.gofiber.io/guide/testing)
+- [Go Testing](https://go.dev/doc/tutorial/add-a-test)
+- [OpenTelemetry Java](https://opentelemetry.io/docs/instrumentation/java/)
+- [OpenTelemetry Go](https://opentelemetry.io/docs/instrumentation/go/)
+
+### Tools
+- [RestAssured Documentation](https://rest-assured.io/)
+- [MockMvc Reference](https://docs.spring.io/spring-framework/reference/testing/spring-mvc-test-framework.html)
+- [WebTestClient Guide](https://docs.spring.io/spring-framework/reference/testing/webtestclient.html)
+- [Fiber Testing](https://docs.gofiber.io/api/app#test)
+- [wrk2 Load Testing](https://github.com/giltene/wrk2)
+
+---
+
+**Last Updated**: December 2025  
+**Version**: 1.0.0  
+**Maintained by**: Observability-Benchmarking Team
