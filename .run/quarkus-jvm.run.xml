@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="quarkus-jvm" type="QuarkusRunConfiguration" factoryName="QuarkusRunConfiguration">
+    <module name="quarkus-jvm" />
+    <option name="profile" />
+    <method v="2" />
+  </configuration>
+</component>

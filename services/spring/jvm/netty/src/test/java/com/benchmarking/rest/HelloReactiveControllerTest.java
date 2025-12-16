@@ -1,18 +1,26 @@
 package com.benchmarking.rest;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
-public class HelloControllerTest {
+public class HelloReactiveControllerTest {
 
-    @Autowired
+    @LocalServerPort
+    int port;
+
     private WebTestClient webTestClient;
+
+    @BeforeEach
+    void setUp() {
+        this.webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+    }
 
     @Test
     public void testReactiveEndpoint() {
@@ -20,7 +28,7 @@ public class HelloControllerTest {
             .uri("/hello/reactive")
             .exchange()
             .expectStatus().isOk()
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
             .expectBody(String.class)
             .consumeWith(response -> {
                 String body = response.getResponseBody();
@@ -37,7 +45,7 @@ public class HelloControllerTest {
                 .build())
             .exchange()
             .expectStatus().isOk()
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
             .expectBody(String.class)
             .consumeWith(response -> {
                 String body = response.getResponseBody();
@@ -54,7 +62,7 @@ public class HelloControllerTest {
                 .build())
             .exchange()
             .expectStatus().isOk()
-            .expectHeader().contentType(MediaType.APPLICATION_JSON)
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
             .expectBody(String.class)
             .consumeWith(response -> {
                 String body = response.getResponseBody();

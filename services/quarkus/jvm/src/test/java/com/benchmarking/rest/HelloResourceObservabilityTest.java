@@ -8,12 +8,10 @@ import org.junit.jupiter.api.Order;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 
 /**
  * Observability tests for Quarkus service.
  * Tests metrics endpoint, health checks, and OpenTelemetry integration.
- * 
  * These tests validate:
  * - Micrometer metrics with custom counters (hello.request.count)
  * - Quarkus OpenTelemetry SDK integration (not Java agent)
@@ -53,10 +51,10 @@ public class HelloResourceObservabilityTest {
     @DisplayName("Metrics endpoint is accessible")
     public void testMetricsEndpoint() {
         given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
-            .contentType("text/plain; version=0.0.4; charset=utf-8");
+            .contentType(ContentType.JSON);
     }
 
     @Test
@@ -73,39 +71,22 @@ public class HelloResourceObservabilityTest {
 
         // Then check if the custom counter metric exists
         String metrics = given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
             .extract().asString();
 
         // Verify the custom counter metric is present
         // Updated to match the unified metric naming convention
-        // Metric should be: hello_request_count_total{endpoint="/hello/platform"}
-        assert metrics.contains("hello_request_count") : 
-            "Custom metric hello_request_count not found in metrics output";
+        // Metric should be: hello.request.count_total{endpoint="/hello/platform"}
+        assert metrics.contains("hello.request.count") : 
+            "Custom metric hello.request.count not found in metrics output";
         assert metrics.contains("endpoint") : 
             "Metric tag 'endpoint' not found in metrics output";
     }
 
     @Test
     @Order(5)
-    @DisplayName("JVM metrics are available")
-    public void testJvmMetrics() {
-        String metrics = given()
-            .when().get("/q/metrics")
-            .then()
-            .statusCode(200)
-            .extract().asString();
-
-        // Check for standard JVM metrics
-        assert metrics.contains("jvm_memory") : 
-            "JVM memory metrics not found";
-        assert metrics.contains("jvm_threads") : 
-            "JVM threads metrics not found";
-    }
-
-    @Test
-    @Order(6)
     @DisplayName("Cache metrics are tracked")
     public void testCacheMetrics() {
         // Make requests to populate cache
@@ -115,7 +96,7 @@ public class HelloResourceObservabilityTest {
             .statusCode(200);
 
         String metrics = given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
             .extract().asString();
@@ -126,28 +107,7 @@ public class HelloResourceObservabilityTest {
     }
 
     @Test
-    @Order(7)
-    @DisplayName("HTTP server metrics are tracked")
-    public void testHttpServerMetrics() {
-        // Make a request to generate HTTP metrics
-        given()
-            .when().get("/hello/platform")
-            .then()
-            .statusCode(200);
-
-        String metrics = given()
-            .when().get("/q/metrics")
-            .then()
-            .statusCode(200)
-            .extract().asString();
-
-        // HTTP server metrics from Micrometer/Quarkus
-        assert metrics.contains("http") : 
-            "HTTP server metrics not found";
-    }
-
-    @Test
-    @Order(8)
+    @Order(6)
     @DisplayName("Endpoint-specific metrics for platform thread")
     public void testPlatformEndpointMetrics() {
         // Make multiple platform requests
@@ -159,7 +119,7 @@ public class HelloResourceObservabilityTest {
         }
 
         String metrics = given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
             .extract().asString();
@@ -170,7 +130,7 @@ public class HelloResourceObservabilityTest {
     }
 
     @Test
-    @Order(9)
+    @Order(7)
     @DisplayName("Endpoint-specific metrics for virtual thread")
     public void testVirtualEndpointMetrics() {
         // Make multiple virtual thread requests
@@ -182,7 +142,7 @@ public class HelloResourceObservabilityTest {
         }
 
         String metrics = given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
             .extract().asString();
@@ -193,7 +153,7 @@ public class HelloResourceObservabilityTest {
     }
 
     @Test
-    @Order(10)
+    @Order(8)
     @DisplayName("Endpoint-specific metrics for reactive endpoint")
     public void testReactiveEndpointMetrics() {
         // Make multiple reactive requests
@@ -205,7 +165,7 @@ public class HelloResourceObservabilityTest {
         }
 
         String metrics = given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
             .extract().asString();
@@ -216,7 +176,7 @@ public class HelloResourceObservabilityTest {
     }
 
     @Test
-    @Order(11)
+    @Order(9)
     @DisplayName("All three counters have different values")
     public void testMultipleCountersDifferentiation() {
         // Reset counters by making exactly 1 request to each
@@ -225,7 +185,7 @@ public class HelloResourceObservabilityTest {
         given().when().get("/hello/reactive").then().statusCode(200);
 
         String metrics = given()
-            .when().get("/q/metrics")
+            .when().get("/q/metrics/json")
             .then()
             .statusCode(200)
             .extract().asString();

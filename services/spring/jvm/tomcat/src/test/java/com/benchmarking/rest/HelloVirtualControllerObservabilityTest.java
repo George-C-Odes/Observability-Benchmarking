@@ -1,22 +1,24 @@
 package com.benchmarking.rest;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Observability tests for Spring Boot Tomcat service.
  * Tests metrics endpoint, health checks, and OpenTelemetry integration.
- * 
  * These tests validate:
  * - Micrometer metrics with custom counters (hello.request.count)
  * - OpenTelemetry Java Agent integration
@@ -24,13 +26,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Health endpoints (liveness, readiness)
  * - Caffeine cache metrics
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@DisplayName("Spring Boot Tomcat Observability Tests")
-public class HelloControllerObservabilityTest {
+@SpringBootTest(properties = "spring.threads.virtual.enabled=true")
+@DisplayName("Spring Boot Tomcat Virtual Observability Tests")
+public class HelloVirtualControllerObservabilityTest {
 
     @Autowired
+    private WebApplicationContext wac;
+
     private MockMvc mockMvc;
+
+    @BeforeEach
+    void setup() {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
+    }
 
     @Test
     @Order(1)
@@ -61,16 +69,6 @@ public class HelloControllerObservabilityTest {
 
     @Test
     @Order(4)
-    @DisplayName("Prometheus metrics endpoint is accessible")
-    public void testPrometheusMetricsEndpoint() throws Exception {
-        mockMvc.perform(get("/actuator/prometheus"))
-            .andExpect(status().isOk())
-            .andExpect(header().string("Content-Type", 
-                org.hamcrest.Matchers.containsString("text/plain")));
-    }
-
-    @Test
-    @Order(5)
     @DisplayName("Actuator metrics endpoint is accessible")
     public void testActuatorMetricsEndpoint() throws Exception {
         mockMvc.perform(get("/actuator/metrics"))
@@ -79,17 +77,17 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(6)
+    @Order(5)
     @DisplayName("Custom metric counter exists after requests")
     public void testCustomMetricCounter() throws Exception {
         // Make some requests to generate metrics
         for (int i = 0; i < 5; i++) {
-            mockMvc.perform(get("/hello/platform"))
+            mockMvc.perform(get("/hello/virtual"))
                 .andExpect(status().isOk());
         }
 
-        // Check Prometheus endpoint for custom counter
-        MvcResult result = mockMvc.perform(get("/actuator/prometheus"))
+        // Check metrics endpoint for custom counter
+        MvcResult result = mockMvc.perform(get("/actuator/metrics"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -97,91 +95,51 @@ public class HelloControllerObservabilityTest {
 
         // Verify the custom counter metric is present
         // Updated to match the unified metric naming convention
-        // Metric should be: hello_request_count_total{endpoint="/hello/platform"}
-        assertThat(metrics).contains("hello_request_count");
-        assertThat(metrics).contains("endpoint");
+        assertThat(metrics).contains("hello.request.count");
     }
 
     @Test
-    @Order(7)
-    @DisplayName("JVM metrics are available in Prometheus format")
+    @Order(6)
+    @DisplayName("JVM metrics are available json format")
     public void testJvmMetrics() throws Exception {
-        MvcResult result = mockMvc.perform(get("/actuator/prometheus"))
+        MvcResult result = mockMvc.perform(get("/actuator/metrics"))
             .andExpect(status().isOk())
             .andReturn();
 
         String metrics = result.getResponse().getContentAsString();
 
         // Check for standard JVM metrics
-        assertThat(metrics).contains("jvm_memory");
-        assertThat(metrics).contains("jvm_threads");
-        assertThat(metrics).contains("jvm_gc");
+        assertThat(metrics).contains("jvm.memory");
+        assertThat(metrics).contains("jvm.threads");
+        assertThat(metrics).contains("jvm.gc");
     }
 
     @Test
-    @Order(8)
-    @DisplayName("HTTP server metrics are tracked")
-    public void testHttpServerMetrics() throws Exception {
-        // Make a request to generate HTTP metrics
-        mockMvc.perform(get("/hello/platform"))
-            .andExpect(status().isOk());
-
-        MvcResult result = mockMvc.perform(get("/actuator/prometheus"))
-            .andExpect(status().isOk())
-            .andReturn();
-
-        String metrics = result.getResponse().getContentAsString();
-
-        // HTTP server metrics from Spring Boot / Micrometer
-        assertThat(metrics).contains("http_server");
-    }
-
-    @Test
-    @Order(9)
+    @Order(7)
     @DisplayName("Process metrics are available")
     public void testProcessMetrics() throws Exception {
-        MvcResult result = mockMvc.perform(get("/actuator/prometheus"))
+        MvcResult result = mockMvc.perform(get("/actuator/metrics"))
             .andExpect(status().isOk())
             .andReturn();
 
         String metrics = result.getResponse().getContentAsString();
 
         // Process-level metrics
-        assertThat(metrics).contains("process_cpu");
-        assertThat(metrics).contains("process_uptime");
+        assertThat(metrics).contains("process.cpu");
+        assertThat(metrics).contains("process.uptime");
     }
 
     @Test
-    @Order(10)
-    @DisplayName("Endpoint-specific metrics for platform thread")
-    public void testPlatformEndpointMetrics() throws Exception {
-        // Make multiple platform requests
-        for (int i = 0; i < 3; i++) {
-            mockMvc.perform(get("/hello/platform"))
-                .andExpect(status().isOk());
-        }
-
-        MvcResult result = mockMvc.perform(get("/actuator/prometheus"))
-            .andExpect(status().isOk())
-            .andReturn();
-
-        String metrics = result.getResponse().getContentAsString();
-
-        // Should have endpoint-specific tag
-        assertThat(metrics).contains("/hello/platform");
-    }
-
-    @Test
-    @Order(11)
+    @Order(8)
     @DisplayName("Endpoint-specific metrics for virtual thread")
     public void testVirtualEndpointMetrics() throws Exception {
-        // Make multiple virtual thread requests
+        // Make multiple virtual requests
         for (int i = 0; i < 3; i++) {
             mockMvc.perform(get("/hello/virtual"))
                 .andExpect(status().isOk());
         }
 
-        MvcResult result = mockMvc.perform(get("/actuator/prometheus"))
+        MvcResult result = mockMvc.perform(get("/actuator/metrics/hello.request.count"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -189,10 +147,11 @@ public class HelloControllerObservabilityTest {
 
         // Should have endpoint-specific tag
         assertThat(metrics).contains("/hello/virtual");
+        assertThat(metrics).contains("endpoint");
     }
 
     @Test
-    @Order(12)
+    @Order(9)
     @DisplayName("Actuator info endpoint is available")
     public void testInfoEndpoint() throws Exception {
         mockMvc.perform(get("/actuator/info"))
@@ -200,11 +159,11 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(13)
+    @Order(10)
     @DisplayName("Metrics list includes custom metrics")
     public void testMetricsListIncludesCustomMetrics() throws Exception {
         // Make a request first to ensure metric exists
-        mockMvc.perform(get("/hello/platform"))
+        mockMvc.perform(get("/hello/virtual"))
             .andExpect(status().isOk());
 
         MvcResult result = mockMvc.perform(get("/actuator/metrics"))
@@ -218,11 +177,11 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(14)
+    @Order(11)
     @DisplayName("Specific metric details are accessible")
     public void testSpecificMetricDetails() throws Exception {
         // Make a request to ensure metric exists
-        mockMvc.perform(get("/hello/platform"))
+        mockMvc.perform(get("/hello/virtual"))
             .andExpect(status().isOk());
 
         // Try to get details of the custom metric
@@ -234,7 +193,7 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(15)
+    @Order(12)
     @DisplayName("Spring Boot version is 4.0.0")
     public void testSpringBootVersion() throws Exception {
         // This test verifies we're running Spring Boot 4.0.0

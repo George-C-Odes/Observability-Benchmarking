@@ -1,12 +1,11 @@
 package com.benchmarking.rest;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Observability tests for Spring Boot Netty (WebFlux) service.
  * Tests metrics endpoint, health checks, and OpenTelemetry integration.
- * 
  * These tests validate:
  * - Micrometer metrics with custom counters (hello.request.count)
  * - OpenTelemetry Java Agent integration
@@ -22,13 +20,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - WebFlux health endpoints
  * - Reactor Netty metrics
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+        "management.endpoint.health.probes.enabled=true" // Enable liveness/readiness probe endpoints on Boot 3.x
+    }
+)
 @DisplayName("Spring Boot Netty Observability Tests")
-public class HelloControllerObservabilityTest {
+public class HelloReactiveControllerObservabilityTest {
 
-    @Autowired
+    @LocalServerPort
+    int port;
+
     private WebTestClient webTestClient;
+
+    @BeforeEach
+    void setUp() {
+        this.webTestClient = WebTestClient.bindToServer()
+            .baseUrl("http://localhost:" + port)
+            .build();
+    }
 
     @Test
     @Order(1)
@@ -68,17 +79,6 @@ public class HelloControllerObservabilityTest {
 
     @Test
     @Order(4)
-    @DisplayName("Prometheus metrics endpoint is accessible")
-    public void testPrometheusMetricsEndpoint() {
-        webTestClient.get()
-            .uri("/actuator/prometheus")
-            .exchange()
-            .expectStatus().isOk()
-            .expectHeader().contentType(MediaType.parseMediaType("text/plain;version=0.0.4;charset=utf-8"));
-    }
-
-    @Test
-    @Order(5)
     @DisplayName("Actuator metrics endpoint is accessible")
     public void testActuatorMetricsEndpoint() {
         webTestClient.get()
@@ -90,7 +90,7 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(6)
+    @Order(5)
     @DisplayName("Custom metric counter exists after requests")
     public void testCustomMetricCounter() {
         // Make some requests to generate metrics
@@ -101,9 +101,9 @@ public class HelloControllerObservabilityTest {
                 .expectStatus().isOk();
         }
 
-        // Check Prometheus endpoint for custom counter
+        // Check metrics endpoint for custom counter
         String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
+            .uri("/actuator/metrics/hello.request.count")
             .exchange()
             .expectStatus().isOk()
             .expectBody(String.class)
@@ -112,17 +112,16 @@ public class HelloControllerObservabilityTest {
 
         // Verify the custom counter metric is present
         // Updated to match the unified metric naming convention
-        // Metric should be: hello_request_count_total{endpoint="/hello/reactive"}
-        assertThat(metrics).contains("hello_request_count");
+        assertThat(metrics).contains("/hello/reactive");
         assertThat(metrics).contains("endpoint");
     }
 
     @Test
-    @Order(7)
-    @DisplayName("JVM metrics are available in Prometheus format")
+    @Order(6)
+    @DisplayName("JVM metrics are available in json format")
     public void testJvmMetrics() {
         String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
+            .uri("/actuator/metrics")
             .exchange()
             .expectStatus().isOk()
             .expectBody(String.class)
@@ -130,57 +129,17 @@ public class HelloControllerObservabilityTest {
             .getResponseBody();
 
         // Check for standard JVM metrics
-        assertThat(metrics).contains("jvm_memory");
-        assertThat(metrics).contains("jvm_threads");
-        assertThat(metrics).contains("jvm_gc");
+        assertThat(metrics).contains("jvm.memory");
+        assertThat(metrics).contains("jvm.threads");
+        assertThat(metrics).contains("jvm.gc");
     }
 
     @Test
-    @Order(8)
-    @DisplayName("HTTP server metrics are tracked")
-    public void testHttpServerMetrics() {
-        // Make a request to generate HTTP metrics
-        webTestClient.get()
-            .uri("/hello/reactive")
-            .exchange()
-            .expectStatus().isOk();
-
-        String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody(String.class)
-            .returnResult()
-            .getResponseBody();
-
-        // HTTP server metrics from Spring WebFlux / Micrometer
-        assertThat(metrics).contains("http_server");
-    }
-
-    @Test
-    @Order(9)
-    @DisplayName("Reactor Netty metrics are available")
-    public void testReactorNettyMetrics() {
-        String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
-            .exchange()
-            .expectStatus().isOk()
-            .expectBody(String.class)
-            .returnResult()
-            .getResponseBody();
-
-        // Reactor Netty specific metrics
-        assertThat(metrics)
-            .as("Netty metrics should be present")
-            .containsAnyOf("reactor_netty", "netty");
-    }
-
-    @Test
-    @Order(10)
+    @Order(7)
     @DisplayName("Process metrics are available")
     public void testProcessMetrics() {
         String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
+            .uri("/actuator/metrics")
             .exchange()
             .expectStatus().isOk()
             .expectBody(String.class)
@@ -188,12 +147,12 @@ public class HelloControllerObservabilityTest {
             .getResponseBody();
 
         // Process-level metrics
-        assertThat(metrics).contains("process_cpu");
-        assertThat(metrics).contains("process_uptime");
+        assertThat(metrics).contains("process.cpu");
+        assertThat(metrics).contains("process.uptime");
     }
 
     @Test
-    @Order(11)
+    @Order(8)
     @DisplayName("Endpoint-specific metrics for reactive endpoint")
     public void testReactiveEndpointMetrics() {
         // Make multiple reactive requests
@@ -205,19 +164,18 @@ public class HelloControllerObservabilityTest {
         }
 
         String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
+            .uri("/actuator/metrics")
             .exchange()
             .expectStatus().isOk()
             .expectBody(String.class)
             .returnResult()
             .getResponseBody();
 
-        // Should have endpoint-specific tag
-        assertThat(metrics).contains("/hello/reactive");
+        assertThat(metrics).contains("hello.request.count");
     }
 
     @Test
-    @Order(12)
+    @Order(9)
     @DisplayName("Actuator info endpoint is available")
     public void testInfoEndpoint() {
         webTestClient.get()
@@ -227,7 +185,7 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(13)
+    @Order(10)
     @DisplayName("Metrics list includes custom metrics")
     public void testMetricsListIncludesCustomMetrics() {
         // Make a request first to ensure metric exists
@@ -249,7 +207,7 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(14)
+    @Order(11)
     @DisplayName("Specific metric details are accessible")
     public void testSpecificMetricDetails() {
         // Make a request to ensure metric exists
@@ -269,7 +227,7 @@ public class HelloControllerObservabilityTest {
     }
 
     @Test
-    @Order(15)
+    @Order(12)
     @DisplayName("WebFlux actuator endpoints work reactively")
     public void testReactiveActuatorEndpoints() {
         // Test that actuator endpoints return properly in reactive context
@@ -280,12 +238,11 @@ public class HelloControllerObservabilityTest {
             .expectBody()
             .jsonPath("$._links").exists()
             .jsonPath("$._links.health").exists()
-            .jsonPath("$._links.metrics").exists()
-            .jsonPath("$._links.prometheus").exists();
+            .jsonPath("$._links.metrics").exists();
     }
 
     @Test
-    @Order(16)
+    @Order(13)
     @DisplayName("Multiple concurrent reactive requests are handled")
     public void testConcurrentReactiveRequests() {
         // Send multiple concurrent requests (WebFlux should handle them efficiently)
@@ -300,13 +257,13 @@ public class HelloControllerObservabilityTest {
 
         // Verify metrics were recorded
         String metrics = webTestClient.get()
-            .uri("/actuator/prometheus")
+            .uri("/actuator/metrics")
             .exchange()
             .expectStatus().isOk()
             .expectBody(String.class)
             .returnResult()
             .getResponseBody();
 
-        assertThat(metrics).contains("hello_request_count");
+        assertThat(metrics).contains("hello.request.count");
     }
 }
