@@ -126,6 +126,30 @@ x-default-environment: &default_env
 #See also https://quarkus.io/guides/opentelemetry,  https://quarkus.io/guides/opentelemetry-metrics
 
 services:
+  dashboard:
+    profiles: ["OBS"]
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+    image: observability-dashboard:latest
+    container_name: observability-dashboard
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../.env:/app/compose/.env
+      - ../.run:/app/.run:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   spring-jvm-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_PLATFORM:-skip}"]
     image: spring-jvm-tomcat-platform:${SPRING_BOOT_VERSION}_latest
