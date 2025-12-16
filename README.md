@@ -1,6 +1,7 @@
 # Observability-Benchmarking
 
 [<img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg">]()
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://george-c-odes.github.io/Observability-Benchmarking/)
 
 A Docker Compose-based local environment for benchmarking containerised REST services under the Grafana Observability "LGTM" stack (Loki, Grafana, Tempo, Mimir), with profiling (Pyroscope), OpenTelemetry collection (Alloy), and load-generation using wrk2.
 
@@ -11,7 +12,9 @@ Table of contents
 - Running a benchmark
 - Results (RPS)
 - Test environment
+- Testing
 - Profiling and observability
+- Documentation
 - Future plans
 - Contributing
 - License
@@ -144,6 +147,43 @@ Requests per second on quad-CPU-limited docker containers
 - Track free heap with (PromQL)
   - sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024
 
+### Testing
+
+This project focuses on performance benchmarking rather than traditional unit/integration testing. Testing is performed through:
+
+**Load Testing & Benchmarking**
+- wrk2-based deterministic load generation with fixed request rates
+- Benchmark scripts in `loadgen/wrk2/` directory
+- Results captured in `results/` directory with timestamps and metadata
+- See [Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html) for detailed testing procedures
+
+**Service Validation**
+- Health check endpoints (`/actuator/health` for Spring, `/q/health` for Quarkus)
+- Startup validation via Docker Compose health checks
+- Manual smoke testing with curl or browser
+
+**Observability Validation**
+- Metrics collection verified in Grafana dashboards
+- Trace propagation checked in Tempo
+- Log aggregation validated in Loki
+- Profile data confirmed in Pyroscope
+
+For running benchmarks and interpreting results, see the documentation links below.
+
+### Documentation
+
+Comprehensive documentation is available on GitHub Pages:
+
+📚 **[Full Documentation Site](https://george-c-odes.github.io/Observability-Benchmarking/)**
+
+**Quick Links:**
+- **[Getting Started Guide](https://george-c-odes.github.io/Observability-Benchmarking/getting-started.html)** - Step-by-step setup instructions, prerequisites, and troubleshooting
+- **[System Architecture](https://george-c-odes.github.io/Observability-Benchmarking/architecture.html)** - Detailed architecture, component descriptions, and design decisions
+- **[Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html)** - Complete testing procedures, reproducibility guidelines, and result interpretation
+- **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
+
+The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
+
 ### Future plans
 - Additional implementations: Micronaut, Helidon, Go, Rust
 - Kubernetes manifests / Helm charts & ArgoCD deployment for cluster-scale benchmarking
@@ -183,3 +223,4 @@ Quick links
 - Full project structure and folder responsibilities: docs/STRUCTURE.md
 - How to run: see Quick start section above
 - Contributing: see CONTRIBUTING.md (future)
+- **Complete documentation**: [GitHub Pages Site](https://george-c-odes.github.io/Observability-Benchmarking/)
