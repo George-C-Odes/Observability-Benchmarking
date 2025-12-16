@@ -370,6 +370,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/api/cache/key1
 - Error rate
 
 **Comparison to Alternatives**:
+
 | Tool | Type | Coordinated Omission | Scripting |
 |------|------|---------------------|-----------|
 | wrk2 | ✅ Fixed rate | ✅ Yes | ✅ Lua |
@@ -594,25 +595,26 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ## Technology Stack Summary
 
-| Category | Technology | Version | Purpose |
-|----------|-----------|---------|---------|
-| **Runtime** | Java (Corretto) | 25      | JVM services |
+| Category | Technology | Version | Purpose            |
+|----------|-----------|---------|--------------------|
+| **Runtime** | Java (Corretto) | 25      | JVM services       |
 | **Runtime** | GraalVM | 25.0.1  | Native compilation |
-| **Runtime** | Go | 1.25.5  | Go services (WIP) |
-| **Framework** | Spring Boot | 4.0.0   | Enterprise Java |
-| **Framework** | Quarkus | 3.30.3  | Cloud-native Java |
-| **Observability** | Grafana | Latest  | Visualization |
-| **Observability** | Loki | Latest  | Logs |
-| **Observability** | Tempo | Latest  | Traces |
-| **Observability** | Mimir | Latest  | Metrics |
-| **Observability** | Pyroscope | Latest  | Profiles |
-| **Observability** | Alloy | Latest  | Collector |
-| **Instrumentation** | OpenTelemetry | Latest  | Telemetry SDK |
-| **Testing** | wrk2 | Latest  | Benchmarking |
-| **Cache** | Caffeine | Latest  | In-memory cache |
-| **Container** | Docker | 24+     | Containerization |
-| **Orchestration** | Docker Compose | v2      | Multi-container |
-| **Build** | Maven | 3.9+    | Build automation |
+| **Runtime** | Go | 1.25.5  | Go services (WIP)  |
+| **Framework** | Spring Boot | 4.0.0   | Enterprise Java    |
+| **Framework** | Quarkus | 3.30.3  | Cloud-native Java  |
+| **Observability** | Grafana | 12.3.0  | Visualization      |
+| **Observability** | Loki | 3.6.3   | Logs               |
+| **Observability** | Tempo | 2.9.0   | Traces             |
+| **Observability** | Mimir | 3.0.1   | Metrics            |
+| **Observability** | Pyroscope | 1.16.0  | Profiles           |
+| **Observability** | Alloy | 1.10.2  | Collector          |
+| **Instrumentation** | OpenTelemetry | 1.57.0  | Telemetry SDK      |
+| **Instrumentation** | OpenTelemetry | 2.23.0  | Telemetry Distro   |
+| **Testing** | wrk2 | Latest  | Benchmarking       |
+| **Cache** | Caffeine | 3.2.3   | In-memory cache    |
+| **Container** | Docker | 24+     | Containerization   |
+| **Orchestration** | Docker Compose | v2      | Multi-container    |
+| **Build** | Maven | 3.9+    | Build automation   |
 
 ---
 

@@ -735,6 +735,7 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 - [ ] **Automated Docker image builds** and registry publishing
 
 #### Protocol Support
+- [ ] **HTTP/2 HTTP/3 benchmarking** Successors of HTTP/1.1
 - [ ] **gRPC benchmarking** alongside HTTP REST
 - [ ] **WebSocket performance testing**
 - [ ] **GraphQL endpoint support**

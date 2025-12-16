@@ -263,18 +263,27 @@ docker stats --no-stream
 ### Fair Comparison Checklist
 
 ✓ **Same hardware**: All tests on same machine
+
 ✓ **Same resource limits**: CPU and memory constraints identical
+
 ✓ **Same workload**: Identical request pattern
+
 ✓ **Same warmup**: Adequate warmup time for each
+
 ✓ **Multiple runs**: At least 3 runs, report median
+
 ✓ **Same observability**: Instrumentation overhead consistent
 
 ### Common Pitfalls
 
 ❌ **Cold start bias**: Insufficient warmup
+
 ❌ **Thermal throttling**: CPU temperature limiting performance
+
 ❌ **Background processes**: Other workloads affecting results
+
 ❌ **Network saturation**: Localhost loopback as bottleneck
+
 ❌ **Observer effect**: Observability overhead not accounted for
 
 ## Statistical Rigor
@@ -282,12 +291,15 @@ docker stats --no-stream
 ### Multiple Runs
 
 **Minimum**: 3 runs per configuration
+
 **Report**: Median RPS, range
+
 **Discard**: Outliers with clear explanation
 
 ### Variance Analysis
 
 **Acceptable**: ±5% between runs
+
 **Investigate**: >10% variance suggests instability
 
 ### Significance

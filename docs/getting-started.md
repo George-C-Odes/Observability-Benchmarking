@@ -415,8 +415,8 @@ jobs:
 After completing setup:
 
 1. **Explore Grafana**: Familiarize yourself with pre-built dashboards
-2. **Read Architecture Docs**: Understand system design ([architecture.md](architecture.md))
-3. **Review Benchmarking Guide**: Learn methodology ([benchmarking.md](benchmarking.md))
+2. **Read Architecture Docs**: Understand system design ([Architecture](architecture.html))
+3. **Review Benchmarking Guide**: Learn methodology ([Benchmarking](benchmarking.html))
 4. **Experiment**: Try different services and configurations
 5. **Contribute**: Share improvements via GitHub
 
@@ -468,4 +468,4 @@ docker system prune -a --volumes
 
 ---
 
-**Ready to benchmark?** Head back to [the main page](index.html) or dive into [benchmarking methodology](benchmarking.md)!
+**Ready to benchmark?** Head back to [the main page](index.html) or dive into [benchmarking methodology](benchmarking.html)!

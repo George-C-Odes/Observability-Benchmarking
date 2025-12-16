@@ -39,7 +39,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 ### Service Layer
 
 **REST Services** - Multiple implementations for comparison
-- Spring Boot 4.0 (JVM, Native planned)
+- Spring Boot 4.0 (JVM and Native)
   - Platform threads (traditional thread pool)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
@@ -223,6 +223,7 @@ Container → Alloy (eBPF) → Pyroscope Server
 
 ### Planned Improvements
 1. **Kubernetes Support**: Helm charts and operators
+2. **gRPC - HTTP/2 - HTTP/3**: Additional protocols
 2. **CI/CD Integration**: Automated benchmark runs
 3. **Multi-region**: Distributed load generation
 4. **Service Mesh**: Istio/Linkerd integration
