@@ -640,4 +640,4 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ---
 
-**Next**: [Getting Started Guide](getting-started.md) | [Architecture](architecture.md) | [Benchmarking](benchmarking.md)
+**Next**: [Getting Started Guide](getting-started.html) | [Architecture](architecture.html) | [Benchmarking](benchmarking.html)
