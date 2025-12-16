@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Suppress checks for generated code -->
+    <suppress checks=".*" files=".*[\\/]target[\\/].*"/>
+    <suppress checks=".*" files=".*[\\/]generated-sources[\\/].*"/>
+    
+    <!-- Suppress specific checks for test files -->
+    <suppress checks="JavadocMethod" files=".*[\\/]test[\\/].*"/>
+    <suppress checks="JavadocType" files=".*[\\/]test[\\/].*"/>
+    <suppress checks="JavadocVariable" files=".*[\\/]test[\\/].*"/>
+    
+    <!-- Suppress checks for Spring Boot and Quarkus Application classes (simple main methods) -->
+    <suppress checks="HideUtilityClassConstructor" files=".*[\\/](Tomcat|Netty)Application\.java"/>
+</suppressions>
