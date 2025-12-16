@@ -1,0 +1,33 @@
+title: Observability Benchmarking
+description: A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack
+author: George-C-Odes
+url: https://george-c-odes.github.io
+baseurl: /Observability-Benchmarking
+
+# Build settings
+markdown: kramdown
+plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude from processing
+exclude:
+  - README.md
+  - STRUCTURE.md
+  - Gemfile.lock
+  - node_modules
+  - vendor
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"

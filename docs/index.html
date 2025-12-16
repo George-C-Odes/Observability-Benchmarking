@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observability Benchmarking - Performance Analysis Framework</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="getting-started.html">Get Started</a></li>
+                <li><a href="architecture.html">Architecture</a></li>
+                <li><a href="benchmarking.html">Benchmarking</a></li>
+                <li><a href="tools-technologies.html">Tools</a></li>
+                <li><a href="#resources">Resources</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Observability Benchmarking</h1>
+            <p class="tagline">A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack</p>
+            <div class="hero-buttons">
+                <a href="https://github.com/George-C-Odes/Observability-Benchmarking" class="btn btn-primary">
+                    <i class="fab fa-github"></i> View on GitHub
+                </a>
+                <a href="#overview" class="btn btn-secondary">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="overview" class="section">
+        <div class="container">
+            <h2>Project Overview</h2>
+            <p class="lead">This project provides a production-ready Docker Compose environment for benchmarking REST service implementations while collecting comprehensive telemetry data including logs, metrics, traces, and CPU profiles.</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-rocket"></i>
+                    <h3>High Performance</h3>
+                    <p>Benchmark results up to 86,000 RPS on CPU-limited containers</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-eye"></i>
+                    <h3>Full Observability</h3>
+                    <p>Complete LGTM stack: Loki, Grafana, Tempo, Mimir with Pyroscope profiling</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-code"></i>
+                    <h3>Multiple Frameworks</h3>
+                    <p>Spring Boot, Quarkus implementations with JVM and native compilation</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Thread Models</h3>
+                    <p>Compare platform threads, virtual threads, and reactive programming</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Reproducible</h3>
+                    <p>Deterministic load generation with wrk2 and containerized environment</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-docker"></i>
+                    <h3>Containerized</h3>
+                    <p>Complete Docker Compose orchestration for all services and tools</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="section section-alt">
+        <div class="container">
+            <h2>System Architecture</h2>
+            <p class="lead">A modern, cloud-native architecture demonstrating industry best practices in observability and performance engineering.</p>
+            
+            <div class="architecture-diagram">
+                <div class="arch-layer">
+                    <h3>Load Generation Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">wrk2 Load Generator</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Service Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Spring Boot Services</div>
+                        <div class="arch-component">Quarkus Services</div>
+                        <div class="arch-component">Go Services (WIP)</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Collection Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">OpenTelemetry</div>
+                        <div class="arch-component">Grafana Alloy</div>
+                        <div class="arch-component">Pyroscope Agent</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Storage & Analysis Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Loki (Logs)</div>
+                        <div class="arch-component">Tempo (Traces)</div>
+                        <div class="arch-component">Mimir (Metrics)</div>
+                        <div class="arch-component">Pyroscope (Profiles)</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Visualization Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Grafana Dashboards</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arch-details">
+                <h3>Key Design Decisions</h3>
+                <ul>
+                    <li><strong>OpenTelemetry Integration:</strong> Standardized instrumentation across all services using OTLP over gRPC</li>
+                    <li><strong>Batched Telemetry:</strong> Optimized batch processing to minimize overhead on services under test</li>
+                    <li><strong>Resource Isolation:</strong> CPU-limited containers ensure fair comparison across implementations</li>
+                    <li><strong>Multi-dimensional Profiling:</strong> Combined eBPF and agent-based profiling for comprehensive insights</li>
+                    <li><strong>Deterministic Testing:</strong> wrk2 provides fixed-rate load generation for reproducible results</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="results" class="section">
+        <div class="container">
+            <h2>Benchmark Results</h2>
+            <p class="lead">Performance comparison of different frameworks and thread models on CPU-limited containers (4 vCPUs)</p>
+            
+            <div class="results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Implementation</th>
+                            <th>Mode</th>
+                            <th>RPS</th>
+                            <th>Performance Class</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="highlight">
+                            <td>1</td>
+                            <td>Quarkus JVM</td>
+                            <td>Reactive</td>
+                            <td>86,000</td>
+                            <td><span class="badge badge-gold">Exceptional</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Quarkus JVM</td>
+                            <td>Virtual</td>
+                            <td>68,000</td>
+                            <td><span class="badge badge-silver">Excellent</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Quarkus Native</td>
+                            <td>Reactive</td>
+                            <td>56,000</td>
+                            <td><span class="badge badge-bronze">Very Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Quarkus JVM</td>
+                            <td>Platform</td>
+                            <td>56,000</td>
+                            <td><span class="badge badge-bronze">Very Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>Quarkus Native</td>
+                            <td>Virtual</td>
+                            <td>55,000</td>
+                            <td><span class="badge badge-bronze">Very Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>Spring JVM</td>
+                            <td>Virtual</td>
+                            <td>38,000</td>
+                            <td><span class="badge badge-good">Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>Quarkus Native</td>
+                            <td>Platform</td>
+                            <td>37,000</td>
+                            <td><span class="badge badge-good">Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>8</td>
+                            <td>Spring JVM</td>
+                            <td>Platform</td>
+                            <td>35,000</td>
+                            <td><span class="badge badge-good">Good</span></td>
+                        </tr>
+                        <tr>
+                            <td>9</td>
+                            <td>Spring JVM</td>
+                            <td>Reactive</td>
+                            <td>29,000</td>
+                            <td><span class="badge badge-good">Good</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="results-insights">
+                <h3>Key Insights</h3>
+                <div class="insight-grid">
+                    <div class="insight-card">
+                        <h4>Reactive Advantage</h4>
+                        <p>Quarkus reactive implementation shows exceptional performance with minimal resource utilization</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Virtual Threads</h4>
+                        <p>Java 25's virtual threads provide excellent throughput with simpler programming model</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Native vs JVM</h4>
+                        <p>GraalVM native compilation offers faster startup but JVM shows better peak throughput</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Framework Impact</h4>
+                        <p>Choice of framework and thread model significantly impacts performance characteristics</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="skills" class="section section-alt">
+        <div class="container">
+            <h2>Demonstrated Skills & Competencies</h2>
+            <p class="lead">This project showcases advanced software engineering capabilities across multiple domains</p>
+            
+            <div class="skills-grid">
+                <div class="skill-category">
+                    <h3><i class="fas fa-code"></i> Software Development</h3>
+                    <ul>
+                        <li>Java 25 (Spring Boot 4.0, Quarkus 3.30)</li>
+                        <li>Go programming (in progress)</li>
+                        <li>Reactive programming patterns</li>
+                        <li>Virtual threads implementation</li>
+                        <li>Multi-threaded application design</li>
+                        <li>RESTful API development</li>
+                        <li>Caching strategies (Caffeine)</li>
+                    </ul>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-chart-line"></i> Performance Engineering</h3>
+                    <ul>
+                        <li>Load testing and benchmarking</li>
+                        <li>Performance profiling and optimization</li>
+                        <li>CPU and memory analysis</li>
+                        <li>JVM tuning and configuration</li>
+                        <li>GraalVM native image optimization</li>
+                        <li>Concurrency analysis</li>
+                        <li>Deterministic testing methodologies</li>
+                    </ul>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-eye"></i> Observability & Monitoring</h3>
+                    <ul>
+                        <li>OpenTelemetry instrumentation</li>
+                        <li>Distributed tracing</li>
+                        <li>Metrics collection and analysis</li>
+                        <li>Log aggregation and correlation</li>
+                        <li>Continuous profiling (eBPF, Java Agent)</li>
+                        <li>Grafana dashboard design</li>
+                        <li>LGTM stack implementation</li>
+                    </ul>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-server"></i> DevOps & Infrastructure</h3>
+                    <ul>
+                        <li>Docker containerization</li>
+                        <li>Docker Compose orchestration</li>
+                        <li>Multi-stage builds</li>
+                        <li>Container resource management</li>
+                        <li>Service networking</li>
+                        <li>Infrastructure as Code</li>
+                        <li>Environment configuration management</li>
+                    </ul>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-shield-alt"></i> Best Practices</h3>
+                    <ul>
+                        <li>Test-driven development</li>
+                        <li>Documentation standards</li>
+                        <li>Version control (Git)</li>
+                        <li>Code organization and structure</li>
+                        <li>Configuration management</li>
+                        <li>Reproducible build processes</li>
+                        <li>Open-source contribution</li>
+                    </ul>
+                </div>
+                
+                <div class="skill-category">
+                    <h3><i class="fas fa-brain"></i> Architecture & Design</h3>
+                    <ul>
+                        <li>Microservices architecture</li>
+                        <li>Cloud-native design patterns</li>
+                        <li>System integration</li>
+                        <li>Performance-oriented design</li>
+                        <li>Scalability considerations</li>
+                        <li>Technology evaluation</li>
+                        <li>Trade-off analysis</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="tools" class="section">
+        <div class="container">
+            <h2>Technology Stack</h2>
+            <p class="lead">Modern, production-grade tools and technologies demonstrating industry standards</p>
+            
+            <div class="tools-grid">
+                <div class="tool-category">
+                    <h3>Application Frameworks</h3>
+                    <div class="tools-list">
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Spring_Boot-4.0.0-6DB33F?style=flat&logo=springboot&logoColor=white" alt="Spring Boot">
+                            <p>Enterprise Java framework</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Quarkus-3.30.3-4695EB?style=flat&logo=quarkus&logoColor=white" alt="Quarkus">
+                            <p>Kubernetes-native Java stack</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Go-1.25.5-00ADD8?style=flat&logo=go&logoColor=white" alt="Go">
+                            <p>High-performance runtime</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tool-category">
+                    <h3>Observability Stack</h3>
+                    <div class="tools-list">
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Grafana-LGTM-F46800?style=flat&logo=grafana&logoColor=white" alt="Grafana">
+                            <p>Visualization platform</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Loki-Logs-F46800?style=flat&logo=grafana&logoColor=white" alt="Loki">
+                            <p>Log aggregation</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Tempo-Traces-F46800?style=flat&logo=grafana&logoColor=white" alt="Tempo">
+                            <p>Distributed tracing</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Mimir-Metrics-F46800?style=flat&logo=grafana&logoColor=white" alt="Mimir">
+                            <p>Metrics storage</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Pyroscope-Profiling-F46800?style=flat&logo=grafana&logoColor=white" alt="Pyroscope">
+                            <p>Continuous profiling</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Alloy-Collection-F46800?style=flat&logo=grafana&logoColor=white" alt="Alloy">
+                            <p>OpenTelemetry collector</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tool-category">
+                    <h3>Development Tools</h3>
+                    <div class="tools-list">
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Java-25-007396?style=flat&logo=openjdk&logoColor=white" alt="Java">
+                            <p>Amazon Corretto JDK</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/GraalVM-25.0.1-4695EB?style=flat&logo=oracle&logoColor=white" alt="GraalVM">
+                            <p>Native compilation</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Docker-Latest-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker">
+                            <p>Containerization</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Maven-Build-C71A36?style=flat&logo=apachemaven&logoColor=white" alt="Maven">
+                            <p>Build automation</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tool-category">
+                    <h3>Testing & Benchmarking</h3>
+                    <div class="tools-list">
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/wrk2-Load_Testing-4B4B4B?style=flat" alt="wrk2">
+                            <p>HTTP benchmarking</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/OpenTelemetry-Latest-425CC7?style=flat&logo=opentelemetry&logoColor=white" alt="OpenTelemetry">
+                            <p>Telemetry standard</p>
+                        </div>
+                        <div class="tool-item">
+                            <img src="https://img.shields.io/badge/Caffeine-Cache-0769AD?style=flat" alt="Caffeine">
+                            <p>High-performance cache</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="best-practices" class="section section-alt">
+        <div class="container">
+            <h2>Modern Software Practices</h2>
+            <p class="lead">Alignment with industry standards and best practices</p>
+            
+            <div class="practices-grid">
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                    <h3>Cloud-Native Architecture</h3>
+                    <p>Containerized microservices following 12-factor app principles with proper separation of concerns and configuration management</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h3>Observability-First Design</h3>
+                    <p>Comprehensive instrumentation from day one using OpenTelemetry standards for logs, metrics, traces, and profiles</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h3>Infrastructure as Code</h3>
+                    <p>Declarative configuration using Docker Compose with version-controlled infrastructure definitions</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-file-code"></i>
+                    </div>
+                    <h3>Documentation-Driven Development</h3>
+                    <p>Comprehensive documentation including architecture diagrams, setup guides, and troubleshooting resources</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <h3>Version Control Best Practices</h3>
+                    <p>Git-based workflow with clear commit history, .gitignore configuration, and structured repository organization</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-redo"></i>
+                    </div>
+                    <h3>Reproducible Builds</h3>
+                    <p>Pinned dependencies, deterministic build processes, and containerized environments for consistent results</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Security Consciousness</h3>
+                    <p>License compliance (Apache 2.0), secure defaults, and awareness of security implications in configuration</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Performance Engineering</h3>
+                    <p>Systematic benchmarking methodology with controlled test environments and statistical rigor</p>
+                </div>
+                
+                <div class="practice-card">
+                    <div class="practice-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Open Source Contribution</h3>
+                    <p>Public repository with proper licensing, contribution guidelines, and acknowledgment of dependencies</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="resources" class="section">
+        <div class="container">
+            <h2>Resources & References</h2>
+            <p class="lead">Links to documentation, tutorials, and related materials</p>
+            
+            <div class="resources-grid">
+                <div class="resource-category">
+                    <h3>Documentation</h3>
+                    <ul class="resource-list">
+                        <li><a href="getting-started.html">
+                            <i class="fas fa-play-circle"></i> Getting Started Guide
+                        </a></li>
+                        <li><a href="architecture.html">
+                            <i class="fas fa-sitemap"></i> System Architecture
+                        </a></li>
+                        <li><a href="benchmarking.html">
+                            <i class="fas fa-chart-line"></i> Benchmarking Methodology
+                        </a></li>
+                        <li><a href="tools-technologies.html">
+                            <i class="fas fa-tools"></i> Tools & Technologies
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="resource-category">
+                    <h3>Project Resources</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                            <i class="fab fa-github"></i> GitHub Repository
+                        </a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/blob/main/README.md" target="_blank">
+                            <i class="fas fa-book"></i> Main README
+                        </a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/blob/main/docs/STRUCTURE.md" target="_blank">
+                            <i class="fas fa-sitemap"></i> Project Structure
+                        </a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/blob/main/LICENSE" target="_blank">
+                            <i class="fas fa-balance-scale"></i> Apache 2.0 License
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="resource-category">
+                    <h3>Grafana Ecosystem</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://grafana.com/docs/" target="_blank">
+                            <i class="fas fa-book-open"></i> Grafana Documentation
+                        </a></li>
+                        <li><a href="https://grafana.com/docs/loki/latest/" target="_blank">
+                            <i class="fas fa-file-alt"></i> Loki Documentation
+                        </a></li>
+                        <li><a href="https://grafana.com/docs/tempo/latest/" target="_blank">
+                            <i class="fas fa-route"></i> Tempo Documentation
+                        </a></li>
+                        <li><a href="https://grafana.com/docs/mimir/latest/" target="_blank">
+                            <i class="fas fa-chart-bar"></i> Mimir Documentation
+                        </a></li>
+                        <li><a href="https://grafana.com/docs/pyroscope/latest/" target="_blank">
+                            <i class="fas fa-fire"></i> Pyroscope Documentation
+                        </a></li>
+                        <li><a href="https://grafana.com/docs/alloy/latest/" target="_blank">
+                            <i class="fas fa-stream"></i> Alloy Documentation
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="resource-category">
+                    <h3>Framework Documentation</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://spring.io/projects/spring-boot" target="_blank">
+                            <i class="fas fa-leaf"></i> Spring Boot Documentation
+                        </a></li>
+                        <li><a href="https://quarkus.io/guides/" target="_blank">
+                            <i class="fas fa-cube"></i> Quarkus Guides
+                        </a></li>
+                        <li><a href="https://www.graalvm.org/latest/docs/" target="_blank">
+                            <i class="fas fa-bolt"></i> GraalVM Documentation
+                        </a></li>
+                        <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/" target="_blank">
+                            <i class="fab fa-java"></i> Java Documentation
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="resource-category">
+                    <h3>OpenTelemetry</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://opentelemetry.io/docs/" target="_blank">
+                            <i class="fas fa-satellite-dish"></i> OpenTelemetry Documentation
+                        </a></li>
+                        <li><a href="https://github.com/open-telemetry/opentelemetry-java-instrumentation" target="_blank">
+                            <i class="fab fa-github"></i> Java Instrumentation
+                        </a></li>
+                        <li><a href="https://opentelemetry.io/docs/specs/otel/" target="_blank">
+                            <i class="fas fa-file-contract"></i> OTLP Specification
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="resource-category">
+                    <h3>Tools & Libraries</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://github.com/giltene/wrk2" target="_blank">
+                            <i class="fab fa-github"></i> wrk2 - HTTP Benchmarking
+                        </a></li>
+                        <li><a href="https://github.com/ben-manes/caffeine" target="_blank">
+                            <i class="fab fa-github"></i> Caffeine Cache
+                        </a></li>
+                        <li><a href="https://docs.docker.com/" target="_blank">
+                            <i class="fab fa-docker"></i> Docker Documentation
+                        </a></li>
+                    </ul>
+                </div>
+                
+                <div class="resource-category">
+                    <h3>Related Articles & Blogs</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://martinfowler.com/articles/microservices.html" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> Microservices Architecture
+                        </a></li>
+                        <li><a href="https://www.cncf.io/blog/" target="_blank">
+                            <i class="fas fa-cloud"></i> CNCF Blog
+                        </a></li>
+                        <li><a href="https://grafana.com/blog/" target="_blank">
+                            <i class="fas fa-rss"></i> Grafana Labs Blog
+                        </a></li>
+                        <li><a href="https://openjdk.org/projects/loom/" target="_blank">
+                            <i class="fas fa-code"></i> Project Loom (Virtual Threads)
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section-alt">
+        <div class="container">
+            <h2>Getting Started</h2>
+            <p class="lead">Quick start guide to run the benchmarking environment</p>
+            
+            <div class="getting-started">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Prerequisites</h3>
+                        <p>Install Docker and modern Docker Compose on your system</p>
+                        <pre><code>docker --version
+docker compose version</code></pre>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Clone the Repository</h3>
+                        <p>Get the source code from GitHub</p>
+                        <pre><code>git clone https://github.com/George-C-Odes/Observability-Benchmarking.git
+cd Observability-Benchmarking</code></pre>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Start the Stack</h3>
+                        <p>Launch the observability stack and services</p>
+                        <pre><code>docker compose --project-directory compose \
+  --profile=OBS --profile=SERVICES \
+  up --no-recreate --build -d</code></pre>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Access Grafana</h3>
+                        <p>Open Grafana in your browser (default credentials: a / a)</p>
+                        <pre><code>http://localhost:3000</code></pre>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Run Benchmarks</h3>
+                        <p>Execute load tests and observe the results</p>
+                        <pre><code>docker compose --project-directory compose \
+  --profile RAIN_FIRE up --force-recreate -d</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Observability Benchmarking</h4>
+                    <p>A comprehensive framework for performance analysis and observability</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking">GitHub</a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/issues">Issues</a></li>
+                        <li><a href="https://github.com/George-C-Odes">@George-C-Odes</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>License</h4>
+                    <p>Apache License 2.0<br>SPDX-License-Identifier: Apache-2.0</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 George-C-Odes. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

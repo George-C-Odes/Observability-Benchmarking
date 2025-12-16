@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title | default: site.title }}</title>
+    <link rel="stylesheet" href="{{ '/style.css' | relative_url }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% seo %}
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ '/index.html' | relative_url }}">Home</a></li>
+                <li><a href="{{ '/getting-started.html' | relative_url }}">Get Started</a></li>
+                <li><a href="{{ '/architecture.html' | relative_url }}">Architecture</a></li>
+                <li><a href="{{ '/benchmarking.html' | relative_url }}">Benchmarking</a></li>
+                <li><a href="{{ '/tools-technologies.html' | relative_url }}">Tools</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            {{ content }}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Observability Benchmarking</h4>
+                    <p>A comprehensive framework for performance analysis and observability</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking">GitHub</a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/issues">Issues</a></li>
+                        <li><a href="https://github.com/George-C-Odes">@George-C-Odes</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>License</h4>
+                    <p>Apache License 2.0<br>SPDX-License-Identifier: Apache-2.0</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 George-C-Odes. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
