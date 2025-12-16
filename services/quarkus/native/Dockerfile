@@ -14,14 +14,16 @@ ENV JAVA_RELEASE=${JAVA_RELEASE}
 ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
+ARG QUARKUS_VERSION=3.30.3
+ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 
 # create missing quarkus user for enterprise image builder
 RUN useradd -m -u 1001 quarkus
 USER quarkus
 
-COPY --chown=quarkus:quarkus --chmod=0755 native/mvnw /code/mvnw
-COPY --chown=quarkus:quarkus native/.mvn /code/.mvn
-COPY --chown=quarkus:quarkus native/pom.xml /code/pom.xml
+COPY --chown=quarkus:quarkus --chmod=0755 quarkus/native/mvnw /code/mvnw
+COPY --chown=quarkus:quarkus quarkus/native/.mvn /code/.mvn
+COPY --chown=quarkus:quarkus quarkus/native/pom.xml /code/pom.xml
 USER quarkus
 WORKDIR /code
 
@@ -48,7 +50,9 @@ ARG QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 --enable-native-access=ALL-UNNAMED,\
 --enable-monitoring=heapdump\\,jfr,\
 --initialize-at-build-time=jdk.nio.zipfs.ZipFileSystemProvider\\,jdk.nio.zipfs.ZipFileSystem\\,sun.nio.fs.LinuxFileSystemProvider\\,sun.nio.fs.LinuxFileSystem,\
+--initialize-at-build-time=io.micrometer,\
 --initialize-at-run-time=org.fusesource.jansi.internal,\
+--report-unsupported-elements-at-runtime,\
 --link-at-build-time=ALL,\
 --future-defaults=all,\
 --gc=G1,\
@@ -66,18 +70,24 @@ ARG QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 #-Ob,\
 #--pgo,\
 
-RUN ./mvnw -v
-RUN ./mvnw dependency:go-offline -B
-COPY jvm/src /code/src
+RUN ./mvnw -v \
+  && ./mvnw -B -Dquarkus.platform.version=${QUARKUS_VERSION} dependency:go-offline
+
+COPY quarkus/jvm/src /code/src
+COPY checkstyle.xml /code/checkstyle.xml
+COPY checkstyle-suppressions.xml /code/checkstyle-suppressions.xml
 
 # Build and Verify the native executable works # NOTE: Avoid passing JVM heap flags in additional-build-args; use quarkus.native.native-image-xmx instead.
 RUN ./mvnw verify -Dnative \
-    -Dquarkus.profile=${QUARKUS_PROFILE} \
-    -Dquarkus.native.native-image-xmx=10g \
-    -Dquarkus.native.debug.enabled=true \
-    -Dquarkus.native.monitoring=jfr \
-    -Dmaven.artifact.threads=16 \
-    -Dmaven.compiler.release=${JAVA_RELEASE}
+  -Dquarkus.platform.version=${QUARKUS_VERSION} \
+  -Dquarkus.profile=${QUARKUS_PROFILE} \
+  -Dquarkus.native.native-image-xmx=10g \
+  -Dquarkus.native.debug.enabled=true \
+  -Dquarkus.native.monitoring=jfr \
+  -Dmaven.artifact.threads=16 \
+  -Dmaven.compiler.release=${JAVA_RELEASE} \
+  -Dcheckstyle.config.location=checkstyle.xml \
+  -Dcheckstyle.suppressions.location=checkstyle.xml
 
 #-----------------------  RUNTIME STAGE -----------------------
 #FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0

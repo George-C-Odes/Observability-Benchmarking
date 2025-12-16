@@ -74,7 +74,7 @@ services:
 
   loki:
     profiles: ["OBS"]
-    image: grafana/loki:3.6.2
+    image: grafana/loki:3.6.3
     container_name: loki
     volumes:
       - ../data/loki:/loki
