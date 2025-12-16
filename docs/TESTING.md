@@ -71,7 +71,7 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.1 or Eclipse Temurin 25)
 Maven: 3.9+
-Spring Boot: 4.0.0
+Spring Boot: 4.0.0 (3.5.8 also supported)
 Quarkus: 3.30.3
 ```
 

@@ -78,7 +78,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.30.2
+### Quarkus 3.30.3
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -89,7 +89,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.30.2** (latest stable)
+- **Quarkus 3.30.3** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -596,23 +596,23 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Runtime** | Java (Corretto) | 25 | JVM services |
-| **Runtime** | GraalVM | 25.0.1 | Native compilation |
-| **Runtime** | Go | 1.25.4 | Go services (WIP) |
-| **Framework** | Spring Boot | 4.0.0 | Enterprise Java |
-| **Framework** | Quarkus | 3.30.2 | Cloud-native Java |
-| **Observability** | Grafana | Latest | Visualization |
-| **Observability** | Loki | Latest | Logs |
-| **Observability** | Tempo | Latest | Traces |
-| **Observability** | Mimir | Latest | Metrics |
-| **Observability** | Pyroscope | Latest | Profiles |
-| **Observability** | Alloy | Latest | Collector |
-| **Instrumentation** | OpenTelemetry | Latest | Telemetry SDK |
-| **Testing** | wrk2 | Latest | Benchmarking |
-| **Cache** | Caffeine | Latest | In-memory cache |
-| **Container** | Docker | 24+ | Containerization |
-| **Orchestration** | Docker Compose | v2 | Multi-container |
-| **Build** | Maven | 3.9+ | Build automation |
+| **Runtime** | Java (Corretto) | 25      | JVM services |
+| **Runtime** | GraalVM | 25.0.1  | Native compilation |
+| **Runtime** | Go | 1.25.5  | Go services (WIP) |
+| **Framework** | Spring Boot | 4.0.0   | Enterprise Java |
+| **Framework** | Quarkus | 3.30.3  | Cloud-native Java |
+| **Observability** | Grafana | Latest  | Visualization |
+| **Observability** | Loki | Latest  | Logs |
+| **Observability** | Tempo | Latest  | Traces |
+| **Observability** | Mimir | Latest  | Metrics |
+| **Observability** | Pyroscope | Latest  | Profiles |
+| **Observability** | Alloy | Latest  | Collector |
+| **Instrumentation** | OpenTelemetry | Latest  | Telemetry SDK |
+| **Testing** | wrk2 | Latest  | Benchmarking |
+| **Cache** | Caffeine | Latest  | In-memory cache |
+| **Container** | Docker | 24+     | Containerization |
+| **Orchestration** | Docker Compose | v2      | Multi-container |
+| **Build** | Maven | 3.9+    | Build automation |
 
 ---
 

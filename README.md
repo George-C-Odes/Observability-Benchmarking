@@ -28,6 +28,7 @@
 - [Observability & Profiling](#-observability--profiling)
 - [Code Quality & Security](#-code-quality--security)
 - [Configuration](#-configuration)
+- [Comprehensive Documentation](#-comprehensive-documentation)
 - [Future Plans](#-future-plans)
 - [Known Issues](#-known-issues)
 - [Contributing](#-contributing)
@@ -73,7 +74,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Amazon Corretto)
-- **Spring Boot 4.0.0**
+- **Spring Boot 4.0.0 (3.5.8 also supported)**
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
@@ -182,6 +183,29 @@ Pre-configured run configurations are available in the `.run/` directory for con
 - Grafana datasources are connected
 - Observability agents are registered
 
+### Testing
+
+This project focuses primarily on performance benchmarking.
+
+**Load Testing & Benchmarking**
+- wrk2-based deterministic load generation with fixed request rates
+- Benchmark scripts in `loadgen/wrk2/` directory
+- Results captured in `results/` directory with timestamps and metadata
+- See [Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html) for detailed testing procedures
+
+**Service Validation**
+- Health check endpoints (`/actuator/health` for Spring, `/q/health` for Quarkus)
+- Startup validation via Docker Compose health checks
+- Manual smoke testing with curl or browser
+
+**Observability Validation**
+- Metrics collection verified in Grafana dashboards
+- Trace propagation checked in Tempo
+- Log aggregation validated in Loki
+- Profile data confirmed in Pyroscope
+
+Traditional unit/integration testing is also present, see under integration-tests/ directory.
+
 ### 📸 Visual Overview
 
 > **Note**: Screenshots and diagrams can be added to `docs/images/` directory. This is where you can include:
@@ -261,8 +285,8 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 
 #### Software Versions
 - **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
-- **Java Native**: GraalVM Enterprise 25.0.1-ol9
-- **Spring Boot**: 4.0.0
+- **Java Native**: GraalVM Enterprise 25.0.1-ol10
+- **Spring Boot**: 4.0.0 (3.5.8 also supported)
 - **Quarkus**: 3.30.3
 - **Go**: 1.25.5 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
@@ -600,6 +624,18 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 - OOM events are logged and will cause container restart
 - Review heap dumps to diagnose memory issues
 
+## 📚 Comprehensive Documentation
+
+Documentation is available on GitHub Pages: **[Full Documentation Site](https://george-c-odes.github.io/Observability-Benchmarking/)**
+
+**Quick Links:**
+- **[Getting Started Guide](https://george-c-odes.github.io/Observability-Benchmarking/getting-started.html)** - Step-by-step setup instructions, prerequisites, and troubleshooting
+- **[System Architecture](https://george-c-odes.github.io/Observability-Benchmarking/architecture.html)** - Detailed architecture, component descriptions, and design decisions
+- **[Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html)** - Complete testing procedures, reproducibility guidelines, and result interpretation
+- **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
+
+The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
+
 ## ⚠️ Known Issues
 
 ### OpenTelemetry & Spring Boot 4.0
@@ -611,13 +647,6 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 
 **Tracking**: [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906)
 
-### Quarkus Native Metrics Disappearing
-**Issue**: Metrics intermittently disappear for Quarkus native builds.
-
-**Workaround**: Restart the affected container to restore metrics collection.
-
-**Status**: Under investigation. May be related to GraalVM native image memory management.
-
 ### Alloy eBPF Profiler on WSL2
 **Issue**: eBPF profiling doesn't work with Alloy version >= 1.11.0 on Windows WSL2 Docker.
 
@@ -628,13 +657,15 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 **Tracking**: [grafana/alloy#4921](https://github.com/grafana/alloy/issues/4921)
 
 ### Profile-to-Span Correlation Reliability
-**Issue**: Grafana's profile-to-span correlation is experimental and doesn't always work.
+**Issue**: Grafana's profile-to-span correlation is experimental, doesn't always work and only supported via Java agent.
 
 **Cause**: Feature maturity - correlation depends on precise timing and requires Pyroscope Java agent.
 
 **Workaround**: Use profiles and traces separately for analysis. Manual correlation is still valuable.
 
 **Status**: Grafana team is actively improving this feature.
+
+**Reference**: [pyroscope/latest/configure-client/trace-span-profiles/java-span-profiles](https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/java-span-profiles/)
 
 ### Cold Start Effects
 **Issue**: First benchmark run may show significantly different results.
