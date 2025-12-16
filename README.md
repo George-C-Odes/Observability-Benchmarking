@@ -1,14 +1,10 @@
 # Observability-Benchmarking
 
 [<img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg">]()
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://george-c-odes.github.io/Observability-Benchmarking/)
 
 A Docker Compose-based local environment for benchmarking containerised REST services under the Grafana Observability "LGTM" stack (Loki, Grafana, Tempo, Mimir), with profiling (Pyroscope), OpenTelemetry collection (Alloy), and load-generation using wrk2.
 
-📚 **[View Full Documentation](https://george-c-odes.github.io/Observability-Benchmarking/)**
-
 Table of contents
-- [📚 Full Documentation](https://george-c-odes.github.io/Observability-Benchmarking/)
 - Overview
 - What's included
 - Quick start
