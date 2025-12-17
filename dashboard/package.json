@@ -19,7 +19,8 @@
     "@mui/material-nextjs": "7.3.6",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "xml2js": "0.6.2"
+    "xml2js": "0.6.2",
+    "date-fns": "4.1.0"
   },
   "devDependencies": {
     "@types/node": "25.0.3",

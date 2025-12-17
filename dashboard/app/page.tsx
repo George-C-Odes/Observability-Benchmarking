@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -10,10 +10,18 @@ import {
   Tabs,
   Tab,
   Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EnvEditor from './components/EnvEditor';
 import ScriptRunner from './components/ScriptRunner';
+import SystemInfo from './components/SystemInfo';
+import ServiceHealth from './components/ServiceHealth';
+import AppLogs from './components/AppLogs';
+import { themeOptions } from './theme';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,10 +46,35 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function Home() {
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboardTab');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+    return 0;
+  });
+
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dashboardTheme') || 'dark';
+    }
+    return 'dark';
+  });
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboardTab', newValue.toString());
+    }
+  };
+
+  const handleThemeChange = (event: any) => {
+    const newTheme = event.target.value;
+    setCurrentTheme(newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboardTheme', newTheme);
+      window.location.reload(); // Reload to apply theme
+    }
   };
 
   return (
@@ -52,24 +85,61 @@ export default function Home() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Observability Benchmarking Dashboard
           </Typography>
+          <FormControl sx={{ minWidth: 200 }} size="small">
+            <InputLabel id="theme-select-label" sx={{ color: 'white' }}>Theme</InputLabel>
+            <Select
+              labelId="theme-select-label"
+              value={currentTheme}
+              label="Theme"
+              onChange={handleThemeChange}
+              sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.23)' } }}
+            >
+              {themeOptions.map((theme) => (
+                <MenuItem key={theme.id} value={theme.id}>
+                  {theme.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Paper elevation={3}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
-              <Tab label="Environment Configuration" />
+            <Tabs 
+              value={tabValue} 
+              onChange={handleTabChange} 
+              aria-label="dashboard tabs"
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label="System Info" />
+              <Tab label="Service Health" />
+              <Tab label="Environment Config" />
               <Tab label="Script Runner" />
+              <Tab label="Logs" />
             </Tabs>
           </Box>
 
           <TabPanel value={tabValue} index={0}>
-            <EnvEditor />
+            <SystemInfo />
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
+            <ServiceHealth />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={2}>
+            <EnvEditor />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={3}>
             <ScriptRunner />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={4}>
+            <AppLogs />
           </TabPanel>
         </Paper>
       </Container>

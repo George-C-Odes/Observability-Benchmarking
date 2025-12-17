@@ -24,6 +24,7 @@ interface Script {
   name: string;
   description: string;
   command: string;
+  category: 'build-img' | 'multi-cont' | 'single-cont' | 'test';
 }
 
 export default function ScriptRunner() {
@@ -128,54 +129,210 @@ export default function ScriptRunner() {
         </Alert>
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-        {scripts.map((script) => (
-          <Box key={script.name}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <TerminalIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6" component="div">
-                    {script.name}
+      {/* Build Image Scripts */}
+      {scripts.filter(s => s.category === 'build-img').length > 0 && (
+        <>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            Build Images
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
+            {scripts.filter(s => s.category === 'build-img').map((script) => (
+              <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <TerminalIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6" component="div" fontSize="0.95rem">
+                      {script.name}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {script.description}
                   </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  {script.description}
-                </Typography>
-                <Chip
-                  label={script.command.split(' ')[0]}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-              </CardContent>
-              <CardActions>
-                <Button
-                  size="small"
-                  variant="contained"
-                  startIcon={
-                    executing === script.name ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <PlayArrowIcon />
-                    )
-                  }
-                  onClick={() => executeScript(script.name, script.command)}
-                  disabled={executing !== null}
-                  fullWidth
-                >
-                  {executing === script.name ? 'Executing...' : 'Execute'}
-                </Button>
-              </CardActions>
-            </Card>
+                  <Chip
+                    label={script.command.split(' ')[0]}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={
+                      executing === script.name ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <PlayArrowIcon />
+                      )
+                    }
+                    onClick={() => executeScript(script.name, script.command)}
+                    disabled={executing !== null}
+                    fullWidth
+                  >
+                    {executing === script.name ? 'Executing...' : 'Execute'}
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
           </Box>
-        ))}
-      </Box>
+        </>
+      )}
+
+      {/* Multi-Container Scripts */}
+      {scripts.filter(s => s.category === 'multi-cont').length > 0 && (
+        <>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            Multi-Container Orchestration
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
+            {scripts.filter(s => s.category === 'multi-cont').map((script) => (
+              <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <TerminalIcon sx={{ mr: 1, color: 'secondary.main' }} />
+                    <Typography variant="h6" component="div" fontSize="0.95rem">
+                      {script.name}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {script.description}
+                  </Typography>
+                  <Chip
+                    label={script.command.split(' ')[0]}
+                    size="small"
+                    color="secondary"
+                    variant="outlined"
+                  />
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={
+                      executing === script.name ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <PlayArrowIcon />
+                      )
+                    }
+                    onClick={() => executeScript(script.name, script.command)}
+                    disabled={executing !== null}
+                    fullWidth
+                  >
+                    {executing === script.name ? 'Executing...' : 'Execute'}
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+          </Box>
+        </>
+      )}
+
+      {/* Single-Container Scripts */}
+      {scripts.filter(s => s.category === 'single-cont').length > 0 && (
+        <>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            Single Container
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
+            {scripts.filter(s => s.category === 'single-cont').map((script) => (
+              <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <TerminalIcon sx={{ mr: 1, color: 'info.main' }} />
+                    <Typography variant="h6" component="div" fontSize="0.95rem">
+                      {script.name}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {script.description}
+                  </Typography>
+                  <Chip
+                    label={script.command.split(' ')[0]}
+                    size="small"
+                    color="info"
+                    variant="outlined"
+                  />
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={
+                      executing === script.name ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <PlayArrowIcon />
+                      )
+                    }
+                    onClick={() => executeScript(script.name, script.command)}
+                    disabled={executing !== null}
+                    fullWidth
+                  >
+                    {executing === script.name ? 'Executing...' : 'Execute'}
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+          </Box>
+        </>
+      )}
+
+      {/* Test Scripts */}
+      {scripts.filter(s => s.category === 'test').length > 0 && (
+        <>
+          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+            Tests
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
+            {scripts.filter(s => s.category === 'test').map((script) => (
+              <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <TerminalIcon sx={{ mr: 1, color: 'success.main' }} />
+                    <Typography variant="h6" component="div" fontSize="0.95rem">
+                      {script.name}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {script.description}
+                  </Typography>
+                  <Chip
+                    label={script.command.split(' ')[0]}
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                  />
+                </CardContent>
+                <CardActions>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={
+                      executing === script.name ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <PlayArrowIcon />
+                      )
+                    }
+                    onClick={() => executeScript(script.name, script.command)}
+                    disabled={executing !== null}
+                    fullWidth
+                  >
+                    {executing === script.name ? 'Executing...' : 'Execute'}
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+          </Box>
+        </>
+      )}
 
       {scripts.length === 0 && !loading && (
         <Box textAlign="center" py={4}>
           <Typography variant="body1" color="text.secondary">
-            No scripts found in the .run directory
+            No scripts found with required prefixes ([build-img], [multi-cont], [single-cont], [test])
           </Typography>
         </Box>
       )}
