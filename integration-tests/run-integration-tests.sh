@@ -5,13 +5,14 @@
 # Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Test counters
 TESTS_PASSED=0
 TESTS_FAILED=0
+
+TIMEOUT=2
 
 # Configuration - Port mappings match docker-compose.yml order
 # JVM Services
@@ -33,6 +34,11 @@ GO_URL="${GO_URL:-http://localhost:8088}"
 
 # Observability
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
+ALLOY_URL="${ALLOY_URL:-http://localhost:12345}"
+LOKI_URL="${LOKI_URL:-http://localhost:3100}"
+MIMIR_URL="${MIMIR_URL:-http://localhost:9009}"
+TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
+PYROSCOPE_URL="${PYROSCOPE_URL:-http://localhost:4040}"
 
 # Framework versions
 QUARKUS_VERSION="3.30.3"
@@ -49,7 +55,7 @@ test_endpoint() {
     echo -n "Testing ${name}... "
     
     # Don't exit on curl failure
-    response=$(curl -s -w "\n%{http_code}" "${url}" 2>/dev/null || echo -e "\n000")
+    response=$(curl -s --max-time ${TIMEOUT} -w "\n%{http_code}" "${url}" 2>/dev/null || echo -e "\n000")
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | head -n-1)
     
@@ -85,7 +91,7 @@ test_spring_metrics() {
 test_quarkus_metrics() {
     local name=$1
     local url=$2
-    
+
     # Try different metric endpoints
     test_endpoint "${name} Metrics" "${url}/q/metrics/json" 200 "" || \
     test_endpoint "${name} Metrics" "${url}/q/health/ready" 200 "" || \
@@ -173,8 +179,13 @@ test_quarkus_metrics "Quarkus JVM" "${QUARKUS_JVM_URL}"
 test_quarkus_metrics "Quarkus Native" "${QUARKUS_NATIVE_URL}"
 echo ""
 
-echo -e "${BLUE}--- Grafana Stack Health ---${NC}"
+echo -e "${BLUE}--- Grafana Stack Readiness ---${NC}"
 test_endpoint "Grafana UI" "${GRAFANA_URL}/api/health" 200 ""
+test_endpoint "Alloy" "${ALLOY_URL}/-/ready" 200 ""
+test_endpoint "Loki" "${LOKI_URL}/ready" 200 ""
+test_endpoint "Mimir" "${MIMIR_URL}/ready" 200 ""
+test_endpoint "Tempo" "${TEMPO_URL}/ready" 200 ""
+test_endpoint "Pyroscope" "${PYROSCOPE_URL}/ready" 200 ""
 echo ""
 
 echo -e "${BLUE}--- Trace Generation (Smoke Test) ---${NC}"
@@ -212,7 +223,7 @@ run_trace_and_verify() {
     local expected="$4"
 
     # Fire request to generate log/trace (don't fail suite on curl failure)
-    curl -s "${url}?log=true" > /dev/null 2>&1 || true
+    curl -s --max-time ${TIMEOUT} "${url}?log=true" > /dev/null 2>&1 || true
 
     # Small delay to let the service flush logs
     sleep 0.2
@@ -236,8 +247,7 @@ run_trace_and_verify "Quarkus Native Platform" "${QUARKUS_NATIVE_URL}/hello/plat
 run_trace_and_verify "Quarkus Native Virtual" "${QUARKUS_NATIVE_URL}/hello/virtual" "quarkus-native" "vthread"
 run_trace_and_verify "Quarkus Native Reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" "quarkus-native" "vert.x-eventloop-thread"
 
-# No mapping was provided for GO container logs; keeping request as a smoke call only:
-curl -s "${GO_URL}/hello/platform?log=true" > /dev/null 2>&1 || true
+curl -s --max-time ${TIMEOUT} "${GO_URL}/hello/platform?log=true" > /dev/null 2>&1 || true
 
 echo ""
 

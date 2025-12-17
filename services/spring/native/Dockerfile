@@ -57,7 +57,7 @@ RUN ./mvnw -v \
   && ./mvnw -B -q -Dspring-boot.version=${SPRING_BOOT_VERSION} dependency:go-offline \
   && ./mvnw -B \
     -Dspring-boot.version=${SPRING_BOOT_VERSION} \
-    -Pnative -DskipTests native:compile \
+    -Pnative native:compile \
     -Dmaven.artifact.threads=16 \
     -Dmaven.compiler.release=${JAVA_RELEASE} \
     -Dcheckstyle.config.location=checkstyle.xml \

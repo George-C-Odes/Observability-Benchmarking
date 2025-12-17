@@ -187,6 +187,7 @@ discovery.relabel "apps" {
                 ".*loki.*|" +
                 ".*pyroscope.*|" +
                 ".*wrk2.*|" +
+                ".*nextjs-dash.*|" +
                 ".*spring-jvm-tomcat-platform.*|" +
                 ".*spring-jvm-tomcat-virtual.*|" +
                 ".*spring-jvm-netty.*|" +
@@ -200,6 +201,21 @@ discovery.relabel "apps" {
         action = "drop"
         source_labels = ["service_name"]
         regex = "^(ebpf_grafana|ebpf_wrk2|ebpf/bin/bash_wrk2|ebpf/bin/busybox_wrk2)$"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/usr/local/bin/node_nextjs-dash$"
+        replacement = "ebpf/node/nextjs-dash"
+    }
+    //TODO one of them should be removed
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf_nextjs-dash$"
+        replacement = "ebpf/nextjs-dash"
     }
     rule {
         action = "replace"
@@ -781,6 +797,31 @@ loki.source.docker "go" {
 }
 
 loki.process "go" {
+  stage.docker {}
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ nextjs-dash LOGS (from the Docker container) ============
+discovery.relabel "nextjs_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?nextjs-dash.*"
+  }
+}
+
+loki.source.docker "nextjs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.nextjs_only.output
+  labels     = {
+    job          = "nextjs-dash",
+    service_name = "nextjs-dash",
+  }
+  forward_to = [loki.process.nextjs.receiver]
+}
+
+loki.process "nextjs" {
   stage.docker {}
   forward_to = [loki.write.loki.receiver]
 }

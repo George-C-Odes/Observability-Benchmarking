@@ -7,7 +7,7 @@ services:
   alloy:
     profiles: ["OBS"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.0
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.1
     container_name: alloy
     command:
       - run

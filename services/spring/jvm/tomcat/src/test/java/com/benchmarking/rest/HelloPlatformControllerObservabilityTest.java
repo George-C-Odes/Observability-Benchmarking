@@ -25,7 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Health endpoints (liveness, readiness)
  * - Caffeine cache metrics
  */
-@SpringBootTest(properties = "spring.threads.virtual.enabled=false")
+@SpringBootTest(
+    properties = {
+        "spring.threads.virtual.enabled=false",
+        "management.endpoint.health.probes.enabled=true" // Enable liveness/readiness probe endpoints on Boot 3.x
+    }
+)
 @DisplayName("Spring Boot Tomcat Platform Observability Tests")
 public class HelloPlatformControllerObservabilityTest {
 

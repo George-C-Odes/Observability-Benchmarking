@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="SERVICES -RECREATE" type="ShConfigurationType">
+  <configuration default="false" name="[multi-cont] SERVICES -RECREATE" type="ShConfigurationType">
     <option name="SCRIPT_TEXT" value="docker compose --project-directory compose --profile=OBS --profile=SERVICES up --force-recreate -d" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />

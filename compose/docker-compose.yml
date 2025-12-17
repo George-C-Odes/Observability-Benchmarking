@@ -126,13 +126,13 @@ x-default-environment: &default_env
 #See also https://quarkus.io/guides/opentelemetry,  https://quarkus.io/guides/opentelemetry-metrics
 
 services:
-  dashboard:
+  nextjs-dash:
     profiles: ["OBS"]
     build:
       context: ../dashboard
       dockerfile: Dockerfile
-    image: observability-dashboard:latest
-    container_name: observability-dashboard
+    image: nextjs-dash:latest
+    container_name: nextjs-dash
     ports:
       - "3001:3001"
     volumes:
@@ -142,7 +142,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-    restart: unless-stopped
+    restart: no
+    pull_policy: never
+    cpuset: *default_efficiency_cores
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
       interval: 30s

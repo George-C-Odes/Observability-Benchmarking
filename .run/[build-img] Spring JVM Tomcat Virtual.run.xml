@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Spring JVM Tomcat Virtual" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
+  <configuration default="false" name="[build-img] Spring JVM Tomcat Virtual" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
         <option name="imageTag" value="spring-jvm-tomcat-virtual:4.0.0_latest" />

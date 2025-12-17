@@ -31,12 +31,19 @@ A Next.js-based dashboard for orchestrating and managing the Observability Bench
    npm install
    ```
 
-2. Run the development server:
+2. (Optional) Update dependency versions to the latest (including majors), then reinstall:
+   ```bash
+   npx npm-check-updates -u
+   npm install
+   ```
+This updates package.json and refreshes package-lock.json.
+
+3. Run the development server:
    ```bash
    npm run dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3001](http://localhost:3001) in your browser
 
 ### Building for Production
 
@@ -56,7 +63,7 @@ The dashboard is designed to run in a Docker container alongside the observabili
 The dashboard service is already configured in `compose/docker-compose.yml` and will start with the OBS profile:
 
 ```bash
-docker compose --project-directory compose up dashboard --build -d
+docker compose --project-directory compose up nextjs-dash --build -d
 ```
 
 Access the dashboard at [http://localhost:3001](http://localhost:3001)
@@ -64,7 +71,7 @@ Access the dashboard at [http://localhost:3001](http://localhost:3001)
 ### Option 2: Build the Docker image manually:
 
 ```bash
-docker build -t observability-dashboard:latest ./dashboard
+docker build -t nextjs-dash:latest ./dashboard
 ```
 
 ### Option 3: Run the container:
@@ -73,7 +80,7 @@ docker build -t observability-dashboard:latest ./dashboard
 docker run -p 3001:3001 \
   -v $(pwd)/../compose/.env:/app/compose/.env \
   -v $(pwd)/../.run:/app/.run \
-  observability-dashboard:latest
+  nextjs-dash:latest
 ```
 
 ### Using Docker Compose
@@ -82,11 +89,11 @@ Add the following service to your `docker-compose.yml` (already included in this
 
 ```yaml
 services:
-  dashboard:
+   nextjs-dash:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
-    container_name: observability-dashboard
+    container_name: nextjs-dash
     ports:
       - "3001:3001"
     volumes:
@@ -101,7 +108,7 @@ services:
 Then start the dashboard:
 
 ```bash
-docker compose up dashboard -d
+docker compose up nextjs-dash -d
 ```
 
 ## Usage

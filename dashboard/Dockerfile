@@ -1,26 +1,47 @@
-FROM node:22-slim
+# syntax=docker/dockerfile:1.7
 
+FROM node:25.2-slim AS deps
 WORKDIR /app
 
-# Create non-root user
-RUN groupadd -g 1001 nodejs && \
-    useradd -u 1001 -g nodejs -M -d /nonexistent -s /sbin/nologin nodejs
+COPY package.json package-lock.json ./
 
-# Copy application files
-COPY --chown=nodejs:nodejs . .
+# Faster repeat builds + deterministic installs
+RUN --mount=type=cache,target=/root/.npm \
+    npm i -g npm@11.7.0 && npm ci --no-audit --fund=false
 
-# Install dependencies
-RUN npm install
+FROM node:25.2-slim AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Build the application
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-USER nodejs
+# Ensure /public exists so the runtime COPY never fails
+RUN mkdir -p /app/public
 
-EXPOSE 3001
+FROM node:25.2-slim AS runner
+WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV HOSTNAME="0.0.0.0"
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3001
 
-CMD ["npm", "start"]
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nodejs
+
+# Copy as the runtime user to avoid permission surprises
+COPY --chown=nodejs:nodejs --from=builder /app/public ./public
+COPY --chown=nodejs:nodejs --from=builder /app/.next/standalone ./
+COPY --chown=nodejs:nodejs --from=builder /app/.next/static ./.next/static
+
+# Give Next a writable cache dir (safe default)
+RUN mkdir -p /app/.next/cache && chown -R nodejs:nodejs /app/.next
+
+USER nodejs
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD node -e "fetch(`http://127.0.0.1:${process.env.PORT||3001}/`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "server.js"]

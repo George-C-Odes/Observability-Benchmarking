@@ -1,17 +1,17 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build Spring NATIVE Netty" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
+  <configuration default="false" name="[build-img] Spring NATIVE Tomcat Virtual" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="spring-native-netty:4.0.0_latest" />
+        <option name="imageTag" value="spring-native-tomcat-virtual:4.0.0_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="PROFILE" />
-              <option name="value" value="netty" />
+              <option name="value" value="tomcat" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="VIRTUAL_ENABLED" />
-              <option name="value" value="false" />
+              <option name="value" value="true" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="SPRING_BOOT_VERSION" />
@@ -19,7 +19,7 @@
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="spring-native-netty:4.0.0_latest" />
+              <option name="value" value="spring-native-tomcat-virtual:4.0.0_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

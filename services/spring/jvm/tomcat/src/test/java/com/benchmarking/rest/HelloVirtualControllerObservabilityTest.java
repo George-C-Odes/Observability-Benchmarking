@@ -26,7 +26,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Health endpoints (liveness, readiness)
  * - Caffeine cache metrics
  */
-@SpringBootTest(properties = "spring.threads.virtual.enabled=true")
+@SpringBootTest(
+    properties = {
+        "spring.threads.virtual.enabled=true",
+        "management.endpoint.health.probes.enabled=true" // Enable liveness/readiness probe endpoints on Boot 3.x
+    }
+)
 @DisplayName("Spring Boot Tomcat Virtual Observability Tests")
 public class HelloVirtualControllerObservabilityTest {
 
