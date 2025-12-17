@@ -49,13 +49,25 @@ npm start
 
 The dashboard is designed to run in a Docker container alongside the observability stack.
 
-### Build the Docker image:
+**Note**: Due to npm ci timeout issues in resource-constrained CI environments, it's recommended to build locally first or use the development mode.
+
+### Option 1: Use Docker Compose (Recommended for local development)
+
+The dashboard service is already configured in `compose/docker-compose.yml` and will start with the OBS profile:
 
 ```bash
-docker build -t observability-dashboard:latest .
+docker compose --project-directory compose up dashboard --build -d
 ```
 
-### Run the container:
+Access the dashboard at [http://localhost:3001](http://localhost:3001)
+
+### Option 2: Build the Docker image manually:
+
+```bash
+docker build -t observability-dashboard:latest ./dashboard
+```
+
+### Option 3: Run the container:
 
 ```bash
 docker run -p 3001:3001 \
@@ -66,7 +78,7 @@ docker run -p 3001:3001 \
 
 ### Using Docker Compose
 
-Add the following service to your `docker-compose.yml`:
+Add the following service to your `docker-compose.yml` (already included in this project):
 
 ```yaml
 services:

@@ -1,50 +1,26 @@
-FROM node:22-alpine AS base
+FROM node:22-slim
 
-# Install dependencies only when needed
-FROM base AS deps
 WORKDIR /app
-
-# Copy package files
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Build Next.js application
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
-
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs -M -d /nonexistent -s /sbin/nologin nodejs || true
 
-# Copy necessary files
-COPY --from=builder /app/public ./public
+# Copy application files
+COPY --chown=nodejs:nodejs . .
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Install dependencies
+RUN npm install
 
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Build the application
+RUN npm run build
 
-USER nextjs
+USER nodejs
 
 EXPOSE 3001
 
+ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

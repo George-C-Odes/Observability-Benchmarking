@@ -71,6 +71,13 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
   - eBPF-based sampling (system-wide)
   - HTTP scrape endpoints
 
+### 🎛️ Orchestration Dashboard
+- **Next.js Dashboard**: Modern web UI for managing the benchmarking environment
+  - Edit environment configuration (`compose/.env`) through intuitive UI
+  - Execute IntelliJ IDEA run configurations from the browser
+  - Professional MUI-based interface suitable for portfolio demonstration
+  - Built with Next.js 16.0.10 and Material-UI 7.3.6
+
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Amazon Corretto)
@@ -145,6 +152,9 @@ docker compose --project-directory compose --profile=OBS up --no-recreate --buil
 
 **Access Grafana**: Navigate to [http://localhost:3000](http://localhost:3000)
 - Default credentials: `a` / `a`
+
+**Access Dashboard**: Navigate to [http://localhost:3001](http://localhost:3001)
+- Orchestration UI for managing environment and running scripts
 
 #### 2. Start Observability Stack + REST Services
 
