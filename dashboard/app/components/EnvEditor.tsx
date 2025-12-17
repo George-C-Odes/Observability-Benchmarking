@@ -45,6 +45,7 @@ export default function EnvEditor() {
   };
 
   const parseEnvContent = (content: string) => {
+    // Note: This project uses YAML-style "KEY: VALUE" format, not standard "KEY=VALUE"
     const lines = content.split('\n');
     const variables: EnvVariable[] = [];
     let currentComment = '';

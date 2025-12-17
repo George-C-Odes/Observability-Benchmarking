@@ -17,10 +17,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Security: Only allow docker compose commands for now
-    if (!command.includes('docker compose') && !command.includes('mvn')) {
+    // Security: Sanitize and validate inputs
+    if (typeof scriptName !== 'string' || typeof command !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid input types' },
+        { status: 400 }
+      );
+    }
+
+    // Security: Only allow specific command prefixes
+    const allowedPrefixes = ['docker compose', 'mvn'];
+    const hasAllowedPrefix = allowedPrefixes.some(prefix => command.startsWith(prefix));
+    
+    if (!hasAllowedPrefix) {
       return NextResponse.json(
         { error: 'Only docker compose and mvn commands are allowed' },
+        { status: 403 }
+      );
+    }
+
+    // Security: Prevent command injection by checking for dangerous characters
+    const dangerousPatterns = [';', '&&', '||', '|', '`', '$', '(', ')', '<', '>'];
+    const hasDangerousChars = dangerousPatterns.some(pattern => 
+      scriptName.includes(pattern) || command.includes(pattern)
+    );
+
+    if (hasDangerousChars) {
+      return NextResponse.json(
+        { error: 'Command contains potentially dangerous characters' },
         { status: 403 }
       );
     }

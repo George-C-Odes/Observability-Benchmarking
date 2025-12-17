@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Create non-root user
 RUN groupadd -g 1001 nodejs && \
-    useradd -u 1001 -g nodejs -M -d /nonexistent -s /sbin/nologin nodejs || true
+    useradd -u 1001 -g nodejs -M -d /nonexistent -s /sbin/nologin nodejs
 
 # Copy application files
 COPY --chown=nodejs:nodejs . .

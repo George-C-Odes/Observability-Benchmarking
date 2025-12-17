@@ -136,7 +136,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ../.env:/app/compose/.env
+      - ./.env:/app/compose/.env
       - ../.run:/app/.run:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
