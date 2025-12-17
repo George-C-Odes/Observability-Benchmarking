@@ -50,7 +50,7 @@ RUN mvn -B \
   -Dquarkus.package.jar.type=fast-jar \
   -Dmaven.compiler.release=${JAVA_RELEASE} \
   -Dcheckstyle.config.location=checkstyle.xml \
-  -Dcheckstyle.suppressions.location=checkstyle.xml
+  -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
 #-DskipTests
 #uber-jar
 

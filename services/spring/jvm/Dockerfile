@@ -48,7 +48,7 @@ RUN mvn -v \
   && mvn -B -Dspring-boot.version=${SPRING_BOOT_VERSION} clean package \
     -Dmaven.compiler.release=${JAVA_RELEASE} \
     -Dcheckstyle.config.location=checkstyle.xml \
-    -Dcheckstyle.suppressions.location=checkstyle.xml
+    -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
 #    -DskipTests
 
 #-----------------------  RUNTIME STAGE -----------------------

@@ -87,7 +87,7 @@ RUN ./mvnw verify -Dnative \
   -Dmaven.artifact.threads=16 \
   -Dmaven.compiler.release=${JAVA_RELEASE} \
   -Dcheckstyle.config.location=checkstyle.xml \
-  -Dcheckstyle.suppressions.location=checkstyle.xml
+  -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
 
 #-----------------------  RUNTIME STAGE -----------------------
 #FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0

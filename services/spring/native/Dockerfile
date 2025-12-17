@@ -61,7 +61,7 @@ RUN ./mvnw -v \
     -Dmaven.artifact.threads=16 \
     -Dmaven.compiler.release=${JAVA_RELEASE} \
     -Dcheckstyle.config.location=checkstyle.xml \
-    -Dcheckstyle.suppressions.location=checkstyle.xml
+    -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
 
 # 2) Runtime stage – ultra-small, high-throughput
 FROM debian:13.2-slim AS runner
