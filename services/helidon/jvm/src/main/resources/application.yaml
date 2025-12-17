@@ -1,0 +1,36 @@
+server:
+  port: 8080
+  host: 0.0.0.0
+  max-concurrent-requests: 10000
+  connection-options:
+    receive-buffer-size: 32768
+    send-buffer-size: 32768
+    connect-timeout-millis: 10000
+    read-timeout-millis: 60000
+  sockets:
+    - name: "admin"
+      port: 8081
+  features:
+    observe:
+      enabled: true
+      endpoint: "/observe"
+      cors:
+        enabled: false
+
+# Logging configuration
+logging:
+  level:
+    io.helidon: INFO
+    com.benchmarking: INFO
+
+# Metrics configuration  
+metrics:
+  enabled: true
+  app-name: helidon-jvm
+
+# Health check configuration
+health:
+  enabled: true
+  include:
+    - "liveness"
+    - "readiness"

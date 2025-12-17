@@ -4,6 +4,8 @@
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.30.3-blue.svg)](https://quarkus.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.3.2-purple.svg)](https://helidon.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-4.10.5-teal.svg)](https://micronaut.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -41,7 +43,7 @@
 
 This repository provides a **production-ready Docker Compose environment** for comprehensive performance benchmarking of REST service implementations. It enables you to:
 
-- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus (JVM & Native), Go, and more
+- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus (JVM & Native), Helidon, Micronaut, Go, and more
 - **Test concurrency models**: Platform threads, virtual threads (Project Loom), and reactive programming
 - **Collect full observability data**: Logs, metrics, traces, and continuous profiling in one unified stack
 - **Run deterministic benchmarks**: Use wrk2 for controlled, reproducible load testing
@@ -81,6 +83,12 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 - **Quarkus 3.30.3**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
+- **Helidon 4.3.2**
+  - JVM builds (platform, virtual, reactive)
+  - Native builds with GraalVM (planned)
+- **Micronaut 4.10.5**
+  - JVM builds (platform, virtual, reactive)
+  - Native builds with GraalVM (planned)
 
 #### Go (1.25.5) - Work in Progress
 - Fiber framework integration
@@ -701,8 +709,8 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🎯 Short-term Goals (Next 3-6 months)
 
 #### Additional Framework Support
-- [ ] **Micronaut**: Another popular JVM framework with reactive and GraalVM support
-- [ ] **Helidon**: Oracle's microservices framework (SE and MP editions)
+- [x] **Micronaut**: Another popular JVM framework with reactive and GraalVM support (JVM build completed, native in progress)
+- [x] **Helidon**: Oracle's microservices framework (SE edition completed, native in progress)
 - [ ] **Ktor**: Kotlin-based asynchronous framework
 - [ ] **Complete Go implementation**: Full observability instrumentation
 - [ ] **Rust**: Actix-web or Axum framework with OTLP integration
