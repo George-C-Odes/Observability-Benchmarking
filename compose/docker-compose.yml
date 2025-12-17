@@ -758,3 +758,147 @@ services:
         hard: *default_ulimit
     depends_on:
       - alloy
+
+  helidon-jvm:
+    profiles: ["${DOCKER_PROF_HELIDON_JVM:-skip}"]
+    image: helidon-jvm:4.3.2_latest
+    build:
+      context: ../services
+      dockerfile: helidon/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: helidon-jvm:4.3.2_latest
+        HELIDON_VERSION: 4.3.2
+    container_name: helidon-jvm
+    ports:
+      - "8090:8080"
+    volumes:
+      - ../data/services/helidon/jvm/error:/var/log/error
+    environment:
+      TZ: *default_TZ
+      JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_SERVICE_NAME: "helidon-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "service.name=helidon-jvm,env=dev,runtime=jvm,webengine.name=Helidon,webengine.version=4.3.2"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: 15000
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/helidon-jvm"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    restart: no
+    pull_policy: never
+    deploy:
+      resources:
+        limits:
+          cpus: *default_cpu_limit
+          memory: *default_mem_limit
+        reservations:
+          cpus: *default_cpu_limit
+          memory: *default_mem_limit
+    cpuset: *default_performance_cores
+    ulimits:
+      nofile:
+        soft: *default_ulimit
+        hard: *default_ulimit
+    depends_on:
+      - alloy
+
+  micronaut-jvm:
+    profiles: ["${DOCKER_PROF_MICRONAUT_JVM:-skip}"]
+    image: micronaut-jvm:4.10.5_latest
+    build:
+      context: ../services
+      dockerfile: micronaut/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: micronaut-jvm:4.10.5_latest
+        MICRONAUT_VERSION: 4.10.5
+    container_name: micronaut-jvm
+    ports:
+      - "8091:8080"
+    volumes:
+      - ../data/services/micronaut/jvm/error:/var/log/error
+    environment:
+      TZ: *default_TZ
+      JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_SERVICE_NAME: "micronaut-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "service.name=micronaut-jvm,env=dev,runtime=jvm,webengine.name=Micronaut,webengine.version=4.10.5"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: 15000
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/micronaut-jvm"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    restart: no
+    pull_policy: never
+    deploy:
+      resources:
+        limits:
+          cpus: *default_cpu_limit
+          memory: *default_mem_limit
+        reservations:
+          cpus: *default_cpu_limit
+          memory: *default_mem_limit
+    cpuset: *default_performance_cores
+    ulimits:
+      nofile:
+        soft: *default_ulimit
+        hard: *default_ulimit
+    depends_on:
+      - alloy

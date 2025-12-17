@@ -14,7 +14,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <micronaut.version>4.10.11</micronaut.version>
+        <micronaut.version>4.10.5</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <exec.mainClass>com.benchmarking.Application</exec.mainClass>
         <lombok.version>1.18.42</lombok.version>

@@ -1,7 +1,7 @@
 # Micronaut JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 4.10.11 running on the Java Virtual Machine (JVM 25). This service supports three different thread models for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Micronaut 4.10.5 running on the Java Virtual Machine (JVM 25). This service supports three different thread models for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Micronaut performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Micronaut 4.10.11 runn
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 4.10.11
+- **Framework**: Micronaut 4.10.5
 - **Java Version**: Amazon Corretto 25.0.1
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive
@@ -165,7 +165,7 @@ java -jar target/micronaut-jvm-1.0.0-SNAPSHOT.jar
 ### Docker Build
 ```bash
 cd services
-docker build -f micronaut/jvm/Dockerfile -t micronaut-jvm:4.10.11_latest .
+docker build -f micronaut/jvm/Dockerfile -t micronaut-jvm:4.10.5_latest .
 ```
 
 ### Docker Compose
