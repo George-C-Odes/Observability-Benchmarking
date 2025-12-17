@@ -18,6 +18,7 @@ import reactor.core.scheduler.Schedulers;
 @Controller("/hello")
 public class HelloController {
 
+    /** Caffeine cache instance for storing key-value pairs. */
     private final Cache<String, String> cache;
 
     /**
@@ -32,8 +33,8 @@ public class HelloController {
     /**
      * Handles requests using platform threads (standard JVM threads).
      *
-     * @param sleepSeconds optional sleep duration in seconds
-     * @param printLog whether to log thread information
+     * @param sleep optional sleep duration in seconds
+     * @param log whether to log thread information
      * @return greeting message with cached value
      * @throws InterruptedException if the thread sleep is interrupted
      */
@@ -57,8 +58,8 @@ public class HelloController {
      * Handles requests using virtual threads (Project Loom).
      * Micronaut will use virtual threads when configured with Java 21+.
      *
-     * @param sleepSeconds optional sleep duration in seconds
-     * @param printLog whether to log thread information
+     * @param sleep optional sleep duration in seconds
+     * @param log whether to log thread information
      * @return greeting message with cached value
      * @throws InterruptedException if the thread sleep is interrupted
      */
@@ -81,8 +82,8 @@ public class HelloController {
     /**
      * Handles requests using reactive programming model with Reactor.
      *
-     * @param sleepSeconds optional sleep duration in seconds (not recommended under load)
-     * @param printLog whether to log thread information
+     * @param sleep optional sleep duration in seconds (not recommended under load)
+     * @param log whether to log thread information
      * @return Mono with greeting message and cached value
      */
     @Get("/reactive")

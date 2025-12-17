@@ -12,6 +12,7 @@ import java.time.Duration;
 @Singleton
 public class CacheConfig {
 
+    /** Caffeine cache instance for storing key-value pairs. */
     private final Cache<String, String> cache;
 
     /**

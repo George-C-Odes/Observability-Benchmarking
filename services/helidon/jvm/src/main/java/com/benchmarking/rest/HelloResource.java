@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
  */
 public class HelloResource implements HttpService {
 
+    /** Caffeine cache instance for storing key-value pairs. */
     private final Cache<String, String> cache;
 
     /**
