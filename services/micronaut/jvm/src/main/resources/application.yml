@@ -1,0 +1,58 @@
+micronaut:
+  application:
+    name: micronaut-jvm
+  server:
+    port: 8080
+    host: 0.0.0.0
+    max-request-size: 10MB
+    netty:
+      max-header-size: 16384
+      max-chunk-size: 8192
+      max-initial-line-length: 4096
+      idle-timeout: 60s
+      worker:
+        threads: 32
+      event-loops:
+        default:
+          num-threads: 8
+  executors:
+    blocking:
+      type: FIXED
+      nThreads: 200
+      virtual: true  # Enable virtual threads for blocking executor
+  metrics:
+    enabled: true
+    binders:
+      jvm:
+        enabled: true
+      web:
+        enabled: true
+      executor:
+        enabled: true
+    export:
+      prometheus:
+        enabled: true
+        step: PT15S
+        descriptions: true
+  health:
+    enabled: true
+  router:
+    static-resources:
+      default:
+        enabled: false
+
+endpoints:
+  all:
+    enabled: true
+    sensitive: false
+  health:
+    enabled: true
+    sensitive: false
+  prometheus:
+    enabled: true
+    sensitive: false
+
+logger:
+  levels:
+    io.micronaut: INFO
+    com.benchmarking: INFO
