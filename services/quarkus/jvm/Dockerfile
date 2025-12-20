@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+ARG MAVEN_RELEASE=3.9.12
 ARG DISTRIBUTION=amazoncorretto
 #amazoncorretto, eclipse-temurin
 ARG JAVA_RELEASE=25
@@ -10,100 +12,101 @@ ARG BASE_RUNTIME=al2023-headless
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 #Option N/A for J21 set to "", for J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings
 
-FROM maven:3.9.11-${DISTRIBUTION}-${JAVA_RELEASE}-${BASE_BUILDER} AS builder
+FROM maven:${MAVEN_RELEASE}-${DISTRIBUTION}-${JAVA_RELEASE}-${BASE_BUILDER} AS builder
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
-ARG QUARKUS_VERSION=3.30.3
+ARG QUARKUS_VERSION=3.30.4
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
-ENV HOME=/home/maven
-ENV MAVEN_OPTS="-Duser.home=${HOME}"
-
-RUN groupadd -r maven \
- && useradd -r -g maven -d /home/maven -s /bin/sh maven \
- && mkdir -p /home/maven \
- && chown -R maven:maven /home/maven
-
-COPY --chown=maven:maven quarkus/jvm/pom.xml /code/
-USER maven
-WORKDIR /code
-
-ARG PROFILE=stage
-ENV QUARKUS_PROFILE=${PROFILE}
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=false
+ENV HOME=/home/maven
+ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
 
-RUN mvn -v && mvn -B \
-  -Dquarkus.platform.version=${QUARKUS_VERSION} \
-  -Duser.home=${HOME} \
-  -Dmaven.repo.local=${HOME}/.m2 \
-  dependency:go-offline
-COPY quarkus/jvm/src /code/src
-COPY checkstyle.xml /code/checkstyle.xml
-COPY checkstyle-suppressions.xml /code/checkstyle-suppressions.xml
-RUN mvn -B \
-  -Dquarkus.platform.version=${QUARKUS_VERSION} \
-  -Duser.home=${HOME} \
-  -Dmaven.repo.local=${HOME}/.m2 clean package \
-  -Dquarkus.package.jar.type=fast-jar \
-  -Dmaven.compiler.release=${JAVA_RELEASE} \
-  -Dcheckstyle.config.location=checkstyle.xml \
-  -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
+# Ensure UID/GID are consistent across images for cache ownership
+RUN groupadd -g 1000 maven \
+ && useradd  -u 1000 -g maven -d /home/maven -s /bin/sh maven \
+ && mkdir -p /home/maven /workspace \
+ && chown -R 1000:1000 /home/maven /workspace
+
+USER 1000
+WORKDIR /workspace
+
+COPY --link --chown=1000:1000 quarkus/jvm/pom.xml pom.xml
+COPY --link --chown=1000:1000 checkstyle.xml checkstyle.xml
+COPY --link --chown=1000:1000 checkstyle-suppressions.xml checkstyle-suppressions.xml
+
+# Warm dependencies (won't be busted by source changes)
+RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
+    mvn -v &&  \
+    mvn -B -q -ntp \
+      -Dquarkus.platform.version=${QUARKUS_VERSION} \
+      dependency:go-offline
+
+COPY --link --chown=1000:1000 quarkus/jvm/src ./src
+
+RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
+    mvn -B -ntp -T 1C \
+      -Dquarkus.platform.version=${QUARKUS_VERSION} \
+      -Dquarkus.package.jar.type=fast-jar \
+      -Dmaven.compiler.release=${JAVA_RELEASE} \
+      -Dcheckstyle.config.location=checkstyle.xml \
+      -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml \
+      package
 #-DskipTests
 #uber-jar
 
-FROM ${DISTRIBUTION}:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_RUNTIME} AS runtime
-ARG JAVA_ARGS
-ENV JAVA_ARGS=${JAVA_ARGS}
-
-WORKDIR /work/
-
-# Install curl & ca-certificates to support healthcheck and downloads
-# Create a dedicated non-root user/group (OpenShift-friendly UID/GID 1001)
-RUN mkdir -p /deployments /otel /work \
-    && dnf install -y --setopt=install_weak_deps=False \
-      shadow-utils \
-    && update-ca-trust \
-    && groupadd -g 1001 quarkus \
-    && useradd -u 1001 -g quarkus -M -d /nonexistent -s /sbin/nologin quarkus \
-    && dnf clean all && rm -rf /var/cache/dnf/*
-
-WORKDIR /work
-
-COPY --from=builder --chown=1001:1001 /code/target/quarkus-app/lib/ /deployments/lib/
-COPY --from=builder --chown=1001:1001 /code/target/quarkus-app/*.jar /deployments/
-COPY --from=builder --chown=1001:1001 /code/target/quarkus-app/app/ /deployments/app/
-COPY --from=builder --chown=1001:1001 /code/target/quarkus-app/quarkus/ /deployments/quarkus/
+# ------------ OTEL/PROFILING DEPS STAGE -----------------------
+FROM alpine:3.23.2 AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=1.0.4
-ADD https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/pyroscope-otel.jar /work/pyroscope-otel-extension.jar
-RUN chown 1001:1001 /work/pyroscope-otel-extension.jar; \
-    chmod 0640 /work/pyroscope-otel-extension.jar
-
 ARG OTEL_JAVA_AGENT_VERSION=2.23.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 ### Snapshots - prereleased:
 #ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}-20251212.043721-77.jar
 #ARG OTEL_JAVA_AGENT_URL="https://central.sonatype.com/repository/maven-snapshots/io/opentelemetry/javaagent/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}-SNAPSHOT/${OTEL_JAVA_AGENT_FILENAME}"
-RUN --mount=type=cache,target=/otel-agent-cache \
+
+RUN apk add --no-cache ca-certificates curl
+WORKDIR /out
+
+# Download with BuildKit cache to speed rebuilds
+RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
     set -e; \
-    mkdir -p /work /otel-agent-cache/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}; \
-    LOCAL_JAR="/otel-agent-cache/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"; \
-    IMAGE_JAR="/work/opentelemetry-javaagent.jar"; \
-    if [ -f "$LOCAL_JAR" ]; then \
-      echo "Reusing OpenTelemetry Java agent from BuildKit cache: $LOCAL_JAR"; \
-    else \
-      echo "OpenTelemetry Java agent not found in cache, downloading from ${OTEL_JAVA_AGENT_URL}"; \
-      curl -fsSL --retry 5 --retry-all-errors --http1.1 \
-        -o "$LOCAL_JAR" \
-        "${OTEL_JAVA_AGENT_URL}"; \
+    PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/pyroscope-otel.jar"; \
+    PYRO_CACHE="/cache/pyroscope-otel-${OTEL_PYROSCOPE_VERSION}.jar"; \
+    if [ ! -f "$PYRO_CACHE" ]; then \
+      curl -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
     fi; \
-    cp "$LOCAL_JAR" "$IMAGE_JAR" \
- && chown 1001:1001 /work/opentelemetry-javaagent.jar \
- && chmod 0640 /work/opentelemetry-javaagent.jar
+    cp "$PYRO_CACHE" ./pyroscope-otel-extension.jar; \
+    AGENT_CACHE="/cache/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar"; \
+    if [ ! -f "$AGENT_CACHE" ]; then \
+      curl -fsSL --retry 5 --retry-all-errors -o "$AGENT_CACHE" "${OTEL_JAVA_AGENT_URL}"; \
+    fi; \
+    cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
+
+#-----------------------  RUNTIME STAGE -----------------------
+FROM ${DISTRIBUTION}:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_RUNTIME} AS runner
+ARG JAVA_ARGS
+ENV JAVA_ARGS=${JAVA_ARGS}
+ENV QUARKUS_HTTP_HOST=0.0.0.0
+ENV QUARKUS_HTTP_PORT=8080
+
+WORKDIR /work
+
+# Install ca-certificates to support healthcheck and downloads
+# Create a dedicated non-root user/group (OpenShift-friendly UID/GID 1001)
+RUN dnf install -y --setopt=install_weak_deps=False shadow-utils ca-certificates \
+    && groupadd -g 1001 quarkus \
+    && useradd -u 1001 -g quarkus -M -d /nonexistent -s /sbin/nologin quarkus \
+    && mkdir -p /work /deployments \
+    && dnf clean all && rm -rf /var/cache/dnf/*
+
+COPY --from=builder --chown=1001:1001 /workspace/target/quarkus-app/ /deployments/
+COPY --from=otel_deps --chown=1001:1001 --chmod=0640 /out/pyroscope-otel-extension.jar /work/pyroscope-otel-extension.jar
+COPY --from=otel_deps --chown=1001:1001 --chmod=0640 /out/opentelemetry-javaagent.jar    /work/opentelemetry-javaagent.jar
 
 EXPOSE 8080
 
@@ -130,13 +133,5 @@ ENV JAVA_TOOL_OPTIONS="\
     --enable-native-access=ALL-UNNAMED \
     ${JAVA_ARGS}"
 
-RUN chown -R quarkus:quarkus /deployments /otel /work \
-  && chmod -R g+rX,o-rwx /deployments /otel /work
-
-# Run as non-root user (UID 1001 is OpenShift-friendly)
 USER 1001
-
-ARG PROFILE=stage
-ENV QUARKUS_HTTP_HOST=0.0.0.0
-ENV QUARKUS_PROFILE=${PROFILE}
 ENTRYPOINT ["java", "-jar", "/deployments/quarkus-run.jar"]

@@ -47,7 +47,7 @@ The service is configured through code in `cmd/server/main.go`:
 
 ### Custom Metrics
 
-#### `go.request.count` (Counter)
+#### `hello.request.count` (Counter)
 - **Type**: Int64 Counter
 - **Description**: Total number of requests handled
 - **Instrumentation**: Incremented on each request to `/hello/platform`
@@ -171,7 +171,7 @@ docker compose --project-directory compose --profile=RAIN_FIRE up -d
 When modifying this service:
 1. Ensure OTLP endpoint configuration remains environment-based
 2. Maintain consistency with metrics naming convention
-3. Keep cache initialization pattern for fair benchmarking
+3. Keep the cache initialization pattern for fair benchmarking
 4. Document any new configuration options
 5. Update this README with changes
 

@@ -102,7 +102,7 @@ services:
 
   pyroscope:
     profiles: ["OBS"]
-    image: grafana/pyroscope:1.16.0
+    image: grafana/pyroscope:1.17.0
     container_name: pyroscope
     ports:
       - "4040:4040"

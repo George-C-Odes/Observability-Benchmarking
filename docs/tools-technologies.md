@@ -19,7 +19,7 @@ A comprehensive overview of all tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.0.0
+### Spring Boot 4.0.1
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -30,7 +30,7 @@ A comprehensive overview of all tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.0.0** (latest major release)
+- **Spring Boot 4.0.1** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -78,7 +78,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.30.3
+### Quarkus 3.30.4
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -89,7 +89,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.30.3** (latest stable)
+- **Quarkus 3.30.4** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -601,12 +601,12 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Runtime** | GraalVM | 25.0.1  | Native compilation |
 | **Runtime** | Go | 1.25.5  | Go services (WIP)  |
 | **Framework** | Spring Boot | 4.0.0   | Enterprise Java    |
-| **Framework** | Quarkus | 3.30.3  | Cloud-native Java  |
+| **Framework** | Quarkus | 3.30.4  | Cloud-native Java  |
 | **Observability** | Grafana | 12.3.0  | Visualization      |
 | **Observability** | Loki | 3.6.3   | Logs               |
 | **Observability** | Tempo | 2.9.0   | Traces             |
 | **Observability** | Mimir | 3.0.1   | Metrics            |
-| **Observability** | Pyroscope | 1.16.0  | Profiles           |
+| **Observability** | Pyroscope | 1.17.0  | Profiles           |
 | **Observability** | Alloy | 1.10.2  | Collector          |
 | **Instrumentation** | OpenTelemetry | 1.57.0  | Telemetry SDK      |
 | **Instrumentation** | OpenTelemetry | 2.23.0  | Telemetry Distro   |
@@ -614,7 +614,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Cache** | Caffeine | 3.2.3   | In-memory cache    |
 | **Container** | Docker | 24+     | Containerization   |
 | **Orchestration** | Docker Compose | v2      | Multi-container    |
-| **Build** | Maven | 3.9+    | Build automation   |
+| **Build** | Maven | 3.9.12  | Build automation   |
 
 ---
 

@@ -9,7 +9,7 @@ management:
     web:
       base-path: /actuator
       exposure:
-        include: health,prometheus,metrics,info
+        include: health,metrics,info
 otel:
   instrumentation:
     micrometer:

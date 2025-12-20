@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Quarkus NATIVE" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="quarkus-native:3.30.3_latest" />
+        <option name="imageTag" value="quarkus-native:3.30.4_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="QUARKUS_VERSION" />
-              <option name="value" value="3.30.3" />
+              <option name="value" value="3.30.4" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="quarkus-native:3.30.3_latest" />
+              <option name="value" value="quarkus-native:3.30.4_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

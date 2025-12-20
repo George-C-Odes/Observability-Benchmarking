@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 ARG DISTRIBUTION=mandrel
 #mandrel, graalvmce
 ARG JAVA_RELEASE=25
@@ -14,25 +15,13 @@ ENV JAVA_RELEASE=${JAVA_RELEASE}
 ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
-ARG QUARKUS_VERSION=3.30.3
+ARG QUARKUS_VERSION=3.30.4
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
-
-# create missing quarkus user for enterprise image builder
-RUN useradd -m -u 1001 quarkus
-USER quarkus
-
-COPY --chown=quarkus:quarkus --chmod=0755 quarkus/native/mvnw /code/mvnw
-COPY --chown=quarkus:quarkus quarkus/native/.mvn /code/.mvn
-COPY --chown=quarkus:quarkus quarkus/native/pom.xml /code/pom.xml
-USER quarkus
-WORKDIR /code
-
-ARG PROFILE=stage
-ENV QUARKUS_PROFILE=${PROFILE}
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=true
-ENV OTEL_SDK_DISABLED=true
-ARG QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
+ENV HOME=/home/maven
+ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
+ENV QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 -H:+UnlockExperimentalVMOptions,\
 -H:+PreserveFramePointer,\
 -H:-DeleteLocalSymbols,\
@@ -50,15 +39,13 @@ ARG QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 --enable-native-access=ALL-UNNAMED,\
 --enable-monitoring=heapdump\\,jfr,\
 --initialize-at-build-time=jdk.nio.zipfs.ZipFileSystemProvider\\,jdk.nio.zipfs.ZipFileSystem\\,sun.nio.fs.LinuxFileSystemProvider\\,sun.nio.fs.LinuxFileSystem,\
---initialize-at-build-time=io.micrometer,\
 --initialize-at-run-time=org.fusesource.jansi.internal,\
---report-unsupported-elements-at-runtime,\
 --link-at-build-time=ALL,\
 --future-defaults=all,\
 --gc=G1,\
 --verbose,\
 -H:-UnlockExperimentalVMOptions"
-
+#--initialize-at-build-time=io.micrometer,\
 #-R is the equvalent of jvm -XX
 #EE base image Oracle GraalVM Enterprise on Linux amd64/aarch64 ->
 #https://www.graalvm.org/latest/reference-manual/native-image/optimizations-and-performance/MemoryManagement/#g1-garbage-collector
@@ -70,57 +57,71 @@ ARG QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 #-Ob,\
 #--pgo,\
 
-RUN ./mvnw -v \
-  && ./mvnw -B -Dquarkus.platform.version=${QUARKUS_VERSION} dependency:go-offline
+# Ensure UID/GID are consistent across images for cache ownership
+RUN groupadd -g 1000 maven \
+ && useradd  -u 1000 -g maven -d /home/maven -s /bin/sh maven \
+ && mkdir -p /home/maven /workspace \
+ && chown -R 1000:1000 /home/maven /workspace
 
-COPY quarkus/jvm/src /code/src
-COPY checkstyle.xml /code/checkstyle.xml
-COPY checkstyle-suppressions.xml /code/checkstyle-suppressions.xml
+USER 1000
+WORKDIR /workspace
 
-# Build and Verify the native executable works # NOTE: Avoid passing JVM heap flags in additional-build-args; use quarkus.native.native-image-xmx instead.
-RUN ./mvnw verify -Dnative \
-  -Dquarkus.platform.version=${QUARKUS_VERSION} \
-  -Dquarkus.profile=${QUARKUS_PROFILE} \
-  -Dquarkus.native.native-image-xmx=10g \
-  -Dquarkus.native.debug.enabled=true \
-  -Dquarkus.native.monitoring=jfr \
-  -Dmaven.artifact.threads=16 \
-  -Dmaven.compiler.release=${JAVA_RELEASE} \
-  -Dcheckstyle.config.location=checkstyle.xml \
-  -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
+COPY --link --chown=1000:1000 quarkus/native/.mvn/ .mvn
+COPY --link --chown=1000:1000 quarkus/native/mvnw ./mvnw
+RUN chmod +x mvnw
+COPY --link --chown=1000:1000 quarkus/native/pom.xml pom.xml
+COPY --link --chown=1000:1000 checkstyle.xml checkstyle.xml
+COPY --link --chown=1000:1000 checkstyle-suppressions.xml checkstyle-suppressions.xml
+
+# Warm dependencies (won't be busted by source changes)
+RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
+    ./mvnw -v && \
+    ./mvnw -B -q -ntp \
+      -Dquarkus.platform.version=${QUARKUS_VERSION}  \
+      dependency:go-offline
+
+COPY --link --chown=1000:1000 quarkus/jvm/src ./src
+
+# Build and Verify the native executable works
+RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
+  ./mvnw -B -ntp verify -Dnative \
+      -Dquarkus.platform.version=${QUARKUS_VERSION} \
+      -Dmaven.compiler.release=${JAVA_RELEASE} \
+      -Dcheckstyle.config.location=checkstyle.xml \
+      -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
+
+# Make the output deterministic: copy the produced runner to a fixed path
+RUN set -eux; \
+    RUNNER="$(ls -1 target/*-runner | head -n 1)"; \
+    test -n "$RUNNER"; \
+    cp "$RUNNER" /workspace/quarkus-native; \
+    chmod 0555 /workspace/quarkus-native
 
 #-----------------------  RUNTIME STAGE -----------------------
 #FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
-FROM debian:13.2-slim AS runner
 #FROM gcr.io/distroless/base-debian13
-WORKDIR /native/
-COPY --from=builder /code/target/*-runner /native/quarkus-native
-
-RUN chmod 775 /native /native/quarkus-native \
-  && chown -R 1001 /native \
-  && chmod -R "g+rwX" /native \
-  && chown -R 1001:root /native \
-  && if command -v microdnf > /dev/null 2>&1; then \
-      microdnf install -y curl && microdnf clean all; \
-    elif command -v dnf > /dev/null 2>&1; then \
-      dnf install -y curl && dnf clean all; \
-    elif command -v yum > /dev/null 2>&1; then \
-      yum install -y curl && yum clean all; \
-    else \
-      echo "No package manager found! curl not installed"; \
-    fi
-
-EXPOSE 8080
-# Add a Docker HEALTHCHECK that probes the Quarkus readiness endpoint using curl.
-#HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \
-#  CMD ["curl", "-f", "http://127.0.0.1:8080/q/health/ready"]
-# non-root user (UID 1001 is OpenShift-friendly)
-USER 1001
-
-ARG PROFILE=stage
+FROM debian:13.2-slim AS runner
 ENV QUARKUS_HTTP_HOST=0.0.0.0
 ENV QUARKUS_HTTP_PORT=8080
-ENV QUARKUS_PROFILE=${PROFILE}
+
+WORKDIR /native
+
+# Install ca-certificates to support healthcheck and downloads
+# Create a dedicated non-root user/group (OpenShift-friendly UID/GID 1001)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates adduser \
+ && rm -rf /var/lib/apt/lists/* \
+ && addgroup --gid 1001 quarkus \
+ && adduser  --uid 1001 --gid 1001 \
+            --home /nonexistent --no-create-home \
+            --shell /usr/sbin/nologin --disabled-password --gecos "" quarkus
+
+COPY --from=builder --chown=1001:1001 --chmod=0555 /workspace/quarkus-native /native/quarkus-native
+
+EXPOSE 8080
+
+USER 1001
+
 # Enable JFR for native executables
 # Mandrel does not support Flight Recorder options, 'Error: Could not find option 'FlightRecorder' from 'user'. Use -H:PrintFlags= to list all available options.'
 # https://www.graalvm.org/latest/reference-manual/native-image/debugging-and-diagnostics/JFR/

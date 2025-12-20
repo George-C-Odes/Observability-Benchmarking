@@ -1,0 +1,46 @@
+# ignore everything in the context
+**
+
+# keep Dockerfiles (optional but useful)
+!**/Dockerfile
+
+# keep shared checskstyle files
+!checkstyle.xml
+!checkstyle-suppressions.xml
+
+# re-include the directory chain
+!spring/
+!spring/jvm/
+!spring/jvm/tomcat/
+!spring/jvm/tomcat/src/
+!spring/jvm/tomcat/src/**
+!spring/jvm/tomcat/pom.xml
+!spring/jvm/netty/
+!spring/jvm/netty/src/
+!spring/jvm/netty/src/**
+!spring/jvm/netty/pom.xml
+
+!spring/native/
+!spring/native/mvnw
+!spring/native/.mvn/
+!spring/native/.mvn/wrapper/
+!spring/native/.mvn/wrapper/maven-wrapper.properties
+!spring/native/.mvn/jvm.config
+!spring/native/tomcat/
+!spring/native/tomcat/pom.xml
+!spring/native/netty/
+!spring/native/netty/pom.xml
+
+!quarkus/
+!quarkus/jvm/
+!quarkus/jvm/src/
+!quarkus/jvm/src/**
+!quarkus/jvm/pom.xml
+
+!quarkus/native/
+!quarkus/native/mvnw
+!quarkus/native/.mvn/
+!quarkus/native/.mvn/wrapper/
+!quarkus/native/.mvn/wrapper/maven-wrapper.properties
+!quarkus/native/.mvn/jvm.config
+!quarkus/native/pom.xml

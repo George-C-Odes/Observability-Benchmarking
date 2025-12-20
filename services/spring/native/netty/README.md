@@ -1,7 +1,7 @@
 # Spring Boot Netty Native Service
 
 ## Overview
-A reactive REST service implementation built with Spring Boot 4.0.0 compiled to a native executable using GraalVM Native Image. This service uses Spring WebFlux with Netty for reactive, non-blocking request handling with fast startup and low memory footprint.
+A reactive REST service implementation built with Spring Boot 4.0.1 compiled to a native executable using GraalVM Native Image. This service uses Spring WebFlux with Netty for reactive, non-blocking request handling with fast startup and low memory footprint.
 
 ## Purpose
 - Demonstrate Spring Boot native compilation with reactive WebFlux
@@ -12,7 +12,7 @@ A reactive REST service implementation built with Spring Boot 4.0.0 compiled to 
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.0.0 + Spring WebFlux
+- **Framework**: Spring Boot 4.0.1 + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.1
@@ -275,7 +275,7 @@ docker logs spring-native-netty 2>&1 | grep "Started"
 Same queries as JVM version, filtered by service name:
 ```promql
 # RPS
-rate(spring_request_count_total{service_name="SpringNativeNetty"}[1m])
+rate(hello_request_count_total{service_name="SpringNativeNetty"}[1m])
 
 # Memory (RSS)
 process_memory_rss_bytes{service_name="SpringNativeNetty"}

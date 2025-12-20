@@ -19,8 +19,6 @@ quarkus:
         level: INFO
     console:
       format: "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"
-      json:
-        enabled: true
       enabled: true
     level: INFO
   micrometer:
@@ -51,13 +49,18 @@ quarkus:
         enabled: false
         path: metrics/prometheus
   native:
-    enabled: false
-    native-image-xmx: 10g
     container-build: false
     debug:
       enabled: true
+    enabled: false
+    monitoring:
+      - HEAPDUMP
+      - JFR
+    native-image-xmx: 8g
   otel:
-    enabled: true
+    sdk:
+      disabled: true  #Run time
+    enabled: true     #Build time
     metrics:
       enabled: true
     traces:
@@ -65,7 +68,7 @@ quarkus:
     logs:
       enabled: true
     security-events:
-      enabled: true
+      enabled: false
   smallrye-health:
     ui:
       enabled: false

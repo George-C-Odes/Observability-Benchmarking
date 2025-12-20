@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * These tests validate:
  * - Micrometer metrics with custom counters (hello.request.count)
  * - OpenTelemetry Java Agent integration
- * - Spring Boot 4.0.0 actuator endpoints
+ * - Spring Boot 4.0.1 actuator endpoints
  * - Health endpoints (liveness, readiness)
  * - Caffeine cache metrics
  */
@@ -200,7 +200,7 @@ public class HelloPlatformControllerObservabilityTest {
     @Order(12)
     @DisplayName("Spring Boot version is 4.0.0")
     public void testSpringBootVersion() throws Exception {
-        // This test verifies we're running Spring Boot 4.0.0
+        // This test verifies we're running Spring Boot 4.0.1
         // We can check this through actuator info or by checking class versions
         // For now, we just ensure the actuator is working (which requires Boot 2.0+)
         mockMvc.perform(get("/actuator"))

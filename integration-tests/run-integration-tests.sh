@@ -41,8 +41,8 @@ TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
 PYROSCOPE_URL="${PYROSCOPE_URL:-http://localhost:4040}"
 
 # Framework versions
-QUARKUS_VERSION="3.30.3"
-SPRING_BOOT_VERSION="4.0.0"
+QUARKUS_VERSION="3.30.4"
+SPRING_BOOT_VERSION="4.0.1"
 GO_VERSION="1.25.5"
 
 # Helper function to test HTTP endpoint

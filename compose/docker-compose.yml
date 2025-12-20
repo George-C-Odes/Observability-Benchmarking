@@ -14,15 +14,15 @@ x-default-environment: &default_env
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
   ulimit: &default_ulimit ${ULIMIT:-1048576}
-  spring_boot_version: ${SPRING_BOOT_VERSION:-4.0.0}
-  quarkus_version: ${QUARKUS_VERSION:-3.30.3}
+  spring_boot_version: ${SPRING_BOOT_VERSION:-4.0.1}
+  quarkus_version: ${QUARKUS_VERSION:-3.30.4}
   pyroscope_agent_enabled: &default_pyroscope_agent_enabled ${PROFILING_AGENT:-false}
   metric_mm_http: &default_metric_mm_http ${METRIC_MM_HTTP:-true}
   metric_mm_jvm: &default_metric_mm_jvm ${METRIC_MM_JVM:-false}
   metric_mm_tomcat: &default_metric_mm_tomcat ${METRIC_MM_TOMCAT:-false}
   metric_otel_http: &default_metric_otel_http ${METRIC_OTEL_HTTP:-true}
   metric_otel_jvm: &default_metric_otel_jvm ${METRIC_OTEL_JVM:-false}
-  metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}
+  metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}  # Does not seem to have an effect
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
@@ -127,7 +127,7 @@ x-default-environment: &default_env
 
 services:
   nextjs-dash:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_NEXTJS_DASH:-skip}"]
     build:
       context: ../dashboard
       dockerfile: Dockerfile
@@ -138,10 +138,12 @@ services:
     volumes:
       - ./.env:/app/compose/.env
       - ../.run:/app/.run:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       NODE_ENV: production
       PORT: 3001
+      ORCH_URL: http://orchestrator:4000
+      ORCH_API_KEY: ${ORCH_API_KEY:-}
     restart: no
     pull_policy: never
     cpuset: *default_efficiency_cores
@@ -151,6 +153,39 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  orchestrator:
+    profiles: ["${DOCKER_PROF_ORCHESTRATOR:-skip}"]
+    build:
+      context: ../orchestrator
+      dockerfile: Dockerfile
+    image: local/orchestrator:latest
+    container_name: orchestrator
+    environment:
+      PORT: 4000
+      WORKSPACE: ${HOST_REPO:-/workspace}
+      DEFAULT_PROJECT_DIR: compose
+      ORCH_API_KEY: ${ORCH_API_KEY:-}
+      DOCKER_BUILDKIT: "1"
+      COMPOSE_DOCKER_CLI_BUILD: "1"
+      CORS_ORIGIN: http://localhost:3001
+    restart: no
+    pull_policy: never
+    expose:
+      - "4000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOST_REPO:?set HOST_REPO in compose/.env}:${HOST_REPO:?set HOST_REPO in compose/.env}
+      # Recommended (paths identical for docker compose bind mounts)^
+      # Fallback (often OK for builds, but may break bind mounts on Docker Desktop):
+      # - ..:/workspace
+    cpuset: *default_performance_cores
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   spring-jvm-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_PLATFORM:-skip}"]
@@ -170,6 +205,8 @@ services:
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-platform
+      SERVER_TOMCAT_MBEANREGISTRY_ENABLED: *default_metric_mm_tomcat
+      SPRING_JMX_ENABLED: false
       JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
       SPRING_THREADS_VIRTUAL_ENABLED: false
       LOGGING_LEVEL_ROOT: "INFO"
@@ -255,6 +292,8 @@ services:
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-virtual
+      SERVER_TOMCAT_MBEANREGISTRY_ENABLED: *default_metric_mm_tomcat
+      SPRING_JMX_ENABLED: false
       JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
       SPRING_THREADS_VIRTUAL_ENABLED: true
       LOGGING_LEVEL_ROOT: "INFO"
@@ -623,7 +662,7 @@ services:
       TZ: *default_TZ
       JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
       QUARKUS_LOG_LEVEL: "info"
-
+      OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_LOGS_LEVEL: "info"
       QUARKUS_OTEL_INSTRUMENT_HTTP_SERVER_METRICS: *default_metric_otel_http
@@ -713,7 +752,7 @@ services:
     environment:
       TZ: *default_TZ
       QUARKUS_LOG_LEVEL: "info"
-
+      OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_LOGS_LEVEL: "info"
       QUARKUS_OTEL_INSTRUMENT_HTTP_SERVER_METRICS: *default_metric_otel_http

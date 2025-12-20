@@ -10,24 +10,47 @@ FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MI
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG PROFILE=default
+ARG PROFILE=tomcat
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
 ARG SPRING_BOOT_VERSION=4.0.0
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
-WORKDIR /workspace
+ENV HOME=/home/maven
+ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
 
+ARG YQ_VERSION=4.50.1
 RUN microdnf install -y curl && microdnf clean all && \
-    curl -L "https://github.com/mikefarah/yq/releases/download/v4.49.2/yq_linux_amd64" \
+    curl -L "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
       -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq
 
-COPY spring/native/tomcat/pom.xml ./tomcat/pom.xml
-COPY spring/jvm/tomcat/src ./tomcat/src
-COPY spring/native/netty/pom.xml ./netty/pom.xml
-COPY spring/jvm/netty/src ./netty/src
-COPY checkstyle.xml checkstyle.xml
-COPY checkstyle-suppressions.xml checkstyle-suppressions.xml
+# Ensure UID/GID are consistent across images for cache ownership
+RUN groupadd -g 1000 maven \
+ && useradd  -u 1000 -g maven -d /home/maven -s /bin/sh maven \
+ && mkdir -p /home/maven /workspace \
+ && chown -R 1000:1000 /home/maven /workspace
+
+USER 1000
+WORKDIR /workspace
+
+COPY --link --chown=1000:1000 spring/native/.mvn/ .mvn
+COPY --link --chown=1000:1000 spring/native/mvnw ./mvnw
+RUN chmod +x mvnw
+COPY --link --chown=1000:1000 spring/native/tomcat/pom.xml ./tomcat/pom.xml
+COPY --link --chown=1000:1000 spring/native/netty/pom.xml ./netty/pom.xml
+COPY --link --chown=1000:1000 checkstyle.xml checkstyle.xml
+COPY --link --chown=1000:1000 checkstyle-suppressions.xml checkstyle-suppressions.xml
+
+# Warm dependencies (won't be busted by source changes)
+RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
+    ./mvnw -v && \
+    ./mvnw -B -q -ntp \
+      -Dspring-boot.version=${SPRING_BOOT_VERSION} -f tomcat/pom.xml dependency:go-offline && \
+    ./mvnw -B -q -ntp \
+      -Dspring-boot.version=${SPRING_BOOT_VERSION} -f netty/pom.xml dependency:go-offline
+
+COPY --link --chown=1000:1000 spring/jvm/tomcat/src ./tomcat/src
+COPY --link --chown=1000:1000 spring/jvm/netty/src ./netty/src
 
 # Conditionally select the correct POM and src files
 RUN if [ "$PROFILE" = "netty" ]; then \
@@ -44,45 +67,55 @@ RUN if [ "$PROFILE" = "netty" ]; then \
         rm -rf ./netty/src; \
     fi
 
-COPY spring/native/.mvn/ .mvn
-COPY spring/native/mvnw ./mvnw
-RUN chmod +x mvnw
-
 RUN echo "VIRTUAL_ENABLED=$VIRTUAL_ENABLED"
 
 RUN yq -i '.spring.threads.virtual.enabled = (env(VIRTUAL_ENABLED) == "true")' \
        src/main/resources/application.yml
 
-RUN ./mvnw -v \
-  && ./mvnw -B -q -Dspring-boot.version=${SPRING_BOOT_VERSION} dependency:go-offline \
-  && ./mvnw -B \
-    -Dspring-boot.version=${SPRING_BOOT_VERSION} \
-    -Pnative native:compile \
-    -Dmaven.artifact.threads=16 \
-    -Dmaven.compiler.release=${JAVA_RELEASE} \
-    -Dcheckstyle.config.location=checkstyle.xml \
-    -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml
+RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
+    ./mvnw -B -ntp -T 1C \
+      -Dspring-boot.version=${SPRING_BOOT_VERSION} \
+      -Dmaven.compiler.release=${JAVA_RELEASE} \
+      -Dcheckstyle.config.location=checkstyle.xml \
+      -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml \
+      -Pnative native:compile \
+      -DskipTests
 
-# 2) Runtime stage – ultra-small, high-throughput
+#-----------------------  RUNTIME STAGE -----------------------
 FROM debian:13.2-slim AS runner
+ARG PROFILE=tomcat
+ARG APP_NAME=spring-native-${PROFILE}
+ARG VIRTUAL_ENABLED=false
+
 WORKDIR /native
 
-ARG PROFILE
-ARG APP_NAME=spring-native-${PROFILE}
-COPY --from=builder /workspace/target/${APP_NAME} /native/${APP_NAME}
+# Install ca-certificates to support healthcheck and downloads
+# Create a dedicated non-root user/group (OpenShift-friendly UID/GID 1001)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates adduser \
+ && rm -rf /var/lib/apt/lists/* \
+ && addgroup --gid 1001 spring \
+ && adduser  --uid 1001 --gid 1001 \
+            --home /nonexistent --no-create-home \
+            --shell /usr/sbin/nologin --disabled-password --gecos "" spring
 
-ARG VIRTUAL_ENABLED
+COPY --from=builder --chown=1001:1001 --chmod=0555 /workspace/target/${APP_NAME} /native/${APP_NAME}
 
 RUN if [ "$PROFILE" = "netty" ]; then \
         echo "Renaming $APP_NAME for NETTY with PROFILE:$PROFILE and VIRTUAL_ENABLED:$VIRTUAL_ENABLED"; \
+        ln -sf "/native/${APP_NAME}" /native/app; \
     else \
         echo "Renaming $APP_NAME for TOMCAT with PROFILE:$PROFILE and VIRTUAL_ENABLED:$VIRTUAL_ENABLED"; \
         if [ "$VIRTUAL_ENABLED" = "false" ]; then \
-            mv /native/${APP_NAME} /native/${APP_NAME}-platform; \
+            mv "/native/${APP_NAME}" "/native/${APP_NAME}-platform"; \
+            ln -sf "/native/${APP_NAME}-platform" /native/app; \
         else \
-            mv /native/${APP_NAME} /native/${APP_NAME}-virtual; \
+            mv "/native/${APP_NAME}" "/native/${APP_NAME}-virtual"; \
+            ln -sf "/native/${APP_NAME}-virtual" /native/app; \
         fi; \
     fi
 
-USER 65532:65532
 EXPOSE 8080
+
+USER 1001
+ENTRYPOINT ["/native/app"]

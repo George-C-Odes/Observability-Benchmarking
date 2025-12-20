@@ -1,7 +1,7 @@
 # Spring Boot Tomcat JVM Service
 
 ## Overview
-A REST service implementation built with Spring Boot 4.0.0 running on Apache Tomcat embedded server with the Java Virtual Machine (JVM 25). This service can be configured to run in either platform thread mode or virtual thread mode, but only one mode per deployment.
+A REST service implementation built with Spring Boot 4.0.1 running on Apache Tomcat embedded server with the Java Virtual Machine (JVM 25). This service can be configured to run in either platform thread mode or virtual thread mode, but only one mode per deployment.
 
 ## Purpose
 - Benchmark Spring Boot with Tomcat web server across different thread models
@@ -359,7 +359,7 @@ curl http://localhost:8080/actuator/prometheus
 
 #### RPS per Endpoint
 ```promql
-rate(spring_request_count_total{service_name="SpringTomcat"}[1m])
+rate(hello_request_count_total{service_name="SpringTomcat"}[1m])
 ```
 
 #### HTTP Request Rate (when available)

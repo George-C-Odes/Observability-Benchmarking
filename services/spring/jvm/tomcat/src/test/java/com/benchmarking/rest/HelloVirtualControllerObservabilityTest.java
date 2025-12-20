@@ -1,9 +1,6 @@
 package com.benchmarking.rest;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
@@ -11,10 +8,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Observability tests for Spring Boot Tomcat service.
@@ -22,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * These tests validate:
  * - Micrometer metrics with custom counters (hello.request.count)
  * - OpenTelemetry Java Agent integration
- * - Spring Boot 4.0.0 actuator endpoints
+ * - Spring Boot 4.0.1 actuator endpoints
  * - Health endpoints (liveness, readiness)
  * - Caffeine cache metrics
  */
@@ -201,7 +197,7 @@ public class HelloVirtualControllerObservabilityTest {
     @Order(12)
     @DisplayName("Spring Boot version is 4.0.0")
     public void testSpringBootVersion() throws Exception {
-        // This test verifies we're running Spring Boot 4.0.0
+        // This test verifies we're running Spring Boot 4.0.1
         // We can check this through actuator info or by checking class versions
         // For now, we just ensure the actuator is working (which requires Boot 2.0+)
         mockMvc.perform(get("/actuator"))

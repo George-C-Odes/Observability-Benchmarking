@@ -18,7 +18,7 @@ func setupTestApp() *fiber.App {
 
 	// Create instruments
 	meter := otel.Meter("go-hello-fiber-test")
-	counter, _ := meter.Int64Counter("go.request.count")
+	counter, _ := meter.Int64Counter("hello.request.count")
 	tracer := otel.Tracer("go-hello-fiber-test")
 
 	// Create Fiber app
@@ -106,7 +106,7 @@ func TestInitMeterProvider(t *testing.T) {
 	// or if the endpoint is not reachable, which is expected in unit tests
 	// We're testing that the function doesn't panic
 	_, err := initMeterProvider(ctx)
-	
+
 	// It's okay if this fails due to missing endpoint in test environment
 	if err != nil {
 		t.Logf("Expected error in test environment: %v", err)
@@ -121,7 +121,7 @@ func TestInitTracerProvider(t *testing.T) {
 	// or if the endpoint is not reachable, which is expected in unit tests
 	// We're testing that the function doesn't panic
 	_, err := initTracerProvider(ctx)
-	
+
 	// It's okay if this fails due to missing endpoint in test environment
 	if err != nil {
 		t.Logf("Expected error in test environment: %v", err)

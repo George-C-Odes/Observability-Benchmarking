@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.3-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.4-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -81,11 +81,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Amazon Corretto)
-- **Spring Boot 4.0.0 (3.5.8 also supported)**
+- **Spring Boot 4.0.1 (3.5.8 also supported)**
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.3**
+- **Quarkus 3.30.4**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
@@ -297,7 +297,7 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 - **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
 - **Spring Boot**: 4.0.0 (3.5.8 also supported)
-- **Quarkus**: 3.30.3
+- **Quarkus**: 3.30.4
 - **Go**: 1.25.5 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -395,12 +395,6 @@ Use these PromQL queries in Grafana to analyze performance:
 ```promql
 # Total HTTP RPS across all services
 http_server_request_duration_seconds_count{} by (service_name)
-
-# Spring Boot specific RPS
-spring_request_count_total{} by (endpoint)
-
-# Quarkus specific RPS
-quarkus_request_count_total{} by (endpoint)
 
 # JVM Memory Usage
 jvm_memory_used_bytes{} by (jvm_memory_pool_name, area)

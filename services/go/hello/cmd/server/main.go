@@ -97,7 +97,7 @@ func main() {
 
 	// Create instruments
 	meter := otel.Meter("go-hello-fiber")
-	counter, _ := meter.Int64Counter("go.request.count")
+	counter, _ := meter.Int64Counter("hello.request.count")
 	tracer := otel.Tracer("go-hello-fiber")
 
 	// Fiber app
