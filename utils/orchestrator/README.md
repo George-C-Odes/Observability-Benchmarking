@@ -15,9 +15,11 @@ and exposes a small HTTP API to run **restricted** `docker compose ...` commands
 - `GET /v1/commands` — preset of docker commands
 - `POST /v1/run` — submit a command (restricted allowlist)
 
-Swagger UI (live):
-- http://localhost:4000/q/swagger-ui/
-- http://localhost:4000/q/openapi/
+Swagger UI:
+- http://localhost:3002/q/swagger-ui/
+
+Health UI:
+- http://localhost:3002/q/health-ui/
 
 > Swagger UI is always included (also in prod mode) via `quarkus.swagger-ui.always-include=true`.
 
@@ -29,28 +31,22 @@ Build the orchestrator image:
 docker build -t local/orchestrator-quarkus:dev .
 ```
 
-Run (example):
+Start the orchestrator container:
 
 ```bash
-docker run --rm -p 4000:8080 \
-  -e ORCH_API_KEY=change-me \
-  -e ORCH_PROJECT_DIR=/workspace/compose \
-  -e ORCH_WORKSPACE=/workspace \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v "$(pwd)":/workspace \
-  local/orchestrator-quarkus:dev
+docker compose --project-directory compose up orchestrator --no-recreate -d
 ```
 
 Test:
 
 ```bash
-curl http://localhost:4000/health
+curl http://localhost:3002/q/health/ready
 ```
 
 Run a compose command (example):
 
 ```bash
-curl -X POST http://localhost:4000/v1/run \
+curl -X POST http://localhost:3002/v1/run \
   -H "content-type: application/json" \
   -H "authorization: Bearer change-me" \
   -d '{"command":"docker compose --project-directory /workspace/compose --profile=OBS up -d"}'
@@ -59,7 +55,7 @@ curl -X POST http://localhost:4000/v1/run \
 Stream the job output:
 
 ```bash
-curl -N http://localhost:4000/v1/jobs/<JOB_ID>/events \
+curl -N http://localhost:3002/v1/jobs/<JOB_ID>/events \
   -H "authorization: Bearer change-me"
 ```
 

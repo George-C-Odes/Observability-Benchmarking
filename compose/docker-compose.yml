@@ -25,6 +25,8 @@ x-default-environment: &default_env
   metric_otel_runtime: &default_metric_otel_runtime ${METRIC_OTEL_RUNTIME:-false}
   metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}  # Does not seem to have an effect
   metric_otel_interval: &default_metric_otel_interval ${METRIC_OTEL_INTERVAL:-15000}
+  orch_api_key: &default_orch_api_key ${ORCH_API_KEY:-change-me}
+  host_repo: &default_host_repo ${HOST_REPO:-C:/}
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
@@ -168,8 +170,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      ORCH_URL: http://orchestrator:4000
-      ORCH_API_KEY: ${ORCH_API_KEY:-}
+      ORCH_URL: http://orchestrator:3002
+      ORCH_API_KEY: *default_orch_api_key
     restart: no
     pull_policy: never
     cpuset: *default_efficiency_cores
@@ -188,12 +190,12 @@ services:
     image: orchestrator:latest
     container_name: orchestrator
     ports:
-      - "4000:8080"
+      - "3002:3002"
     user: "nonroot:nonroot"
     group_add:
       - "0"
     environment:
-      ORCH_API_KEY: ${ORCH_API_KEY:-change-me}
+      ORCH_API_KEY: *default_orch_api_key
       ORCH_WORKSPACE: "/workspace"
       ORCH_PROJECT_DIR: "/workspace/compose"
       ORCH_MAX_BUFFER_LINES: "5000"
@@ -204,7 +206,7 @@ services:
       COMPOSE_DOCKER_CLI_BUILD: "1"
     volumes:
       - type: bind
-        source: ${HOST_REPO}
+        source: *default_host_repo
         target: /workspace
 #        read_only: false
 #      - ${HOST_REPO}:/workspace:rw

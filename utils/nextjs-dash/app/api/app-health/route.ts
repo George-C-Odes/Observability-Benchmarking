@@ -16,7 +16,7 @@ export async function GET() {
 
     // Try to check orchestrator connectivity
     try {
-      const orchUrl = process.env.ORCH_URL || 'http://orchestrator:4000';
+      const orchUrl = process.env.ORCH_URL || 'http://orchestrator:3002';
       const orchResponse = await fetch(`${orchUrl}/q/health/ready`, {
         method: 'GET',
         signal: AbortSignal.timeout(2000), // 2 second timeout

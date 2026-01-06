@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Orchestrator service URL
-const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:4000';
-const ORCHESTRATOR_TOKEN = process.env.ORCHESTRATOR_TOKEN || 'dev-token-changeme';
+const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
+const ORCHESTRATOR_API_KEY = process.env.ORCH_API_KEY || 'dev-changeme';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ORCHESTRATOR_TOKEN}`,
+        'Authorization': `Bearer ${ORCHESTRATOR_API_KEY}`,
       },
       body: JSON.stringify({ command }),
     });

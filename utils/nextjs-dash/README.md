@@ -71,7 +71,7 @@ Access the dashboard at [http://localhost:3001](http://localhost:3001)
 ### Option 2: Build the Docker image manually:
 
 ```bash
-docker build -t nextjs-dash:latest ./dashboard
+docker buildx build --load -t nextjs-dash:latest -f utils/nextjs-dash/Dockerfile .
 ```
 
 ### Option 3: Run the container:

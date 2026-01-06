@@ -15,7 +15,7 @@ const SERVICE_ENDPOINTS: ServiceEndpoint[] = [
   { name: 'tempo', url: 'http://tempo:3200/ready', timeout: 5000 },
   { name: 'pyroscope', url: 'http://pyroscope:4040/ready', timeout: 5000 },
 
-  // Spring Services (all use internal port 8080)
+  // Spring Services
   { name: 'spring-jvm-tomcat-platform', url: 'http://spring-jvm-tomcat-platform:8080/actuator/health/readiness', timeout: 10000 },
   { name: 'spring-jvm-tomcat-virtual', url: 'http://spring-jvm-tomcat-virtual:8080/actuator/health/readiness', timeout: 10000 },
   { name: 'spring-jvm-netty', url: 'http://spring-jvm-netty:8080/actuator/health/readiness', timeout: 10000 },
@@ -23,15 +23,15 @@ const SERVICE_ENDPOINTS: ServiceEndpoint[] = [
   { name: 'spring-native-tomcat-virtual', url: 'http://spring-native-tomcat-virtual:8080/actuator/health/readiness', timeout: 10000 },
   { name: 'spring-native-netty', url: 'http://spring-native-netty:8080/actuator/health/readiness', timeout: 10000 },
 
-  // Quarkus Services (all use internal port 8080)
+  // Quarkus Services
   { name: 'quarkus-jvm', url: 'http://quarkus-jvm:8080/q/health/ready', timeout: 10000 },
   { name: 'quarkus-native', url: 'http://quarkus-native:8080/q/health/ready', timeout: 10000 },
 
-  // Go Services (use internal port 8080)
+  // Go Services
   { name: 'go', url: 'http://go:8080/readyz', timeout: 5000 },
 
   // Utils Services
-  { name: 'orchestrator', url: 'http://orchestrator:4000/q/health/ready', timeout: 5000 },
+  { name: 'orchestrator', url: 'http://orchestrator:3002/q/health/ready', timeout: 5000 },
 ];
 
 // TypeScript

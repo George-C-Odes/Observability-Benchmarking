@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // Orchestrator service URL (from environment or default to docker-compose service name)
-const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:4000';
+const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
 
 export async function GET() {
   try {
