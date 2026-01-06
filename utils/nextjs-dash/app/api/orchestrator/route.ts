@@ -70,6 +70,15 @@ export async function POST(request: NextRequest) {
           output: responseJson.output || responseJson.error || 'No output available',
           jobId: jobId,
           state: responseStatus,
+          jobDetails: {
+            jobId: responseJson.jobId,
+            status: responseStatus,
+            createdAt: responseJson.createdAt,
+            startedAt: responseJson.startedAt,
+            finishedAt: responseJson.finishedAt,
+            exitCode: responseJson.exitCode,
+            lastLine: responseJson.lastLine,
+          },
         });
       }
 

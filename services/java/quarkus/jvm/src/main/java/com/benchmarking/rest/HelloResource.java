@@ -26,9 +26,24 @@ import org.jspecify.annotations.NonNull;
 @Produces(MediaType.APPLICATION_JSON)
 public class HelloResource {
 
+    /**
+     * Caffeine cache instance for storing key-value pairs.
+     */
     Cache<@NonNull String, String> cache;
+    
+    /**
+     * Micrometer counter for tracking platform thread requests.
+     */
     private final Counter platformCounter;
+    
+    /**
+     * Micrometer counter for tracking virtual thread requests.
+     */
     private final Counter virtualCounter;
+    
+    /**
+     * Micrometer counter for tracking reactive requests.
+     */
     private final Counter reactiveCounter;
 
     /**

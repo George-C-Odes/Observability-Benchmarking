@@ -16,11 +16,14 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import CodeIcon from '@mui/icons-material/Code';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface Script {
   name: string;
@@ -34,13 +37,24 @@ export default function ScriptRunner() {
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [outputDialog, setOutputDialog] = useState<{ open: boolean; title: string; output: string }>({
+  const [outputDialog, setOutputDialog] = useState<{ open: boolean; title: string; output: string; jobDetails?: any }>({
     open: false,
     title: '',
     output: '',
   });
   const [freeTextCommand, setFreeTextCommand] = useState('');
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
+  const [copySuccess, setCopySuccess] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, scriptName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(scriptName);
+      setTimeout(() => setCopySuccess(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const fetchScripts = async () => {
     setLoading(true);
@@ -74,10 +88,33 @@ export default function ScriptRunner() {
         throw new Error(data.error || 'Failed to execute command');
       }
 
+      // Format output with job details
+      let formattedOutput = '';
+      if (data.jobDetails) {
+        const startTime = new Date(data.jobDetails.startedAt);
+        const endTime = new Date(data.jobDetails.finishedAt);
+        const durationMs = endTime.getTime() - startTime.getTime();
+        const durationSec = (durationMs / 1000).toFixed(2);
+        
+        formattedOutput = `Job ID: ${data.jobDetails.jobId}\n`;
+        formattedOutput += `Status: ${data.jobDetails.status}\n`;
+        formattedOutput += `Exit Code: ${data.jobDetails.exitCode}\n`;
+        formattedOutput += `Duration: ${durationSec}s\n`;
+        formattedOutput += `Started: ${startTime.toLocaleString()}\n`;
+        formattedOutput += `Finished: ${endTime.toLocaleString()}\n\n`;
+        
+        if (data.jobDetails.lastLine) {
+          formattedOutput += `Last Output Line:\n${data.jobDetails.lastLine}\n\n`;
+        }
+      }
+      
+      formattedOutput += data.output || 'No additional output available';
+
       setOutputDialog({
         open: true,
         title: scriptName,
-        output: data.output || 'Command executed successfully',
+        output: formattedOutput,
+        jobDetails: data.jobDetails,
       });
 
       if (data.success) {
@@ -211,11 +248,24 @@ export default function ScriptRunner() {
             {scripts.filter(s => s.category === 'build-img').map((script) => (
               <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <TerminalIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <Typography variant="h6" component="div" fontSize="0.95rem">
-                      {script.name}
-                    </Typography>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                    <Box display="flex" alignItems="center">
+                      <TerminalIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Tooltip title={script.command} arrow placement="top">
+                        <Typography variant="h6" component="div" fontSize="0.95rem">
+                          {script.name}
+                        </Typography>
+                      </Tooltip>
+                    </Box>
+                    <Tooltip title={copySuccess === script.name ? "Copied!" : "Copy command"} arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => copyToClipboard(script.command, script.name)}
+                        sx={{ ml: 1 }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
                     {script.description}
@@ -261,11 +311,24 @@ export default function ScriptRunner() {
             {scripts.filter(s => s.category === 'multi-cont').map((script) => (
               <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <TerminalIcon sx={{ mr: 1, color: 'secondary.main' }} />
-                    <Typography variant="h6" component="div" fontSize="0.95rem">
-                      {script.name}
-                    </Typography>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                    <Box display="flex" alignItems="center">
+                      <TerminalIcon sx={{ mr: 1, color: 'secondary.main' }} />
+                      <Tooltip title={script.command} arrow placement="top">
+                        <Typography variant="h6" component="div" fontSize="0.95rem">
+                          {script.name}
+                        </Typography>
+                      </Tooltip>
+                    </Box>
+                    <Tooltip title={copySuccess === script.name ? "Copied!" : "Copy command"} arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => copyToClipboard(script.command, script.name)}
+                        sx={{ ml: 1 }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
                     {script.description}
@@ -311,11 +374,24 @@ export default function ScriptRunner() {
             {scripts.filter(s => s.category === 'single-cont').map((script) => (
               <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <TerminalIcon sx={{ mr: 1, color: 'info.main' }} />
-                    <Typography variant="h6" component="div" fontSize="0.95rem">
-                      {script.name}
-                    </Typography>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                    <Box display="flex" alignItems="center">
+                      <TerminalIcon sx={{ mr: 1, color: 'info.main' }} />
+                      <Tooltip title={script.command} arrow placement="top">
+                        <Typography variant="h6" component="div" fontSize="0.95rem">
+                          {script.name}
+                        </Typography>
+                      </Tooltip>
+                    </Box>
+                    <Tooltip title={copySuccess === script.name ? "Copied!" : "Copy command"} arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => copyToClipboard(script.command, script.name)}
+                        sx={{ ml: 1 }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
                     {script.description}
@@ -361,11 +437,24 @@ export default function ScriptRunner() {
             {scripts.filter(s => s.category === 'test').map((script) => (
               <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <TerminalIcon sx={{ mr: 1, color: 'success.main' }} />
-                    <Typography variant="h6" component="div" fontSize="0.95rem">
-                      {script.name}
-                    </Typography>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                    <Box display="flex" alignItems="center">
+                      <TerminalIcon sx={{ mr: 1, color: 'success.main' }} />
+                      <Tooltip title={script.command} arrow placement="top">
+                        <Typography variant="h6" component="div" fontSize="0.95rem">
+                          {script.name}
+                        </Typography>
+                      </Tooltip>
+                    </Box>
+                    <Tooltip title={copySuccess === script.name ? "Copied!" : "Copy command"} arrow>
+                      <IconButton
+                        size="small"
+                        onClick={() => copyToClipboard(script.command, script.name)}
+                        sx={{ ml: 1 }}
+                      >
+                        <ContentCopyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
                     {script.description}

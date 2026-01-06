@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .gear {
+      animation: spin 4s linear infinite;
+      transform-origin: 50% 50%;
+      fill: #3b82f6;
+    }
+  </style>
+  <g class="gear">
+    <!-- Gear center circle -->
+    <circle cx="50" cy="50" r="15" fill="#3b82f6"/>
+    
+    <!-- Gear teeth -->
+    <path d="M 50 10 L 55 20 L 45 20 Z" fill="#3b82f6"/>
+    <path d="M 70 15 L 72 25 L 63 22 Z" fill="#3b82f6"/>
+    <path d="M 85 30 L 82 40 L 75 33 Z" fill="#3b82f6"/>
+    <path d="M 90 50 L 80 55 L 80 45 Z" fill="#3b82f6"/>
+    <path d="M 85 70 L 75 67 L 82 60 Z" fill="#3b82f6"/>
+    <path d="M 70 85 L 63 78 L 72 75 Z" fill="#3b82f6"/>
+    <path d="M 50 90 L 45 80 L 55 80 Z" fill="#3b82f6"/>
+    <path d="M 30 85 L 37 78 L 28 75 Z" fill="#3b82f6"/>
+    <path d="M 15 70 L 25 67 L 18 60 Z" fill="#3b82f6"/>
+    <path d="M 10 50 L 20 45 L 20 55 Z" fill="#3b82f6"/>
+    <path d="M 15 30 L 18 40 L 25 33 Z" fill="#3b82f6"/>
+    <path d="M 30 15 L 28 25 L 37 22 Z" fill="#3b82f6"/>
+  </g>
+</svg>

@@ -57,6 +57,8 @@ export default function RootLayout({
       <head>
         <title>Observability Benchmarking Dashboard</title>
         <meta name="description" content="Orchestration dashboard for managing benchmarking environment" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
       </head>
       <body>
         <AppRouterCacheProvider>
