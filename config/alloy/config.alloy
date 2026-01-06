@@ -72,8 +72,8 @@ loki.relabel "alloy_logs"{
 }
 
 tracing {
-	// Write all spans. Don't do this in production!
-	sampling_fraction = 0.2 //20%
+	// Write only a percentage of spans. Don't do 100% in production!
+	sampling_fraction = 0.1 //10%
 
 	// Forward internal spans to the local Tempo instance.
 	write_to = [otelcol.exporter.otlp.tempo.input]
@@ -166,7 +166,7 @@ discovery.relabel "apps" {
         action = "replace"
         source_labels = ["__meta_process_exe"]
         target_label = "__meta_process_exe"
-        regex = "^(/usr/lib/jvm/java.*|/opt/java/openjdk/bin/java)$"
+        regex = "^(/usr/lib/jvm/java.*|/usr/lib/jvm/.*/bin/java|/opt/java/openjdk/bin/java)$"
         replacement = "/jvm/"
     }
     rule {
@@ -188,6 +188,7 @@ discovery.relabel "apps" {
                 ".*pyroscope.*|" +
                 ".*wrk2.*|" +
                 ".*nextjs-dash.*|" +
+                ".*orchestrator.*|" +
                 ".*spring-jvm-tomcat-platform.*|" +
                 ".*spring-jvm-tomcat-virtual.*|" +
                 ".*spring-jvm-netty.*|" +
@@ -776,31 +777,6 @@ loki.process "wrk2" {
   forward_to = [loki.write.loki.receiver]
 }
 
-// ============ GO LOGS (from the Docker container) ============
-discovery.relabel "go_only" {
-  targets = discovery.docker.local.targets
-  rule {
-    action        = "keep"
-    source_labels = ["__meta_docker_container_name"]
-    regex         = ".*/?go.*"
-  }
-}
-
-loki.source.docker "go" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.relabel.go_only.output
-  labels     = {
-    job          = "go",
-    service_name = "go",
-  }
-  forward_to = [loki.process.go.receiver]
-}
-
-loki.process "go" {
-  stage.docker {}
-  forward_to = [loki.write.loki.receiver]
-}
-
 // ============ nextjs-dash LOGS (from the Docker container) ============
 discovery.relabel "nextjs_only" {
   targets = discovery.docker.local.targets
@@ -822,6 +798,31 @@ loki.source.docker "nextjs" {
 }
 
 loki.process "nextjs" {
+  stage.docker {}
+  forward_to = [loki.write.loki.receiver]
+}
+
+// ============ orchestrator LOGS (from the Docker container) ============
+discovery.relabel "orchestrator_only" {
+  targets = discovery.docker.local.targets
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_name"]
+    regex         = ".*/?orchestrator.*"
+  }
+}
+
+loki.source.docker "orchestrator" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.orchestrator_only.output
+  labels     = {
+    job          = "orchestrator",
+    service_name = "orchestrator",
+  }
+  forward_to = [loki.process.orchestrator.receiver]
+}
+
+loki.process "orchestrator" {
   stage.docker {}
   forward_to = [loki.write.loki.receiver]
 }

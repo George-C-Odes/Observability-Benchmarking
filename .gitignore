@@ -45,10 +45,10 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Next.js
-/dashboard/.next/
-/dashboard/out/
-/dashboard/.env*.local
-/dashboard/next-env.d.ts
+/utils/nextjs-dash/.next/
+/utils/nextjs-dash/out/
+/utils/nextjs-dash/.env*.local
+/utils/nextjs-dash/next-env.d.ts
 
 # Docker / containers / local compose overrides
 .env.local

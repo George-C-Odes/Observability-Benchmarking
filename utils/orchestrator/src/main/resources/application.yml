@@ -1,0 +1,27 @@
+orchestrator:
+  api-key: '${ORCH_API_KEY:}'
+  max-buffer-lines: '${ORCH_MAX_BUFFER_LINES:2000}'
+  project-dir: '${ORCH_PROJECT_DIR:/workspace/compose}'
+  serial-execution: '${ORCH_SERIAL_EXECUTION:true}'
+  workspace: '${ORCH_WORKSPACE:/workspace}'
+quarkus:
+  http:
+    host: 0.0.0.0
+    limits:
+      max-body-size: 10M
+    port: 8080
+  log:
+    console:
+      format: '%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX} %-5p [%c{2.}] (jobId=%X{jobId}) %s%e%n'
+  smallrye-health:
+    include-problem-details: true
+    ui:
+      always-include: true
+      enabled: true
+  smallrye-openapi:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    always-include: true
+    persist-authorization: true
+    show-mutated-request: true

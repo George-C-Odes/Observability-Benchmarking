@@ -1,0 +1,8 @@
+target
+.gradle
+.idea
+.vscode
+*.iml
+.DS_Store
+.git
+.gitignore

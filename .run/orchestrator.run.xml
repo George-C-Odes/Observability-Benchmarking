@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="orchestrator" type="QuarkusRunConfiguration" factoryName="QuarkusRunConfiguration">
+    <module name="orchestrator" />
+    <option name="profile" />
+    <method v="2" />
+  </configuration>
+</component>

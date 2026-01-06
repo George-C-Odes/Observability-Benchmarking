@@ -1,0 +1,25 @@
+# VCS
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go build artifacts
+**/*.test
+**/*.out
+bin/
+dist/
+coverage/
+*.prof
+
+# Node / misc
+node_modules/
+
+# Docker / compose artifacts
+**/*-debug.log

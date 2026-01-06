@@ -1,0 +1,4 @@
+# ignore everything in the context
+**
+!Dockerfile
+!run.sh

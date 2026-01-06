@@ -18,7 +18,7 @@
         <option name="buildOnly" value="true" />
         <option name="containerName" value="" />
         <option name="showCommandPreview" value="true" />
-        <option name="sourceFilePath" value="services/go/hello/Dockerfile" />
+        <option name="sourceFilePath" value="services/go/enhanced/Dockerfile" />
       </settings>
     </deployment>
     <method v="2" />

@@ -8,7 +8,7 @@ services:
     profiles: ["RAIN_FIRE"]
     image: wrk2:latest
     build:
-      context: ../loadgen/wrk2
+      context: ../utils/wrk2
       dockerfile: Dockerfile
     container_name: wrk2
     volumes:
@@ -24,6 +24,8 @@ services:
       WRK_RATE: ${WRK_RATE}
       WRK_SLEEP_BETWEEN: ${WRK_SLEEP_BETWEEN}
       WRK_SLEEP_INIT: ${WRK_SLEEP_INIT}
+    restart: no
+    pull_policy: never
     deploy:
       resources:
         limits:

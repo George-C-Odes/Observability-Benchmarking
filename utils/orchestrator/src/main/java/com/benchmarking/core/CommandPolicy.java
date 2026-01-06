@@ -1,0 +1,238 @@
+package com.benchmarking.core;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import java.nio.file.Path;
+import java.util.*;
+
+@ApplicationScoped
+public class CommandPolicy {
+
+  @ConfigProperty(name = "orchestrator.workspace")
+  String workspace;
+
+  @ConfigProperty(name = "orchestrator.project-dir")
+  String projectDir;
+
+  // "Read-only-ish" docker commands (includes your requested docker ps)
+  private static final Set<String> ALLOWED_DOCKER_COMMANDS = Set.of(
+          "ps", "version", "info", "images"
+  );
+
+  // docker compose subcommands allowed
+  private static final Set<String> ALLOWED_COMPOSE_SUBCOMMANDS = Set.of(
+          "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config"
+  );
+
+  // docker buildx subcommands allowed
+  private static final Set<String> ALLOWED_BUILDX_SUBCOMMANDS = Set.of(
+          "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version"
+  );
+
+  // Prevent redirecting the daemon target / messing with TLS daemon settings
+  private static final Set<String> DISALLOWED_TOKENS = Set.of(
+          "-H", "--host", "--context", "--config", "--tls", "--tlscacert", "--tlscert", "--tlskey", "--tlsverify"
+  );
+
+  // Compose global options (allowed before the subcommand) + whether they take a value.
+  private static final Map<String, Boolean> COMPOSE_GLOBAL_OPTS = Map.ofEntries(
+          Map.entry("--project-directory", true),
+          Map.entry("--profile", true),
+          Map.entry("--file", true),
+          Map.entry("-f", true),
+          Map.entry("--env-file", true),
+          Map.entry("--project-name", true),
+          Map.entry("-p", true),
+          Map.entry("--ansi", true),
+          Map.entry("--parallel", true),
+          Map.entry("--compatibility", false),
+          Map.entry("--progress", true),
+
+          Map.entry("--dummy", false) // will never be used; avoids empty Map.ofEntries issues if you edit later
+  );
+
+  public record ValidatedCommand(List<String> argv, String workspace, String projectDir) {}
+
+  public ValidatedCommand validate(String raw) {
+    List<String> t = CommandTokenizer.tokenize(raw);
+
+    if (t.size() < 2) {
+      throw new IllegalArgumentException("Command too short; expected 'docker <command> ...'");
+    }
+    if (!"docker".equals(t.get(0))) {
+      throw new IllegalArgumentException("Only 'docker' commands are allowed");
+    }
+
+    // Basic safety checks (no shell operators, no daemon retargeting flags)
+    for (String s : t) {
+      if (DISALLOWED_TOKENS.contains(s)) {
+        throw new IllegalArgumentException("Disallowed docker option: " + s);
+      }
+      if (s.contains(";") || s.contains("&&") || s.contains("|") || s.contains("`")) {
+        throw new IllegalArgumentException("Disallowed token content");
+      }
+    }
+
+    String cmd = t.get(1);
+
+    if ("compose".equals(cmd)) {
+      return validateCompose(t);
+    }
+
+    if ("buildx".equals(cmd)) {
+      return validateBuildx(t);
+    }
+
+    if (!ALLOWED_DOCKER_COMMANDS.contains(cmd)) {
+      throw new IllegalArgumentException("Docker command not allowed: " + cmd);
+    }
+
+    return new ValidatedCommand(t, workspace, projectDir);
+  }
+
+  /**
+   * Supports: docker compose [GLOBAL_OPTIONS...] <subcommand> [args...]
+   * where GLOBAL_OPTIONS can appear before the subcommand.
+   * Fix B: supports both "--opt value" and "--opt=value" for global options.
+   */
+  private ValidatedCommand validateCompose(List<String> tokens) {
+    if (tokens.size() < 3) {
+      throw new IllegalArgumentException("Command too short; expected 'docker compose <subcommand> ...'");
+    }
+
+    int i = 2; // start after: docker compose
+    boolean hasProjectDir = false;
+
+    // Consume compose global options (which come before the subcommand)
+    while (i < tokens.size()) {
+      String tok = tokens.get(i);
+
+      // subcommand is first non-option token
+      if (!tok.startsWith("-")) break;
+
+      String opt = tok;
+      String inlineVal = null;
+
+      // Support --opt=value form (only for long options)
+      int eq = tok.indexOf('=');
+      if (eq > 0 && tok.startsWith("--")) {
+        opt = tok.substring(0, eq);
+        inlineVal = tok.substring(eq + 1);
+        if (inlineVal.isEmpty()) inlineVal = null;
+      }
+
+      // Ignore the placeholder entry if present
+      if (opt.equals("--dummy")) {
+        i += 1;
+        continue;
+      }
+
+      Boolean takesValue = COMPOSE_GLOBAL_OPTS.get(opt);
+      if (takesValue == null) {
+        // show original token (tok) so you see e.g. "--profile=OBS"
+        throw new IllegalArgumentException("Compose global option not allowed: " + tok);
+      }
+
+      if (opt.equals("--project-directory")) hasProjectDir = true;
+
+      if (takesValue) {
+        String val;
+
+        if (inlineVal != null) {
+          // consumed as --opt=value
+          val = inlineVal;
+          i += 1;
+        } else {
+          // consumed as --opt value (two tokens)
+          if (i + 1 >= tokens.size()) throw new IllegalArgumentException("Missing value for option: " + opt);
+          val = tokens.get(i + 1);
+          i += 2;
+        }
+
+        // validate path-like opts
+        if (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f") || opt.equals("--env-file")) {
+          ensureUnderWorkspace(val);
+        }
+
+      } else {
+        // flag option (no value expected)
+        if (inlineVal != null) {
+          throw new IllegalArgumentException("Option does not take a value: " + opt);
+        }
+        i += 1;
+      }
+    }
+
+    if (i >= tokens.size()) {
+      throw new IllegalArgumentException("Missing compose subcommand (e.g., up/down/ps/logs)");
+    }
+
+    String sub = tokens.get(i);
+    if (!ALLOWED_COMPOSE_SUBCOMMANDS.contains(sub)) {
+      throw new IllegalArgumentException("Compose subcommand not allowed: " + sub);
+    }
+
+    // If not provided, inject our enforced project directory BEFORE the subcommand
+    if (!hasProjectDir) {
+      var tmp = new ArrayList<>(tokens);
+      tmp.add(2, "--project-directory");
+      tmp.add(3, projectDir);
+      tokens = tmp;
+    }
+
+    return new ValidatedCommand(tokens, workspace, projectDir);
+  }
+
+  /**
+   * Supports: docker buildx [options...] <subcommand> [args...]
+   * We locate the first allowed subcommand token after "buildx".
+   * Optional: validate -f/--file paths for buildx build.
+   */
+  private ValidatedCommand validateBuildx(List<String> tokens) {
+    if (tokens.size() < 3) {
+      throw new IllegalArgumentException("Command too short; expected 'docker buildx <subcommand> ...'");
+    }
+
+    int subIdx = -1;
+    for (int i = 2; i < tokens.size(); i++) {
+      if (ALLOWED_BUILDX_SUBCOMMANDS.contains(tokens.get(i))) {
+        subIdx = i;
+        break;
+      }
+    }
+
+    if (subIdx == -1) {
+      throw new IllegalArgumentException("Buildx subcommand not allowed or missing");
+    }
+
+    String sub = tokens.get(subIdx);
+
+    if ("build".equals(sub)) {
+      for (int i = subIdx + 1; i < tokens.size(); i++) {
+        String tok = tokens.get(i);
+        if (("-f".equals(tok) || "--file".equals(tok)) && i + 1 < tokens.size()) {
+          ensureUnderWorkspace(tokens.get(i + 1));
+          i++; // skip value
+        }
+      }
+    }
+
+    return new ValidatedCommand(tokens, workspace, projectDir);
+  }
+
+  /**
+   * Accepts absolute OR relative paths:
+   * - absolute must be under workspace
+   * - relative is resolved against workspace
+   */
+  private void ensureUnderWorkspace(String pathStr) {
+    Path ws = Path.of(workspace).normalize().toAbsolutePath();
+    Path p = Path.of(pathStr);
+    Path abs = p.isAbsolute() ? p.normalize().toAbsolutePath() : ws.resolve(p).normalize().toAbsolutePath();
+
+    if (!abs.startsWith(ws)) {
+      throw new IllegalArgumentException("Path must be under workspace: " + abs);
+    }
+  }
+}

@@ -63,7 +63,7 @@ Below is the full repository tree. Descriptions and notes follow after the code 
 │   │           └── src/
 │   └── go/
 │       └── (future)/
-├── loadgen/
+├── utils/
 │   ├── wrk2/
 │   └── scripts/
 ├── dashboards/
@@ -113,8 +113,10 @@ Folder responsibilities and short notes
     - Each leaf folder should contain Dockerfile, README.md, and src/.
     - Examples included for Spring and Quarkus (JVM + native variants); Go reserved for future.
 
-- loadgen/
+- utils/
     - wrk2 wrappers and scripts used to run deterministic benchmarks.
+    - orchestrator TODO
+    - dashboard TODO
 
 - dashboards/
     - Grafana JSON exports and instructions for importing/provisioning.

@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.4-blue.svg)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.1-green.svg)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.5-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -75,17 +75,17 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 - **Next.js Dashboard**: Modern web UI for managing the benchmarking environment
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
-  - Professional MUI-based interface suitable for portfolio demonstration
-  - Built with Next.js 16.0.10 and Material-UI 7.3.6
+  - Professional MUI-based interface with switchable themes
+  - Built with Next.js 16.1.1 and Material-UI 7.3.6
 
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Amazon Corretto)
-- **Spring Boot 4.0.1 (3.5.8 also supported)**
+- **Spring Boot 4.0.1 (3.5.9 also supported)**
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.4**
+- **Quarkus 3.30.5**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
@@ -199,7 +199,7 @@ This project focuses primarily on performance benchmarking.
 
 **Load Testing & Benchmarking**
 - wrk2-based deterministic load generation with fixed request rates
-- Benchmark scripts in `loadgen/wrk2/` directory
+- Benchmark scripts in `utils/wrk2/` directory
 - Results captured in `results/` directory with timestamps and metadata
 - See [Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html) for detailed testing procedures
 
@@ -296,8 +296,8 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 #### Software Versions
 - **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
-- **Spring Boot**: 4.0.0 (3.5.8 also supported)
-- **Quarkus**: 3.30.4
+- **Spring Boot**: 4.0.1 (3.5.9 also supported)
+- **Quarkus**: 3.30.5
 - **Go**: 1.25.5 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -546,7 +546,7 @@ Observability-Benchmarking/
 │   ├── grafana/             # Grafana dashboards and provisioning
 │   ├── loki/                # Loki configuration
 │   └── pyroscope/           # Pyroscope profiling config
-├── loadgen/                 # Load generation tools and scripts
+├── utils/                 # Load generation tools and scripts
 ├── results/                 # Benchmark results and outputs
 ├── docs/                    # Additional documentation
 │   ├── LINTING_AND_CODE_QUALITY.md
@@ -564,7 +564,7 @@ Observability-Benchmarking/
 - **`services/`**: Each subdirectory contains a complete REST service implementation with Dockerfile, source code, and README
 - **`compose/`**: Docker Compose files using profiles for flexible deployment (OBS, SERVICES, RAIN_FIRE)
 - **`config/`**: Centralized configuration for all observability tools
-- **`loadgen/`**: wrk2 wrappers and benchmark automation scripts
+- **`utils/`**: wrk2 wrappers and benchmark automation scripts
 - **`results/`**: Stores benchmark outputs with timestamps for reproducibility
 
 For a comprehensive breakdown of the directory structure with detailed notes, see **[docs/STRUCTURE.md](docs/STRUCTURE.md)**.

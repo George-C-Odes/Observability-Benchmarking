@@ -6,7 +6,7 @@
         <option name="buildOnly" value="true" />
         <option name="containerName" value="" />
         <option name="showCommandPreview" value="true" />
-        <option name="sourceFilePath" value="loadgen/wrk2/Dockerfile" />
+        <option name="sourceFilePath" value="utils/wrk2/Dockerfile" />
       </settings>
     </deployment>
     <method v="2" />

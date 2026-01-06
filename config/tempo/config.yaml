@@ -8,6 +8,9 @@ server:
   log_level: warn
 
 distributor:
+  log_discarded_spans:
+    enabled: true
+    include_all_attributes: false
   receivers:
     otlp:
       protocols:
@@ -95,8 +98,7 @@ overrides:
     # You can also cap cardinality later with:
     #   max_active_series: 50000
     ingestion:
-      rate_strategy: local        # or: global
+      rate_strategy: global        # or: local
       rate_limit_bytes: 200000000 # 200 MB/s sustained
       burst_size_bytes: 400000000 # 400 MB burst
-      # Optional, other useful limits:
-      # max_traces_per_user: 0    # disable live-trace count limit if needed
+#      max_traces_per_user: 0    #default 10000; 0 disables live-trace count limit

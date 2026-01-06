@@ -41,7 +41,7 @@ TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
 PYROSCOPE_URL="${PYROSCOPE_URL:-http://localhost:4040}"
 
 # Framework versions
-QUARKUS_VERSION="3.30.4"
+QUARKUS_VERSION="3.30.5"
 SPRING_BOOT_VERSION="4.0.1"
 GO_VERSION="1.25.5"
 
@@ -96,6 +96,16 @@ test_quarkus_metrics() {
     test_endpoint "${name} Metrics" "${url}/q/metrics/json" 200 "" || \
     test_endpoint "${name} Metrics" "${url}/q/health/ready" 200 "" || \
     test_endpoint "${name} Metrics" "${url}/q/health/live" 200 ""
+}
+
+test_go_metrics() {
+    local name=$1
+    local url=$2
+
+    # Try different metric endpoints
+    test_endpoint "${name} Metrics" "${url}/healthz" 200 "" || \
+    test_endpoint "${name} Metrics" "${url}/readyz" 200 "" || \
+    test_endpoint "${name} Metrics" "${url}/livez" 200 ""
 }
 
 echo "=========================================="
@@ -160,7 +170,7 @@ echo "=========================================="
 echo ""
 
 echo -e "${BLUE}--- Go Fiber (port 8088) ---${NC}"
-test_endpoint "Go - /hello/platform" "${GO_URL}/hello/platform" 200 "GO"
+test_endpoint "Go - /hello/virtual" "${GO_URL}/hello/virtual" 200 "GO"
 echo ""
 
 echo "=========================================="
@@ -177,6 +187,7 @@ test_spring_metrics "Spring Native Tomcat Virtual" "${SPRING_NATIVE_TOMCAT_VIRTU
 test_spring_metrics "Spring Native Netty" "${SPRING_NATIVE_NETTY_URL}"
 test_quarkus_metrics "Quarkus JVM" "${QUARKUS_JVM_URL}"
 test_quarkus_metrics "Quarkus Native" "${QUARKUS_NATIVE_URL}"
+test_go_metrics "Go" "${GO_URL}"
 echo ""
 
 echo -e "${BLUE}--- Grafana Stack Readiness ---${NC}"
@@ -247,7 +258,7 @@ run_trace_and_verify "Quarkus Native Platform" "${QUARKUS_NATIVE_URL}/hello/plat
 run_trace_and_verify "Quarkus Native Virtual" "${QUARKUS_NATIVE_URL}/hello/virtual" "quarkus-native" "vthread"
 run_trace_and_verify "Quarkus Native Reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" "quarkus-native" "vert.x-eventloop-thread"
 
-curl -s --max-time ${TIMEOUT} "${GO_URL}/hello/platform?log=true" > /dev/null 2>&1 || true
+run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
 
 echo ""
 

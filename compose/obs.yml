@@ -41,7 +41,7 @@ services:
 
   grafana:
     profiles: ["OBS"]
-    image: grafana/grafana:12.3.0
+    image: grafana/grafana:12.3.1
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -89,7 +89,7 @@ services:
   mimir:
     profiles: ["OBS"]
     #2.17.2
-    image: grafana/mimir:3.0.1
+    image: grafana/mimir:3.0.2
     container_name: mimir
     volumes:
       - ../config/mimir:/etc/mimir-config
