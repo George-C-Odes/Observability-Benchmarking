@@ -127,6 +127,24 @@ docker compose up nextjs-dash -d
 3. Click **Execute** on any script to run it
 4. View the output in the dialog that appears
 
+### Healthcheck
+Healthcheck is available at endpoint:
+http://localhost:3001/api/app-health
+
+Sample response:
+```json
+{
+    "status": "UP",
+    "timestamp": "2026-01-06T22:25:48.530Z",
+    "application": "nextjs-dash",
+    "version": "1.0.0",
+    "checks": {
+        "api": "UP",
+        "orchestrator": "UP"
+    }
+}
+```
+
 ## Security Considerations
 
 - The dashboard currently has no authentication (suitable for local development)

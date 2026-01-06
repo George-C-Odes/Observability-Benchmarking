@@ -39,6 +39,8 @@ LOKI_URL="${LOKI_URL:-http://localhost:3100}"
 MIMIR_URL="${MIMIR_URL:-http://localhost:9009}"
 TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
 PYROSCOPE_URL="${PYROSCOPE_URL:-http://localhost:4040}"
+NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
 # Framework versions
 QUARKUS_VERSION="3.30.5"
@@ -197,6 +199,11 @@ test_endpoint "Loki" "${LOKI_URL}/ready" 200 ""
 test_endpoint "Mimir" "${MIMIR_URL}/ready" 200 ""
 test_endpoint "Tempo" "${TEMPO_URL}/ready" 200 ""
 test_endpoint "Pyroscope" "${PYROSCOPE_URL}/ready" 200 ""
+echo ""
+
+echo -e "${BLUE}--- Orchestration Stack Readiness ---${NC}"
+test_endpoint "NextJS UI" "${NEXTJS_URL}/api/app-health" 200 ""
+test_endpoint "Orchestrator" "${ORCHESTRATOR_URL}/q/health/ready" 200 ""
 echo ""
 
 echo -e "${BLUE}--- Trace Generation (Smoke Test) ---${NC}"

@@ -361,12 +361,34 @@ cd integration-tests
 
 ```bash
 # Override service URLs
-export QUARKUS_URL=http://localhost:8086
+# Spring JVM Services
 export SPRING_TOMCAT_PLATFORM_URL=http://localhost:8080
 export SPRING_TOMCAT_VIRTUAL_URL=http://localhost:8081
 export SPRING_NETTY_URL=http://localhost:8082
-export GO_URL=http://localhost:8083
+
+# Spring Native Services
+export SPRING_NATIVE_TOMCAT_PLATFORM_URL=http://localhost:8083
+export SPRING_NATIVE_TOMCAT_VIRTUAL_URL=http://localhost:8084
+export SPRING_NATIVE_NETTY_URL=http://localhost:8085
+
+# Quarkus Services
+export QUARKUS_JVM_URL=http://localhost:8086
+export QUARKUS_NATIVE_URL=http://localhost:8087
+
+# Go Service
+export GO_URL=http://localhost:8088
+
+# Observability
 export GRAFANA_URL=http://localhost:3000
+export ALLOY_URL=http://localhost:12345
+export LOKI_URL=http://localhost:3100
+export MIMIR_URL=http://localhost:9009
+export TEMPO_URL=http://localhost:3200
+export PYROSCOPE_URL=http://localhost:4040
+
+# Orchestration
+export NEXTJS_URL=http://localhost:3001
+export ORCHESTRATOR_URL=http://localhost:3002
 
 # Run tests
 ./run-integration-tests.sh

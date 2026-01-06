@@ -60,12 +60,12 @@ sleep 120
 Override default URLs (matches docker-compose.yml port order):
 
 ```bash
-# JVM Services
+# Spring JVM Services
 export SPRING_TOMCAT_PLATFORM_URL=http://localhost:8080
 export SPRING_TOMCAT_VIRTUAL_URL=http://localhost:8081
 export SPRING_NETTY_URL=http://localhost:8082
 
-# Native Services
+# Spring Native Services
 export SPRING_NATIVE_TOMCAT_PLATFORM_URL=http://localhost:8083
 export SPRING_NATIVE_TOMCAT_VIRTUAL_URL=http://localhost:8084
 export SPRING_NATIVE_NETTY_URL=http://localhost:8085
@@ -79,6 +79,15 @@ export GO_URL=http://localhost:8088
 
 # Observability
 export GRAFANA_URL=http://localhost:3000
+export ALLOY_URL=http://localhost:12345
+export LOKI_URL=http://localhost:3100
+export MIMIR_URL=http://localhost:9009
+export TEMPO_URL=http://localhost:3200
+export PYROSCOPE_URL=http://localhost:4040
+
+# Orchestration
+export NEXTJS_URL=http://localhost:3001
+export ORCHESTRATOR_URL=http://localhost:3002
 
 ./run-integration-tests.sh
 ```
