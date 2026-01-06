@@ -21,10 +21,25 @@ import org.jspecify.annotations.NonNull;
 @RequestMapping(value = "/hello", produces = MediaType.APPLICATION_JSON_VALUE)
 @Slf4j
 public class HelloController {
+    /**
+     * Flag indicating whether virtual threads are enabled for this controller.
+     */
     @Value("${spring.threads.virtual.enabled:false}")
     private boolean virtualThreadsEnabled;
+    
+    /**
+     * Caffeine cache instance for storing key-value pairs.
+     */
     private final Cache<@NonNull String, String> cache;
+    
+    /**
+     * Micrometer counter for tracking platform thread requests.
+     */
     private final Counter platformCounter;
+    
+    /**
+     * Micrometer counter for tracking virtual thread requests.
+     */
     private final Counter virtualCounter;
 
     /**

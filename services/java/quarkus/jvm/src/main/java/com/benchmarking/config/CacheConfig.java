@@ -17,6 +17,10 @@ import org.jspecify.annotations.NonNull;
 @JBossLog
 @ApplicationScoped
 public class CacheConfig {
+    /**
+     * Maximum number of entries the cache can hold.
+     * Defaults to 50,000 entries if not configured.
+     */
     @ConfigProperty(name = "CACHE_SIZE", defaultValue = "50000")
     long cacheSize;
     /**

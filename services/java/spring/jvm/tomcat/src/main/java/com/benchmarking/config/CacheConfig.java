@@ -17,6 +17,10 @@ import java.time.Duration;
 @Slf4j
 @Configuration
 public class CacheConfig {
+    /**
+     * Maximum number of entries the cache can hold.
+     * Defaults to 50,000 entries if not configured.
+     */
     @Value("${CACHE_SIZE:50000}")
     private long cacheSize;
     /**

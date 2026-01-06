@@ -21,7 +21,14 @@ import reactor.core.publisher.Mono;
 @RequestMapping(value = "/hello", produces = MediaType.APPLICATION_JSON_VALUE)
 @Slf4j
 public class HelloController {
+    /**
+     * Caffeine cache instance for storing key-value pairs.
+     */
     private final Cache<@NonNull String, String> cache;
+    
+    /**
+     * Micrometer counter for tracking reactive requests.
+     */
     private final Counter reactiveCounter;
 
     /**
