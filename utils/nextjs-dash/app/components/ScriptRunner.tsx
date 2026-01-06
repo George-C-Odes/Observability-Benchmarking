@@ -15,10 +15,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TerminalIcon from '@mui/icons-material/Terminal';
+import CodeIcon from '@mui/icons-material/Code';
 
 interface Script {
   name: string;
@@ -37,6 +39,8 @@ export default function ScriptRunner() {
     title: '',
     output: '',
   });
+  const [freeTextCommand, setFreeTextCommand] = useState('');
+  const [showFreeTextInput, setShowFreeTextInput] = useState(false);
 
   const fetchScripts = async () => {
     setLoading(true);
@@ -58,32 +62,47 @@ export default function ScriptRunner() {
     setExecuting(scriptName);
     setMessage(null);
     try {
-      const response = await fetch('/api/scripts/execute', {
+      const response = await fetch('/api/orchestrator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scriptName, command }),
+        body: JSON.stringify({ command }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to execute script');
+        throw new Error(data.error || 'Failed to execute command');
       }
 
       setOutputDialog({
         open: true,
         title: scriptName,
-        output: data.output || 'Script executed successfully',
+        output: data.output || 'Command executed successfully',
       });
 
-      setMessage({ type: 'success', text: `Script "${scriptName}" executed successfully!` });
+      if (data.success) {
+        setMessage({ type: 'success', text: `Command "${scriptName}" executed successfully!` });
+      } else {
+        setMessage({ type: 'error', text: `Command "${scriptName}" failed` });
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to execute script';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to execute command';
       setMessage({ type: 'error', text: errorMessage });
       console.error(error);
     } finally {
       setExecuting(null);
     }
+  };
+
+  const executeFreeText = async () => {
+    if (!freeTextCommand.trim()) {
+      setMessage({ type: 'error', text: 'Please enter a command' });
+      return;
+    }
+
+    await executeScript('Free Text Command', freeTextCommand);
+    setFreeTextCommand('');
+    setShowFreeTextInput(false);
   };
 
   const handleCloseDialog = () => {
@@ -113,15 +132,68 @@ export default function ScriptRunner() {
             Execute scripts from the .run directory with environment parameters
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchScripts}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchScripts}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<CodeIcon />}
+            onClick={() => setShowFreeTextInput(!showFreeTextInput)}
+            color="secondary"
+          >
+            {showFreeTextInput ? 'Hide' : 'Custom Command'}
+          </Button>
+        </Box>
       </Box>
+
+      {showFreeTextInput && (
+        <Card sx={{ mb: 3, bgcolor: 'background.paper', border: '2px solid', borderColor: 'secondary.main' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Execute Custom Command
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Enter any docker compose command to execute through the orchestrator
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              value={freeTextCommand}
+              onChange={(e) => setFreeTextCommand(e.target.value)}
+              placeholder="e.g., docker compose --project-directory compose ps"
+              disabled={executing !== null}
+              variant="outlined"
+              sx={{ mb: 2 }}
+            />
+            <Box display="flex" gap={2}>
+              <Button
+                variant="contained"
+                startIcon={<PlayArrowIcon />}
+                onClick={executeFreeText}
+                disabled={executing !== null || !freeTextCommand.trim()}
+              >
+                Execute
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setFreeTextCommand('');
+                  setShowFreeTextInput(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {message && (
         <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
