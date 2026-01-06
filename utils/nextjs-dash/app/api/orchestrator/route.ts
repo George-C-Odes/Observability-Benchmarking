@@ -59,15 +59,17 @@ export async function POST(request: NextRequest) {
         throw new Error(`Failed to fetch job status: ${statusResponse.status}`);
       }
 
-      const status = await statusResponse.json();
-      console.log(`[ORCHESTRATOR API] Job ${jobId} status: ${status.state}`);
+      const responseJson = await statusResponse.json();
+      const responseStatus = responseJson.status;   // QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED
+      console.log(`[ORCHESTRATOR API] Job ${jobId} status: ${responseStatus}`);
+      // console.log("Response = " + JSON.stringify(responseJson));
 
-      if (status.state === 'COMPLETED' || status.state === 'FAILED') {
+      if (responseStatus === 'SUCCEEDED' || responseStatus === 'FAILED' || responseStatus === 'CANCELED') {
         return NextResponse.json({
-          success: status.state === 'COMPLETED',
-          output: status.output || status.error || 'No output available',
+          success: responseStatus === 'SUCCEEDED',
+          output: responseJson.output || responseJson.error || 'No output available',
           jobId: jobId,
-          state: status.state,
+          state: responseStatus,
         });
       }
 
@@ -84,7 +86,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[ORCHESTRATOR API] Error executing command:', error);
-    
     return NextResponse.json(
       {
         error: 'Failed to execute command',
