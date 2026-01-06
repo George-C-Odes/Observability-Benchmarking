@@ -45,6 +45,9 @@ export default function ScriptRunner() {
   const [freeTextCommand, setFreeTextCommand] = useState('');
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
+  const [eventLogs, setEventLogs] = useState<string[]>([]);
+  const [showEventLogs, setShowEventLogs] = useState(false);
+  const MAX_EVENT_LOGS = 500;
 
   const copyToClipboard = async (text: string, scriptName: string) => {
     try {
@@ -75,49 +78,62 @@ export default function ScriptRunner() {
   const executeScript = async (scriptName: string, command: string) => {
     setExecuting(scriptName);
     setMessage(null);
+    setEventLogs([]); // Clear previous logs
+    setShowEventLogs(true); // Show event logs panel
+    
     try {
-      const response = await fetch('/api/orchestrator', {
+      // Step 1: Submit the job and get jobId immediately
+      const submitResponse = await fetch('/api/orchestrator/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command }),
       });
 
-      const data = await response.json();
+      const submitData = await submitResponse.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to execute command');
+      if (!submitResponse.ok) {
+        throw new Error(submitData.error || 'Failed to submit command');
       }
+
+      const jobId = submitData.jobId;
+      console.log(`Job submitted with ID: ${jobId}`);
+
+      // Step 2: Start streaming events immediately
+      streamJobEvents(jobId);
+
+      // Step 3: Poll for job completion
+      const finalStatus = await pollJobStatus(jobId);
 
       // Format output with job details
       let formattedOutput = '';
-      if (data.jobDetails) {
-        const startTime = new Date(data.jobDetails.startedAt);
-        const endTime = new Date(data.jobDetails.finishedAt);
+      if (finalStatus) {
+        const startTime = new Date(finalStatus.startedAt);
+        const endTime = new Date(finalStatus.finishedAt);
         const durationMs = endTime.getTime() - startTime.getTime();
         const durationSec = (durationMs / 1000).toFixed(2);
         
-        formattedOutput = `Job ID: ${data.jobDetails.jobId}\n`;
-        formattedOutput += `Status: ${data.jobDetails.status}\n`;
-        formattedOutput += `Exit Code: ${data.jobDetails.exitCode}\n`;
+        formattedOutput = `Job ID: ${finalStatus.jobId}\n`;
+        formattedOutput += `Status: ${finalStatus.status}\n`;
+        formattedOutput += `Exit Code: ${finalStatus.exitCode}\n`;
         formattedOutput += `Duration: ${durationSec}s\n`;
         formattedOutput += `Started: ${startTime.toLocaleString()}\n`;
         formattedOutput += `Finished: ${endTime.toLocaleString()}\n\n`;
         
-        if (data.jobDetails.lastLine) {
-          formattedOutput += `Last Output Line:\n${data.jobDetails.lastLine}\n\n`;
+        if (finalStatus.lastLine) {
+          formattedOutput += `Last Output Line:\n${finalStatus.lastLine}\n\n`;
         }
       }
       
-      formattedOutput += data.output || 'No additional output available';
+      formattedOutput += 'Check the event logs below for full execution output';
 
       setOutputDialog({
         open: true,
         title: scriptName,
         output: formattedOutput,
-        jobDetails: data.jobDetails,
+        jobDetails: finalStatus,
       });
 
-      if (data.success) {
+      if (finalStatus && finalStatus.status === 'SUCCEEDED') {
         setMessage({ type: 'success', text: `Command "${scriptName}" executed successfully!` });
       } else {
         setMessage({ type: 'error', text: `Command "${scriptName}" failed` });
@@ -128,6 +144,53 @@ export default function ScriptRunner() {
       console.error(error);
     } finally {
       setExecuting(null);
+    }
+  };
+
+  const pollJobStatus = async (jobId: string): Promise<any> => {
+    const maxAttempts = 60;
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      try {
+        const statusResponse = await fetch(`/api/orchestrator/status?jobId=${jobId}`);
+        const status = await statusResponse.json();
+        
+        if (status.status === 'SUCCEEDED' || status.status === 'FAILED' || status.status === 'CANCELED') {
+          return status;
+        }
+      } catch (error) {
+        console.error('Error polling job status:', error);
+      }
+    }
+    return null; // Timeout
+  };
+
+  const streamJobEvents = async (jobId: string) => {
+    try {
+      const ORCH_URL = process.env.NEXT_PUBLIC_ORCH_URL || 'http://localhost:4000';
+      const eventSource = new EventSource(`${ORCH_URL}/v1/jobs/${jobId}/events`);
+      
+      eventSource.onmessage = (event) => {
+        const logLine = event.data;
+        setEventLogs((prev) => {
+          const updated = [...prev, logLine];
+          // Keep only last MAX_EVENT_LOGS lines
+          return updated.slice(-MAX_EVENT_LOGS);
+        });
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+      };
+
+      // Clean up on completion (close after 60 seconds as a safety measure)
+      setTimeout(() => {
+        eventSource.close();
+      }, 60000);
+    } catch (error) {
+      console.error('Failed to stream job events:', error);
     }
   };
 
@@ -236,6 +299,57 @@ export default function ScriptRunner() {
         <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
           {message.text}
         </Alert>
+      )}
+
+      {/* Event Logs Panel */}
+      {showEventLogs && eventLogs.length > 0 && (
+        <Card sx={{ mb: 3, bgcolor: 'background.paper' }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">
+                Execution Logs (Real-time)
+              </Typography>
+              <Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setEventLogs([])}
+                  sx={{ mr: 1 }}
+                >
+                  Clear
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setShowEventLogs(false)}
+                >
+                  Hide
+                </Button>
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                bgcolor: 'grey.900',
+                color: 'grey.100',
+                p: 2,
+                borderRadius: 1,
+                maxHeight: '400px',
+                overflow: 'auto',
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+            >
+              {eventLogs.map((log, index) => (
+                <div key={index}>{log}</div>
+              ))}
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Showing last {Math.min(eventLogs.length, MAX_EVENT_LOGS)} lines (max {MAX_EVENT_LOGS})
+            </Typography>
+          </CardContent>
+        </Card>
       )}
 
       {/* Build Image Scripts */}
