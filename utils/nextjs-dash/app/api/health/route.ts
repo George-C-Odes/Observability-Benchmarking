@@ -15,20 +15,20 @@ const SERVICE_ENDPOINTS: ServiceEndpoint[] = [
   { name: 'tempo', url: 'http://tempo:3200/ready', timeout: 5000 },
   { name: 'pyroscope', url: 'http://pyroscope:4040/ready', timeout: 5000 },
 
-  // Spring Services
+  // Spring Services (all use internal port 8080)
   { name: 'spring-jvm-tomcat-platform', url: 'http://spring-jvm-tomcat-platform:8080/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-jvm-tomcat-virtual', url: 'http://spring-jvm-tomcat-virtual:8081/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-jvm-netty', url: 'http://spring-jvm-netty:8082/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-native-tomcat-platform', url: 'http://spring-native-tomcat-platform:8083/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-native-tomcat-virtual', url: 'http://spring-native-tomcat-virtual:8084/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-native-netty', url: 'http://spring-native-netty:8085/actuator/health/readiness', timeout: 10000 },
+  { name: 'spring-jvm-tomcat-virtual', url: 'http://spring-jvm-tomcat-virtual:8080/actuator/health/readiness', timeout: 10000 },
+  { name: 'spring-jvm-netty', url: 'http://spring-jvm-netty:8080/actuator/health/readiness', timeout: 10000 },
+  { name: 'spring-native-tomcat-platform', url: 'http://spring-native-tomcat-platform:8080/actuator/health/readiness', timeout: 10000 },
+  { name: 'spring-native-tomcat-virtual', url: 'http://spring-native-tomcat-virtual:8080/actuator/health/readiness', timeout: 10000 },
+  { name: 'spring-native-netty', url: 'http://spring-native-netty:8080/actuator/health/readiness', timeout: 10000 },
 
-  // Quarkus Services
-  { name: 'quarkus-jvm', url: 'http://quarkus-jvm:8086/q/health/ready', timeout: 10000 },
-  { name: 'quarkus-native', url: 'http://quarkus-native:8087/q/health/ready', timeout: 10000 },
+  // Quarkus Services (all use internal port 8080)
+  { name: 'quarkus-jvm', url: 'http://quarkus-jvm:8080/q/health/ready', timeout: 10000 },
+  { name: 'quarkus-native', url: 'http://quarkus-native:8080/q/health/ready', timeout: 10000 },
 
-  // Go Services
-  { name: 'go', url: 'http://go:8088/readyz', timeout: 5000 },
+  // Go Services (use internal port 8080)
+  { name: 'go', url: 'http://go:8080/readyz', timeout: 5000 },
 
   // Utils Services
   { name: 'orchestrator', url: 'http://orchestrator:4000/q/health/ready', timeout: 5000 },
