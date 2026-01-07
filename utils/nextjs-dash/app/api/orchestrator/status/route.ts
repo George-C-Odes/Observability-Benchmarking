@@ -1,36 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getJobStatus, validateJobId } from '@/lib/orchestratorClient';
 
-// Orchestrator service URL
-const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
-
+/**
+ * GET /api/orchestrator/status
+ * Polls job status by jobId from the orchestrator
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get('jobId');
 
-    if (!jobId) {
-      return NextResponse.json(
-        { error: 'jobId parameter is required' },
-        { status: 400 }
-      );
-    }
+    // Validate jobId
+    const validatedJobId = validateJobId(jobId);
 
-    console.log(`[ORCHESTRATOR STATUS API] Fetching status for job: ${jobId}`);
+    console.log(`[ORCHESTRATOR STATUS API] Fetching status for job: ${validatedJobId}`);
 
-    const statusResponse = await fetch(`${ORCHESTRATOR_URL}/v1/jobs/${jobId}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!statusResponse.ok) {
-      throw new Error(`Failed to fetch job status: ${statusResponse.status}`);
-    }
-
-    const responseJson = await statusResponse.json();
-    console.log(`[ORCHESTRATOR STATUS API] Status for job: ${jobId} received: ${responseJson.status}`);
-    return NextResponse.json(responseJson);
+    // Get status using shared client
+    const status = await getJobStatus(validatedJobId);
+    
+    console.log(`[ORCHESTRATOR STATUS API] Status for job: ${validatedJobId} received: ${status.status}`);
+    return NextResponse.json(status);
 
   } catch (error: any) {
     console.error('[ORCHESTRATOR STATUS API] Error fetching job status:', error);

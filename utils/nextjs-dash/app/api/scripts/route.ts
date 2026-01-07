@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getCommandPresets } from '@/lib/orchestratorClient';
 
-// Orchestrator service URL (from environment or default to docker-compose service name)
-const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
-
+/**
+ * GET /api/scripts
+ * Fetches command presets from the orchestrator service
+ */
 export async function GET() {
   try {
-    console.log(`[SCRIPTS API] Fetching presets from orchestrator: ${ORCHESTRATOR_URL}/v1/commands`);
+    console.log(`[SCRIPTS API] Fetching presets from orchestrator`);
     
-    const response = await fetch(`${ORCHESTRATOR_URL}/v1/commands`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Orchestrator returned ${response.status}: ${response.statusText}`);
-    }
-
-    const presets = await response.json();
+    const presets = await getCommandPresets();
     console.log(`[SCRIPTS API] Fetched ${presets.length} command presets from orchestrator`);
 
     // Transform orchestrator response to match frontend expectations

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { submitCommand, validateCommand } from '@/lib/orchestratorClient';
 
-// Orchestrator service URL
-const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
-const ORCHESTRATOR_API_KEY = process.env.ORCH_API_KEY || 'dev-changeme';
-
+/**
+ * POST /api/orchestrator/submit
+ * Submits a command to the orchestrator and returns the jobId immediately
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -11,40 +12,19 @@ export async function POST(request: NextRequest) {
     
     const { command } = body;
 
-    if (!command || typeof command !== 'string') {
-      console.error('[ORCHESTRATOR SUBMIT API] Missing or invalid command');
-      return NextResponse.json(
-        { error: 'Command is required and must be a string' },
-        { status: 400 }
-      );
-    }
+    // Validate command
+    const validatedCommand = validateCommand(command);
 
-    console.log(`[ORCHESTRATOR SUBMIT API] Submitting command to orchestrator: ${command}`);
+    console.log(`[ORCHESTRATOR SUBMIT API] Submitting command to orchestrator: ${validatedCommand}`);
 
-    // Submit command to orchestrator
-    const runResponse = await fetch(`${ORCHESTRATOR_URL}/v1/run`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ORCHESTRATOR_API_KEY}`,
-      },
-      body: JSON.stringify({ command }),
-    });
+    // Submit command using shared client
+    const result = await submitCommand(validatedCommand);
 
-    if (!runResponse.ok) {
-      const errorText = await runResponse.text();
-      throw new Error(`Orchestrator returned ${runResponse.status}: ${errorText}`);
-    }
+    console.log(`[ORCHESTRATOR SUBMIT API] Job submitted with ID: ${result.jobId}`);
 
-    const runResult = await runResponse.json();
-    const jobId = runResult.jobId;
-
-    console.log(`[ORCHESTRATOR SUBMIT API] Job submitted with ID: ${jobId}`);
-
-    // Return jobId immediately
     return NextResponse.json({
       success: true,
-      jobId: jobId,
+      jobId: result.jobId,
     });
 
   } catch (error: any) {

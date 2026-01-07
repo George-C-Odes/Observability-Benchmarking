@@ -168,8 +168,8 @@ export default function ScriptRunner() {
 
   const streamJobEvents = async (jobId: string) => {
     try {
-      const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
-      const eventSource = new EventSource(`${ORCHESTRATOR_URL}/v1/jobs/${jobId}/events`);
+      // Use Next.js API proxy instead of direct orchestrator connection
+      const eventSource = new EventSource(`/api/orchestrator/events?jobId=${jobId}`);
       
       eventSource.onmessage = (event) => {
         const logLine = event.data;
