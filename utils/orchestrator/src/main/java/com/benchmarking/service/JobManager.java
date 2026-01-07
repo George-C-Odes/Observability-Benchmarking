@@ -48,13 +48,26 @@ public class JobManager {
     CANCELED
   }
 
+  /**
+   * Maximum number of lines to buffer per job.
+   */
   @ConfigProperty(name = "orchestrator.max-buffer-lines")
   int maxBufferLines;
 
+  /**
+   * Whether to execute jobs serially (one at a time).
+   */
   @ConfigProperty(name = "orchestrator.serial-execution")
   boolean serialExecution;
 
+  /**
+   * Executor service for running jobs.
+   */
   private final ExecutorService executor;
+  
+  /**
+   * Map of active jobs by ID.
+   */
   private final ConcurrentMap<UUID, Job> jobs = new ConcurrentHashMap<>();
 
   public JobManager() {
@@ -84,7 +97,9 @@ public class JobManager {
 
   private Job get(UUID id) {
     Job j = jobs.get(id);
-    if (j == null) throw new IllegalArgumentException("Unknown jobId: " + id);
+    if (j == null) {
+      throw new IllegalArgumentException("Unknown jobId: " + id);
+    }
     return j;
   }
 
@@ -159,7 +174,9 @@ public class JobManager {
         // Log to orchestrator stdout so Alloy can scrape
         LOG.infof("[%s] %s", stream, line);
       }
-    } catch (Exception ignored) {}
+    } catch (Exception ignored) {
+      // Intentionally ignored
+    }
   }
 
   /**
@@ -239,22 +256,34 @@ public class JobManager {
     }
 
     synchronized void addToBuffer(JobEvent e) {
-      if ("log".equals(e.getType()) && e.getMessage() != null) lastLine = e.getMessage();
-      if (buffer.size() >= maxLines) buffer.removeFirst();
+      if ("log".equals(e.getType()) && e.getMessage() != null) {
+        lastLine = e.getMessage();
+      }
+      if (buffer.size() >= maxLines) {
+        buffer.removeFirst();
+      }
       buffer.addLast(e);
     }
 
     void emit(JobEvent e) {
       addToBuffer(e);
       for (var em : emitters) {
-        try { em.emit(e); } catch (Exception ignored) {}
+        try {
+          em.emit(e);
+        } catch (Exception ignored) {
+          // Intentionally ignored
+        }
       }
     }
 
     void complete() {
       completed = true;
       for (var em : emitters) {
-        try { em.complete(); } catch (Exception ignored) {}
+        try {
+          em.complete();
+        } catch (Exception ignored) {
+          // Intentionally ignored
+        }
       }
     }
 
@@ -265,7 +294,9 @@ public class JobManager {
         }
         emitters.add(em);
         em.onTermination(() -> emitters.remove(em));
-        if (completed) em.complete();
+        if (completed) {
+          em.complete();
+        }
       });
     }
 
