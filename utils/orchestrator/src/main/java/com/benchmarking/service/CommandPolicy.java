@@ -161,7 +161,9 @@ public class CommandPolicy {
         throw new IllegalArgumentException("Compose global option not allowed: " + tok);
       }
 
-      if (opt.equals("--project-directory")) hasProjectDir = true;
+      if (opt.equals("--project-directory")) {
+        hasProjectDir = true;
+      }
 
       if (takesValue) {
         String val;

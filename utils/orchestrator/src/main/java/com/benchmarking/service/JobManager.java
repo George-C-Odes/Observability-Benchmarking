@@ -14,16 +14,36 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 
 @ApplicationScoped
 public class JobManager {
+  /**
+   * Logger instance for this class.
+   */
   private static final Logger LOG = Logger.getLogger(JobManager.class);
 
-  public enum Status { QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED }
+  /**
+   * Job execution status.
+   */
+  public enum Status {
+    /** Job is queued for execution. */
+    QUEUED,
+    /** Job is currently running. */
+    RUNNING,
+    /** Job completed successfully. */
+    SUCCEEDED,
+    /** Job failed with an error. */
+    FAILED,
+    /** Job was canceled. */
+    CANCELED
+  }
 
   @ConfigProperty(name = "orchestrator.max-buffer-lines")
   int maxBufferLines;

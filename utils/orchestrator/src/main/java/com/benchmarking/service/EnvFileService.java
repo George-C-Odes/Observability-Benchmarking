@@ -161,6 +161,9 @@ public class EnvFileService {
             VALIDATION_ERROR
         }
 
+        /**
+         * The type of exception that occurred.
+         */
         private final Type type;
 
         /**
