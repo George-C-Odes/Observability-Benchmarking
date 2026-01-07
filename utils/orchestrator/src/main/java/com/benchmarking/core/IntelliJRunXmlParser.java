@@ -178,9 +178,6 @@ public final class IntelliJRunXmlParser {
         context = ".";
       }
     }
-    else {
-      context = ".";
-    }
 
     List<String> argv = new ArrayList<>();
     argv.add("docker");

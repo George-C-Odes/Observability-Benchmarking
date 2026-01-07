@@ -168,8 +168,8 @@ export default function ScriptRunner() {
 
   const streamJobEvents = async (jobId: string) => {
     try {
-      const ORCH_URL = process.env.NEXT_PUBLIC_ORCH_URL || 'http://localhost:4000';
-      const eventSource = new EventSource(`${ORCH_URL}/v1/jobs/${jobId}/events`);
+      const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
+      const eventSource = new EventSource(`${ORCHESTRATOR_URL}/v1/jobs/${jobId}/events`);
       
       eventSource.onmessage = (event) => {
         const logLine = event.data;

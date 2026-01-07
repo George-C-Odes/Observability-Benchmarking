@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-
+# ------------ DEPS STAGE -----------------------
 FROM node:25.2-slim AS deps
 WORKDIR /app
 
@@ -9,6 +9,7 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm i -g npm@11.7.0 && npm ci --no-audit --fund=false
 
+# ------------ BUILD STAGE -----------------------
 FROM node:25.2-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -20,7 +21,8 @@ RUN npm run build
 # Ensure /public exists so the runtime COPY never fails
 RUN mkdir -p /app/public
 
-FROM node:25.2-slim AS runner
+#-----------------------  RUNTIME STAGE -----------------------
+FROM node:25.2.1-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -28,6 +30,11 @@ ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3001
+
+#Install curl for troubleshooting TODO TMP
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nodejs
 

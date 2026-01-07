@@ -20,6 +20,10 @@ interface EnvVariable {
   comment?: string;
 }
 
+// Orchestrator service URL
+const ORCHESTRATOR_URL = process.env.ORCH_URL || 'http://orchestrator:3002';
+const ORCHESTRATOR_API_KEY = process.env.ORCH_API_KEY || 'dev-changeme';
+
 export default function EnvEditor() {
   const [envContent, setEnvContent] = useState('');
   const [envVariables, setEnvVariables] = useState<EnvVariable[]>([]);
@@ -31,7 +35,13 @@ export default function EnvEditor() {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('/api/env');
+      const response = await fetch(`${ORCHESTRATOR_URL}/v1/env`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
       if (!response.ok) throw new Error('Failed to fetch environment file');
       const data = await response.json();
       setEnvContent(data.content);
@@ -98,9 +108,12 @@ export default function EnvEditor() {
 
       const newContent = newLines.join('\n');
 
-      const response = await fetch('/api/env', {
+      const response = await fetch(`${ORCHESTRATOR_URL}/v1/env`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ORCHESTRATOR_API_KEY}`,
+        },
         body: JSON.stringify({ content: newContent }),
       });
 

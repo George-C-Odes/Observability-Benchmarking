@@ -1,4 +1,4 @@
-# Build stage
+# ------------ BUILD STAGE -----------------------
 ARG GO_VERSION=1.25.5
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 RUN go build -o server ./cmd/server
 
-# Run stage
+#-----------------------  RUNTIME STAGE -----------------------
 FROM gcr.io/distroless/static-debian13:nonroot
 
 COPY --from=builder /app/server /server
