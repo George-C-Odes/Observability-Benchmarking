@@ -78,6 +78,13 @@ export function createCustomTheme(themeId: string) {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
+            transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: option.mode === 'dark' 
+                ? '0 8px 24px rgba(0, 0, 0, 0.4)' 
+                : '0 8px 24px rgba(0, 0, 0, 0.15)',
+            },
           },
         },
       },
@@ -85,6 +92,10 @@ export function createCustomTheme(themeId: string) {
         styleOverrides: {
           root: {
             textTransform: 'none',
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.05)',
+            },
           },
         },
       },
@@ -92,8 +103,56 @@ export function createCustomTheme(themeId: string) {
         styleOverrides: {
           root: {
             fontWeight: 500,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.1)',
+            },
           },
         },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'rotate(15deg) scale(1.1)',
+            },
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            transition: 'box-shadow 0.3s ease-in-out',
+          },
+        },
+      },
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+            },
+          },
+        },
+      },
+    },
+    transitions: {
+      duration: {
+        shortest: 150,
+        shorter: 200,
+        short: 250,
+        standard: 300,
+        complex: 375,
+        enteringScreen: 225,
+        leavingScreen: 195,
+      },
+      easing: {
+        easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
+        easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+        sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
       },
     },
   });

@@ -14,6 +14,9 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Fade,
+  Slide,
+  Grow,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EnvEditor from './components/EnvEditor';
@@ -40,7 +43,13 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Fade in={value === index} timeout={600}>
+          <Slide direction="up" in={value === index} timeout={400}>
+            <Box sx={{ p: 3 }}>{children}</Box>
+          </Slide>
+        </Fade>
+      )}
     </div>
   );
 }
