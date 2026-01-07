@@ -178,7 +178,9 @@ public final class IntelliJRunXmlParser {
   }
 
   private static String extractFirstDockerCommand(String script, String workspace) {
-    if (script == null) return null;
+    if (script == null) {
+      return null;
+    }
 
     String expanded = script;
     if (workspace != null && !workspace.isBlank()) {
@@ -193,7 +195,9 @@ public final class IntelliJRunXmlParser {
     }
 
     String oneLine = expanded.strip().replaceAll("[\r\n]+", " ").trim();
-    if (oneLine.startsWith("docker ")) return oneLine;
+    if (oneLine.startsWith("docker ")) {
+      return oneLine;
+    }
 
     return null;
   }
@@ -226,7 +230,9 @@ public final class IntelliJRunXmlParser {
     argv.add(dockerfile);
 
     for (EnvVar ev : cfg.buildArgs) {
-      if (ev.name() == null || ev.name().isBlank()) continue;
+      if (ev.name() == null || ev.name().isBlank()) {
+        continue;
+      }
       argv.add("--build-arg");
       argv.add(ev.name() + "=" + (ev.value() == null ? "" : ev.value()));
     }
@@ -243,14 +249,20 @@ public final class IntelliJRunXmlParser {
     NodeList opts = settings.getElementsByTagName("option");
     for (int i = 0; i < opts.getLength(); i++) {
       Node n = opts.item(i);
-      if (n.getNodeType() != Node.ELEMENT_NODE) continue;
+      if (n.getNodeType() != Node.ELEMENT_NODE) {
+        continue;
+      }
       Element e = (Element) n;
-      if (!"buildArgs".equals(e.getAttribute("name"))) continue;
+      if (!"buildArgs".equals(e.getAttribute("name"))) {
+        continue;
+      }
 
       NodeList envNodes = e.getElementsByTagName("DockerEnvVarImpl");
       for (int j = 0; j < envNodes.getLength(); j++) {
         Node en = envNodes.item(j);
-        if (en.getNodeType() != Node.ELEMENT_NODE) continue;
+        if (en.getNodeType() != Node.ELEMENT_NODE) {
+          continue;
+        }
         Element env = (Element) en;
 
         String name = null;
@@ -258,12 +270,18 @@ public final class IntelliJRunXmlParser {
         NodeList envOpts = env.getElementsByTagName("option");
         for (int k = 0; k < envOpts.getLength(); k++) {
           Node o = envOpts.item(k);
-          if (o.getNodeType() != Node.ELEMENT_NODE) continue;
+          if (o.getNodeType() != Node.ELEMENT_NODE) {
+            continue;
+          }
           Element oe = (Element) o;
           String on = oe.getAttribute("name");
           String ov = oe.getAttribute("value");
-          if ("name".equals(on)) name = ov;
-          if ("value".equals(on)) value = ov;
+          if ("name".equals(on)) {
+            name = ov;
+          }
+          if ("value".equals(on)) {
+            value = ov;
+          }
         }
 
         if (name != null && !name.isBlank()) out.add(new EnvVar(name, value));
