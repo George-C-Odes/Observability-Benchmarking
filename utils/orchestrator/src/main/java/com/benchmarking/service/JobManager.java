@@ -1,4 +1,4 @@
-package com.benchmarking.core;
+package com.benchmarking.service;
 
 import com.benchmarking.api.JobEvent;
 import com.benchmarking.api.JobStatusResponse;

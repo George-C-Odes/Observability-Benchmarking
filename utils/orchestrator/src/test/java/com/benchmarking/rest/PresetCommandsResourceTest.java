@@ -1,7 +1,7 @@
 package com.benchmarking.rest;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.rest assured.http.ContentType;
+import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;

@@ -1,30 +1,27 @@
 package com.benchmarking.rest;
 
 import com.benchmarking.security.RequireOrchestratorAuth;
+import com.benchmarking.service.EnvFileService;
+import com.benchmarking.service.EnvFileService.EnvFileContent;
+import com.benchmarking.service.EnvFileService.EnvFileException;
+import com.benchmarking.service.EnvFileService.EnvFileUpdate;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-import org.jboss.logging.Logger;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
  * REST resource for managing environment configuration files.
  * Provides endpoints for retrieving and updating the compose/.env file.
+ * Delegates business logic to {@link EnvFileService}.
  */
 @Path("/v1/env")
 @Produces(MediaType.APPLICATION_JSON)
@@ -32,13 +29,11 @@ import java.util.Map;
 @Tag(name = "Environment")
 public class EnvResource {
 
-    private static final Logger LOG = Logger.getLogger(EnvResource.class);
-
     /**
-     * Path to the environment configuration file.
+     * Service for environment file operations.
      */
-    @ConfigProperty(name = "orchestrator.env.path", defaultValue = "../compose/.env")
-    String envFilePath;
+    @Inject
+    EnvFileService envFileService;
 
     /**
      * Get the content of the environment file.
@@ -49,23 +44,13 @@ public class EnvResource {
     @Operation(summary = "Retrieve environment file content")
     public Response getEnvFile() {
         try {
-            Path path = Paths.get(envFilePath);
-            if (!Files.exists(path)) {
-                LOG.warnf("Environment file not found at: %s", path.toAbsolutePath());
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "Environment file not found"))
-                        .build();
-            }
-
-            String content = Files.readString(path);
-            LOG.infof("Successfully read environment file from: %s", path.toAbsolutePath());
-            
-            return Response.ok(Map.of("content", content, "path", path.toAbsolutePath().toString())).build();
-        } catch (IOException e) {
-            LOG.errorf(e, "Failed to read environment file: %s", envFilePath);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Failed to read environment file: " + e.getMessage()))
-                    .build();
+            EnvFileContent content = envFileService.readEnvFile();
+            return Response.ok(Map.of(
+                    "content", content.content(), 
+                    "path", content.absolutePath()
+            )).build();
+        } catch (EnvFileException e) {
+            return buildErrorResponse(e);
         }
     }
 
@@ -97,41 +82,40 @@ public class EnvResource {
             )
     )
     public Response updateEnvFile(EnvUpdateRequest request) {
-        if (request == null || request.content == null || request.content.isEmpty()) {
+        if (request == null || request.content == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Content is required"))
                     .build();
         }
 
         try {
-            Path path = Paths.get(envFilePath);
-            
-            if (!Files.exists(path)) {
-                LOG.warnf("Environment file not found at: %s", path.toAbsolutePath());
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "Environment file not found"))
-                        .build();
-            }
-
-            // Create backup
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            Path backupPath = path.resolveSibling(path.getFileName() + ".backup." + timestamp);
-            Files.copy(path, backupPath, StandardCopyOption.REPLACE_EXISTING);
-            LOG.infof("Created backup: %s", backupPath.toAbsolutePath());
-
-            // Write new content
-            Files.writeString(path, request.content);
-            LOG.infof("Successfully updated environment file: %s", path.toAbsolutePath());
-
+            EnvFileUpdate update = envFileService.updateEnvFile(request.content);
             return Response.ok(Map.of(
-                    "message", "Environment file updated successfully",
-                    "backup", backupPath.getFileName().toString()
+                    "message", update.message(),
+                    "backup", update.backupFilename()
             )).build();
-        } catch (IOException e) {
-            LOG.errorf(e, "Failed to update environment file: %s", envFilePath);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(Map.of("error", "Failed to update environment file: " + e.getMessage()))
-                    .build();
+        } catch (EnvFileException e) {
+            return buildErrorResponse(e);
         }
+    }
+
+    /**
+     * Builds an error response based on the exception type.
+     *
+     * @param exception the environment file exception
+     * @return appropriate HTTP response
+     */
+    private Response buildErrorResponse(EnvFileException exception) {
+        return switch (exception.getType()) {
+            case NOT_FOUND -> Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", exception.getMessage()))
+                    .build();
+            case VALIDATION_ERROR -> Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", exception.getMessage()))
+                    .build();
+            case IO_ERROR -> Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", exception.getMessage()))
+                    .build();
+        };
     }
 }

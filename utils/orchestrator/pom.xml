@@ -11,7 +11,7 @@
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.version>3.30.5</quarkus.platform.version>
-    <maven.compiler.release>25</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
     <surefire.version>3.5.4</surefire.version>
     <compiler-plugin.version>3.14.1</compiler-plugin.version>
     <lombok.version>1.18.42</lombok.version>

@@ -1,6 +1,7 @@
-package com.benchmarking.core;
+package com.benchmarking.service;
 
 import com.benchmarking.api.CommandPreset;
+import com.benchmarking.core.IntelliJRunXmlParser;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
