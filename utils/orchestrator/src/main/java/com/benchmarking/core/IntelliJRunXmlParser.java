@@ -72,7 +72,9 @@ public final class IntelliJRunXmlParser {
     doc.getDocumentElement().normalize();
 
     Element cfg = firstElement(doc, "configuration");
-    if (cfg == null) throw new IllegalArgumentException("Missing <configuration> element");
+    if (cfg == null) {
+      throw new IllegalArgumentException("Missing <configuration> element");
+    }
 
     String name = cfg.getAttribute("name");
     String configType = cfg.getAttribute("type");
@@ -86,20 +88,28 @@ public final class IntelliJRunXmlParser {
     Element optionScope = cfg;
     if (deployment != null) {
       Element settings = firstElement(deployment, "settings");
-      if (settings != null) optionScope = settings;
+      if (settings != null) {
+        optionScope = settings;
+      }
     }
 
     Map<String, String> opts = new LinkedHashMap<>();
     NodeList options = optionScope.getElementsByTagName("option");
     for (int i = 0; i < options.getLength(); i++) {
       Node n = options.item(i);
-      if (n.getNodeType() != Node.ELEMENT_NODE) continue;
+      if (n.getNodeType() != Node.ELEMENT_NODE) {
+        continue;
+      }
       Element e = (Element) n;
-      if (!e.hasAttribute("name")) continue;
+      if (!e.hasAttribute("name")) {
+        continue;
+      }
 
       String on = e.getAttribute("name");
       // Skip nested list container; parsed separately
-      if ("buildArgs".equals(on)) continue;
+      if ("buildArgs".equals(on)) {
+        continue;
+      }
 
       String ov = e.getAttribute("value");
       if (!ov.isBlank()) {
@@ -111,7 +121,9 @@ public final class IntelliJRunXmlParser {
       String text = e.getTextContent();
       if (text != null) {
         text = text.trim();
-        if (!text.isBlank()) opts.putIfAbsent(on, text);
+        if (!text.isBlank()) {
+          opts.putIfAbsent(on, text);
+        }
       }
     }
 
@@ -121,7 +133,9 @@ public final class IntelliJRunXmlParser {
   }
 
   public static String toDockerCommand(ParsedRunConfig cfg, String workspace) {
-    if (cfg == null) return null;
+    if (cfg == null) {
+      return null;
+    }
 
     // 1) Shell Script run config: SCRIPT_TEXT is the canonical command source
     if ("ShConfigurationType".equalsIgnoreCase(cfg.configType)) {
@@ -132,7 +146,9 @@ public final class IntelliJRunXmlParser {
           cfg.flatOptions.get("commandLine")
       );
       String cmd = extractFirstDockerCommand(script, workspace);
-      if (cmd != null) return cmd;
+      if (cmd != null) {
+        return cmd;
+      }
     }
 
     // 2) dockerfile deployment -> buildx build
@@ -151,7 +167,9 @@ public final class IntelliJRunXmlParser {
     );
     if (explicit != null) {
       String cmd = extractFirstDockerCommand(explicit, workspace);
-      if (cmd != null) return cmd;
+      if (cmd != null) {
+        return cmd;
+      }
     }
 
     LOG.debugf("Unsupported run config (type=%s deploymentType=%s) name=%s",
