@@ -6,9 +6,35 @@
 import { orchestratorConfig } from './config';
 
 /**
+ * TypeScript interfaces for type safety
+ */
+export interface JobStatus {
+  jobId: string;
+  status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED';
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  exitCode?: number;
+  lastLine?: string;
+  output?: string;
+  error?: string;
+}
+
+export interface CommandPreset {
+  title: string;
+  command: string;
+  category: string;
+  sourceFile: string;
+}
+
+export interface EnvFileContent {
+  content: string;
+}
+
+/**
  * Base headers for orchestrator requests
  */
-const getHeaders = (includeAuth: boolean = true): HeadersInit => {
+const getHeaders = (includeAuth: boolean = false): HeadersInit => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -77,22 +103,22 @@ export async function submitCommand(command: string): Promise<{ jobId: string }>
 /**
  * Get job status by jobId
  */
-export async function getJobStatus(jobId: string): Promise<any> {
-  return orchestratorGet(`/v1/jobs/${jobId}`, false);
+export async function getJobStatus(jobId: string): Promise<JobStatus> {
+  return orchestratorGet<JobStatus>(`/v1/jobs/${jobId}`, false);
 }
 
 /**
  * Get command presets from the orchestrator
  */
-export async function getCommandPresets(): Promise<any> {
-  return orchestratorGet('/v1/commands', false);
+export async function getCommandPresets(): Promise<CommandPreset[]> {
+  return orchestratorGet<CommandPreset[]>('/v1/commands', false);
 }
 
 /**
  * Get environment file content
  */
-export async function getEnvFile(): Promise<{ content: string }> {
-  return orchestratorGet('/v1/env', false);
+export async function getEnvFile(): Promise<EnvFileContent> {
+  return orchestratorGet<EnvFileContent>('/v1/env', false);
 }
 
 /**

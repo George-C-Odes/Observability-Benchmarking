@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orchestratorConfig } from '@/lib/config';
+import { validateJobId } from '@/lib/orchestratorClient';
 
 /**
  * GET /api/orchestrator/events
@@ -10,18 +11,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId');
 
-  if (!jobId) {
-    return NextResponse.json(
-      { error: 'jobId parameter is required' },
-      { status: 400 }
-    );
-  }
-
-  console.log(`[ORCHESTRATOR EVENTS API] Starting SSE stream for job: ${jobId}`);
-
   try {
+    // Validate jobId for consistency
+    const validatedJobId = validateJobId(jobId);
+    
+    console.log(`[ORCHESTRATOR EVENTS API] Starting SSE stream for job: ${validatedJobId}`);
+
     // Fetch the SSE stream from orchestrator
-    const url = `${orchestratorConfig.url}/v1/jobs/${jobId}/events`;
+    const url = `${orchestratorConfig.url}/v1/jobs/${validatedJobId}/events`;
     const response = await fetch(url, {
       headers: {
         'Accept': 'text/event-stream',
