@@ -6,7 +6,11 @@ import com.benchmarking.service.EnvFileService.EnvFileContent;
 import com.benchmarking.service.EnvFileService.EnvFileException;
 import com.benchmarking.service.EnvFileService.EnvFileUpdate;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -61,7 +65,25 @@ public class EnvResource {
         /**
          * New content for the environment file.
          */
-        public String content;
+        private String content;
+
+        /**
+         * Gets the content.
+         *
+         * @return the content
+         */
+        public String getContent() {
+            return content;
+        }
+
+        /**
+         * Sets the content.
+         *
+         * @param content the content to set
+         */
+        public void setContent(String content) {
+            this.content = content;
+        }
     }
 
     /**
@@ -82,14 +104,14 @@ public class EnvResource {
             )
     )
     public Response updateEnvFile(EnvUpdateRequest request) {
-        if (request == null || request.content == null) {
+        if (request == null || request.getContent() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Content is required"))
                     .build();
         }
 
         try {
-            EnvFileUpdate update = envFileService.updateEnvFile(request.content);
+            EnvFileUpdate update = envFileService.updateEnvFile(request.getContent());
             return Response.ok(Map.of(
                     "message", update.message(),
                     "backup", update.backupFilename()

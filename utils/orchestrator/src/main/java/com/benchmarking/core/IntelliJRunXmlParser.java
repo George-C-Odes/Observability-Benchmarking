@@ -284,7 +284,9 @@ public final class IntelliJRunXmlParser {
           }
         }
 
-        if (name != null && !name.isBlank()) out.add(new EnvVar(name, value));
+        if (name != null && !name.isBlank()) {
+          out.add(new EnvVar(name, value));
+        }
       }
     }
 
@@ -292,11 +294,17 @@ public final class IntelliJRunXmlParser {
   }
 
   private static String firstNonBlank(String... candidates) {
-    if (candidates == null) return null;
+    if (candidates == null) {
+      return null;
+    }
     for (String c : candidates) {
-      if (c == null) continue;
+      if (c == null) {
+        continue;
+      }
       String t = c.trim();
-      if (!t.isBlank()) return t;
+      if (!t.isBlank()) {
+        return t;
+      }
     }
     return null;
   }
@@ -321,8 +329,12 @@ public final class IntelliJRunXmlParser {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < argv.size(); i++) {
       String a = argv.get(i);
-      if (a == null) a = "";
-      if (i > 0) sb.append(' ');
+      if (a == null) {
+        a = "";
+      }
+      if (i > 0) {
+        sb.append(' ');
+      }
 
       if (a.isBlank()) {
         sb.append("\"\"");
