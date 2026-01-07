@@ -13,13 +13,47 @@ public class IllegalArgumentExceptionMapper implements ExceptionMapper<IllegalAr
                 .build();
     }
 
+    /**
+     * Error response structure for bad requests.
+     */
     public static class ErrorResponse {
-        public String error;
-        public String message;
+        /**
+         * Error type identifier.
+         */
+        private String error;
+        
+        /**
+         * Detailed error message.
+         */
+        private String message;
 
+        /**
+         * Creates a new error response.
+         *
+         * @param error the error type
+         * @param message the error message
+         */
         public ErrorResponse(String error, String message) {
             this.error = error;
             this.message = message;
+        }
+
+        /**
+         * Gets the error type.
+         *
+         * @return the error type
+         */
+        public String getError() {
+            return error;
+        }
+
+        /**
+         * Gets the error message.
+         *
+         * @return the error message
+         */
+        public String getMessage() {
+            return message;
         }
     }
 }

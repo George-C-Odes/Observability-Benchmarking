@@ -69,10 +69,10 @@ public class OrchestratorResource {
     )
   )
   public RunResponse run(RunRequest req) {
-    if (req == null || req.command == null || req.command.isBlank()) {
+    if (req == null || req.getCommand() == null || req.getCommand().isBlank()) {
       throw new BadRequestException("command is required");
     }
-    var validated = policy.validate(req.command);
+    var validated = policy.validate(req.getCommand());
     UUID id = jobs.submit(validated);
     return new RunResponse(id);
   }

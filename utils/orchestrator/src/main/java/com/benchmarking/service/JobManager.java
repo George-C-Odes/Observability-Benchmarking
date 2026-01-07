@@ -139,22 +139,76 @@ public class JobManager {
     } catch (Exception ignored) {}
   }
 
+  /**
+   * Internal representation of a job with its state and event streaming capabilities.
+   */
   static final class Job {
+    /**
+     * Unique job identifier.
+     */
     final UUID id;
+    
+    /**
+     * Current job status.
+     */
     volatile Status status = Status.QUEUED;
+    
+    /**
+     * Timestamp when job was created.
+     */
     volatile Instant createdAt = Instant.now();
+    
+    /**
+     * Timestamp when job started executing.
+     */
     volatile Instant startedAt;
+    
+    /**
+     * Timestamp when job finished executing.
+     */
     volatile Instant finishedAt;
+    
+    /**
+     * Process exit code.
+     */
     volatile Integer exitCode;
+    
+    /**
+     * Cancellation flag.
+     */
     volatile boolean canceled = false;
 
+    /**
+     * Event buffer for replay to new subscribers.
+     */
     final Deque<JobEvent> buffer;
+    
+    /**
+     * Maximum lines to keep in buffer.
+     */
     final int maxLines;
 
+    /**
+     * Active event emitters.
+     */
     final CopyOnWriteArrayList<MultiEmitter<? super JobEvent>> emitters = new CopyOnWriteArrayList<>();
+    
+    /**
+     * Job completion flag.
+     */
     volatile boolean completed = false;
+    
+    /**
+     * Last output line from the job.
+     */
     volatile String lastLine = null;
 
+    /**
+     * Creates a new job.
+     *
+     * @param id the job identifier
+     * @param maxLines maximum lines to buffer
+     */
     Job(UUID id, int maxLines) {
       this.id = id;
       this.maxLines = Math.max(100, maxLines);
@@ -162,7 +216,7 @@ public class JobManager {
     }
 
     synchronized void addToBuffer(JobEvent e) {
-      if ("log".equals(e.type) && e.message != null) lastLine = e.message;
+      if ("log".equals(e.getType()) && e.getMessage() != null) lastLine = e.getMessage();
       if (buffer.size() >= maxLines) buffer.removeFirst();
       buffer.addLast(e);
     }
@@ -194,13 +248,13 @@ public class JobManager {
 
     JobStatusResponse toStatus() {
       JobStatusResponse r = new JobStatusResponse();
-      r.jobId = id;
-      r.status = status.name();
-      r.createdAt = createdAt;
-      r.startedAt = startedAt;
-      r.finishedAt = finishedAt;
-      r.exitCode = exitCode;
-      r.lastLine = lastLine;
+      r.setJobId(id);
+      r.setStatus(status.name());
+      r.setCreatedAt(createdAt);
+      r.setStartedAt(startedAt);
+      r.setFinishedAt(finishedAt);
+      r.setExitCode(exitCode);
+      r.setLastLine(lastLine);
       return r;
     }
   }
