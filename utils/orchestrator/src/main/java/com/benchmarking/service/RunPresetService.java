@@ -16,19 +16,28 @@ import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class RunPresetService {
+  /**
+   * Logger instance for this class.
+   */
   private static final Logger LOG = Logger.getLogger(RunPresetService.class);
 
+  /**
+   * Pattern to match run configuration file names with category prefix.
+   */
   private static final Pattern RUN_FILE = Pattern.compile(
     "^\\[(build-img|single-cont|multi-cont)]\\s+(.+)\\.run\\.xml$",
     Pattern.CASE_INSENSITIVE
   );
 
+  /**
+   * Workspace directory path.
+   */
   @ConfigProperty(name = "orchestrator.workspace")
   String workspace;
 
   /**
    * Discovers presets from IntelliJ's .run directory located at:
-   *   ${orchestrator.workspace}/.run
+   *   ${orchestrator.workspace}/.run.
    */
   public List<CommandPreset> listPresets() {
     Path runDir = Path.of(workspace).resolve(".run");
@@ -45,7 +54,9 @@ public class RunPresetService {
           .forEach(p -> {
             String fn = p.getFileName().toString();
             Matcher m = RUN_FILE.matcher(fn);
-            if (!m.matches()) return;
+            if (!m.matches()) {
+              return;
+            }
 
             String category = m.group(1);
 
@@ -76,10 +87,14 @@ public class RunPresetService {
   }
 
   private static String normalizeTitle(String category, String raw) {
-    if (raw == null) return "";
+    if (raw == null) {
+      return "";
+    }
     String prefix = "[" + category + "]";
     String t = raw.trim();
-    if (t.startsWith(prefix)) t = t.substring(prefix.length()).trim();
+    if (t.startsWith(prefix)) {
+      t = t.substring(prefix.length()).trim();
+    }
     return t;
   }
 }

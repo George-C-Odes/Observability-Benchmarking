@@ -290,7 +290,9 @@ public class JobManager {
     Multi<JobEvent> multi() {
       return Multi.createFrom().emitter(em -> {
         synchronized (this) {
-          for (JobEvent e : buffer) em.emit(e);
+          for (JobEvent e : buffer) {
+            em.emit(e);
+          }
         }
         emitters.add(em);
         em.onTermination(() -> emitters.remove(em));
