@@ -15,13 +15,18 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class BearerAuthFilter implements ContainerRequestFilter {
 
+  /**
+   * API key for bearer token authentication.
+   */
   @ConfigProperty(name = "orchestrator.api-key")
   String apiKey;
 
   @Override
   public void filter(ContainerRequestContext ctx) {
     // If no API key configured, allow (local dev convenience)
-    if (apiKey == null || apiKey.isBlank()) return;
+    if (apiKey == null || apiKey.isBlank()) {
+      return;
+    }
 
     String auth = ctx.getHeaderString("Authorization");
     if (auth == null || !auth.startsWith("Bearer ")) {

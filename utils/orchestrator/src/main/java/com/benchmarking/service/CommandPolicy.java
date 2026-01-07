@@ -5,38 +5,60 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+/**
+ * Policy for validating docker commands.
+ */
 @ApplicationScoped
 public class CommandPolicy {
 
+  /**
+   * Workspace directory.
+   */
   @ConfigProperty(name = "orchestrator.workspace")
   String workspace;
 
+  /**
+   * Project directory.
+   */
   @ConfigProperty(name = "orchestrator.project-dir")
   String projectDir;
 
-  // "Read-only-ish" docker commands (includes your requested docker ps)
+  /**
+   * "Read-only-ish" docker commands (includes your requested docker ps).
+   */
   private static final Set<String> ALLOWED_DOCKER_COMMANDS = Set.of(
     "ps", "version", "info", "images"
   );
 
-  // docker compose subcommands allowed
+  /**
+   * docker compose subcommands allowed.
+   */
   private static final Set<String> ALLOWED_COMPOSE_SUBCOMMANDS = Set.of(
     "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config", "version"
   );
 
-  // docker buildx subcommands allowed
+  /**
+   * docker buildx subcommands allowed.
+   */
   private static final Set<String> ALLOWED_BUILDX_SUBCOMMANDS = Set.of(
     "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version"
   );
 
-  // Prevent redirecting the daemon target / messing with TLS daemon settings
+  /**
+   * Prevent redirecting the daemon target / messing with TLS daemon settings.
+   */
   private static final Set<String> DISALLOWED_TOKENS = Set.of(
     "-H", "--host", "--context", "--config", "--tls", "--tlscacert", "--tlscert", "--tlskey", "--tlsverify"
   );
 
-  // Compose global options (allowed before the subcommand) + whether they take a value.
+  /**
+   * Compose global options (allowed before the subcommand) + whether they take a value.
+   */
   private static final Map<String, Boolean> COMPOSE_GLOBAL_OPTS = Map.ofEntries(
     Map.entry("--project-directory", true),
     Map.entry("--profile", true),

@@ -9,4 +9,4 @@ import java.lang.annotation.ElementType;
 @NameBinding
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
-public @interface RequireOrchestratorAuth {}
+public @interface RequireOrchestratorAuth { }
