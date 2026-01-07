@@ -1,5 +1,6 @@
 package com.benchmarking.core;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
 import javax.xml.XMLConstants;
@@ -164,10 +165,21 @@ public final class IntelliJRunXmlParser {
   private static String dockerfileToBuildx(ParsedRunConfig cfg) {
     String tag = cfg.flatOptions.get("imageTag");
     String dockerfile = cfg.flatOptions.get("sourceFilePath");
-    String context = cfg.flatOptions.getOrDefault("contextFolderPath", ".");
-
-    if (tag == null || dockerfile == null) {
+    if (StringUtils.isBlank(tag) || StringUtils.isBlank(dockerfile)) {
       throw new IllegalArgumentException("dockerfile deployment missing required options (imageTag/sourceFilePath)");
+    }
+    String context = cfg.flatOptions.get("contextFolderPath");
+    if (StringUtils.isBlank(context)) {
+      try {
+        Path df = Path.of(dockerfile);
+        Path parent = df.getParent();
+        context = (parent == null) ? "." : parent.toString();
+      } catch (Exception e) {
+        context = ".";
+      }
+    }
+    else {
+      context = ".";
     }
 
     List<String> argv = new ArrayList<>();

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     const responseJson = await statusResponse.json();
-    
+    console.log(`[ORCHESTRATOR STATUS API] Status for job: ${jobId} received: ${responseJson.status}`);
     return NextResponse.json(responseJson);
 
   } catch (error: any) {
