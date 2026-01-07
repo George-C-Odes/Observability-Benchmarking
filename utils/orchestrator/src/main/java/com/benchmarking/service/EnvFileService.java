@@ -19,7 +19,14 @@ import java.time.format.DateTimeFormatter;
 @ApplicationScoped
 public class EnvFileService {
 
+    /**
+     * Logger instance for this service.
+     */
     private static final Logger LOG = Logger.getLogger(EnvFileService.class);
+    
+    /**
+     * Date-time formatter for backup file timestamps.
+     */
     private static final DateTimeFormatter BACKUP_TIMESTAMP_FORMAT = 
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 

@@ -75,7 +75,7 @@ public class CommandPolicy {
     Map.entry("--dummy", false) // will never be used; avoids empty Map.ofEntries issues if you edit later
   );
 
-  public record ValidatedCommand(List<String> argv, String workspace, String projectDir) {}
+  public record ValidatedCommand(List<String> argv, String workspace, String projectDir) { }
 
   public ValidatedCommand validate(String raw) {
     List<String> t = CommandTokenizer.tokenize(raw);
@@ -132,7 +132,9 @@ public class CommandPolicy {
       String tok = tokens.get(i);
 
       // subcommand is first non-option token
-      if (!tok.startsWith("-")) break;
+      if (!tok.startsWith("-")) {
+        break;
+      }
 
       String opt = tok;
       String inlineVal = null;
@@ -142,7 +144,9 @@ public class CommandPolicy {
       if (eq > 0 && tok.startsWith("--")) {
         opt = tok.substring(0, eq);
         inlineVal = tok.substring(eq + 1);
-        if (inlineVal.isEmpty()) inlineVal = null;
+        if (inlineVal.isEmpty()) {
+          inlineVal = null;
+        }
       }
 
       // Ignore the placeholder entry if present
@@ -168,7 +172,9 @@ public class CommandPolicy {
           i += 1;
         } else {
           // consumed as --opt value (two tokens)
-          if (i + 1 >= tokens.size()) throw new IllegalArgumentException("Missing value for option: " + opt);
+          if (i + 1 >= tokens.size()) {
+            throw new IllegalArgumentException("Missing value for option: " + opt);
+          }
           val = tokens.get(i + 1);
           i += 2;
         }
@@ -246,8 +252,8 @@ public class CommandPolicy {
 
   /**
    * Accepts absolute OR relative paths:
-   * - absolute must be under workspace
-   * - relative is resolved against workspace
+   * - absolute must be under workspace.
+   * - relative is resolved against workspace.
    */
   private void ensureUnderWorkspace(String pathStr) {
     Path ws = Path.of(workspace).normalize().toAbsolutePath();
