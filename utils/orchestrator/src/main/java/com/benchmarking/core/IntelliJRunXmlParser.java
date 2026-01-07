@@ -25,19 +25,37 @@ import java.util.Map;
  *    - Converts to: docker buildx build --load -t <tag> -f <dockerfile> --build-arg ... <context>
  */
 public final class IntelliJRunXmlParser {
+  /**
+   * Logger for this class.
+   */
   private static final Logger LOG = Logger.getLogger(IntelliJRunXmlParser.class);
 
-  private IntelliJRunXmlParser() {}
+  private IntelliJRunXmlParser() { }
 
+  /**
+   * Parsed IntelliJ run configuration containing configuration details.
+   *
+   * @param name the name of the run configuration
+   * @param configType the type of configuration (e.g., ShConfigurationType)
+   * @param deploymentType the deployment type (e.g., dockerfile)
+   * @param flatOptions map of configuration options
+   * @param buildArgs list of build arguments for Docker builds
+   */
   public record ParsedRunConfig(
       String name,
       String configType,
       String deploymentType,
       Map<String, String> flatOptions,
       List<EnvVar> buildArgs
-  ) {}
+  ) { }
 
-  public record EnvVar(String name, String value) {}
+  /**
+   * Environment variable for Docker build arguments.
+   *
+   * @param name the variable name
+   * @param value the variable value
+   */
+  public record EnvVar(String name, String value) { }
 
   public static ParsedRunConfig parse(Path file) throws Exception {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

@@ -11,10 +11,12 @@ import java.util.List;
  * This avoids invoking a shell.
  */
 public final class CommandTokenizer {
-  private CommandTokenizer() {}
+  private CommandTokenizer() { }
 
   public static List<String> tokenize(String command) {
-    if (command == null) return List.of();
+    if (command == null) {
+      return List.of();
+    }
 
     List<String> out = new ArrayList<>();
     StringBuilder cur = new StringBuilder();
@@ -56,7 +58,9 @@ public final class CommandTokenizer {
       cur.append(c);
     }
 
-    if (!cur.isEmpty()) out.add(cur.toString());
+    if (!cur.isEmpty()) {
+      out.add(cur.toString());
+    }
     return out;
   }
 }

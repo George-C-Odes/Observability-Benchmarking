@@ -122,7 +122,7 @@ public class EnvFileService {
      * @param content the file content
      * @param absolutePath the absolute path to the file
      */
-    public record EnvFileContent(String content, String absolutePath) {}
+    public record EnvFileContent(String content, String absolutePath) { }
 
     /**
      * Immutable record representing the result of an environment file update.
@@ -130,7 +130,7 @@ public class EnvFileService {
      * @param message success message
      * @param backupFilename the filename of the backup created
      */
-    public record EnvFileUpdate(String message, String backupFilename) {}
+    public record EnvFileUpdate(String message, String backupFilename) { }
 
     /**
      * Exception thrown when environment file operations fail.
