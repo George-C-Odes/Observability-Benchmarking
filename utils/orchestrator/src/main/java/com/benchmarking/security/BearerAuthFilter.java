@@ -15,7 +15,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class BearerAuthFilter implements ContainerRequestFilter {
 
-  @ConfigProperty(name = "orchestrator.api-key", defaultValue = "")
+  @ConfigProperty(name = "orchestrator.api-key")
   String apiKey;
 
   @Override

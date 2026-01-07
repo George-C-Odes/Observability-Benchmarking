@@ -16,7 +16,7 @@ x-default-environment: &default_env
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
   ulimit: &default_ulimit ${ULIMIT:-1048576}
   spring_boot_version: ${SPRING_BOOT_VERSION:-4.0.1}
-  quarkus_version: ${QUARKUS_VERSION:-3.30.5}
+  quarkus_version: ${QUARKUS_VERSION:-3.30.6}
   pyroscope_agent_enabled: &default_pyroscope_agent_enabled ${PROFILING_AGENT:-false}
   metric_mm_http: &default_metric_mm_http ${METRIC_MM_HTTP:-true}
   metric_mm_jvm: &default_metric_mm_jvm ${METRIC_MM_JVM:-false}
@@ -197,7 +197,6 @@ services:
     environment:
       ORCH_API_KEY: *default_orch_api_key
       ORCH_WORKSPACE: "/workspace"
-      ORCH_PROJECT_DIR: "/workspace/compose"
       ORCH_MAX_BUFFER_LINES: "5000"
       ORCH_SERIAL_EXECUTION: "true"
       DOCKER_HOST: "unix:///var/run/docker.sock"

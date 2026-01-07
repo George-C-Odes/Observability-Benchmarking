@@ -1,8 +1,0 @@
-orchestrator:
-  api-key: test-token-12345
-  workspace: /tmp/test-workspace
-  project-dir: /tmp/test-project
-  env:
-    path: /tmp/test.env
-  max-buffer-lines: 1000
-  serial-execution: true

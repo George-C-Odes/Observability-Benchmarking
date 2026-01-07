@@ -26,7 +26,7 @@ public class EnvFileService {
     /**
      * Path to the environment configuration file.
      */
-    @ConfigProperty(name = "orchestrator.env.path", defaultValue = "/workspace/compose/.env")
+    @ConfigProperty(name = "orchestrator.env.path")
     String envFilePath;
 
     /**

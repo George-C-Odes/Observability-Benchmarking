@@ -18,39 +18,39 @@ public class CommandPolicy {
 
   // "Read-only-ish" docker commands (includes your requested docker ps)
   private static final Set<String> ALLOWED_DOCKER_COMMANDS = Set.of(
-          "ps", "version", "info", "images"
+    "ps", "version", "info", "images"
   );
 
   // docker compose subcommands allowed
   private static final Set<String> ALLOWED_COMPOSE_SUBCOMMANDS = Set.of(
-          "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config"
+    "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config", "version"
   );
 
   // docker buildx subcommands allowed
   private static final Set<String> ALLOWED_BUILDX_SUBCOMMANDS = Set.of(
-          "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version"
+    "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version"
   );
 
   // Prevent redirecting the daemon target / messing with TLS daemon settings
   private static final Set<String> DISALLOWED_TOKENS = Set.of(
-          "-H", "--host", "--context", "--config", "--tls", "--tlscacert", "--tlscert", "--tlskey", "--tlsverify"
+    "-H", "--host", "--context", "--config", "--tls", "--tlscacert", "--tlscert", "--tlskey", "--tlsverify"
   );
 
   // Compose global options (allowed before the subcommand) + whether they take a value.
   private static final Map<String, Boolean> COMPOSE_GLOBAL_OPTS = Map.ofEntries(
-          Map.entry("--project-directory", true),
-          Map.entry("--profile", true),
-          Map.entry("--file", true),
-          Map.entry("-f", true),
-          Map.entry("--env-file", true),
-          Map.entry("--project-name", true),
-          Map.entry("-p", true),
-          Map.entry("--ansi", true),
-          Map.entry("--parallel", true),
-          Map.entry("--compatibility", false),
-          Map.entry("--progress", true),
+    Map.entry("--project-directory", true),
+    Map.entry("--profile", true),
+    Map.entry("--file", true),
+    Map.entry("-f", true),
+    Map.entry("--env-file", true),
+    Map.entry("--project-name", true),
+    Map.entry("-p", true),
+    Map.entry("--ansi", true),
+    Map.entry("--parallel", true),
+    Map.entry("--compatibility", false),
+    Map.entry("--progress", true),
 
-          Map.entry("--dummy", false) // will never be used; avoids empty Map.ofEntries issues if you edit later
+    Map.entry("--dummy", false) // will never be used; avoids empty Map.ofEntries issues if you edit later
   );
 
   public record ValidatedCommand(List<String> argv, String workspace, String projectDir) {}

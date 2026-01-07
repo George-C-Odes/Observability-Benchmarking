@@ -8,7 +8,7 @@
  */
 export const orchestratorConfig = {
   url: process.env.ORCH_URL || 'http://orchestrator:3002',
-  apiKey: process.env.ORCH_API_KEY || 'dev-changeme',
+  apiKey: process.env.ORCH_API_KEY || 'dev-change-me',
   timeout: 60000, // 60 seconds
 } as const;
 

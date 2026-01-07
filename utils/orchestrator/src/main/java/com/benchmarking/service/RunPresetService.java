@@ -23,7 +23,7 @@ public class RunPresetService {
     Pattern.CASE_INSENSITIVE
   );
 
-  @ConfigProperty(name = "orchestrator.workspace", defaultValue = "/workspace")
+  @ConfigProperty(name = "orchestrator.workspace")
   String workspace;
 
   /**

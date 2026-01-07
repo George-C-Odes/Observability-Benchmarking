@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 public class EnvResourceTest {
 
-    @ConfigProperty(name = "orchestrator.api.key", defaultValue = "dev-token-changeme")
+    @ConfigProperty(name = "orchestrator.api-key")
     String apiKey;
 
     /**
@@ -24,10 +24,10 @@ public class EnvResourceTest {
     @Test
     public void testGetEnvFile() {
         given()
-                .when().get("/v1/env")
-                .then()
-                .statusCode(anyOf(is(200), is(404))) // 404 if file doesn't exist in test environment
-                .contentType(ContentType.JSON);
+            .when().get("/v1/env")
+            .then()
+            .statusCode(anyOf(is(200), is(404))) // 404 if file doesn't exist in test environment
+            .contentType(ContentType.JSON);
     }
 
     /**
@@ -36,11 +36,11 @@ public class EnvResourceTest {
     @Test
     public void testUpdateEnvRequiresAuth() {
         given()
-                .contentType(ContentType.JSON)
-                .body("{\"content\":\"TEST=value\"}")
-                .when().post("/v1/env")
-                .then()
-                .statusCode(401);
+            .contentType(ContentType.JSON)
+            .body("{\"content\":\"TEST=value\"}")
+            .when().post("/v1/env")
+            .then()
+            .statusCode(401);
     }
 
     /**
@@ -49,12 +49,12 @@ public class EnvResourceTest {
     @Test
     public void testUpdateEnvValidatesContent() {
         given()
-                .header("Authorization", "Bearer " + apiKey)
-                .contentType(ContentType.JSON)
-                .body("{}")
-                .when().post("/v1/env")
-                .then()
-                .statusCode(400);
+            .header("Authorization", "Bearer " + apiKey)
+            .contentType(ContentType.JSON)
+            .body("{}")
+            .when().post("/v1/env")
+            .then()
+            .statusCode(400);
     }
 
     /**
@@ -63,11 +63,11 @@ public class EnvResourceTest {
     @Test
     public void testUpdateEnvRejectsEmptyContent() {
         given()
-                .header("Authorization", "Bearer " + apiKey)
-                .contentType(ContentType.JSON)
-                .body("{\"content\":\"\"}")
-                .when().post("/v1/env")
-                .then()
-                .statusCode(400);
+            .header("Authorization", "Bearer " + apiKey)
+            .contentType(ContentType.JSON)
+            .body("{\"content\":\"\"}")
+            .when().post("/v1/env")
+            .then()
+            .statusCode(400);
     }
 }

@@ -1,15 +1,18 @@
 orchestrator:
-  api-key: '${ORCH_API_KEY:}'
+  api-key: '${ORCH_API_KEY:dev-change-me}'
+  env:
+    path: '${orchestrator.workspace}/compose/.env'
   max-buffer-lines: '${ORCH_MAX_BUFFER_LINES:2000}'
-  project-dir: '${ORCH_PROJECT_DIR:/workspace/compose}'
+  project-dir: '${orchestrator.workspace}/compose'
   serial-execution: '${ORCH_SERIAL_EXECUTION:true}'
-  workspace: '${ORCH_WORKSPACE:/workspace}'
+  workspace: '${ORCH_WORKSPACE:${user.dir}/../..}'
 quarkus:
   http:
     host: 0.0.0.0
     limits:
       max-body-size: 10M
     port: 3002
+    test-port: 3012
   log:
     console:
       format: '%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX} %-5p [%c{2.}] (jobId=%X{jobId}) %s%e%n'

@@ -25,15 +25,18 @@ WORKDIR /workspace
 
 # Keep cache-friendly layering
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} pom.xml pom.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
+
 RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
-  mvn -B -ntp -DskipTests dependency:go-offline
+  mvn -B -ntp dependency:go-offline
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} src ./src
 RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
-  mvn -B -ntp -DskipTests -T 1C \
+  mvn -B -ntp -T 1C \
     -Dquarkus.package.jar.type=fast-jar \
     package
-
+# -DskipTests
 # ------------ DOCKER CLI STAGE (prep perms here, not in distroless) -----------------------
 FROM ${IMAGE_DOCKER_CLI} AS docker_cli
 # Copy only what we need (docker + compose/buildx plugins) and ensure executable bits

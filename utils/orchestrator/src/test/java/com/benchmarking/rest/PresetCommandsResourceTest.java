@@ -20,11 +20,11 @@ public class PresetCommandsResourceTest {
     @Test
     public void testListCommands() {
         given()
-                .when().get("/v1/commands")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("$", is(instanceOf(java.util.List.class)));
+            .when().get("/v1/commands")
+            .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body("$", is(instanceOf(java.util.List.class)));
     }
 
     /**
@@ -33,15 +33,15 @@ public class PresetCommandsResourceTest {
     @Test
     public void testCommandStructure() {
         given()
-                .when().get("/v1/commands")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                // If there are any commands, they should have these fields
-                .body(
-                        "[0].name", anyOf(nullValue(), isA(String.class)),
-                        "[0].command", anyOf(nullValue(), isA(String.class)),
-                        "[0].description", anyOf(nullValue(), isA(String.class))
-                );
+            .when().get("/v1/commands")
+            .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            // If there are any commands, they should have these fields
+            .body(
+                "[0].name", anyOf(nullValue(), isA(String.class)),
+                "[0].command", anyOf(nullValue(), isA(String.class)),
+                "[0].description", anyOf(nullValue(), isA(String.class))
+            );
     }
 }

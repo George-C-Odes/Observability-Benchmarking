@@ -25,10 +25,10 @@ public class JobManager {
 
   public enum Status { QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED }
 
-  @ConfigProperty(name = "orchestrator.max-buffer-lines", defaultValue = "2000")
+  @ConfigProperty(name = "orchestrator.max-buffer-lines")
   int maxBufferLines;
 
-  @ConfigProperty(name = "orchestrator.serial-execution", defaultValue = "true")
+  @ConfigProperty(name = "orchestrator.serial-execution")
   boolean serialExecution;
 
   private final ExecutorService executor;

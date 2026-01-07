@@ -63,7 +63,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.1 (3.5.9 also supported)
-- Quarkus: 3.30.5
+- Quarkus: 3.30.6
 - Go: 1.25.5 with Fiber v2.52.10
 
 ## Workload Design
