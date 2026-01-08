@@ -40,7 +40,6 @@ class LogBuffer {
   }
 }
 
-// eslint-disable-next-line no-var
 declare global {
   // Persist across HMR in dev
   var __NEXTJS_DASH_LOG_BUFFER__: LogBuffer | undefined;
@@ -52,4 +51,3 @@ export function getServerLogBuffer() {
   }
   return globalThis.__NEXTJS_DASH_LOG_BUFFER__;
 }
-

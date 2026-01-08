@@ -4,8 +4,10 @@
  * Follows Single Responsibility Principle - handles only env file HTTP proxying.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getEnvFile, updateEnvFile } from '@/lib/orchestratorClient';
+import { serverLogger } from '@/lib/serverLogger';
+import { errorFromUnknown, errorJson, okJson } from '@/lib/apiResponses';
 
 /**
  * GET /api/env
@@ -15,17 +17,13 @@ import { getEnvFile, updateEnvFile } from '@/lib/orchestratorClient';
  */
 export async function GET() {
   try {
-    console.log('[API_ENV] Fetching environment file from orchestrator');
+    serverLogger.info('[API_ENV] Fetching environment file from orchestrator');
     const envData = await getEnvFile();
-    console.log('[API_ENV] Successfully retrieved environment file');
-    return NextResponse.json(envData);
+    serverLogger.info('[API_ENV] Successfully retrieved environment file');
+    return okJson(envData);
   } catch (error) {
-    console.error('[API_ENV] Failed to fetch environment file:', error);
-    const message = error instanceof Error ? error.message : 'Failed to fetch environment file';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    serverLogger.error('[API_ENV] Failed to fetch environment file:', error);
+    return errorFromUnknown(500, error, 'Failed to fetch environment file');
   }
 }
 
@@ -38,26 +36,19 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[API_ENV] Updating environment file');
-    const body = await request.json();
-    
-    if (!body.content || typeof body.content !== 'string') {
-      console.error('[API_ENV] Invalid request: content field is required');
-      return NextResponse.json(
-        { error: 'content field is required and must be a string' },
-        { status: 400 }
-      );
+    serverLogger.info('[API_ENV] Updating environment file');
+    const body = (await request.json()) as { content?: unknown };
+
+    if (typeof body.content !== 'string' || !body.content.trim()) {
+      serverLogger.warn('[API_ENV] Invalid request: content field is required');
+      return errorJson(400, { error: 'content field is required and must be a non-empty string' });
     }
 
     await updateEnvFile(body.content);
-    console.log('[API_ENV] Successfully updated environment file');
-    return NextResponse.json({ success: true });
+    serverLogger.info('[API_ENV] Successfully updated environment file');
+    return okJson({ success: true });
   } catch (error) {
-    console.error('[API_ENV] Failed to update environment file:', error);
-    const message = error instanceof Error ? error.message : 'Failed to update environment file';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    serverLogger.error('[API_ENV] Failed to update environment file:', error);
+    return errorFromUnknown(500, error, 'Failed to update environment file');
   }
 }

@@ -2,6 +2,17 @@
 
 A Next.js-based dashboard for orchestrating and managing the Observability Benchmarking environment.
 
+## Architecture (high-level)
+
+**Browser UI (Next.js / MUI)** → **Next.js API routes** → **Orchestrator service (Quarkus)**
+
+- UI components live under `app/components/*`.
+- All “backend” operations (env file, scripts, job status/events) go through Next.js `app/api/*` routes.
+- The Next.js API routes use `lib/orchestratorClient.ts` for HTTP calls to the orchestrator.
+- Logging:
+  - Client logs: captured from browser `console.*`.
+  - Server logs: captured from Next.js route handlers and exposed via `/api/logs` and `/api/logs/stream`.
+
 ## Features
 
 - **Environment Configuration Editor**: Edit the `compose/.env` file through an intuitive UI
@@ -17,6 +28,15 @@ A Next.js-based dashboard for orchestrating and managing the Observability Bench
 - **TypeScript**: v5
 - **Node.js**: v25
 
+## Configuration
+
+Environment variables:
+
+- `ORCH_URL` (default: `http://orchestrator:3002`)
+- `ORCH_API_KEY` (default: `dev-change-me`)
+
+> Security note: the dashboard has no authentication and is intended for local/dev environments.
+
 ## Development
 
 ### Prerequisites
@@ -31,20 +51,25 @@ A Next.js-based dashboard for orchestrating and managing the Observability Bench
    npm install
    ```
 
-2. (Optional) Update dependency versions to the latest (including majors), install updated packages and perform lint check (into output file):
-   ```bash
-   npx npm-check-updates -u
-   npm install
-   npm run lint *> ("output-{0:yyyyMMdd-HHmmss}.txt" -f (Get-Date))
-   ```
-This updates package.json and refreshes package-lock.json.
-
-3. Run the development server:
+2. Run the development server:
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:3001](http://localhost:3001) in your browser
+3. Open [http://localhost:3001](http://localhost:3001) in your browser
+
+### Quality gates
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+```
+
+Quick One liner:
+```bash
+npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
+```
 
 ### Building for Production
 
@@ -52,6 +77,13 @@ This updates package.json and refreshes package-lock.json.
 npm run build
 npm start
 ```
+
+## Runtime endpoints
+
+- App health: `GET /api/app-health`
+- Service health aggregation: `GET /api/health`
+- Server logs (snapshot): `GET /api/logs`
+- Server logs (live SSE): `GET /api/logs/stream`
 
 ## Docker Deployment
 
@@ -84,34 +116,6 @@ docker run -p 3001:3001 \
   nextjs-dash:latest
 ```
 
-### Using Docker Compose
-
-Add the following service to your `docker-compose.yml` (already included in this project):
-
-```yaml
-services:
-   nextjs-dash:
-    build:
-      context: ./dashboard
-      dockerfile: Dockerfile
-    container_name: nextjs-dash
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./compose/.env:/app/compose/.env
-      - ./.run:/app/.run:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
-```
-
-Then start the dashboard:
-
-```bash
-docker compose up nextjs-dash -d
-```
-
 ## Usage
 
 ### Environment Configuration
@@ -129,6 +133,7 @@ docker compose up nextjs-dash -d
 4. View the output in the dialog that appears
 
 ### Healthcheck
+
 Healthcheck is available at endpoint:
 http://localhost:3001/api/app-health
 

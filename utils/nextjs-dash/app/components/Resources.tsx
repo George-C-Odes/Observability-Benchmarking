@@ -51,9 +51,9 @@ export default function Resources() {
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
-        📚 Resources & Documentation
+        Resources & Documentation
       </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Quick access to related tools, APIs, and project information
       </Typography>
 
@@ -77,7 +77,7 @@ export default function Resources() {
                     {resource.title}
                   </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary" paragraph>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {resource.description}
                 </Typography>
                 <Link
@@ -105,10 +105,10 @@ export default function Resources() {
       <Divider sx={{ my: 4 }} />
 
       <Alert severity="info" sx={{ mt: 3 }}>
-        <Typography variant="body2" paragraph sx={{ mb: 1 }}>
+        <Typography variant="body2" sx={{ mb: 1 }}>
           <strong>Observability Benchmarking Dashboard</strong>
         </Typography>
-        <Typography variant="body2" paragraph sx={{ mb: 0.5 }}>
+        <Typography variant="body2" sx={{ mb: 0.5 }}>
           Created by <strong>George Charalambous</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary">

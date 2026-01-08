@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { serverLogger } from '@/lib/serverLogger';
+import { errorFromUnknown, okJson } from '@/lib/apiResponses';
+import { withApiRoute } from '@/lib/routeWrapper';
 
 const execAsync = promisify(exec);
 
-export async function GET() {
+export const GET = withApiRoute({ name: 'SYSTEM_API' }, async function GET() {
   try {
     const systemInfo: Record<string, string> = {
       nodejs: process.version,
@@ -32,17 +33,14 @@ export async function GET() {
       systemInfo.mui = packageJson.dependencies?.['@mui/material'] || 'N/A';
       systemInfo.typescript = packageJson.devDependencies?.typescript || 'N/A';
     } catch (e: unknown) {
-      serverLogger.error('[SYSTEM API] Error reading package.json:', e);
+      serverLogger.error('Error reading package.json:', e);
     }
 
-    serverLogger.info('[SYSTEM API] System info:', systemInfo);
+    serverLogger.info('System info:', systemInfo);
 
-    return NextResponse.json(systemInfo);
+    return okJson(systemInfo);
   } catch (error) {
-    serverLogger.error('[SYSTEM API] Error getting system info:', error);
-    return NextResponse.json(
-      { error: 'Failed to get system info' },
-      { status: 500 }
-    );
+    serverLogger.error('Error getting system info:', error);
+    return errorFromUnknown(500, error, 'Failed to get system info');
   }
-}
+});

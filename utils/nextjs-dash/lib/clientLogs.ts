@@ -8,8 +8,8 @@ export interface ClientLogEntry {
 
 type Subscriber = (entries: ClientLogEntry[]) => void;
 
-// eslint-disable-next-line no-var
 declare global {
+  // Persist across HMR in dev
   var __NEXTJS_DASH_CLIENT_LOGS__:
     | {
         entries: ClientLogEntry[];
@@ -60,6 +60,10 @@ function append(level: ClientLogEntry['level'], args: unknown[]) {
   notify();
 }
 
+interface RestoreCapableConsole extends Console {
+  __nextjsDashRestore__?: () => void;
+}
+
 export function installConsoleCapture() {
   const s = getState();
   if (s.installed) return;
@@ -90,7 +94,7 @@ export function installConsoleCapture() {
   };
 
   // Expose a best-effort restore hook for tests.
-  (console as any).__nextjsDashRestore__ = () => {
+  (console as RestoreCapableConsole).__nextjsDashRestore__ = () => {
     console.log = originalLog;
     console.warn = originalWarn;
     console.error = originalError;
@@ -114,4 +118,3 @@ export function clearClientLogs() {
   s.entries = [];
   notify();
 }
-

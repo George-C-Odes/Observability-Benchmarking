@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { serverLogger } from '@/lib/serverLogger';
+import { errorJson, okJson, errorFromUnknown } from '@/lib/apiResponses';
+import { withApiRoute } from '@/lib/routeWrapper';
 
 interface ServiceEndpoint {
   name: string;
@@ -72,30 +74,28 @@ async function checkServiceHealth(service: ServiceEndpoint): Promise<{ name: str
   }
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withApiRoute({ name: 'HEALTH_API' }, async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const serviceName = searchParams.get('service');
 
     if (serviceName) {
-      // Check single service
       const service = SERVICE_ENDPOINTS.find((s) => s.name === serviceName);
       if (!service) {
-        return NextResponse.json({ error: 'Service not found' }, { status: 404 });
+        return errorJson(404, { error: 'Service not found' });
       }
 
-      serverLogger.info(`[HEALTH API] Checking health of: ${serviceName}`);
+      serverLogger.info('Checking health of service', { service: serviceName });
       const result = await checkServiceHealth(service);
-      return NextResponse.json(result);
-    } else {
-      // Check all services
-      serverLogger.info('[HEALTH API] Checking health of all services');
-      const results = await Promise.all(SERVICE_ENDPOINTS.map((service) => checkServiceHealth(service)));
-
-      return NextResponse.json({ services: results });
+      return okJson(result);
     }
+
+    serverLogger.info('Checking health of all services');
+    const results = await Promise.all(SERVICE_ENDPOINTS.map((service) => checkServiceHealth(service)));
+
+    return okJson({ services: results });
   } catch (error) {
-    serverLogger.error('[HEALTH API] Error checking service health:', error);
-    return NextResponse.json({ error: 'Failed to check service health' }, { status: 500 });
+    serverLogger.error('Error checking service health:', error);
+    return errorFromUnknown(500, error, 'Failed to check service health');
   }
-}
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -27,7 +27,7 @@ export default function EnvEditor() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const fetchEnvFile = async () => {
+  const fetchEnvFile = useCallback(async () => {
     setLoading(true);
     setMessage(null);
     try {
@@ -38,7 +38,11 @@ export default function EnvEditor() {
         },
       });
 
-      if (!response.ok) throw new Error('Failed to fetch environment file');
+      if (!response.ok) {
+        setMessage({ type: 'error', text: 'Failed to load environment file' });
+        return;
+      }
+
       const data = await response.json();
       setEnvContent(data.content);
       parseEnvContent(data.content);
@@ -48,7 +52,7 @@ export default function EnvEditor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const parseEnvContent = (content: string) => {
     // Note: This project uses YAML-style "KEY: VALUE" format, not standard "KEY=VALUE"
@@ -112,7 +116,12 @@ export default function EnvEditor() {
         body: JSON.stringify({ content: newContent }),
       });
 
-      if (!response.ok) throw new Error('Failed to save environment file');
+      if (!response.ok) {
+        const bodyText = await response.text().catch(() => '');
+        console.error('Failed to save environment file:', bodyText);
+        setMessage({ type: 'error', text: 'Failed to save environment file' });
+        return;
+      }
 
       setMessage({ type: 'success', text: 'Environment file saved successfully!' });
       setEnvContent(newContent);
@@ -125,8 +134,8 @@ export default function EnvEditor() {
   };
 
   useEffect(() => {
-    fetchEnvFile();
-  }, []);
+    void fetchEnvFile();
+  }, [fetchEnvFile]);
 
   if (loading) {
     return (
@@ -141,7 +150,7 @@ export default function EnvEditor() {
       <Typography variant="h5" gutterBottom>
         Environment Configuration Editor
       </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Edit the configuration values for the compose/.env file
       </Typography>
 

@@ -1,5 +1,6 @@
 import type { LogLevel } from './logBuffer';
 import { getServerLogBuffer } from './logBuffer';
+import { getRequestId } from './requestContext';
 
 function formatArgs(args: unknown[]): { message: string; meta?: unknown } {
   // Keep the message readable, but don't lose objects.
@@ -28,31 +29,31 @@ function formatArgs(args: unknown[]): { message: string; meta?: unknown } {
 
 export function logServer(level: LogLevel, ...args: unknown[]) {
   const { message, meta } = formatArgs(args);
+  const requestId = getRequestId();
+
   getServerLogBuffer().add({
     ts: Date.now(),
     level,
     source: 'server',
     message,
-    meta,
+    meta: requestId ? { requestId, meta } : meta,
   });
 
   // Still write to stdout/stderr so container logs remain useful.
+  const prefix = requestId ? `[rid:${requestId}]` : '';
+
   switch (level) {
     case 'error':
-      // eslint-disable-next-line no-console
-      console.error(...args);
+      console.error(prefix, ...args);
       break;
     case 'warn':
-      // eslint-disable-next-line no-console
-      console.warn(...args);
+      console.warn(prefix, ...args);
       break;
     case 'debug':
-      // eslint-disable-next-line no-console
-      console.debug(...args);
+      console.debug(prefix, ...args);
       break;
     default:
-      // eslint-disable-next-line no-console
-      console.log(...args);
+      console.log(prefix, ...args);
   }
 }
 
@@ -62,4 +63,3 @@ export const serverLogger = {
   warn: (...args: unknown[]) => logServer('warn', ...args),
   error: (...args: unknown[]) => logServer('error', ...args),
 } as const;
-

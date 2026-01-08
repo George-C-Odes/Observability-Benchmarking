@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import Providers from './Providers';
+import { ThemeHydrationScript } from './components/ThemeHydrationScript';
+import { ThemeColorSchemeScript } from './components/ThemeColorSchemeScript';
+import { RestoreUiStateScript } from './components/RestoreUiStateScript';
 
 export const metadata: Metadata = {
   title: 'Observability Benchmarking Dashboard',
@@ -16,8 +19,11 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
+        <ThemeColorSchemeScript />
+        <ThemeHydrationScript />
+        <RestoreUiStateScript />
         <Providers>{children}</Providers>
       </body>
     </html>

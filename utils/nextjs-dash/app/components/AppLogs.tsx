@@ -9,9 +9,12 @@ import {
   Chip,
   ToggleButtonGroup,
   ToggleButton,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArticleIcon from '@mui/icons-material/Article';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import { clearClientLogs, subscribeClientLogs } from '@/lib/clientLogs';
 
@@ -23,10 +26,17 @@ interface LogEntry {
   level: UiLevel;
   source: UiSource;
   message: string;
+  meta?: unknown;
 }
 
 function tsToTime(ts: number) {
   return new Date(ts).toLocaleTimeString();
+}
+
+function extractRequestId(meta: unknown): string | null {
+  if (!meta || typeof meta !== 'object') return null;
+  const m = meta as { requestId?: unknown };
+  return typeof m.requestId === 'string' && m.requestId.trim() ? m.requestId : null;
 }
 
 export default function AppLogs() {
@@ -77,7 +87,7 @@ export default function AppLogs() {
       try {
         const res = await fetch('/api/logs');
         const data = (await res.json()) as {
-          entries?: Array<{ ts: number; level: UiLevel; source: UiSource; message: string }>;
+          entries?: Array<{ ts: number; level: UiLevel; source: UiSource; message: string; meta?: unknown }>;
         };
         const incoming = Array.isArray(data?.entries) ? data.entries : [];
         appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
@@ -95,10 +105,16 @@ export default function AppLogs() {
         es.onmessage = (evt) => {
           if (cancelled) return;
           try {
-            const parsed = JSON.parse(evt.data) as { ts: number; level: UiLevel; message: string };
+            const parsed = JSON.parse(evt.data) as { ts: number; level: UiLevel; message: string; meta?: unknown };
             if (!parsed?.ts || !parsed?.level || typeof parsed?.message !== 'string') return;
             appendServerEntries([
-              { ts: parsed.ts, level: parsed.level, source: 'server', message: parsed.message },
+              {
+                ts: parsed.ts,
+                level: parsed.level,
+                source: 'server',
+                message: parsed.message,
+                meta: parsed.meta,
+              },
             ]);
           } catch {
             // ignore
@@ -116,6 +132,8 @@ export default function AppLogs() {
       }
     };
 
+    // Always load an initial snapshot so the list is populated even if SSE is slow/blocked.
+    void fallbackSnapshot();
     connect();
 
     return () => {
@@ -211,6 +229,14 @@ export default function AppLogs() {
     return source === 'server' ? 'secondary' : 'default';
   };
 
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // ignore
+    }
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -251,40 +277,60 @@ export default function AppLogs() {
         {filteredLogs.length === 0 ? (
           <Typography color="text.secondary">No logs to display</Typography>
         ) : (
-          filteredLogs.map((log, index) => (
-            <Box
-              key={`${log.ts}-${index}`}
-              sx={{
-                py: 0.5,
-                borderBottom: index < filteredLogs.length - 1 ? 1 : 0,
-                borderColor: 'divider',
-              }}
-            >
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography
-                  component="span"
-                  sx={{ color: 'text.secondary', minWidth: '90px', fontSize: '0.75rem' }}
-                >
-                  {tsToTime(log.ts)}
-                </Typography>
-                <Chip
-                  label={log.source.toUpperCase()}
-                  color={getSourceColor(log.source)}
-                  size="small"
-                  sx={{ minWidth: '75px', fontSize: '0.7rem', height: '20px' }}
-                />
-                <Chip
-                  label={log.level.toUpperCase()}
-                  color={getLevelColor(log.level)}
-                  size="small"
-                  sx={{ minWidth: '70px', fontSize: '0.7rem', height: '20px' }}
-                />
-                <Typography component="span" sx={{ wordBreak: 'break-word', flex: 1 }}>
-                  {log.message}
-                </Typography>
+          filteredLogs.map((log, index) => {
+            const rid = log.source === 'server' ? extractRequestId(log.meta) : null;
+            return (
+              <Box
+                key={`${log.ts}-${index}`}
+                sx={{
+                  py: 0.5,
+                  borderBottom: index < filteredLogs.length - 1 ? 1 : 0,
+                  borderColor: 'divider',
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography
+                    component="span"
+                    sx={{ color: 'text.secondary', minWidth: '90px', fontSize: '0.75rem' }}
+                  >
+                    {tsToTime(log.ts)}
+                  </Typography>
+                  <Chip
+                    label={log.source.toUpperCase()}
+                    color={getSourceColor(log.source)}
+                    size="small"
+                    sx={{ minWidth: '75px', fontSize: '0.7rem', height: '20px' }}
+                  />
+                  <Chip
+                    label={log.level.toUpperCase()}
+                    color={getLevelColor(log.level)}
+                    size="small"
+                    sx={{ minWidth: '70px', fontSize: '0.7rem', height: '20px' }}
+                  />
+                  {rid && (
+                    <Tooltip title={`Request ID: ${rid}`} arrow>
+                      <Chip
+                        label={`RID ${rid.slice(0, 6)}`}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: '0.7rem', height: '20px' }}
+                        onClick={() => void copyText(rid)}
+                        onDelete={() => void copyText(rid)}
+                        deleteIcon={
+                          <IconButton size="small" aria-label="copy request id">
+                            <ContentCopyIcon fontSize="inherit" />
+                          </IconButton>
+                        }
+                      />
+                    </Tooltip>
+                  )}
+                  <Typography component="span" sx={{ wordBreak: 'break-word', flex: 1 }}>
+                    {log.message}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          ))
+            );
+          })
         )}
       </Paper>
 

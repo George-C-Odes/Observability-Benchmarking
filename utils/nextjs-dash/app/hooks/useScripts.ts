@@ -1,0 +1,51 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+
+export interface Script {
+  name: string;
+  description: string;
+  command: string;
+  category: 'build-img' | 'multi-cont' | 'single-cont' | 'test';
+}
+
+export type ScriptsState = {
+  scripts: Script[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+};
+
+export function useScripts(): ScriptsState {
+  const [scripts, setScripts] = useState<Script[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/scripts');
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        console.error('Failed to fetch scripts:', text);
+        setError('Failed to load scripts');
+        return;
+      }
+      const data = (await response.json()) as { scripts?: Script[] };
+      setScripts(Array.isArray(data?.scripts) ? data.scripts : []);
+    } catch (e) {
+      setError('Failed to load scripts');
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return { scripts, loading, error, refresh };
+}
+

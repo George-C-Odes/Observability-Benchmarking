@@ -11,6 +11,7 @@ import {
   Chip,
 } from '@mui/material';
 import ComputerIcon from '@mui/icons-material/Computer';
+import { fetchJson } from '@/lib/fetchJson';
 
 interface SystemInfoData {
   nodejs: string;
@@ -29,20 +30,17 @@ export default function SystemInfo() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSystemInfo();
+    void fetchSystemInfo();
   }, []);
 
   const fetchSystemInfo = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/system');
-      if (!response.ok) throw new Error('Failed to fetch system info');
-      const data = await response.json();
+      const data = await fetchJson<SystemInfoData>('/api/system');
       setSystemInfo(data);
-    } catch (err) {
+    } catch {
       setError('Failed to load system information');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -65,7 +63,7 @@ export default function SystemInfo() {
       <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <ComputerIcon /> System Information
       </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Framework and library versions currently in use
       </Typography>
 

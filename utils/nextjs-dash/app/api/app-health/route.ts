@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { serverLogger } from '@/lib/serverLogger';
+import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 
 export async function GET() {
   try {
@@ -30,16 +30,9 @@ export async function GET() {
 
     serverLogger.info('[APP-HEALTH API] Health check result:', health);
 
-    return NextResponse.json(health, { status: 200 });
+    return okJson(health);
   } catch (error) {
     serverLogger.error('[APP-HEALTH API] Health check failed:', error);
-    return NextResponse.json(
-      {
-        status: 'DOWN',
-        timestamp: new Date().toISOString(),
-        error: 'Health check failed',
-      },
-      { status: 503 }
-    );
+    return errorFromUnknown(503, error, 'Health check failed');
   }
 }

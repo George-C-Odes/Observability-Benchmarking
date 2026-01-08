@@ -18,6 +18,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import { fetchJson } from '@/lib/fetchJson';
 
 interface ServiceHealth {
   name: string;
@@ -33,20 +34,17 @@ export default function ServiceHealth() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    fetchAllServices();
+    void fetchAllServices();
   }, []);
 
   const fetchAllServices = async () => {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('/api/health');
-      if (!response.ok) throw new Error('Failed to fetch service health');
-      const data = await response.json();
+      const data = await fetchJson<{ services?: ServiceHealth[] }>('/api/health');
       setServices(data.services || []);
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to check service health' });
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -55,15 +53,11 @@ export default function ServiceHealth() {
   const refreshService = async (serviceName: string) => {
     setRefreshing(serviceName);
     try {
-      const response = await fetch(`/api/health?service=${serviceName}`);
-      if (!response.ok) throw new Error('Failed to check service health');
-      const data = await response.json();
-      
-      setServices(prev =>
-        prev.map(s => (s.name === serviceName ? data : s))
-      );
-    } catch (err) {
-      console.error(err);
+      const data = await fetchJson<ServiceHealth>(`/api/health?service=${serviceName}`);
+
+      setServices((prev) => prev.map((s) => (s.name === serviceName ? data : s)));
+    } catch {
+      // Keep this quiet; the card will still display the previous known state.
     } finally {
       setRefreshing(null);
     }

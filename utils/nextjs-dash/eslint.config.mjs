@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import nextPlugin from '@next/eslint-plugin-next';
 import eslintJs from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,10 +49,12 @@ export default [
     },
     plugins: {
       '@next/next': nextPlugin,
+      'react-hooks': reactHooks,
     },
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs['core-web-vitals'].rules,
+      ...reactHooks.configs.recommended.rules,
     },
   },
 

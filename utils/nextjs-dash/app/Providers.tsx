@@ -9,6 +9,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BootLogger } from './components/BootLogger';
 import { createCustomTheme, themeOptions } from './theme';
 import { installConsoleCapture } from '@/lib/clientLogs';
+import { readStoredTheme, writeStoredTheme } from '@/lib/themeStorage';
 
 type DashboardThemeContextValue = {
   currentTheme: string;
@@ -25,35 +26,38 @@ export function useDashboardTheme() {
   return ctx;
 }
 
-export default function Providers({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+function sanitizeThemeId(themeId: string | null | undefined): string {
+  if (!themeId) return 'dark';
+  return themeOptions.some((t) => t.id === themeId) ? themeId : 'dark';
+}
 
-  // Keep the initial theme stable between SSR and the first client render.
-  const [currentTheme, setCurrentTheme] = useState<string>('dark');
+function getInitialTheme(): string {
+  // SSR fallback
+  if (typeof window === 'undefined') return 'dark';
+
+  // Prefer the pre-hydration value injected by ThemeHydrationScript.
+  const attr = document.documentElement.dataset.dashboardTheme;
+  if (attr) return sanitizeThemeId(attr);
+
+  return sanitizeThemeId(readStoredTheme() ?? 'dark');
+}
+
+export default function Providers({ children }: { children: ReactNode }) {
+  const [currentTheme, _setCurrentTheme] = useState<string>(getInitialTheme);
+
+  const setCurrentTheme = (themeId: string) => {
+    _setCurrentTheme(sanitizeThemeId(themeId));
+  };
 
   useEffect(() => {
     installConsoleCapture();
-    setMounted(true);
   }, []);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('dashboardTheme');
-      // Validate that the stored theme exists in our theme options
-      if (stored && themeOptions.some((t) => t.id === stored)) {
-        setCurrentTheme(stored);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('dashboardTheme', currentTheme);
-    } catch {
-      // ignore
-    }
+    writeStoredTheme(currentTheme);
+    // Keep the data attribute in sync (useful for debugging and future CSS hooks).
+    document.documentElement.dataset.dashboardTheme = currentTheme;
   }, [currentTheme]);
 
   const theme = useMemo(() => createCustomTheme(currentTheme), [currentTheme]);
@@ -63,16 +67,6 @@ export default function Providers({ children }: { children: ReactNode }) {
     [currentTheme]
   );
 
-  // Avoid hydration mismatches by not rendering the dynamic client tree until after mount.
-  if (!mounted) {
-    return (
-      <AppRouterCacheProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-        </ThemeProvider>
-      </AppRouterCacheProvider>
-    );
-  }
 
   return (
     <AppRouterCacheProvider>
