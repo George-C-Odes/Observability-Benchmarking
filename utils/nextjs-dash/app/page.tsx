@@ -64,20 +64,15 @@ export default function Home() {
     return 0;
   });
 
-  const [currentTheme, setCurrentTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('dashboardTheme') || 'dark';
-    }
-    return 'dark';
-  });
+  const [currentTheme, setCurrentTheme] = useState('dark');
 
-  // Update theme state when component mounts to sync with localStorage
+  // Sync theme state with localStorage on mount
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedTheme = localStorage.getItem('dashboardTheme') || 'dark';
       setCurrentTheme(storedTheme);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
