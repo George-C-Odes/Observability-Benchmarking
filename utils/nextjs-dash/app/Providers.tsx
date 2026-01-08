@@ -7,13 +7,13 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { BootLogger } from './components/BootLogger';
-import { createCustomTheme } from './theme';
+import { createCustomTheme, themeOptions } from './theme';
 
 export default function Providers({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   // Keep the initial theme stable between SSR and the first client render.
-  const [currentTheme, setCurrentTheme] = useState<'dark' | 'light'>('dark');
+  const [currentTheme, setCurrentTheme] = useState<string>('dark');
 
   useEffect(() => {
     setMounted(true);
@@ -22,7 +22,8 @@ export default function Providers({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('dashboardTheme');
-      if (stored === 'light' || stored === 'dark') {
+      // Validate that the stored theme exists in our theme options
+      if (stored && themeOptions.some(t => t.id === stored)) {
         setCurrentTheme(stored);
       }
     } catch {
