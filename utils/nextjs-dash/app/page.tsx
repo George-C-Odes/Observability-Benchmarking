@@ -122,7 +122,7 @@ export default function Home() {
               onChange={handleTabChange} 
               aria-label="dashboard tabs"
               variant="scrollable"
-              scrollButtons="auto"
+              scrollButtons={false}
             >
               <Tab label="System Info" />
               <Tab label="Service Health" />
