@@ -71,6 +71,16 @@ export default function Home() {
     return 'dark';
   });
 
+  // Update theme state when localStorage changes (e.g., after page reload)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTheme = localStorage.getItem('dashboardTheme') || 'dark';
+      if (storedTheme !== currentTheme) {
+        setCurrentTheme(storedTheme);
+      }
+    }
+  }, []);
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     if (typeof window !== 'undefined') {
