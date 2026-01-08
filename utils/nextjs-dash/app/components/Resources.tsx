@@ -59,7 +59,7 @@ export default function Resources() {
 
       <Grid container spacing={3} sx={{ mt: 2 }}>
         {resources.map((resource) => (
-          <Grid item xs={12} sm={6} key={resource.title}>
+          <Grid size={{ xs: 12, sm: 6 }} key={resource.title}>
             <Card
               sx={{
                 height: '100%',
