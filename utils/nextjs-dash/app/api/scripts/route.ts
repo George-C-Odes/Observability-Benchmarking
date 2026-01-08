@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getCommandPresets } from '@/lib/orchestratorClient';
 
+type OrchestratorPreset = {
+  title: string;
+  command: string;
+  category: 'build-img' | 'multi-cont' | 'single-cont' | 'test' | string;
+  sourceFile: string;
+};
+
 /**
  * GET /api/scripts
  * Fetches command presets from the orchestrator service
@@ -8,12 +15,12 @@ import { getCommandPresets } from '@/lib/orchestratorClient';
 export async function GET() {
   try {
     console.log(`[SCRIPTS API] Fetching presets from orchestrator`);
-    
+
     const presets = await getCommandPresets();
     console.log(`[SCRIPTS API] Fetched ${presets.length} command presets from orchestrator`);
 
     // Transform orchestrator response to match frontend expectations
-    const scripts = presets.map((preset: any) => ({
+    const scripts = (presets as OrchestratorPreset[]).map((preset) => ({
       name: preset.title,
       description: `${preset.category} command`,
       command: preset.command,

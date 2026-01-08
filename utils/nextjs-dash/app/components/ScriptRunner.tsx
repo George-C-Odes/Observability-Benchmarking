@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -32,12 +32,22 @@ interface Script {
   category: 'build-img' | 'multi-cont' | 'single-cont' | 'test';
 }
 
+interface JobStatus {
+  jobId: string;
+  status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED';
+  createdAt?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  exitCode?: number;
+  lastLine?: string;
+}
+
 export default function ScriptRunner() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [outputDialog, setOutputDialog] = useState<{ open: boolean; title: string; output: string; jobDetails?: any }>({
+  const [outputDialog, setOutputDialog] = useState<{ open: boolean; title: string; output: string; jobDetails?: JobStatus | null }>({
     open: false,
     title: '',
     output: '',
@@ -48,6 +58,11 @@ export default function ScriptRunner() {
   const [eventLogs, setEventLogs] = useState<string[]>([]);
   const [showEventLogs, setShowEventLogs] = useState(false);
   const MAX_EVENT_LOGS = 500;
+
+  // Track the current SSE connection and whether we expect it to close (normal end-of-stream)
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const expectedSseCloseRef = useRef(false);
+  const activeSseJobIdRef = useRef<string | null>(null);
 
   const copyToClipboard = async (text: string, scriptName: string) => {
     try {
@@ -75,12 +90,26 @@ export default function ScriptRunner() {
     }
   };
 
+  const closeEventSource = () => {
+    expectedSseCloseRef.current = true;
+    activeSseJobIdRef.current = null;
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+  };
+
   const executeScript = async (scriptName: string, command: string) => {
     setExecuting(scriptName);
     setMessage(null);
     setEventLogs([]); // Clear previous logs
     setShowEventLogs(true); // Show event logs panel
-    
+
+    // Ensure any previous SSE stream is closed before starting a new job
+    closeEventSource();
+    expectedSseCloseRef.current = false;
+    activeSseJobIdRef.current = null;
+
     try {
       // Step 1: Submit the job and get jobId immediately
       const submitResponse = await fetch('/api/orchestrator/submit', {
@@ -104,21 +133,29 @@ export default function ScriptRunner() {
       // Step 3: Poll for job completion
       const finalStatus = await pollJobStatus(jobId);
 
+      // Mark stream as expected to end now (some browsers emit an EventSource "error" on normal close)
+      expectedSseCloseRef.current = true;
+      activeSseJobIdRef.current = null;
+      closeEventSource();
+
       // Format output with job details
       let formattedOutput = '';
       if (finalStatus) {
-        const startTime = new Date(finalStatus.startedAt);
-        const endTime = new Date(finalStatus.finishedAt);
-        const durationMs = endTime.getTime() - startTime.getTime();
-        const durationSec = (durationMs / 1000).toFixed(2);
-        
+        const startedAt = finalStatus.startedAt ?? '';
+        const finishedAt = finalStatus.finishedAt ?? '';
+
+        const startTime = startedAt ? new Date(startedAt) : null;
+        const endTime = finishedAt ? new Date(finishedAt) : null;
+        const durationMs = startTime && endTime ? endTime.getTime() - startTime.getTime() : null;
+        const durationSec = durationMs !== null ? (durationMs / 1000).toFixed(2) : 'N/A';
+
         formattedOutput = `Job ID: ${finalStatus.jobId}\n`;
         formattedOutput += `Status: ${finalStatus.status}\n`;
         formattedOutput += `Exit Code: ${finalStatus.exitCode}\n`;
         formattedOutput += `Duration: ${durationSec}s\n`;
-        formattedOutput += `Started: ${startTime.toLocaleString()}\n`;
-        formattedOutput += `Finished: ${endTime.toLocaleString()}\n\n`;
-        
+        formattedOutput += `Started: ${startTime ? startTime.toLocaleString() : 'N/A'}\n`;
+        formattedOutput += `Finished: ${endTime ? endTime.toLocaleString() : 'N/A'}\n\n`;
+
         if (finalStatus.lastLine) {
           formattedOutput += `Last Output Line:\n${finalStatus.lastLine}\n\n`;
         }
@@ -139,6 +176,8 @@ export default function ScriptRunner() {
         setMessage({ type: 'error', text: `Command "${scriptName}" failed` });
       }
     } catch (error) {
+      // Make sure we close the SSE stream on any error
+      closeEventSource();
       const errorMessage = error instanceof Error ? error.message : 'Failed to execute command';
       setMessage({ type: 'error', text: errorMessage });
       console.error(error);
@@ -147,16 +186,21 @@ export default function ScriptRunner() {
     }
   };
 
-  const pollJobStatus = async (jobId: string): Promise<any> => {
+  const pollJobStatus = async (jobId: string): Promise<JobStatus | null> => {
     const maxAttempts = 60;
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       try {
         const statusResponse = await fetch(`/api/orchestrator/status?jobId=${jobId}`);
-        const status = await statusResponse.json();
-        
+        const status = (await statusResponse.json()) as JobStatus;
+
         if (status.status === 'SUCCEEDED' || status.status === 'FAILED' || status.status === 'CANCELED') {
+          // If this is the active SSE stream, mark it as expected to close now.
+          if (activeSseJobIdRef.current === jobId) {
+            expectedSseCloseRef.current = true;
+            activeSseJobIdRef.current = null;
+          }
           return status;
         }
       } catch (error) {
@@ -168,9 +212,15 @@ export default function ScriptRunner() {
 
   const streamJobEvents = async (jobId: string) => {
     try {
+      // Close any previous stream before opening a new one
+      closeEventSource();
+      expectedSseCloseRef.current = false;
+      activeSseJobIdRef.current = jobId;
+
       // Use Next.js API proxy instead of direct orchestrator connection
       const eventSource = new EventSource(`/api/orchestrator/events?jobId=${jobId}`);
-      
+      eventSourceRef.current = eventSource;
+
       eventSource.onmessage = (event) => {
         const logLine = event.data;
         setEventLogs((prev) => {
@@ -180,15 +230,23 @@ export default function ScriptRunner() {
         });
       };
 
-      eventSource.onerror = (error) => {
-        console.error('EventSource error:', error);
-        eventSource.close();
+      eventSource.onerror = () => {
+        // Important: browsers often emit `error` when the server closes the stream normally.
+        // So we only treat this as a real error if the stream is still the active one.
+        const isExpected = expectedSseCloseRef.current || activeSseJobIdRef.current !== jobId;
+
+        closeEventSource();
+
+        if (!isExpected) {
+          // Optional: surface a UI message instead of noisy console output.
+          setMessage({ type: 'error', text: 'Lost connection to event stream (job still running). Check orchestrator logs.' });
+        }
       };
 
-      // Clean up on completion (close after 60 seconds as a safety measure)
+      // Safety close (avoid dangling streams)
       setTimeout(() => {
-        eventSource.close();
-      }, 60000);
+        closeEventSource();
+      }, 600000);
     } catch (error) {
       console.error('Failed to stream job events:', error);
     }
@@ -211,6 +269,11 @@ export default function ScriptRunner() {
 
   useEffect(() => {
     fetchScripts();
+  }, []);
+
+  // Cleanup SSE on unmount
+  useEffect(() => {
+    return () => closeEventSource();
   }, []);
 
   if (loading) {

@@ -21,12 +21,13 @@ export async function GET(request: NextRequest) {
     console.log(`[ORCHESTRATOR STATUS API] Status for job: ${validatedJobId} received: ${status.status}`);
     return NextResponse.json(status);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const details = error instanceof Error ? error.message : String(error);
     console.error('[ORCHESTRATOR STATUS API] Error fetching job status:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch job status',
-        details: error.message || 'Unknown error occurred',
+        details,
       },
       { status: 500 }
     );

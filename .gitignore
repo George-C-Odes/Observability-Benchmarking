@@ -130,3 +130,6 @@ venv.bak/
 /qodana.yaml
 /services/quarkus/jvm/src/main/resources/META-INF.native-image/
 /services/quarkus/jvm/target/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

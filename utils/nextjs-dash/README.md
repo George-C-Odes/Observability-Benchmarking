@@ -31,10 +31,11 @@ A Next.js-based dashboard for orchestrating and managing the Observability Bench
    npm install
    ```
 
-2. (Optional) Update dependency versions to the latest (including majors), then reinstall:
+2. (Optional) Update dependency versions to the latest (including majors), install updated packages and perform lint check (into output file):
    ```bash
    npx npm-check-updates -u
    npm install
+   npm run lint *> ("output-{0:yyyyMMdd-HHmmss}.txt" -f (Get-Date))
    ```
 This updates package.json and refreshes package-lock.json.
 

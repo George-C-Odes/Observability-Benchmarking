@@ -21,14 +21,14 @@ export async function GET() {
         method: 'GET',
         signal: AbortSignal.timeout(2000), // 2 second timeout
       });
-      
+
       health.checks.orchestrator = orchResponse.ok ? 'UP' : 'DOWN';
-    } catch (e) {
+    } catch {
       health.checks.orchestrator = 'DOWN';
     }
 
     return NextResponse.json(health, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         status: 'DOWN',

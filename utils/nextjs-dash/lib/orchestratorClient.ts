@@ -50,7 +50,7 @@ const getHeaders = (includeAuth: boolean = false): HeadersInit => {
 /**
  * Make a GET request to the orchestrator
  */
-export async function orchestratorGet<T = any>(
+export async function orchestratorGet<T = unknown>(
   endpoint: string,
   requireAuth: boolean = false
 ): Promise<T> {
@@ -72,9 +72,9 @@ export async function orchestratorGet<T = any>(
 /**
  * Make a POST request to the orchestrator
  */
-export async function orchestratorPost<T = any>(
+export async function orchestratorPost<T = unknown>(
   endpoint: string,
-  body: any,
+  body: unknown,
   requireAuth: boolean = true
 ): Promise<T> {
   const url = `${orchestratorConfig.url}${endpoint}`;

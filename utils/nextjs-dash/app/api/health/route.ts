@@ -58,14 +58,15 @@ async function checkServiceHealth(service: ServiceEndpoint): Promise<{ name: str
     } else {
       return { name: service.name, status: 'down', responseTime, statusCode: response.status, body: text, error: `HTTP ${response.status}` };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const responseTime = Date.now() - startTime;
-    const isTimeout = err?.name === 'AbortError';
+    const isTimeout = err instanceof Error && err.name === 'AbortError';
+    const message = err instanceof Error ? err.message : String(err);
     return {
       name: service.name,
       status: 'down',
       responseTime,
-      error: isTimeout ? `Timeout after ${timeoutMs}ms` : err?.message ?? String(err)
+      error: isTimeout ? `Timeout after ${timeoutMs}ms` : message,
     };
   }
 }

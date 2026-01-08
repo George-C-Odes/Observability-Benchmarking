@@ -6,7 +6,7 @@ const execAsync = promisify(exec);
 
 export async function GET() {
   try {
-    const systemInfo: any = {
+    const systemInfo: Record<string, string> = {
       nodejs: process.version,
       platform: process.platform,
       arch: process.arch,
@@ -16,18 +16,21 @@ export async function GET() {
     try {
       const { stdout: npmVersion } = await execAsync('npm --version');
       systemInfo.npm = npmVersion.trim();
-    } catch (e) {
+    } catch {
       systemInfo.npm = 'N/A';
     }
 
     // Get package versions from package.json
     try {
-      const packageJson = require('../../../package.json');
+      const packageJson = require('../../../package.json') as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      };
       systemInfo.nextjs = packageJson.dependencies?.next || 'N/A';
       systemInfo.react = packageJson.dependencies?.react || 'N/A';
       systemInfo.mui = packageJson.dependencies?.['@mui/material'] || 'N/A';
       systemInfo.typescript = packageJson.devDependencies?.typescript || 'N/A';
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('[SYSTEM API] Error reading package.json:', e);
     }
 

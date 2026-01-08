@@ -27,12 +27,13 @@ export async function POST(request: NextRequest) {
       jobId: result.jobId,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const details = error instanceof Error ? error.message : String(error);
     console.error('[ORCHESTRATOR SUBMIT API] Error submitting command:', error);
     return NextResponse.json(
       {
         error: 'Failed to submit command',
-        details: error.message || 'Unknown error occurred',
+        details,
       },
       { status: 500 }
     );

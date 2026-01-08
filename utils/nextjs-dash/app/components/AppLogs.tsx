@@ -76,11 +76,14 @@ export default function AppLogs() {
     ? logs 
     : logs.filter(log => log.level === filter);
 
-  const getLevelColor = (level: string) => {
+  const getLevelColor = (level: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (level) {
-      case 'error': return 'error';
-      case 'warn': return 'warning';
-      default: return 'info';
+      case 'error':
+        return 'error';
+      case 'warn':
+        return 'warning';
+      default:
+        return 'info';
     }
   };
 
@@ -149,7 +152,7 @@ export default function AppLogs() {
                 </Typography>
                 <Chip
                   label={log.level.toUpperCase()}
-                  color={getLevelColor(log.level) as any}
+                  color={getLevelColor(log.level)}
                   size="small"
                   sx={{ minWidth: '70px', fontSize: '0.7rem', height: '20px' }}
                 />

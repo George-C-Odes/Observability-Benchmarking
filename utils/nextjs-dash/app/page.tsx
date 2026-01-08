@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -16,8 +16,8 @@ import {
   InputLabel,
   Fade,
   Slide,
-  Grow,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EnvEditor from './components/EnvEditor';
 import ScriptRunner from './components/ScriptRunner';
@@ -77,7 +77,7 @@ export default function Home() {
     }
   };
 
-  const handleThemeChange = (event: any) => {
+  const handleThemeChange = (event: SelectChangeEvent) => {
     const newTheme = event.target.value;
     setCurrentTheme(newTheme);
     if (typeof window !== 'undefined') {

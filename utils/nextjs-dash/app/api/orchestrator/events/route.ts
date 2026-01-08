@@ -61,12 +61,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const details = error instanceof Error ? error.message : String(error);
     console.error('[ORCHESTRATOR EVENTS API] Error streaming events:', error);
     return NextResponse.json(
       {
         error: 'Failed to stream job events',
-        details: error.message || 'Unknown error occurred',
+        details,
       },
       { status: 500 }
     );
