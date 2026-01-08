@@ -125,7 +125,7 @@ export default function Resources() {
       <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
         This dashboard provides a unified interface for managing and monitoring observability
         benchmarking workloads across Spring Boot, Quarkus, and Go services with comprehensive
-        telemetry integration (Grafana, Loki, Mimir, Tempo, Pyroscope).
+        telemetry integration (Grafana, Alloy, Loki, Mimir, Tempo, Pyroscope).
       </Typography>
     </Box>
   );

@@ -133,3 +133,7 @@ venv.bak/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+output-*.txt
+
+.env.backup.*
