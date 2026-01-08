@@ -19,6 +19,7 @@ import {
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CodeIcon from '@mui/icons-material/Code';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import { useJobRunner } from '@/app/hooks/useJobRunner';
 import { useScripts } from '@/app/hooks/useScripts';
 import type { Script } from '@/app/hooks/useScripts';
@@ -120,8 +121,8 @@ export default function ScriptRunner() {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
-          <Typography variant="h5" gutterBottom>
-            Script Runner
+          <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TerminalIcon /> Script Runner
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Execute scripts from the .run directory with environment parameters

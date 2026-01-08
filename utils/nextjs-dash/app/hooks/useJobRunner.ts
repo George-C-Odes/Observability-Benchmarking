@@ -1,5 +1,6 @@
 'use client';
 
+import { getPublicConfig } from '@/lib/publicConfig';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type JobStatus = {
@@ -46,6 +47,9 @@ export function useJobRunner(): UseJobRunnerState {
     setEventLogs([]);
   }, []);
 
+  const { orchestratorPublicUrl } = getPublicConfig();
+  const apiBase = orchestratorPublicUrl;
+
   const streamJobEvents = useCallback(
     (jobId: string) => {
       try {
@@ -53,7 +57,11 @@ export function useJobRunner(): UseJobRunnerState {
         expectedSseCloseRef.current = false;
         activeSseJobIdRef.current = jobId;
 
-        const es = new EventSource(`/api/orchestrator/events?jobId=${jobId}`);
+        const es = new EventSource(
+          apiBase
+            ? `${apiBase}/v1/jobs/${encodeURIComponent(jobId)}/events`
+            : `/api/orchestrator/events?jobId=${encodeURIComponent(jobId)}`
+        );
         eventSourceRef.current = es;
 
         es.onmessage = (event) => {
@@ -81,7 +89,7 @@ export function useJobRunner(): UseJobRunnerState {
         console.error('Failed to stream job events:', e);
       }
     },
-    [closeEventSource]
+    [apiBase, closeEventSource]
   );
 
   const pollJobStatus = useCallback(async (jobId: string): Promise<JobStatus | null> => {
@@ -90,7 +98,9 @@ export function useJobRunner(): UseJobRunnerState {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       try {
-        const statusResponse = await fetch(`/api/orchestrator/status?jobId=${jobId}`);
+        const statusResponse = await fetch(
+          apiBase ? `${apiBase}/v1/jobs/${encodeURIComponent(jobId)}` : `/api/orchestrator/status?jobId=${encodeURIComponent(jobId)}`
+        );
         const status = (await statusResponse.json()) as JobStatus;
 
         if (status.status === 'SUCCEEDED' || status.status === 'FAILED' || status.status === 'CANCELED') {
@@ -105,7 +115,7 @@ export function useJobRunner(): UseJobRunnerState {
       }
     }
     return null;
-  }, []);
+  }, [apiBase]);
 
   const runCommand = useCallback(
     async (command: string, label?: string): Promise<RunResult> => {
@@ -117,7 +127,8 @@ export function useJobRunner(): UseJobRunnerState {
       activeSseJobIdRef.current = null;
 
       try {
-        const submitResponse = await fetch('/api/orchestrator/submit', {
+        const submitEndpoint = apiBase ? `${apiBase}/v1/run` : '/api/orchestrator/submit';
+        const submitResponse = await fetch(submitEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ command }),
@@ -159,7 +170,7 @@ export function useJobRunner(): UseJobRunnerState {
         setExecuting(false);
       }
     },
-    [closeEventSource, pollJobStatus, streamJobEvents]
+    [apiBase, closeEventSource, pollJobStatus, streamJobEvents]
   );
 
   useEffect(() => {

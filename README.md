@@ -76,7 +76,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.1.1 and Material-UI 7.3.6
+  - Built with Next.js 16.1.1 and Material-UI 7.3.7
 
 ### 🚀 REST Service Implementations
 

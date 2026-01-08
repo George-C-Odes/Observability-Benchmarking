@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
 import { serverLogger } from './serverLogger';
-import { withRequestContext } from './requestContext';
+import { getRequestId, withRequestContext } from './requestContext';
 import { errorFromUnknown } from './apiResponses';
 
 type Handler<TResponse> = (req: NextRequest) => Promise<TResponse> | TResponse;
@@ -26,24 +26,25 @@ export function withApiRoute<TResponse>(opts: WrapOpts, handler: Handler<TRespon
       const started = Date.now();
       const method = req.method;
       const url = req.nextUrl?.pathname ?? new URL(req.url).pathname;
+      const requestId = getRequestId();
 
       serverLogger.info(`[${opts.name}] ${method} ${url} start`, {
-        requestId: incomingRid,
+        requestId,
+        ...(incomingRid ? { incomingRequestId: incomingRid } : {}),
       });
 
       try {
         const res = await handler(req);
         serverLogger.info(`[${opts.name}] ${method} ${url} ok`, {
+          requestId,
           tookMs: Date.now() - started,
         });
         return res;
       } catch (e) {
         serverLogger.error(`[${opts.name}] ${method} ${url} error`, e);
-        // Default: internal error. Individual routes can still catch/return 400s.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return errorFromUnknown(500, e, 'Internal Server Error') as any;
       }
     }, incomingRid);
   };
 }
-

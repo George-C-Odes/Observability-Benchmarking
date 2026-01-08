@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orchestratorConfig } from '@/lib/config';
-import { validateJobId } from '@/lib/orchestratorClient';
 import { serverLogger } from '@/lib/serverLogger';
 import { errorFromUnknown, errorJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
@@ -15,13 +14,14 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
   const jobId = searchParams.get('jobId');
 
   try {
-    // Validate jobId for consistency
-    const validatedJobId = validateJobId(jobId);
+    if (!jobId) {
+      return errorJson(400, { error: 'jobId is required' });
+    }
 
-    serverLogger.info('Starting SSE stream for job', { jobId: validatedJobId });
+    serverLogger.info('Starting SSE stream for job', { jobId });
 
     // Fetch the SSE stream from orchestrator
-    const url = `${orchestratorConfig.url}/v1/jobs/${validatedJobId}/events`;
+    const url = `${orchestratorConfig.url}/v1/jobs/${jobId}/events`;
     const response = await fetch(url, {
       headers: {
         Accept: 'text/event-stream',
@@ -69,10 +69,6 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
       },
     });
   } catch (error: unknown) {
-    if (error instanceof Error && /jobId is required/.test(error.message)) {
-      return errorJson(400, { error: error.message });
-    }
-
     serverLogger.error('Error streaming events:', error);
     return errorFromUnknown(500, error, 'Failed to stream job events');
   }

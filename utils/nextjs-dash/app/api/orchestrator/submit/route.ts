@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { submitCommand, validateCommand } from '@/lib/orchestratorClient';
+import { submitCommand } from '@/lib/orchestratorClient';
 import { serverLogger } from '@/lib/serverLogger';
 import { errorFromUnknown, errorJson, okJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
@@ -11,14 +11,13 @@ import { withApiRoute } from '@/lib/routeWrapper';
 export const POST = withApiRoute({ name: 'ORCH_SUBMIT_API' }, async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as { command?: unknown };
-    serverLogger.info('Received command submission request');
+    const command = body.command;
+    if (typeof command !== 'string') {
+      return errorJson(400, { error: 'command must be a string' });
+    }
 
-    const { command } = body;
-    const validatedCommand = validateCommand(command);
-
-    serverLogger.info('Submitting command to orchestrator', { command: validatedCommand });
-
-    const result = await submitCommand(validatedCommand);
+    serverLogger.info('Submitting command to orchestrator');
+    const result = await submitCommand(command);
 
     serverLogger.info('Job submitted', { jobId: result.jobId });
 
@@ -27,11 +26,6 @@ export const POST = withApiRoute({ name: 'ORCH_SUBMIT_API' }, async function POS
       jobId: result.jobId,
     });
   } catch (error: unknown) {
-    // Validation failures are 400s.
-    if (error instanceof Error && /required/.test(error.message)) {
-      return errorJson(400, { error: error.message });
-    }
-
     serverLogger.error('Error submitting command:', error);
     return errorFromUnknown(500, error, 'Failed to submit command');
   }

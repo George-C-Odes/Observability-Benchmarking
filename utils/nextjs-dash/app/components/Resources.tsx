@@ -15,6 +15,7 @@ import ApiIcon from '@mui/icons-material/Api';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 
 /**
  * Resources component displaying useful links and project information.
@@ -50,8 +51,8 @@ export default function Resources() {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Resources & Documentation
+      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <MenuBookIcon /> Resources & Documentation
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Quick access to related tools, APIs, and project information

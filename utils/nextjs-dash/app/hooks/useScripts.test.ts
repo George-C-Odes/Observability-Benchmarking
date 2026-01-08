@@ -1,7 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 
 import { useScripts } from './useScripts';
+
+beforeEach(() => {
+  vi.stubEnv('NEXT_PUBLIC_ORCH_URL', '');
+});
 
 afterEach(() => {
   vi.restoreAllMocks();

@@ -129,21 +129,31 @@ export async function updateEnvFile(content: string): Promise<void> {
 }
 
 /**
- * Validate that a command string is not empty
+ * @deprecated Validation should live in the Quarkus orchestrator. Kept only as a very small
+ * safety net to avoid sending obviously invalid requests.
  */
 export function validateCommand(command: unknown): string {
-  if (!command || typeof command !== 'string' || !command.trim()) {
-    throw new Error('Command is required and must be a non-empty string');
+  if (typeof command !== 'string') {
+    throw new Error('Command must be a string');
   }
-  return command.trim();
+  const trimmed = command.trim();
+  if (!trimmed) {
+    throw new Error('Command must be a non-empty string');
+  }
+  return trimmed;
 }
 
 /**
- * Validate that a jobId is valid
+ * @deprecated Validation should live in the Quarkus orchestrator. Kept only as a very small
+ * safety net to avoid sending obviously invalid requests.
  */
 export function validateJobId(jobId: unknown): string {
-  if (!jobId || typeof jobId !== 'string' || !jobId.trim()) {
-    throw new Error('jobId is required and must be a non-empty string');
+  if (typeof jobId !== 'string') {
+    throw new Error('jobId must be a string');
   }
-  return jobId.trim();
+  const trimmed = jobId.trim();
+  if (!trimmed) {
+    throw new Error('jobId must be a non-empty string');
+  }
+  return trimmed;
 }

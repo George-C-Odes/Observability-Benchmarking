@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TuneIcon from '@mui/icons-material/Tune';
 
 interface EnvVariable {
   key: string;
@@ -147,8 +148,8 @@ export default function EnvEditor() {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Environment Configuration Editor
+      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <TuneIcon /> Environment Configuration Editor
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Edit the configuration values for the compose/.env file

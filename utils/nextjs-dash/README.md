@@ -1,30 +1,51 @@
 # Observability Benchmarking Dashboard
 
-A Next.js-based dashboard for orchestrating and managing the Observability Benchmarking environment.
+A Next.js-based dashboard UI for orchestrating and managing the Observability Benchmarking environment.
 
 ## Architecture (high-level)
 
-**Browser UI (Next.js / MUI)** → **Next.js API routes** → **Orchestrator service (Quarkus)**
+### Today (MVP)
+
+**Browser UI (Next.js / MUI)** → **Thin Next.js API proxy (optional)** → **Orchestrator service (Quarkus)**
 
 - UI components live under `app/components/*`.
-- All “backend” operations (env file, scripts, job status/events) go through Next.js `app/api/*` routes.
-- The Next.js API routes use `lib/orchestratorClient.ts` for HTTP calls to the orchestrator.
-- Logging:
-  - Client logs: captured from browser `console.*`.
-  - Server logs: captured from Next.js route handlers and exposed via `/api/logs` and `/api/logs/stream`.
+- Next.js should remain a *presentation layer*.
+  - It may expose small `/api/*` routes for local/dev convenience.
+  - These routes should be **thin proxies** and avoid business rules.
+- The orchestration / business logic belongs in the **Quarkus orchestrator**.
+
+### Future vision
+
+#### Mobile app
+
+- The mobile app will have **zero interaction with Next.js**.
+- The mobile app will talk **directly to the Quarkus orchestrator**.
+
+#### Authentication & roles
+
+- Authentication/authorization will be based on **Keycloak (OIDC)**.
+- Authorization decisions should be enforced in the **orchestrator** (RBAC), not in Next.js.
+
+## MVPs implemented now
+
+- Standardized backend logging with per-request correlation ids (requestId) and stable UI rendering.
+- Refactored complex UI into hooks + components to improve testability.
+- Added unit tests for core hooks and Logs UI.
+- Reduced Next.js "business logic" (validation rules) in API routes in favor of orchestrator ownership.
 
 ## Features
 
 - **Environment Configuration Editor**: Edit the `compose/.env` file through an intuitive UI
-- **Script Runner**: Execute IntelliJ IDEA run configurations from the `.run` directory
-- **Professional UI**: Built with Material-UI v7.3.6 for a polished interface
+- **Script Runner**: Execute run presets via the orchestrator
+- **Application Logs**: Client console + buffered Next.js server logs for local/dev troubleshooting
+- **Professional UI**: Built with Material-UI for a polished interface
 - **Docker Support**: Runs in its own containerized environment
 
 ## Technology Stack
 
 - **Next.js**: v16.1.1
 - **React**: v19.2.3
-- **Material-UI (MUI)**: v7.3.6
+- **Material-UI (MUI)**: v7.3.7
 - **TypeScript**: v5
 - **Node.js**: v25
 
@@ -34,6 +55,7 @@ Environment variables:
 
 - `ORCH_URL` (default: `http://orchestrator:3002`)
 - `ORCH_API_KEY` (default: `dev-change-me`)
+- `NEXT_PUBLIC_ORCH_URL` (optional): if set, the browser UI will call the orchestrator directly for supported features (scripts + job submit/status/events). This reduces reliance on Next.js `/api/*` proxy routes.
 
 > Security note: the dashboard has no authentication and is intended for local/dev environments.
 
@@ -80,8 +102,12 @@ npm start
 
 ## Runtime endpoints
 
+> Note: `/api/*` exists for convenience and local/dev. Long term, the orchestrator is the primary backend.
+
 - App health: `GET /api/app-health`
 - Service health aggregation: `GET /api/health`
+- Env proxy: `GET/POST /api/env`
+- Orchestrator proxy: `POST /api/orchestrator/submit`, `GET /api/orchestrator/status`, `GET /api/orchestrator/events`
 - Server logs (snapshot): `GET /api/logs`
 - Server logs (live SSE): `GET /api/logs/stream`
 
@@ -116,56 +142,19 @@ docker run -p 3001:3001 \
   nextjs-dash:latest
 ```
 
-## Usage
+## Future roadmap (overview)
 
-### Environment Configuration
+### When mobile comes into play
 
-1. Navigate to the **Environment Configuration** tab
-2. Edit any configuration values
-3. Click **Save Changes** to update the `compose/.env` file
-4. A backup is automatically created before each save
+- Orchestrator exposes all required endpoints directly (OpenAPI-first).
+- Build a dedicated TypeScript client (and later mobile-native clients) that talk to the orchestrator.
+- Harden real-time channels (SSE reconnect support, Last-Event-ID, heartbeats).
 
-### Script Runner
+### When auth & roles come into play
 
-1. Navigate to the **Script Runner** tab
-2. View all available scripts from the `.run` directory
-3. Click **Execute** on any script to run it
-4. View the output in the dialog that appears
-
-### Healthcheck
-
-Healthcheck is available at endpoint:
-http://localhost:3001/api/app-health
-
-Sample response:
-```json
-{
-    "status": "UP",
-    "timestamp": "2026-01-06T22:25:48.530Z",
-    "application": "nextjs-dash",
-    "version": "1.0.0",
-    "checks": {
-        "api": "UP",
-        "orchestrator": "UP"
-    }
-}
-```
-
-## Security Considerations
-
-- The dashboard currently has no authentication (suitable for local development)
-- Script execution is limited to `docker compose` and `mvn` commands
-- File operations are restricted to the `.env` file
-- Consider adding authentication before deploying to production
-
-## Future Enhancements
-
-- Add authentication/authorization
-- Real-time log streaming from executed scripts
-- Environment variable validation
-- Script scheduling and history
-- Container status monitoring
-- Resource usage visualization
+- Integrate Keycloak in orchestrator.
+- Enforce RBAC at orchestrator endpoints.
+- Add audit events: who ran what, who changed env, who canceled jobs.
 
 ## License
 
