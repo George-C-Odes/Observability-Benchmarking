@@ -681,7 +681,30 @@ export default function ScriptRunner() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>{outputDialog.title} - Output</DialogTitle>
+        <DialogTitle>
+          {outputDialog.title} - Output
+          {outputDialog.jobDetails && (
+            <Chip
+              label={outputDialog.jobDetails.status}
+              size="small"
+              sx={{
+                ml: 2,
+                bgcolor:
+                  outputDialog.jobDetails.status === 'SUCCEEDED'
+                    ? 'success.main'
+                    : outputDialog.jobDetails.status === 'FAILED'
+                    ? 'error.main'
+                    : outputDialog.jobDetails.status === 'RUNNING'
+                    ? 'warning.main'
+                    : outputDialog.jobDetails.status === 'QUEUED'
+                    ? 'warning.main'
+                    : 'error.main', // CANCELED
+                color: 'white',
+                fontWeight: 'bold',
+              }}
+            />
+          )}
+        </DialogTitle>
         <DialogContent>
           <Box
             component="pre"

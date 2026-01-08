@@ -24,6 +24,7 @@ import ScriptRunner from './components/ScriptRunner';
 import SystemInfo from './components/SystemInfo';
 import ServiceHealth from './components/ServiceHealth';
 import AppLogs from './components/AppLogs';
+import Resources from './components/Resources';
 import { themeOptions } from './theme';
 
 interface TabPanelProps {
@@ -128,6 +129,7 @@ export default function Home() {
               <Tab label="Environment Config" />
               <Tab label="Script Runner" />
               <Tab label="Logs" />
+              <Tab label="Resources" />
             </Tabs>
           </Box>
 
@@ -149,6 +151,10 @@ export default function Home() {
 
           <TabPanel value={tabValue} index={4}>
             <AppLogs />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={5}>
+            <Resources />
           </TabPanel>
         </Paper>
       </Container>
