@@ -27,8 +27,19 @@ export function BootLogger() {
         console.log('='.repeat(80));
       })
       .catch((err) => console.error('Failed to fetch system info:', err));
+
+    // Also fetch server logs snapshot so the Logs tab has something even if opened later.
+    fetch('/api/logs')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data?.entries) && data.entries.length) {
+          console.log(`[SERVER LOGS] Loaded ${data.entries.length} server log entries`);
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
   }, []);
 
   return null;
 }
-

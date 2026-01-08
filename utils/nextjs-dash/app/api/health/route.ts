@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverLogger } from '@/lib/serverLogger';
 
 interface ServiceEndpoint {
   name: string;
@@ -75,31 +76,26 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const serviceName = searchParams.get('service');
-    
+
     if (serviceName) {
       // Check single service
-      const service = SERVICE_ENDPOINTS.find(s => s.name === serviceName);
+      const service = SERVICE_ENDPOINTS.find((s) => s.name === serviceName);
       if (!service) {
         return NextResponse.json({ error: 'Service not found' }, { status: 404 });
       }
-      
-      console.log(`[HEALTH API] Checking health of: ${serviceName}`);
+
+      serverLogger.info(`[HEALTH API] Checking health of: ${serviceName}`);
       const result = await checkServiceHealth(service);
       return NextResponse.json(result);
     } else {
       // Check all services
-      console.log(`[HEALTH API] Checking health of all services`);
-      const results = await Promise.all(
-        SERVICE_ENDPOINTS.map(service => checkServiceHealth(service))
-      );
-      
+      serverLogger.info('[HEALTH API] Checking health of all services');
+      const results = await Promise.all(SERVICE_ENDPOINTS.map((service) => checkServiceHealth(service)));
+
       return NextResponse.json({ services: results });
     }
   } catch (error) {
-    console.error('[HEALTH API] Error checking service health:', error);
-    return NextResponse.json(
-      { error: 'Failed to check service health' },
-      { status: 500 }
-    );
+    serverLogger.error('[HEALTH API] Error checking service health:', error);
+    return NextResponse.json({ error: 'Failed to check service health' }, { status: 500 });
   }
 }

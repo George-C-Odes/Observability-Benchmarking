@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCommandPresets } from '@/lib/orchestratorClient';
+import { serverLogger } from '@/lib/serverLogger';
 
 type OrchestratorPreset = {
   title: string;
@@ -14,10 +15,10 @@ type OrchestratorPreset = {
  */
 export async function GET() {
   try {
-    console.log(`[SCRIPTS API] Fetching presets from orchestrator`);
+    serverLogger.info('[SCRIPTS API] Fetching presets from orchestrator');
 
     const presets = await getCommandPresets();
-    console.log(`[SCRIPTS API] Fetched ${presets.length} command presets from orchestrator`);
+    serverLogger.info(`[SCRIPTS API] Fetched ${presets.length} command presets from orchestrator`);
 
     // Transform orchestrator response to match frontend expectations
     const scripts = (presets as OrchestratorPreset[]).map((preset) => ({
@@ -30,7 +31,7 @@ export async function GET() {
 
     return NextResponse.json({ scripts });
   } catch (error) {
-    console.error('[SCRIPTS API] Error fetching from orchestrator:', error);
+    serverLogger.error('[SCRIPTS API] Error fetching from orchestrator:', error);
     return NextResponse.json(
       { error: 'Failed to fetch scripts from orchestrator service' },
       { status: 500 }

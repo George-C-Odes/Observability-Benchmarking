@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -13,57 +13,127 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArticleIcon from '@mui/icons-material/Article';
 
+import { clearClientLogs, subscribeClientLogs } from '@/lib/clientLogs';
+
+type UiLevel = 'debug' | 'info' | 'warn' | 'error';
+type UiSource = 'client' | 'server';
+
 interface LogEntry {
-  timestamp: string;
-  level: 'info' | 'warn' | 'error';
+  ts: number;
+  level: UiLevel;
+  source: UiSource;
   message: string;
 }
 
+function tsToTime(ts: number) {
+  return new Date(ts).toLocaleTimeString();
+}
+
 export default function AppLogs() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [clientLogs, setClientLogs] = useState<LogEntry[]>([]);
+  const [serverLogs, setServerLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<string>('all');
-  const logsEndRef = useRef<HTMLDivElement>(null);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const shouldStickToBottomRef = useRef(true);
+  const hasMountedRef = useRef(false);
+
+  // Subscribe to captured browser console logs.
   useEffect(() => {
-    // Capture console logs
-    const originalConsoleLog = console.log;
-    const originalConsoleWarn = console.warn;
-    const originalConsoleError = console.error;
-
-    const addLog = (level: 'info' | 'warn' | 'error', message: string) => {
-      const timestamp = new Date().toLocaleTimeString();
-      setLogs(prev => [...prev, { timestamp, level, message }].slice(-100)); // Keep last 100 logs
-    };
-
-    console.log = (...args) => {
-      originalConsoleLog(...args);
-      addLog('info', args.join(' '));
-    };
-
-    console.warn = (...args) => {
-      originalConsoleWarn(...args);
-      addLog('warn', args.join(' '));
-    };
-
-    console.error = (...args) => {
-      originalConsoleError(...args);
-      addLog('error', args.join(' '));
-    };
-
-    return () => {
-      console.log = originalConsoleLog;
-      console.warn = originalConsoleWarn;
-      console.error = originalConsoleError;
-    };
+    return subscribeClientLogs((entries) => {
+      setClientLogs(
+        entries.map((e) => ({
+          ts: e.ts,
+          level: e.level,
+          source: 'client',
+          message: e.message,
+        }))
+      );
+    });
   }, []);
 
+  // Stream server logs via SSE.
   useEffect(() => {
-    // Auto-scroll to bottom when new logs arrive
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
+    let cancelled = false;
+    let es: EventSource | null = null;
 
-  const clearLogs = () => {
-    setLogs([]);
+    const appendServerEntries = (incoming: LogEntry[]) => {
+      if (!incoming.length) return;
+      setServerLogs((prev) => {
+        const merged = [...prev, ...incoming.map((e) => ({ ...e, source: 'server' as const }))];
+        const seen = new Set<string>();
+        const deduped: LogEntry[] = [];
+        for (const m of merged) {
+          const key = `${m.ts}|${m.level}|${m.message}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          deduped.push(m);
+        }
+        return deduped.slice(-2000);
+      });
+    };
+
+    async function fallbackSnapshot() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = (await res.json()) as {
+          entries?: Array<{ ts: number; level: UiLevel; source: UiSource; message: string }>;
+        };
+        const incoming = Array.isArray(data?.entries) ? data.entries : [];
+        appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
+      } catch {
+        // ignore
+      }
+    }
+
+    const connect = () => {
+      try {
+        const sinceTs = serverLogs.length ? serverLogs[serverLogs.length - 1].ts : undefined;
+        const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
+        es = new EventSource(url);
+
+        es.onmessage = (evt) => {
+          if (cancelled) return;
+          try {
+            const parsed = JSON.parse(evt.data) as { ts: number; level: UiLevel; message: string };
+            if (!parsed?.ts || !parsed?.level || typeof parsed?.message !== 'string') return;
+            appendServerEntries([
+              { ts: parsed.ts, level: parsed.level, source: 'server', message: parsed.message },
+            ]);
+          } catch {
+            // ignore
+          }
+        };
+
+        es.onerror = () => {
+          // If SSE fails (proxy/browser), fall back to a snapshot and let the browser retry.
+          es?.close();
+          es = null;
+          void fallbackSnapshot();
+        };
+      } catch {
+        void fallbackSnapshot();
+      }
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      es?.close();
+      es = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const clearLogs = async () => {
+    clearClientLogs();
+    setServerLogs([]);
+    try {
+      await fetch('/api/logs', { method: 'DELETE' });
+    } catch {
+      // ignore
+    }
   };
 
   const handleFilterChange = (_event: React.MouseEvent<HTMLElement>, newFilter: string) => {
@@ -72,19 +142,73 @@ export default function AppLogs() {
     }
   };
 
-  const filteredLogs = filter === 'all' 
-    ? logs 
-    : logs.filter(log => log.level === filter);
+  const mergedLogs = useMemo(() => {
+    const merged = [...clientLogs, ...serverLogs];
+    merged.sort((a, b) => a.ts - b.ts);
+    return merged;
+  }, [clientLogs, serverLogs]);
 
-  const getLevelColor = (level: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const filteredLogs = useMemo(() => {
+    if (filter === 'all') return mergedLogs;
+    if (filter === 'server' || filter === 'client') {
+      return mergedLogs.filter((l) => l.source === filter);
+    }
+    return mergedLogs.filter((log) => log.level === filter);
+  }, [filter, mergedLogs]);
+
+  // Track whether the user is near the bottom, so we don't force-scroll.
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      shouldStickToBottomRef.current = distanceFromBottom < 40;
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
+  // Auto-scroll only if we were already at the bottom.
+  // Use scrollTop assignment (more stable than scrollIntoView) and skip the very first paint.
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    if (shouldStickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [filteredLogs.length]);
+
+  const getLevelColor = (
+    level: string
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (level) {
       case 'error':
         return 'error';
       case 'warn':
         return 'warning';
+      case 'debug':
+        return 'default';
       default:
         return 'info';
     }
+  };
+
+  const getSourceColor = (
+    source: UiSource
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+    return source === 'server' ? 'secondary' : 'default';
   };
 
   return (
@@ -95,33 +219,26 @@ export default function AppLogs() {
             <ArticleIcon /> Application Logs
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Real-time dashboard logs for troubleshooting and monitoring
+            Frontend console logs + buffered Next.js server logs (live)
           </Typography>
         </Box>
         <Box display="flex" gap={2}>
-          <ToggleButtonGroup
-            value={filter}
-            exclusive
-            onChange={handleFilterChange}
-            size="small"
-          >
+          <ToggleButtonGroup value={filter} exclusive onChange={handleFilterChange} size="small">
             <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="client">Client</ToggleButton>
+            <ToggleButton value="server">Server</ToggleButton>
             <ToggleButton value="info">Info</ToggleButton>
             <ToggleButton value="warn">Warn</ToggleButton>
             <ToggleButton value="error">Error</ToggleButton>
           </ToggleButtonGroup>
-          <Button
-            variant="outlined"
-            startIcon={<DeleteIcon />}
-            onClick={clearLogs}
-            size="small"
-          >
+          <Button variant="outlined" startIcon={<DeleteIcon />} onClick={clearLogs} size="small">
             Clear
           </Button>
         </Box>
       </Box>
 
       <Paper
+        ref={scrollContainerRef}
         sx={{
           bgcolor: 'background.default',
           p: 2,
@@ -136,7 +253,7 @@ export default function AppLogs() {
         ) : (
           filteredLogs.map((log, index) => (
             <Box
-              key={index}
+              key={`${log.ts}-${index}`}
               sx={{
                 py: 0.5,
                 borderBottom: index < filteredLogs.length - 1 ? 1 : 0,
@@ -146,10 +263,16 @@ export default function AppLogs() {
               <Box display="flex" alignItems="center" gap={1}>
                 <Typography
                   component="span"
-                  sx={{ color: 'text.secondary', minWidth: '80px', fontSize: '0.75rem' }}
+                  sx={{ color: 'text.secondary', minWidth: '90px', fontSize: '0.75rem' }}
                 >
-                  {log.timestamp}
+                  {tsToTime(log.ts)}
                 </Typography>
+                <Chip
+                  label={log.source.toUpperCase()}
+                  color={getSourceColor(log.source)}
+                  size="small"
+                  sx={{ minWidth: '75px', fontSize: '0.7rem', height: '20px' }}
+                />
                 <Chip
                   label={log.level.toUpperCase()}
                   color={getLevelColor(log.level)}
@@ -163,11 +286,10 @@ export default function AppLogs() {
             </Box>
           ))
         )}
-        <div ref={logsEndRef} />
       </Paper>
 
       <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-        Showing last {filteredLogs.length} logs (max 100)
+        Showing {filteredLogs.length} logs (client max 1000, server max 2000)
       </Typography>
     </Box>
   );

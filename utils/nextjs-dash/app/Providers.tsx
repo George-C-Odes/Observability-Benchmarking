@@ -8,6 +8,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import { BootLogger } from './components/BootLogger';
 import { createCustomTheme, themeOptions } from './theme';
+import { installConsoleCapture } from '@/lib/clientLogs';
 
 type DashboardThemeContextValue = {
   currentTheme: string;
@@ -31,6 +32,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<string>('dark');
 
   useEffect(() => {
+    installConsoleCapture();
     setMounted(true);
   }, []);
 

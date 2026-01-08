@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orchestratorConfig } from '@/lib/config';
 import { validateJobId } from '@/lib/orchestratorClient';
+import { serverLogger } from '@/lib/serverLogger';
 
 /**
  * GET /api/orchestrator/events
@@ -14,14 +15,14 @@ export async function GET(request: NextRequest) {
   try {
     // Validate jobId for consistency
     const validatedJobId = validateJobId(jobId);
-    
-    console.log(`[ORCHESTRATOR EVENTS API] Starting SSE stream for job: ${validatedJobId}`);
+
+    serverLogger.info(`[ORCHESTRATOR EVENTS API] Starting SSE stream for job: ${validatedJobId}`);
 
     // Fetch the SSE stream from orchestrator
     const url = `${orchestratorConfig.url}/v1/jobs/${validatedJobId}/events`;
     const response = await fetch(url, {
       headers: {
-        'Accept': 'text/event-stream',
+        Accept: 'text/event-stream',
       },
     });
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
             controller.enqueue(value);
           }
         } catch (error) {
-          console.error('[ORCHESTRATOR EVENTS API] Stream error:', error);
+          serverLogger.error('[ORCHESTRATOR EVENTS API] Stream error:', error);
         } finally {
           controller.close();
         }
@@ -57,13 +58,12 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
       },
     });
-
   } catch (error: unknown) {
     const details = error instanceof Error ? error.message : String(error);
-    console.error('[ORCHESTRATOR EVENTS API] Error streaming events:', error);
+    serverLogger.error('[ORCHESTRATOR EVENTS API] Error streaming events:', error);
     return NextResponse.json(
       {
         error: 'Failed to stream job events',

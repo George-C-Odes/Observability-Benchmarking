@@ -14,8 +14,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Fade,
-  Slide,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -36,23 +34,25 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
+  const isActive = value === index;
 
   return (
-    <div
+    <Box
       role="tabpanel"
-      hidden={value !== index}
       id={`tabpanel-${index}`}
       aria-labelledby={`tab-${index}`}
       {...other}
+      sx={{
+        display: isActive ? 'block' : 'none',
+        p: 3,
+        // Keep layout stable; just fade/slide content in.
+        opacity: isActive ? 1 : 0,
+        transform: isActive ? 'translateY(0px)' : 'translateY(8px)',
+        transition: 'opacity 180ms ease, transform 180ms ease',
+      }}
     >
-      {value === index && (
-        <Fade in={value === index} timeout={600}>
-          <Slide direction="up" in={value === index} timeout={400}>
-            <Box sx={{ p: 3 }}>{children}</Box>
-          </Slide>
-        </Fade>
-      )}
-    </div>
+      {children}
+    </Box>
   );
 }
 

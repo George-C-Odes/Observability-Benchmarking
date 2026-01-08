@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { serverLogger } from '@/lib/serverLogger';
 
 export async function GET() {
   try {
@@ -27,8 +28,11 @@ export async function GET() {
       health.checks.orchestrator = 'DOWN';
     }
 
+    serverLogger.info('[APP-HEALTH API] Health check result:', health);
+
     return NextResponse.json(health, { status: 200 });
-  } catch {
+  } catch (error) {
+    serverLogger.error('[APP-HEALTH API] Health check failed:', error);
     return NextResponse.json(
       {
         status: 'DOWN',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getJobStatus, validateJobId } from '@/lib/orchestratorClient';
+import { serverLogger } from '@/lib/serverLogger';
 
 /**
  * GET /api/orchestrator/status
@@ -13,17 +14,16 @@ export async function GET(request: NextRequest) {
     // Validate jobId
     const validatedJobId = validateJobId(jobId);
 
-    console.log(`[ORCHESTRATOR STATUS API] Fetching status for job: ${validatedJobId}`);
+    serverLogger.info(`[ORCHESTRATOR STATUS API] Fetching status for job: ${validatedJobId}`);
 
     // Get status using shared client
     const status = await getJobStatus(validatedJobId);
-    
-    console.log(`[ORCHESTRATOR STATUS API] Status for job: ${validatedJobId} received: ${status.status}`);
-    return NextResponse.json(status);
 
+    serverLogger.info(`[ORCHESTRATOR STATUS API] Status for job: ${validatedJobId} received: ${status.status}`);
+    return NextResponse.json(status);
   } catch (error: unknown) {
     const details = error instanceof Error ? error.message : String(error);
-    console.error('[ORCHESTRATOR STATUS API] Error fetching job status:', error);
+    serverLogger.error('[ORCHESTRATOR STATUS API] Error fetching job status:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch job status',
