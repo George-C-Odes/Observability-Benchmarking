@@ -25,6 +25,7 @@ import SystemInfo from './components/SystemInfo';
 import ServiceHealth from './components/ServiceHealth';
 import AppLogs from './components/AppLogs';
 import Resources from './components/Resources';
+import { useDashboardTheme } from './Providers';
 import { themeOptions } from './theme';
 
 interface TabPanelProps {
@@ -64,15 +65,7 @@ export default function Home() {
     return 0;
   });
 
-  const [currentTheme, setCurrentTheme] = useState('dark');
-
-  // Sync theme state with localStorage on mount
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedTheme = localStorage.getItem('dashboardTheme') || 'dark';
-      setCurrentTheme(storedTheme);
-    }
-  }, []);
+  const { currentTheme, setCurrentTheme } = useDashboardTheme();
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -83,11 +76,10 @@ export default function Home() {
 
   const handleThemeChange = (event: SelectChangeEvent) => {
     const newTheme = event.target.value;
-    setCurrentTheme(newTheme);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('dashboardTheme', newTheme);
-      window.location.reload(); // Reload to apply theme
-    }
+
+    // Only accept known theme ids; otherwise fall back to dark.
+    const nextTheme = themeOptions.some((t) => t.id === newTheme) ? newTheme : 'dark';
+    setCurrentTheme(nextTheme);
   };
 
   return (
@@ -99,13 +91,18 @@ export default function Home() {
             Observability Benchmarking Dashboard
           </Typography>
           <FormControl sx={{ minWidth: 200 }} size="small">
-            <InputLabel id="theme-select-label" sx={{ color: 'white' }}>Theme</InputLabel>
+            <InputLabel id="theme-select-label" sx={{ color: 'white' }}>
+              Theme
+            </InputLabel>
             <Select
               labelId="theme-select-label"
               value={currentTheme}
               label="Theme"
               onChange={handleThemeChange}
-              sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.23)' } }}
+              sx={{
+                color: 'white',
+                '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+              }}
             >
               {themeOptions.map((theme) => (
                 <MenuItem key={theme.id} value={theme.id}>
@@ -120,9 +117,9 @@ export default function Home() {
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Paper elevation={3}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs 
-              value={tabValue} 
-              onChange={handleTabChange} 
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
               aria-label="dashboard tabs"
               variant="scrollable"
               scrollButtons={false}

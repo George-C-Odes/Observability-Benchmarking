@@ -4,10 +4,25 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import { BootLogger } from './components/BootLogger';
 import { createCustomTheme, themeOptions } from './theme';
+
+type DashboardThemeContextValue = {
+  currentTheme: string;
+  setCurrentTheme: (themeId: string) => void;
+};
+
+const DashboardThemeContext = createContext<DashboardThemeContextValue | undefined>(undefined);
+
+export function useDashboardTheme() {
+  const ctx = useContext(DashboardThemeContext);
+  if (!ctx) {
+    throw new Error('useDashboardTheme must be used within <Providers />');
+  }
+  return ctx;
+}
 
 export default function Providers({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -23,7 +38,7 @@ export default function Providers({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem('dashboardTheme');
       // Validate that the stored theme exists in our theme options
-      if (stored && themeOptions.some(t => t.id === stored)) {
+      if (stored && themeOptions.some((t) => t.id === stored)) {
         setCurrentTheme(stored);
       }
     } catch {
@@ -41,24 +56,29 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   const theme = useMemo(() => createCustomTheme(currentTheme), [currentTheme]);
 
+  const ctxValue = useMemo<DashboardThemeContextValue>(
+    () => ({ currentTheme, setCurrentTheme }),
+    [currentTheme]
+  );
+
   // Avoid hydration mismatches by not rendering the dynamic client tree until after mount.
   if (!mounted) {
     return (
-        <AppRouterCacheProvider>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+      <AppRouterCacheProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+        </ThemeProvider>
+      </AppRouterCacheProvider>
     );
   }
 
   return (
-      <AppRouterCacheProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <BootLogger />
-          {children}
-        </ThemeProvider>
-      </AppRouterCacheProvider>
+    <AppRouterCacheProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BootLogger />
+        <DashboardThemeContext.Provider value={ctxValue}>{children}</DashboardThemeContext.Provider>
+      </ThemeProvider>
+    </AppRouterCacheProvider>
   );
 }
