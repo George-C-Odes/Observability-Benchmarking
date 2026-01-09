@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -33,35 +33,38 @@ export default function ServiceHealth() {
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    void fetchAllServices();
-  }, []);
-
-  const fetchAllServices = async () => {
+  const fetchAllServices = useCallback(async () => {
     setLoading(true);
     setMessage(null);
     try {
-      const data = await fetchJson<{ services?: ServiceHealth[] }>('/api/health');
+      const data = await fetchJson<{ services?: ServiceHealth[] }>(`/api/health`);
       setServices(data.services || []);
     } catch {
-      setMessage({ type: 'error', text: 'Failed to check service health' });
+      setMessage({ type: 'error', text: 'Failed to check service health (dashboard backend unreachable)' });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const refreshService = async (serviceName: string) => {
+  const refreshService = useCallback(async (serviceName: string) => {
     setRefreshing(serviceName);
     try {
-      const data = await fetchJson<ServiceHealth>(`/api/health?service=${serviceName}`);
+      const data = await fetchJson<{ services?: ServiceHealth[] }>(`/api/health?service=${encodeURIComponent(serviceName)}`);
+      const single = Array.isArray(data?.services) && data.services.length ? data.services[0] : null;
 
-      setServices((prev) => prev.map((s) => (s.name === serviceName ? data : s)));
+      if (single) {
+        setServices((prev) => prev.map((s) => (s.name === serviceName ? single : s)));
+      }
     } catch {
-      // Keep this quiet; the card will still display the previous known state.
+      // ignore
     } finally {
       setRefreshing(null);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchAllServices();
+  }, [fetchAllServices]);
 
   const groupedServices = {
     observability: services.filter(s => 

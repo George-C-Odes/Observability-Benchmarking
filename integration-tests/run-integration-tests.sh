@@ -204,6 +204,7 @@ echo ""
 echo -e "${BLUE}--- Orchestration Stack Readiness ---${NC}"
 test_endpoint "NextJS UI" "${NEXTJS_URL}/api/app-health" 200 ""
 test_endpoint "Orchestrator" "${ORCHESTRATOR_URL}/q/health/ready" 200 ""
+test_endpoint "Orchestrator Aggregated" "${ORCHESTRATOR_URL}/v1/health" 200 ""
 echo ""
 
 echo -e "${BLUE}--- Trace Generation (Smoke Test) ---${NC}"

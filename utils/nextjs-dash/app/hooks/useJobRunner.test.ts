@@ -27,9 +27,6 @@ beforeEach(() => {
   MockEventSource.instances = [];
   // @ts-expect-error test override
   globalThis.EventSource = MockEventSource;
-
-  // Force proxy mode for tests.
-  vi.stubEnv('NEXT_PUBLIC_ORCH_URL', '');
 });
 
 afterEach(() => {
@@ -74,4 +71,3 @@ describe('useJobRunner', () => {
     expect(res.output).toContain('Job ID: job-1');
   });
 });
-

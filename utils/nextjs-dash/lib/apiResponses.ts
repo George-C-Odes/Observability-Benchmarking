@@ -20,4 +20,3 @@ export function errorFromUnknown(status: number, error: unknown, fallbackMessage
   const details = error instanceof Error ? error.message : String(error);
   return errorJson(status, { error: fallbackMessage, details });
 }
-

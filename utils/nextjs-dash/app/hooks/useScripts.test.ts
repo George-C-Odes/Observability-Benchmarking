@@ -4,7 +4,6 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useScripts } from './useScripts';
 
 beforeEach(() => {
-  vi.stubEnv('NEXT_PUBLIC_ORCH_URL', '');
 });
 
 afterEach(() => {
@@ -34,4 +33,3 @@ describe('useScripts', () => {
     expect(result.current.scripts[0].name).toBe('A');
   });
 });
-

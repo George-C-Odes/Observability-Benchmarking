@@ -1,6 +1,5 @@
 'use client';
 
-import { getPublicConfig } from '@/lib/publicConfig';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type JobStatus = {
@@ -47,9 +46,6 @@ export function useJobRunner(): UseJobRunnerState {
     setEventLogs([]);
   }, []);
 
-  const { orchestratorPublicUrl } = getPublicConfig();
-  const apiBase = orchestratorPublicUrl;
-
   const streamJobEvents = useCallback(
     (jobId: string) => {
       try {
@@ -57,11 +53,7 @@ export function useJobRunner(): UseJobRunnerState {
         expectedSseCloseRef.current = false;
         activeSseJobIdRef.current = jobId;
 
-        const es = new EventSource(
-          apiBase
-            ? `${apiBase}/v1/jobs/${encodeURIComponent(jobId)}/events`
-            : `/api/orchestrator/events?jobId=${encodeURIComponent(jobId)}`
-        );
+        const es = new EventSource(`/api/orchestrator/events?jobId=${encodeURIComponent(jobId)}`);
         eventSourceRef.current = es;
 
         es.onmessage = (event) => {
@@ -76,46 +68,46 @@ export function useJobRunner(): UseJobRunnerState {
           const isExpected = expectedSseCloseRef.current || activeSseJobIdRef.current !== jobId;
           closeEventSource();
           if (!isExpected) {
-            // Bubble up as a synthetic log entry. The UI can also show a toast.
-            setEventLogs((prev) => [...prev, '[client] Lost connection to event stream (job still running).']);
+            setEventLogs((prev) => [...prev, '[client] Lost connection to orchestrator event stream.']);
           }
         };
 
-        // Safety close (avoid dangling streams)
         window.setTimeout(() => {
           closeEventSource();
         }, 600000);
       } catch (e) {
+        setEventLogs((prev) => [...prev, '[client] Failed to open orchestrator event stream.']);
         console.error('Failed to stream job events:', e);
       }
     },
-    [apiBase, closeEventSource]
+    [closeEventSource]
   );
 
-  const pollJobStatus = useCallback(async (jobId: string): Promise<JobStatus | null> => {
-    const maxAttempts = 60;
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  const pollJobStatus = useCallback(
+    async (jobId: string): Promise<JobStatus | null> => {
+      const maxAttempts = 60;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      try {
-        const statusResponse = await fetch(
-          apiBase ? `${apiBase}/v1/jobs/${encodeURIComponent(jobId)}` : `/api/orchestrator/status?jobId=${encodeURIComponent(jobId)}`
-        );
-        const status = (await statusResponse.json()) as JobStatus;
+        try {
+          const statusResponse = await fetch(`/api/orchestrator/status?jobId=${encodeURIComponent(jobId)}`);
+          const status = (await statusResponse.json()) as JobStatus;
 
-        if (status.status === 'SUCCEEDED' || status.status === 'FAILED' || status.status === 'CANCELED') {
-          if (activeSseJobIdRef.current === jobId) {
-            expectedSseCloseRef.current = true;
-            activeSseJobIdRef.current = null;
+          if (status.status === 'SUCCEEDED' || status.status === 'FAILED' || status.status === 'CANCELED') {
+            if (activeSseJobIdRef.current === jobId) {
+              expectedSseCloseRef.current = true;
+              activeSseJobIdRef.current = null;
+            }
+            return status;
           }
-          return status;
+        } catch (e) {
+          console.error('Error polling job status:', e);
         }
-      } catch (e) {
-        console.error('Error polling job status:', e);
       }
-    }
-    return null;
-  }, [apiBase]);
+      return null;
+    },
+    []
+  );
 
   const runCommand = useCallback(
     async (command: string, label?: string): Promise<RunResult> => {
@@ -127,10 +119,11 @@ export function useJobRunner(): UseJobRunnerState {
       activeSseJobIdRef.current = null;
 
       try {
-        const submitEndpoint = apiBase ? `${apiBase}/v1/run` : '/api/orchestrator/submit';
-        const submitResponse = await fetch(submitEndpoint, {
+        const submitResponse = await fetch(`/api/orchestrator/submit`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({ command }),
         });
 
@@ -164,13 +157,13 @@ export function useJobRunner(): UseJobRunnerState {
         return { ok: finalStatus?.status === 'SUCCEEDED', job: finalStatus, output: formatted };
       } catch (e) {
         closeEventSource();
-        const errorMessage = e instanceof Error ? e.message : 'Failed to execute command';
+        const errorMessage = e instanceof Error ? e.message : 'Failed to execute command (orchestrator unreachable)';
         return { ok: false, job: null, output: errorMessage };
       } finally {
         setExecuting(false);
       }
     },
-    [apiBase, closeEventSource, pollJobStatus, streamJobEvents]
+    [closeEventSource, pollJobStatus, streamJobEvents]
   );
 
   useEffect(() => {
@@ -206,4 +199,3 @@ function formatFinalStatus(finalStatus: JobStatus | null): string {
   out += 'Check the event logs below for full execution output';
   return out;
 }
-

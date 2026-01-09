@@ -1,101 +1,23 @@
-import { NextRequest } from 'next/server';
-import { serverLogger } from '@/lib/serverLogger';
-import { errorJson, okJson, errorFromUnknown } from '@/lib/apiResponses';
+import { orchestratorConfig } from '@/lib/config';
+import { errorFromUnknown } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
+import { serverLogger } from '@/lib/serverLogger';
 
-interface ServiceEndpoint {
-  name: string;
-  url: string;
-  timeout?: number;
-}
-
-const SERVICE_ENDPOINTS: ServiceEndpoint[] = [
-  // Observability Stack
-  { name: 'grafana', url: 'http://grafana:3000/api/health', timeout: 5000 },
-  { name: 'alloy', url: 'http://alloy:12345/-/ready', timeout: 5000 },
-  { name: 'loki', url: 'http://loki:3100/ready', timeout: 5000 },
-  { name: 'mimir', url: 'http://mimir:9009/ready', timeout: 5000 },
-  { name: 'tempo', url: 'http://tempo:3200/ready', timeout: 5000 },
-  { name: 'pyroscope', url: 'http://pyroscope:4040/ready', timeout: 5000 },
-
-  // Spring Services
-  { name: 'spring-jvm-tomcat-platform', url: 'http://spring-jvm-tomcat-platform:8080/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-jvm-tomcat-virtual', url: 'http://spring-jvm-tomcat-virtual:8080/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-jvm-netty', url: 'http://spring-jvm-netty:8080/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-native-tomcat-platform', url: 'http://spring-native-tomcat-platform:8080/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-native-tomcat-virtual', url: 'http://spring-native-tomcat-virtual:8080/actuator/health/readiness', timeout: 10000 },
-  { name: 'spring-native-netty', url: 'http://spring-native-netty:8080/actuator/health/readiness', timeout: 10000 },
-
-  // Quarkus Services
-  { name: 'quarkus-jvm', url: 'http://quarkus-jvm:8080/q/health/ready', timeout: 10000 },
-  { name: 'quarkus-native', url: 'http://quarkus-native:8080/q/health/ready', timeout: 10000 },
-
-  // Go Services
-  { name: 'go', url: 'http://go:8080/readyz', timeout: 5000 },
-
-  // Utils Services
-  { name: 'orchestrator', url: 'http://orchestrator:3002/q/health/ready', timeout: 5000 },
-];
-
-// TypeScript
-async function checkServiceHealth(service: ServiceEndpoint): Promise<{ name: string; status: 'up' | 'down'; responseTime?: number; statusCode?: number; body?: string; error?: string }> {
-  const startTime = Date.now();
-  const timeoutMs = service.timeout ?? 10000; // increase default timeout
-
+export const GET = withApiRoute({ name: 'HEALTH_API' }, async function GET(request: Request) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const url = new URL(request.url);
+    const service = url.searchParams.get('service');
 
-    const response = await fetch(service.url, {
-      method: 'GET',
-      signal: controller.signal,
-      // remove strict Accept if it causes server to behave differently
+    const upstream = `${orchestratorConfig.url}/v1/health${service ? `?service=${encodeURIComponent(service)}` : ''}`;
+    serverLogger.info('Checking health of service:', service ? service : 'ALL');
+    const response = await fetch(upstream);
+    const text = await response.text();
+    return new Response(text, {
+      status: response.status,
+      headers: { 'Content-Type': response.headers.get('Content-Type') || 'application/json' },
     });
-
-    clearTimeout(timeoutId);
-    const responseTime = Date.now() - startTime;
-    const text = await response.text().catch(() => '');
-
-    if (response.ok) {
-      return { name: service.name, status: 'up', responseTime, statusCode: response.status, body: text };
-    } else {
-      return { name: service.name, status: 'down', responseTime, statusCode: response.status, body: text, error: `HTTP ${response.status}` };
-    }
-  } catch (err: unknown) {
-    const responseTime = Date.now() - startTime;
-    const isTimeout = err instanceof Error && err.name === 'AbortError';
-    const message = err instanceof Error ? err.message : String(err);
-    return {
-      name: service.name,
-      status: 'down',
-      responseTime,
-      error: isTimeout ? `Timeout after ${timeoutMs}ms` : message,
-    };
-  }
-}
-
-export const GET = withApiRoute({ name: 'HEALTH_API' }, async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const serviceName = searchParams.get('service');
-
-    if (serviceName) {
-      const service = SERVICE_ENDPOINTS.find((s) => s.name === serviceName);
-      if (!service) {
-        return errorJson(404, { error: 'Service not found' });
-      }
-
-      serverLogger.info('Checking health of service', { service: serviceName });
-      const result = await checkServiceHealth(service);
-      return okJson(result);
-    }
-
-    serverLogger.info('Checking health of all services');
-    const results = await Promise.all(SERVICE_ENDPOINTS.map((service) => checkServiceHealth(service)));
-
-    return okJson({ services: results });
   } catch (error) {
     serverLogger.error('Error checking service health:', error);
-    return errorFromUnknown(500, error, 'Failed to check service health');
+    return errorFromUnknown(500, error, 'Failed to fetch service health');
   }
 });

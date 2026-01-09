@@ -1,61 +1,71 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  Card,
-  CardContent,
-  Alert,
-  Chip,
-} from '@mui/material';
+import { useMemo, useState } from 'react';
+import { Box, Typography, Card, CardContent, Chip, Alert } from '@mui/material';
 import ComputerIcon from '@mui/icons-material/Computer';
-import { fetchJson } from '@/lib/fetchJson';
+import PublicIcon from '@mui/icons-material/Public';
+import { getRuntimeConfig } from '@/lib/runtimeConfig';
 
-interface SystemInfoData {
-  nodejs: string;
-  npm: string;
-  nextjs: string;
-  react: string;
-  mui: string;
-  typescript: string;
+type ServerSystemInfo = NonNullable<ReturnType<typeof getRuntimeConfig>['systemInfo']>;
+
+type ClientSystemInfo = {
+  userAgent: string;
+  language: string;
+  timeZone: string;
   platform: string;
-  arch: string;
+  screen: string;
+};
+
+function collectClientInfo(): ClientSystemInfo {
+  const ua = navigator.userAgent;
+  const lang = navigator.language;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const plat = (navigator as unknown as { platform?: string }).platform ?? 'N/A';
+  const scr = `${window.screen.width}x${window.screen.height} @${window.devicePixelRatio || 1}x`;
+
+  return { userAgent: ua, language: lang, timeZone: tz, platform: plat, screen: scr };
 }
 
 export default function SystemInfo() {
-  const [systemInfo, setSystemInfo] = useState<SystemInfoData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    void fetchSystemInfo();
-  }, []);
-
-  const fetchSystemInfo = async () => {
-    setLoading(true);
-    setError(null);
+  const { systemInfo } = getRuntimeConfig();
+  const [client] = useState<ClientSystemInfo | null>(() => {
+    if (typeof window === 'undefined') return null;
     try {
-      const data = await fetchJson<SystemInfoData>('/api/system');
-      setSystemInfo(data);
+      return collectClientInfo();
     } catch {
-      setError('Failed to load system information');
-    } finally {
-      setLoading(false);
+      return null;
     }
-  };
+  });
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const serverCards = useMemo(() => {
+    const s = systemInfo as ServerSystemInfo | undefined;
+    if (!s) return [];
 
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return [
+      { label: 'Node.js', value: s.nodejs, chip: { label: 'Runtime', color: 'primary' as const } },
+      { label: 'npm', value: s.npm, chip: { label: 'Package', color: 'primary' as const } },
+      { label: 'Next.js', value: s.nextjs, chip: { label: 'Framework', color: 'secondary' as const } },
+      { label: 'React', value: s.react, chip: { label: 'UI', color: 'secondary' as const } },
+      { label: 'Material-UI', value: s.mui, chip: { label: 'Components', color: 'secondary' as const } },
+      { label: 'TypeScript', value: s.typescript, chip: { label: 'Language', color: 'secondary' as const } },
+      { label: 'Platform', value: s.platform, chip: { label: 'OS' } },
+      { label: 'Architecture', value: s.arch, chip: { label: 'CPU' } },
+    ];
+  }, [systemInfo]);
+
+  const clientCards = useMemo(() => {
+    if (!client) return [];
+    return [
+      { label: 'Browser (UA)', value: client.userAgent, chip: { label: 'UA' } },
+      { label: 'Language', value: client.language, chip: { label: 'Locale' } },
+      { label: 'Timezone', value: client.timeZone, chip: { label: 'TZ' } },
+      { label: 'Platform', value: client.platform, chip: { label: 'Navigator' } },
+      { label: 'Screen', value: client.screen, chip: { label: 'Display' } },
+    ];
+  }, [client]);
+
+  if (!systemInfo) {
+    return <Alert severity="warning">Server system information is not available.</Alert>;
   }
 
   return (
@@ -64,105 +74,68 @@ export default function SystemInfo() {
         <ComputerIcon /> System Information
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Framework and library versions currently in use
+        Server and client environment details
       </Typography>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, mt: 3 }}>
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Node.js
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.nodejs || 'N/A'}
-            </Typography>
-            <Chip label="Runtime" size="small" color="primary" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+          gap: 2,
+          mt: 2,
+        }}
+      >
+        <Box>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <ComputerIcon fontSize="small" /> Server
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 1.5 }}>
+            {serverCards.map((c) => (
+              <Card key={c.label} sx={{ height: '100%' }}>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Typography color="text.secondary" variant="caption" gutterBottom>
+                    {c.label}
+                  </Typography>
+                  <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
+                    {c.value || 'N/A'}
+                  </Typography>
+                  <Chip size="small" sx={{ mt: 1 }} {...c.chip} />
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Box>
 
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              npm
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.npm || 'N/A'}
-            </Typography>
-            <Chip label="Package Manager" size="small" color="primary" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Next.js
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.nextjs || 'N/A'}
-            </Typography>
-            <Chip label="Framework" size="small" color="secondary" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              React
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.react || 'N/A'}
-            </Typography>
-            <Chip label="UI Library" size="small" color="secondary" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Material-UI
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.mui || 'N/A'}
-            </Typography>
-            <Chip label="Component Library" size="small" color="secondary" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              TypeScript
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.typescript || 'N/A'}
-            </Typography>
-            <Chip label="Language" size="small" color="secondary" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Platform
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.platform || 'N/A'}
-            </Typography>
-            <Chip label="OS" size="small" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <Typography color="text.secondary" gutterBottom>
-              Architecture
-            </Typography>
-            <Typography variant="h5" component="div">
-              {systemInfo?.arch || 'N/A'}
-            </Typography>
-            <Chip label="CPU" size="small" sx={{ mt: 1 }} />
-          </CardContent>
-        </Card>
+        <Box>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <PublicIcon fontSize="small" /> Client
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 1.5 }}>
+            {!client && (
+              <Card>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Typography color="text.secondary" variant="caption" gutterBottom>
+                    Loading
+                  </Typography>
+                  <Typography variant="body1">Collecting client info…</Typography>
+                </CardContent>
+              </Card>
+            )}
+            {clientCards.map((c) => (
+              <Card key={c.label} sx={{ height: '100%' }}>
+                <CardContent sx={{ py: 1.5 }}>
+                  <Typography color="text.secondary" variant="caption" gutterBottom>
+                    {c.label}
+                  </Typography>
+                  <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
+                    {c.value || 'N/A'}
+                  </Typography>
+                  <Chip size="small" sx={{ mt: 1 }} {...c.chip} />
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

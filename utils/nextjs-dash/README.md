@@ -6,11 +6,11 @@ A Next.js-based dashboard UI for orchestrating and managing the Observability Be
 
 ### Today (MVP)
 
-**Browser UI (Next.js / MUI)** → **Thin Next.js API proxy (optional)** → **Orchestrator service (Quarkus)**
+**Browser UI (Next.js / MUI)** → **Thin Next.js API proxy** → **Orchestrator service (Quarkus)**
 
 - UI components live under `app/components/*`.
 - Next.js should remain a *presentation layer*.
-  - It may expose small `/api/*` routes for local/dev convenience.
+  - It exposes `/api/*` routes for accessing the orchestrator and avoids CORS complexity.
   - These routes should be **thin proxies** and avoid business rules.
 - The orchestration / business logic belongs in the **Quarkus orchestrator**.
 
@@ -51,13 +51,30 @@ A Next.js-based dashboard UI for orchestrating and managing the Observability Be
 
 ## Configuration
 
-Environment variables:
+Environment variables (provided to the **Next.js container** via docker-compose):
 
-- `ORCH_URL` (default: `http://orchestrator:3002`)
-- `ORCH_API_KEY` (default: `dev-change-me`)
-- `NEXT_PUBLIC_ORCH_URL` (optional): if set, the browser UI will call the orchestrator directly for supported features (scripts + job submit/status/events). This reduces reliance on Next.js `/api/*` proxy routes.
+- `ORCH_URL` (server-to-server URL, e.g. `http://orchestrator:3002`)
+- `ORCH_API_KEY`
 
-> Security note: the dashboard has no authentication and is intended for local/dev environments.
+## Runtime endpoints
+
+Next.js local endpoints used by the browser:
+
+- Next.js app health: `GET /api/app-health`
+- Next.js logs (snapshot): `GET /api/logs`
+- Next.js logs (live SSE): `GET /api/logs/stream`
+- Aggregated service health proxy: `GET /api/health`
+- Env proxy: `GET/POST /api/env`
+- Orchestrator proxy: `POST /api/orchestrator/submit`, `GET /api/orchestrator/status`, `GET /api/orchestrator/events`
+
+Orchestrator (Quarkus) endpoints used by the router:
+
+- Commands: `GET /v1/commands`
+- Run a command: `POST /v1/run` (requires Authorization)
+- Job status: `GET /v1/jobs/{id}`
+- Job events (SSE): `GET /v1/jobs/{id}/events`
+- Env file: `GET/POST /v1/env` (POST requires Authorization)
+- Aggregated service health: `GET /v1/health`
 
 ## Development
 
@@ -99,17 +116,6 @@ npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 npm run build
 npm start
 ```
-
-## Runtime endpoints
-
-> Note: `/api/*` exists for convenience and local/dev. Long term, the orchestrator is the primary backend.
-
-- App health: `GET /api/app-health`
-- Service health aggregation: `GET /api/health`
-- Env proxy: `GET/POST /api/env`
-- Orchestrator proxy: `POST /api/orchestrator/submit`, `GET /api/orchestrator/status`, `GET /api/orchestrator/events`
-- Server logs (snapshot): `GET /api/logs`
-- Server logs (live SSE): `GET /api/logs/stream`
 
 ## Docker Deployment
 
