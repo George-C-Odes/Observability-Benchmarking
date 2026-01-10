@@ -27,17 +27,23 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class ServiceHealthService {
 
+  /** Status value for a healthy service. */
   private static final String STATUS_UP = "up";
+  /** Status value for an unhealthy or unreachable service. */
   private static final String STATUS_DOWN = "down";
 
+  /** Shared HTTP client used to perform internal health checks. */
   private final WebClient client;
 
+  /** Default probe timeout in milliseconds applied to each health request. */
   @ConfigProperty(name = "orchestrator.health.timeout-ms", defaultValue = "10000")
   long defaultTimeoutMs;
 
+  /** Maximum number of concurrent in-flight health checks. */
   @ConfigProperty(name = "orchestrator.health.concurrency", defaultValue = "8")
   int concurrency;
 
+  /** Map of service name to base URL to probe (for example, {@code http://grafana:3000}). */
   @ConfigProperty(name = "orchestrator.health.endpoints")
   Map<String, String> endpointBaseUrls;
 
@@ -132,7 +138,10 @@ public class ServiceHealthService {
     eps.put("go", new Endpoint("go", baseUrls.get("go"), "/readyz"));
 
     // Utils
-    eps.put("nextjs-dash", new Endpoint("nextjs-dash", baseUrls.get("nextjs-dash"), "/api/app-health"));
+    eps.put(
+      "nextjs-dash",
+      new Endpoint("nextjs-dash", baseUrls.get("nextjs-dash"), "/api/app-health")
+    );
     eps.put("orchestrator", new Endpoint("orchestrator", baseUrls.get("orchestrator"), "/q/health/ready"));
 
     return eps.values().stream().filter(e -> e.baseUrl != null && !e.baseUrl.isBlank()).toList();
@@ -197,15 +206,21 @@ public class ServiceHealthService {
         String body = resp.bodyAsString();
 
         if (code >= 200 && code < 300) {
-          return new ServiceHealthResponse(endpoint.name, STATUS_UP, code, took, null, endpoint.baseUrl, body);
+          return new ServiceHealthResponse(
+            endpoint.name, STATUS_UP, code, took, null, endpoint.baseUrl, body
+          );
         }
 
-        return new ServiceHealthResponse(endpoint.name, STATUS_DOWN, code, took, "HTTP " + code, endpoint.baseUrl, body);
+        return new ServiceHealthResponse(
+          endpoint.name, STATUS_DOWN, code, took, "HTTP " + code, endpoint.baseUrl, body
+        );
       })
       .onFailure().recoverWithItem(ex -> {
         long took = System.currentTimeMillis() - start;
         String msg = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
-        return new ServiceHealthResponse(endpoint.name, STATUS_DOWN, null, took, msg, endpoint.baseUrl, null);
+        return new ServiceHealthResponse(
+          endpoint.name, STATUS_DOWN, null, took, msg, endpoint.baseUrl, null
+        );
       });
   }
 
