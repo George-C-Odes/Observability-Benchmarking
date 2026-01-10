@@ -32,12 +32,12 @@ public class RunPresetService {
   /**
    * Workspace directory path.
    */
-  @ConfigProperty(name = "orchestrator.workspace")
+  @ConfigProperty(name = "orchestrator.project-paths.workspace.root")
   String workspace;
 
   /**
    * Discovers presets from IntelliJ's .run directory located at:
-   *   ${orchestrator.workspace}/.run.
+   *   ${orchestrator.project-paths.workspace.root}/.run.
    */
   public List<CommandPreset> listPresets() {
     Path runDir = Path.of(workspace).resolve(".run");

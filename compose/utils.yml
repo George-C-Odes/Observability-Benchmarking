@@ -12,7 +12,7 @@ services:
       dockerfile: Dockerfile
     container_name: wrk2
     volumes:
-      - ../results/benchmarks:/usr/local/bin/benchmarks
+      - ${HOST_REPO}/results/benchmarks:/usr/local/bin/benchmarks
     environment:
       TZ: *default_TZ
       WRK_HOST: ${WRK_HOST}

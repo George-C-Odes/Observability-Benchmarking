@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -50,6 +50,8 @@ export default function ScriptRunner() {
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [showEventLogs, setShowEventLogs] = useState(false);
+  const executionLogRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
 
   const copyToClipboard = async (text: string, scriptName: string) => {
     try {
@@ -106,6 +108,29 @@ export default function ScriptRunner() {
   const handleCloseDialog = () => {
     setOutputDialog({ open: false, title: '', output: '' });
   };
+
+  useEffect(() => {
+    const el = executionLogRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      stickToBottomRef.current = distanceFromBottom < 40;
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const el = executionLogRef.current;
+    if (!el) return;
+    if (stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [eventLogs.length]);
 
   if (loading) {
     return (
@@ -213,6 +238,7 @@ export default function ScriptRunner() {
               </Box>
             </Box>
             <Box
+              ref={executionLogRef}
               sx={{
                 bgcolor: 'grey.900',
                 color: 'grey.100',

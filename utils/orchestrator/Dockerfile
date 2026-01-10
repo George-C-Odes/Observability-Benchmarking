@@ -2,6 +2,8 @@
 ARG IMAGE_BUILDER=maven:3.9.12-eclipse-temurin-25-noble
 ARG IMAGE_DOCKER_CLI=docker:29.1.3-cli
 ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
+#ARG IMAGE_RUNTIME=amazoncorretto:25.0.1
+## amazoncorretto includes curl for troubleshooting
 # ------------ BUILD STAGE -----------------------
 FROM ${IMAGE_BUILDER} AS builder
 ARG BUILD_UID=1000
@@ -65,6 +67,8 @@ RUN set -eux; \
 FROM ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
 ARG RUNTIME_GROUP=nonroot
+#ARG RUNTIME_USER=1001
+#ARG RUNTIME_GROUP=1001
 ENV RUNTIME_USER=${RUNTIME_USER}
 ENV RUNTIME_GROUP=${RUNTIME_GROUP}
 ENV JAVA_TOOL_OPTIONS="\

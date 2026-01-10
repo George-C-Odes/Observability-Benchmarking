@@ -1,11 +1,39 @@
 orchestrator:
   api-key: '${ORCH_API_KEY:dev-change-me}'
-  env:
-    path: '${orchestrator.workspace}/compose/.env'
+  health:
+    timeout-ms: '${ORCH_HEALTH_TIMEOUT_MS:10000}'
+    concurrency: '${ORCH_HEALTH_CONCURRENCY:8}'
+    endpoints:
+      grafana: '${ORCH_HEALTH_GRAFANA_BASE_URL:http://localhost:3000}'
+      alloy: '${ORCH_HEALTH_ALLOY_BASE_URL:http://localhost:12345}'
+      loki: '${ORCH_HEALTH_LOKI_BASE_URL:http://localhost:3100}'
+      mimir: '${ORCH_HEALTH_MIMIR_BASE_URL:http://localhost:9009}'
+      tempo: '${ORCH_HEALTH_TEMPO_BASE_URL:http://localhost:3200}'
+      pyroscope: '${ORCH_HEALTH_PYROSCOPE_BASE_URL:http://localhost:4040}'
+      spring-jvm-tomcat-platform: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL:http://localhost:8080}'
+      spring-jvm-tomcat-virtual: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL:http://localhost:8080}'
+      spring-jvm-netty: '${ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL:http://localhost:8080}'
+      spring-native-tomcat-platform: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_PLATFORM_BASE_URL:http://localhost:8080}'
+      spring-native-tomcat-virtual: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_VIRTUAL_BASE_URL:http://localhost:8080}'
+      spring-native-netty: '${ORCH_HEALTH_SPRING_NATIVE_NETTY_BASE_URL:http://localhost:8080}'
+      quarkus-jvm: '${ORCH_HEALTH_QUARKUS_JVM_BASE_URL:http://localhost:8080}'
+      quarkus-native: '${ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL:http://localhost:8080}'
+      go: '${ORCH_HEALTH_GO_BASE_URL:http://localhost:8080}'
+      nextjs-dash: '${ORCH_HEALTH_NEXTJS_DASH_BASE_URL:http://localhost:3001}'
+      orchestrator: '${ORCH_HEALTH_ORCHESTRATOR_BASE_URL:http://localhost:3002}'
   max-buffer-lines: '${ORCH_MAX_BUFFER_LINES:2000}'
-  project-dir: '${orchestrator.workspace}/compose'
+  project-paths:
+    # When set, docker compose will be executed with this host-side project directory.
+    # Needed because orchestrator talks to the host Docker Engine via /var/run/docker.sock,
+    # so bind mount source paths must be valid on the host (e.g. C:/... on Windows).
+    host-compose: '${ORCH_HOST_PROJECT_DIR:}'
+    workspace:
+      # Intended to resolve user.dir when running orchestrator locally and when containerized feed in the environment var for '/workspace'
+      root: '${ORCH_WORKSPACE:${user.dir}/../..}'
+      compose: '${orchestrator.project-paths.workspace.root}/compose'
+      env: '${orchestrator.project-paths.workspace.root}/compose/.env'
   serial-execution: '${ORCH_SERIAL_EXECUTION:true}'
-  workspace: '${ORCH_WORKSPACE:${user.dir}/../..}'
+
 quarkus:
   http:
     host: 0.0.0.0

@@ -6,6 +6,8 @@ import java.util.List;
 
 /**
  * Aggregated health response.
+ *
+ * @param services list of aggregated service health statuses
  */
 @Schema(name = "HealthAggregateResponse")
 public record HealthAggregateResponse(

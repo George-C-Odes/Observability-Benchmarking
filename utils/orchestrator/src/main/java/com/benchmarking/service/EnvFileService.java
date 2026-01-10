@@ -33,7 +33,7 @@ public class EnvFileService {
     /**
      * Path to the environment configuration file.
      */
-    @ConfigProperty(name = "orchestrator.env.path")
+    @ConfigProperty(name = "orchestrator.project-paths.workspace.env")
     String envFilePath;
 
     /**

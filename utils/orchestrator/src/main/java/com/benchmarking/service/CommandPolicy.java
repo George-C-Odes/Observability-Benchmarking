@@ -19,14 +19,21 @@ public class CommandPolicy {
   /**
    * Workspace directory.
    */
-  @ConfigProperty(name = "orchestrator.workspace")
+  @ConfigProperty(name = "orchestrator.project-paths.workspace.root")
   String workspace;
 
   /**
    * Project directory.
    */
-  @ConfigProperty(name = "orchestrator.project-dir")
+  @ConfigProperty(name = "orchestrator.project-paths.workspace.compose")
   String projectDir;
+
+  /**
+   * Host-side project directory (used when orchestrator runs docker compose against a host Docker Engine).
+   * When set, we inject this as --project-directory and treat it as trusted (not under /workspace).
+   */
+  @ConfigProperty(name = "orchestrator.project-paths.host-compose")
+  java.util.Optional<String> hostProjectDir;
 
   /**
    * "Read-only-ish" docker commands (includes your requested docker ps).
@@ -126,6 +133,8 @@ public class CommandPolicy {
 
     int i = 2; // start after: docker compose
     boolean hasProjectDir = false;
+    boolean hasFile = false;
+    boolean hasEnvFile = false;
 
     // Consume compose global options (which come before the subcommand)
     while (i < tokens.size()) {
@@ -149,7 +158,6 @@ public class CommandPolicy {
         }
       }
 
-      // Ignore the placeholder entry if present
       if (opt.equals("--dummy")) {
         i += 1;
         continue;
@@ -157,23 +165,26 @@ public class CommandPolicy {
 
       Boolean takesValue = COMPOSE_GLOBAL_OPTS.get(opt);
       if (takesValue == null) {
-        // show original token (tok) so you see e.g. "--profile=OBS"
         throw new IllegalArgumentException("Compose global option not allowed: " + tok);
       }
 
       if (opt.equals("--project-directory")) {
         hasProjectDir = true;
       }
+      if (opt.equals("--file") || opt.equals("-f")) {
+        hasFile = true;
+      }
+      if (opt.equals("--env-file")) {
+        hasEnvFile = true;
+      }
 
       if (takesValue) {
         String val;
 
         if (inlineVal != null) {
-          // consumed as --opt=value
           val = inlineVal;
           i += 1;
         } else {
-          // consumed as --opt value (two tokens)
           if (i + 1 >= tokens.size()) {
             throw new IllegalArgumentException("Missing value for option: " + opt);
           }
@@ -183,11 +194,16 @@ public class CommandPolicy {
 
         // validate path-like opts
         if (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f") || opt.equals("--env-file")) {
-          ensureUnderWorkspace(val);
+          boolean isHostMode = hostProjectDir.isPresent();
+          boolean isWindowsAbs = isWindowsAbsolutePath(val);
+          if (!(isHostMode && (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f")))) {
+            if (!isWindowsAbs) {
+              ensureUnderWorkspace(val);
+            }
+          }
         }
 
       } else {
-        // flag option (no value expected)
         if (inlineVal != null) {
           throw new IllegalArgumentException("Option does not take a value: " + opt);
         }
@@ -204,11 +220,34 @@ public class CommandPolicy {
       throw new IllegalArgumentException("Compose subcommand not allowed: " + sub);
     }
 
-    // If not provided, inject our enforced project directory BEFORE the subcommand
+    // Always force --project-directory to the container-visible projectDir.
+    // This is required because:
+    // - compose include paths (include: ./obs.yml, ./utils.yml) are resolved relative to project directory.
+    // - when a Windows path is passed (C:/...), compose running in Linux treats it as relative and prefixes /workspace.
+    // Using projectDir ensures includes and other relative references are readable inside the container.
     if (!hasProjectDir) {
       var tmp = new ArrayList<>(tokens);
       tmp.add(2, "--project-directory");
       tmp.add(3, projectDir);
+      tokens = tmp;
+    }
+
+    // Ensure a compose file is provided (container-visible).
+    if (!hasFile) {
+      String file = Path.of(projectDir).resolve("docker-compose.yml").toString();
+      var tmp = new ArrayList<>(tokens);
+      tmp.add(2, "-f");
+      tmp.add(3, file);
+      tokens = tmp;
+    }
+
+    // Ensure the compose env file is loaded so variables from compose/.env (e.g. SPRING_BOOT_VERSION) are set,
+    // regardless of the host process environment.
+    if (!hasEnvFile) {
+      String envFile = Path.of(projectDir).resolve(".env").toString();
+      var tmp = new ArrayList<>(tokens);
+      tmp.add(2, "--env-file");
+      tmp.add(3, envFile);
       tokens = tmp;
     }
 
@@ -265,5 +304,25 @@ public class CommandPolicy {
     if (!abs.startsWith(ws)) {
       throw new IllegalArgumentException("Path must be under workspace: " + abs);
     }
+  }
+
+  /**
+   * Returns true if the provided path string looks like an absolute Windows path.
+   * This is needed because the orchestrator runs on Linux inside a container, where Path.of("C:/x")
+   * is treated as relative (and would otherwise be resolved under /workspace).
+   */
+  private static boolean isWindowsAbsolutePath(String path) {
+    if (path == null || path.isBlank()) {
+      return false;
+    }
+    // C:\... or C:/...
+    if (path.length() >= 3
+      && Character.isLetter(path.charAt(0))
+      && path.charAt(1) == ':'
+      && (path.charAt(2) == '\\' || path.charAt(2) == '/')) {
+      return true;
+    }
+    // UNC paths: \\server\share\...
+    return path.startsWith("\\\\") || path.startsWith("//");
   }
 }

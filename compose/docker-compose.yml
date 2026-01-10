@@ -1,4 +1,4 @@
-name: Observability-Benchmarking
+﻿name: Observability-Benchmarking
 
 include:
   - ./obs.yml
@@ -27,6 +27,7 @@ x-default-environment: &default_env
   metric_otel_interval: &default_metric_otel_interval ${METRIC_OTEL_INTERVAL:-15000}
   orch_api_key: &default_orch_api_key ${ORCH_API_KEY:-change-me}
   host_repo: &default_host_repo ${HOST_REPO:-C:/}
+  workspace: &default_workspace ${WORKSPACE:-/workspace}
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
@@ -192,26 +193,67 @@ services:
     ports:
       - "3002:3002"
     user: "nonroot:nonroot"
+#    user: "1001:1001"
     group_add:
       - "0"
     environment:
-      ORCH_API_KEY: *default_orch_api_key
-      ORCH_WORKSPACE: "/workspace"
-      ORCH_MAX_BUFFER_LINES: "5000"
-      ORCH_SERIAL_EXECUTION: "true"
-      DOCKER_HOST: "unix:///var/run/docker.sock"
-      DOCKER_CONFIG: "/tmp/.docker"
-      DOCKER_BUILDKIT: "1"
       COMPOSE_DOCKER_CLI_BUILD: "1"
+      DOCKER_BUILDKIT: "1"
+      DOCKER_CONFIG: "/tmp/.docker"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+
+      ORCH_API_KEY: *default_orch_api_key
+      # Health aggregation upstreams (docker DNS base URLs)
+      ORCH_HEALTH_GRAFANA_BASE_URL: "http://grafana:3000"
+      ORCH_HEALTH_ALLOY_BASE_URL: "http://alloy:12345"
+      ORCH_HEALTH_LOKI_BASE_URL: "http://loki:3100"
+      ORCH_HEALTH_MIMIR_BASE_URL: "http://mimir:9009"
+      ORCH_HEALTH_TEMPO_BASE_URL: "http://tempo:3200"
+      ORCH_HEALTH_PYROSCOPE_BASE_URL: "http://pyroscope:4040"
+      ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL: "http://spring-jvm-tomcat-platform:8080"
+      ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL: "http://spring-jvm-tomcat-virtual:8080"
+      ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL: "http://spring-jvm-netty:8080"
+      ORCH_HEALTH_SPRING_NATIVE_TOMCAT_PLATFORM_BASE_URL: "http://spring-native-tomcat-platform:8080"
+      ORCH_HEALTH_SPRING_NATIVE_TOMCAT_VIRTUAL_BASE_URL: "http://spring-native-tomcat-virtual:8080"
+      ORCH_HEALTH_SPRING_NATIVE_NETTY_BASE_URL: "http://spring-native-netty:8080"
+      ORCH_HEALTH_QUARKUS_JVM_BASE_URL: "http://quarkus-jvm:8080"
+      ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL: "http://quarkus-native:8080"
+      ORCH_HEALTH_GO_BASE_URL: "http://go:8080"
+      ORCH_HEALTH_NEXTJS_DASH_BASE_URL: "http://nextjs-dash:3001"
+      ORCH_HEALTH_ORCHESTRATOR_BASE_URL: "http://orchestrator:3002"
+
+      # IMPORTANT: docker compose executed from inside orchestrator targets the host Docker Engine.
+      # Bind mounts must therefore use host-valid paths. On Windows, that's typically C:/... not /workspace.
+      # We default this to the same HOST_REPO that is already configured for the orchestrator bind mount.
+      ORCH_HOST_PROJECT_DIR: "${HOST_REPO}/compose"
+      ORCH_MAX_BUFFER_LINES: 5000
+      ORCH_SERIAL_EXECUTION: true
+      ORCH_WORKSPACE: *default_workspace
     volumes:
-      - type: bind
-        source: *default_host_repo
-        target: /workspace
-#        read_only: false
-#      - ${HOST_REPO}:/workspace:rw
       - type: bind
         source: /var/run/docker.sock
         target: /var/run/docker.sock
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/.run
+        target: ${WORKSPACE}/.run
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/compose
+        target: ${WORKSPACE}/compose
+        read_only: false
+      - type: bind
+        source: ${HOST_REPO}/config
+        target: ${WORKSPACE}/config
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/services
+        target: ${WORKSPACE}/services
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/utils
+        target: ${WORKSPACE}/utils
+        read_only: true
     tmpfs:
       - /tmp:rw,mode=1777
     read_only: true
@@ -238,7 +280,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../data/services/spring/jvm/tomcat/platform/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/jvm/tomcat/platform/error:/var/log/error
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-platform
@@ -310,7 +352,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ../data/services/spring/jvm/tomcat/virtual/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/jvm/tomcat/virtual/error:/var/log/error
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-virtual
@@ -382,7 +424,7 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - ../data/services/spring/jvm/netty/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/jvm/netty/error:/var/log/error
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-jvm-netty
@@ -451,7 +493,7 @@ services:
     ports:
       - "8083:8080"
     volumes:
-      - ../data/services/spring/native/tomcat/platform/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/native/tomcat/platform/error:/var/log/error
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-native-tomcat-platform
@@ -503,7 +545,7 @@ services:
     ports:
       - "8084:8080"
     volumes:
-      - ../data/services/spring/native/tomcat/virtual/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/native/tomcat/virtual/error:/var/log/error
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-native-tomcat-virtual
@@ -555,7 +597,7 @@ services:
     ports:
       - "8085:8080"
     volumes:
-      - ../data/services/spring/native/netty/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/native/netty/error:/var/log/error
     environment:
       TZ: *default_TZ
       SPRING_APPLICATION_NAME: spring-native-netty
@@ -601,7 +643,7 @@ services:
     ports:
       - "8086:8080"
     volumes:
-      - ../data/services/quarkus/jvm/error:/var/log/error
+      - ${HOST_REPO}/data/services/quarkus/jvm/error:/var/log/error
     environment:
       TZ: *default_TZ
       JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
@@ -676,7 +718,7 @@ services:
     ports:
       - "8087:8080"
     volumes:
-      - ../data/services/quarkus/native/error:/var/log/error
+      - ${HOST_REPO}/data/services/quarkus/native/error:/var/log/error
     #      - ../data/services/quarkus/native/jfr:/tmp
     environment:
       TZ: *default_TZ

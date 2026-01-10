@@ -7,7 +7,7 @@ services:
   alloy:
     profiles: ["OBS"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.1
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.2
     container_name: alloy
     command:
       - run
@@ -16,7 +16,7 @@ services:
       - --storage.path=/var/lib/alloy/data
       - --stability.level=experimental
     volumes:
-      - ../config/alloy:/etc/alloy
+      - ${HOST_REPO}/config/alloy:/etc/alloy
       - /var/run/docker.sock:/var/run/docker.sock:ro
     user: root
     privileged: true
@@ -53,8 +53,8 @@ services:
           2> >(/bin/grep -vE '"logger":"tsdb\.(pyroscope|tempo|loki|mimir)"' >&2)
       # start grafana and strip plugin debug lines from stdout
     volumes:
-      - ../config/grafana:/etc/grafana-config
-      - ../config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ${HOST_REPO}/config/grafana:/etc/grafana-config
+      - ${HOST_REPO}/config/grafana/datasources:/etc/grafana/provisioning/datasources
     ports:
       - "3000:3000"
     environment:
@@ -77,8 +77,8 @@ services:
     image: grafana/loki:3.6.3
     container_name: loki
     volumes:
-      - ../data/loki:/loki
-      - ../config/loki:/etc/loki
+      - ${HOST_REPO}/data/loki:/loki
+      - ${HOST_REPO}/config/loki:/etc/loki
     ports:
       - "3100:3100"
     command: >
@@ -92,7 +92,7 @@ services:
     image: grafana/mimir:3.0.2
     container_name: mimir
     volumes:
-      - ../config/mimir:/etc/mimir-config
+      - ${HOST_REPO}/config/mimir:/etc/mimir-config
     ports:
       - "9009:9009"
     command:
@@ -107,7 +107,7 @@ services:
     ports:
       - "4040:4040"
     volumes:
-      - ../config/pyroscope/config.yaml:/etc/pyroscope/config.yaml:ro
+      - ${HOST_REPO}/config/pyroscope/config.yaml:/etc/pyroscope/config.yaml:ro
     command: >
       -log.level=warn
       -config.file=/etc/pyroscope/config.yaml
@@ -124,8 +124,8 @@ services:
       - "-server.http-listen-port=3200"
       - "-log.level=warn"
     volumes:
-      - ../config/tempo:/etc/tempo-config:ro
-      - ../data/tempo:/var/tempo
+      - ${HOST_REPO}/config/tempo:/etc/tempo-config:ro
+      - ${HOST_REPO}/data/tempo:/var/tempo
     ports:
       - "3200:3200"   # Tempo HTTP / API / TraceQL
       - "4317:4317"   # OTLP gRPC

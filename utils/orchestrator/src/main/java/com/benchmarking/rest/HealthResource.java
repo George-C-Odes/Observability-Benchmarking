@@ -26,6 +26,7 @@ import java.util.Optional;
 @Tag(name = "Health")
 public class HealthResource {
 
+  /** Service that aggregates health from upstream services. */
   @Inject
   ServiceHealthService health;
 
