@@ -2,8 +2,8 @@ package com.benchmarking.service;
 
 import com.benchmarking.api.CommandPreset;
 import com.benchmarking.core.IntelliJRunXmlParser;
+import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import java.nio.file.Files;
@@ -14,12 +14,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@JBossLog
 @ApplicationScoped
 public class RunPresetService {
-  /**
-   * Logger instance for this class.
-   */
-  private static final Logger LOG = Logger.getLogger(RunPresetService.class);
 
   /**
    * Pattern to match run configuration file names with category prefix.
@@ -42,7 +39,7 @@ public class RunPresetService {
   public List<CommandPreset> listPresets() {
     Path runDir = Path.of(workspace).resolve(".run");
     if (!Files.isDirectory(runDir)) {
-      LOG.debugf(".run directory not found at %s", runDir);
+      log.debugf(".run directory not found at %s", runDir);
       return List.of();
     }
 
@@ -66,7 +63,7 @@ public class RunPresetService {
               String cmd = IntelliJRunXmlParser.toDockerCommand(cfg, workspace);
 
               if (cmd == null || cmd.isBlank()) {
-                LOG.warnf("Skipping %s: unsupported/empty command (type=%s deploymentType=%s)",
+                log.warnf("Skipping %s: unsupported/empty command (type=%s deploymentType=%s)",
                     fn, cfg.configType(), cfg.deploymentType());
                 return;
               }
@@ -76,11 +73,11 @@ public class RunPresetService {
 
               out.add(new CommandPreset(category, title, cmd, sourceFile));
             } catch (Exception e) {
-              LOG.warnf(e, "Failed to parse %s", fn);
+              log.warnf(e, "Failed to parse %s", fn);
             }
           });
     } catch (Exception e) {
-      LOG.warnf(e, "Failed to list .run directory: %s", runDir);
+      log.warnf(e, "Failed to list .run directory: %s", runDir);
     }
 
     return out;

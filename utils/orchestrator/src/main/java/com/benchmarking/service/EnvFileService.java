@@ -1,8 +1,9 @@
 package com.benchmarking.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import lombok.Getter;
+import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,14 +17,9 @@ import java.time.format.DateTimeFormatter;
  * Service for managing environment configuration files.
  * Handles file I/O, validation, and backup operations following Single Responsibility Principle.
  */
+@JBossLog
 @ApplicationScoped
 public class EnvFileService {
-
-    /**
-     * Logger instance for this service.
-     */
-    private static final Logger LOG = Logger.getLogger(EnvFileService.class);
-    
     /**
      * Date-time formatter for backup file timestamps.
      */
@@ -47,16 +43,16 @@ public class EnvFileService {
             Path path = Paths.get(envFilePath);
             
             if (!Files.exists(path)) {
-                LOG.warnf("Environment file not found at: %s", path.toAbsolutePath());
+                log.warnf("Environment file not found at: %s", path.toAbsolutePath());
                 throw new EnvFileException("Environment file not found", EnvFileException.Type.NOT_FOUND);
             }
 
             String content = Files.readString(path);
-            LOG.infof("Successfully read environment file from: %s", path.toAbsolutePath());
+            log.infof("Successfully read environment file from: %s", path.toAbsolutePath());
             
             return new EnvFileContent(content, path.toAbsolutePath().toString());
         } catch (IOException e) {
-            LOG.errorf(e, "Failed to read environment file: %s", envFilePath);
+            log.errorf(e, "Failed to read environment file: %s", envFilePath);
             throw new EnvFileException("Failed to read environment file: " + e.getMessage(), 
                     EnvFileException.Type.IO_ERROR, e);
         }
@@ -77,7 +73,7 @@ public class EnvFileService {
             Path path = Paths.get(envFilePath);
             
             if (!Files.exists(path)) {
-                LOG.warnf("Environment file not found at: %s", path.toAbsolutePath());
+                log.warnf("Environment file not found at: %s", path.toAbsolutePath());
                 throw new EnvFileException("Environment file not found", EnvFileException.Type.NOT_FOUND);
             }
 
@@ -86,11 +82,11 @@ public class EnvFileService {
             
             // Write new content
             Files.writeString(path, newContent);
-            LOG.infof("Successfully updated environment file: %s", path.toAbsolutePath());
+            log.infof("Successfully updated environment file: %s", path.toAbsolutePath());
 
             return new EnvFileUpdate("Environment file updated successfully", backupFilename);
         } catch (IOException e) {
-            LOG.errorf(e, "Failed to update environment file: %s", envFilePath);
+            log.errorf(e, "Failed to update environment file: %s", envFilePath);
             throw new EnvFileException("Failed to update environment file: " + e.getMessage(), 
                     EnvFileException.Type.IO_ERROR, e);
         }
@@ -119,7 +115,7 @@ public class EnvFileService {
         String timestamp = LocalDateTime.now().format(BACKUP_TIMESTAMP_FORMAT);
         Path backupPath = originalPath.resolveSibling(originalPath.getFileName() + ".backup." + timestamp);
         Files.copy(originalPath, backupPath, StandardCopyOption.REPLACE_EXISTING);
-        LOG.infof("Created backup: %s", backupPath.toAbsolutePath());
+        log.infof("Created backup: %s", backupPath.toAbsolutePath());
         return backupPath.getFileName().toString();
     }
 
@@ -142,6 +138,7 @@ public class EnvFileService {
     /**
      * Exception thrown when environment file operations fail.
      */
+    @Getter
     public static class EnvFileException extends Exception {
         /**
          * Type of environment file exception.
@@ -163,6 +160,8 @@ public class EnvFileService {
 
         /**
          * The type of exception that occurred.
+         * -- GETTER --
+         *  Gets the exception type.
          */
         private final Type type;
 
@@ -189,13 +188,5 @@ public class EnvFileService {
             this.type = type;
         }
 
-        /**
-         * Gets the exception type.
-         *
-         * @return the exception type
-         */
-        public Type getType() {
-            return type;
-        }
     }
 }

@@ -1,27 +1,71 @@
+# IntelliJ YAML schema validation doesn't understand Quarkus config keys here.
+# $schema: disable
+
 orchestrator:
   api-key: '${ORCH_API_KEY:dev-change-me}'
   health:
-    timeout-ms: '${ORCH_HEALTH_TIMEOUT_MS:10000}'
-    concurrency: '${ORCH_HEALTH_CONCURRENCY:8}'
-    endpoints:
-      grafana: '${ORCH_HEALTH_GRAFANA_BASE_URL:http://localhost:3000}'
-      alloy: '${ORCH_HEALTH_ALLOY_BASE_URL:http://localhost:12345}'
-      loki: '${ORCH_HEALTH_LOKI_BASE_URL:http://localhost:3100}'
-      mimir: '${ORCH_HEALTH_MIMIR_BASE_URL:http://localhost:9009}'
-      tempo: '${ORCH_HEALTH_TEMPO_BASE_URL:http://localhost:3200}'
-      pyroscope: '${ORCH_HEALTH_PYROSCOPE_BASE_URL:http://localhost:4040}'
-      spring-jvm-tomcat-platform: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL:http://localhost:8080}'
-      spring-jvm-tomcat-virtual: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL:http://localhost:8080}'
-      spring-jvm-netty: '${ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL:http://localhost:8080}'
-      spring-native-tomcat-platform: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_PLATFORM_BASE_URL:http://localhost:8080}'
-      spring-native-tomcat-virtual: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_VIRTUAL_BASE_URL:http://localhost:8080}'
-      spring-native-netty: '${ORCH_HEALTH_SPRING_NATIVE_NETTY_BASE_URL:http://localhost:8080}'
-      quarkus-jvm: '${ORCH_HEALTH_QUARKUS_JVM_BASE_URL:http://localhost:8080}'
-      quarkus-native: '${ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL:http://localhost:8080}'
-      go: '${ORCH_HEALTH_GO_BASE_URL:http://localhost:8080}'
-      nextjs-dash: '${ORCH_HEALTH_NEXTJS_DASH_BASE_URL:http://localhost:3001}'
-      orchestrator: '${ORCH_HEALTH_ORCHESTRATOR_BASE_URL:http://localhost:3002}'
-  max-buffer-lines: '${ORCH_MAX_BUFFER_LINES:2000}'
+    timeout-ms: ${ORCH_HEALTH_TIMEOUT_MS:10000}
+    concurrency: ${ORCH_HEALTH_CONCURRENCY:8}
+    services:
+      spring-jvm-tomcat-platform:
+        base-url: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL:http://localhost:8080}'
+        health-path: /actuator/health/readiness
+      spring-jvm-tomcat-virtual:
+        base-url: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-jvm-netty:
+        base-url: '${ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-native-tomcat-platform:
+        base-url: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_PLATFORM_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-native-tomcat-virtual:
+        base-url: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_VIRTUAL_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-native-netty:
+        base-url: '${ORCH_HEALTH_SPRING_NATIVE_NETTY_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+
+      quarkus-jvm:
+        base-url: '${ORCH_HEALTH_QUARKUS_JVM_BASE_URL:false}'
+        health-path: /q/health/ready
+      quarkus-native:
+        base-url: '${ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL:false}'
+        health-path: /q/health/ready
+
+      go:
+        base-url: '${ORCH_HEALTH_GO_BASE_URL:false}'
+        health-path: /readyz
+
+      # Observability
+      grafana:
+        base-url: '${ORCH_HEALTH_GRAFANA_BASE_URL:http://localhost:3000}'
+        health-path: /api/health
+      alloy:
+        base-url: '${ORCH_HEALTH_ALLOY_BASE_URL:http://localhost:12345}'
+        health-path: /-/ready
+      loki:
+        base-url: '${ORCH_HEALTH_LOKI_BASE_URL:http://localhost:3100}'
+        health-path: /ready
+      mimir:
+        base-url: '${ORCH_HEALTH_MIMIR_BASE_URL:http://localhost:9009}'
+        health-path: /ready
+      tempo:
+        base-url: '${ORCH_HEALTH_TEMPO_BASE_URL:http://localhost:3200}'
+        health-path: /ready
+      pyroscope:
+        base-url: '${ORCH_HEALTH_PYROSCOPE_BASE_URL:http://localhost:4040}'
+        health-path: /ready
+
+      # Utils
+      nextjs-dash:
+        base-url: '${ORCH_HEALTH_NEXTJS_DASH_BASE_URL:http://localhost:3001}'
+        health-path: /api/app-health
+      orchestrator:
+        base-url: '${ORCH_HEALTH_ORCHESTRATOR_BASE_URL:http://localhost:3002}'
+        health-path: /q/health/ready
+
+  max-buffer-lines: ${ORCH_MAX_BUFFER_LINES:2000}
   project-paths:
     # When set, docker compose will be executed with this host-side project directory.
     # Needed because orchestrator talks to the host Docker Engine via /var/run/docker.sock,
@@ -32,7 +76,7 @@ orchestrator:
       root: '${ORCH_WORKSPACE:${user.dir}/../..}'
       compose: '${orchestrator.project-paths.workspace.root}/compose'
       env: '${orchestrator.project-paths.workspace.root}/compose/.env'
-  serial-execution: '${ORCH_SERIAL_EXECUTION:true}'
+  serial-execution: ${ORCH_SERIAL_EXECUTION:true}
 
 quarkus:
   http:

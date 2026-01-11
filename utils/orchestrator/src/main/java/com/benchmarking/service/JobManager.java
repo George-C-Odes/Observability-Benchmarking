@@ -2,7 +2,7 @@ package com.benchmarking.service;
 
 import com.benchmarking.api.JobEvent;
 import com.benchmarking.api.JobStatusResponse;
-import org.jboss.logging.Logger;
+import lombok.extern.jbosslog.JBossLog;
 import org.jboss.logging.MDC;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -25,12 +25,9 @@ import java.util.concurrent.TimeUnit;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 
+@JBossLog
 @ApplicationScoped
 public class JobManager {
-  /**
-   * Logger instance for this class.
-   */
-  private static final Logger LOG = Logger.getLogger(JobManager.class);
 
   /**
    * Job execution status.
@@ -118,7 +115,7 @@ public class JobManager {
       env.putIfAbsent("DOCKER_BUILDKIT", "1");
       env.putIfAbsent("COMPOSE_DOCKER_CLI_BUILD", "1");
 
-      LOG.infof("Executing: %s", String.join(" ", cmd.argv()));
+      log.infof("Executing: %s", String.join(" ", cmd.argv()));
       job.emit(JobEvent.status("EXEC " + String.join(" ", cmd.argv())));
 
       Process p = pb.start();
@@ -152,14 +149,14 @@ public class JobManager {
         job.emit(JobEvent.status("FAILED exitCode=" + exit));
       }
 
-      LOG.infof("Finished status=%s exitCode=%s", job.status, exit);
+      log.infof("Finished status=%s exitCode=%s", job.status, exit);
       job.complete();
     } catch (Exception e) {
       job.finishedAt = Instant.now();
       job.status = Status.FAILED;
       String msg = "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage();
       job.emit(JobEvent.status(msg));
-      LOG.error(msg, e);
+      log.error(msg, e);
       job.complete();
     } finally {
       MDC.remove("jobId");
@@ -172,7 +169,7 @@ public class JobManager {
       while ((line = br.readLine()) != null) {
         job.emit(JobEvent.log(stream, line));
         // Log to orchestrator stdout so Alloy can scrape
-        LOG.infof("[%s] %s", stream, line);
+        log.infof("[%s] %s", stream, line);
       }
     } catch (Exception ignored) {
       // Intentionally ignored

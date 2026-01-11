@@ -1,7 +1,7 @@
 package com.benchmarking.core;
 
+import lombok.extern.jbosslog.JBossLog;
 import org.apache.commons.lang3.StringUtils;
-import org.jboss.logging.Logger;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -24,11 +24,8 @@ import java.util.Map;
  * 2) docker-deploy run configs with deployment type="dockerfile":
  *    - Converts to: docker buildx build --load -t <tag> -f <dockerfile> --build-arg ... <context>
  */
+@JBossLog
 public final class IntelliJRunXmlParser {
-  /**
-   * Logger for this class.
-   */
-  private static final Logger LOG = Logger.getLogger(IntelliJRunXmlParser.class);
 
   private IntelliJRunXmlParser() { }
 
@@ -172,7 +169,7 @@ public final class IntelliJRunXmlParser {
       }
     }
 
-    LOG.debugf("Unsupported run config (type=%s deploymentType=%s) name=%s",
+    log.debugf("Unsupported run config (type=%s deploymentType=%s) name=%s",
         cfg.configType, cfg.deploymentType, cfg.name);
     return null;
   }

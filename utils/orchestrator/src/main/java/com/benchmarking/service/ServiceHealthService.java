@@ -10,10 +10,9 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.net.URI;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,25 +31,18 @@ public class ServiceHealthService {
   /** Status value for an unhealthy or unreachable service. */
   private static final String STATUS_DOWN = "down";
 
+  /** Special base-url value meaning this service is intentionally disabled for health checks. */
+  private static final String DISABLED_BASE_URL = "false";
+
   /** Shared HTTP client used to perform internal health checks. */
   private final WebClient client;
 
-  /** Default probe timeout in milliseconds applied to each health request. */
-  @ConfigProperty(name = "orchestrator.health.timeout-ms", defaultValue = "10000")
-  long defaultTimeoutMs;
-
-  /** Maximum number of concurrent in-flight health checks. */
-  @ConfigProperty(name = "orchestrator.health.concurrency", defaultValue = "8")
-  int concurrency;
-
-  /** Map of service name to base URL to probe (for example, {@code http://grafana:3000}). */
-  @ConfigProperty(name = "orchestrator.health.endpoints")
-  Map<String, String> endpointBaseUrls;
-
-  private Map<String, String> effectiveBaseUrls() {
-    // Tests can override endpointBaseUrls directly; Quarkus config injection can still populate it in prod.
-    return endpointBaseUrls == null ? Map.of() : endpointBaseUrls;
-  }
+  /**
+   * Health-check configuration loaded from application config under {@code orchestrator.health.*}.
+   *
+   * <p>This drives which services are probed (service name -> base URL + health path).
+   */
+  private final ServiceHealthConfig config;
 
   /**
    * WebClient creation uses sane defaults for a small set of internal health checks.
@@ -60,7 +52,9 @@ public class ServiceHealthService {
    * Disabling keep-alive makes these probes more robust.</p>
    */
   @Inject
-  public ServiceHealthService(Vertx vertx) {
+  public ServiceHealthService(Vertx vertx, ServiceHealthConfig config) {
+    this.config = config;
+
     HttpClientOptions httpClientOptions = new HttpClientOptions()
       .setKeepAlive(false)
       .setTcpKeepAlive(true)
@@ -80,71 +74,31 @@ public class ServiceHealthService {
   }
 
   private List<Endpoint> endpoints() {
-    // Use a stable order for UI rendering.
-    Map<String, String> baseUrls = effectiveBaseUrls();
-    Map<String, Endpoint> eps = new LinkedHashMap<>();
+    Map<String, ServiceHealthConfig.Service> cfgs = config.services();
+    if (cfgs == null || cfgs.isEmpty()) {
+      return List.of();
+    }
 
-    // Observability
-    eps.put("grafana", new Endpoint("grafana", baseUrls.get("grafana"), "/api/health"));
-    eps.put("alloy", new Endpoint("alloy", baseUrls.get("alloy"), "/-/ready"));
-    eps.put("loki", new Endpoint("loki", baseUrls.get("loki"), "/ready"));
-    eps.put("mimir", new Endpoint("mimir", baseUrls.get("mimir"), "/ready"));
-    eps.put("tempo", new Endpoint("tempo", baseUrls.get("tempo"), "/ready"));
-    eps.put("pyroscope", new Endpoint("pyroscope", baseUrls.get("pyroscope"), "/ready"));
+    List<Endpoint> result = new ArrayList<>(cfgs.size());
+    for (Map.Entry<String, ServiceHealthConfig.Service> e : cfgs.entrySet()) {
+      String name = e.getKey();
+      ServiceHealthConfig.Service cfg = e.getValue();
+      if (cfg == null) {
+        continue;
+      }
 
-    // Spring
-    eps.put("spring-jvm-tomcat-platform", new Endpoint(
-      "spring-jvm-tomcat-platform",
-      baseUrls.get("spring-jvm-tomcat-platform"),
-      "/actuator/health/readiness"
-    ));
-    eps.put("spring-jvm-tomcat-virtual", new Endpoint(
-      "spring-jvm-tomcat-virtual",
-      baseUrls.get("spring-jvm-tomcat-virtual"),
-      "/actuator/health/readiness"
-    ));
-    eps.put("spring-jvm-netty", new Endpoint(
-      "spring-jvm-netty",
-      baseUrls.get("spring-jvm-netty"),
-      "/actuator/health/readiness"
-    ));
-    eps.put("spring-native-tomcat-platform", new Endpoint(
-      "spring-native-tomcat-platform",
-      baseUrls.get("spring-native-tomcat-platform"),
-      "/actuator/health/readiness"
-    ));
-    eps.put("spring-native-tomcat-virtual", new Endpoint(
-      "spring-native-tomcat-virtual",
-      baseUrls.get("spring-native-tomcat-virtual"),
-      "/actuator/health/readiness"
-    ));
-    eps.put("spring-native-netty", new Endpoint(
-      "spring-native-netty",
-      baseUrls.get("spring-native-netty"),
-      "/actuator/health/readiness"
-    ));
+      String baseUrl = cfg.baseUrl().orElse(null);
+      if (baseUrl == null || baseUrl.isBlank()) {
+        continue;
+      }
+      if (DISABLED_BASE_URL.equalsIgnoreCase(baseUrl.trim())) {
+        continue;
+      }
 
-    // Quarkus
-    eps.put(
-      "quarkus-jvm",
-      new Endpoint("quarkus-jvm", baseUrls.get("quarkus-jvm"), "/q/health/ready")
-    );
-    eps.put(
-      "quarkus-native",
-      new Endpoint("quarkus-native", baseUrls.get("quarkus-native"), "/q/health/ready")
-    );
+      result.add(new Endpoint(name, baseUrl, cfg.healthPath()));
+    }
 
-    // Go
-    eps.put("go", new Endpoint("go", baseUrls.get("go"), "/readyz"));
-
-    // Utils
-    eps.put(
-      "nextjs-dash",
-      new Endpoint("nextjs-dash", baseUrls.get("nextjs-dash"), "/api/app-health")
-    );
-    eps.put("orchestrator", new Endpoint("orchestrator", baseUrls.get("orchestrator"), "/q/health/ready"));
-
-    return eps.values().stream().filter(e -> e.baseUrl != null && !e.baseUrl.isBlank()).toList();
+    return result;
   }
 
   public Uni<HealthAggregateResponse> checkAll(Optional<String> onlyService) {
@@ -152,7 +106,7 @@ public class ServiceHealthService {
       .map(name -> endpoints().stream().filter(e -> e.name.equals(name)).toList())
       .orElseGet(this::endpoints);
 
-    int batchSize = Math.max(1, concurrency);
+    int batchSize = Math.max(1, config.concurrency());
 
     return Multi.createFrom().iterable(selected)
       .group().intoLists().of(batchSize)
@@ -168,7 +122,7 @@ public class ServiceHealthService {
 
   private Uni<ServiceHealthResponse> checkOne(Endpoint endpoint) {
     long start = System.currentTimeMillis();
-    long timeoutMs = defaultTimeoutMs > 0 ? defaultTimeoutMs : 10000;
+    long timeoutMs = config.timeoutMs() > 0 ? config.timeoutMs() : 10000;
 
     URI base;
     try {
