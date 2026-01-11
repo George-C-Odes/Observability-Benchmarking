@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.7
+ARG IMAGE_DEPS=node:25.2.1-bookworm-slim
+ARG IMAGE_BUILDER=node:25.2.1-bookworm-slim
+ARG IMAGE_RUNTIME=node:25.2.1-bookworm-slim
 # ------------ DEPS STAGE -----------------------
-FROM node:25.2-slim AS deps
+FROM ${IMAGE_DEPS} AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -10,7 +13,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm i -g npm@11.7.0 && npm ci --no-audit --fund=false
 
 # ------------ BUILD STAGE -----------------------
-FROM node:25.2-slim AS builder
+FROM ${IMAGE_BUILDER} AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -22,7 +25,7 @@ RUN npm run build
 RUN mkdir -p /app/public
 
 #-----------------------  RUNTIME STAGE -----------------------
-FROM node:25.2.1-bookworm-slim AS runner
+FROM ${IMAGE_RUNTIME} AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

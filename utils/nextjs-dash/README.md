@@ -148,6 +148,78 @@ docker run -p 3001:3001 \
   nextjs-dash:latest
 ```
 
+## Testing & performance
+
+This module uses **Vitest**. On Windows in particular, end-to-end wall time is often dominated by:
+
+- JSDOM startup
+- module graph/import time
+- worker startup overhead
+
+To keep runs fast, tests are split into two suites:
+
+- **Node suite**: `lib/**` + `app/api/**` (no JSDOM)
+- **DOM suite**: `app/components/**` + `app/hooks/**` (JSDOM)
+
+That split is wired through:
+
+- `vitest.config.node.ts`
+- `vitest.config.dom.ts`
+
+### Common commands
+
+```powershell
+npm -s test
+npm -s run test:node
+npm -s run test:dom
+npm -s run test:fast
+```
+
+### Profiling test runtime (wall time)
+
+Vitest can print detailed timings for transform/setup/import/tests. These are the key numbers to watch.
+
+```powershell
+# DOM suite timings
+npx vitest run -c vitest.config.dom.ts --reporter=verbose
+
+# Node suite timings
+npx vitest run -c vitest.config.node.ts --reporter=verbose
+
+# Include heap usage per test (helps spot memory-pressure driven slowdowns)
+npx vitest run -c vitest.config.dom.ts --reporter=verbose --logHeapUsage
+```
+
+### Performance tuning knobs
+
+You can tune parallelism locally without changing repo defaults:
+
+```powershell
+# Cap workers (recommended on Windows when JSDOM is slow)
+ npx vitest run -c vitest.config.dom.ts --maxWorkers=2
+ npx vitest run -c vitest.config.dom.ts --maxWorkers=4
+
+# For consistency, tune both suites
+ npx vitest run -c vitest.config.node.ts --maxWorkers=4
+ npx vitest run -c vitest.config.dom.ts --maxWorkers=4
+```
+
+Notes:
+
+- This repo uses `pool: 'threads'` because `pool: 'processes'` is not supported for this setup.
+- If your runs are slower with more workers, reduce `--maxWorkers`.
+- If `import` time dominates, consider reducing heavyweight module imports in tests or mocking expensive UI deps.
+
+### Coverage
+
+Coverage is computed per-suite:
+
+```powershell
+npm -s run test:coverage
+```
+
+If you need a single combined HTML report, we can optionally add a merge step later.
+
 ## Future roadmap (overview)
 
 ### When mobile comes into play

@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
+// Default Vitest config (kept for editor integration).
+// CI/local scripts use split configs:
+// - vitest.config.node.ts
+// - vitest.config.dom.ts
 export default defineConfig({
   resolve: {
     alias: {
@@ -12,11 +16,5 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['**/*.{test,spec}.{ts,tsx}'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
-      include: ['app/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}'],
-      exclude: ['**/*.d.ts', '**/.next/**', '**/node_modules/**'],
-    },
   },
 });
