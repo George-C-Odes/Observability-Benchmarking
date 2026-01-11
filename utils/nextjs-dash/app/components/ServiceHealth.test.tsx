@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // ServiceHealth calls fetchJson at module scope.
@@ -23,16 +23,25 @@ type MockService = {
 function mockHealthResponse(services: MockService[]) {
   vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    if (url === '/api/health') {
+    if (url.startsWith('/api/health')) {
       return { services };
     }
 
-    if (url === '/api/orchestrator/submit') {
+    if (url === '/api/docker/control') {
       // Sanity: ensure caller sends JSON.
       expect(init?.method).toBe('POST');
-      const parsed = JSON.parse(String(init?.body || '{}')) as { command?: string };
-      expect(typeof parsed.command).toBe('string');
-      return { success: true, jobId: 'job-1' };
+      const parsed = JSON.parse(String(init?.body || '{}')) as {
+        service?: string;
+        action?: 'start' | 'stop' | 'restart';
+        forceRecreate?: boolean;
+        deleteContainer?: boolean;
+      };
+      expect(typeof parsed.service).toBe('string');
+      expect(['start', 'stop', 'restart']).toContain(parsed.action);
+
+      // Keep the UI stable for multi-action tests: we don't want the optimistic PENDING state
+      // to hide buttons mid-test. Real status will only change after a refresh anyway.
+      return { success: true, jobId: 'job-1', command: 'mock', status: 'up' };
     }
 
     throw new Error(`Unexpected fetchJson call: ${url}`);
@@ -41,6 +50,7 @@ function mockHealthResponse(services: MockService[]) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  cleanup();
 });
 
 describe('ServiceHealth', () => {
@@ -83,17 +93,17 @@ describe('ServiceHealth', () => {
 
     expect(await screen.findByText('wrk2')).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('--force-recreate'));
+    const wrk2Card = screen.getByText('wrk2').closest('.MuiCard-root') as HTMLElement;
+    expect(wrk2Card).toBeTruthy();
 
-    const startButton = await screen.findByLabelText('Start');
+    const startButton = await within(wrk2Card).findByLabelText('Start');
     await user.click(startButton);
 
-    // Health refresh calls can happen after submit; assert the submit call happened.
     expect(fetchJson).toHaveBeenCalledWith(
-      '/api/orchestrator/submit',
+      '/api/docker/control',
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ command: 'docker compose up -d --force-recreate wrk2' }),
+        body: JSON.stringify({ service: 'wrk2', action: 'start' }),
       })
     );
 
@@ -101,26 +111,44 @@ describe('ServiceHealth', () => {
     expect(await screen.findByText('PENDING')).toBeInTheDocument();
   });
 
-  it('submits Stop with delete container option when checked', async () => {
-    mockHealthResponse([{ name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' }]);
+  it('submits Restart, Recreate, Stop and Delete via /api/docker/control with correct flags', async () => {
+    const actions: Array<{ label: 'Restart' | 'Recreate' | 'Stop' | 'Delete'; expectedBody: string }> = [
+      { label: 'Restart', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart' }) },
+      {
+        label: 'Recreate',
+        expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart', forceRecreate: true }),
+      },
+      { label: 'Stop', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop' }) },
+      {
+        label: 'Delete',
+        expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop', deleteContainer: true }),
+      },
+    ];
 
-    const user = userEvent.setup();
-    render(<ServiceHealth />);
+    for (const a of actions) {
+      vi.mocked(fetchJson).mockClear();
+      mockHealthResponse([{ name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' }]);
 
-    expect(await screen.findByText('orchestrator')).toBeInTheDocument();
+      const user = userEvent.setup();
+      const { unmount } = render(<ServiceHealth />);
 
-    await user.click(screen.getByLabelText('Delete container'));
+      expect(await screen.findByText('orchestrator')).toBeInTheDocument();
 
-    const stopButton = await screen.findByLabelText('Stop');
-    await user.click(stopButton);
+      const orchCard = screen.getByText('orchestrator').closest('.MuiCard-root') as HTMLElement;
+      expect(orchCard).toBeTruthy();
 
-    expect(fetchJson).toHaveBeenCalledWith(
-      '/api/orchestrator/submit',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ command: 'docker compose stop orchestrator; docker compose rm -f orchestrator' }),
-      })
-    );
+      await user.click(await within(orchCard).findByLabelText(a.label));
+
+      expect(fetchJson).toHaveBeenCalledWith(
+        '/api/docker/control',
+        expect.objectContaining({
+          method: 'POST',
+          body: a.expectedBody,
+        })
+      );
+
+      unmount();
+    }
   });
 
   it('renders error message only when populated and keeps response body behind hover affordance', async () => {

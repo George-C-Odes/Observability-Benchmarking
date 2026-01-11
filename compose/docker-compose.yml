@@ -210,6 +210,7 @@ services:
       ORCH_HEALTH_MIMIR_BASE_URL: "http://mimir:9009"
       ORCH_HEALTH_TEMPO_BASE_URL: "http://tempo:3200"
       ORCH_HEALTH_PYROSCOPE_BASE_URL: "http://pyroscope:4040"
+      # Can skip specific services from aggregated health check by setting base url to 'false'
       ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL: "http://spring-jvm-tomcat-platform:8080"
       ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL: "http://spring-jvm-tomcat-virtual:8080"
       ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL: "http://spring-jvm-netty:8080"

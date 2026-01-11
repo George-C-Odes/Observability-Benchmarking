@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -8,15 +8,11 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  CardActions,
   Chip,
   Alert,
   IconButton,
   Tooltip,
-  FormControlLabel,
-  Checkbox,
   Stack,
-  Divider,
   Link,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -26,7 +22,10 @@ import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
+import CachedIcon from '@mui/icons-material/Cached';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { fetchJson } from '@/lib/fetchJson';
+import { orchestratorConfig } from '@/lib/config';
 
 interface ServiceHealth {
   name: string;
@@ -112,8 +111,14 @@ function buildComposeCommand(params: {
 }): string {
   const { service, action, forceRecreate, deleteContainer } = params;
 
-  if (action === 'start' || action === 'restart') {
+  if (action === 'start') {
     return `docker compose up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
+  }
+
+  if (action === 'restart') {
+    // Normal 'restart' should translate to docker compose restart.
+    // (We use 'up -d --force-recreate' for the explicit Recreate action.)
+    return `docker compose restart ${service}`;
   }
 
   // stop
@@ -122,6 +127,16 @@ function buildComposeCommand(params: {
     command += `; docker compose rm -f ${service}`;
   }
   return command;
+}
+
+function buildRecreateCommand(service: string): string {
+  // Force recreate the service container
+  return `docker compose up -d --force-recreate ${service}`;
+}
+
+function buildDeleteCommand(service: string): string {
+  // Stop + remove the service container
+  return buildComposeCommand({ service, action: 'stop', forceRecreate: false, deleteContainer: true });
 }
 
 function isProbablyHttpUrl(value: string): boolean {
@@ -133,8 +148,6 @@ export default function ServiceHealth() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const [forceRecreate, setForceRecreate] = useState(false);
-  const [deleteContainer, setDeleteContainer] = useState(false);
   const [message, setMessage] = useState<ServiceMessage | null>(null);
 
   const fetchAllServices = useCallback(async () => {
@@ -168,36 +181,27 @@ export default function ServiceHealth() {
     }
   }, []);
 
-  const submitControl = useCallback(
-    async (serviceName: string, action: ControlAction) => {
+  const submitDockerControl = useCallback(
+    async (serviceName: string, payload: { service: string; action: 'start' | 'stop' | 'restart'; forceRecreate?: boolean; deleteContainer?: boolean }, optimisticActionLabel: string) => {
       setSubmitting(serviceName);
-
-      // optimistic: mark as pending
       setServices((prev) => prev.map((s) => (s.name === serviceName ? toPending(s) : s)));
 
-      const command = buildComposeCommand({
-        service: serviceName,
-        action,
-        forceRecreate: action === 'stop' ? false : forceRecreate,
-        deleteContainer: action === 'stop' ? deleteContainer : false,
-      });
-
       try {
-        await fetchJson(`/api/orchestrator/submit`, {
+        await fetchJson(`/api/docker/control`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command }),
+          body: JSON.stringify(payload),
         });
 
         setMessage({
           type: 'success',
-          text: `Submitted ${action} for ${serviceName}. Status will update after refresh.`,
+          text: `Submitted ${optimisticActionLabel} for ${serviceName}. Status will update after refresh.`,
           service: serviceName,
         });
       } catch {
         setMessage({
           type: 'error',
-          text: `Failed to submit ${action} for ${serviceName}.`,
+          text: `Failed to submit ${optimisticActionLabel} for ${serviceName}.`,
           service: serviceName,
         });
         void refreshService(serviceName);
@@ -205,7 +209,7 @@ export default function ServiceHealth() {
         setSubmitting(null);
       }
     },
-    [deleteContainer, forceRecreate, refreshService]
+    [refreshService]
   );
 
   useEffect(() => {
@@ -238,167 +242,299 @@ export default function ServiceHealth() {
     );
   }
 
-  const renderServiceCard = (service: ServiceHealth, denseTitle: boolean = false) => {
+  const renderServiceCard = (service: ServiceHealth) => {
     const statusUI = getStatusUI(service.status);
     const isBusy = refreshing === service.name || submitting === service.name;
 
     const canStart = service.status === 'down';
-    const canStopRestart = service.status === 'up';
+    const canManageContainer = service.status === 'up';
 
-    return (
-      <Card key={service.name}>
-        <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" component="div" fontSize={denseTitle ? '0.9rem' : undefined}>
-              {service.name}
-            </Typography>
-            {statusUI.icon}
-          </Box>
-          <Chip
-            label={statusUI.label}
-            color={statusUI.color}
-            size="small"
-            sx={{ mt: 1 }}
-          />
+    // Keep a stable 2-column layout on md+ (data + actions). On smaller screens we stack.
+    // Do NOT force stacking based on title length; instead ellipsize the title.
 
-          {typeof service.responseTime === 'number' && (
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              Response: {service.responseTime}ms
-            </Typography>
-          )}
+    const upstreamHealthUrl = `${orchestratorConfig.url}/v1/health?service=${encodeURIComponent(service.name)}`;
 
-          {service.baseUrl && (
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              Base URL:{' '}
-              {isProbablyHttpUrl(service.baseUrl) ? (
-                <Link href={service.baseUrl} target="_blank" rel="noreferrer" underline="hover">
-                  {service.baseUrl}
-                </Link>
-              ) : (
-                service.baseUrl
-              )}
-            </Typography>
-          )}
+    const startCommand = buildComposeCommand({
+      service: service.name,
+      action: 'start',
+      forceRecreate: false,
+      deleteContainer: false,
+    });
+    const restartCommand = buildComposeCommand({
+      service: service.name,
+      action: 'restart',
+      forceRecreate: false,
+      deleteContainer: false,
+    });
+    const stopCommand = buildComposeCommand({
+      service: service.name,
+      action: 'stop',
+      forceRecreate: false,
+      deleteContainer: false,
+    });
 
-          {service.error && (
-            <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
-              {service.error}
-            </Typography>
-          )}
+    const recreateCommand = buildRecreateCommand(service.name);
+    const deleteCommand = buildDeleteCommand(service.name);
 
-          {service.body !== undefined && (
-            <Box sx={{ mt: 1 }}>
-              <Tooltip
-                title={
-                  <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
-                    {typeof service.body === 'string' ? service.body : JSON.stringify(service.body, null, 2)}
-                  </Box>
-                }
-                placement="bottom-start"
-              >
-                <Typography variant="caption" color="text.secondary" sx={{ cursor: 'help' }}>
-                  Response body (hover)
-                </Typography>
-              </Tooltip>
-            </Box>
-          )}
-        </CardContent>
-        <CardActions sx={{ px: 2, pb: 2, pt: 0, flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Tooltip title="Refresh this service" disableInteractive>
+    const ActionRow = (props: {
+      label: string;
+      ariaLabel: string;
+      tooltipCommand: string;
+      onClick: () => void;
+      disabled?: boolean;
+      icon: React.ReactNode;
+    }) => {
+      const isDelete = props.ariaLabel === 'Delete';
+
+      return (
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{
+            // Keep action rows compact and consistent with the response-data line rhythm.
+            minHeight: 22,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              width: 64,
+              color: 'text.secondary',
+              fontWeight: 600,
+              lineHeight: 1.2,
+            }}
+          >
+            {props.label}
+          </Typography>
+          <Tooltip
+            disableInteractive
+            placement="left"
+            title={
+              <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
+                {props.tooltipCommand}
+              </Box>
+            }
+          >
+            <span>
               <IconButton
-                aria-label="Refresh"
+                aria-label={props.ariaLabel}
                 type="button"
                 size="small"
+                sx={{
+                  // MUI IconButton has quite a bit of built-in padding; reduce it to fix the vertical spacing.
+                  width: 28,
+                  height: 28,
+                  p: 0.5,
+                  color: isDelete ? 'error.main' : undefined,
+                }}
+                onClick={props.onClick}
+                disabled={props.disabled}
+              >
+                {props.icon}
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      );
+    };
+
+    return (
+      <Card
+        key={service.name}
+        sx={{
+          px: 1.5,
+          // Enable container queries so the card can decide when to stack actions below.
+          containerType: 'inline-size',
+        }}
+      >
+        <CardContent sx={{ pb: 1 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              // Default: two vertical sections (data + actions).
+              gridTemplateColumns: 'minmax(0, 1fr) max-content',
+              columnGap: 2,
+              rowGap: 1,
+              alignItems: 'start',
+              minWidth: 0,
+              // If the card itself is narrow, stack into a single column to avoid overlap.
+              // Use a slightly higher threshold so 3-column layouts at medium viewport sizes don't overlap.
+              '@container (max-width: 440px)': {
+                gridTemplateColumns: '1fr',
+              },
+            }}
+          >
+            {/* Data section (spans full width on xs) */}
+            <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
+              {/* Header: service icon + name */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  minWidth: 0,
+                  flexWrap: 'nowrap',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: '0 0 auto' }}>{statusUI.icon}</Box>
+                <Typography
+                  variant="subtitle1"
+                  component="div"
+                  // Keep title consistent across all cards (including Spring).
+                  fontSize={undefined}
+                  sx={{
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    width: '100%',
+                    // Prefer keeping names (<= 30 chars) on a single line.
+                    // If space is tighter, ellipsize without overlapping the actions column.
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {service.name}
+                </Typography>
+              </Box>
+
+              {/* Status row */}
+              <Box display="flex" alignItems="center" gap={1} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                  Status
+                </Typography>
+                <Chip label={statusUI.label} color={statusUI.color} size="small" />
+              </Box>
+
+              {/* Response data directly below Status (reduced whitespace) */}
+              <Box sx={{ mt: 0.5, minWidth: 0 }}>
+                {typeof service.responseTime === 'number' && (
+                  <Typography variant="caption" display="block" sx={{ mt: 0.25 }}>
+                    Response: {service.responseTime}ms
+                  </Typography>
+                )}
+
+                {service.baseUrl && (
+                  <Typography variant="caption" display="block" sx={{ mt: 0.25, wordBreak: 'break-word' }}>
+                    Base URL:{' '}
+                    {isProbablyHttpUrl(service.baseUrl) ? (
+                      <Link href={service.baseUrl} target="_blank" rel="noreferrer" underline="hover">
+                        {service.baseUrl}
+                      </Link>
+                    ) : (
+                      service.baseUrl
+                    )}
+                  </Typography>
+                )}
+
+                {service.error && (
+                  <Typography variant="caption" color="error" display="block" sx={{ mt: 0.25, wordBreak: 'break-word' }}>
+                    {service.error}
+                  </Typography>
+                )}
+
+                {service.body !== undefined && (
+                  <Box sx={{ mt: 0.25 }}>
+                    <Tooltip
+                      title={
+                        <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', maxWidth: 500 }}>
+                          {typeof service.body === 'string' ? service.body : JSON.stringify(service.body, null, 2)}
+                        </Box>
+                      }
+                      placement="bottom-start"
+                    >
+                      <Typography variant="caption" color="text.secondary" sx={{ cursor: 'help' }}>
+                        Response body (hover)
+                      </Typography>
+                    </Tooltip>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+
+            {/* Actions section (stacks below on xs, right column on md+) */}
+            <Stack
+              direction="column"
+              spacing={0}
+              alignItems="stretch"
+              sx={{
+                justifySelf: 'end',
+                mt: 0,
+                '@container (max-width: 440px)': {
+                  justifySelf: 'start',
+                  mt: 1,
+                },
+              }}
+            >
+              <ActionRow
+                label="Refresh"
+                ariaLabel="Refresh"
+                tooltipCommand={upstreamHealthUrl}
                 onClick={() => refreshService(service.name)}
                 disabled={isBusy}
-              >
-                {refreshing === service.name ? <CircularProgress size={20} /> : <RefreshIcon />}
-              </IconButton>
-            </Tooltip>
+                icon={refreshing === service.name ? <CircularProgress size={18} /> : <RefreshIcon fontSize="small" />}
+              />
 
-            <Box display="flex" gap={1}>
               {canStart && (
-                <Tooltip title="Start" disableInteractive>
-                  <IconButton
-                    aria-label="Start"
-                    type="button"
-                    size="small"
-                    onClick={() => submitControl(service.name, 'start')}
-                    disabled={isBusy}
-                    color="primary"
-                  >
-                    <PlayArrowIcon />
-                  </IconButton>
-                </Tooltip>
+                <ActionRow
+                  label="Start"
+                  ariaLabel="Start"
+                  tooltipCommand={startCommand}
+                  onClick={() => submitDockerControl(service.name, { service: service.name, action: 'start' }, 'start')}
+                  disabled={isBusy}
+                  icon={<PlayArrowIcon fontSize="small" color="primary" />}
+                />
               )}
 
-              {canStopRestart && (
+              {canManageContainer && (
                 <>
-                  <Tooltip title="Restart" disableInteractive>
-                    <IconButton
-                      aria-label="Restart"
-                      type="button"
-                      size="small"
-                      onClick={() => submitControl(service.name, 'restart')}
-                      disabled={isBusy}
-                      color="primary"
-                    >
-                      <RestartAltIcon />
-                    </IconButton>
-                  </Tooltip>
+                  <ActionRow
+                    label="Restart"
+                    ariaLabel="Restart"
+                    tooltipCommand={restartCommand}
+                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
+                    disabled={isBusy}
+                    icon={<RestartAltIcon fontSize="small" color="primary" />}
+                  />
 
-                  <Tooltip title="Stop" disableInteractive>
-                    <IconButton
-                      aria-label="Stop"
-                      type="button"
-                      size="small"
-                      onClick={() => submitControl(service.name, 'stop')}
-                      disabled={isBusy}
-                      color="error"
-                    >
-                      <StopCircleIcon />
-                    </IconButton>
-                  </Tooltip>
+                  <ActionRow
+                    label="Stop"
+                    ariaLabel="Stop"
+                    tooltipCommand={stopCommand}
+                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
+                    disabled={isBusy}
+                    icon={<StopCircleIcon fontSize="small" color="error" />}
+                  />
+
+                  <ActionRow
+                    label="Recreate"
+                    ariaLabel="Recreate"
+                    tooltipCommand={recreateCommand}
+                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart', forceRecreate: true }, 'recreate')}
+                    disabled={isBusy}
+                    icon={<CachedIcon fontSize="small" sx={{ color: 'warning.main' }} />}
+                  />
+
+                  <ActionRow
+                    label="Delete"
+                    ariaLabel="Delete"
+                    tooltipCommand={deleteCommand}
+                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop', deleteContainer: true }, 'delete')}
+                    disabled={isBusy}
+                    icon={
+                      <DeleteOutlineIcon
+                        fontSize="small"
+                        sx={{ color: 'red' }}
+                      />
+                    }
+                  />
                 </>
               )}
-            </Box>
+            </Stack>
           </Box>
-
-          {(canStart || canStopRestart) && (
-            <>
-              <Divider />
-              <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
-                {(canStart || canStopRestart) && (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={forceRecreate}
-                        onChange={(e) => setForceRecreate(e.target.checked)}
-                        disabled={isBusy}
-                      />
-                    }
-                    label="--force-recreate"
-                  />
-                )}
-                {canStopRestart && (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={deleteContainer}
-                        onChange={(e) => setDeleteContainer(e.target.checked)}
-                        disabled={isBusy}
-                      />
-                    }
-                    label="Delete container"
-                  />
-                )}
-              </Stack>
-            </>
-          )}
-        </CardActions>
+        </CardContent>
       </Card>
     );
   };
@@ -414,9 +550,22 @@ export default function ServiceHealth() {
             Readiness checks for all services in the observability stack
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<RefreshIcon />} onClick={fetchAllServices} disabled={loading}>
-          Refresh All
-        </Button>
+
+        <Tooltip
+          disableInteractive
+          placement="left"
+          title={
+            <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
+              {`${orchestratorConfig.url}/v1/health`}
+            </Box>
+          }
+        >
+          <span>
+            <Button variant="contained" startIcon={<RefreshIcon />} onClick={fetchAllServices} disabled={loading}>
+              Refresh All
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
 
       {message && (
@@ -454,7 +603,7 @@ export default function ServiceHealth() {
               mb: 3,
             }}
           >
-            {groupedServices.spring.map((service) => renderServiceCard(service, true))}
+            {groupedServices.spring.map((service) => renderServiceCard(service))}
           </Box>
         </>
       )}

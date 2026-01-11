@@ -33,13 +33,14 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
     const deleteContainer = body.deleteContainer === true;
 
     // NOTE: service name is used as compose service and container name, per repo convention.
-    // We use docker compose so the entire stack is consistent with the benchmark environment.
+    // We submit *explicit docker compose commands* to orchestrator and do not send any higher-level intent.
     let command: string;
     if (action === 'start') {
       command = `docker compose up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
     } else if (action === 'restart') {
-      // Restart is implemented as a targeted up -d to allow --force-recreate checkbox.
-      command = `docker compose up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
+      command = forceRecreate
+        ? `docker compose up -d --force-recreate ${service}`
+        : `docker compose restart ${service}`;
     } else {
       // stop
       command = `docker compose stop ${service}`;
@@ -49,6 +50,7 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
     }
 
     serverLogger.info('[DOCKER CONTROL API] Submitting docker control command', {
+      command,
       action,
       service,
       forceRecreate,

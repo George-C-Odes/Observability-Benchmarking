@@ -58,7 +58,7 @@ public class ServiceHealthService {
     HttpClientOptions httpClientOptions = new HttpClientOptions()
       .setKeepAlive(false)
       .setTcpKeepAlive(true)
-      .setConnectTimeout(5000)
+      .setConnectTimeout(3000)
       .setMaxPoolSize(32)
       .setIdleTimeout(2)
       .setIdleTimeoutUnit(TimeUnit.SECONDS);
