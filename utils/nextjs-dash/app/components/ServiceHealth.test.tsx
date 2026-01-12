@@ -54,6 +54,43 @@ afterEach(() => {
 });
 
 describe('ServiceHealth', () => {
+  it('shows profile-prefixed command in Delete tooltip for quarkus services', async () => {
+    mockHealthResponse([{ name: 'quarkus-jvm', status: 'up', baseUrl: 'http://quarkus-jvm:8080' }]);
+
+    const user = userEvent.setup();
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('quarkus-jvm')).toBeInTheDocument();
+    const card = screen.getByText('quarkus-jvm').closest('.MuiCard-root') as HTMLElement;
+    expect(card).toBeTruthy();
+
+    const deleteBtn = await within(card).findByLabelText('Delete');
+    await user.hover(deleteBtn);
+
+    // Tooltip is rendered in a portal; assert the command text is present.
+    expect(
+      await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm')
+    ).toBeInTheDocument();
+  });
+
+  it('shows profile-prefixed command in Delete tooltip for go services', async () => {
+    mockHealthResponse([{ name: 'go', status: 'up', baseUrl: 'http://go:8080' }]);
+
+    const user = userEvent.setup();
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('go')).toBeInTheDocument();
+    const card = screen.getByText('go').closest('.MuiCard-root') as HTMLElement;
+    expect(card).toBeTruthy();
+
+    const deleteBtn = await within(card).findByLabelText('Delete');
+    await user.hover(deleteBtn);
+
+    expect(
+      await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s go')
+    ).toBeInTheDocument();
+  });
+
   it('renders utils cards in alphabetical order (nextjs-dash to the left of orchestrator)', async () => {
     mockHealthResponse([
       { name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' },

@@ -23,6 +23,28 @@ describe('/api/docker/control', () => {
     vi.clearAllMocks();
   });
 
+  it('prepends compose profile flags for quarkus services (deleteContainer)', async () => {
+    const res = await POST(
+      makeRequest({ service: 'quarkus-jvm', action: 'stop', deleteContainer: true }) as unknown as never
+    );
+
+    expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
+
+    const json = (await res.json()) as { command?: string };
+    expect(json.command).toBe('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
+  });
+
+  it('prepends compose profile flags for go services (deleteContainer)', async () => {
+    const res = await POST(
+      makeRequest({ service: 'go', action: 'stop', deleteContainer: true }) as unknown as never
+    );
+
+    expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s go');
+
+    const json = (await res.json()) as { command?: string };
+    expect(json.command).toBe('docker compose --profile=OBS --profile=SERVICES rm -f -s go');
+  });
+
   it('builds start command', async () => {
     const res = await POST(makeRequest({ service: 'grafana', action: 'start' }) as unknown as never);
 
@@ -49,13 +71,16 @@ describe('/api/docker/control', () => {
     expect(json.command).toBe('docker compose up -d --force-recreate tempo');
   });
 
-  it('builds stop+rm command when deleteContainer is true', async () => {
+  it('builds rm -f -s command when deleteContainer is true', async () => {
+    const { submitCommand } = await import('@/lib/orchestratorClient');
+
     const res = await POST(
       makeRequest({ service: 'orchestrator', action: 'stop', deleteContainer: true }) as unknown as never
     );
 
-    expect(submitCommand).toHaveBeenCalledWith('docker compose stop orchestrator; docker compose rm -f orchestrator');
-    const json = (await res.json()) as { command?: string };
-    expect(json.command).toBe('docker compose stop orchestrator; docker compose rm -f orchestrator');
+    expect(submitCommand).toHaveBeenCalledWith('docker compose rm -f -s orchestrator');
+
+    const json = (await res.json()) as { command: string };
+    expect(json.command).toBe('docker compose rm -f -s orchestrator');
   });
 });

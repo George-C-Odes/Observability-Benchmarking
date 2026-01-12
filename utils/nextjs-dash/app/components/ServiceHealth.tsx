@@ -103,6 +103,15 @@ function byName(a: ServiceHealth, b: ServiceHealth) {
   return a.name.localeCompare(b.name);
 }
 
+function needsServicesProfiles(serviceName: string): boolean {
+  return serviceName.startsWith('spring-') || serviceName.startsWith('quarkus-') || serviceName.startsWith('go');
+}
+
+function composePrefixForService(serviceName: string): string {
+  const base = 'docker compose';
+  return needsServicesProfiles(serviceName) ? `${base} --profile=OBS --profile=SERVICES` : base;
+}
+
 function buildComposeCommand(params: {
   service: string;
   action: ControlAction;
@@ -110,19 +119,20 @@ function buildComposeCommand(params: {
   deleteContainer: boolean;
 }): string {
   const { service, action, forceRecreate, deleteContainer } = params;
+  const compose = composePrefixForService(service);
 
   if (action === 'start') {
-    return `docker compose up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
+    return `${compose} up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
   }
 
   if (action === 'restart') {
     // Normal 'restart' should translate to docker compose restart.
     // (We use 'up -d --force-recreate' for the explicit Recreate action.)
-    return `docker compose restart ${service}`;
+    return `${compose} restart ${service}`;
   }
 
   // stop
-  let command = `docker compose stop ${service}`;
+  let command = `${compose} stop ${service}`;
   if (deleteContainer) {
     command += `; docker compose rm -f ${service}`;
   }
@@ -131,12 +141,15 @@ function buildComposeCommand(params: {
 
 function buildRecreateCommand(service: string): string {
   // Force recreate the service container
-  return `docker compose up -d --force-recreate ${service}`;
+  const compose = composePrefixForService(service);
+  return `${compose} up -d --force-recreate ${service}`;
 }
 
 function buildDeleteCommand(service: string): string {
-  // Stop + remove the service container
-  return buildComposeCommand({ service, action: 'stop', forceRecreate: false, deleteContainer: true });
+  // Remove the service container (stop it if running)
+  // `-s` == stop container if running
+  const compose = composePrefixForService(service);
+  return `${compose} rm -f -s ${service}`;
 }
 
 function isProbablyHttpUrl(value: string): boolean {

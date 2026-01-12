@@ -4,6 +4,16 @@ import { submitCommand } from '@/lib/orchestratorClient';
 import { withApiRoute } from '@/lib/routeWrapper';
 import { serverLogger } from '@/lib/serverLogger';
 
+function needsServicesProfiles(serviceName: string): boolean {
+  return serviceName.startsWith('spring-') || serviceName.startsWith('quarkus-') || serviceName.startsWith('go');
+}
+
+function composePrefixForService(serviceName: string): string {
+  const base = 'docker compose';
+  // Spring/Quarkus/Go services are behind compose profiles.
+  return needsServicesProfiles(serviceName) ? `${base} --profile=OBS --profile=SERVICES` : base;
+}
+
 /**
  * POST /api/docker/control
  *
@@ -34,18 +44,20 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
 
     // NOTE: service name is used as compose service and container name, per repo convention.
     // We submit *explicit docker compose commands* to orchestrator and do not send any higher-level intent.
+    const compose = composePrefixForService(service);
     let command: string;
     if (action === 'start') {
-      command = `docker compose up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
+      command = `${compose} up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
     } else if (action === 'restart') {
       command = forceRecreate
-        ? `docker compose up -d --force-recreate ${service}`
-        : `docker compose restart ${service}`;
+        ? `${compose} up -d --force-recreate ${service}`
+        : `${compose} restart ${service}`;
     } else {
       // stop
-      command = `docker compose stop ${service}`;
+      command = `${compose} stop ${service}`;
       if (deleteContainer) {
-        command += `; docker compose rm -f ${service}`;
+        // Use a single rm command that also stops if running.
+        command = `${compose} rm -f -s ${service}`;
       }
     }
 

@@ -46,7 +46,7 @@ public class CommandPolicy {
    * docker compose subcommands allowed.
    */
   private static final Set<String> ALLOWED_COMPOSE_SUBCOMMANDS = Set.of(
-    "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config", "version"
+    "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config", "version", "rm"
   );
 
   /**
