@@ -23,9 +23,9 @@ describe('/api/docker/control', () => {
     vi.clearAllMocks();
   });
 
-  it('prepends compose profile flags for quarkus services (deleteContainer)', async () => {
+  it('prepends compose profile flags for quarkus services (stopMode=delete)', async () => {
     const res = await POST(
-      makeRequest({ service: 'quarkus-jvm', action: 'stop', deleteContainer: true }) as unknown as never
+      makeRequest({ service: 'quarkus-jvm', action: 'stop', stopMode: 'delete' }) as unknown as never
     );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
@@ -34,9 +34,9 @@ describe('/api/docker/control', () => {
     expect(json.command).toBe('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
   });
 
-  it('prepends compose profile flags for go services (deleteContainer)', async () => {
+  it('prepends compose profile flags for go services (stopMode=delete)', async () => {
     const res = await POST(
-      makeRequest({ service: 'go', action: 'stop', deleteContainer: true }) as unknown as never
+      makeRequest({ service: 'go', action: 'stop', stopMode: 'delete' }) as unknown as never
     );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s go');
@@ -61,9 +61,9 @@ describe('/api/docker/control', () => {
     expect(json.command).toBe('docker compose restart tempo');
   });
 
-  it('builds recreate command via restart+forceRecreate', async () => {
+  it('builds recreate command via restartMode=recreate', async () => {
     const res = await POST(
-      makeRequest({ service: 'tempo', action: 'restart', forceRecreate: true }) as unknown as never
+      makeRequest({ service: 'tempo', action: 'restart', restartMode: 'recreate' }) as unknown as never
     );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose up -d --force-recreate tempo');
@@ -71,16 +71,26 @@ describe('/api/docker/control', () => {
     expect(json.command).toBe('docker compose up -d --force-recreate tempo');
   });
 
-  it('builds rm -f -s command when deleteContainer is true', async () => {
+  it('builds rm -f -s command when stopMode is delete', async () => {
     const { submitCommand } = await import('@/lib/orchestratorClient');
 
     const res = await POST(
-      makeRequest({ service: 'orchestrator', action: 'stop', deleteContainer: true }) as unknown as never
+      makeRequest({ service: 'orchestrator', action: 'stop', stopMode: 'delete' }) as unknown as never
     );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose rm -f -s orchestrator');
 
     const json = (await res.json()) as { command: string };
     expect(json.command).toBe('docker compose rm -f -s orchestrator');
+  });
+
+  it('keeps backward-compat: forceRecreate maps to restartMode=recreate', async () => {
+    const res = await POST(
+      makeRequest({ service: 'tempo', action: 'restart', forceRecreate: true }) as unknown as never
+    );
+
+    expect(submitCommand).toHaveBeenCalledWith('docker compose up -d --force-recreate tempo');
+    const json = (await res.json()) as { command?: string };
+    expect(json.command).toBe('docker compose up -d --force-recreate tempo');
   });
 });

@@ -33,8 +33,9 @@ function mockHealthResponse(services: MockService[]) {
       const parsed = JSON.parse(String(init?.body || '{}')) as {
         service?: string;
         action?: 'start' | 'stop' | 'restart';
-        forceRecreate?: boolean;
-        deleteContainer?: boolean;
+        startMode?: 'start' | 'recreate';
+        restartMode?: 'restart' | 'recreate';
+        stopMode?: 'stop' | 'delete';
       };
       expect(typeof parsed.service).toBe('string');
       expect(['start', 'stop', 'restart']).toContain(parsed.action);
@@ -122,7 +123,7 @@ describe('ServiceHealth', () => {
     expect(container).toBeTruthy();
   });
 
-  it('submits Start with --force-recreate when checked and marks service as PENDING', async () => {
+  it('submits Start and marks service as PENDING', async () => {
     mockHealthResponse([{ name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' }]);
 
     const user = userEvent.setup();
@@ -148,11 +149,11 @@ describe('ServiceHealth', () => {
     expect(await screen.findByText('PENDING')).toBeInTheDocument();
   });
 
-  it('submits Restart, Recreate, Stop and Delete via /api/docker/control with correct flags', async () => {
+  it('submits Restart, Stop and Delete via /api/docker/control with correct intent', async () => {
     const actions: Array<{ label: 'Restart' | 'Stop' | 'Delete'; expectedBody: string }> = [
       { label: 'Restart', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart' }) },
       { label: 'Stop', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop' }) },
-      { label: 'Delete', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop', deleteContainer: true }) },
+      { label: 'Delete', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop', stopMode: 'delete' }) },
     ];
 
     for (const a of actions) {
@@ -198,7 +199,7 @@ describe('ServiceHealth', () => {
     expect(screen.getByText('Response body (hover)')).toBeInTheDocument();
 
     // Tooltip content is in a portal and only appears on hover; verifying the trigger is enough here.
-    expect(screen.queryByText(/"details"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\"details\"/)).not.toBeInTheDocument();
   });
 });
 

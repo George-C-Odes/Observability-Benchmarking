@@ -3,16 +3,12 @@ import { errorFromUnknown, errorJson, okJson } from '@/lib/apiResponses';
 import { submitCommand } from '@/lib/orchestratorClient';
 import { withApiRoute } from '@/lib/routeWrapper';
 import { serverLogger } from '@/lib/serverLogger';
-
-function needsServicesProfiles(serviceName: string): boolean {
-  return serviceName.startsWith('spring-') || serviceName.startsWith('quarkus-') || serviceName.startsWith('go');
-}
-
-function composePrefixForService(serviceName: string): string {
-  const base = 'docker compose';
-  // Spring/Quarkus/Go services are behind compose profiles.
-  return needsServicesProfiles(serviceName) ? `${base} --profile=OBS --profile=SERVICES` : base;
-}
+import {
+  buildDockerControlCommand,
+  type DockerRestartMode,
+  type DockerStartMode,
+  type DockerStopMode,
+} from '@/lib/dockerComposeControl';
 
 /**
  * POST /api/docker/control
@@ -25,6 +21,13 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
     const body = (await request.json()) as {
       service?: unknown;
       action?: unknown;
+
+      // Preferred explicit intent.
+      startMode?: unknown;
+      restartMode?: unknown;
+      stopMode?: unknown;
+
+      // Legacy flags (back-compat).
       forceRecreate?: unknown;
       deleteContainer?: unknown;
     };
@@ -39,32 +42,35 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       return errorJson(400, { error: 'action must be one of: start, stop, restart' });
     }
 
+    const startMode: DockerStartMode | undefined = body.startMode === 'start' || body.startMode === 'recreate' ? body.startMode : undefined;
+    const restartMode: DockerRestartMode | undefined =
+      body.restartMode === 'restart' || body.restartMode === 'recreate' ? body.restartMode : undefined;
+    const stopMode: DockerStopMode | undefined = body.stopMode === 'stop' || body.stopMode === 'delete' ? body.stopMode : undefined;
+
     const forceRecreate = body.forceRecreate === true;
     const deleteContainer = body.deleteContainer === true;
 
     // NOTE: service name is used as compose service and container name, per repo convention.
     // We submit *explicit docker compose commands* to orchestrator and do not send any higher-level intent.
-    const compose = composePrefixForService(service);
-    let command: string;
-    if (action === 'start') {
-      command = `${compose} up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
-    } else if (action === 'restart') {
-      command = forceRecreate
-        ? `${compose} up -d --force-recreate ${service}`
-        : `${compose} restart ${service}`;
-    } else {
-      // stop
-      command = `${compose} stop ${service}`;
-      if (deleteContainer) {
-        // Use a single rm command that also stops if running.
-        command = `${compose} rm -f -s ${service}`;
-      }
-    }
+    const command = buildDockerControlCommand({
+      service,
+      action,
+      startMode,
+      restartMode,
+      stopMode,
+
+      // Back-compat mapping is handled inside buildDockerControlCommand.
+      forceRecreate,
+      deleteContainer,
+    });
 
     serverLogger.info('[DOCKER CONTROL API] Submitting docker control command', {
       command,
       action,
       service,
+      startMode,
+      restartMode,
+      stopMode,
       forceRecreate,
       deleteContainer,
     });

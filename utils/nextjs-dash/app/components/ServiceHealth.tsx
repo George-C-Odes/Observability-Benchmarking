@@ -26,6 +26,12 @@ import CachedIcon from '@mui/icons-material/Cached';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
+import {
+  buildDockerControlCommand,
+  type DockerRestartMode,
+  type DockerStartMode,
+  type DockerStopMode,
+} from '@/lib/dockerComposeControl';
 
 interface ServiceHealth {
   name: string;
@@ -35,8 +41,6 @@ interface ServiceHealth {
   error?: string;
   body?: unknown;
 }
-
-type ControlAction = 'start' | 'stop' | 'restart';
 
 type ServiceMessage = {
   type: 'success' | 'error';
@@ -103,55 +107,6 @@ function byName(a: ServiceHealth, b: ServiceHealth) {
   return a.name.localeCompare(b.name);
 }
 
-function needsServicesProfiles(serviceName: string): boolean {
-  return serviceName.startsWith('spring-') || serviceName.startsWith('quarkus-') || serviceName.startsWith('go');
-}
-
-function composePrefixForService(serviceName: string): string {
-  const base = 'docker compose';
-  return needsServicesProfiles(serviceName) ? `${base} --profile=OBS --profile=SERVICES` : base;
-}
-
-function buildComposeCommand(params: {
-  service: string;
-  action: ControlAction;
-  forceRecreate: boolean;
-  deleteContainer: boolean;
-}): string {
-  const { service, action, forceRecreate, deleteContainer } = params;
-  const compose = composePrefixForService(service);
-
-  if (action === 'start') {
-    return `${compose} up -d${forceRecreate ? ' --force-recreate' : ''} ${service}`;
-  }
-
-  if (action === 'restart') {
-    // Normal 'restart' should translate to docker compose restart.
-    // (We use 'up -d --force-recreate' for the explicit Recreate action.)
-    return `${compose} restart ${service}`;
-  }
-
-  // stop
-  let command = `${compose} stop ${service}`;
-  if (deleteContainer) {
-    command += `; docker compose rm -f ${service}`;
-  }
-  return command;
-}
-
-function buildRecreateCommand(service: string): string {
-  // Force recreate the service container
-  const compose = composePrefixForService(service);
-  return `${compose} up -d --force-recreate ${service}`;
-}
-
-function buildDeleteCommand(service: string): string {
-  // Remove the service container (stop it if running)
-  // `-s` == stop container if running
-  const compose = composePrefixForService(service);
-  return `${compose} rm -f -s ${service}`;
-}
-
 function isProbablyHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
@@ -195,7 +150,17 @@ export default function ServiceHealth() {
   }, []);
 
   const submitDockerControl = useCallback(
-    async (serviceName: string, payload: { service: string; action: 'start' | 'stop' | 'restart'; forceRecreate?: boolean; deleteContainer?: boolean }, optimisticActionLabel: string) => {
+    async (
+      serviceName: string,
+      payload: {
+        service: string;
+        action: 'start' | 'stop' | 'restart';
+        startMode?: DockerStartMode;
+        restartMode?: DockerRestartMode;
+        stopMode?: DockerStopMode;
+      },
+      optimisticActionLabel: string
+    ) => {
       setSubmitting(serviceName);
       setServices((prev) => prev.map((s) => (s.name === serviceName ? toPending(s) : s)));
 
@@ -263,32 +228,31 @@ export default function ServiceHealth() {
     const canManageContainer = service.status === 'up';
     const canRecreate = canManageContainer && service.name !== 'orchestrator';
 
-    // Keep a stable 2-column layout on md+ (data + actions). On smaller screens we stack.
-    // Do NOT force stacking based on title length; instead ellipsize the title.
-
     const upstreamHealthUrl = `${orchestratorConfig.url}/v1/health?service=${encodeURIComponent(service.name)}`;
 
-    const startCommand = buildComposeCommand({
+    const startCommand = buildDockerControlCommand({
       service: service.name,
       action: 'start',
-      forceRecreate: false,
-      deleteContainer: false,
     });
-    const restartCommand = buildComposeCommand({
+    const restartCommand = buildDockerControlCommand({
       service: service.name,
       action: 'restart',
-      forceRecreate: false,
-      deleteContainer: false,
     });
-    const stopCommand = buildComposeCommand({
+    const stopCommand = buildDockerControlCommand({
       service: service.name,
       action: 'stop',
-      forceRecreate: false,
-      deleteContainer: false,
     });
 
-    const recreateCommand = buildRecreateCommand(service.name);
-    const deleteCommand = buildDeleteCommand(service.name);
+    const recreateCommand = buildDockerControlCommand({
+      service: service.name,
+      action: 'restart',
+      restartMode: 'recreate',
+    });
+    const deleteCommand = buildDockerControlCommand({
+      service: service.name,
+      action: 'stop',
+      stopMode: 'delete',
+    });
 
     const ActionRow = (props: {
       label: string;
@@ -527,7 +491,13 @@ export default function ServiceHealth() {
                       label="Recreate"
                       ariaLabel="Recreate"
                       tooltipCommand={recreateCommand}
-                      onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart', forceRecreate: true }, 'recreate')}
+                      onClick={() =>
+                        submitDockerControl(
+                          service.name,
+                          { service: service.name, action: 'restart', restartMode: 'recreate' },
+                          'recreate'
+                        )
+                      }
                       disabled={isBusy}
                       icon={<CachedIcon fontSize="small" sx={{ color: 'warning.main' }} />}
                     />
@@ -537,7 +507,13 @@ export default function ServiceHealth() {
                      label="Delete"
                      ariaLabel="Delete"
                      tooltipCommand={deleteCommand}
-                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop', deleteContainer: true }, 'delete')}
+                     onClick={() =>
+                       submitDockerControl(
+                         service.name,
+                         { service: service.name, action: 'stop', stopMode: 'delete' },
+                         'delete'
+                       )
+                     }
                      disabled={isBusy}
                      icon={
                        <DeleteOutlineIcon
