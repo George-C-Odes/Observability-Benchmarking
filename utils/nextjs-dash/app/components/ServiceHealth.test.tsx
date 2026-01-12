@@ -65,10 +65,18 @@ describe('ServiceHealth', () => {
     render(<ServiceHealth />);
 
     expect(await screen.findByText('Overview')).toBeInTheDocument();
-    expect(screen.getByTestId('overview-up')).toHaveTextContent('UP: 1');
-    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 1');
-    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING: 1');
-    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL: 3');
+
+    // After the first fetch, it should render a relative string like 'Just now'.
+    expect(screen.getByTestId('overview-last-updated')).not.toHaveTextContent('—');
+
+    expect(screen.getByTestId('overview-up')).toHaveTextContent('UP');
+    expect(screen.getByTestId('overview-up')).toHaveTextContent('1');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING');
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('1');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('3');
   });
 
   it('updates overview counters after Refresh All', async () => {
@@ -99,15 +107,26 @@ describe('ServiceHealth', () => {
     render(<ServiceHealth />);
 
     expect(await screen.findByText('Overview')).toBeInTheDocument();
-    expect(screen.getByTestId('overview-up')).toHaveTextContent('UP: 0');
-    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 2');
-    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL: 2');
+
+    const initialUpdated = screen.getByTestId('overview-last-updated').textContent;
+    expect(initialUpdated).toBeTruthy();
+    expect(screen.getByTestId('overview-last-updated')).not.toHaveTextContent('—');
+
+    expect(screen.getByTestId('overview-up')).toHaveTextContent('UP');
+    expect(screen.getByTestId('overview-up')).toHaveTextContent('0');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('2');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('2');
 
     await user.click(screen.getByRole('button', { name: 'Refresh All' }));
 
-    expect(await screen.findByTestId('overview-up')).toHaveTextContent('UP: 1');
-    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 1');
-    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL: 2');
+    expect(await screen.findByTestId('overview-up')).toHaveTextContent('1');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('2');
+
+    // Still should not be placeholder.
+    expect(screen.getByTestId('overview-last-updated')).not.toHaveTextContent('—');
   });
 
   it('updates overview counters after an optimistic action sets a card to PENDING', async () => {
@@ -120,8 +139,10 @@ describe('ServiceHealth', () => {
     render(<ServiceHealth />);
 
     expect(await screen.findByText('wrk2')).toBeInTheDocument();
-    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING: 0');
-    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 1');
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING');
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('0');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
 
     const wrk2Card = screen.getByText('wrk2').closest('.MuiCard-root') as HTMLElement;
     expect(wrk2Card).toBeTruthy();
@@ -129,9 +150,9 @@ describe('ServiceHealth', () => {
     await user.click(await within(wrk2Card).findByLabelText('Start'));
 
     // Optimistic pending affects both card and overview
-    expect(await screen.findByText('PENDING')).toBeInTheDocument();
-    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING: 1');
-    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 0');
+    expect(await within(wrk2Card).findByText('PENDING')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('1');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('0');
   });
 
   it('shows profile-prefixed command in Delete tooltip for quarkus services', async () => {
@@ -225,7 +246,7 @@ describe('ServiceHealth', () => {
     );
 
     // Optimistic pending.
-    expect(await screen.findByText('PENDING')).toBeInTheDocument();
+    expect(await within(wrk2Card).findByText('PENDING')).toBeInTheDocument();
   });
 
   it('submits Restart, Stop and Delete via /api/docker/control with correct intent', async () => {

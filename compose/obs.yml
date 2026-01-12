@@ -1,5 +1,5 @@
-x-default-environment: &default_env
-  TZ: &default_TZ "Europe/Nicosia"
+x-default-environment:
+  TZ: "Europe/Nicosia"
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
 

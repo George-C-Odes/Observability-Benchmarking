@@ -14,6 +14,7 @@ import {
   Tooltip,
   Stack,
   Link,
+  Divider,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -26,6 +27,8 @@ import CachedIcon from '@mui/icons-material/Cached';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PendingIcon from '@mui/icons-material/Pending';
 import AppsIcon from '@mui/icons-material/Apps';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import BoltIcon from '@mui/icons-material/Bolt';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
 import {
@@ -127,6 +130,23 @@ function countByStatus(services: ServiceHealth[]): { up: number; down: number; p
   return { up, down, pending, total: services.length };
 }
 
+function formatRelativeSince(nowMs: number, thenMs: number): string {
+  const deltaMs = Math.max(0, nowMs - thenMs);
+
+  if (deltaMs < 5_000) return 'Just now';
+  if (deltaMs < 60_000) return `${Math.floor(deltaMs / 1_000)}s ago`;
+  if (deltaMs < 60 * 60_000) return `${Math.floor(deltaMs / 60_000)}m ago`;
+  if (deltaMs < 24 * 60 * 60_000) return `${Math.floor(deltaMs / (60 * 60_000))}h ago`;
+
+  // Older than a day: show an explicit date+time.
+  return new Date(thenMs).toLocaleString();
+}
+
+function formatExactTime(d: Date): string {
+  // Keep it short and consistent (HH:MM:SS), independent of locale.
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 export default function ServiceHealth() {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,6 +157,45 @@ export default function ServiceHealth() {
   const statusCounts = useMemo(() => countByStatus(services), [services]);
   const [countsPulseKey, setCountsPulseKey] = useState(0);
   const [countsPulseOn, setCountsPulseOn] = useState(false);
+
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+  const [updatedFlashOn, setUpdatedFlashOn] = useState(false);
+
+  // Ticker used to keep the relative 'Last updated' text fresh.
+  const [nowTick, setNowTick] = useState(0);
+
+  useEffect(() => {
+    if (!lastUpdatedAt) return;
+
+    const id = window.setInterval(() => setNowTick((t) => t + 1), 1_000);
+    return () => window.clearInterval(id);
+  }, [lastUpdatedAt]);
+
+  function markUpdated() {
+    setLastUpdatedAt(new Date());
+    setUpdatedFlashOn(true);
+    const t = setTimeout(() => setUpdatedFlashOn(false), 900);
+    return () => clearTimeout(t);
+  }
+
+  const lastUpdatedText = useMemo(() => {
+    if (!lastUpdatedAt) return '—';
+
+    // Depend on nowTick so component recalculates every second once we have a timestamp.
+    void nowTick;
+
+    const thenMs = lastUpdatedAt.getTime();
+    const deltaMs = Math.max(0, Date.now() - thenMs);
+
+    // When older than a day, show explicit date+time.
+    if (deltaMs >= 24 * 60 * 60_000) {
+      return lastUpdatedAt.toLocaleString();
+    }
+
+    const rel = formatRelativeSince(Date.now(), thenMs);
+    const exact = formatExactTime(lastUpdatedAt);
+    return `${rel} · ${exact}`;
+  }, [lastUpdatedAt, nowTick]);
 
   // Trigger an eye-catching pulse whenever counts change (refresh, optimistic updates, etc.)
   useEffect(() => {
@@ -153,6 +212,7 @@ export default function ServiceHealth() {
       const data = await fetchJson<{ services?: HealthApiService[] }>(`/api/health`);
       const normalized = (data.services || []).map(normalizeServiceFromApi).sort(byName);
       setServices(normalized);
+      markUpdated();
     } catch {
       setMessage({ type: 'error', text: 'Failed to check service health (dashboard backend unreachable)' });
     } finally {
@@ -169,6 +229,7 @@ export default function ServiceHealth() {
 
       if (single) {
         setServices((prev) => prev.map((s) => (s.name === serviceName ? single : s)).sort(byName));
+        markUpdated();
       }
     } catch {
       // ignore
@@ -191,6 +252,7 @@ export default function ServiceHealth() {
     ) => {
       setSubmitting(serviceName);
       setServices((prev) => prev.map((s) => (s.name === serviceName ? toPending(s) : s)));
+      markUpdated();
 
       try {
         await fetchJson(`/api/docker/control`, {
@@ -599,14 +661,21 @@ export default function ServiceHealth() {
           transform: countsPulseOn ? 'translateY(-1px)' : 'translateY(0)',
         }}
       >
-        <CardContent sx={{
-          pb: 2,
-          '@keyframes overviewPulse': {
-            '0%': { transform: 'scale(1)', opacity: 0.95 },
-            '45%': { transform: 'scale(1.01)', opacity: 1 },
-            '100%': { transform: 'scale(1)', opacity: 1 },
-          },
-        }}>
+        <CardContent
+          sx={{
+            pb: 2,
+            '@keyframes overviewPulse': {
+              '0%': { transform: 'scale(1)', opacity: 0.95 },
+              '45%': { transform: 'scale(1.01)', opacity: 1 },
+              '100%': { transform: 'scale(1)', opacity: 1 },
+            },
+            '@keyframes updatedFlash': {
+              '0%': { backgroundColor: 'rgba(255, 214, 0, 0.0)' },
+              '35%': { backgroundColor: 'rgba(255, 214, 0, 0.18)' },
+              '100%': { backgroundColor: 'rgba(255, 214, 0, 0.0)' },
+            },
+          }}
+        >
           <Box display="flex" alignItems="center" justifyContent="space-between" gap={2} flexWrap="wrap">
             <Box display="flex" alignItems="center" gap={1}>
               <AppsIcon color="primary" />
@@ -614,43 +683,237 @@ export default function ServiceHealth() {
             </Box>
 
             <Box
-              key={countsPulseKey}
               sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, max-content)' },
-                gap: { xs: 1.2, sm: 2 },
+                display: 'flex',
                 alignItems: 'center',
-                animation: countsPulseOn ? 'overviewPulse 650ms ease-in-out' : 'none',
+                gap: 1,
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                animation: updatedFlashOn ? 'updatedFlash 900ms ease-in-out' : 'none',
               }}
             >
-              <Chip
-                icon={<CheckCircleIcon />}
-                label={`UP: ${statusCounts.up}`}
-                color="success"
-                size="medium"
-                data-testid="overview-up"
-              />
-              <Chip
-                icon={<CancelIcon />}
-                label={`DOWN: ${statusCounts.down}`}
-                color="error"
-                size="medium"
-                data-testid="overview-down"
-              />
-              <Chip
-                icon={<PendingIcon />}
-                label={`PENDING: ${statusCounts.pending}`}
-                color="warning"
-                size="medium"
-                data-testid="overview-pending"
-              />
-              <Chip
-                label={`TOTAL: ${statusCounts.total}`}
-                variant="outlined"
-                size="medium"
-                data-testid="overview-total"
-              />
+              <AccessTimeIcon fontSize="small" color="action" />
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                Last updated
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  color: 'text.primary',
+                  fontWeight: 700,
+                }}
+                data-testid="overview-last-updated"
+                title={lastUpdatedAt ? lastUpdatedAt.toLocaleString() : undefined}
+              >
+                {lastUpdatedText}
+              </Typography>
+              {countsPulseOn && <BoltIcon fontSize="small" sx={{ color: 'warning.main' }} />}
             </Box>
+          </Box>
+
+          <Divider sx={{ my: 1.5 }} />
+
+          <Box
+            key={countsPulseKey}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, max-content)', md: 'repeat(4, max-content)' },
+              gap: { xs: 1, sm: 1.25, md: 1.5 },
+              alignItems: 'center',
+              animation: countsPulseOn ? 'overviewPulse 650ms ease-in-out' : 'none',
+            }}
+          >
+            <Chip
+              icon={<CheckCircleIcon />}
+              label={
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '84px 10px 44px',
+                    alignItems: 'center',
+                    columnGap: 0.75,
+                  }}
+                >
+                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                    UP
+                  </Typography>
+                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                    :
+                  </Typography>
+                  <Box
+                    component="span"
+                    sx={{
+                      ml: 0,
+                      display: 'inline-flex',
+                      justifyContent: 'flex-end',
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: 'rgba(255,255,255,0.25)',
+                      minWidth: 40,
+                    }}
+                  >
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      sx={{
+                        fontWeight: 900,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      }}
+                    >
+                      {statusCounts.up}
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              color="success"
+              size="medium"
+              data-testid="overview-up"
+              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+            />
+            <Chip
+              icon={<CancelIcon />}
+              label={
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '84px 10px 44px',
+                    alignItems: 'center',
+                    columnGap: 0.75,
+                  }}
+                >
+                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                    DOWN
+                  </Typography>
+                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                    :
+                  </Typography>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      justifyContent: 'flex-end',
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: 'rgba(255,255,255,0.25)',
+                      minWidth: 40,
+                    }}
+                  >
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      sx={{
+                        fontWeight: 900,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      }}
+                    >
+                      {statusCounts.down}
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              color="error"
+              size="medium"
+              data-testid="overview-down"
+              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+            />
+            <Chip
+              icon={<PendingIcon />}
+              label={
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '84px 10px 44px',
+                    alignItems: 'center',
+                    columnGap: 0.75,
+                  }}
+                >
+                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                    PENDING
+                  </Typography>
+                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                    :
+                  </Typography>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      justifyContent: 'flex-end',
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: 'rgba(255,255,255,0.25)',
+                      minWidth: 40,
+                    }}
+                  >
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      sx={{
+                        fontWeight: 900,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      }}
+                    >
+                      {statusCounts.pending}
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              color="warning"
+              size="medium"
+              data-testid="overview-pending"
+              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+            />
+            <Chip
+              label={
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '84px 10px 44px',
+                    alignItems: 'center',
+                    columnGap: 0.75,
+                  }}
+                >
+                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                    TOTAL
+                  </Typography>
+                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                    :
+                  </Typography>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      justifyContent: 'flex-end',
+                      px: 0.75,
+                      py: 0.25,
+                      borderRadius: 1,
+                      bgcolor: 'rgba(0,0,0,0.04)',
+                      minWidth: 40,
+                    }}
+                  >
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      sx={{
+                        fontWeight: 900,
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                      }}
+                    >
+                      {statusCounts.total}
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              variant="outlined"
+              size="medium"
+              data-testid="overview-total"
+              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+            />
           </Box>
         </CardContent>
       </Card>
