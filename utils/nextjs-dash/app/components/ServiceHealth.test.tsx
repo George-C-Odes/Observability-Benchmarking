@@ -55,6 +55,85 @@ afterEach(() => {
 });
 
 describe('ServiceHealth', () => {
+  it('shows overview counters (UP/DOWN/PENDING/TOTAL)', async () => {
+    mockHealthResponse([
+      { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },
+      { name: 'loki', status: 'down', baseUrl: 'http://loki:3100' },
+      { name: 'tempo', status: 'pending', baseUrl: 'http://tempo:3200' },
+    ]);
+
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('Overview')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-up')).toHaveTextContent('UP: 1');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 1');
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING: 1');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL: 3');
+  });
+
+  it('updates overview counters after Refresh All', async () => {
+    const first: MockService[] = [
+      { name: 'grafana', status: 'down', baseUrl: 'http://grafana:3000' },
+      { name: 'loki', status: 'down', baseUrl: 'http://loki:3100' },
+    ];
+    const second: MockService[] = [
+      { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },
+      { name: 'loki', status: 'down', baseUrl: 'http://loki:3100' },
+    ];
+
+    let healthCalls = 0;
+
+    vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/health')) {
+        healthCalls += 1;
+        return { services: healthCalls === 1 ? first : second };
+      }
+      if (url === '/api/docker/control') {
+        return { success: true, jobId: 'job-1', command: 'mock', status: 'up' };
+      }
+      throw new Error(`Unexpected fetchJson call: ${url}`);
+    });
+
+    const user = userEvent.setup();
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('Overview')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-up')).toHaveTextContent('UP: 0');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 2');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL: 2');
+
+    await user.click(screen.getByRole('button', { name: 'Refresh All' }));
+
+    expect(await screen.findByTestId('overview-up')).toHaveTextContent('UP: 1');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 1');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL: 2');
+  });
+
+  it('updates overview counters after an optimistic action sets a card to PENDING', async () => {
+    mockHealthResponse([
+      { name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' },
+      { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },
+    ]);
+
+    const user = userEvent.setup();
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('wrk2')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING: 0');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 1');
+
+    const wrk2Card = screen.getByText('wrk2').closest('.MuiCard-root') as HTMLElement;
+    expect(wrk2Card).toBeTruthy();
+
+    await user.click(await within(wrk2Card).findByLabelText('Start'));
+
+    // Optimistic pending affects both card and overview
+    expect(await screen.findByText('PENDING')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING: 1');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN: 0');
+  });
+
   it('shows profile-prefixed command in Delete tooltip for quarkus services', async () => {
     mockHealthResponse([{ name: 'quarkus-jvm', status: 'up', baseUrl: 'http://quarkus-jvm:8080' }]);
 
@@ -199,7 +278,7 @@ describe('ServiceHealth', () => {
     expect(screen.getByText('Response body (hover)')).toBeInTheDocument();
 
     // Tooltip content is in a portal and only appears on hover; verifying the trigger is enough here.
-    expect(screen.queryByText(/\"details\"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"details"/)).not.toBeInTheDocument();
   });
 });
 

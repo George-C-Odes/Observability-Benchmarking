@@ -24,6 +24,8 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import CachedIcon from '@mui/icons-material/Cached';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PendingIcon from '@mui/icons-material/Pending';
+import AppsIcon from '@mui/icons-material/Apps';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
 import {
@@ -111,12 +113,38 @@ function isProbablyHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
 
+function countByStatus(services: ServiceHealth[]): { up: number; down: number; pending: number; total: number } {
+  let up = 0;
+  let down = 0;
+  let pending = 0;
+
+  for (const s of services) {
+    if (s.status === 'up') up += 1;
+    else if (s.status === 'pending') pending += 1;
+    else down += 1;
+  }
+
+  return { up, down, pending, total: services.length };
+}
+
 export default function ServiceHealth() {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [message, setMessage] = useState<ServiceMessage | null>(null);
+
+  const statusCounts = useMemo(() => countByStatus(services), [services]);
+  const [countsPulseKey, setCountsPulseKey] = useState(0);
+  const [countsPulseOn, setCountsPulseOn] = useState(false);
+
+  // Trigger an eye-catching pulse whenever counts change (refresh, optimistic updates, etc.)
+  useEffect(() => {
+    setCountsPulseKey((k) => k + 1);
+    setCountsPulseOn(true);
+    const t = setTimeout(() => setCountsPulseOn(false), 700);
+    return () => clearTimeout(t);
+  }, [statusCounts.up, statusCounts.down, statusCounts.pending, statusCounts.total]);
 
   const fetchAllServices = useCallback(async () => {
     setLoading(true);
@@ -559,6 +587,73 @@ export default function ServiceHealth() {
           </span>
         </Tooltip>
       </Box>
+
+      {/* Overview */}
+      <Card
+        sx={{
+          mb: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: countsPulseOn ? 6 : 1,
+          transition: 'box-shadow 250ms ease, transform 250ms ease',
+          transform: countsPulseOn ? 'translateY(-1px)' : 'translateY(0)',
+        }}
+      >
+        <CardContent sx={{
+          pb: 2,
+          '@keyframes overviewPulse': {
+            '0%': { transform: 'scale(1)', opacity: 0.95 },
+            '45%': { transform: 'scale(1.01)', opacity: 1 },
+            '100%': { transform: 'scale(1)', opacity: 1 },
+          },
+        }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" gap={2} flexWrap="wrap">
+            <Box display="flex" alignItems="center" gap={1}>
+              <AppsIcon color="primary" />
+              <Typography variant="h6">Overview</Typography>
+            </Box>
+
+            <Box
+              key={countsPulseKey}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, max-content)' },
+                gap: { xs: 1.2, sm: 2 },
+                alignItems: 'center',
+                animation: countsPulseOn ? 'overviewPulse 650ms ease-in-out' : 'none',
+              }}
+            >
+              <Chip
+                icon={<CheckCircleIcon />}
+                label={`UP: ${statusCounts.up}`}
+                color="success"
+                size="medium"
+                data-testid="overview-up"
+              />
+              <Chip
+                icon={<CancelIcon />}
+                label={`DOWN: ${statusCounts.down}`}
+                color="error"
+                size="medium"
+                data-testid="overview-down"
+              />
+              <Chip
+                icon={<PendingIcon />}
+                label={`PENDING: ${statusCounts.pending}`}
+                color="warning"
+                size="medium"
+                data-testid="overview-pending"
+              />
+              <Chip
+                label={`TOTAL: ${statusCounts.total}`}
+                variant="outlined"
+                size="medium"
+                data-testid="overview-total"
+              />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
       {message && (
         <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
