@@ -29,6 +29,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import AppsIcon from '@mui/icons-material/Apps';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BoltIcon from '@mui/icons-material/Bolt';
+import SummarizeIcon from '@mui/icons-material/Summarize';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
 import {
@@ -732,7 +733,8 @@ export default function ServiceHealth() {
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: '84px 10px 44px',
+                    // Tighten on mobile; keep alignment on larger screens
+                    gridTemplateColumns: { xs: '68px 10px 42px', sm: '84px 10px 44px' },
                     alignItems: 'center',
                     columnGap: 0.75,
                   }}
@@ -772,7 +774,12 @@ export default function ServiceHealth() {
               color="success"
               size="medium"
               data-testid="overview-up"
-              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+              sx={{
+                justifyContent: 'flex-start',
+                maxWidth: '5cm',
+                width: '100%',
+                '& .MuiChip-label': { width: '100%' },
+              }}
             />
             <Chip
               icon={<CancelIcon />}
@@ -780,7 +787,7 @@ export default function ServiceHealth() {
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: '84px 10px 44px',
+                    gridTemplateColumns: { xs: '68px 10px 42px', sm: '84px 10px 44px' },
                     alignItems: 'center',
                     columnGap: 0.75,
                   }}
@@ -819,7 +826,12 @@ export default function ServiceHealth() {
               color="error"
               size="medium"
               data-testid="overview-down"
-              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+              sx={{
+                justifyContent: 'flex-start',
+                maxWidth: '5cm',
+                width: '100%',
+                '& .MuiChip-label': { width: '100%' },
+              }}
             />
             <Chip
               icon={<PendingIcon />}
@@ -827,7 +839,7 @@ export default function ServiceHealth() {
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: '84px 10px 44px',
+                    gridTemplateColumns: { xs: '68px 10px 42px', sm: '84px 10px 44px' },
                     alignItems: 'center',
                     columnGap: 0.75,
                   }}
@@ -866,14 +878,20 @@ export default function ServiceHealth() {
               color="warning"
               size="medium"
               data-testid="overview-pending"
-              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+              sx={{
+                justifyContent: 'flex-start',
+                maxWidth: '5cm',
+                width: '100%',
+                '& .MuiChip-label': { width: '100%' },
+              }}
             />
             <Chip
+              icon={<SummarizeIcon />}
               label={
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: '84px 10px 44px',
+                    gridTemplateColumns: { xs: '68px 10px 42px', sm: '84px 10px 44px' },
                     alignItems: 'center',
                     columnGap: 0.75,
                   }}
@@ -912,7 +930,12 @@ export default function ServiceHealth() {
               variant="outlined"
               size="medium"
               data-testid="overview-total"
-              sx={{ justifyContent: 'flex-start', '& .MuiChip-label': { width: '100%' } }}
+              sx={{
+                justifyContent: 'flex-start',
+                maxWidth: '5cm',
+                width: '100%',
+                '& .MuiChip-label': { width: '100%' },
+              }}
             />
           </Box>
         </CardContent>
