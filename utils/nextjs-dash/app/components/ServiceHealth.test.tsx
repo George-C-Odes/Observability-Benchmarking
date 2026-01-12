@@ -112,17 +112,10 @@ describe('ServiceHealth', () => {
   });
 
   it('submits Restart, Recreate, Stop and Delete via /api/docker/control with correct flags', async () => {
-    const actions: Array<{ label: 'Restart' | 'Recreate' | 'Stop' | 'Delete'; expectedBody: string }> = [
+    const actions: Array<{ label: 'Restart' | 'Stop' | 'Delete'; expectedBody: string }> = [
       { label: 'Restart', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart' }) },
-      {
-        label: 'Recreate',
-        expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart', forceRecreate: true }),
-      },
       { label: 'Stop', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop' }) },
-      {
-        label: 'Delete',
-        expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop', deleteContainer: true }),
-      },
+      { label: 'Delete', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop', deleteContainer: true }) },
     ];
 
     for (const a of actions) {

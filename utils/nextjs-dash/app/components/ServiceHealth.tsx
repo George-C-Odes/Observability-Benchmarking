@@ -248,6 +248,7 @@ export default function ServiceHealth() {
 
     const canStart = service.status === 'down';
     const canManageContainer = service.status === 'up';
+    const canRecreate = canManageContainer && service.name !== 'orchestrator';
 
     // Keep a stable 2-column layout on md+ (data + actions). On smaller screens we stack.
     // Do NOT force stacking based on title length; instead ellipsize the title.
@@ -489,49 +490,51 @@ export default function ServiceHealth() {
               )}
 
               {canManageContainer && (
-                <>
-                  <ActionRow
-                    label="Restart"
-                    ariaLabel="Restart"
-                    tooltipCommand={restartCommand}
-                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
-                    disabled={isBusy}
-                    icon={<RestartAltIcon fontSize="small" color="primary" />}
-                  />
+                 <>
+                   <ActionRow
+                     label="Restart"
+                     ariaLabel="Restart"
+                     tooltipCommand={restartCommand}
+                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
+                     disabled={isBusy}
+                     icon={<RestartAltIcon fontSize="small" color="primary" />}
+                   />
 
-                  <ActionRow
-                    label="Stop"
-                    ariaLabel="Stop"
-                    tooltipCommand={stopCommand}
-                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
-                    disabled={isBusy}
-                    icon={<StopCircleIcon fontSize="small" color="error" />}
-                  />
+                   <ActionRow
+                     label="Stop"
+                     ariaLabel="Stop"
+                     tooltipCommand={stopCommand}
+                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
+                     disabled={isBusy}
+                     icon={<StopCircleIcon fontSize="small" color="error" />}
+                   />
 
-                  <ActionRow
-                    label="Recreate"
-                    ariaLabel="Recreate"
-                    tooltipCommand={recreateCommand}
-                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart', forceRecreate: true }, 'recreate')}
-                    disabled={isBusy}
-                    icon={<CachedIcon fontSize="small" sx={{ color: 'warning.main' }} />}
-                  />
+                  {canRecreate && (
+                    <ActionRow
+                      label="Recreate"
+                      ariaLabel="Recreate"
+                      tooltipCommand={recreateCommand}
+                      onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart', forceRecreate: true }, 'recreate')}
+                      disabled={isBusy}
+                      icon={<CachedIcon fontSize="small" sx={{ color: 'warning.main' }} />}
+                    />
+                  )}
 
-                  <ActionRow
-                    label="Delete"
-                    ariaLabel="Delete"
-                    tooltipCommand={deleteCommand}
-                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop', deleteContainer: true }, 'delete')}
-                    disabled={isBusy}
-                    icon={
-                      <DeleteOutlineIcon
-                        fontSize="small"
-                        sx={{ color: 'red' }}
-                      />
-                    }
-                  />
-                </>
-              )}
+                   <ActionRow
+                     label="Delete"
+                     ariaLabel="Delete"
+                     tooltipCommand={deleteCommand}
+                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop', deleteContainer: true }, 'delete')}
+                     disabled={isBusy}
+                     icon={
+                       <DeleteOutlineIcon
+                         fontSize="small"
+                         sx={{ color: 'red' }}
+                       />
+                     }
+                   />
+                 </>
+               )}
             </Stack>
           </Box>
         </CardContent>
