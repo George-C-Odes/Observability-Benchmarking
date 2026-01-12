@@ -28,15 +28,6 @@ export interface DockerControlCommandParams {
    * - delete: `docker compose rm -f -s SERVICE` (stop if running)
    */
   stopMode?: DockerStopMode;
-
-  /**
-   * @deprecated Use startMode/restartMode instead.
-   */
-  forceRecreate?: boolean;
-  /**
-   * @deprecated Use stopMode instead.
-   */
-  deleteContainer?: boolean;
 }
 
 /**
@@ -57,19 +48,10 @@ function normalizeIntent(params: DockerControlCommandParams): {
   restartMode: DockerRestartMode;
   stopMode: DockerStopMode;
 } {
-  // Prefer explicit intent.
-  const explicitStartMode = params.startMode;
-  const explicitRestartMode = params.restartMode;
-  const explicitStopMode = params.stopMode;
-
-  // Back-compat: map old booleans to intent.
-  const legacyForceRecreate = params.forceRecreate === true;
-  const legacyDelete = params.deleteContainer === true;
-
   return {
-    startMode: explicitStartMode ?? (legacyForceRecreate ? 'recreate' : 'start'),
-    restartMode: explicitRestartMode ?? (legacyForceRecreate ? 'recreate' : 'restart'),
-    stopMode: explicitStopMode ?? (legacyDelete ? 'delete' : 'stop'),
+    startMode: params.startMode ?? 'start',
+    restartMode: params.restartMode ?? 'restart',
+    stopMode: params.stopMode ?? 'stop',
   };
 }
 

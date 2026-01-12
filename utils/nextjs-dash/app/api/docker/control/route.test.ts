@@ -83,14 +83,4 @@ describe('/api/docker/control', () => {
     const json = (await res.json()) as { command: string };
     expect(json.command).toBe('docker compose rm -f -s orchestrator');
   });
-
-  it('keeps backward-compat: forceRecreate maps to restartMode=recreate', async () => {
-    const res = await POST(
-      makeRequest({ service: 'tempo', action: 'restart', forceRecreate: true }) as unknown as never
-    );
-
-    expect(submitCommand).toHaveBeenCalledWith('docker compose up -d --force-recreate tempo');
-    const json = (await res.json()) as { command?: string };
-    expect(json.command).toBe('docker compose up -d --force-recreate tempo');
-  });
 });

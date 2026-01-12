@@ -22,14 +22,10 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       service?: unknown;
       action?: unknown;
 
-      // Preferred explicit intent.
+      // Explicit intent.
       startMode?: unknown;
       restartMode?: unknown;
       stopMode?: unknown;
-
-      // Legacy flags (back-compat).
-      forceRecreate?: unknown;
-      deleteContainer?: unknown;
     };
 
     const service = body.service;
@@ -42,13 +38,12 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       return errorJson(400, { error: 'action must be one of: start, stop, restart' });
     }
 
-    const startMode: DockerStartMode | undefined = body.startMode === 'start' || body.startMode === 'recreate' ? body.startMode : undefined;
+    const startMode: DockerStartMode | undefined =
+      body.startMode === 'start' || body.startMode === 'recreate' ? body.startMode : undefined;
     const restartMode: DockerRestartMode | undefined =
       body.restartMode === 'restart' || body.restartMode === 'recreate' ? body.restartMode : undefined;
-    const stopMode: DockerStopMode | undefined = body.stopMode === 'stop' || body.stopMode === 'delete' ? body.stopMode : undefined;
-
-    const forceRecreate = body.forceRecreate === true;
-    const deleteContainer = body.deleteContainer === true;
+    const stopMode: DockerStopMode | undefined =
+      body.stopMode === 'stop' || body.stopMode === 'delete' ? body.stopMode : undefined;
 
     // NOTE: service name is used as compose service and container name, per repo convention.
     // We submit *explicit docker compose commands* to orchestrator and do not send any higher-level intent.
@@ -58,10 +53,6 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       startMode,
       restartMode,
       stopMode,
-
-      // Back-compat mapping is handled inside buildDockerControlCommand.
-      forceRecreate,
-      deleteContainer,
     });
 
     serverLogger.info('[DOCKER CONTROL API] Submitting docker control command', {
@@ -71,8 +62,6 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       startMode,
       restartMode,
       stopMode,
-      forceRecreate,
-      deleteContainer,
     });
 
     const result = await submitCommand(command);
