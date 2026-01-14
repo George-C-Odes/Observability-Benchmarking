@@ -1,7 +1,10 @@
 # syntax=docker/dockerfile:1.7
-ARG IMAGE_DEPS=node:25.2.1-bookworm-slim
-ARG IMAGE_BUILDER=node:25.2.1-bookworm-slim
-ARG IMAGE_RUNTIME=node:25.2.1-bookworm-slim
+ARG IMAGE_DEPS=node:25.2.1-alpine3.23
+ARG IMAGE_BUILDER=node:25.2.1-alpine3.23
+ARG IMAGE_RUNTIME=node:25.2.1-alpine3.23
+#ARG IMAGE_DEPS=node:25.2.1-bookworm-slim
+#ARG IMAGE_BUILDER=node:25.2.1-bookworm-slim
+#ARG IMAGE_RUNTIME=node:25.2.1-bookworm-slim
 # ------------ DEPS STAGE -----------------------
 FROM ${IMAGE_DEPS} AS deps
 WORKDIR /app
@@ -10,7 +13,7 @@ COPY package.json package-lock.json ./
 
 # Faster repeat builds + deterministic installs
 RUN --mount=type=cache,target=/root/.npm \
-  npm i -g npm@11.7.0 && npm ci --no-audit --fund=false
+  npm ci --no-audit --fund=false
 
 # ------------ BUILD STAGE -----------------------
 FROM ${IMAGE_BUILDER} AS builder
@@ -37,8 +40,11 @@ ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3001
 
-# Create a dedicated non-root user with a fixed UID/GID (plays well with Kubernetes etc.)
-RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nodejs
+# Create a dedicated non-root user with a fixed UID/GID (Alpine uses addgroup/adduser)
+RUN addgroup -g 1001 -S nodejs && adduser -S -D -H -u 1001 -G nodejs nodejs
+
+## Create a dedicated non-root user with a fixed UID/GID (bookworm - plays well with Kubernetes etc.)
+#RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nodejs
 
 # Copy as the runtime user to avoid permission surprises
 COPY --chown=nodejs:nodejs --from=builder /app/public ./public
