@@ -10,7 +10,7 @@ COPY package.json package-lock.json ./
 
 # Faster repeat builds + deterministic installs
 RUN --mount=type=cache,target=/root/.npm \
-    npm i -g npm@11.7.0 && npm ci --no-audit --fund=false
+  npm i -g npm@11.7.0 && npm ci --no-audit --fund=false
 
 # ------------ BUILD STAGE -----------------------
 FROM ${IMAGE_BUILDER} AS builder
@@ -19,7 +19,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+
+# Speed up rebuilds by caching Next's build cache
+RUN --mount=type=cache,target=/app/.next/cache \
+  npm run build
 
 # Ensure /public exists so the runtime COPY never fails
 RUN mkdir -p /app/public
@@ -34,10 +37,7 @@ ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3001
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  curl ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
-
+# Create a dedicated non-root user with a fixed UID/GID (plays well with Kubernetes etc.)
 RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nodejs
 
 # Copy as the runtime user to avoid permission surprises
@@ -45,12 +45,12 @@ COPY --chown=nodejs:nodejs --from=builder /app/public ./public
 COPY --chown=nodejs:nodejs --from=builder /app/.next/standalone ./
 COPY --chown=nodejs:nodejs --from=builder /app/.next/static ./.next/static
 
-# Give Next a writable cache dir (safe default)
-RUN mkdir -p /app/.next/cache && chown -R nodejs:nodejs /app/.next
+# Make common writable paths exist (supports running with read-only rootfs + tmpfs mounts)
+RUN mkdir -p /app/.next/cache /tmp && chown -R nodejs:nodejs /app /tmp
 
 USER nodejs
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=5 \
-  CMD curl -fsS "http://127.0.0.1:${PORT}/" >/dev/null || exit 1
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "server.js"]
