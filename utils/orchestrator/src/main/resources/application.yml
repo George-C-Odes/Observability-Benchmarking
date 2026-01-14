@@ -64,6 +64,9 @@ orchestrator:
       orchestrator:
         base-url: '${ORCH_HEALTH_ORCHESTRATOR_BASE_URL:http://localhost:3002}'
         health-path: /q/health/ready
+      wrk2:
+        base-url: '${ORCH_HEALTH_WRK2_BASE_URL:http://localhost:3003}'
+        health-path: /ready
 
   max-buffer-lines: ${ORCH_MAX_BUFFER_LINES:2000}
   project-paths:

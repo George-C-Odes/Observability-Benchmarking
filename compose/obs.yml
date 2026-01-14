@@ -1,11 +1,12 @@
 x-default-environment:
-  TZ: "Europe/Nicosia"
+  timezone: ${TIMEZONE:-Europe/Nicosia}
+  host_repo: ${HOST_REPO:-C:/}
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
 
 services:
   alloy:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
     #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.2
     container_name: alloy
@@ -40,7 +41,7 @@ services:
       - pyroscope
 
   grafana:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
     image: grafana/grafana:12.3.1
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
@@ -73,7 +74,7 @@ services:
     cpuset: *default_efficiency_cores
 
   loki:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_LOKI:-skip}"]
     image: grafana/loki:3.6.3
     container_name: loki
     volumes:
@@ -87,8 +88,7 @@ services:
     cpuset: *default_efficiency_cores
 
   mimir:
-    profiles: ["OBS"]
-    #2.17.2
+    profiles: ["${DOCKER_PROF_MIMIR:-skip}"]
     image: grafana/mimir:3.0.2
     container_name: mimir
     volumes:
@@ -101,7 +101,7 @@ services:
     cpuset: *default_efficiency_cores
 
   pyroscope:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
     image: grafana/pyroscope:1.17.0
     container_name: pyroscope
     ports:
@@ -115,7 +115,7 @@ services:
     cpuset: *default_efficiency_cores
 
   tempo:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
     image: grafana/tempo:2.9.0
     container_name: tempo
     command:

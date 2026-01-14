@@ -5,7 +5,8 @@ include:
   - ./utils.yml
 
 x-default-environment:
-  TZ: &default_TZ "Europe/Nicosia"
+  timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
+  host_repo: ${HOST_REPO:-C:/}
   cache_size: &default_cache_size ${CACHE_SIZE:-50000}
   cpu_limit: &default_cpu_limit ${CORES_LIMIT:-4}
   mem_limit: &default_mem_limit ${MEM_LIMIT:-512M}
@@ -24,7 +25,6 @@ x-default-environment:
   metric_otel_runtime: &default_metric_otel_runtime ${METRIC_OTEL_RUNTIME:-false}
   metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}  # Does not seem to have an effect
   metric_otel_interval: &default_metric_otel_interval ${METRIC_OTEL_INTERVAL:-15000}
-  host_repo: ${HOST_REPO:-C:/}
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
@@ -169,7 +169,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/spring/jvm/tomcat/platform/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-platform
       SERVER_TOMCAT_MBEANREGISTRY_ENABLED: *default_metric_mm_tomcat
       SPRING_JMX_ENABLED: false
@@ -241,7 +241,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/spring/jvm/tomcat/virtual/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-virtual
       SERVER_TOMCAT_MBEANREGISTRY_ENABLED: *default_metric_mm_tomcat
       SPRING_JMX_ENABLED: false
@@ -313,7 +313,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/spring/jvm/netty/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-jvm-netty
       JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
       SPRING_THREADS_VIRTUAL_ENABLED: false
@@ -382,7 +382,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/spring/native/tomcat/platform/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-native-tomcat-platform
       SERVER_TOMCAT_MBEANREGISTRY_ENABLED: false
       SPRING_JMX_ENABLED: false
@@ -434,7 +434,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/spring/native/tomcat/virtual/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-native-tomcat-virtual
       SERVER_TOMCAT_MBEANREGISTRY_ENABLED: false
       SPRING_JMX_ENABLED: false
@@ -486,7 +486,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/spring/native/netty/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-native-netty
       LOGGING_LEVEL_ROOT: "INFO"
       CACHE_SIZE: *default_cache_size
@@ -532,7 +532,7 @@ services:
     volumes:
       - ${HOST_REPO}/data/services/quarkus/jvm/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
       QUARKUS_LOG_LEVEL: "info"
       CACHE_SIZE: *default_cache_size
@@ -608,7 +608,7 @@ services:
       - ${HOST_REPO}/data/services/quarkus/native/error:/var/log/error
     #      - ../data/services/quarkus/native/jfr:/tmp
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       QUARKUS_LOG_LEVEL: "info"
       CACHE_SIZE: *default_cache_size
 
@@ -644,7 +644,7 @@ services:
     ports:
       - "8088:8080"
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       GOMAXPROCS: *default_cpu_limit
 #      GOMEMLIMIT: "${HEAP_MAX}iB"
       GOGC: 200
@@ -693,7 +693,7 @@ services:
     ports:
       - "8089:8080"
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       GOMAXPROCS: *default_cpu_limit
 #      GOMEMLIMIT: "${HEAP_MAX}iB"
       OTEL_EXPORTER_OTLP_ENDPOINT: "alloy:4317"

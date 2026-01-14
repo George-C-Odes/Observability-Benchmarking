@@ -1,9 +1,11 @@
 x-default-environment:
-  TZ: &default_TZ "Europe/Nicosia"
+  timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
+  host_repo: ${HOST_REPO:-C:/}
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
+  mem_limit_wrk: &default_mem_limit_wrk ${MEM_LIMIT_WRK:-64M}
+  ulimit: &default_ulimit ${ULIMIT:-1048576}
   orch_api_key: &default_orch_api_key ${ORCH_API_KEY:-change-me}
-  host_repo: ${HOST_REPO:-C:/}
   workspace: &default_workspace ${WORKSPACE:-/workspace}
 
 services:
@@ -20,6 +22,7 @@ services:
       - ./.env:/app/compose/.env
       - ../.run:/app/.run:ro
     environment:
+      TZ: *default_timezone
       NODE_ENV: production
       PORT: 3001
       ORCH_URL: http://orchestrator:3002
@@ -48,6 +51,7 @@ services:
     group_add:
       - "0"
     environment:
+      TZ: *default_timezone
       COMPOSE_DOCKER_CLI_BUILD: "1"
       DOCKER_BUILDKIT: "1"
       DOCKER_CONFIG: "/tmp/.docker"
@@ -73,6 +77,7 @@ services:
       ORCH_HEALTH_GO_BASE_URL: "http://go:8080"
       ORCH_HEALTH_NEXTJS_DASH_BASE_URL: "http://nextjs-dash:3001"
       ORCH_HEALTH_ORCHESTRATOR_BASE_URL: "http://orchestrator:3002"
+      ORCH_HEALTH_WRK2_BASE_URL: "http://wrk2:3003"
 
       # IMPORTANT: docker compose executed from inside orchestrator targets the host Docker Engine.
       # Bind mounts must therefore use host-valid paths. On Windows, that's typically C:/... not /workspace.
@@ -125,26 +130,53 @@ services:
       context: ../utils/wrk2
       dockerfile: Dockerfile
     container_name: wrk2
+    ports:
+      - "3003:3003"
     volumes:
-      - ${HOST_REPO}/results/benchmarks:/usr/local/bin/benchmarks
+      - ${HOST_REPO}/results/benchmarks:/exports
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       WRK_HOST: ${WRK_HOST}
       WRK_PORT: 8080
       WRK_ENDPOINT: ${WRK_ENDPOINT}
+
+      WRK_AUTO_RUN: ${WRK_AUTO_RUN}
+      WRK_ITERATIONS: ${WRK_ITERATIONS}
+      WRK_SLEEP_BETWEEN: ${WRK_SLEEP_BETWEEN}
+      WRK_SLEEP_INIT: ${WRK_SLEEP_INIT}
+
       WRK_THREADS: ${WRK_THREADS}
       WRK_CONNECTIONS: ${WRK_CONNECTIONS}
       WRK_DURATION: ${WRK_DURATION}
       WRK_RATE: ${WRK_RATE}
-      WRK_SLEEP_BETWEEN: ${WRK_SLEEP_BETWEEN}
-      WRK_SLEEP_INIT: ${WRK_SLEEP_INIT}
+
+      WRK_SAVE_LOGS: ${WRK_SAVE_LOGS}
+      WRK_BENCH_DIR: /benchmarks
+      WRK_EXPORT_DIR: /exports
+      WRK_READY_PORT: 3003
+    tmpfs:
+      - /tmp:rw,mode=1777
+      - /benchmarks:rw,mode=1777
+    # Default to root for portability. On Linux/WSL, may need to set WRK_UID/WRK_GID to match the host folder owner (e.g. 1000/1000).
+    user: "${WRK_UID:-0}:${WRK_GID:-0}"
+    healthcheck:
+      test: ["CMD", "busybox", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3003/ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     restart: no
     pull_policy: never
+    cpuset: *default_performance_cores
+    mem_limit: *default_mem_limit_wrk
+    mem_reservation: *default_mem_limit_wrk
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: *default_mem_limit_wrk
         reservations:
-          memory: 64M
-    cpuset: *default_performance_cores
-    command: ["/bin/sh", "-c", "sleep ${WRK_SLEEP_INIT} && /usr/local/bin/run.sh && tail -f /dev/null"]
+          memory: *default_mem_limit_wrk
+    ulimits:
+      nofile:
+        soft: *default_ulimit
+        hard: *default_ulimit
