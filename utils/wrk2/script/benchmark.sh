@@ -25,8 +25,8 @@ CONNECTIONS="${WRK_CONNECTIONS:-200}"
 DURATION="${WRK_DURATION:-30s}"
 RATE="${WRK_RATE:-500}"
 SLEEP_BETWEEN="${WRK_SLEEP_BETWEEN:-10}"
-SLEEP_INIT="${WRK_SLEEP_INIT:-0}"
-ITERATIONS="${WRK_ITERATIONS:-0}"
+SLEEP_INIT="${WRK_SLEEP_INIT:-10}"
+ITERATIONS="${WRK_ITERATIONS:-1}"
 SAVE_LOGS="${WRK_SAVE_LOGS:-true}"
 EXPORT_DIR="${WRK_EXPORT_DIR:-}"
 
@@ -182,7 +182,7 @@ run_wrk_one() {
 
 echo "[wrk2] benchmark script ready (exec /script/benchmark.sh to run on-demand)" >&2
 
-# Avoid printing config twice when WRK_AUTO_RUN=true:
+# Avoid printing config twice when WRK_AUTORUN=true:
 # - entrypoint.sh prints config once on container boot
 # - benchmark.sh prints config only when run on-demand (WRK_PRINT_CONFIG=true)
 if [ "${WRK_PRINT_CONFIG:-false}" = "true" ]; then

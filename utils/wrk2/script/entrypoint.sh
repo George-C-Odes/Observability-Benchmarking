@@ -32,11 +32,28 @@ if ! kill -0 "${READY_PID}" 2>/dev/null; then
   exit 1
 fi
 
+EXIT_AFTER_AUTORUN="${WRK_EXIT_AFTER_AUTORUN:-false}"
+
 # If configured to auto-run benchmarks on container start, do so.
-if [ "${WRK_AUTO_RUN:-true}" = "true" ]; then
-  WRK_PRINT_CONFIG=false "${SCRIPT_DIR}/benchmark.sh" || true
+if [ "${WRK_AUTORUN:-true}" = "true" ]; then
+  set +e
+  WRK_PRINT_CONFIG=false "${SCRIPT_DIR}/benchmark.sh"
+  bench_rc=$?
+  set -e
+
+  # Optional mode: stop the container after autorun finishes.
+  if [ "${EXIT_AFTER_AUTORUN}" = "true" ]; then
+    echo "[wrk2] WRK_EXIT_AFTER_AUTORUN=true; stopping container after autorun" >&2
+
+    if [ -n "${READY_PID}" ] && kill -0 "${READY_PID}" 2>/dev/null; then
+      kill "${READY_PID}" 2>/dev/null || true
+      wait "${READY_PID}" 2>/dev/null || true
+    fi
+
+    exit "${bench_rc}"
+  fi
 else
-  echo "[wrk2] WRK_AUTO_RUN=false; not running benchmarks automatically" >&2
+  echo "[wrk2] WRK_AUTORUN=false; not running benchmarks automatically" >&2
 fi
 
 # Keep container alive for exec/debugging while readiness stays up

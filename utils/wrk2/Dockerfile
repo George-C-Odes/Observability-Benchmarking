@@ -94,8 +94,8 @@ WORKDIR /script
 # Create a dedicated writable output directory for benchmarks.
 ENV WRK_BENCH_DIR=/benchmarks
 
-# Default: auto-run benchmarks on container start (set WRK_AUTO_RUN=false to only keep readiness + exec)
-ENV WRK_AUTO_RUN=true
+# Default: auto-run benchmarks on container start (set WRK_AUTORUN=false to only keep readiness + exec)
+ENV WRK_AUTORUN=true
 
 # Run as non-root by default.
 RUN addgroup -S wrk2 \

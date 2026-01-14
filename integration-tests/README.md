@@ -41,12 +41,12 @@ Run from the root directory of this repo.
 
 ```powerShell
 #powershell
-$env:WRK_AUTO_RUN="false"; docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
+$env:WRK_AUTORUN="false"; docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
 ```
 or
 ```bash
 #bash
-WRK_AUTO_RUN=false docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
+WRK_AUTORUN=false docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
 ```
 
 2. Wait for services to initialize (less than a minute if everything was pre-built / cached)

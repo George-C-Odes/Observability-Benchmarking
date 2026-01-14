@@ -28,9 +28,21 @@ Benchmarks are executed by `script/benchmark.sh`.
 
 Controlled by:
 
-- `WRK_AUTO_RUN=true|false` (default: `true`)
+- `WRK_AUTORUN=true|false` (default: `true`)
 
-If `WRK_AUTO_RUN=false`, the container becomes an always-on worker with `/ready` and you run `benchmark.sh` manually via `docker exec`.
+If `WRK_AUTORUN=false`, the container becomes an always-on worker with `/ready` and you run `benchmark.sh` manually via `docker exec`.
+
+#### Exit-after-autorun mode
+
+If you want the container to **exit automatically when the auto-run finishes**, enable:
+
+- `WRK_EXIT_AFTER_AUTORUN=true|false` (default: `false`)
+
+Behavior:
+
+- Only applies when `WRK_AUTORUN=true`.
+- After `benchmark.sh` completes, the container stops (exit code is the same as the benchmark script’s exit code).
+- This is useful for “run benchmarks and stop” CI-like workflows.
 
 ### On-demand (exec into container)
 

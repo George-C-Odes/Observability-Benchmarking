@@ -53,10 +53,11 @@ print_common_vars() {
   local DEFAULT_PORT="8080"
   local DEFAULT_ENDPOINT="platform"
 
-  local DEFAULT_AUTO_RUN="true"
-  local DEFAULT_ITERATIONS="0"
+  local DEFAULT_AUTORUN="true"
+  local DEFAULT_WRK_EXIT_AFTER_AUTORUN="false"
+  local DEFAULT_ITERATIONS="1"
   local DEFAULT_SLEEP_BETWEEN="10"
-  local DEFAULT_SLEEP_INIT="0"
+  local DEFAULT_SLEEP_INIT="10"
 
   local DEFAULT_THREADS="4"
   local DEFAULT_CONNECTIONS="200"
@@ -72,7 +73,8 @@ print_common_vars() {
   local port_val="${WRK_PORT:-$DEFAULT_PORT}"
   local ep_val="${WRK_ENDPOINT:-$DEFAULT_ENDPOINT}"
 
-  local auto_val="${WRK_AUTO_RUN:-$DEFAULT_AUTO_RUN}"
+  local auto_val="${WRK_AUTORUN:-$DEFAULT_AUTORUN}"
+  local auto_exit_val="${WRK_EXIT_AFTER_AUTORUN:-$DEFAULT_WRK_EXIT_AFTER_AUTORUN}"
   local iter_val="${WRK_ITERATIONS:-$DEFAULT_ITERATIONS}"
   local sleep_between_val="${WRK_SLEEP_BETWEEN:-$DEFAULT_SLEEP_BETWEEN}"
   local sleep_init_val="${WRK_SLEEP_INIT:-$DEFAULT_SLEEP_INIT}"
@@ -91,48 +93,50 @@ print_common_vars() {
     # Some terminals/renderers may strip '|' characters; we use commas for enums here.
     cat <<'EOF'
 Common variables:
-  TZ                   Timezone name (e.g. Europe/Nicosia)
-  WRK_HOST             Target service hostname
-  WRK_PORT             Target port
-  WRK_ENDPOINT         hello endpoint suffix (platform, virtual, reactive, combo)
+  TZ                        Timezone name (e.g. Europe/Nicosia)
+  WRK_HOST                  Target service hostname
+  WRK_PORT                  Target port
+  WRK_ENDPOINT              'hello' endpoint suffix (platform, virtual, reactive, combo)
 
-  WRK_AUTO_RUN         true/false: auto-run benchmarks on container start
-  WRK_ITERATIONS       number of iterations (0 = loop forever)
-  WRK_SLEEP_BETWEEN    delay between runs in seconds
-  WRK_SLEEP_INIT       initial delay in seconds
+  WRK_AUTORUN               Auto-run benchmarks on container start (true, false)
+  WRK_EXIT_AFTER_AUTORUN    Stop container after auto-run (true, false)
+  WRK_ITERATIONS            Number of iterations (0 = loop forever)
+  WRK_SLEEP_BETWEEN         Delay between runs in seconds
+  WRK_SLEEP_INIT            Initial delay in seconds
 
-  WRK_THREADS          wrk threads
-  WRK_CONNECTIONS      wrk connections
-  WRK_DURATION         duration (e.g. 30s, 3m)
-  WRK_RATE             target request rate
+  WRK_THREADS               wrk client threads
+  WRK_CONNECTIONS           wrk client connections
+  WRK_DURATION              wrk client duration (e.g. 30s, 3m)
+  WRK_RATE                  wrk client target request rate
 
-  WRK_SAVE_LOGS        true, false, auto
-  WRK_BENCH_DIR        internal bench dir
-  WRK_EXPORT_DIR       host-export dir. When set and writable, each log is copied to:
-                       ${WRK_EXPORT_DIR}/YYYYMMDD/<same_filename>
+  WRK_SAVE_LOGS             Save each benchmark log produced by wrk client (true, false, auto)
+  WRK_BENCH_DIR             Internal temp benchmark dir
+  WRK_EXPORT_DIR            Export dir mount for benchmarks. When set and writable, each log is copied to:
+                            ${WRK_EXPORT_DIR}/YYYYMMDD/<timestamped_filename_with_service_name_and_run_params>.log
 EOF
 
     cat <<EOF
 
 Defaults and current values:
-  TZ                   current:${tz_val:-<unset>}
-  WRK_HOST             current:${host_val}, default:${DEFAULT_HOST}
-  WRK_PORT             current:${port_val}, default:${DEFAULT_PORT}
-  WRK_ENDPOINT         current:${ep_val}, default:${DEFAULT_ENDPOINT}
+  TZ                        current:${tz_val:-<unset>}
+  WRK_HOST                  current:${host_val}, default:${DEFAULT_HOST}
+  WRK_PORT                  current:${port_val}, default:${DEFAULT_PORT}
+  WRK_ENDPOINT              current:${ep_val}, default:${DEFAULT_ENDPOINT}
 
-  WRK_AUTO_RUN         current:${auto_val}, default:${DEFAULT_AUTO_RUN}
-  WRK_ITERATIONS       current:${iter_val}, default:${DEFAULT_ITERATIONS}
-  WRK_SLEEP_BETWEEN    current:${sleep_between_val}, default:${DEFAULT_SLEEP_BETWEEN}
-  WRK_SLEEP_INIT       current:${sleep_init_val}, default:${DEFAULT_SLEEP_INIT}
+  WRK_AUTORUN               current:${auto_val}, default:${DEFAULT_AUTORUN}
+  WRK_EXIT_AFTER_AUTORUN    current:${auto_exit_val}, default:${DEFAULT_WRK_EXIT_AFTER_AUTORUN}
+  WRK_ITERATIONS            current:${iter_val}, default:${DEFAULT_ITERATIONS}
+  WRK_SLEEP_BETWEEN         current:${sleep_between_val}, default:${DEFAULT_SLEEP_BETWEEN}
+  WRK_SLEEP_INIT            current:${sleep_init_val}, default:${DEFAULT_SLEEP_INIT}
 
-  WRK_THREADS          current:${threads_val}, default:${DEFAULT_THREADS}
-  WRK_CONNECTIONS      current:${conns_val}, default:${DEFAULT_CONNECTIONS}
-  WRK_DURATION         current:${dur_val}, default:${DEFAULT_DURATION}
-  WRK_RATE             current:${rate_val}, default:${DEFAULT_RATE}
+  WRK_THREADS               current:${threads_val}, default:${DEFAULT_THREADS}
+  WRK_CONNECTIONS           current:${conns_val}, default:${DEFAULT_CONNECTIONS}
+  WRK_DURATION              current:${dur_val}, default:${DEFAULT_DURATION}
+  WRK_RATE                  current:${rate_val}, default:${DEFAULT_RATE}
 
-  WRK_SAVE_LOGS        current:${save_logs_val}, default:${DEFAULT_SAVE_LOGS}
-  WRK_BENCH_DIR        current:${bench_dir_val}, default:${DEFAULT_BENCH_DIR}
-  WRK_EXPORT_DIR       current:${export_dir_val:-<unset>}, default:<empty>
+  WRK_SAVE_LOGS             current:${save_logs_val}, default:${DEFAULT_SAVE_LOGS}
+  WRK_BENCH_DIR             current:${bench_dir_val}, default:${DEFAULT_BENCH_DIR}
+  WRK_EXPORT_DIR            current:${export_dir_val:-<unset>}, default:<empty>
 EOF
 
     return 0
@@ -141,20 +145,21 @@ EOF
   # summary (for startup)
   echo "[wrk2] config:" >&2
   echo "  TZ:${tz_val:-<unset>}" >&2
-  echo "  WRK_HOST:           ${host_val} (default: ${DEFAULT_HOST})" >&2
-  echo "  WRK_PORT:           ${port_val} (default: ${DEFAULT_PORT})" >&2
-  echo "  WRK_ENDPOINT:       ${ep_val} (default: ${DEFAULT_ENDPOINT})" >&2
-  echo "  WRK_AUTO_RUN:       ${auto_val} (default: ${DEFAULT_AUTO_RUN})" >&2
-  echo "  WRK_ITERATIONS:     ${iter_val} (default: ${DEFAULT_ITERATIONS})" >&2
-  echo "  WRK_SLEEP_BETWEEN:  ${sleep_between_val} (default: ${DEFAULT_SLEEP_BETWEEN})" >&2
-  echo "  WRK_SLEEP_INIT:     ${sleep_init_val} (default: ${DEFAULT_SLEEP_INIT})" >&2
-  echo "  WRK_THREADS:        ${threads_val} (default: ${DEFAULT_THREADS})" >&2
-  echo "  WRK_CONNECTIONS:    ${conns_val} (default: ${DEFAULT_CONNECTIONS})" >&2
-  echo "  WRK_DURATION:       ${dur_val} (default: ${DEFAULT_DURATION})" >&2
-  echo "  WRK_RATE:           ${rate_val} (default: ${DEFAULT_RATE})" >&2
-  echo "  WRK_SAVE_LOGS:      ${save_logs_val} (default: ${DEFAULT_SAVE_LOGS})" >&2
-  echo "  WRK_BENCH_DIR:      ${bench_dir_val} (default: ${DEFAULT_BENCH_DIR})" >&2
-  echo "  WRK_EXPORT_DIR:     ${export_dir_val:-<unset>} (default: <empty>)" >&2
+  echo "  WRK_HOST:                 ${host_val} (default: ${DEFAULT_HOST})" >&2
+  echo "  WRK_PORT:                 ${port_val} (default: ${DEFAULT_PORT})" >&2
+  echo "  WRK_ENDPOINT:             ${ep_val} (default: ${DEFAULT_ENDPOINT})" >&2
+  echo "  WRK_AUTORUN:              ${auto_val} (default: ${DEFAULT_AUTORUN})" >&2
+  echo "  WRK_EXIT_AFTER_AUTORUN:   ${auto_exit_val} (default: ${DEFAULT_WRK_EXIT_AFTER_AUTORUN})" >&2
+  echo "  WRK_ITERATIONS:           ${iter_val} (default: ${DEFAULT_ITERATIONS})" >&2
+  echo "  WRK_SLEEP_BETWEEN:        ${sleep_between_val} (default: ${DEFAULT_SLEEP_BETWEEN})" >&2
+  echo "  WRK_SLEEP_INIT:           ${sleep_init_val} (default: ${DEFAULT_SLEEP_INIT})" >&2
+  echo "  WRK_THREADS:              ${threads_val} (default: ${DEFAULT_THREADS})" >&2
+  echo "  WRK_CONNECTIONS:          ${conns_val} (default: ${DEFAULT_CONNECTIONS})" >&2
+  echo "  WRK_DURATION:             ${dur_val} (default: ${DEFAULT_DURATION})" >&2
+  echo "  WRK_RATE:                 ${rate_val} (default: ${DEFAULT_RATE})" >&2
+  echo "  WRK_SAVE_LOGS:            ${save_logs_val} (default: ${DEFAULT_SAVE_LOGS})" >&2
+  echo "  WRK_BENCH_DIR:            ${bench_dir_val} (default: ${DEFAULT_BENCH_DIR})" >&2
+  echo "  WRK_EXPORT_DIR:           ${export_dir_val:-<unset>} (default: <empty>)" >&2
 }
 
 emit_benchmark_help() {
