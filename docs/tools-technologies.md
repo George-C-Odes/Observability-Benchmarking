@@ -616,7 +616,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Orchestration** | Docker Compose         | v2      | Multi-container                   |
 | **Orchestration** | Docker CLI             | 29.1.3  | Docker CLI                        |
 | **Build** | Maven                  | 3.9.12  | Build automation                  |
-| **Build** | NPM                    | 11.7.0  | Package manager (Orchestrator UI) |
+| **Build** | NPM                    | 11.6.2  | Package manager (Orchestrator UI) |
 | **Framework** | React                  | 19.2.3  | Frontend (Orchestrator UI)        |
 | **Framework** | Next.js                | 16.1.1  | Frontend (Orchestrator UI)        |
 | **Framework** | Node                   | 25.2.1  | Runtime JavaScript (Orchestrator UI)   |
