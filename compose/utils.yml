@@ -138,6 +138,7 @@ services:
       TZ: *default_timezone
       WRK_HOST: ${WRK_HOST}
       WRK_PORT: 8080
+      WRK_RESOURCE: ${WRK_RESOURCE:-hello}
       WRK_ENDPOINT: ${WRK_ENDPOINT}
 
       WRK_AUTORUN: ${WRK_AUTORUN}

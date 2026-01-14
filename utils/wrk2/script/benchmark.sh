@@ -19,6 +19,7 @@ apply_tz
 
 HOST="${WRK_HOST:-quarkus-jvm}"
 PORT="${WRK_PORT:-8080}"
+RESOURCE="${WRK_RESOURCE:-hello}"
 ENDPOINT="${WRK_ENDPOINT:-platform}"
 THREADS="${WRK_THREADS:-4}"
 CONNECTIONS="${WRK_CONNECTIONS:-200}"
@@ -75,9 +76,9 @@ url_for() {
   local target_ep=$2
 
   if [ -z "${target_ep}" ]; then
-    echo "http://${target_host}:${PORT}/hello"
+    echo "http://${target_host}:${PORT}/${RESOURCE}"
   else
-    echo "http://${target_host}:${PORT}/hello/${target_ep}"
+    echo "http://${target_host}:${PORT}/${RESOURCE}/${target_ep}"
   fi
 }
 
