@@ -32,7 +32,7 @@ buildNumber.properties
 !gradle/wrapper/gradle-wrapper.jar
 
 # Quarkus / native-image artifacts
-**/*-runner
+**/target/*-runner
 quarkus-app/
 /native-image-output/
 /build/native/
