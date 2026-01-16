@@ -1,12 +1,13 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { serverLogger } from '@/lib/serverLogger';
+import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
 
 const execAsync = promisify(exec);
 
 export const GET = withApiRoute({ name: 'SYSTEM_API' }, async function GET() {
+  const logger = createScopedServerLogger('SYSTEM_API');
   try {
     const systemInfo: Record<string, string> = {
       nodejs: process.version,
@@ -33,14 +34,14 @@ export const GET = withApiRoute({ name: 'SYSTEM_API' }, async function GET() {
       systemInfo.mui = packageJson.dependencies?.['@mui/material'] || 'N/A';
       systemInfo.typescript = packageJson.devDependencies?.typescript || 'N/A';
     } catch (e: unknown) {
-      serverLogger.error('Error reading package.json:', e);
+      logger.error('Error reading package.json', e);
     }
 
-    serverLogger.info('System info:', systemInfo);
+    logger.info('System info', systemInfo);
 
     return okJson(systemInfo);
   } catch (error) {
-    serverLogger.error('Error getting system info:', error);
+    logger.error('Error getting system info', error);
     return errorFromUnknown(500, error, 'Failed to get system info');
   }
 });

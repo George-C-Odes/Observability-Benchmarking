@@ -11,13 +11,11 @@ import { orchestratorConfig } from './config';
 export interface JobStatus {
   jobId: string;
   status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED';
-  createdAt: string;
+  createdAt?: string;
   startedAt?: string;
   finishedAt?: string;
   exitCode?: number;
   lastLine?: string;
-  output?: string;
-  error?: string;
 }
 
 export interface CommandPreset {
@@ -34,16 +32,20 @@ export interface EnvFileContent {
 /**
  * Base headers for orchestrator requests
  */
-const getHeaders = (includeAuth: boolean = false): HeadersInit => {
+const getHeaders = (includeAuth: boolean = false, requestId?: string): HeadersInit => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
-  
+
+  if (requestId) {
+    headers['X-Request-Id'] = requestId;
+  }
+
   if (includeAuth) {
     headers['Authorization'] = `Bearer ${orchestratorConfig.apiKey}`;
   }
-  
+
   return headers;
 };
 
@@ -52,13 +54,14 @@ const getHeaders = (includeAuth: boolean = false): HeadersInit => {
  */
 export async function orchestratorGet<T = unknown>(
   endpoint: string,
-  requireAuth: boolean = false
+  requireAuth: boolean = false,
+  requestId?: string
 ): Promise<T> {
   const url = `${orchestratorConfig.url}${endpoint}`;
-  
+
   const response = await fetch(url, {
     method: 'GET',
-    headers: getHeaders(requireAuth),
+    headers: getHeaders(requireAuth, requestId),
   });
 
   if (!response.ok) {
@@ -75,13 +78,14 @@ export async function orchestratorGet<T = unknown>(
 export async function orchestratorPost<T = unknown>(
   endpoint: string,
   body: unknown,
-  requireAuth: boolean = true
+  requireAuth: boolean = true,
+  requestId?: string
 ): Promise<T> {
   const url = `${orchestratorConfig.url}${endpoint}`;
-  
+
   const response = await fetch(url, {
     method: 'POST',
-    headers: getHeaders(requireAuth),
+    headers: getHeaders(requireAuth, requestId),
     body: JSON.stringify(body),
   });
 
@@ -101,10 +105,24 @@ export async function submitCommand(command: string): Promise<{ jobId: string }>
 }
 
 /**
- * Get job status by jobId
+ * Submit a command for execution with an optional runId.
  */
-export async function getJobStatus(jobId: string): Promise<JobStatus> {
-  return orchestratorGet<JobStatus>(`/v1/jobs/${jobId}`, false);
+export async function submitCommandWithRunId(
+  command: string,
+  runId: string | null,
+  requestId?: string
+): Promise<{ jobId: string; runId?: string | null }> {
+  const body: { command: string; runId?: string } = { command };
+  if (runId) body.runId = runId;
+  return orchestratorPost('/v1/run', body, true, requestId);
+}
+
+/**
+ * Get job status by jobId and runId.
+ */
+export async function getJobStatusWithRunId(jobId: string, runId: string | null, requestId?: string | null): Promise<JobStatus> {
+  const suffix = runId ? `?runId=${encodeURIComponent(runId)}` : '';
+  return orchestratorGet<JobStatus>(`/v1/jobs/${jobId}${suffix}`, false, requestId ?? undefined);
 }
 
 /**

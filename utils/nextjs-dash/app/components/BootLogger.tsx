@@ -2,37 +2,41 @@
 
 import { useEffect } from 'react';
 import { fetchJson } from '@/lib/fetchJson';
+import { createClientLogger, setClientLogLevel } from '@/lib/clientLogger';
+import { useLoggingConfig } from '@/app/hooks/useLoggingConfig';
+import { collectClientSystemInfo } from '@/lib/systemInfo';
+import { getRuntimeConfig } from '@/lib/runtimeConfig';
 
 export function BootLogger() {
+  const { config: loggingConfig } = useLoggingConfig();
+
   useEffect(() => {
+    setClientLogLevel(loggingConfig.clientLogLevel);
+  }, [loggingConfig.clientLogLevel]);
+
+  useEffect(() => {
+    const logger = createClientLogger('Boot');
+
     // Defer logging slightly to avoid competing with hydration/layout.
     const id = window.setTimeout(() => {
-      console.log('='.repeat(45));
-      console.log('OBSERVABILITY BENCHMARKING DASHBOARD');
-      console.log('='.repeat(45));
-      console.log('Node.js: N/A');
-      console.log(`Platform: ${navigator.platform}`);
-      console.log(`User Agent: ${navigator.userAgent}`);
-      console.log('='.repeat(45));
+      const { systemInfo } = getRuntimeConfig();
+      const clientInfo = collectClientSystemInfo();
 
-      void fetchJson<Record<string, string>>('/api/system')
-        .then((data) => {
-          console.log('Backend Framework Versions:');
-          console.log(`  Next.js: ${data.nextjs}`);
-          console.log(`  React: ${data.react}`);
-          console.log(`  MUI: ${data.mui}`);
-          console.log(`  TypeScript: ${data.typescript}`);
-          console.log(`  npm: ${data.npm}`);
-          console.log(`  Node.js: ${data.nodejs}`);
-          console.log('='.repeat(45));
-        })
-        .catch((err) => console.error('Failed to fetch system info:', err));
+      // Log in the same order as the SystemInfo page:
+      // 1) server info
+      // 2) client info
+      if (systemInfo) {
+        logger.info('System info (server)', systemInfo);
+      } else {
+        logger.warn('System info (server) not available');
+      }
+      logger.info('System info (client)', clientInfo);
 
       // Also fetch server logs snapshot so the Logs tab has something even if opened later.
       void fetchJson<{ entries?: unknown[] }>('/api/logs')
         .then((data) => {
           if (Array.isArray(data?.entries) && data.entries.length) {
-            console.log(`[SERVER LOGS] Loaded ${data.entries.length} server log entries`);
+            logger.info('Loaded server log entries snapshot', { count: data.entries.length });
           }
         })
         .catch(() => {

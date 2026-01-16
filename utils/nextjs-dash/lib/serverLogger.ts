@@ -1,6 +1,32 @@
 import type { LogLevel } from './logBuffer';
 import { getServerLogBuffer } from './logBuffer';
 import { getRequestId } from './requestContext';
+import type { RuntimeLogLevel } from './loggingTypes';
+
+const levelOrder: Record<RuntimeLogLevel, number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+  silent: 50,
+};
+
+declare global {
+  var __NEXTJS_DASH_SERVER_LOG_LEVEL__: RuntimeLogLevel | undefined;
+
+  interface GlobalThis {
+    __NEXTJS_DASH_SERVER_LOG_LEVEL__?: RuntimeLogLevel;
+  }
+}
+
+export function getServerLogLevel(): RuntimeLogLevel {
+  return globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ ?? 'info';
+}
+
+function shouldLog(level: LogLevel): boolean {
+  // LogLevel is debug|info|warn|error.
+  return levelOrder[level] >= levelOrder[getServerLogLevel()];
+}
 
 function formatArgs(args: unknown[]): { message: string; meta?: unknown } {
   // Keep the message readable, but don't lose objects.
@@ -28,6 +54,7 @@ function formatArgs(args: unknown[]): { message: string; meta?: unknown } {
 }
 
 export function logServer(level: LogLevel, ...args: unknown[]) {
+  if (!shouldLog(level)) return;
   const { message, meta } = formatArgs(args);
   const requestId = getRequestId();
 

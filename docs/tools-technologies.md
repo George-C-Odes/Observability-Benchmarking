@@ -595,31 +595,35 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ## Technology Stack Summary
 
-| Category | Technology             | Version | Purpose                           |
-|----------|------------------------|---------|-----------------------------------|
-| **Runtime** | Java (Eclipse Temurin) | 25      | JVM services                      |
-| **Runtime** | GraalVM                | 25.0.1  | Native compilation                |
-| **Runtime** | Go                     | 1.25.5  | Go services                       |
-| **Framework** | Spring Boot            | 4.0.1   | Enterprise Java                   |
-| **Framework** | Quarkus                | 3.30.6  | Cloud-native Java                 |
-| **Observability** | Grafana                | 12.3.1  | Visualization                     |
-| **Observability** | Loki                   | 3.6.3   | Logs                              |
-| **Observability** | Tempo                  | 2.9.0   | Traces                            |
-| **Observability** | Mimir                  | 3.0.2   | Metrics                           |
-| **Observability** | Pyroscope              | 1.17.1  | Profiles                          |
-| **Observability** | Alloy                  | 1.10.2  | Collector                         |
-| **Instrumentation** | OpenTelemetry          | 1.57.0  | Telemetry SDK                     |
-| **Instrumentation** | OpenTelemetry          | 2.23.0  | Telemetry Distro                  |
-| **Testing** | wrk2                   | Latest  | Benchmarking                      |
-| **Cache** | Caffeine               | 3.2.3   | In-memory cache                   |
-| **Container** | Docker                 | 24+     | Containerization                  |
-| **Orchestration** | Docker Compose         | v2      | Multi-container                   |
-| **Orchestration** | Docker CLI             | 29.1.3  | Docker CLI                        |
-| **Build** | Maven                  | 3.9.12  | Build automation                  |
-| **Build** | NPM                    | 11.6.2  | Package manager (Orchestrator UI) |
-| **Framework** | React                  | 19.2.3  | Frontend (Orchestrator UI)        |
-| **Framework** | Next.js                | 16.1.1  | Frontend (Orchestrator UI)        |
-| **Framework** | Node                   | 25.2.1  | Runtime JavaScript (Orchestrator UI)   |
+| Category            | Technology             | Version | Purpose            |
+|---------------------|------------------------|---------|--------------------|
+| **Runtime**         | Java (Eclipse Temurin) | 25      | JVM services       |
+| **Runtime**         | GraalVM                | 25.0.1  | Native compilation |
+| **Runtime**         | Go                     | 1.25.5  | Go services        |
+| **Framework**       | Spring Boot            | 4.0.1   | Enterprise Java    |
+| **Framework**       | Quarkus                | 3.30.6  | Cloud-native Java  |
+| **Observability**   | Grafana                | 12.3.1  | Visualization      |
+| **Observability**   | Loki                   | 3.6.3   | Logs               |
+| **Observability**   | Tempo                  | 2.9.0   | Traces             |
+| **Observability**   | Mimir                  | 3.0.2   | Metrics            |
+| **Observability**   | Pyroscope              | 1.17.1  | Profiles           |
+| **Observability**   | Alloy                  | 1.10.2  | Collector          |
+| **Instrumentation** | OpenTelemetry          | 1.57.0  | Telemetry SDK      |
+| **Instrumentation** | OpenTelemetry          | 2.23.0  | Telemetry Distro   |
+| **Testing**         | wrk2                   | Latest  | Benchmarking       |
+| **Cache**           | Caffeine               | 3.2.3   | In-memory cache    |
+| **Container**       | Docker                 | 24+     | Containerization   |
+| **Orchestration**   | Docker Compose         | v2      | Multi-container    |
+| **Orchestration**   | Docker CLI             | 29.1.3  | Docker CLI         |
+| **Build**           | Maven                  | 3.9.12  | Build automation   |
+| **Build**           | NPM                    | 11.6.2  | Package manager    |
+| **Framework**       | React                  | 19.2.3  | Frontend           |
+| **Framework**       | Next.js                | 16.1.2  | Frontend           |
+| **Framework**       | Node                   | 25.2.1  | Runtime JavaScript |
+| **Library**         | Material UI (MUI)      | 7.3.7   | Frontend           |
+| **Framework**       | Typescript             | 5.9.3   | Frontend           |
+| **Testing**         | Vitest                 | 4.0.17  | Unit Testing       |
+| **Testing**         | JUnit                  | 5 / 6   | Unit Testing       |
 
 ---
 

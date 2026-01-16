@@ -20,7 +20,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
@@ -58,6 +61,12 @@ public class JobManager {
   boolean serialExecution;
 
   /**
+   * Heartbeat (SSE keepalive) interval.
+   */
+  @ConfigProperty(name = "orchestrator.heartbeat.interval-ms")
+  long heartbeatIntervalMs;
+
+  /**
    * Executor service for running jobs.
    */
   private final ExecutorService executor;
@@ -67,6 +76,27 @@ public class JobManager {
    */
   private final ConcurrentMap<UUID, Job> jobs = new ConcurrentHashMap<>();
 
+  /**
+   * Scheduler for periodic heartbeat events (keeps SSE connections alive).
+   */
+  private final ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+    Thread t = new Thread(r, "orchestrator-heartbeats");
+    t.setDaemon(true);
+    return t;
+  });
+
+  /**
+   * When true, the orchestrator is already running a job. We reject new submissions
+   * to avoid concurrent executions across tabs/sessions.
+   */
+  private final AtomicBoolean busy = new AtomicBoolean(false);
+
+  /**
+   * Optional mapping of jobId -> runId as provided by the dashboard.
+   * Used to prevent cross-run job/status/event mixing.
+   */
+  private final ConcurrentMap<UUID, String> jobRunIds = new ConcurrentHashMap<>();
+
   public JobManager() {
     this.executor = Executors.newSingleThreadExecutor(r -> {
       Thread t = new Thread(r, "orchestrator-job-runner");
@@ -75,13 +105,66 @@ public class JobManager {
     });
   }
 
-  public UUID submit(CommandPolicy.ValidatedCommand cmd) {
+  /**
+   * Submits a command for asynchronous execution.
+   *
+   * @param cmd the validated command
+   * @param runId optional dashboard run identifier
+   * @return job id
+   */
+  public UUID submit(CommandPolicy.ValidatedCommand cmd, String runId) {
+    if (!busy.compareAndSet(false, true)) {
+      throw new jakarta.ws.rs.ServiceUnavailableException("Orchestrator is busy running another job");
+    }
+    
     UUID id = UUID.randomUUID();
     Job job = new Job(id, maxBufferLines);
     jobs.put(id, job);
+    if (runId != null && !runId.isBlank()) {
+      jobRunIds.put(id, runId);
+    }
     job.emit(JobEvent.status("QUEUED"));
+    job.emit(JobEvent.summary(job.id,
+      Status.QUEUED.name(),
+      job.createdAt,
+      job.startedAt,
+      job.finishedAt,
+      job.exitCode,
+      job.lastLine
+    ));
     executor.submit(() -> runJob(job, cmd));
     return id;
+  }
+
+  /**
+   * Validates that the given runId matches the runId bound to this job.
+   *
+   * @param jobId the job id
+   * @param runId the run id (may be null)
+   * @throws jakarta.ws.rs.ClientErrorException with 409 on mismatch
+   */
+  public void validateRunId(UUID jobId, String runId) {
+    if (runId == null || runId.isBlank()) {
+      return;
+    }
+    String expected = jobRunIds.get(jobId);
+    if (expected == null) {
+      // job existed but wasn't created with a runId; treat run-scoped request as stale/mismatch
+      throw new jakarta.ws.rs.ClientErrorException(
+        jakarta.ws.rs.core.Response.status(409)
+          .entity("{\"error\":\"stale_run\",\"message\":\"Job is not bound to this run\"}")
+          .type(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
+          .build()
+      );
+    }
+    if (!expected.equals(runId)) {
+      throw new jakarta.ws.rs.ClientErrorException(
+        jakarta.ws.rs.core.Response.status(409)
+          .entity("{\"error\":\"stale_run\",\"message\":\"runId does not match job\"}")
+          .type(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
+          .build()
+      );
+    }
   }
 
   public JobStatusResponse status(UUID id) {
@@ -102,10 +185,54 @@ public class JobManager {
 
   private void runJob(Job job, CommandPolicy.ValidatedCommand cmd) {
     MDC.put("jobId", job.id.toString());
+
+    ScheduledFuture<?> heartbeatFuture = null;
+    final long jobStartNanos = System.nanoTime();
+    final long[] heartbeatCounter = new long[] {
+      0L
+    };
+
     try {
       job.status = Status.RUNNING;
       job.startedAt = Instant.now();
       job.emit(JobEvent.status("RUNNING"));
+      job.emit(JobEvent.summary(job.id,
+        job.status.name(),
+        job.createdAt,
+        job.startedAt,
+        job.finishedAt,
+        job.exitCode,
+        job.lastLine
+      ));
+
+      // Emit periodic heartbeat status updates to keep SSE connections alive,
+      // especially during long commands with sparse output.
+      final long heartbeatMs = Math.max(1000L, heartbeatIntervalMs);
+      heartbeatFuture = heartbeatScheduler.scheduleAtFixedRate(() -> {
+        try {
+          if (!job.completed && (job.status == Status.RUNNING || job.status == Status.QUEUED)) {
+            heartbeatCounter[0] += 1;
+            long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
+            int subscribers = job.emitters.size();
+            int buffered = job.buffer.size();
+
+            // IMPORTANT: send heartbeats as SSE comments (prefixed with ':')
+            // so the browser keeps the connection alive but does not surface
+            // them as "message" events (avoids client log buffer churn).
+            job.emit(
+              JobEvent.status(
+                ": heartbeat #" + heartbeatCounter[0] + " status=" + job.status.name() + " uptimeMs=" + uptimeMs
+              )
+            );
+            log.infof(
+              "Heartbeat #%d status=%s uptimeMs=%d subscribers=%d buffered=%d",
+              heartbeatCounter[0], job.status, uptimeMs, subscribers, buffered
+            );
+          }
+        } catch (Exception ignored) {
+          // Intentionally ignored
+        }
+      }, heartbeatMs, heartbeatMs, TimeUnit.MILLISECONDS);
 
       ProcessBuilder pb = new ProcessBuilder(cmd.argv());
       pb.directory(new java.io.File(cmd.workspace()));
@@ -149,6 +276,26 @@ public class JobManager {
         job.emit(JobEvent.status("FAILED exitCode=" + exit));
       }
 
+      // Also emit a final summary snapshot (same shape as non-terminal, but terminal fields filled).
+      job.emit(JobEvent.summary(job.id,
+        job.status.name(),
+        job.createdAt,
+        job.startedAt,
+        job.finishedAt,
+        job.exitCode,
+        job.lastLine
+      ));
+
+      // Machine-readable completion snapshot for UIs (used by nextjs-dash SSE-only mode).
+      job.emit(JobEvent.terminalSummary(job.id,
+        job.status.name(),
+        job.createdAt,
+        job.startedAt,
+        job.finishedAt,
+        job.exitCode,
+        job.lastLine
+      ));
+
       log.infof("Finished status=%s exitCode=%s", job.status, exit);
       job.complete();
     } catch (Exception e) {
@@ -156,10 +303,33 @@ public class JobManager {
       job.status = Status.FAILED;
       String msg = "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage();
       job.emit(JobEvent.status(msg));
+
+      job.emit(JobEvent.summary(job.id,
+        job.status.name(),
+        job.createdAt,
+        job.startedAt,
+        job.finishedAt,
+        job.exitCode,
+        job.lastLine
+      ));
+
+      job.emit(JobEvent.terminalSummary(job.id,
+        job.status.name(),
+        job.createdAt,
+        job.startedAt,
+        job.finishedAt,
+        job.exitCode,
+        job.lastLine
+      ));
+
       log.error(msg, e);
       job.complete();
     } finally {
+      if (heartbeatFuture != null) {
+        heartbeatFuture.cancel(true);
+      }
       MDC.remove("jobId");
+      busy.set(false);
     }
   }
 

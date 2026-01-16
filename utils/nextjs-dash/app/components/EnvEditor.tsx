@@ -14,12 +14,15 @@ import {
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TuneIcon from '@mui/icons-material/Tune';
+import { createClientLogger } from '@/lib/clientLogger';
 
 interface EnvVariable {
   key: string;
   value: string;
   comment?: string;
 }
+
+const logger = createClientLogger('EnvEditor');
 
 export default function EnvEditor() {
   const [envContent, setEnvContent] = useState('');
@@ -49,7 +52,7 @@ export default function EnvEditor() {
       parseEnvContent(data.content);
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to load environment file' });
-      console.error(error);
+      logger.error('Failed to load environment file', error);
     } finally {
       setLoading(false);
     }
@@ -119,7 +122,7 @@ export default function EnvEditor() {
 
       if (!response.ok) {
         const bodyText = await response.text().catch(() => '');
-        console.error('Failed to save environment file:', bodyText);
+        logger.error('Failed to save environment file', { status: response.status, bodyText });
         setMessage({ type: 'error', text: 'Failed to save environment file' });
         return;
       }
@@ -128,7 +131,7 @@ export default function EnvEditor() {
       setEnvContent(newContent);
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to save environment file' });
-      console.error(error);
+      logger.error('Failed to save environment file', error);
     } finally {
       setSaving(false);
     }

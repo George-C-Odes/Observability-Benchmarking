@@ -1,10 +1,17 @@
 import type { NextRequest } from 'next/server';
 
-import { serverLogger } from './serverLogger';
+import { createScopedServerLogger } from '@/lib/scopedServerLogger';
+import { envString } from '@/lib/env';
+import { DEFAULT_LOGGING_RUNTIME_CONFIG } from '@/lib/loggingTypes';
+
 import { getRequestId, withRequestContext } from './requestContext';
 import { errorFromUnknown } from './apiResponses';
 
-type Handler<TResponse> = (req: NextRequest) => Promise<TResponse> | TResponse;
+export type ApiRouteContext = {
+  requestId: string;
+};
+
+type Handler<TResponse> = (req: NextRequest, ctx: ApiRouteContext) => Promise<TResponse> | TResponse;
 
 type WrapOpts = {
   name: string;
@@ -18,32 +25,44 @@ type WrapOpts = {
  * - logs start/end/error in a consistent way
  * - converts thrown errors into our standard error JSON response
  */
+function applyServerLogLevelFromEnv() {
+  const raw = envString('NEXTJS_DASH_SERVER_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel);
+  const lvl = raw.trim().toLowerCase();
+  if (lvl === 'debug' || lvl === 'info' || lvl === 'warn' || lvl === 'error' || lvl === 'silent') {
+    globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ = lvl;
+  }
+}
+
 export function withApiRoute<TResponse>(opts: WrapOpts, handler: Handler<TResponse>) {
   return async (req: NextRequest): Promise<TResponse> => {
+    applyServerLogLevelFromEnv();
+
     const incomingRid = req.headers.get('x-request-id') ?? undefined;
 
     return withRequestContext(async () => {
+      const logger = createScopedServerLogger(opts.name);
       const started = Date.now();
       const method = req.method;
       const url = req.nextUrl?.pathname ?? new URL(req.url).pathname;
-      const requestId = getRequestId();
+      const requestId = getRequestId() ?? incomingRid ?? 'unknown-request-id';
 
-      serverLogger.info(`[${opts.name}] ${method} ${url} start`, {
+      logger.info(`${method} ${url} start`, {
         requestId,
         ...(incomingRid ? { incomingRequestId: incomingRid } : {}),
       });
 
       try {
-        const res = await handler(req);
-        serverLogger.info(`[${opts.name}] ${method} ${url} ok`, {
+        const ctx: ApiRouteContext = { requestId };
+        const res = await handler(req, ctx);
+        logger.info(`${method} ${url} ok`, {
           requestId,
           tookMs: Date.now() - started,
         });
         return res;
       } catch (e) {
-        serverLogger.error(`[${opts.name}] ${method} ${url} error`, e);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return errorFromUnknown(500, e, 'Internal Server Error') as any;
+        logger.error(`${method} ${url} error`, e);
+        // We deliberately always return our standard error response shape here.
+        return errorFromUnknown(500, e, 'Internal Server Error') as unknown as TResponse;
       }
     }, incomingRid);
   };

@@ -1,5 +1,5 @@
 import { getCommandPresets } from '@/lib/orchestratorClient';
-import { serverLogger } from '@/lib/serverLogger';
+import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
 
@@ -15,11 +15,12 @@ type OrchestratorPreset = {
  * Fetches command presets from the orchestrator service
  */
 export const GET = withApiRoute({ name: 'SCRIPTS_API' }, async function GET() {
+  const logger = createScopedServerLogger('SCRIPTS_API');
   try {
-    serverLogger.info('Fetching presets from orchestrator');
+    logger.info('Fetching presets from orchestrator');
 
     const presets = await getCommandPresets();
-    serverLogger.info(`Fetched ${presets.length} command presets from orchestrator`);
+    logger.info('Fetched command presets from orchestrator', { count: presets.length });
 
     // Transform orchestrator response to match frontend expectations
     const scripts = (presets as OrchestratorPreset[]).map((preset) => ({
@@ -32,7 +33,7 @@ export const GET = withApiRoute({ name: 'SCRIPTS_API' }, async function GET() {
 
     return okJson({ scripts });
   } catch (error) {
-    serverLogger.error('Error fetching from orchestrator:', error);
+    logger.error('Error fetching from orchestrator', error);
     return errorFromUnknown(500, error, 'Failed to fetch scripts from orchestrator service');
   }
 });

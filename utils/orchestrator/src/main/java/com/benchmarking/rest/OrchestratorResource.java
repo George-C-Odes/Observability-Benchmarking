@@ -11,6 +11,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import com.benchmarking.api.JobEvent;
@@ -79,8 +80,9 @@ public class OrchestratorResource {
       throw new BadRequestException("command is required");
     }
     var validated = policy.validate(req.getCommand());
-    UUID id = jobs.submit(validated);
-    return new RunResponse(id);
+    String runId = req.getRunId();
+    UUID id = jobs.submit(validated, runId);
+    return new RunResponse(id, runId);
   }
 
   /**
@@ -91,7 +93,8 @@ public class OrchestratorResource {
    */
   @GET
   @Path("/jobs/{id}")
-  public JobStatusResponse status(@PathParam("id") UUID id) {
+  public JobStatusResponse status(@PathParam("id") UUID id, @QueryParam("runId") String runId) {
+    jobs.validateRunId(id, runId);
     return jobs.status(id);
   }
 
@@ -105,7 +108,8 @@ public class OrchestratorResource {
   @Path("/jobs/{id}/events")
   @Produces(MediaType.SERVER_SENT_EVENTS)
   @RestStreamElementType(MediaType.APPLICATION_JSON)
-  public Multi<JobEvent> events(@PathParam("id") UUID id) {
+  public Multi<JobEvent> events(@PathParam("id") UUID id, @QueryParam("runId") String runId) {
+    jobs.validateRunId(id, runId);
     return jobs.events(id);
   }
 }

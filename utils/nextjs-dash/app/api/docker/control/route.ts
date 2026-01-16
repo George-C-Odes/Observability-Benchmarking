@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { errorFromUnknown, errorJson, okJson } from '@/lib/apiResponses';
 import { submitCommand } from '@/lib/orchestratorClient';
 import { withApiRoute } from '@/lib/routeWrapper';
-import { serverLogger } from '@/lib/serverLogger';
+import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import {
   buildDockerControlCommand,
   type DockerRestartMode,
@@ -17,6 +17,7 @@ import {
  * We intentionally don't poll job status here.
  */
 export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function POST(request: NextRequest) {
+  const logger = createScopedServerLogger('DOCKER_CONTROL_API');
   try {
     const body = (await request.json()) as {
       service?: unknown;
@@ -55,7 +56,7 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       stopMode,
     });
 
-    serverLogger.info('[DOCKER CONTROL API] Submitting docker control command', {
+    logger.info('Submitting docker control command', {
       command,
       action,
       service,
@@ -72,7 +73,7 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       command,
     });
   } catch (error: unknown) {
-    serverLogger.error('[DOCKER CONTROL API] Error:', error);
+    logger.error('Error submitting docker control command', error);
     return errorFromUnknown(500, error, 'Failed to submit docker control command');
   }
 });

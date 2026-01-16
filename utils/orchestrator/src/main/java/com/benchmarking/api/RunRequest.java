@@ -13,6 +13,13 @@ public class RunRequest {
   private String command;
 
   /**
+   * Optional client-provided run identifier used to correlate dashboard sessions.
+   * When provided, it is bound to the created job and must be supplied on subsequent
+   * status/event requests to prevent cross-run mixing.
+   */
+  private String runId;
+
+  /**
    * Gets the command.
    *
    * @return the command
@@ -28,5 +35,23 @@ public class RunRequest {
    */
   public void setCommand(String command) {
     this.command = command;
+  }
+
+  /**
+   * Gets the run identifier.
+   *
+   * @return the run identifier
+   */
+  public String getRunId() {
+    return runId;
+  }
+
+  /**
+   * Sets the run identifier.
+   *
+   * @param runId the run identifier
+   */
+  public void setRunId(String runId) {
+    this.runId = runId;
   }
 }

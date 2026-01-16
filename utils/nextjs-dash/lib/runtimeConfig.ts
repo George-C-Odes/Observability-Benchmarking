@@ -1,14 +1,7 @@
+import type { ServerSystemInfo } from '@/lib/systemInfo';
+
 export type RuntimeClientConfig = {
-  systemInfo?: {
-    nodejs: string;
-    npm: string;
-    nextjs: string;
-    react: string;
-    mui: string;
-    typescript: string;
-    platform: string;
-    arch: string;
-  };
+  systemInfo?: ServerSystemInfo;
 };
 
 export function getRuntimeConfig(): RuntimeClientConfig {

@@ -27,6 +27,18 @@ services:
       PORT: 3001
       ORCH_URL: http://orchestrator:3002
       ORCH_API_KEY: *default_orch_api_key
+      # ScriptRunner config is fetched at runtime from /api/script-runner/config
+      SCRIPT_RUNNER_EXEC_LOG_MAX_LINES: ${SCRIPT_RUNNER_EXEC_LOG_MAX_LINES:-500}
+      SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS: ${SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS:-1800000} # 30 minutes
+      SCRIPT_RUNNER_ENABLE_STATUS_POLLING: ${SCRIPT_RUNNER_ENABLE_STATUS_POLLING:-false}
+      SCRIPT_RUNNER_STATUS_POLL_INTERVAL_MS: ${SCRIPT_RUNNER_STATUS_POLL_INTERVAL_MS:-1000}
+      SCRIPT_RUNNER_STATUS_POLL_MAX_ATTEMPTS: ${SCRIPT_RUNNER_STATUS_POLL_MAX_ATTEMPTS:-720}
+      # Logging config is fetched at runtime from /api/logging/config
+      NEXTJS_DASH_CLIENT_LOG_LEVEL: ${NEXTJS_DASH_CLIENT_LOG_LEVEL:-debug} # debug|info|warn|error|silent
+      NEXTJS_DASH_SERVER_LOG_LEVEL: ${NEXTJS_DASH_SERVER_LOG_LEVEL:-debug} # debug|info|warn|error|silent
+      # AppLogs config is fetched at runtime from /api/app-logs/config
+      APP_LOGS_CLIENT_MAX_ENTRIES: ${APP_LOGS_CLIENT_MAX_ENTRIES:-400}
+      APP_LOGS_SERVER_MAX_ENTRIES: ${APP_LOGS_SERVER_MAX_ENTRIES:-500}
     restart: no
     pull_policy: never
     cpuset: *default_efficiency_cores
@@ -67,6 +79,7 @@ services:
       - "0"
     environment:
       TZ: *default_timezone
+      QUARKUS_LOG_LEVEL: "info"
       COMPOSE_DOCKER_CLI_BUILD: "1"
       DOCKER_BUILDKIT: "1"
       DOCKER_CONFIG: "/tmp/.docker"
@@ -98,9 +111,10 @@ services:
       # Bind mounts must therefore use host-valid paths. On Windows, that's typically C:/... not /workspace.
       # We default this to the same HOST_REPO that is already configured for the orchestrator bind mount.
       ORCH_HOST_PROJECT_DIR: "${HOST_REPO}/compose"
-      ORCH_MAX_BUFFER_LINES: 5000
+      ORCH_MAX_BUFFER_LINES: 10000
       ORCH_SERIAL_EXECUTION: true
       ORCH_WORKSPACE: *default_workspace
+      ORCH_HEARTBEAT_INTERVAL_MS: ${ORCH_HEARTBEAT_INTERVAL_MS:-15000}
     volumes:
       - type: bind
         source: /var/run/docker.sock

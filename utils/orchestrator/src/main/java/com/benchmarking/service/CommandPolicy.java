@@ -53,7 +53,7 @@ public class CommandPolicy {
    * docker buildx subcommands allowed.
    */
   private static final Set<String> ALLOWED_BUILDX_SUBCOMMANDS = Set.of(
-    "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version"
+    "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version", "prune"
   );
 
   /**
@@ -112,6 +112,10 @@ public class CommandPolicy {
 
     if ("buildx".equals(cmd)) {
       return validateBuildx(t);
+    }
+
+    if ("builder".equals(cmd)) {
+      return validateBuilder(t);
     }
 
     if (!ALLOWED_DOCKER_COMMANDS.contains(cmd)) {
@@ -286,6 +290,48 @@ public class CommandPolicy {
           i++; // skip value
         }
       }
+    }
+
+    return new ValidatedCommand(tokens, workspace, projectDir);
+  }
+
+  /**
+   * Supports: docker builder prune -a --force
+   * This is intentionally narrow because prune is destructive.
+   */
+  private ValidatedCommand validateBuilder(List<String> tokens) {
+    if (tokens.size() < 3) {
+      throw new IllegalArgumentException("Command too short; expected 'docker builder <subcommand> ...'");
+    }
+
+    String sub = tokens.get(2);
+    if (!"prune".equals(sub)) {
+      throw new IllegalArgumentException("Builder subcommand not allowed: " + sub);
+    }
+
+    boolean hasAll = false;
+    boolean hasForce = false;
+
+    for (int i = 3; i < tokens.size(); i++) {
+      String tok = tokens.get(i);
+      if ("-a".equals(tok) || "--all".equals(tok)) {
+        hasAll = true;
+        continue;
+      }
+      if ("--force".equals(tok) || "-f".equals(tok)) {
+        hasForce = true;
+        continue;
+      }
+
+      // Keep this strict: no filters/labels/etc until explicitly requested.
+      throw new IllegalArgumentException("Builder prune option not allowed: " + tok);
+    }
+
+    if (!hasAll) {
+      throw new IllegalArgumentException("Builder prune requires -a/--all");
+    }
+    if (!hasForce) {
+      throw new IllegalArgumentException("Builder prune requires --force");
     }
 
     return new ValidatedCommand(tokens, workspace, projectDir);

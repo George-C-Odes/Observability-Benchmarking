@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
+// Ensure AppLogs doesn't consume our first fetch mock for its config.
+vi.mock('@/app/hooks/useAppLogsConfig', () => ({
+  useAppLogsConfig: () => ({
+    config: { clientMaxEntries: 1000, serverMaxEntries: 2000 },
+    loading: false,
+    error: null,
+    refresh: async () => undefined,
+  }),
+}));
+
 import AppLogs from './AppLogs';
 
 class MockEventSource {
@@ -9,6 +19,8 @@ class MockEventSource {
 
   constructor() {
     // no-op
+    void this.onmessage;
+    void this.onerror;
   }
 
   close() {
@@ -16,10 +28,15 @@ class MockEventSource {
   }
 }
 
+declare global {
+  interface GlobalThis {
+    EventSource: typeof EventSource;
+  }
+}
+
 describe('AppLogs', () => {
   it('renders RID chip for server logs with requestId meta', async () => {
-    // @ts-expect-error test override
-    globalThis.EventSource = MockEventSource;
+    globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(

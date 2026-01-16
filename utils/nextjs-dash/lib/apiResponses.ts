@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 export interface ApiErrorBody {
   error: string;
   details?: string;
+  [key: string]: unknown;
 }
 
 export function okJson<T>(data: T, init?: { status?: number; headers?: HeadersInit }) {
@@ -11,9 +12,10 @@ export function okJson<T>(data: T, init?: { status?: number; headers?: HeadersIn
 
 export function errorJson(
   status: number,
-  body: ApiErrorBody
+  body: ApiErrorBody,
+  init?: { headers?: HeadersInit }
 ) {
-  return NextResponse.json(body, { status });
+  return NextResponse.json(body, { status, headers: init?.headers });
 }
 
 export function errorFromUnknown(status: number, error: unknown, fallbackMessage: string) {

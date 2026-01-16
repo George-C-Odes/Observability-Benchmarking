@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { createClientLogger } from '@/lib/clientLogger';
 
 export interface Script {
   name: string;
@@ -16,6 +17,8 @@ export type ScriptsState = {
   refresh: () => Promise<void>;
 };
 
+const logger = createClientLogger('useScripts');
+
 export function useScripts(): ScriptsState {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +31,7 @@ export function useScripts(): ScriptsState {
       const response = await fetch(`/api/scripts`);
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        console.error('Failed to fetch scripts:', text);
+        logger.error('Failed to fetch scripts', { status: response.status, bodyText: text });
         setError('Failed to load scripts');
         return;
       }
@@ -36,8 +39,8 @@ export function useScripts(): ScriptsState {
       const payload = (await response.json()) as { scripts?: Array<{ name: string; description: string; command: string; category: string }> };
       setScripts((payload.scripts || []) as Script[]);
     } catch (e) {
+      logger.error('Failed to fetch scripts', e);
       setError('Failed to load scripts');
-      console.error(e);
     } finally {
       setLoading(false);
     }

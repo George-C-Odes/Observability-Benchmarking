@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -15,8 +15,12 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArticleIcon from '@mui/icons-material/Article';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import StorageIcon from '@mui/icons-material/Storage';
+import ComputerIcon from '@mui/icons-material/Computer';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 
-import { clearClientLogs, subscribeClientLogs } from '@/lib/clientLogs';
+import { clearClientLogs, setClientLogsMaxEntries, subscribeClientLogs } from '@/lib/clientLogs';
+import { useAppLogsConfig } from '@/app/hooks/useAppLogsConfig';
 
 type UiLevel = 'debug' | 'info' | 'warn' | 'error';
 type UiSource = 'client' | 'server';
@@ -40,6 +44,8 @@ function extractRequestId(meta: unknown): string | null {
 }
 
 export default function AppLogs() {
+  const { config: appLogsConfig } = useAppLogsConfig();
+
   const [clientLogs, setClientLogs] = useState<LogEntry[]>([]);
   const [serverLogs, setServerLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<string>('all');
@@ -47,27 +53,71 @@ export default function AppLogs() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const shouldStickToBottomRef = useRef(true);
   const hasMountedRef = useRef(false);
+  const lastServerTsRef = useRef<number | null>(null);
+  const [pulseUntilMs, setPulseUntilMs] = useState<number>(0);
+  const [pulseNow, setPulseNow] = useState<number>(() => Date.now());
+
+  const pulseActive = pulseUntilMs > 0 && pulseUntilMs > pulseNow;
+
+  const pulseSettleTimerRef = useRef<number | null>(null);
+
+  const pulse = useCallback(() => {
+    // Keep glow active for 1s after the last log arrives.
+    const until = Date.now() + 1000;
+    setPulseUntilMs(until);
+    setPulseNow(Date.now());
+
+    // Ensure we don't accumulate timeouts during bursty log streams.
+    if (pulseSettleTimerRef.current !== null) {
+      window.clearTimeout(pulseSettleTimerRef.current);
+      pulseSettleTimerRef.current = null;
+    }
+
+    pulseSettleTimerRef.current = window.setTimeout(() => {
+      setPulseNow(Date.now());
+      pulseSettleTimerRef.current = null;
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pulseSettleTimerRef.current !== null) {
+        window.clearTimeout(pulseSettleTimerRef.current);
+        pulseSettleTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    lastServerTsRef.current = serverLogs.length ? serverLogs[serverLogs.length - 1].ts : null;
+  }, [serverLogs]);
+
+  // Apply runtime-configured client log cap (in memory).
+  useEffect(() => {
+    setClientLogsMaxEntries(appLogsConfig.clientMaxEntries);
+  }, [appLogsConfig.clientMaxEntries]);
 
   // Subscribe to captured browser console logs.
   useEffect(() => {
     return subscribeClientLogs((entries) => {
-      setClientLogs(
-        entries.map((e) => ({
+      const mapped: LogEntry[] = entries
+        .map((e) => ({
           ts: e.ts,
-          level: e.level,
-          source: 'client',
+          level: e.level as UiLevel,
+          source: 'client' as const,
           message: e.message,
         }))
-      );
+        .slice(-appLogsConfig.clientMaxEntries);
+
+      setClientLogs(mapped);
+      if (mapped.length) {
+        pulse();
+      }
     });
-  }, []);
+  }, [appLogsConfig.clientMaxEntries, pulse]);
 
-  // Stream server logs via SSE.
-  useEffect(() => {
-    let cancelled = false;
-    let es: EventSource | null = null;
-
-    const appendServerEntries = (incoming: LogEntry[]) => {
+  const appendServerEntries = useCallback(
+    (incoming: LogEntry[]) => {
       if (!incoming.length) return;
       setServerLogs((prev) => {
         const merged = [...prev, ...incoming.map((e) => ({ ...e, source: 'server' as const }))];
@@ -79,28 +129,56 @@ export default function AppLogs() {
           seen.add(key);
           deduped.push(m);
         }
-        return deduped.slice(-2000);
+        return deduped.slice(-appLogsConfig.serverMaxEntries);
       });
-    };
+    },
+    [appLogsConfig.serverMaxEntries]
+  );
 
-    async function fallbackSnapshot() {
-      try {
-        const res = await fetch('/api/logs');
-        const data = (await res.json()) as {
-          entries?: Array<{ ts: number; level: UiLevel; source: UiSource; message: string; meta?: unknown }>;
-        };
-        const incoming = Array.isArray(data?.entries) ? data.entries : [];
-        appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
-      } catch {
-        // ignore
-      }
+  const fallbackSnapshot = useCallback(async () => {
+    try {
+      const res = await fetch('/api/logs');
+      const data = (await res.json()) as {
+        entries?: Array<{ ts: number; level: UiLevel; source: UiSource; message: string; meta?: unknown }>;
+      };
+      const incoming = Array.isArray(data?.entries) ? data.entries : [];
+      appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
+    } catch {
+      // ignore
     }
+  }, [appendServerEntries]);
+
+  const connectSse = useCallback(
+    (sinceTs?: number) => {
+      const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
+      return new EventSource(url);
+    },
+    []
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    let es: EventSource | null = null;
+
+    // Load a snapshot asynchronously to avoid triggering react-hooks/set-state-in-effect.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      void fallbackSnapshot();
+    });
 
     const connect = () => {
       try {
-        const sinceTs = serverLogs.length ? serverLogs[serverLogs.length - 1].ts : undefined;
-        const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
-        es = new EventSource(url);
+        const sinceTs = lastServerTsRef.current ?? undefined;
+        es = connectSse(sinceTs);
+
+        es.onopen = () => {
+          // If stream connects, we can still refresh snapshot once to backfill any missed entries.
+          // Run it asynchronously so state updates happen as a reaction to an external event.
+          queueMicrotask(() => {
+            if (cancelled) return;
+            void fallbackSnapshot();
+          });
+        };
 
         es.onmessage = (evt) => {
           if (cancelled) return;
@@ -116,6 +194,7 @@ export default function AppLogs() {
                 meta: parsed.meta,
               },
             ]);
+            pulse();
           } catch {
             // ignore
           }
@@ -125,15 +204,19 @@ export default function AppLogs() {
           // If SSE fails (proxy/browser), fall back to a snapshot and let the browser retry.
           es?.close();
           es = null;
-          void fallbackSnapshot();
+          queueMicrotask(() => {
+            if (cancelled) return;
+            void fallbackSnapshot();
+          });
         };
       } catch {
-        void fallbackSnapshot();
+        queueMicrotask(() => {
+          if (cancelled) return;
+          void fallbackSnapshot();
+        });
       }
     };
 
-    // Always load an initial snapshot so the list is populated even if SSE is slow/blocked.
-    void fallbackSnapshot();
     connect();
 
     return () => {
@@ -141,8 +224,8 @@ export default function AppLogs() {
       es?.close();
       es = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [appendServerEntries, connectSse, fallbackSnapshot, pulse]);
+
 
   const clearLogs = async () => {
     clearClientLogs();
@@ -179,16 +262,16 @@ export default function AppLogs() {
     const el = scrollContainerRef.current;
     if (!el) return;
 
-    const onScroll = () => {
+    const recompute = () => {
       const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
       shouldStickToBottomRef.current = distanceFromBottom < 40;
     };
 
-    el.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    el.addEventListener('scroll', recompute, { passive: true });
+    recompute();
 
     return () => {
-      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('scroll', recompute);
     };
   }, []);
 
@@ -237,6 +320,10 @@ export default function AppLogs() {
     }
   };
 
+  const lastClientCount = clientLogs.length;
+  const lastServerCount = serverLogs.length;
+  const shownCount = filteredLogs.length;
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -253,6 +340,7 @@ export default function AppLogs() {
             <ToggleButton value="all">All</ToggleButton>
             <ToggleButton value="client">Client</ToggleButton>
             <ToggleButton value="server">Server</ToggleButton>
+            <ToggleButton value="debug">Debug</ToggleButton>
             <ToggleButton value="info">Info</ToggleButton>
             <ToggleButton value="warn">Warn</ToggleButton>
             <ToggleButton value="error">Error</ToggleButton>
@@ -334,9 +422,59 @@ export default function AppLogs() {
         )}
       </Paper>
 
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-        Showing {filteredLogs.length} logs (client max 1000, server max 2000)
-      </Typography>
+      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Typography variant="caption" color="text.secondary">
+          Logs:
+        </Typography>
+
+        <Chip
+          size="small"
+          variant="outlined"
+          icon={<ListAltIcon fontSize="small" />}
+          label={`shown ${shownCount}`}
+          sx={{
+            fontWeight: 'bold',
+            transition: 'transform 150ms ease, filter 300ms ease, box-shadow 220ms ease',
+            transform: pulseActive ? 'translateY(-0.5px)' : 'none',
+            filter: pulseActive ? 'saturate(1.1)' : 'none',
+            boxShadow: pulseActive
+              ? '0 0 0 4px rgba(255,255,255,0.06), 0 0 10px 2px rgba(255,255,255,0.06)'
+              : 'none',
+          }}
+        />
+
+        <Chip
+          size="small"
+          variant="outlined"
+          color={lastClientCount >= appLogsConfig.clientMaxEntries ? 'warning' : 'default'}
+          icon={<ComputerIcon fontSize="small" />}
+          label={`client ${lastClientCount}/${appLogsConfig.clientMaxEntries}`}
+          sx={{
+            fontWeight: 'bold',
+            transition: 'transform 150ms ease, filter 300ms ease',
+            transform: pulseActive ? 'translateY(-0.5px)' : 'none',
+            filter: pulseActive ? 'saturate(1.1)' : 'none',
+          }}
+        />
+
+        <Chip
+          size="small"
+          variant="outlined"
+          color={lastServerCount >= appLogsConfig.serverMaxEntries ? 'warning' : 'default'}
+          icon={<StorageIcon fontSize="small" />}
+          label={`server ${lastServerCount}/${appLogsConfig.serverMaxEntries}`}
+          sx={{
+            fontWeight: 'bold',
+            transition: 'transform 150ms ease, filter 300ms ease',
+            transform: pulseActive ? 'translateY(-0.5px)' : 'none',
+            filter: pulseActive ? 'saturate(1.1)' : 'none',
+          }}
+        />
+
+        <Typography variant="caption" color="text.secondary">
+          (shown is after filters; client/server are buffer last/max)
+        </Typography>
+      </Box>
     </Box>
   );
 }

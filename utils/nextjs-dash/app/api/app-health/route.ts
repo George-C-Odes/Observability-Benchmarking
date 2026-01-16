@@ -1,7 +1,9 @@
-import { serverLogger } from '@/lib/serverLogger';
+import { orchestratorConfig } from '@/lib/config';
+import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 
 export async function GET() {
+  const logger = createScopedServerLogger('APP_HEALTH_API');
   try {
     // Basic health check - if we can execute this, the app is alive
     const health = {
@@ -17,8 +19,7 @@ export async function GET() {
 
     // Try to check orchestrator connectivity
     try {
-      const orchUrl = process.env.ORCH_URL || 'http://orchestrator:3002';
-      const orchResponse = await fetch(`${orchUrl}/q/health/ready`, {
+      const orchResponse = await fetch(`${orchestratorConfig.url}/q/health/ready`, {
         method: 'GET',
         signal: AbortSignal.timeout(2000), // 2 second timeout
       });
@@ -28,11 +29,11 @@ export async function GET() {
       health.checks.orchestrator = 'DOWN';
     }
 
-    serverLogger.info('[APP-HEALTH API] Health check result:', health);
+    logger.info('Health check result', health);
 
     return okJson(health);
   } catch (error) {
-    serverLogger.error('[APP-HEALTH API] Health check failed:', error);
+    logger.error('Health check failed', error);
     return errorFromUnknown(503, error, 'Health check failed');
   }
 }

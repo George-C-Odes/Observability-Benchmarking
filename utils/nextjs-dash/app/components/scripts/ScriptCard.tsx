@@ -21,6 +21,8 @@ import type { Script } from '@/app/hooks/useScripts';
 type ScriptCardProps = {
   script: Script;
   executing: boolean;
+  executeDisabled?: boolean;
+  executeDisabledReason?: string;
   accentColor:
     | 'primary.main'
     | 'secondary.main'
@@ -35,6 +37,8 @@ type ScriptCardProps = {
 export function ScriptCard({
   script,
   executing,
+  executeDisabled,
+  executeDisabledReason,
   accentColor,
   chipColor,
   copySuccess,
@@ -70,16 +74,20 @@ export function ScriptCard({
         />
       </CardContent>
       <CardActions>
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={executing ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />}
-          onClick={onExecuteAction}
-          disabled={executing}
-          fullWidth
-        >
-          {executing ? 'Executing...' : 'Execute'}
-        </Button>
+        <Tooltip title={executeDisabledReason ?? ''} arrow disableHoverListener={!executeDisabled}>
+          <span style={{ width: '100%' }}>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={executing ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />}
+              onClick={onExecuteAction}
+              disabled={executing || Boolean(executeDisabled)}
+              fullWidth
+            >
+              {executing ? 'Executing...' : 'Execute'}
+            </Button>
+          </span>
+        </Tooltip>
       </CardActions>
     </Card>
   );

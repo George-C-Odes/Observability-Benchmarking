@@ -10,6 +10,8 @@ type ScriptSectionProps = {
   scripts: Script[];
   executingName: string | null;
   copySuccessFor: string | null;
+  executeDisabled?: boolean;
+  executeDisabledReason?: string;
   accentColor:
     | 'primary.main'
     | 'secondary.main'
@@ -25,6 +27,8 @@ export function ScriptSection({
   scripts,
   executingName,
   copySuccessFor,
+  executeDisabled,
+  executeDisabledReason,
   accentColor,
   chipColor,
   onCopyAction,
@@ -50,6 +54,8 @@ export function ScriptSection({
             key={script.name}
             script={script}
             executing={executingName === script.name}
+            executeDisabled={executeDisabled}
+            executeDisabledReason={executeDisabledReason}
             accentColor={accentColor}
             chipColor={chipColor}
             copySuccess={copySuccessFor === script.name}

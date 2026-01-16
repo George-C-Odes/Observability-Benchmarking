@@ -118,3 +118,13 @@ export function clearClientLogs() {
   s.entries = [];
   notify();
 }
+
+export function setClientLogsMaxEntries(maxEntries: number) {
+  const s = getState();
+  if (!Number.isFinite(maxEntries) || maxEntries <= 0) return;
+  s.maxEntries = maxEntries;
+  if (s.entries.length > s.maxEntries) {
+    s.entries = s.entries.slice(s.entries.length - s.maxEntries);
+    notify();
+  }
+}

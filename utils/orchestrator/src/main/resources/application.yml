@@ -2,7 +2,7 @@
 # $schema: disable
 
 orchestrator:
-  api-key: '${ORCH_API_KEY:dev-change-me}'
+  api-key: '${ORCH_API_KEY:change-me}'
   health:
     timeout-ms: ${ORCH_HEALTH_TIMEOUT_MS:10000}
     concurrency: ${ORCH_HEALTH_CONCURRENCY:8}
@@ -68,7 +68,9 @@ orchestrator:
         base-url: '${ORCH_HEALTH_WRK2_BASE_URL:http://localhost:3003}'
         health-path: /ready
 
-  max-buffer-lines: ${ORCH_MAX_BUFFER_LINES:2000}
+  max-buffer-lines: ${ORCH_MAX_BUFFER_LINES:10000}
+  heartbeat:
+    interval-ms: ${ORCH_HEARTBEAT_INTERVAL_MS:15000}
   project-paths:
     # When set, docker compose will be executed with this host-side project directory.
     # Needed because orchestrator talks to the host Docker Engine via /var/run/docker.sock,
@@ -82,6 +84,8 @@ orchestrator:
   serial-execution: ${ORCH_SERIAL_EXECUTION:true}
 
 quarkus:
+  analytics:
+    disabled: true
   http:
     host: 0.0.0.0
     limits:

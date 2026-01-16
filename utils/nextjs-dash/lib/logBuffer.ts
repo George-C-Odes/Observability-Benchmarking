@@ -45,9 +45,22 @@ declare global {
   var __NEXTJS_DASH_LOG_BUFFER__: LogBuffer | undefined;
 }
 
-export function getServerLogBuffer() {
+function readMaxEntriesFromEnv(defaultValue: number): number {
+  const raw = process.env.APP_LOGS_SERVER_MAX_ENTRIES;
+  if (!raw) return defaultValue;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : defaultValue;
+}
+
+export function getServerLogBuffer(opts?: { maxEntries?: number }) {
   if (!globalThis.__NEXTJS_DASH_LOG_BUFFER__) {
-    globalThis.__NEXTJS_DASH_LOG_BUFFER__ = new LogBuffer(2000);
+    const max = opts?.maxEntries ?? readMaxEntriesFromEnv(2000);
+    globalThis.__NEXTJS_DASH_LOG_BUFFER__ = new LogBuffer(max);
   }
   return globalThis.__NEXTJS_DASH_LOG_BUFFER__;
+}
+
+export function resetServerLogBufferForTests() {
+  // Useful in unit tests to ensure a fresh buffer when env changes.
+  globalThis.__NEXTJS_DASH_LOG_BUFFER__ = undefined;
 }

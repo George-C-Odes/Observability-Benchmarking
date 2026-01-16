@@ -6,22 +6,24 @@
 
 import { NextRequest } from 'next/server';
 import { getEnvFile, updateEnvFile } from '@/lib/orchestratorClient';
-import { serverLogger } from '@/lib/serverLogger';
+import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import { errorFromUnknown, okJson, errorJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
 
 export const GET = withApiRoute({ name: 'ENV_API' }, async function GET() {
+  const logger = createScopedServerLogger('ENV_API');
   try {
-    serverLogger.info('Fetching environment file from orchestrator');
+    logger.info('Fetching environment file from orchestrator');
     const envData = await getEnvFile();
     return okJson(envData);
   } catch (error) {
-    serverLogger.error('Failed to fetch environment file:', error);
+    logger.error('Failed to fetch environment file', error);
     return errorFromUnknown(500, error, 'Failed to fetch environment file');
   }
 });
 
 export const POST = withApiRoute({ name: 'ENV_API' }, async function POST(request: NextRequest) {
+  const logger = createScopedServerLogger('ENV_API');
   try {
     const body = (await request.json()) as { content?: unknown };
     // Keep minimal sanity check, but let orchestrator enforce rules.
@@ -30,10 +32,10 @@ export const POST = withApiRoute({ name: 'ENV_API' }, async function POST(reques
     }
 
     await updateEnvFile(body.content);
-    serverLogger.info('Successfully updated environment file');
+    logger.info('Successfully updated environment file');
     return okJson({ success: true });
   } catch (error) {
-    serverLogger.error('Failed to update environment file:', error);
+    logger.error('Failed to update environment file', error);
     return errorFromUnknown(500, error, 'Failed to update environment file');
   }
 });

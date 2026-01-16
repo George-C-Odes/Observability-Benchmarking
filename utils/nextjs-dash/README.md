@@ -43,7 +43,7 @@ A Next.js-based dashboard UI for orchestrating and managing the Observability Be
 
 ## Technology Stack
 
-- **Next.js**: v16.1.1
+- **Next.js**: v16.1.2
 - **React**: v19.2.3
 - **Material-UI (MUI)**: v7.3.7
 - **TypeScript**: v5
@@ -75,6 +75,40 @@ Orchestrator (Quarkus) endpoints used by the router:
 - Job events (SSE): `GET /v1/jobs/{id}/events`
 - Env file: `GET/POST /v1/env` (POST requires Authorization)
 - Aggregated service health: `GET /v1/health`
+
+## Runtime configuration (env-driven)
+
+Some UI behaviors are configured at runtime via Next.js API routes (so changing docker-compose env vars and recreating the container is enough; no rebuild needed).
+
+### Script Runner
+
+Runtime config endpoint: `GET /api/script-runner/config`
+
+Environment variables (passed into the `nextjs-dash` container):
+- `SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS` (default: `1800000` = 30 minutes)
+- `SCRIPT_RUNNER_EXEC_LOG_MAX_LINES` (default: `500`)
+
+### Logging
+
+Runtime log verbosity is configurable independently for browser/client logs and server/container logs:
+
+- `NEXTJS_DASH_CLIENT_LOG_LEVEL` (default: `info`) 
+  - one of: `debug | info | warn | error | silent`
+  - controls what the client logger emits (still goes through `console.*` so it is captured in the Logs page)
+
+- `NEXTJS_DASH_SERVER_LOG_LEVEL` (default: `info`)
+  - one of: `debug | info | warn | error | silent`
+  - controls what the server logger records/emits (server log buffer + stdout/stderr)
+
+### Application Logs
+
+Runtime config endpoint: `GET /api/app-logs/config`
+
+Environment variables:
+- `APP_LOGS_CLIENT_MAX_ENTRIES` (default: `400`)
+- `APP_LOGS_SERVER_MAX_ENTRIES` (default: `500`)
+
+Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift between API routes and client hooks.
 
 ## Development
 

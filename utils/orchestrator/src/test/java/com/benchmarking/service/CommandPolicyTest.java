@@ -49,6 +49,28 @@ public class CommandPolicyTest {
     assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose --context foo version"));
   }
 
+  @Test
+  void allows_docker_buildx_prune_force_all() {
+    var cmd = policy.validate("docker buildx prune -a --force");
+    assertEquals(List.of("docker", "buildx", "prune", "-a", "--force"), cmd.argv());
+  }
+
+  @Test
+  void allows_docker_builder_prune_force_all() {
+    var cmd = policy.validate("docker builder prune -a --force");
+    assertEquals(List.of("docker", "builder", "prune", "-a", "--force"), cmd.argv());
+  }
+
+  @Test
+  void builder_prune_requires_force() {
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder prune -a"));
+  }
+
+  @Test
+  void builder_prune_rejects_extra_options() {
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder prune -a --force --filter foo"));
+  }
+
   private static void assertContainsSubsequence(List<String> haystack, List<String> needle) {
     assertFalse(needle.isEmpty());
 

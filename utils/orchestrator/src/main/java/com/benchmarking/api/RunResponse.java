@@ -12,12 +12,28 @@ public class RunResponse {
   private UUID jobId;
 
   /**
+   * The run identifier bound to this job (if provided by the client).
+   */
+  private String runId;
+
+  /**
    * Creates a new run response.
    *
    * @param jobId the job identifier
    */
   public RunResponse(UUID jobId) {
     this.jobId = jobId;
+  }
+
+  /**
+   * Creates a new run response.
+   *
+   * @param jobId the job identifier
+   * @param runId the run identifier
+   */
+  public RunResponse(UUID jobId, String runId) {
+    this.jobId = jobId;
+    this.runId = runId;
   }
 
   /**
@@ -36,5 +52,23 @@ public class RunResponse {
    */
   public void setJobId(UUID jobId) {
     this.jobId = jobId;
+  }
+
+  /**
+   * Gets the run identifier.
+   *
+   * @return the run identifier
+   */
+  public String getRunId() {
+    return runId;
+  }
+
+  /**
+   * Sets the run identifier.
+   *
+   * @param runId the run identifier
+   */
+  public void setRunId(String runId) {
+    this.runId = runId;
   }
 }

@@ -135,3 +135,6 @@ venv.bak/
 output-*.txt
 
 .env.backup.*
+
+# Vitest / test report artifacts
+vitest-*.json
