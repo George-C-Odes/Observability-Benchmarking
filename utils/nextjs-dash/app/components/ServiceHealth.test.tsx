@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, within, cleanup } from '@testing-library/react';
+import { render, screen, within, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // ServiceHealth calls fetchJson at module scope.
@@ -20,7 +20,50 @@ type MockService = {
   body?: unknown;
 };
 
-function mockHealthResponse(services: MockService[]) {
+function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnabled?: Record<string, boolean> }) {
+  const enabledDefault = {
+    alloy: true,
+    grafana: true,
+    loki: true,
+    mimir: true,
+    pyroscope: true,
+    tempo: true,
+
+    // everything else off by default; tests can opt-in via overrides
+    'spring-jvm-tomcat-platform': false,
+    'spring-jvm-tomcat-virtual': false,
+    'spring-jvm-netty': false,
+    'spring-native-tomcat-platform': false,
+    'spring-native-tomcat-virtual': false,
+    'spring-native-netty': false,
+    'quarkus-jvm': false,
+    'quarkus-native': false,
+    go: false,
+    'nextjs-dash': false,
+    orchestrator: false,
+    wrk2: false,
+  };
+
+  const serviceActionsEnabled = {
+    ...enabledDefault,
+    ...(opts?.serviceActionsEnabled ?? {}),
+  };
+
+  // Update global fetch mock for this test case (used by useServiceActionsConfig).
+  const fetchMock = vi.mocked(globalThis.fetch as unknown as ReturnType<typeof vi.fn>);
+  fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === '/api/service-actions/config') {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ enabled: serviceActionsEnabled }),
+        text: async () => '',
+      } as unknown as Response;
+    }
+    throw new Error(`Unexpected fetch call: ${url}`);
+  });
+
   vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.startsWith('/api/health')) {
@@ -55,8 +98,64 @@ afterEach(() => {
 });
 
 beforeEach(() => {
-  // In tests, keep actions enabled unless a test explicitly overrides.
-  process.env.SERVICE_ACTIONS_ENABLE_ALL = 'true';
+  // Mock global fetch used by useServiceActionsConfig.
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/service-actions/config') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            enabled: {
+              alloy: true,
+              grafana: true,
+              loki: true,
+              mimir: true,
+              pyroscope: true,
+              tempo: true,
+              'spring-jvm-tomcat-platform': false,
+              'spring-jvm-tomcat-virtual': false,
+              'spring-jvm-netty': false,
+              'spring-native-tomcat-platform': false,
+              'spring-native-tomcat-virtual': false,
+              'spring-native-netty': false,
+              'quarkus-jvm': false,
+              'quarkus-native': false,
+              go: false,
+              'nextjs-dash': false,
+              orchestrator: false,
+              wrk2: false,
+            },
+          }),
+          text: async () => '',
+        } as unknown as Response;
+      }
+      throw new Error(`Unexpected fetch call: ${url}`);
+    })
+  );
+
+  // Default mock for the fetchJson calls used by ServiceHealth (health + docker control).
+  vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+
+    if (url === '/api/docker/controle') {
+      // typo safety
+      throw new Error('Unexpected endpoint');
+    }
+
+    if (url === '/api/docker/control') {
+      expect(init?.method).toBe('POST');
+      return { success: true, jobId: 'job-1', command: 'mock', status: 'up' };
+    }
+
+    return { services: [] };
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('ServiceHealth', () => {
@@ -98,6 +197,31 @@ describe('ServiceHealth', () => {
 
     vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
+      if (url === '/api/service-actions/config') {
+        // Keep OBS services enabled; other services irrelevant for this test.
+        return {
+          enabled: {
+            alloy: true,
+            grafana: true,
+            loki: true,
+            mimir: true,
+            pyroscope: true,
+            tempo: true,
+            'spring-jvm-tomcat-platform': false,
+            'spring-jvm-tomcat-virtual': false,
+            'spring-jvm-netty': false,
+            'spring-native-tomcat-platform': false,
+            'spring-native-tomcat-virtual': false,
+            'spring-native-netty': false,
+            'quarkus-jvm': false,
+            'quarkus-native': false,
+            go: false,
+            'nextjs-dash': false,
+            orchestrator: false,
+            wrk2: false,
+          },
+        };
+      }
       if (url.startsWith('/api/health')) {
         healthCalls += 1;
         return { services: healthCalls === 1 ? first : second };
@@ -135,10 +259,13 @@ describe('ServiceHealth', () => {
   });
 
   it('updates overview counters after an optimistic action sets a card to PENDING', async () => {
-    mockHealthResponse([
-      { name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' },
-      { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },
-    ]);
+    mockHealthResponse(
+      [
+        { name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' },
+        { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },
+      ],
+      { serviceActionsEnabled: { wrk2: true } }
+    );
 
     const user = userEvent.setup();
     render(<ServiceHealth />);
@@ -152,7 +279,10 @@ describe('ServiceHealth', () => {
     const wrk2Card = screen.getByText('wrk2').closest('.MuiCard-root') as HTMLElement;
     expect(wrk2Card).toBeTruthy();
 
-    await user.click(await within(wrk2Card).findByLabelText('Start'));
+    const startBtn = await within(wrk2Card).findByLabelText('Start');
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
+    await waitFor(() => expect(startBtn).not.toBeDisabled());
+    await user.click(startBtn);
 
     // Optimistic pending affects both card and overview
     expect(await within(wrk2Card).findByText('PENDING')).toBeInTheDocument();
@@ -161,7 +291,9 @@ describe('ServiceHealth', () => {
   });
 
   it('shows profile-prefixed command in Delete tooltip for quarkus services', async () => {
-    mockHealthResponse([{ name: 'quarkus-jvm', status: 'up', baseUrl: 'http://quarkus-jvm:8080' }]);
+    mockHealthResponse([{ name: 'quarkus-jvm', status: 'up', baseUrl: 'http://quarkus-jvm:8080' }], {
+      serviceActionsEnabled: { 'quarkus-jvm': true },
+    });
 
     const user = userEvent.setup();
     render(<ServiceHealth />);
@@ -171,6 +303,8 @@ describe('ServiceHealth', () => {
     expect(card).toBeTruthy();
 
     const deleteBtn = await within(card).findByLabelText('Delete');
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
+    await waitFor(() => expect(deleteBtn).not.toBeDisabled());
     await user.hover(deleteBtn);
 
     // Tooltip is rendered in a portal; assert the command text is present.
@@ -180,7 +314,9 @@ describe('ServiceHealth', () => {
   });
 
   it('shows profile-prefixed command in Delete tooltip for go services', async () => {
-    mockHealthResponse([{ name: 'go', status: 'up', baseUrl: 'http://go:8080' }]);
+    mockHealthResponse([{ name: 'go', status: 'up', baseUrl: 'http://go:8080' }], {
+      serviceActionsEnabled: { go: true },
+    });
 
     const user = userEvent.setup();
     render(<ServiceHealth />);
@@ -190,6 +326,8 @@ describe('ServiceHealth', () => {
     expect(card).toBeTruthy();
 
     const deleteBtn = await within(card).findByLabelText('Delete');
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
+    await waitFor(() => expect(deleteBtn).not.toBeDisabled());
     await user.hover(deleteBtn);
 
     expect(
@@ -229,7 +367,9 @@ describe('ServiceHealth', () => {
   });
 
   it('submits Start and marks service as PENDING', async () => {
-    mockHealthResponse([{ name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' }]);
+    mockHealthResponse([{ name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' }], {
+      serviceActionsEnabled: { wrk2: true },
+    });
 
     const user = userEvent.setup();
     render(<ServiceHealth />);
@@ -240,6 +380,8 @@ describe('ServiceHealth', () => {
     expect(wrk2Card).toBeTruthy();
 
     const startButton = await within(wrk2Card).findByLabelText('Start');
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
+    await waitFor(() => expect(startButton).not.toBeDisabled());
     await user.click(startButton);
 
     expect(fetchJson).toHaveBeenCalledWith(
@@ -263,7 +405,9 @@ describe('ServiceHealth', () => {
 
     for (const a of actions) {
       vi.mocked(fetchJson).mockClear();
-      mockHealthResponse([{ name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' }]);
+      mockHealthResponse([{ name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' }], {
+        serviceActionsEnabled: { orchestrator: true },
+      });
 
       const user = userEvent.setup();
       const { unmount } = render(<ServiceHealth />);
@@ -273,7 +417,10 @@ describe('ServiceHealth', () => {
       const orchCard = screen.getByText('orchestrator').closest('.MuiCard-root') as HTMLElement;
       expect(orchCard).toBeTruthy();
 
-      await user.click(await within(orchCard).findByLabelText(a.label));
+      const btn = await within(orchCard).findByLabelText(a.label);
+      await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
+      await waitFor(() => expect(btn).not.toBeDisabled());
+      await user.click(btn);
 
       expect(fetchJson).toHaveBeenCalledWith(
         '/api/docker/control',
@@ -308,10 +455,10 @@ describe('ServiceHealth', () => {
   });
 
   it('disables actions and shows feature disabled tooltip when feature flag is off', async () => {
-    process.env.SERVICE_ACTIONS_ENABLE_ALL = 'false';
-
-    // Use a service in "up" state so Restart/Stop/Delete are rendered.
-    mockHealthResponse([{ name: 'go', status: 'up', baseUrl: 'http://go:8080' }]);
+    // Explicitly disable actions for go (service-level flag; Refresh remains available).
+    mockHealthResponse([{ name: 'go', status: 'up', baseUrl: 'http://go:8080' }], {
+      serviceActionsEnabled: { go: false },
+    });
 
     render(<ServiceHealth />);
 

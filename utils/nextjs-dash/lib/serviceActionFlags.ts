@@ -1,6 +1,5 @@
-export type ServiceAction = 'restart' | 'stop' | 'recreate' | 'delete';
-
 export type ServiceActionFlags = {
+  start: boolean;
   restart: boolean;
   stop: boolean;
   recreate: boolean;
@@ -14,39 +13,40 @@ function envBool(name: string, fallback: boolean): boolean {
   return fallback;
 }
 
-export function getDefaultServiceActionFlags(): ServiceActionFlags {
-  // Defaults requested:
-  // - Observability stack group services: true
-  // - Everything else: false
-  // For Docker compose deployment (nextjs-dash service), we want everything true by default.
-  // We'll support both via env override.
-  const defaultAll = envBool('SERVICE_ACTIONS_ENABLE_ALL', true);
+function isObsCoreDefaultEnabled(serviceName: string): boolean {
+  return ['alloy', 'grafana', 'loki', 'mimir', 'pyroscope', 'tempo'].includes(serviceName);
+}
 
-  if (defaultAll) {
-    return { restart: true, stop: true, recreate: true, delete: true };
-  }
+/**
+ * Contract:
+ * - There is a single enable/disable flag per service.
+ * - If enabled: all actions are enabled together (start/restart/stop/recreate/delete),
+ *   except that UI may still hide actions based on health state (e.g. DOWN -> only Start).
+ * - If disabled: all 5 actions are disabled together.
+ * - Defaults (when no env overrides):
+ *   - OBS core: enabled
+ *   - everything else: disabled
+ * - Overrides:
+ *   - SERVICE_ACTIONS_ENABLE_ALL=true enables all services
+ *   - <SERVICE>_ACTIONS_ENABLE=true|false sets per-service enable
+ */
+export function isServiceActionsEnabled(serviceName: string): boolean {
+  const enableAll = envBool('SERVICE_ACTIONS_ENABLE_ALL', false);
+  const defaultEnabled = enableAll ? true : isObsCoreDefaultEnabled(serviceName);
 
-  return { restart: false, stop: false, recreate: false, delete: false };
+  // Per-service override uses the exact env var names listed in requirements:
+  // e.g. GO_ACTIONS_ENABLE, SPRING_JVM_TOMCAT_PLATFORM_ACTIONS_ENABLE, etc.
+  const key = `${serviceName.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_ACTIONS_ENABLE`;
+  return envBool(key, defaultEnabled);
 }
 
 export function resolveServiceActionFlags(serviceName: string): ServiceActionFlags {
-  const defaults = getDefaultServiceActionFlags();
-
-  // Local defaults: only observability core is enabled.
-  const isObsCore = ['alloy', 'grafana', 'loki', 'mimir', 'pyroscope', 'tempo'].includes(serviceName);
-
-  const base: ServiceActionFlags = isObsCore
-    ? { restart: true, stop: true, recreate: true, delete: true }
-    : { ...defaults };
-
-  // Per-service overrides (optional): SERVICE_<SERVICE>_ACTIONS_RESTART=true, etc.
-  const prefix = `SERVICE_${serviceName.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_ACTIONS_`;
-  const restart = envBool(`${prefix}RESTART`, base.restart);
-  const stop = envBool(`${prefix}STOP`, base.stop);
-  const recreate = envBool(`${prefix}RECREATE`, base.recreate);
-  const del = envBool(`${prefix}DELETE`, base.delete);
-
-  return { restart, stop, recreate, delete: del };
+  const enabled = isServiceActionsEnabled(serviceName);
+  return {
+    start: enabled,
+    restart: enabled,
+    stop: enabled,
+    recreate: enabled,
+    delete: enabled,
+  };
 }
-
-// (intentionally no extra helpers here; keep this module tiny)

@@ -39,7 +39,7 @@ import {
   type DockerStartMode,
   type DockerStopMode,
 } from '@/lib/dockerComposeControl';
-import { resolveServiceActionFlags } from '@/lib/serviceActionFlags';
+import { useServiceActionsConfig } from '@/app/hooks/useServiceActionsConfig';
 
 interface ServiceHealth {
   name: string;
@@ -150,12 +150,18 @@ function formatExactTime(d: Date): string {
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+function isObsCoreServiceName(serviceName: string): boolean {
+  return ['alloy', 'grafana', 'loki', 'mimir', 'pyroscope', 'tempo'].includes(serviceName);
+}
+
 export default function ServiceHealth() {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [message, setMessage] = useState<ServiceMessage | null>(null);
+
+  const serviceActionsCfg = useServiceActionsConfig();
 
   const statusCounts = useMemo(() => countByStatus(services), [services]);
   const [countsPulseKey, setCountsPulseKey] = useState(0);
@@ -321,8 +327,29 @@ export default function ServiceHealth() {
     const canManageContainer = service.status === 'up';
     const canRecreate = canManageContainer && service.name !== 'orchestrator';
 
-    const actionFlags = resolveServiceActionFlags(service.name);
+    // Runtime-config gating (server-relayed). If config isn't loaded yet, default to:
+    // - OBS core services enabled
+    // - everything else disabled
+    const hasConfig = !serviceActionsCfg.loading && !serviceActionsCfg.error;
+    const cfgEnabledRaw = hasConfig ? serviceActionsCfg.config.enabled?.[service.name] : undefined;
 
+    const enabledByConfig =
+      typeof cfgEnabledRaw === 'boolean'
+        ? cfgEnabledRaw
+        : // No config yet / missing entry => safe default.
+          isObsCoreServiceName(service.name);
+
+    const actionFlags = {
+      start: enabledByConfig,
+      restart: enabledByConfig,
+      stop: enabledByConfig,
+      recreate: enabledByConfig,
+      delete: enabledByConfig,
+    };
+
+    const featureDisabledReason = 'feature disabled';
+
+    const canStartAction = canStart && actionFlags.start;
     const canRestartAction = canManageContainer && actionFlags.restart;
     const canStopAction = canManageContainer && actionFlags.stop;
     const canRecreateAction = canRecreate && actionFlags.recreate;
@@ -362,8 +389,10 @@ export default function ServiceHealth() {
       disabled?: boolean;
       icon: React.ReactNode;
       disabledReason?: string;
+      kind?: 'refresh' | 'normal';
     }) => {
       const isDelete = props.ariaLabel === 'Delete';
+      const isRefresh = props.kind === 'refresh';
 
       const tooltip = (
         <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
@@ -380,14 +409,22 @@ export default function ServiceHealth() {
           sx={{
             // Keep action rows compact and consistent with the response-data line rhythm.
             minHeight: 22,
+            ...(isRefresh
+              ? {
+                  borderRadius: 1,
+                  px: 0.5,
+                  py: 0.25,
+                  backgroundColor: 'rgba(25, 118, 210, 0.06)',
+                }
+              : undefined),
           }}
         >
           <Typography
             variant="caption"
             sx={{
               width: 64,
-              color: 'text.secondary',
-              fontWeight: 600,
+              color: props.disabled ? 'text.disabled' : isRefresh ? 'primary.main' : 'text.secondary',
+              fontWeight: isRefresh ? 800 : 600,
               lineHeight: 1.2,
             }}
           >
@@ -558,6 +595,7 @@ export default function ServiceHealth() {
                 onClick={() => refreshService(service.name)}
                 disabled={isBusy}
                 icon={refreshing === service.name ? <CircularProgress size={18} /> : <RefreshIcon fontSize="small" />}
+                kind="refresh"
               />
 
               {canStart && (
@@ -566,7 +604,8 @@ export default function ServiceHealth() {
                   ariaLabel="Start"
                   tooltipCommand={startCommand}
                   onClick={() => submitDockerControl(service.name, { service: service.name, action: 'start' }, 'start')}
-                  disabled={isBusy}
+                  disabled={isBusy || !canStartAction}
+                  disabledReason={!actionFlags.start ? featureDisabledReason : undefined}
                   icon={<PlayArrowIcon fontSize="small" color="primary" />}
                 />
               )}
@@ -579,7 +618,7 @@ export default function ServiceHealth() {
                     tooltipCommand={restartCommand}
                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
                     disabled={isBusy || !canRestartAction}
-                    disabledReason={!actionFlags.restart ? 'feature disabled' : undefined}
+                    disabledReason={!actionFlags.restart ? featureDisabledReason : undefined}
                     icon={<RestartAltIcon fontSize="small" color="primary" />}
                   />
 
@@ -589,7 +628,7 @@ export default function ServiceHealth() {
                     tooltipCommand={stopCommand}
                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
                     disabled={isBusy || !canStopAction}
-                    disabledReason={!actionFlags.stop ? 'feature disabled' : undefined}
+                    disabledReason={!actionFlags.stop ? featureDisabledReason : undefined}
                     icon={<StopCircleIcon fontSize="small" color="error" />}
                   />
 
@@ -606,7 +645,7 @@ export default function ServiceHealth() {
                         )
                       }
                       disabled={isBusy || !canRecreateAction}
-                      disabledReason={!actionFlags.recreate ? 'feature disabled' : undefined}
+                      disabledReason={!actionFlags.recreate ? featureDisabledReason : undefined}
                       icon={<CachedIcon fontSize="small" sx={{ color: 'warning.main' }} />}
                     />
                   )}
@@ -616,14 +655,10 @@ export default function ServiceHealth() {
                     ariaLabel="Delete"
                     tooltipCommand={deleteCommand}
                     onClick={() =>
-                      submitDockerControl(
-                        service.name,
-                        { service: service.name, action: 'stop', stopMode: 'delete' },
-                        'delete'
-                      )
+                      submitDockerControl(service.name, { service: service.name, action: 'stop', stopMode: 'delete' }, 'delete')
                     }
                     disabled={isBusy || !canDeleteAction}
-                    disabledReason={!actionFlags.delete ? 'feature disabled' : undefined}
+                    disabledReason={!actionFlags.delete ? featureDisabledReason : undefined}
                     icon={<DeleteOutlineIcon fontSize="small" sx={{ color: 'red' }} />}
                   />
                 </>
