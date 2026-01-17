@@ -27,16 +27,10 @@ services:
       PORT: 3001
       ORCH_URL: http://orchestrator:3002
       ORCH_API_KEY: *default_orch_api_key
-      # ScriptRunner config is fetched at runtime from /api/script-runner/config
-      SCRIPT_RUNNER_EXEC_LOG_MAX_LINES: ${SCRIPT_RUNNER_EXEC_LOG_MAX_LINES:-500}
+      SCRIPT_RUNNER_EXEC_LOG_MAX_LINES: ${SCRIPT_RUNNER_EXEC_LOG_MAX_LINES:-1000}
       SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS: ${SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS:-1800000} # 30 minutes
-      SCRIPT_RUNNER_ENABLE_STATUS_POLLING: ${SCRIPT_RUNNER_ENABLE_STATUS_POLLING:-false}
-      SCRIPT_RUNNER_STATUS_POLL_INTERVAL_MS: ${SCRIPT_RUNNER_STATUS_POLL_INTERVAL_MS:-1000}
-      SCRIPT_RUNNER_STATUS_POLL_MAX_ATTEMPTS: ${SCRIPT_RUNNER_STATUS_POLL_MAX_ATTEMPTS:-720}
-      # Logging config is fetched at runtime from /api/logging/config
-      NEXTJS_DASH_CLIENT_LOG_LEVEL: ${NEXTJS_DASH_CLIENT_LOG_LEVEL:-debug} # debug|info|warn|error|silent
-      NEXTJS_DASH_SERVER_LOG_LEVEL: ${NEXTJS_DASH_SERVER_LOG_LEVEL:-debug} # debug|info|warn|error|silent
-      # AppLogs config is fetched at runtime from /api/app-logs/config
+      NEXTJS_DASH_CLIENT_LOG_LEVEL: ${NEXTJS_DASH_CLIENT_LOG_LEVEL:-info} # debug|info|warn|error|silent
+      NEXTJS_DASH_SERVER_LOG_LEVEL: ${NEXTJS_DASH_SERVER_LOG_LEVEL:-info} # debug|info|warn|error|silent
       APP_LOGS_CLIENT_MAX_ENTRIES: ${APP_LOGS_CLIENT_MAX_ENTRIES:-400}
       APP_LOGS_SERVER_MAX_ENTRIES: ${APP_LOGS_SERVER_MAX_ENTRIES:-500}
     restart: no

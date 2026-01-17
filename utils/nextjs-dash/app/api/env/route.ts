@@ -11,19 +11,19 @@ import { errorFromUnknown, okJson, errorJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
 
 export const GET = withApiRoute({ name: 'ENV_API' }, async function GET() {
-  const logger = createScopedServerLogger('ENV_API');
+  const serverLogger = createScopedServerLogger('ENV_API');
   try {
-    logger.info('Fetching environment file from orchestrator');
+    serverLogger.debug('Fetching environment file from orchestrator');
     const envData = await getEnvFile();
     return okJson(envData);
   } catch (error) {
-    logger.error('Failed to fetch environment file', error);
-    return errorFromUnknown(500, error, 'Failed to fetch environment file');
+    serverLogger.error('Error fetching environment', error);
+    return errorFromUnknown(500, error, 'Failed to fetch env');
   }
 });
 
 export const POST = withApiRoute({ name: 'ENV_API' }, async function POST(request: NextRequest) {
-  const logger = createScopedServerLogger('ENV_API');
+  const serverLogger = createScopedServerLogger('ENV_API');
   try {
     const body = (await request.json()) as { content?: unknown };
     // Keep minimal sanity check, but let orchestrator enforce rules.
@@ -32,10 +32,10 @@ export const POST = withApiRoute({ name: 'ENV_API' }, async function POST(reques
     }
 
     await updateEnvFile(body.content);
-    logger.info('Successfully updated environment file');
+    serverLogger.debug('Successfully updated environment file');
     return okJson({ success: true });
   } catch (error) {
-    logger.error('Failed to update environment file', error);
-    return errorFromUnknown(500, error, 'Failed to update environment file');
+    serverLogger.error('Error updating env', error);
+    return errorFromUnknown(500, error, 'Failed to update env');
   }
 });

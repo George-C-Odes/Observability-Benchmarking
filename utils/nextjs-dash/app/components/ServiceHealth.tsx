@@ -30,6 +30,7 @@ import AppsIcon from '@mui/icons-material/Apps';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SummarizeIcon from '@mui/icons-material/Summarize';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
 import {
@@ -38,6 +39,7 @@ import {
   type DockerStartMode,
   type DockerStopMode,
 } from '@/lib/dockerComposeControl';
+import { resolveServiceActionFlags } from '@/lib/serviceActionFlags';
 
 interface ServiceHealth {
   name: string;
@@ -319,6 +321,13 @@ export default function ServiceHealth() {
     const canManageContainer = service.status === 'up';
     const canRecreate = canManageContainer && service.name !== 'orchestrator';
 
+    const actionFlags = resolveServiceActionFlags(service.name);
+
+    const canRestartAction = canManageContainer && actionFlags.restart;
+    const canStopAction = canManageContainer && actionFlags.stop;
+    const canRecreateAction = canRecreate && actionFlags.recreate;
+    const canDeleteAction = canManageContainer && actionFlags.delete;
+
     const upstreamHealthUrl = `${orchestratorConfig.url}/v1/health?service=${encodeURIComponent(service.name)}`;
 
     const startCommand = buildDockerControlCommand({
@@ -352,8 +361,16 @@ export default function ServiceHealth() {
       onClick: () => void;
       disabled?: boolean;
       icon: React.ReactNode;
+      disabledReason?: string;
     }) => {
       const isDelete = props.ariaLabel === 'Delete';
+
+      const tooltip = (
+        <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
+          {props.tooltipCommand}
+          {props.disabledReason ? `\n\n⚠ ${props.disabledReason}` : ''}
+        </Box>
+      );
 
       return (
         <Box
@@ -376,15 +393,7 @@ export default function ServiceHealth() {
           >
             {props.label}
           </Typography>
-          <Tooltip
-            disableInteractive
-            placement="left"
-            title={
-              <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
-                {props.tooltipCommand}
-              </Box>
-            }
-          >
+          <Tooltip disableInteractive placement="left" title={tooltip}>
             <span>
               <IconButton
                 aria-label={props.ariaLabel}
@@ -404,6 +413,11 @@ export default function ServiceHealth() {
               </IconButton>
             </span>
           </Tooltip>
+          {props.disabledReason && (
+            <Tooltip title={props.disabledReason}>
+              <WarningAmberIcon fontSize="small" sx={{ color: 'warning.main', opacity: 0.9 }} />
+            </Tooltip>
+          )}
         </Box>
       );
     };
@@ -558,24 +572,26 @@ export default function ServiceHealth() {
               )}
 
               {canManageContainer && (
-                 <>
-                   <ActionRow
-                     label="Restart"
-                     ariaLabel="Restart"
-                     tooltipCommand={restartCommand}
-                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
-                     disabled={isBusy}
-                     icon={<RestartAltIcon fontSize="small" color="primary" />}
-                   />
+                <>
+                  <ActionRow
+                    label="Restart"
+                    ariaLabel="Restart"
+                    tooltipCommand={restartCommand}
+                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
+                    disabled={isBusy || !canRestartAction}
+                    disabledReason={!actionFlags.restart ? 'feature disabled' : undefined}
+                    icon={<RestartAltIcon fontSize="small" color="primary" />}
+                  />
 
-                   <ActionRow
-                     label="Stop"
-                     ariaLabel="Stop"
-                     tooltipCommand={stopCommand}
-                     onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
-                     disabled={isBusy}
-                     icon={<StopCircleIcon fontSize="small" color="error" />}
-                   />
+                  <ActionRow
+                    label="Stop"
+                    ariaLabel="Stop"
+                    tooltipCommand={stopCommand}
+                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
+                    disabled={isBusy || !canStopAction}
+                    disabledReason={!actionFlags.stop ? 'feature disabled' : undefined}
+                    icon={<StopCircleIcon fontSize="small" color="error" />}
+                  />
 
                   {canRecreate && (
                     <ActionRow
@@ -589,32 +605,29 @@ export default function ServiceHealth() {
                           'recreate'
                         )
                       }
-                      disabled={isBusy}
+                      disabled={isBusy || !canRecreateAction}
+                      disabledReason={!actionFlags.recreate ? 'feature disabled' : undefined}
                       icon={<CachedIcon fontSize="small" sx={{ color: 'warning.main' }} />}
                     />
                   )}
 
-                   <ActionRow
-                     label="Delete"
-                     ariaLabel="Delete"
-                     tooltipCommand={deleteCommand}
-                     onClick={() =>
-                       submitDockerControl(
-                         service.name,
-                         { service: service.name, action: 'stop', stopMode: 'delete' },
-                         'delete'
-                       )
-                     }
-                     disabled={isBusy}
-                     icon={
-                       <DeleteOutlineIcon
-                         fontSize="small"
-                         sx={{ color: 'red' }}
-                       />
-                     }
-                   />
-                 </>
-               )}
+                  <ActionRow
+                    label="Delete"
+                    ariaLabel="Delete"
+                    tooltipCommand={deleteCommand}
+                    onClick={() =>
+                      submitDockerControl(
+                        service.name,
+                        { service: service.name, action: 'stop', stopMode: 'delete' },
+                        'delete'
+                      )
+                    }
+                    disabled={isBusy || !canDeleteAction}
+                    disabledReason={!actionFlags.delete ? 'feature disabled' : undefined}
+                    icon={<DeleteOutlineIcon fontSize="small" sx={{ color: 'red' }} />}
+                  />
+                </>
+              )}
             </Stack>
           </Box>
         </CardContent>

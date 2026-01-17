@@ -182,79 +182,46 @@ docker run -p 3001:3001 \
   nextjs-dash:latest
 ```
 
-## Testing & performance
+## Testing
 
-This module uses **Vitest**. On Windows in particular, end-to-end wall time is often dominated by:
+### Orchestrator restart simulation (unit/integration-ish)
 
-- JSDOM startup
-- module graph/import time
-- worker startup overhead
+We have a focused hook test that simulates: an SSE stream error followed by the events-meta endpoint returning **404**, which mimics an orchestrator restart (or any state loss).
 
-To keep runs fast, tests are split into two suites:
+- Test file: `app/hooks/useJobRunner.orchRestart.test.ts`
+- What it asserts:
+  - the hook terminates the job as `FAILED`
+  - it stops reconnect attempts
+  - it logs a human-readable message (including the HTTP status)
 
-- **Node suite**: `lib/**` + `app/api/**` (no JSDOM)
-- **DOM suite**: `app/components/**` + `app/hooks/**` (JSDOM)
+Run it via the normal test suite.
 
-That split is wired through:
+### SSE smoke scripts
 
-- `vitest.config.node.ts`
-- `vitest.config.dom.ts`
+These are lightweight scripts to validate the SSE pipeline end-to-end.
 
-### Common commands
+- `scripts/sse-smoke.mjs` (through nextjs-dash proxy)
+  - Submits via `/api/orchestrator/submit`
+  - Streams via `/api/orchestrator/events`
 
-```powershell
-npm -s test
-npm -s run test:node
-npm -s run test:dom
-npm -s run test:fast
-```
+- `../orchestrator/scripts/direct-sse-smoke.mjs` (direct to orchestrator)
+  - Submits via `/v1/run`
+  - Streams via `/v1/jobs/:id/events`
 
-### Profiling test runtime (wall time)
+Both default to `docker compose version` as the command and can be controlled via env vars.
 
-Vitest can print detailed timings for transform/setup/import/tests. These are the key numbers to watch.
-
-```powershell
-# DOM suite timings
-npx vitest run -c vitest.config.dom.ts --reporter=verbose
-
-# Node suite timings
-npx vitest run -c vitest.config.node.ts --reporter=verbose
-
-# Include heap usage per test (helps spot memory-pressure driven slowdowns)
-npx vitest run -c vitest.config.dom.ts --reporter=verbose --logHeapUsage
-```
-
-### Performance tuning knobs
-
-You can tune parallelism locally without changing repo defaults:
+Example (PowerShell):
 
 ```powershell
-# Cap workers (recommended on Windows when JSDOM is slow)
- npx vitest run -c vitest.config.dom.ts --maxWorkers=2
- npx vitest run -c vitest.config.dom.ts --maxWorkers=4
+$env:NEXTJS_DASH_BASE_URL='http://localhost:3001'
+node scripts/sse-smoke.mjs
 
-# For consistency, tune both suites
- npx vitest run -c vitest.config.node.ts --maxWorkers=4
- npx vitest run -c vitest.config.dom.ts --maxWorkers=4
+$env:ORCH_BASE_URL='http://localhost:3002'
+$env:ORCH_API_KEY='change-me'
+node ..\orchestrator\scripts\direct-sse-smoke.mjs
 ```
 
-Notes:
-
-- This repo uses `pool: 'threads'` because `pool: 'processes'` is not supported for this setup.
-- If your runs are slower with more workers, reduce `--maxWorkers`.
-- If `import` time dominates, consider reducing heavyweight module imports in tests or mocking expensive UI deps.
-
-### Coverage
-
-Coverage is computed per-suite:
-
-```powershell
-npm -s run test:coverage
-```
-
-If you need a single combined HTML report, we can optionally add a merge step later.
-
-## Future roadmap (overview)
+# Future roadmap (overview)
 
 ### When mobile comes into play
 

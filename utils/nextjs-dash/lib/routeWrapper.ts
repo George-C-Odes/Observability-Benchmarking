@@ -40,13 +40,24 @@ export function withApiRoute<TResponse>(opts: WrapOpts, handler: Handler<TRespon
     const incomingRid = req.headers.get('x-request-id') ?? undefined;
 
     return withRequestContext(async () => {
-      const logger = createScopedServerLogger(opts.name);
+      const serverLogger = createScopedServerLogger(opts.name);
       const started = Date.now();
       const method = req.method;
       const url = req.nextUrl?.pathname ?? new URL(req.url).pathname;
       const requestId = getRequestId() ?? incomingRid ?? 'unknown-request-id';
 
-      logger.info(`${method} ${url} start`, {
+      // Downgrade non-issue noisy endpoints to debug.
+      const noisyPrefixes = new Set([
+        'LOGGING_CONFIG_API',
+        'HEALTH_API',
+        'SCRIPT_RUNNER_CONFIG_API',
+        'ENV_API',
+        'APP_LOGS_CONFIG_API',
+        'APP_HEALTH_API',
+      ]);
+      const logLevel: 'debug' | 'info' = noisyPrefixes.has(opts.name) ? 'debug' : 'info';
+
+      serverLogger[logLevel](`${method} ${url} start`, {
         requestId,
         ...(incomingRid ? { incomingRequestId: incomingRid } : {}),
       });
@@ -54,13 +65,13 @@ export function withApiRoute<TResponse>(opts: WrapOpts, handler: Handler<TRespon
       try {
         const ctx: ApiRouteContext = { requestId };
         const res = await handler(req, ctx);
-        logger.info(`${method} ${url} ok`, {
+        serverLogger[logLevel](`${method} ${url} ok`, {
           requestId,
           tookMs: Date.now() - started,
         });
         return res;
       } catch (e) {
-        logger.error(`${method} ${url} error`, e);
+        serverLogger.error(`${method} ${url} error`, e);
         // We deliberately always return our standard error response shape here.
         return errorFromUnknown(500, e, 'Internal Server Error') as unknown as TResponse;
       }

@@ -10,10 +10,6 @@ vi.mock('@/app/hooks/useScriptRunnerConfig', () => ({
       maxExecutionLogLines: 3,
       eventStreamTimeoutMs: 1234,
       debug: false,
-      // Runner is SSE-only now.
-      enableStatusPolling: false,
-      statusPollIntervalMs: 1,
-      statusPollMaxAttempts: 5,
     },
     loading: false,
     error: null,
@@ -269,8 +265,17 @@ describe('useJobRunner', () => {
 
     // Seed persisted state (simulating a prior session)
     globalThis.sessionStorage.setItem(
-      'scriptRunner.activeJob.v1',
-      JSON.stringify({ jobId: 'stale-job', lastCommand: 'echo hi', reconnectCount: 2, lastJobStatus: { jobId: 'stale-job', status: 'RUNNING' }, savedAtMs: Date.now() })
+      'scriptRunner.activeJob.v2',
+      JSON.stringify({
+        jobId: 'stale-job',
+        runId: 'run-1',
+        lastCommand: 'echo hi',
+        lastLabel: 'Test',
+        reconnectCount: 2,
+        lastJobStatus: { jobId: 'stale-job', status: 'RUNNING' },
+        eventLogsTail: ['hi'],
+        savedAtMs: Date.now(),
+      })
     );
 
     fetchSpy.mockImplementation(async () => new Response('not found', { status: 404 }));
@@ -282,10 +287,9 @@ describe('useJobRunner', () => {
     });
 
     // With SSE-only runner, we don't automatically validate a persisted job on mount.
-    // So the hook should not crash, but also should not start tracking it.
-    expect(result.current.currentJobId).toBe(null);
-    expect(result.current.lastJobStatus).toBe(null);
-    expect(result.current.reconnectCount).toBe(0);
+    // The hook should restore the state without throwing.
+    expect(result.current.currentJobId).toBe('stale-job');
+    expect(result.current.lastJobStatus?.status).toBe('RUNNING');
   });
 });
 

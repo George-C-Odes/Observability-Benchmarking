@@ -46,6 +46,8 @@ async function main() {
     headers: {
       accept: 'text/event-stream',
       'x-request-id': `${rid}-events`,
+      connection: 'keep-alive',
+      'accept-encoding': 'identity',
       ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
     },
   });
@@ -61,55 +63,76 @@ async function main() {
   let buf = '';
   let terminal = null;
   const startedAt = Date.now();
-  const timeoutMs = Number(process.env.ITEST_TIMEOUT_MS ?? 20000);
+  const timeoutMs = Number(process.env.ITEST_TIMEOUT_MS ?? 60000);
 
-  while (true) {
-    if (Date.now() - startedAt > timeoutMs) {
-      console.log('timeout waiting for terminalSummary');
-      break;
+  let lastChunkAt = Date.now();
+  const idleTimeoutMs = Number(process.env.ITEST_IDLE_TIMEOUT_MS ?? 10000);
+
+  const idleWatch = setInterval(() => {
+    if (terminal) return;
+    if (Date.now() - lastChunkAt > idleTimeoutMs) {
+      console.log(`idle timeout: no SSE bytes for ${idleTimeoutMs}ms`);
+      try {
+        void reader.cancel();
+      } catch {
+        // ignore
+      }
     }
-    const { done, value } = await reader.read();
-    if (done) break;
+  }, 1000);
 
-    buf += dec.decode(value, { stream: true });
-
+  try {
     while (true) {
-      const idx = buf.indexOf('\n\n');
-      if (idx < 0) break;
+      if (Date.now() - startedAt > timeoutMs) {
+        console.log('timeout waiting for terminalSummary');
+        break;
+      }
+      const { done, value } = await reader.read();
+      if (done) break;
+      lastChunkAt = Date.now();
 
-      const frame = buf.slice(0, idx);
-      buf = buf.slice(idx + 2);
+      const chunk = dec.decode(value, { stream: true });
+      if (chunk) console.log('[chunk]', chunk.replace(/\n/g, '\\n'));
 
-      const dataLines = frame
-        .split('\n')
-        .filter((l) => l.startsWith('data: '))
-        .map((l) => l.slice('data: '.length));
+      buf += chunk;
+      buf = buf.replace(/\r\n/g, '\n');
 
-      for (const d of dataLines) {
-        let ev;
-        try {
-          ev = JSON.parse(d);
-        } catch {
-          continue;
+      while (true) {
+        const idx = buf.indexOf('\n\n');
+        if (idx < 0) break;
+
+        const frame = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+
+        const dataLines = frame
+          .split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => l.replace(/^data:\s?/, ''));
+
+        for (const d of dataLines) {
+          let ev;
+          try {
+            ev = JSON.parse(d);
+          } catch {
+            console.log('data raw', d);
+            continue;
+          }
+
+          console.log('event', ev.type, 'jobStatus', ev.jobStatus ?? null, 'msg', ev.message ?? null, 'rid', ev.requestId ?? null);
+
+          if (ev?.type === 'terminalSummary') {
+            terminal = ev.jobStatus ?? ev.message ?? 'terminal';
+            console.log('terminalSummary', terminal, 'exitCode', ev.exitCode ?? null, 'rid', ev.requestId ?? null);
+            break;
+          }
         }
 
-        console.log('event', ev.type, 'jobStatus', ev.jobStatus ?? null, 'msg', ev.message ?? null, 'rid', ev.requestId ?? null);
-
-        if (ev?.type === 'summary') {
-          console.log('summary', ev.jobStatus, 'rid', ev.requestId ?? null);
-        }
-
-        if (ev?.type === 'terminalSummary') {
-          terminal = ev.jobStatus || ev.message;
-          console.log('terminalSummary', terminal, 'exitCode', ev.exitCode ?? null, 'rid', ev.requestId ?? null);
-          break;
-        }
+        if (terminal) break;
       }
 
       if (terminal) break;
     }
-
-    if (terminal) break;
+  } finally {
+    clearInterval(idleWatch);
   }
 
   console.log('done terminal=', terminal);

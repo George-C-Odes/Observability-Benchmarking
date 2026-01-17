@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -19,6 +19,7 @@ import {
   Tooltip,
   Stack,
   Divider,
+  Collapse,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -29,10 +30,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PendingIcon from '@mui/icons-material/Pending';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import BoltIcon from '@mui/icons-material/Bolt';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ClearAllIcon from '@mui/icons-material/ClearAll';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useJobRunner } from '@/app/hooks/useJobRunner';
 import { useScripts } from '@/app/hooks/useScripts';
 import type { Script } from '@/app/hooks/useScripts';
@@ -48,17 +52,6 @@ interface JobStatus {
   exitCode?: number;
   lastLine?: string;
   title?: string;
-}
-
-function formatDurationHuman(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-
-  if (h > 0) return `${h}h ${m}m ${s}s`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
 }
 
 function formatTimestampHuman(iso?: string): string {
@@ -83,18 +76,43 @@ export default function ScriptRunner() {
     executing,
     eventLogs,
     clearEventLogs,
+    reset,
     runCommand,
     currentJobId,
     lastJobStatus,
     reconnectCount,
-    lastCommand,
     lastLabel,
     sseConnected,
     sseLastError,
     maxExecutionLogLines,
   } = useJobRunner();
 
-  const logger = createClientLogger('ScriptRunner');
+  // --- Output dialog persistence / dismissal ---
+  const DIALOG_DISMISS_KEY = 'scriptRunner.outputDialog.dismissed.v1';
+  const readDismissed = (): { jobId?: string; runId?: string | null } | null => {
+    try {
+      const raw = sessionStorage.getItem(DIALOG_DISMISS_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { jobId?: unknown; runId?: unknown };
+      return {
+        jobId: typeof parsed?.jobId === 'string' ? parsed.jobId : undefined,
+        runId: typeof parsed?.runId === 'string' ? parsed.runId : null,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const writeDismissed = (val: { jobId: string; runId: string | null } | null) => {
+    try {
+      if (!val) sessionStorage.removeItem(DIALOG_DISMISS_KEY);
+      else sessionStorage.setItem(DIALOG_DISMISS_KEY, JSON.stringify(val));
+    } catch {
+      // ignore
+    }
+  };
+
+  const clientLogger = createClientLogger('ScriptRunner');
 
   const [executingName, setExecutingName] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -102,9 +120,17 @@ export default function ScriptRunner() {
     open: boolean;
     title: string;
     jobDetails?: JobStatus | null;
-  }>({
-    open: false,
-    title: '',
+    /** When true, the dialog should never be restored from session again. */
+    dismissed?: boolean;
+    dismissedForJobId?: string | null;
+  }>(() => {
+    const d = readDismissed();
+    return {
+      open: false,
+      title: '',
+      dismissed: Boolean(d?.jobId),
+      dismissedForJobId: d?.jobId ?? null,
+    };
   });
   const [freeTextCommand, setFreeTextCommand] = useState('');
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
@@ -114,14 +140,20 @@ export default function ScriptRunner() {
   const stickToBottomRef = useRef(true);
   const prevStatusRef = useRef<string | null>(null);
   const [statusPulseOn, setStatusPulseOn] = useState(false);
-  const nowMsRef = useRef<number>(0);
-  const [nowMs, setNowMs] = useState<number>(0);
   const [showStreamIssueChip, setShowStreamIssueChip] = useState(false);
+  const [runtimeNowMs, setRuntimeNowMs] = useState<number>(() => Date.now());
 
   const isRunning = lastJobStatus?.status === 'RUNNING' || lastJobStatus?.status === 'QUEUED';
   const isTerminal = lastJobStatus?.status === 'SUCCEEDED' || lastJobStatus?.status === 'FAILED' || lastJobStatus?.status === 'CANCELED';
   const executeBlocked = Boolean(currentJobId) && isRunning;
   const executeBlockedReason = executeBlocked ? 'Another job is still running. Wait for it to finish before starting a new one.' : '';
+
+  // Tick runtime display while running, without violating purity.
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = window.setInterval(() => setRuntimeNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [isRunning]);
 
   const copyToClipboard = async (text: string, scriptName: string) => {
     try {
@@ -129,7 +161,7 @@ export default function ScriptRunner() {
       setCopySuccess(scriptName);
       setTimeout(() => setCopySuccess(null), 2000);
     } catch (err) {
-      logger.error('Failed to copy to clipboard', err);
+      clientLogger.error('Failed to copy to clipboard', err);
     }
   };
 
@@ -139,7 +171,7 @@ export default function ScriptRunner() {
       setCopySuccess('job');
       setTimeout(() => setCopySuccess(null), 1200);
     } catch (err) {
-      logger.error('Failed to copy to clipboard', err);
+      clientLogger.error('Failed to copy to clipboard', err);
     }
   };
 
@@ -152,6 +184,10 @@ export default function ScriptRunner() {
   };
 
   const executeScript = async (scriptName: string, command: string) => {
+    // Clear dialog dismissal marker for new executions.
+    writeDismissed(null);
+    setOutputDialog((prev) => ({ ...prev, dismissed: false, dismissedForJobId: null }));
+
     if (executeBlocked) {
       setMessage({ type: 'error', text: executeBlockedReason });
       return;
@@ -165,15 +201,22 @@ export default function ScriptRunner() {
     const result = await runCommand(command, scriptName);
 
     if (result.ok) {
-      // The message lifecycle is handled by the status-driven effect; keep a short startup text only.
-      setMessage({ type: 'success', text: `Started "${scriptName}".` });
+      // Message lifecyle is derived from status.
+      setMessage(null);
     } else {
-      setMessage({ type: 'error', text: `Failed to start "${scriptName}"` });
-      // Keep a small dialog with the error output.
+      // Provide a richer error message.
+      const details = result.output?.trim();
+      const maybeBusy = details.includes('HTTP 503');
+      setMessage({
+        type: 'error',
+        text: maybeBusy ? `Orchestrator is busy. Try again shortly.` : `Failed to start "${scriptName}"`,
+      });
+
       setOutputDialog({
         open: true,
         title: scriptName,
         jobDetails: result.job,
+        dismissed: false,
       });
     }
 
@@ -192,26 +235,16 @@ export default function ScriptRunner() {
   };
 
   const handleCloseDialog = () => {
-    setOutputDialog({ open: false, title: '' });
+    // Dispose fully so it doesn't reappear after refresh.
+    const jobId = dialogJob?.jobId;
+    const runId = (lastJobStatus as unknown as { runId?: string | null })?.runId ?? null;
+    if (jobId) writeDismissed({ jobId, runId });
+
+    setOutputDialog({ open: false, title: '', jobDetails: null, dismissed: true, dismissedForJobId: jobId ?? null });
   };
 
-  const jobStatusUi = (() => {
-    const st = lastJobStatus?.status;
-    if (!st) return { label: '—', color: 'default' as const, icon: null };
-    if (st === 'SUCCEEDED') return { label: 'SUCCEEDED', color: 'success' as const, icon: <CheckCircleIcon fontSize="small" color="success" /> };
-    if (st === 'FAILED' || st === 'CANCELED') return { label: st, color: 'error' as const, icon: <CancelIcon fontSize="small" color="error" /> };
-    if (st === 'RUNNING') return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={16} /> };
-    return { label: st, color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
-  })();
-
-  const statusPulseGlow = useMemo(() => {
-    const st = lastJobStatus?.status;
-    if (!st) return 'rgba(255,255,255,0.06)';
-    if (st === 'SUCCEEDED') return 'rgba(76, 175, 80, 0.18)'; // success green
-    if (st === 'FAILED' || st === 'CANCELED') return 'rgba(244, 67, 54, 0.18)'; // error red
-    if (st === 'RUNNING' || st === 'QUEUED') return 'rgba(255, 193, 7, 0.18)'; // warning amber
-    return 'rgba(255,255,255,0.06)';
-  }, [lastJobStatus?.status]);
+  // Removed unused computed UI helpers (jobStatusUi, statusPulseGlow, canCopyCmd, runtimeChipUi)
+  // after refactoring the execution summary/logs UI.
 
   useEffect(() => {
     // Avoid a distracting flash: only show the stream-issue chip if the error persists briefly.
@@ -249,20 +282,6 @@ export default function ScriptRunner() {
   }, [eventLogs.length]);
 
   useEffect(() => {
-    if (!isRunning) return;
-    const syncNow = () => {
-      const t = Date.now();
-      nowMsRef.current = t;
-      setNowMs(t);
-    };
-    syncNow();
-    const id = window.setInterval(syncNow, 1000);
-    return () => window.clearInterval(id);
-  }, [isRunning]);
-
-  const canCopyCmd = Boolean(lastCommand && lastCommand.trim().length > 0);
-
-  useEffect(() => {
     const next = lastJobStatus?.status ?? null;
     const prev = prevStatusRef.current;
 
@@ -281,40 +300,15 @@ export default function ScriptRunner() {
     prevStatusRef.current = next;
   }, [lastJobStatus?.status]);
 
-  const runtimeText = (() => {
-    const startedAtMs = lastJobStatus?.startedAt ? new Date(lastJobStatus.startedAt).getTime() : null;
-    if (!startedAtMs || Number.isNaN(startedAtMs)) return '—';
-
-    const endMs = lastJobStatus?.finishedAt ? new Date(lastJobStatus.finishedAt).getTime() : nowMs;
-    const ms = Math.max(0, endMs - startedAtMs);
-    return formatDurationHuman(ms);
-  })();
-
-  const runtimeChipUi = (() => {
-    const st = lastJobStatus?.status;
-    if (!st) {
-      return {
-        color: 'default' as const,
-        variant: 'outlined' as const,
-        icon: <AccessTimeIcon fontSize="small" />,
-      };
-    }
-
-    if (st === 'SUCCEEDED') {
-      return { color: 'success' as const, variant: 'outlined' as const, icon: <AccessTimeIcon fontSize="small" /> };
-    }
-    if (st === 'FAILED' || st === 'CANCELED') {
-      return { color: 'error' as const, variant: 'outlined' as const, icon: <AccessTimeIcon fontSize="small" /> };
-    }
-    if (st === 'RUNNING') {
-      return { color: 'warning' as const, variant: 'filled' as const, icon: <BoltIcon fontSize="small" /> };
-    }
-    return { color: 'warning' as const, variant: 'outlined' as const, icon: <AccessTimeIcon fontSize="small" /> };
-  })();
+  // (Dismissed dialog state is derived from sessionStorage via lazy initialization above)
+  // so we don't need an extra mount-time effect here.
 
   // Open/finalize the output dialog ONLY when we see the terminal SSE summary.
   useEffect(() => {
     if (!lastJobStatus || !isTerminal) return;
+
+    // If the user already dismissed for this job id, don't reopen.
+    if (outputDialog.dismissed && outputDialog.dismissedForJobId === lastJobStatus.jobId) return;
 
     const title = lastJobStatus.title ?? lastLabel ?? 'Free Text Command';
 
@@ -323,39 +317,47 @@ export default function ScriptRunner() {
         open: true,
         title,
         jobDetails: lastJobStatus,
+        dismissed: false,
+        dismissedForJobId: null,
       });
     }, 0);
 
     return () => window.clearTimeout(t);
-  }, [isTerminal, lastJobStatus, lastLabel]);
+  }, [isTerminal, lastJobStatus, lastLabel, outputDialog.dismissed, outputDialog.dismissedForJobId]);
 
-    // Derive the banner message from current job status. Keep it simple (no useMemo) to satisfy React Compiler linting.
-    const derivedMessage = (() => {
-      const st = lastJobStatus?.status;
-      if (!st) return null;
+  // Derive the banner message from current job status.
+  const derivedMessage = (() => {
+    const st = lastJobStatus?.status;
+    if (!st) return null;
 
-      if (st === 'QUEUED' || st === 'RUNNING') {
-        return { type: 'success' as const, text: `Running "${lastLabel ?? 'Free Text Command'}"…` };
-      }
+    if (st === 'QUEUED' || st === 'RUNNING') {
+      return { type: 'success' as const, text: `Running "${lastLabel ?? 'Free Text Command'}"…` };
+    }
 
-      if (st === 'SUCCEEDED') {
-        return { type: 'success' as const, text: `"${lastLabel ?? 'Free Text Command'}" completed successfully.` };
-      }
+    if (st === 'SUCCEEDED') {
+      return { type: 'success' as const, text: `"${lastLabel ?? 'Free Text Command'}" completed successfully.` };
+    }
 
-      if (st === 'FAILED') {
-        return {
-          type: 'error' as const,
-          text: `"${lastLabel ?? 'Free Text Command'}" failed.${typeof lastJobStatus?.exitCode === 'number' ? ` (exitCode=${lastJobStatus.exitCode})` : ''}`,
-        };
-      }
+    if (st === 'FAILED') {
+      return {
+        type: 'error' as const,
+        text: `"${lastLabel ?? 'Free Text Command'}" failed.${typeof lastJobStatus?.exitCode === 'number' ? ` (exitCode=${lastJobStatus.exitCode})` : ''}`,
+      };
+    }
 
-      if (st === 'CANCELED') {
-        return { type: 'error' as const, text: `"${lastLabel ?? 'Free Text Command'}" was canceled.` };
-      }
+    if (st === 'CANCELED') {
+      return { type: 'error' as const, text: `"${lastLabel ?? 'Free Text Command'}" was canceled.` };
+    }
 
-      return null;
-    })();
-    // Remove the setMessage() effect driven from status.
+    return null;
+  })();
+
+  // Prefer the derived message unless a manual error message exists.
+  const bannerMessage = message ?? derivedMessage;
+
+  // EXECUTION LOGS
+  // Treat as never-started state when we have no current job AND no logs and no status.
+  const hasAnyExecutionState = Boolean(currentJobId) || eventLogs.length > 0 || Boolean(lastJobStatus);
 
   if (loading) {
     return (
@@ -380,6 +382,53 @@ export default function ScriptRunner() {
   })();
 
   const lastOutputLine = dialogJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
+
+  // Use current stream state for the in-page status summary (not the dialog snapshot).
+  const pageJob = lastJobStatus;
+  const pageStatusUi = (() => {
+    const st = pageJob?.status;
+    if (!st) return { label: '—', color: 'default' as const, icon: <PendingIcon fontSize="small" /> };
+    if (st === 'SUCCEEDED') return { label: 'SUCCEEDED', color: 'success' as const, icon: <CheckCircleIcon fontSize="small" /> };
+    if (st === 'FAILED') return { label: 'FAILED', color: 'error' as const, icon: <ErrorOutlineIcon fontSize="small" /> };
+    if (st === 'CANCELED') return { label: 'CANCELED', color: 'error' as const, icon: <CancelIcon fontSize="small" /> };
+    if (st === 'RUNNING') return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={14} /> };
+    if (st === 'QUEUED') return { label: 'QUEUED', color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
+    return { label: st, color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
+  })();
+
+  const pageRuntimeText = (() => {
+    const startedAt = pageJob?.startedAt ?? pageJob?.createdAt;
+    if (!startedAt) return '—';
+    const startedAtMs = new Date(startedAt).getTime();
+    if (Number.isNaN(startedAtMs)) return '—';
+    const endMs = pageJob?.finishedAt ? new Date(pageJob.finishedAt).getTime() : runtimeNowMs;
+    const ms = Math.max(0, endMs - startedAtMs);
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  })();
+
+  const pageLastLine = pageJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
+
+  const runningRuntimeText = (() => {
+    const startedAt = dialogJob?.startedAt ?? dialogJob?.createdAt;
+    if (!startedAt) return '—';
+    const startedAtMs = new Date(startedAt).getTime();
+    if (Number.isNaN(startedAtMs)) return '—';
+    const endMs = dialogJob?.finishedAt ? new Date(dialogJob.finishedAt).getTime() : runtimeNowMs;
+    const ms = Math.max(0, endMs - startedAtMs);
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  })();
 
   return (
     <Box>
@@ -450,178 +499,221 @@ export default function ScriptRunner() {
         </Card>
       )}
 
-      {(message || derivedMessage) && (
-        <Alert
-          severity={(message ?? derivedMessage)!.type}
-          sx={{ mb: 2 }}
-          onClose={() => setMessage(null)}
-        >
-          {(message ?? derivedMessage)!.text}
+      {bannerMessage && (
+        <Alert severity={bannerMessage.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
+          {bannerMessage.text}
         </Alert>
       )}
 
-      {(showEventLogs || Boolean(currentJobId)) && (eventLogs.length > 0 || Boolean(currentJobId)) && (
-        <Card sx={{ mb: 3, bgcolor: 'background.paper' }}>
+      {/* Execution status summary card */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2} flexWrap="wrap">
+            <Box display="flex" flexDirection="column" gap={1} minWidth={260}>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TerminalIcon fontSize="small" /> Current Execution
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Status:
+                </Typography>
+                <Chip size="small" color={pageStatusUi.color} icon={pageStatusUi.icon} label={pageStatusUi.label} sx={{ fontWeight: 'bold' }} />
+
+                {!sseConnected && Boolean(currentJobId) && !isTerminal && (
+                  <Tooltip title={sseLastError ?? 'Disconnected'}>
+                    <Chip size="small" icon={<LinkOffIcon fontSize="small" />} color="warning" variant="outlined" label="stream" />
+                  </Tooltip>
+                )}
+
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                  Reconnects:
+                </Typography>
+                <Chip
+                  size="small"
+                  label={String(reconnectCount)}
+                  variant={reconnectCount > 0 ? 'filled' : 'outlined'}
+                  color={reconnectCount > 0 ? 'warning' : 'default'}
+                  sx={{ fontWeight: 'bold' }}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Job id:
+                </Typography>
+                <Chip size="small" variant="outlined" label={currentJobId ?? '—'} sx={{ fontFamily: 'monospace', maxWidth: 420 }} />
+                <Tooltip title={currentJobId ? 'Copy job id' : 'No job id'}>
+                  <span>
+                    <IconButton size="small" onClick={() => currentJobId && void copyText(currentJobId)} disabled={!currentJobId}>
+                      <ContentCopyIcon fontSize="inherit" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+            </Box>
+
+            <Box display="flex" flexDirection="column" gap={1} minWidth={260} flex={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Runtime:
+                </Typography>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  icon={<AccessTimeIcon fontSize="small" />}
+                  label={pageJob?.finishedAt ? pageRuntimeText : (isRunning ? `running… ${pageRuntimeText}` : '—')}
+                />
+
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                  Exit code:
+                </Typography>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={typeof pageJob?.exitCode === 'number' ? String(pageJob.exitCode) : '—'}
+                  color={pageJob?.status === 'SUCCEEDED' ? 'success' : pageJob?.status === 'FAILED' ? 'error' : 'default'}
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Started:
+                </Typography>
+                <Chip size="small" variant="outlined" label={formatTimestampHuman(pageJob?.startedAt ?? pageJob?.createdAt)} />
+
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                  Finished:
+                </Typography>
+                <Chip size="small" variant="outlined" label={formatTimestampHuman(pageJob?.finishedAt)} />
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Last output line:
+                </Typography>
+                <Box
+                  component="pre"
+                  sx={{
+                    m: 0,
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: 'rgba(0,0,0,0.15)',
+                    fontFamily: 'monospace',
+                    fontSize: '0.8rem',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxHeight: 96,
+                    overflow: 'auto',
+                  }}
+                >
+                  {pageLastLine ?? '—'}
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Execution logs */}
+      {hasAnyExecutionState && (
+        <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2}>
-              <Box>
-                <Typography variant="h6">Execution Logs (Real-time)</Typography>
-                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mt: 0.5 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Job:
-                  </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <ListAltIcon />
+                <Typography variant="h6">Execution Logs</Typography>
+                <Chip
+                  size="small"
+                  label={sseConnected ? 'SSE Connected' : 'SSE Disconnected'}
+                  color={sseConnected ? 'success' : 'default'}
+                  icon={sseConnected ? <CheckCircleIcon fontSize="small" /> : <LinkOffIcon fontSize="small" />}
+                  variant="outlined"
+                />
+                {showStreamIssueChip && (
+                  <Chip
+                    size="small"
+                    label={`Stream issue${reconnectCount ? ` (${reconnectCount})` : ''}`}
+                    color="warning"
+                    icon={<WarningAmberIcon fontSize="small" />}
+                    variant="outlined"
+                  />
+                )}
+              </Box>
 
-                  <Tooltip
-                    placement="bottom-start"
-                    title={
-                      <Box sx={{ maxWidth: 640 }}>
-                        <Typography variant="caption" sx={{ display: 'block', mb: 0.5, opacity: 0.8 }}>
-                          Executed command
-                        </Typography>
-                        <Box
-                          component="pre"
-                          sx={{
-                            m: 0,
-                            p: 1,
-                            borderRadius: 1,
-                            bgcolor: 'rgba(0,0,0,0.35)',
-                            fontFamily: 'monospace',
-                            fontSize: '0.75rem',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {lastCommand ?? '—'}
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5, gap: 0.5 }}>
-                          <Tooltip title={canCopyCmd ? 'Copy command' : 'No command available'}>
-                            <span>
-                              <IconButton size="small" onClick={() => canCopyCmd && void copyText(lastCommand!)} disabled={!canCopyCmd}>
-                                <ContentCopyIcon fontSize="inherit" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        </Box>
-                      </Box>
-                    }
+              <Box display="flex" alignItems="center" gap={1}>
+                <Tooltip title="Reset execution state (clears logs, status, and active job)">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<ClearAllIcon />}
+                    onClick={() => {
+                      setOutputDialog({ open: false, title: '', jobDetails: null, dismissed: true });
+                      setMessage(null);
+                      reset();
+                      setShowEventLogs(false);
+                    }}
                   >
-                    <Chip size="small" variant="outlined" label={currentJobId ?? '—'} sx={{ fontFamily: 'monospace', maxWidth: 320, cursor: lastCommand ? 'help' : 'default' }} />
-                  </Tooltip>
+                    Clear
+                  </Button>
+                </Tooltip>
 
-                  <Tooltip title={currentJobId ? 'Copy job id' : 'No job id'}>
-                    <span>
-                      <IconButton size="small" onClick={() => currentJobId && void copyText(currentJobId)} disabled={!currentJobId}>
-                        <ContentCopyIcon fontSize="inherit" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-
-                  <Typography variant="caption" color="text.secondary">
-                    Status:
-                  </Typography>
-                  <Chip
+                <Tooltip title={showEventLogs ? 'Hide execution logs' : 'Show execution logs'}>
+                  <Button
                     size="small"
-                    color={jobStatusUi.color}
-                    label={jobStatusUi.label}
-                    icon={jobStatusUi.icon ?? undefined}
+                    variant={showEventLogs ? 'contained' : 'outlined'}
+                    startIcon={showEventLogs ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    onClick={() => setShowEventLogs((v) => !v)}
                     sx={{
-                      fontWeight: 'bold',
-                      transition: 'transform 180ms ease, box-shadow 220ms ease, filter 300ms ease',
-                      transform: statusPulseOn ? 'scale(1.04)' : 'none',
-                      boxShadow: statusPulseOn ? `0 0 0 4px ${statusPulseGlow}, 0 0 14px 2px ${statusPulseGlow}` : 'none',
-                      filter: statusPulseOn ? 'saturate(1.15)' : 'none',
+                      '@keyframes logsPulse': {
+                        '0%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
+                        '35%': { boxShadow: '0 0 0 6px rgba(255,193,7,0.18)' },
+                        '100%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
+                      },
+                      animation: statusPulseOn ? 'logsPulse 650ms ease-in-out' : 'none',
                     }}
-                  />
+                  >
+                    {showEventLogs ? 'Hide' : 'Show'}
+                  </Button>
+                </Tooltip>
 
-                  <Typography variant="caption" color="text.secondary">
-                    Reconnects:
-                  </Typography>
-                  <Chip size="small" variant={reconnectCount > 0 ? 'filled' : 'outlined'} color={reconnectCount > 0 ? 'warning' : 'default'} label={String(reconnectCount)} sx={{ fontWeight: 'bold' }} />
-
-                  <Typography variant="caption" color="text.secondary">
-                    Runtime:
-                  </Typography>
-                  <Chip
-                    size="small"
-                    variant={runtimeChipUi.variant}
-                    color={runtimeChipUi.color}
-                    icon={runtimeChipUi.icon}
-                    label={runtimeText}
-                    sx={{
-                      fontWeight: 'bold',
-                      transition: 'transform 150ms ease, filter 300ms ease',
-                      transform: isRunning ? 'translateY(-0.5px)' : 'none',
-                      filter: isRunning ? 'saturate(1.1)' : 'none',
-                    }}
-                  />
-
-                  {currentJobId && (
-                    <>
-                      <Typography variant="caption" color="text.secondary">
-                        Events:
-                      </Typography>
-                      <Chip size="small" variant={sseConnected ? 'outlined' : 'filled'} color={sseConnected ? 'success' : 'warning'} label={sseConnected ? 'connected' : 'disconnected'} sx={{ fontWeight: 'bold' }} />
-                      {showStreamIssueChip && (
-                        <Tooltip title={sseLastError}>
-                          <Chip size="small" color="warning" variant="outlined" label="stream issue" />
-                        </Tooltip>
-                      )}
-                    </>
-                  )}
-                </Stack>
-              </Box>
-
-              <Box>
-                <Button size="small" variant="outlined" onClick={clearEventLogs} sx={{ mr: 1 }}>
-                  Clear
-                </Button>
-                <Button size="small" variant="outlined" onClick={() => setShowEventLogs(false)}>
-                  Hide
-                </Button>
+                <Tooltip title={`Keep last ${maxExecutionLogLines} lines`}
+                >
+                  <Chip size="small" label={`${eventLogs.length} lines`} variant="outlined" />
+                </Tooltip>
               </Box>
             </Box>
 
-            <Box
-              ref={executionLogRef}
-              sx={{
-                bgcolor: 'grey.900',
-                color: 'grey.100',
-                p: 2,
-                borderRadius: 1,
-                maxHeight: '400px',
-                overflow: 'auto',
-                fontFamily: 'monospace',
-                fontSize: '0.875rem',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {eventLogs.map((log, idx) => (
-                <div key={idx}>{log}</div>
-              ))}
-            </Box>
-            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="caption" color="text.secondary">
-                Lines:
-              </Typography>
-              <Chip
-                size="small"
-                variant="outlined"
-                color={eventLogs.length >= maxExecutionLogLines ? 'warning' : 'default'}
-                icon={<ListAltIcon fontSize="small" />}
-                label={`${eventLogs.length}/${maxExecutionLogLines}`}
+            <Collapse in={showEventLogs} timeout={250}>
+              <Box
+                ref={executionLogRef}
                 sx={{
-                  fontWeight: 'bold',
-                  transition: 'transform 150ms ease, filter 300ms ease, box-shadow 220ms ease',
-                  transform: isRunning ? 'translateY(-0.5px)' : 'none',
-                  filter: isRunning ? 'saturate(1.1)' : 'none',
-                  boxShadow: isRunning ? '0 0 0 4px rgba(255,255,255,0.06), 0 0 10px 2px rgba(255,255,255,0.06)' : 'none',
+                  mt: 1,
+                  p: 1.5,
+                  borderRadius: 1,
+                  bgcolor: 'grey.900',
+                  color: 'grey.100',
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  fontSize: 12,
+                  whiteSpace: 'pre-wrap',
+                  maxHeight: 280,
+                  overflowY: 'auto',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  transition: 'max-height 250ms ease',
                 }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                (keeps last/max)
-              </Typography>
-            </Box>
+              >
+                {eventLogs.join('\n') || '—'}
+              </Box>
+
+              <Box mt={1} display="flex" justifyContent="flex-end">
+                <Button size="small" variant="outlined" onClick={clearEventLogs} sx={{ mr: 1 }}>
+                  Clear Text
+                </Button>
+              </Box>
+            </Collapse>
           </CardContent>
         </Card>
       )}
@@ -747,7 +839,12 @@ export default function ScriptRunner() {
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                       Runtime:
                     </Typography>
-                    <Chip size="small" variant="outlined" icon={<AccessTimeIcon fontSize="small" />} label={runtimeText} />
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      icon={<AccessTimeIcon fontSize="small" />}
+                      label={dialogJob?.finishedAt ? runningRuntimeText : (isRunning ? `running… ${runningRuntimeText}` : '—')}
+                    />
                   </Box>
 
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>

@@ -3,7 +3,7 @@ import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 
 export async function GET() {
-  const logger = createScopedServerLogger('APP_HEALTH_API');
+  const serverLogger = createScopedServerLogger('APP_HEALTH_API');
   try {
     // Basic health check - if we can execute this, the app is alive
     const health = {
@@ -29,11 +29,11 @@ export async function GET() {
       health.checks.orchestrator = 'DOWN';
     }
 
-    logger.info('Health check result', health);
+    serverLogger.debug('Health check result', health);
 
     return okJson(health);
   } catch (error) {
-    logger.error('Health check failed', error);
+    serverLogger.error('Health check failed', error);
     return errorFromUnknown(503, error, 'Health check failed');
   }
 }

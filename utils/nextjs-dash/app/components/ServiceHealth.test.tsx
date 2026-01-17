@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, within, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -52,6 +52,11 @@ function mockHealthResponse(services: MockService[]) {
 afterEach(() => {
   vi.restoreAllMocks();
   cleanup();
+});
+
+beforeEach(() => {
+  // In tests, keep actions enabled unless a test explicitly overrides.
+  process.env.SERVICE_ACTIONS_ENABLE_ALL = 'true';
 });
 
 describe('ServiceHealth', () => {
@@ -301,5 +306,30 @@ describe('ServiceHealth', () => {
     // Tooltip content is in a portal and only appears on hover; verifying the trigger is enough here.
     expect(screen.queryByText(/"details"/)).not.toBeInTheDocument();
   });
-});
 
+  it('disables actions and shows feature disabled tooltip when feature flag is off', async () => {
+    process.env.SERVICE_ACTIONS_ENABLE_ALL = 'false';
+
+    // Use a service in "up" state so Restart/Stop/Delete are rendered.
+    mockHealthResponse([{ name: 'go', status: 'up', baseUrl: 'http://go:8080' }]);
+
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('go')).toBeInTheDocument();
+
+    const goCard = screen.getByText('go').closest('.MuiCard-root') as HTMLElement;
+    expect(goCard).toBeTruthy();
+
+    // Refresh is never gated.
+    expect(within(goCard).getByLabelText('Refresh')).not.toBeDisabled();
+
+    // These actions should be disabled by feature flags.
+    expect(within(goCard).getByLabelText('Stop')).toBeDisabled();
+    expect(within(goCard).getByLabelText('Restart')).toBeDisabled();
+    expect(within(goCard).getByLabelText('Delete')).toBeDisabled();
+
+    // Tooltip is shown on hover in real UI; in tests, disabled buttons can't be hovered.
+    // To still validate the affordance exists, assert the warning icon is rendered.
+    expect(within(goCard).getAllByTestId('WarningAmberIcon').length).toBeGreaterThan(0);
+  });
+});

@@ -35,4 +35,3 @@ export const GET = withApiRoute({ name: 'LOGGING_CONFIG_API' }, async function G
     },
   });
 });
-

@@ -17,7 +17,7 @@ import {
  * We intentionally don't poll job status here.
  */
 export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function POST(request: NextRequest) {
-  const logger = createScopedServerLogger('DOCKER_CONTROL_API');
+  const serverLogger = createScopedServerLogger('DOCKER_CONTROL_API');
   try {
     const body = (await request.json()) as {
       service?: unknown;
@@ -56,7 +56,7 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       stopMode,
     });
 
-    logger.info('Submitting docker control command', {
+    serverLogger.info('Submitting docker control command', {
       command,
       action,
       service,
@@ -73,7 +73,7 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
       command,
     });
   } catch (error: unknown) {
-    logger.error('Error submitting docker control command', error);
+    serverLogger.error('Error submitting docker control command', error);
     return errorFromUnknown(500, error, 'Failed to submit docker control command');
   }
 });

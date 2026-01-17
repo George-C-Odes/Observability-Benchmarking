@@ -26,6 +26,11 @@ export type UseJobRunnerState = {
   executing: boolean;
   eventLogs: string[];
   clearEventLogs: () => void;
+  /**
+   * Fully resets the script-runner execution state (as if no runs were performed).
+   * Clears persisted session state and closes any active SSE stream.
+   */
+  reset: () => void;
   runCommand: (command: string, label?: string) => Promise<RunResult>;
   currentJobId: string | null;
   lastJobStatus: JobStatus | null;
@@ -136,7 +141,7 @@ export function useJobRunner(): UseJobRunnerState {
   const jobGenerationRef = useRef(0);
   const runIdRef = useRef<string | null>(null);
 
-  const logger = useMemo(() => createClientLogger('useJobRunner'), []);
+  const clientLogger = useMemo(() => createClientLogger('useJobRunner'), []);
 
   const terminalAppliedByJobRef = useRef<Set<string>>(new Set());
   const streamJobEventsRef = useRef<((jobId: string, generation: number) => void) | null>(null);
@@ -165,6 +170,38 @@ export function useJobRunner(): UseJobRunnerState {
     setEventLogs([]);
   }, []);
 
+  const reset = useCallback(() => {
+    // Full reset back to initial state.
+    try {
+      closeEventSource();
+    } catch {
+      // ignore
+    }
+
+    runningJobIdRef.current = null;
+    runIdRef.current = null;
+    activeSseJobIdRef.current = null;
+    expectedSseCloseRef.current = true;
+    terminalAppliedByJobRef.current.clear();
+
+    jobGenerationRef.current += 1; // invalidate in-flight reconnect loops
+
+    setExecuting(false);
+    setEventLogs([]);
+    setCurrentJobId(null);
+    setLastJobStatus(null);
+    setReconnectCount(0);
+    setLastCommand(null);
+    setLastLabel(null);
+    setSseConnected(false);
+    sseConnectedRef.current = false;
+    setSseLastError(null);
+    sseLastRequestIdRef.current = null;
+    sseConnectStartedAtRef.current = null;
+
+    writePersistedState(null);
+  }, [closeEventSource]);
+
   const appendLog = useCallback(
     (line: string) => {
       setEventLogs((prev) => {
@@ -192,8 +229,6 @@ export function useJobRunner(): UseJobRunnerState {
 
         let reconnectAttempt = 0;
 
-        // (removed unused outer markTerminalUnknown; onerror defines its own terminal marker)
-
         const scheduleReconnect = () => {
           if (terminalAppliedByJobRef.current.has(jobId)) return;
           reconnectAttempt += 1;
@@ -217,7 +252,7 @@ export function useJobRunner(): UseJobRunnerState {
 
           const runId = runIdRef.current;
 
-          logger.debug('Opening SSE', { jobId, generation, runId });
+          clientLogger.debug('Opening SSE', { jobId, generation, runId });
 
           const cacheBust = Date.now();
           const runIdParam = runId ? `&runId=${encodeURIComponent(runId)}` : '';
@@ -271,6 +306,8 @@ export function useJobRunner(): UseJobRunnerState {
               lastLine?: string | null;
               requestId?: string | null;
               title?: string | null;
+              reconnects?: number | null;
+              runtimeMs?: number | null;
             } = null;
 
             try {
@@ -308,7 +345,6 @@ export function useJobRunner(): UseJobRunnerState {
 
                 const isTerminal = type === 'terminalSummary';
 
-                // Always allow terminal summary to overwrite prior RUNNING snapshot.
                 setLastJobStatus((prev) => {
                   if (runningJobIdRef.current !== jobId) return prev;
                   if (!isTerminal && terminalAppliedByJobRef.current.has(jobId)) return prev;
@@ -369,51 +405,69 @@ export function useJobRunner(): UseJobRunnerState {
 
             const runId = runIdRef.current;
 
-            // Validate against run gating and (optionally) the status endpoint.
+            // Validate against run gating.
             const metaUrl = `/api/orchestrator/events/meta?jobId=${encodeURIComponent(jobId)}${runId ? `&runId=${encodeURIComponent(runId)}` : ''}`;
-            const statusUrl = `/api/orchestrator/status?jobId=${encodeURIComponent(jobId)}${runId ? `&runId=${encodeURIComponent(runId)}` : ''}`;
 
-            const markTerminalUnknown = (reason: string) => {
+            const markTerminalFailed = (reason: string, extra?: { statusCode?: number; payload?: string }) => {
               terminalAppliedByJobRef.current.add(jobId);
-              setLastJobStatus({ jobId, status: 'FAILED', finishedAt: new Date().toISOString(), lastLine: reason, title: lastLabel ?? undefined });
+              expectedSseCloseRef.current = true;
+
+              // Stop any future reconnect attempts for this job.
+              activeSseJobIdRef.current = null;
+              runningJobIdRef.current = null;
+
+              setLastJobStatus({
+                jobId,
+                status: 'FAILED',
+                finishedAt: new Date().toISOString(),
+                lastLine: reason,
+                title: lastLabel ?? undefined,
+              });
               appendLog(`[client] ${reason}`);
+              if (extra?.statusCode) appendLog(`[client] HTTP ${extra.statusCode}${extra.payload ? ` - ${extra.payload}` : ''}`);
+
+              // Clear persisted state so a refresh doesn't resurrect the dead run.
+              writePersistedState(null);
+
               closeEventSource();
             };
 
-            // Fire both checks; meta handles stale-run; status handles orchestrator restart/unknown job.
-            void Promise.allSettled([
-              fetch(metaUrl, { cache: 'no-store' }),
-              fetch(statusUrl, { cache: 'no-store' }),
-            ])
-              .then(async (results) => {
-                const metaRes = results[0].status === 'fulfilled' ? results[0].value : null;
-                const statusRes = results[1].status === 'fulfilled' ? results[1].value : null;
-
-                if (metaRes && !metaRes.ok) {
+            void fetch(metaUrl, { cache: 'no-store' })
+              .then(async (metaRes) => {
+                if (!metaRes.ok) {
                   const txt = await metaRes.text().catch(() => '');
+
                   if (metaRes.status === 409) {
-                    markTerminalUnknown(`Stream rejected as stale run (409). ${txt}`);
+                    // Stale run: do not reconnect.
+                    markTerminalFailed(`Stream rejected as stale run (409). ${txt}`, { statusCode: metaRes.status, payload: txt });
+                    return;
+                  }
+
+                  if (metaRes.status === 404) {
+                    // Either orchestrator or Next.js restarted and lost run state.
+                    markTerminalFailed(`Job is no longer available (404). Orchestrator/Next.js may have restarted. ${txt}`, { statusCode: metaRes.status, payload: txt });
+                    return;
+                  }
+
+                  if (metaRes.status >= 400 && metaRes.status < 500) {
+                    // Client-side error: stop reconnecting.
+                    markTerminalFailed(`Stream validation failed (HTTP ${metaRes.status}). ${txt}`, { statusCode: metaRes.status, payload: txt });
                     return;
                   }
                 }
 
-                if (statusRes && !statusRes.ok) {
-                  const txt = await statusRes.text().catch(() => '');
-                  if (statusRes.status === 404 || statusRes.status === 400) {
-                    markTerminalUnknown(`Job is no longer available (orchestrator restarted?). ${txt}`);
-                  }
-                }
+                setSseLastError('SSE connection error');
+                const rid = sseLastRequestIdRef.current;
+                const ridMeta = rid ? ` rid=${rid}` : '';
+                appendLog(`[client] Connection to orchestrator event stream lost. Reconnecting...${ridMeta}`);
+
+                scheduleReconnect();
               })
               .catch(() => {
-                // ignore
+                setSseLastError('SSE connection error');
+                appendLog('[client] Connection to orchestrator event stream lost. Reconnecting...');
+                scheduleReconnect();
               });
-
-            setSseLastError('SSE connection error');
-            const rid = sseLastRequestIdRef.current;
-            const meta = rid ? ` rid=${rid}` : '';
-            appendLog(`[client] Connection to orchestrator event stream lost. Reconnecting...${meta}`);
-
-            scheduleReconnect();
           };
         };
 
@@ -434,7 +488,7 @@ export function useJobRunner(): UseJobRunnerState {
         appendLog('[client] Failed to open orchestrator event stream.');
       }
     },
-    [appendLog, clearTimers, closeEventSource, lastLabel, logger, scriptRunnerConfig.eventStreamTimeoutMs]
+    [appendLog, clearTimers, closeEventSource, lastLabel, clientLogger, scriptRunnerConfig.eventStreamTimeoutMs]
   );
 
   useEffect(() => {
@@ -466,6 +520,8 @@ export function useJobRunner(): UseJobRunnerState {
 
     const status = persisted.lastJobStatus?.status;
     const isTerminal = status === 'SUCCEEDED' || status === 'FAILED' || status === 'CANCELED';
+
+    // If restored state indicates we're still running, reopen SSE.
     if (!isTerminal) {
       jobGenerationRef.current += 1;
       const generation = jobGenerationRef.current;
@@ -478,14 +534,18 @@ export function useJobRunner(): UseJobRunnerState {
         streamJobEventsRef.current?.(normalizedJobId, generation);
       }, 0);
     }
+
     // Intentionally run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Persist a small tail of logs and the latest status so a refresh can resume.
   useEffect(() => {
-    if (!currentJobId) return;
-    const persisted: PersistedJobState = {
-      jobId: currentJobId,
+    const jobId = runningJobIdRef.current;
+    if (!jobId) return;
+
+    writePersistedState({
+      jobId,
       runId: runIdRef.current,
       lastCommand,
       lastLabel,
@@ -493,17 +553,8 @@ export function useJobRunner(): UseJobRunnerState {
       lastJobStatus,
       eventLogsTail: eventLogs.slice(-scriptRunnerConfig.maxExecutionLogLines),
       savedAtMs: Date.now(),
-    };
-    writePersistedState(persisted);
-  }, [currentJobId, eventLogs, lastCommand, lastJobStatus, lastLabel, reconnectCount, scriptRunnerConfig.maxExecutionLogLines]);
-
-  useEffect(() => {
-    const st = lastJobStatus?.status;
-    if (!currentJobId || !st) return;
-    const isTerminal = st === 'SUCCEEDED' || st === 'FAILED' || st === 'CANCELED';
-    if (!isTerminal) return;
-    terminalAppliedByJobRef.current.add(currentJobId);
-  }, [currentJobId, lastJobStatus?.status]);
+    });
+  }, [eventLogs, lastJobStatus, reconnectCount, lastCommand, lastLabel, scriptRunnerConfig.maxExecutionLogLines]);
 
   const runCommand = useCallback(
     async (command: string, label?: string): Promise<RunResult> => {
@@ -535,8 +586,31 @@ export function useJobRunner(): UseJobRunnerState {
         });
 
         if (!res.ok) {
-          const bodyText = await res.text();
-          return { ok: false, job: null, output: `HTTP ${res.status} - ${bodyText}` };
+          const bodyText = await res.text().catch(() => '');
+          const status = res.status;
+
+          if (status === 503) {
+            appendLog(`[client] Orchestrator rejected job submit as busy (503).`);
+            appendLog(bodyText ? `[client] ${bodyText}` : '[client] Try again once the active job completes.');
+            setLastJobStatus({
+              jobId: 'N/A',
+              status: 'FAILED',
+              finishedAt: new Date().toISOString(),
+              lastLine: `Orchestrator busy (HTTP 503).`,
+              title: effectiveLabel,
+            });
+            return { ok: false, job: null, output: `HTTP ${status} - ${bodyText}` };
+          }
+
+          appendLog(`[client] Submit failed: HTTP ${status}${bodyText ? ` - ${bodyText}` : ''}`);
+          setLastJobStatus({
+            jobId: 'N/A',
+            status: 'FAILED',
+            finishedAt: new Date().toISOString(),
+            lastLine: `Submit failed (HTTP ${status}).`,
+            title: effectiveLabel,
+          });
+          return { ok: false, job: null, output: `HTTP ${status} - ${bodyText}` };
         }
 
         const json = (await res.json().catch(() => null)) as null | { jobId?: string; requestId?: string };
@@ -564,7 +638,11 @@ export function useJobRunner(): UseJobRunnerState {
         streamJobEvents(normalizedJobId, generation);
 
         const ridTxt = typeof json?.requestId === 'string' ? ` rid=${json.requestId}` : '';
-        return { ok: true, job: { jobId: normalizedJobId, status: 'QUEUED', title: effectiveLabel }, output: `Job ID: ${normalizedJobId}${ridTxt}` };
+        return {
+          ok: true,
+          job: { jobId: normalizedJobId, status: 'QUEUED', title: effectiveLabel },
+          output: `Job ID: ${normalizedJobId}${ridTxt}`,
+        };
       } catch (err) {
         return { ok: false, job: null, output: String(err) };
       } finally {
@@ -578,6 +656,7 @@ export function useJobRunner(): UseJobRunnerState {
     executing,
     eventLogs,
     clearEventLogs,
+    reset,
     runCommand,
     currentJobId,
     lastJobStatus,
@@ -589,4 +668,3 @@ export function useJobRunner(): UseJobRunnerState {
     maxExecutionLogLines: scriptRunnerConfig.maxExecutionLogLines,
   };
 }
-

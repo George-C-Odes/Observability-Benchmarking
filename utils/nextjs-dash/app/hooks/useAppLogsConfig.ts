@@ -5,14 +5,14 @@ import type { AppLogsRuntimeConfig } from '@/lib/runtimeConfigTypes';
 import { DEFAULT_APP_LOGS_RUNTIME_CONFIG } from '@/lib/runtimeConfigTypes';
 import { createClientLogger } from '@/lib/clientLogger';
 
+const clientLogger = createClientLogger('useAppLogsConfig');
+
 export type UseAppLogsConfigState = {
   config: AppLogsRuntimeConfig;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
 };
-
-const logger = createClientLogger('useAppLogsConfig');
 
 export function useAppLogsConfig(): UseAppLogsConfigState {
   const [config, setConfig] = useState<AppLogsRuntimeConfig>(DEFAULT_APP_LOGS_RUNTIME_CONFIG);
@@ -26,7 +26,7 @@ export function useAppLogsConfig(): UseAppLogsConfigState {
       const res = await fetch('/api/app-logs/config', { cache: 'no-store' });
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
-        logger.error('Failed to fetch AppLogs config', { status: res.status, bodyText: txt });
+        clientLogger.error('Failed to fetch AppLogs config', { status: res.status, bodyText: txt });
         setError('Failed to load AppLogs config');
         return;
       }
@@ -37,7 +37,7 @@ export function useAppLogsConfig(): UseAppLogsConfigState {
       };
       setConfig(next);
     } catch (e) {
-      logger.error('Failed to load AppLogs config', e);
+      clientLogger.error('Failed to load AppLogs config', e);
       setError('Failed to load AppLogs config');
     } finally {
       setLoading(false);

@@ -11,7 +11,7 @@ import { getActiveRunId } from '@/lib/scriptRunnerRunState';
  * without opening an SSE stream (EventSource does not expose response headers).
  */
 export const GET = withApiRoute({ name: 'ORCH_EVENTS_META_API' }, async function GET(request: NextRequest, ctx: ApiRouteContext) {
-  const logger = createScopedServerLogger('ORCH_EVENTS_META_API');
+  const serverLogger = createScopedServerLogger('ORCH_EVENTS_META_API');
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId');
   const runId = searchParams.get('runId');
@@ -20,13 +20,22 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_META_API' }, async function
     return errorJson(400, { error: 'jobId is required' }, { headers: { 'X-Request-Id': ctx.requestId } });
   }
 
-  const active = runId ? getActiveRunId() : null;
-  logger.debug('Events meta request received', { jobId, runId: runId ?? null, activeRunId: active });
+  const activeRunId = getActiveRunId();
+  serverLogger.debug('Events meta request received', { jobId, runId: runId ?? null, activeRunId: activeRunId ?? null });
 
-  // Ignore stale meta requests from old reconnect loops.
-  // runId is optional, but when provided we can protect against cross-run mixing.
-  if (runId && active && runId !== active) {
-    logger.debug('Rejecting stale events meta request', { jobId, runId, activeRunId: active });
+  // If the server has no active run, we can't validate this request: treat as "not found".
+  // This commonly happens after a Next.js restart (which often coincides with orchestrator restarts).
+  if (!activeRunId) {
+    return errorJson(
+      404,
+      { error: 'no_active_run', message: 'No active run is tracked on the server (possible restart).' },
+      { headers: { 'X-Request-Id': ctx.requestId } }
+    );
+  }
+
+  // When runId is provided, protect against cross-run mixing.
+  if (runId && runId !== activeRunId) {
+    serverLogger.debug('Rejecting stale events meta request', { jobId, runId, activeRunId });
     return errorJson(
       409,
       { error: 'stale_run', message: 'This events meta request is for a stale run.' },

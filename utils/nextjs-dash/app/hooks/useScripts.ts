@@ -17,7 +17,7 @@ export type ScriptsState = {
   refresh: () => Promise<void>;
 };
 
-const logger = createClientLogger('useScripts');
+const clientLogger = createClientLogger('useScripts');
 
 export function useScripts(): ScriptsState {
   const [scripts, setScripts] = useState<Script[]>([]);
@@ -31,15 +31,15 @@ export function useScripts(): ScriptsState {
       const response = await fetch(`/api/scripts`);
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        logger.error('Failed to fetch scripts', { status: response.status, bodyText: text });
+        clientLogger.error('Failed to fetch scripts', { status: response.status, bodyText: text });
         setError('Failed to load scripts');
         return;
       }
 
       const payload = (await response.json()) as { scripts?: Array<{ name: string; description: string; command: string; category: string }> };
       setScripts((payload.scripts || []) as Script[]);
-    } catch (e) {
-      logger.error('Failed to fetch scripts', e);
+    } catch (err) {
+      clientLogger.error('Failed to fetch scripts', err);
       setError('Failed to load scripts');
     } finally {
       setLoading(false);

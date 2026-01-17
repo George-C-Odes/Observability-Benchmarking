@@ -12,7 +12,7 @@ import { getActiveRunId } from '@/lib/scriptRunnerRunState';
  * This proxies the SSE stream from orchestrator to the browser
  */
 export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(request: NextRequest, ctx: ApiRouteContext) {
-  const logger = createScopedServerLogger('ORCH_EVENTS_API');
+  const serverLogger = createScopedServerLogger('ORCH_EVENTS_API');
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId');
   const preflight = searchParams.get('preflight');
@@ -26,11 +26,11 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
 
     const activeRunId = getActiveRunId();
     if (runId && activeRunId && runId !== activeRunId) {
-      logger.debug('Rejecting stale SSE stream request', { jobId, runId, activeRunId });
+      serverLogger.debug('Rejecting stale SSE stream request', { jobId, runId, activeRunId });
       return errorJson(409, { error: 'stale_run', message: 'This SSE stream request is for a stale run.' }, requestId ? { headers: { 'X-Request-Id': requestId } } : undefined);
     }
 
-    logger.debug('SSE request received', { jobId, runId: runId ?? null, preflight: Boolean(preflight), activeRunId: activeRunId ?? null });
+    serverLogger.debug('SSE request received', { jobId, runId: runId ?? null, preflight: Boolean(preflight), activeRunId: activeRunId ?? null });
 
     if (preflight) {
       return new NextResponse('', {
@@ -53,7 +53,7 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
 
     if (!response.ok) {
       const bodyText = await response.text().catch(() => '');
-      logger.warn('Orchestrator SSE returned non-OK', { status: response.status, bodyText, jobId });
+      serverLogger.warn('Orchestrator SSE returned non-OK', { status: response.status, bodyText, jobId });
       return errorJson(
         response.status,
         {
@@ -97,7 +97,7 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
         };
 
         const onAbort = () => {
-          logger.info('SSE client disconnected; canceling upstream reader', { jobId });
+          serverLogger.debug('SSE client disconnected; canceling upstream reader', { jobId });
           try {
             void reader.cancel();
           } catch {
@@ -122,14 +122,14 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
               controller.enqueue(value);
             } catch (error) {
               // This is typically "Controller is already closed" when the client disconnects.
-              logger.debug('SSE enqueue failed; closing stream', { jobId, error });
+              serverLogger.debug('SSE enqueue failed; closing stream', { jobId, error });
               break;
             }
           }
         } catch (error) {
           // Don't surface abort as an error.
           if (!request.signal.aborted) {
-            logger.error('Stream error', error);
+            serverLogger.error('Stream error', error);
           }
         } finally {
           request.signal.removeEventListener('abort', onAbort);
@@ -156,7 +156,7 @@ export const GET = withApiRoute({ name: 'ORCH_EVENTS_API' }, async function GET(
       },
     });
   } catch (error: unknown) {
-    logger.error('Error streaming events', error);
+    serverLogger.error('Error streaming events', error);
     return errorFromUnknown(500, error, 'Failed to stream job events');
   }
 });

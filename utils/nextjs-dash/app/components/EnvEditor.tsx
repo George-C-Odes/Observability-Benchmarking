@@ -16,13 +16,13 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import TuneIcon from '@mui/icons-material/Tune';
 import { createClientLogger } from '@/lib/clientLogger';
 
-interface EnvVariable {
+const clientLogger = createClientLogger('EnvEditor');
+
+type EnvVariable = {
   key: string;
   value: string;
   comment?: string;
-}
-
-const logger = createClientLogger('EnvEditor');
+};
 
 export default function EnvEditor() {
   const [envContent, setEnvContent] = useState('');
@@ -52,7 +52,7 @@ export default function EnvEditor() {
       parseEnvContent(data.content);
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to load environment file' });
-      logger.error('Failed to load environment file', error);
+      clientLogger.error('Failed to load env file', error);
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function EnvEditor() {
 
       if (!response.ok) {
         const bodyText = await response.text().catch(() => '');
-        logger.error('Failed to save environment file', { status: response.status, bodyText });
+        clientLogger.error('Failed to save env file', { status: response.status, bodyText });
         setMessage({ type: 'error', text: 'Failed to save environment file' });
         return;
       }
@@ -131,7 +131,7 @@ export default function EnvEditor() {
       setEnvContent(newContent);
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to save environment file' });
-      logger.error('Failed to save environment file', error);
+      clientLogger.error('Failed to save env file', error);
     } finally {
       setSaving(false);
     }

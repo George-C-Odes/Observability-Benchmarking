@@ -15,7 +15,7 @@ export function BootLogger() {
   }, [loggingConfig.clientLogLevel]);
 
   useEffect(() => {
-    const logger = createClientLogger('Boot');
+    const clientLogger = createClientLogger('Boot');
 
     // Defer logging slightly to avoid competing with hydration/layout.
     const id = window.setTimeout(() => {
@@ -26,17 +26,17 @@ export function BootLogger() {
       // 1) server info
       // 2) client info
       if (systemInfo) {
-        logger.info('System info (server)', systemInfo);
+        clientLogger.info('System info (server)', systemInfo);
       } else {
-        logger.warn('System info (server) not available');
+        clientLogger.warn('System info (server) not available');
       }
-      logger.info('System info (client)', clientInfo);
+      clientLogger.info('System info (client)', clientInfo);
 
       // Also fetch server logs snapshot so the Logs tab has something even if opened later.
       void fetchJson<{ entries?: unknown[] }>('/api/logs')
         .then((data) => {
           if (Array.isArray(data?.entries) && data.entries.length) {
-            logger.info('Loaded server log entries snapshot', { count: data.entries.length });
+            clientLogger.info('Loaded server log entries snapshot', { count: data.entries.length });
           }
         })
         .catch(() => {

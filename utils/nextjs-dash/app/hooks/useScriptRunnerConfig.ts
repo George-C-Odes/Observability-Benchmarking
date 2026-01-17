@@ -5,7 +5,7 @@ import type { ScriptRunnerRuntimeConfig } from '@/lib/runtimeConfigTypes';
 import { DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG } from '@/lib/runtimeConfigTypes';
 import { createClientLogger } from '@/lib/clientLogger';
 
-const logger = createClientLogger('useScriptRunnerConfig');
+const clientLogger = createClientLogger('useScriptRunnerConfig');
 
 export type UseScriptRunnerConfigState = {
   config: ScriptRunnerRuntimeConfig;
@@ -26,7 +26,7 @@ export function useScriptRunnerConfig(): UseScriptRunnerConfigState {
       const res = await fetch('/api/script-runner/config', { cache: 'no-store' });
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
-        logger.error('Failed to fetch ScriptRunner config', { status: res.status, bodyText: txt });
+        clientLogger.error('Failed to fetch ScriptRunner config', { status: res.status, bodyText: txt });
         setError('Failed to load ScriptRunner config');
         return;
       }
@@ -35,20 +35,9 @@ export function useScriptRunnerConfig(): UseScriptRunnerConfigState {
         maxExecutionLogLines: Number(json.maxExecutionLogLines ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines),
         eventStreamTimeoutMs: Number(json.eventStreamTimeoutMs ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs),
         debug: Boolean(json.debug ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.debug),
-        enableStatusPolling: Boolean(
-          json.enableStatusPolling ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.enableStatusPolling
-        ),
-        statusPollIntervalMs: Number(
-          (json as Partial<ScriptRunnerRuntimeConfig>).statusPollIntervalMs ??
-            DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.statusPollIntervalMs
-        ),
-        statusPollMaxAttempts: Number(
-          (json as Partial<ScriptRunnerRuntimeConfig>).statusPollMaxAttempts ??
-            DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.statusPollMaxAttempts
-        ),
       });
     } catch (e) {
-      logger.error('Failed to load ScriptRunner config', e);
+      clientLogger.error('Failed to load ScriptRunner config', e);
       setError('Failed to load ScriptRunner config');
     } finally {
       setLoading(false);
