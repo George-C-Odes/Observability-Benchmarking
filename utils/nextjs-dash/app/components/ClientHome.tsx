@@ -166,21 +166,21 @@ export default function ClientHome() {
               variant="scrollable"
               scrollButtons={false}
             >
-              <Tab label="System Info" />
               <Tab label="Service Health" />
-              <Tab label="Environment Config" />
               <Tab label="Script Runner" />
+              <Tab label="Environment Config" />
               <Tab label="Logs" />
+              <Tab label="System Info" />
               <Tab label="Project Hub" />
             </Tabs>
           </Box>
 
           <TabPanel value={tabValue} index={0}>
-            <SystemInfo />
+            <ServiceHealth />
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
-            <ServiceHealth />
+            <ScriptRunner />
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
@@ -188,11 +188,11 @@ export default function ClientHome() {
           </TabPanel>
 
           <TabPanel value={tabValue} index={3}>
-            <ScriptRunner />
+            <AppLogs />
           </TabPanel>
 
           <TabPanel value={tabValue} index={4}>
-            <AppLogs />
+            <SystemInfo />
           </TabPanel>
 
           <TabPanel value={tabValue} index={5}>
