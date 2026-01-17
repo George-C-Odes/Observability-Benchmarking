@@ -541,7 +541,7 @@ Observability-Benchmarking/
 │   ├── quarkus/             # Quarkus services
 │   │   ├── jvm/             # JVM builds (platform, virtual, reactive)
 │   │   └── native/          # GraalVM Native builds
-│   └── go/                  # Go services (WIP)
+│   └── go/                  # Go services
 ├── config/                  # Configuration files
 │   ├── grafana/             # Grafana dashboards and provisioning
 │   ├── loki/                # Loki configuration

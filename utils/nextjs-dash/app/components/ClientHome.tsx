@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import {
   Box,
   Container,
@@ -23,7 +23,7 @@ import ScriptRunner from './ScriptRunner';
 import SystemInfo from './SystemInfo';
 import ServiceHealth from './ServiceHealth';
 import AppLogs from './AppLogs';
-import Resources from './Resources';
+import ProjectHub from './ProjectHub';
 import { useDashboardTheme } from '../Providers';
 import { themeOptions } from '../theme';
 
@@ -171,7 +171,7 @@ export default function ClientHome() {
               <Tab label="Environment Config" />
               <Tab label="Script Runner" />
               <Tab label="Logs" />
-              <Tab label="Resources" />
+              <Tab label="Project Hub" />
             </Tabs>
           </Box>
 
@@ -196,7 +196,7 @@ export default function ClientHome() {
           </TabPanel>
 
           <TabPanel value={tabValue} index={5}>
-            <Resources />
+            <ProjectHub />
           </TabPanel>
         </Paper>
       </Container>
