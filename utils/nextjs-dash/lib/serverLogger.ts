@@ -1,7 +1,7 @@
 import type { LogLevel } from './logBuffer';
 import { getServerLogBuffer } from './logBuffer';
 import { getRequestId } from './requestContext';
-import type { RuntimeLogLevel } from './loggingTypes';
+import type { RuntimeLogLevel, ServerLogOutput } from './loggingTypes';
 
 const levelOrder: Record<RuntimeLogLevel, number> = {
   debug: 10,
@@ -13,14 +13,15 @@ const levelOrder: Record<RuntimeLogLevel, number> = {
 
 declare global {
   var __NEXTJS_DASH_SERVER_LOG_LEVEL__: RuntimeLogLevel | undefined;
-
-  interface GlobalThis {
-    __NEXTJS_DASH_SERVER_LOG_LEVEL__?: RuntimeLogLevel;
-  }
+  var __NEXTJS_DASH_SERVER_LOG_OUTPUT__: ServerLogOutput | undefined;
 }
 
 export function getServerLogLevel(): RuntimeLogLevel {
   return globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ ?? 'info';
+}
+
+export function getServerLogOutput(): ServerLogOutput {
+  return globalThis.__NEXTJS_DASH_SERVER_LOG_OUTPUT__ ?? 'json';
 }
 
 function shouldLog(level: LogLevel): boolean {
@@ -66,21 +67,51 @@ export function logServer(level: LogLevel, ...args: unknown[]) {
     meta: requestId ? { requestId, meta } : meta,
   });
 
-  // Still write to stdout/stderr so container logs remain useful.
-  const prefix = requestId ? `[rid:${requestId}]` : '';
+  const output = getServerLogOutput();
+  if (output === 'plain') {
+    // Legacy/human-friendly mode.
+    const prefix = requestId ? `[rid:${requestId}]` : '';
+    switch (level) {
+      case 'error':
+        console.error(prefix, ...args);
+        break;
+      case 'warn':
+        console.warn(prefix, ...args);
+        break;
+      case 'debug':
+        console.debug(prefix, ...args);
+        break;
+      default:
+        console.log(prefix, ...args);
+    }
+    return;
+  }
+
+  // Structured mode (default): emit a single JSON line per log.
+  // This makes Grafana/Alloy able to set detected_level correctly.
+  const payload = {
+    ts: new Date().toISOString(),
+    level,
+    source: 'nextjs-dash',
+    requestId: requestId ?? undefined,
+    message,
+    meta: meta ?? undefined,
+  };
+
+  const line = JSON.stringify(payload);
 
   switch (level) {
     case 'error':
-      console.error(prefix, ...args);
+      console.error(line);
       break;
     case 'warn':
-      console.warn(prefix, ...args);
+      console.warn(line);
       break;
     case 'debug':
-      console.debug(prefix, ...args);
+      console.debug(line);
       break;
     default:
-      console.log(prefix, ...args);
+      console.log(line);
   }
 }
 

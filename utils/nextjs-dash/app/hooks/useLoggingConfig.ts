@@ -35,6 +35,7 @@ export function useLoggingConfig(): UseLoggingConfigState {
       setConfig({
         clientLogLevel: (json.clientLogLevel ?? DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel) as LoggingRuntimeConfig['clientLogLevel'],
         serverLogLevel: (json.serverLogLevel ?? DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel) as LoggingRuntimeConfig['serverLogLevel'],
+        serverLogOutput: (json.serverLogOutput ?? DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput) as LoggingRuntimeConfig['serverLogOutput'],
       });
     } catch (e) {
       clientLogger.error('Failed to load logging config', e);

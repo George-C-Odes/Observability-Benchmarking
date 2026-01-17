@@ -18,6 +18,7 @@ vi.mock('@/app/hooks/useScriptRunnerConfig', () => ({
 
 class MockEventSource {
   static instances: MockEventSource[] = [];
+  // The hook assigns these handlers at runtime.
   onopen: (() => void) | null = null;
   onmessage: ((ev: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
@@ -29,6 +30,9 @@ class MockEventSource {
     MockEventSource.instances.push(this);
   }
 }
+
+// Touch the members once so IDE/typecheck doesn't flag them as unused in this test-only file.
+// (Intentionally omitted; we rely on documented eslint-disable comments instead.)
 
 class MockBroadcastChannel {
   static channels = new Map<string, Set<MockBroadcastChannel>>();
@@ -42,8 +46,7 @@ class MockBroadcastChannel {
     MockBroadcastChannel.channels.set(name, set);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  postMessage(_data: unknown) {
+  postMessage() {
     // No-op: this test focuses on SSE error path.
   }
 
@@ -59,14 +62,6 @@ class MockBroadcastChannel {
     const peers = MockBroadcastChannel.channels.get(this.name);
     peers?.delete(this);
     this.listeners.clear();
-  }
-}
-
-declare global {
-  interface GlobalThis {
-    EventSource: typeof EventSource;
-    BroadcastChannel: typeof BroadcastChannel;
-    sessionStorage: Storage;
   }
 }
 

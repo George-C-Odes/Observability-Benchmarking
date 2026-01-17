@@ -25,17 +25,30 @@ type WrapOpts = {
  * - logs start/end/error in a consistent way
  * - converts thrown errors into our standard error JSON response
  */
-function applyServerLogLevelFromEnv() {
-  const raw = envString('NEXTJS_DASH_SERVER_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel);
-  const lvl = raw.trim().toLowerCase();
-  if (lvl === 'debug' || lvl === 'info' || lvl === 'warn' || lvl === 'error' || lvl === 'silent') {
-    globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ = lvl;
+function applyServerLoggingFromEnv() {
+  {
+    const raw = envString('NEXTJS_DASH_SERVER_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel);
+    const lvl = raw.trim().toLowerCase();
+    if (lvl === 'debug' || lvl === 'info' || lvl === 'warn' || lvl === 'error' || lvl === 'silent') {
+      globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ = lvl;
+    }
+  }
+
+  {
+    const raw = envString(
+      'NEXTJS_DASH_SERVER_LOG_OUTPUT',
+      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput
+    );
+    const mode = raw.trim().toLowerCase();
+    if (mode === 'plain' || mode === 'json') {
+      globalThis.__NEXTJS_DASH_SERVER_LOG_OUTPUT__ = mode;
+    }
   }
 }
 
 export function withApiRoute<TResponse>(opts: WrapOpts, handler: Handler<TResponse>) {
   return async (req: NextRequest): Promise<TResponse> => {
-    applyServerLogLevelFromEnv();
+    applyServerLoggingFromEnv();
 
     const incomingRid = req.headers.get('x-request-id') ?? undefined;
 
