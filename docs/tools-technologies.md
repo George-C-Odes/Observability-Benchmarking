@@ -606,7 +606,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Observability**   | Loki                   | 3.6.3   | Logs               |
 | **Observability**   | Tempo                  | 2.9.0   | Traces             |
 | **Observability**   | Mimir                  | 3.0.2   | Metrics            |
-| **Observability**   | Pyroscope              | 1.17.1  | Profiles           |
+| **Observability**   | Pyroscope              | 1.18.0  | Profiles           |
 | **Observability**   | Alloy                  | 1.10.2  | Collector          |
 | **Instrumentation** | OpenTelemetry          | 1.57.0  | Telemetry SDK      |
 | **Instrumentation** | OpenTelemetry          | 2.23.0  | Telemetry Distro   |

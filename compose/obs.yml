@@ -102,7 +102,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:1.17.1
+    image: grafana/pyroscope:1.18.0
     container_name: pyroscope
     ports:
       - "4040:4040"
