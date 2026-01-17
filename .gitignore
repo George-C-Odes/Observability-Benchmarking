@@ -118,6 +118,7 @@ venv.bak/
 *~
 *.bak
 *.orig
+*.ps1
 
 # Keep docs and .github (explicit, in case of broader ignore rules)
 !/docs/

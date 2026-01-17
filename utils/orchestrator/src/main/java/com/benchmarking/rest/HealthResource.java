@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import io.smallrye.common.annotation.Blocking;
 
 import java.util.Optional;
 
@@ -31,6 +32,7 @@ public class HealthResource {
   ServiceHealthService health;
 
   @GET
+  @Blocking
   @Operation(summary = "Aggregate readiness/health of the whole stack")
   @APIResponse(responseCode = "200", description = "Aggregated health")
   public Uni<HealthAggregateResponse> get(@QueryParam("service") String service) {

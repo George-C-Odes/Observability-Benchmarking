@@ -55,7 +55,7 @@ public class JobManager {
   int maxBufferLines;
 
   /**
-   * Whether to execute jobs serially (one at a time).
+   * Whether to execute jobs serially (one at a time). For future use.
    */
   @ConfigProperty(name = "orchestrator.serial-execution")
   boolean serialExecution;
@@ -470,15 +470,15 @@ public class JobManager {
     }
 
     JobStatusResponse toStatus() {
-      JobStatusResponse r = new JobStatusResponse();
-      r.setJobId(id);
-      r.setStatus(status.name());
-      r.setCreatedAt(createdAt);
-      r.setStartedAt(startedAt);
-      r.setFinishedAt(finishedAt);
-      r.setExitCode(exitCode);
-      r.setLastLine(lastLine);
-      return r;
+      return new JobStatusResponse(
+        id,
+        status.name(),
+        createdAt,
+        startedAt,
+        finishedAt,
+        exitCode,
+        lastLine
+      );
     }
   }
 }

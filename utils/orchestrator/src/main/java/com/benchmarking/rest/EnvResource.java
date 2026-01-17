@@ -13,6 +13,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import lombok.Getter;
+import lombok.Setter;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -61,29 +63,13 @@ public class EnvResource {
     /**
      * Request body for updating environment file.
      */
+    @Getter
+    @Setter
     public static class EnvUpdateRequest {
         /**
          * New content for the environment file.
          */
         private String content;
-
-        /**
-         * Gets the content.
-         *
-         * @return the content
-         */
-        public String getContent() {
-            return content;
-        }
-
-        /**
-         * Sets the content.
-         *
-         * @param content the content to set
-         */
-        public void setContent(String content) {
-            this.content = content;
-        }
     }
 
     /**
