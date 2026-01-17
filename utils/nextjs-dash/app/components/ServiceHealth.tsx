@@ -33,12 +33,7 @@ import SummarizeIcon from '@mui/icons-material/Summarize';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
-import {
-  buildDockerControlCommand,
-  type DockerRestartMode,
-  type DockerStartMode,
-  type DockerStopMode,
-} from '@/lib/dockerComposeControl';
+import { buildDockerControlCommand } from '@/lib/dockerComposeControl';
 import { useServiceActionsConfig } from '@/app/hooks/useServiceActionsConfig';
 
 interface ServiceHealth {
@@ -252,10 +247,7 @@ export default function ServiceHealth() {
       serviceName: string,
       payload: {
         service: string;
-        action: 'start' | 'stop' | 'restart';
-        startMode?: DockerStartMode;
-        restartMode?: DockerRestartMode;
-        stopMode?: DockerStopMode;
+        action: 'start' | 'stop' | 'restart' | 'recreate' | 'delete';
       },
       optimisticActionLabel: string
     ) => {
@@ -372,13 +364,11 @@ export default function ServiceHealth() {
 
     const recreateCommand = buildDockerControlCommand({
       service: service.name,
-      action: 'restart',
-      restartMode: 'recreate',
+      action: 'recreate',
     });
     const deleteCommand = buildDockerControlCommand({
       service: service.name,
-      action: 'stop',
-      stopMode: 'delete',
+      action: 'delete',
     });
 
     const ActionRow = (props: {
@@ -640,7 +630,7 @@ export default function ServiceHealth() {
                       onClick={() =>
                         submitDockerControl(
                           service.name,
-                          { service: service.name, action: 'restart', restartMode: 'recreate' },
+                          { service: service.name, action: 'recreate' },
                           'recreate'
                         )
                       }
@@ -655,7 +645,7 @@ export default function ServiceHealth() {
                     ariaLabel="Delete"
                     tooltipCommand={deleteCommand}
                     onClick={() =>
-                      submitDockerControl(service.name, { service: service.name, action: 'stop', stopMode: 'delete' }, 'delete')
+                      submitDockerControl(service.name, { service: service.name, action: 'delete' }, 'delete')
                     }
                     disabled={isBusy || !canDeleteAction}
                     disabledReason={!actionFlags.delete ? featureDisabledReason : undefined}

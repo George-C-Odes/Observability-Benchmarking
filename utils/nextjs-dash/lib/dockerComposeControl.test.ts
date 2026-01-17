@@ -8,14 +8,14 @@ describe('dockerComposeControl', () => {
     );
   });
 
-  it('uses rm -f -s for stopMode=delete', () => {
-    expect(buildDockerControlCommand({ service: 'orchestrator', action: 'stop', stopMode: 'delete' })).toBe(
+  it('uses rm -f -s for delete', () => {
+    expect(buildDockerControlCommand({ service: 'orchestrator', action: 'delete' })).toBe(
       'docker compose rm -f -s orchestrator'
     );
   });
 
-  it('uses up -d --force-recreate for restartMode=recreate', () => {
-    expect(buildDockerControlCommand({ service: 'tempo', action: 'restart', restartMode: 'recreate' })).toBe(
+  it('uses up -d --force-recreate for recreate', () => {
+    expect(buildDockerControlCommand({ service: 'tempo', action: 'recreate' })).toBe(
       'docker compose up -d --force-recreate tempo'
     );
   });

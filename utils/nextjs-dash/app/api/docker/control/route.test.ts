@@ -23,10 +23,8 @@ describe('/api/docker/control', () => {
     vi.clearAllMocks();
   });
 
-  it('prepends compose profile flags for quarkus services (stopMode=delete)', async () => {
-    const res = await POST(
-      makeRequest({ service: 'quarkus-jvm', action: 'stop', stopMode: 'delete' }) as unknown as never
-    );
+  it('prepends compose profile flags for quarkus services (delete)', async () => {
+    const res = await POST(makeRequest({ service: 'quarkus-jvm', action: 'delete' }) as unknown as never);
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
 
@@ -34,10 +32,8 @@ describe('/api/docker/control', () => {
     expect(json.command).toBe('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
   });
 
-  it('prepends compose profile flags for go services (stopMode=delete)', async () => {
-    const res = await POST(
-      makeRequest({ service: 'go', action: 'stop', stopMode: 'delete' }) as unknown as never
-    );
+  it('prepends compose profile flags for go services (delete)', async () => {
+    const res = await POST(makeRequest({ service: 'go', action: 'delete' }) as unknown as never);
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s go');
 
@@ -61,22 +57,16 @@ describe('/api/docker/control', () => {
     expect(json.command).toBe('docker compose restart tempo');
   });
 
-  it('builds recreate command via restartMode=recreate', async () => {
-    const res = await POST(
-      makeRequest({ service: 'tempo', action: 'restart', restartMode: 'recreate' }) as unknown as never
-    );
+  it('builds recreate command (explicit action)', async () => {
+    const res = await POST(makeRequest({ service: 'tempo', action: 'recreate' }) as unknown as never);
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose up -d --force-recreate tempo');
     const json = (await res.json()) as { command?: string };
     expect(json.command).toBe('docker compose up -d --force-recreate tempo');
   });
 
-  it('builds rm -f -s command when stopMode is delete', async () => {
-    const { submitCommand } = await import('@/lib/orchestratorClient');
-
-    const res = await POST(
-      makeRequest({ service: 'orchestrator', action: 'stop', stopMode: 'delete' }) as unknown as never
-    );
+  it('builds delete command (explicit action)', async () => {
+    const res = await POST(makeRequest({ service: 'orchestrator', action: 'delete' }) as unknown as never);
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose rm -f -s orchestrator');
 

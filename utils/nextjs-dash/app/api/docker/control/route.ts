@@ -3,12 +3,7 @@ import { errorFromUnknown, errorJson, okJson } from '@/lib/apiResponses';
 import { submitCommand } from '@/lib/orchestratorClient';
 import { withApiRoute } from '@/lib/routeWrapper';
 import { createScopedServerLogger } from '@/lib/scopedServerLogger';
-import {
-  buildDockerControlCommand,
-  type DockerRestartMode,
-  type DockerStartMode,
-  type DockerStopMode,
-} from '@/lib/dockerComposeControl';
+import { buildDockerControlCommand, type DockerControlAction } from '@/lib/dockerComposeControl';
 
 /**
  * POST /api/docker/control
@@ -22,47 +17,39 @@ export const POST = withApiRoute({ name: 'DOCKER_CONTROL_API' }, async function 
     const body = (await request.json()) as {
       service?: unknown;
       action?: unknown;
-
-      // Explicit intent.
-      startMode?: unknown;
-      restartMode?: unknown;
-      stopMode?: unknown;
     };
 
     const service = body.service;
-    const action = body.action;
+    const actionRaw = body.action;
 
     if (typeof service !== 'string' || !service.trim()) {
       return errorJson(400, { error: 'service must be a non-empty string' });
     }
-    if (action !== 'start' && action !== 'stop' && action !== 'restart') {
-      return errorJson(400, { error: 'action must be one of: start, stop, restart' });
+
+    const isValidAction =
+      actionRaw === 'start' ||
+      actionRaw === 'stop' ||
+      actionRaw === 'restart' ||
+      actionRaw === 'recreate' ||
+      actionRaw === 'delete';
+
+    if (!isValidAction) {
+      return errorJson(400, { error: 'action must be one of: start, stop, restart, recreate, delete' });
     }
 
-    const startMode: DockerStartMode | undefined =
-      body.startMode === 'start' || body.startMode === 'recreate' ? body.startMode : undefined;
-    const restartMode: DockerRestartMode | undefined =
-      body.restartMode === 'restart' || body.restartMode === 'recreate' ? body.restartMode : undefined;
-    const stopMode: DockerStopMode | undefined =
-      body.stopMode === 'stop' || body.stopMode === 'delete' ? body.stopMode : undefined;
+    const action: DockerControlAction = actionRaw;
 
     // NOTE: service name is used as compose service and container name, per repo convention.
-    // We submit *explicit docker compose commands* to orchestrator and do not send any higher-level intent.
+    // We submit explicit docker compose commands to orchestrator.
     const command = buildDockerControlCommand({
       service,
       action,
-      startMode,
-      restartMode,
-      stopMode,
     });
 
     serverLogger.info('Submitting docker control command', {
       command,
       action,
       service,
-      startMode,
-      restartMode,
-      stopMode,
     });
 
     const result = await submitCommand(command);

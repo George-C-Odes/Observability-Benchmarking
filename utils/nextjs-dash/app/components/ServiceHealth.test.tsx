@@ -75,13 +75,10 @@ function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnab
       expect(init?.method).toBe('POST');
       const parsed = JSON.parse(String(init?.body || '{}')) as {
         service?: string;
-        action?: 'start' | 'stop' | 'restart';
-        startMode?: 'start' | 'recreate';
-        restartMode?: 'restart' | 'recreate';
-        stopMode?: 'stop' | 'delete';
+        action?: 'start' | 'stop' | 'restart' | 'recreate' | 'delete';
       };
       expect(typeof parsed.service).toBe('string');
-      expect(['start', 'stop', 'restart']).toContain(parsed.action);
+      expect(['start', 'stop', 'restart', 'recreate', 'delete']).toContain(parsed.action);
 
       // Keep the UI stable for multi-action tests: we don't want the optimistic PENDING state
       // to hide buttons mid-test. Real status will only change after a refresh anyway.
@@ -400,7 +397,7 @@ describe('ServiceHealth', () => {
     const actions: Array<{ label: 'Restart' | 'Stop' | 'Delete'; expectedBody: string }> = [
       { label: 'Restart', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart' }) },
       { label: 'Stop', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop' }) },
-      { label: 'Delete', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop', stopMode: 'delete' }) },
+      { label: 'Delete', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'delete' }) },
     ];
 
     for (const a of actions) {
