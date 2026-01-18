@@ -1,64 +1,46 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
-  Typography,
-  Alert,
-  CircularProgress,
   Card,
   CardContent,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  Tooltip,
-  Stack,
-  Divider,
+  CircularProgress,
   Collapse,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import CodeIcon from '@mui/icons-material/Code';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import PendingIcon from '@mui/icons-material/Pending';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import ListAltIcon from '@mui/icons-material/ListAlt';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ClearAllIcon from '@mui/icons-material/ClearAll';
+import CodeIcon from '@mui/icons-material/Code';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import PendingIcon from '@mui/icons-material/Pending';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useJobRunner } from '@/app/hooks/useJobRunner';
 import { useScripts } from '@/app/hooks/useScripts';
 import type { Script } from '@/app/hooks/useScripts';
-import { ScriptSection } from './scripts/ScriptSection';
 import { createClientLogger } from '@/lib/clientLogger';
-
-interface JobStatus {
-  jobId: string;
-  status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED';
-  createdAt?: string;
-  startedAt?: string;
-  finishedAt?: string;
-  exitCode?: number;
-  lastLine?: string;
-  title?: string;
-}
+import { ScriptSection } from './scripts/ScriptSection';
 
 function formatTimestampHuman(iso?: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  // To the second, local time.
   return d.toLocaleString(undefined, {
     year: 'numeric',
     month: '2-digit',
@@ -81,65 +63,34 @@ export default function ScriptRunner() {
     currentJobId,
     lastJobStatus,
     reconnectCount,
+    lastCommand,
     lastLabel,
     sseConnected,
     sseLastError,
     maxExecutionLogLines,
   } = useJobRunner();
 
-  // --- Output dialog persistence / dismissal ---
-  const DIALOG_DISMISS_KEY = 'scriptRunner.outputDialog.dismissed.v1';
-  const readDismissed = (): { jobId?: string; runId?: string | null } | null => {
-    try {
-      const raw = sessionStorage.getItem(DIALOG_DISMISS_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as { jobId?: unknown; runId?: unknown };
-      return {
-        jobId: typeof parsed?.jobId === 'string' ? parsed.jobId : undefined,
-        runId: typeof parsed?.runId === 'string' ? parsed.runId : null,
-      };
-    } catch {
-      return null;
-    }
-  };
-
-  const writeDismissed = (val: { jobId: string; runId: string | null } | null) => {
-    try {
-      if (!val) sessionStorage.removeItem(DIALOG_DISMISS_KEY);
-      else sessionStorage.setItem(DIALOG_DISMISS_KEY, JSON.stringify(val));
-    } catch {
-      // ignore
-    }
-  };
+  // Snapshot what the user *submitted* so the UI doesn't lag behind asynchronous SSE title updates.
+  const [submittedRun, setSubmittedRun] = useState<{ label: string; command: string } | null>(null);
 
   const clientLogger = createClientLogger('ScriptRunner');
 
   const [executingName, setExecutingName] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [outputDialog, setOutputDialog] = useState<{
-    open: boolean;
-    title: string;
-    jobDetails?: JobStatus | null;
-    /** When true, the dialog should never be restored from session again. */
-    dismissed?: boolean;
-    dismissedForJobId?: string | null;
-  }>(() => {
-    const d = readDismissed();
-    return {
-      open: false,
-      title: '',
-      dismissed: Boolean(d?.jobId),
-      dismissedForJobId: d?.jobId ?? null,
-    };
-  });
+  const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
   const [freeTextCommand, setFreeTextCommand] = useState('');
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [showEventLogs, setShowEventLogs] = useState(false);
+
   const executionLogRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+
   const prevStatusRef = useRef<string | null>(null);
+  const prevIsTerminalRef = useRef<boolean>(false);
+
   const [statusPulseOn, setStatusPulseOn] = useState(false);
+  const [terminalPulseOn, setTerminalPulseOn] = useState(false);
   const [showStreamIssueChip, setShowStreamIssueChip] = useState(false);
   const [runtimeNowMs, setRuntimeNowMs] = useState<number>(() => Date.now());
 
@@ -148,7 +99,6 @@ export default function ScriptRunner() {
   const executeBlocked = Boolean(currentJobId) && isRunning;
   const executeBlockedReason = executeBlocked ? 'Another job is still running. Wait for it to finish before starting a new one.' : '';
 
-  // Tick runtime display while running, without violating purity.
   useEffect(() => {
     if (!isRunning) return;
     const id = window.setInterval(() => setRuntimeNowMs(Date.now()), 1000);
@@ -169,7 +119,7 @@ export default function ScriptRunner() {
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess('job');
-      setTimeout(() => setCopySuccess(null), 1200);
+      setTimeout(() => setCopySuccess(null), 1000);
     } catch (err) {
       clientLogger.error('Failed to copy to clipboard', err);
     }
@@ -184,39 +134,39 @@ export default function ScriptRunner() {
   };
 
   const executeScript = async (scriptName: string, command: string) => {
-    // Clear dialog dismissal marker for new executions.
-    writeDismissed(null);
-    setOutputDialog((prev) => ({ ...prev, dismissed: false, dismissedForJobId: null }));
+    // Starting a new run should not show stale UI from the previous run.
+    setMessage(null);
+    setDismissedBannerKey(null);
+    setShowEventLogs(true);
+
+    // Reset the per-run snapshot so the UI doesn't keep showing the previous run if submit fails.
+    setSubmittedRun({ label: scriptName, command });
 
     if (executeBlocked) {
       setMessage({ type: 'error', text: executeBlockedReason });
       return;
     }
 
-    setExecutingName(scriptName);
-    setMessage(null);
-    setShowEventLogs(true);
+    // Align with what the Clear button resets.
+    // This clears currentJobId/lastJobStatus/lastCommand/lastLabel and disconnects SSE if any.
+    reset();
 
-    // Let the hook clear the previous run logs and stream the new run.
+    setExecutingName(scriptName);
+
     const result = await runCommand(command, scriptName);
 
     if (result.ok) {
-      // Message lifecyle is derived from status.
       setMessage(null);
     } else {
-      // Provide a richer error message.
+      // If submit fails, make sure we don't keep a previous job id/title "stuck" on screen.
+      // useJobRunner.runCommand sets lastJobStatus to FAILED with jobId 'N/A', and currentJobId remains null.
+      // Keeping submittedRun is useful (it indicates what the user attempted to run), but we should ensure any
+      // previous-job UI reporters don't linger.
       const details = result.output?.trim();
       const maybeBusy = details.includes('HTTP 503');
       setMessage({
         type: 'error',
         text: maybeBusy ? `Orchestrator is busy. Try again shortly.` : `Failed to start "${scriptName}"`,
-      });
-
-      setOutputDialog({
-        open: true,
-        title: scriptName,
-        jobDetails: result.job,
-        dismissed: false,
       });
     }
 
@@ -234,20 +184,7 @@ export default function ScriptRunner() {
     setShowFreeTextInput(false);
   };
 
-  const handleCloseDialog = () => {
-    // Dispose fully so it doesn't reappear after refresh.
-    const jobId = dialogJob?.jobId;
-    const runId = (lastJobStatus as unknown as { runId?: string | null })?.runId ?? null;
-    if (jobId) writeDismissed({ jobId, runId });
-
-    setOutputDialog({ open: false, title: '', jobDetails: null, dismissed: true, dismissedForJobId: jobId ?? null });
-  };
-
-  // Removed unused computed UI helpers (jobStatusUi, statusPulseGlow, canCopyCmd, runtimeChipUi)
-  // after refactoring the execution summary/logs UI.
-
   useEffect(() => {
-    // Avoid a distracting flash: only show the stream-issue chip if the error persists briefly.
     const t = window.setTimeout(() => {
       setShowStreamIssueChip(Boolean(sseLastError) && !isTerminal && Boolean(currentJobId));
     }, 500);
@@ -281,49 +218,38 @@ export default function ScriptRunner() {
     }
   }, [eventLogs.length]);
 
+  // Status pulse (any status change)
   useEffect(() => {
     const next = lastJobStatus?.status ?? null;
     const prev = prevStatusRef.current;
 
     if (next && next !== prev) {
-      if (next === 'QUEUED' || next === 'RUNNING' || next === 'SUCCEEDED' || next === 'FAILED' || next === 'CANCELED') {
-        const frame = window.setTimeout(() => setStatusPulseOn(true), 0);
-        const t = window.setTimeout(() => setStatusPulseOn(false), 650);
-        prevStatusRef.current = next;
-        return () => {
-          window.clearTimeout(frame);
-          window.clearTimeout(t);
-        };
-      }
+      const frame = window.setTimeout(() => setStatusPulseOn(true), 0);
+      const t = window.setTimeout(() => setStatusPulseOn(false), 650);
+      prevStatusRef.current = next;
+      return () => {
+        window.clearTimeout(frame);
+        window.clearTimeout(t);
+      };
     }
 
     prevStatusRef.current = next;
   }, [lastJobStatus?.status]);
 
-  // (Dismissed dialog state is derived from sessionStorage via lazy initialization above)
-  // so we don't need an extra mount-time effect here.
-
-  // Open/finalize the output dialog ONLY when we see the terminal SSE summary.
+  // Terminal "inward closing" pulse (only when entering terminal)
   useEffect(() => {
-    if (!lastJobStatus || !isTerminal) return;
-
-    // If the user already dismissed for this job id, don't reopen.
-    if (outputDialog.dismissed && outputDialog.dismissedForJobId === lastJobStatus.jobId) return;
-
-    const title = lastJobStatus.title ?? lastLabel ?? 'Free Text Command';
-
-    const t = window.setTimeout(() => {
-      setOutputDialog({
-        open: true,
-        title,
-        jobDetails: lastJobStatus,
-        dismissed: false,
-        dismissedForJobId: null,
-      });
-    }, 0);
-
-    return () => window.clearTimeout(t);
-  }, [isTerminal, lastJobStatus, lastLabel, outputDialog.dismissed, outputDialog.dismissedForJobId]);
+    const prevTerminal = prevIsTerminalRef.current;
+    if (isTerminal && !prevTerminal) {
+      const frame = window.setTimeout(() => setTerminalPulseOn(true), 0);
+      const t = window.setTimeout(() => setTerminalPulseOn(false), 1600);
+      prevIsTerminalRef.current = true;
+      return () => {
+        window.clearTimeout(frame);
+        window.clearTimeout(t);
+      };
+    }
+    prevIsTerminalRef.current = isTerminal;
+  }, [isTerminal]);
 
   // Derive the banner message from current job status.
   const derivedMessage = (() => {
@@ -352,11 +278,15 @@ export default function ScriptRunner() {
     return null;
   })();
 
-  // Prefer the derived message unless a manual error message exists.
+  // If the user closes the banner, keep it dismissed until the status/message changes.
+  // Model this as "dismissedBannerKey" instead of resetting state in an effect.
   const bannerMessage = message ?? derivedMessage;
+  const bannerKey = bannerMessage
+    ? `${lastJobStatus?.status ?? 'NONE'}|${bannerMessage.type}|${bannerMessage.text}`
+    : null;
+  const isBannerDismissed = Boolean(bannerKey) && dismissedBannerKey === bannerKey;
+  const visibleBannerMessage = bannerMessage && !isBannerDismissed ? bannerMessage : null;
 
-  // EXECUTION LOGS
-  // Treat as never-started state when we have no current job AND no logs and no status.
   const hasAnyExecutionState = Boolean(currentJobId) || eventLogs.length > 0 || Boolean(lastJobStatus);
 
   if (loading) {
@@ -369,21 +299,6 @@ export default function ScriptRunner() {
 
   const byCategory = (cat: Script['category']) => scripts.filter((s) => s.category === cat);
 
-  const dialogJob = outputDialog.jobDetails ?? lastJobStatus ?? null;
-
-  const dialogStatusUi = (() => {
-    const st = dialogJob?.status;
-    if (!st) return { label: '—', color: 'default' as const, icon: <PendingIcon fontSize="small" /> };
-    if (st === 'SUCCEEDED') return { label: 'SUCCEEDED', color: 'success' as const, icon: <CheckCircleIcon fontSize="small" /> };
-    if (st === 'FAILED') return { label: 'FAILED', color: 'error' as const, icon: <ErrorOutlineIcon fontSize="small" /> };
-    if (st === 'CANCELED') return { label: 'CANCELED', color: 'error' as const, icon: <CancelIcon fontSize="small" /> };
-    if (st === 'RUNNING') return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={14} /> };
-    return { label: st, color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
-  })();
-
-  const lastOutputLine = dialogJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
-
-  // Use current stream state for the in-page status summary (not the dialog snapshot).
   const pageJob = lastJobStatus;
   const pageStatusUi = (() => {
     const st = pageJob?.status;
@@ -394,6 +309,13 @@ export default function ScriptRunner() {
     if (st === 'RUNNING') return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={14} /> };
     if (st === 'QUEUED') return { label: 'QUEUED', color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
     return { label: st, color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
+  })();
+
+  const statusPulseColor = (() => {
+    if (pageStatusUi.color === 'success') return '#2e7d32';
+    if (pageStatusUi.color === 'error') return '#d32f2f';
+    if (pageStatusUi.color === 'warning') return '#ed6c02';
+    return '#90a4ae';
   })();
 
   const pageRuntimeText = (() => {
@@ -414,20 +336,15 @@ export default function ScriptRunner() {
 
   const pageLastLine = pageJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
 
-  const runningRuntimeText = (() => {
-    const startedAt = dialogJob?.startedAt ?? dialogJob?.createdAt;
-    if (!startedAt) return '—';
-    const startedAtMs = new Date(startedAt).getTime();
-    if (Number.isNaN(startedAtMs)) return '—';
-    const endMs = dialogJob?.finishedAt ? new Date(dialogJob.finishedAt).getTime() : runtimeNowMs;
-    const ms = Math.max(0, endMs - startedAtMs);
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
+  // Use the job runner's canonical title/label (matches banner). Avoid falling back to submittedRun here,
+  // because it can be stale relative to restored job state.
+  const jobTitleText = submittedRun?.label ?? pageJob?.title ?? lastLabel ?? '—';
+
+  const jobCommandText = (() => {
+    // Prefer the persisted runner command; only use the local submitted value before the runner is populated.
+    if (lastCommand) return lastCommand;
+    if (submittedRun?.command && isRunning) return submittedRun.command;
+    return '';
   })();
 
   return (
@@ -452,7 +369,7 @@ export default function ScriptRunner() {
       </Box>
 
       {error && !message && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setMessage(null)}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => { setMessage(null); setDismissedBannerKey(bannerKey); }}>
           {error}
         </Alert>
       )}
@@ -480,7 +397,12 @@ export default function ScriptRunner() {
             <Box display="flex" gap={2}>
               <Tooltip title={executeBlockedReason} arrow disableHoverListener={!executeBlocked}>
                 <span>
-                  <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={executeFreeText} disabled={executing || executeBlocked || !freeTextCommand.trim()}>
+                  <Button
+                    variant="contained"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={executeFreeText}
+                    disabled={executing || executeBlocked || !freeTextCommand.trim()}
+                  >
                     Execute
                   </Button>
                 </span>
@@ -499,13 +421,21 @@ export default function ScriptRunner() {
         </Card>
       )}
 
-      {bannerMessage && (
-        <Alert severity={bannerMessage.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
-          {bannerMessage.text}
+      {visibleBannerMessage && (
+        <Alert
+          severity={visibleBannerMessage.type}
+          sx={{ mb: 2 }}
+          onClose={() => {
+            // If the banner is a derived status banner (no manual message), we need a dedicated dismiss flag.
+            // If it's a manual message, clear it as well.
+            if (bannerKey) setDismissedBannerKey(bannerKey);
+            setMessage(null);
+          }}
+        >
+          {visibleBannerMessage.text}
         </Alert>
       )}
 
-      {/* Execution status summary card */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2} flexWrap="wrap">
@@ -518,7 +448,50 @@ export default function ScriptRunner() {
                 <Typography variant="caption" color="text.secondary">
                   Status:
                 </Typography>
-                <Chip size="small" color={pageStatusUi.color} icon={pageStatusUi.icon} label={pageStatusUi.label} sx={{ fontWeight: 'bold' }} />
+
+                <Box
+                  sx={{
+                    position: 'relative',
+                    display: 'inline-flex',
+                    borderRadius: 16,
+                    '@keyframes statusInwardPulse': {
+                      '0%': { transform: 'scale(2.6)', opacity: 0.0 },
+                      '18%': { transform: 'scale(2.25)', opacity: 0.38 },
+                      '45%': { transform: 'scale(1.55)', opacity: 0.52 },
+                      '75%': { transform: 'scale(1.12)', opacity: 0.32 },
+                      '100%': { transform: 'scale(1.0)', opacity: 0.0 },
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: -12,
+                      borderRadius: 22,
+                      border: `2px solid ${statusPulseColor}`,
+                      opacity: terminalPulseOn ? 1 : 0,
+                      animation: terminalPulseOn ? 'statusInwardPulse 1000ms ease-in-out' : 'none',
+                      pointerEvents: 'none',
+                      filter: 'blur(0.2px)',
+                    }}
+                  />
+
+                  <Chip
+                    size="small"
+                    color={pageStatusUi.color}
+                    icon={pageStatusUi.icon}
+                    label={pageStatusUi.label}
+                    sx={{
+                      fontWeight: 'bold',
+                      '@keyframes logsPulse': {
+                        '0%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
+                        '35%': { boxShadow: '0 0 0 6px rgba(255,193,7,0.18)' },
+                        '100%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
+                      },
+                      animation: statusPulseOn ? 'logsPulse 650ms ease-in-out' : 'none',
+                    }}
+                  />
+                </Box>
 
                 {!sseConnected && Boolean(currentJobId) && !isTerminal && (
                   <Tooltip title={sseLastError ?? 'Disconnected'}>
@@ -536,6 +509,53 @@ export default function ScriptRunner() {
                   color={reconnectCount > 0 ? 'warning' : 'default'}
                   sx={{ fontWeight: 'bold' }}
                 />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="caption" color="text.secondary">
+                  Title:
+                </Typography>
+
+                <Tooltip
+                  arrow
+                  placement="bottom-start"
+                  title={
+                    jobCommandText ? (
+                      <Box sx={{ maxWidth: 720 }}>
+                        <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: 12 }}>
+                          {jobCommandText}
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.75 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<ContentCopyIcon fontSize="small" />}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              void copyText(jobCommandText);
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </Box>
+                      </Box>
+                    ) : (
+                      'Command unavailable'
+                    )
+                  }
+                >
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={jobTitleText}
+                    sx={{
+                      maxWidth: 520,
+                      cursor: jobCommandText ? 'help' : 'default',
+                      '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                    }}
+                  />
+                </Tooltip>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -615,7 +635,6 @@ export default function ScriptRunner() {
         </CardContent>
       </Card>
 
-      {/* Execution logs */}
       {hasAnyExecutionState && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -649,8 +668,9 @@ export default function ScriptRunner() {
                     color="inherit"
                     startIcon={<ClearAllIcon />}
                     onClick={() => {
-                      setOutputDialog({ open: false, title: '', jobDetails: null, dismissed: true });
                       setMessage(null);
+                      setDismissedBannerKey(null);
+                      setSubmittedRun(null);
                       reset();
                       setShowEventLogs(false);
                     }}
@@ -678,8 +698,7 @@ export default function ScriptRunner() {
                   </Button>
                 </Tooltip>
 
-                <Tooltip title={`Keep last ${maxExecutionLogLines} lines`}
-                >
+                <Tooltip title={`Keep last ${maxExecutionLogLines} lines`}>
                   <Chip size="small" label={`${eventLogs.length} lines`} variant="outlined" />
                 </Tooltip>
               </Box>
@@ -777,122 +796,6 @@ export default function ScriptRunner() {
           </Typography>
         </Box>
       )}
-
-      <Dialog open={outputDialog.open} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-            <TerminalIcon fontSize="small" />
-            <Typography variant="h6" component="div" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {outputDialog.title || 'Job Result'}
-            </Typography>
-            <Chip size="small" color={dialogStatusUi.color} icon={dialogStatusUi.icon} label={dialogStatusUi.label} sx={{ fontWeight: 'bold' }} />
-          </Box>
-        </DialogTitle>
-
-        <DialogContent>
-          <Stack spacing={1.5} sx={{ mt: 0.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="caption" color="text.secondary">
-                Job id:
-              </Typography>
-              <Chip size="small" variant="outlined" label={dialogJob?.jobId ?? '—'} sx={{ fontFamily: 'monospace', maxWidth: 420 }} />
-              <Tooltip title={dialogJob?.jobId ? 'Copy job id' : 'No job id'}>
-                <span>
-                  <IconButton size="small" onClick={() => dialogJob?.jobId && void copyText(dialogJob.jobId)} disabled={!dialogJob?.jobId}>
-                    <ContentCopyIcon fontSize="inherit" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-
-              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-              <Typography variant="caption" color="text.secondary">
-                Reconnects:
-              </Typography>
-              <Chip size="small" label={String(reconnectCount)} variant={reconnectCount > 0 ? 'filled' : 'outlined'} color={reconnectCount > 0 ? 'warning' : 'default'} sx={{ fontWeight: 'bold' }} />
-
-              {!sseConnected && (
-                <Tooltip title={sseLastError ?? 'Disconnected'}>
-                  <Chip size="small" icon={<LinkOffIcon fontSize="small" />} color="warning" variant="outlined" label="stream" />
-                </Tooltip>
-              )}
-            </Box>
-
-            <Card variant="outlined" sx={{ bgcolor: 'background.paper' }}>
-              <CardContent sx={{ py: 1.5 }}>
-                <Stack spacing={1}>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Title:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {dialogJob?.title ?? outputDialog.title ?? 'Free Text Command'}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Exit code:
-                    </Typography>
-                    <Chip size="small" variant="outlined" label={typeof dialogJob?.exitCode === 'number' ? String(dialogJob.exitCode) : '—'} color={dialogJob?.status === 'SUCCEEDED' ? 'success' : dialogJob?.status === 'FAILED' ? 'error' : 'default'} />
-
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                      Runtime:
-                    </Typography>
-                    <Chip
-                      size="small"
-                      variant="outlined"
-                      icon={<AccessTimeIcon fontSize="small" />}
-                      label={dialogJob?.finishedAt ? runningRuntimeText : (isRunning ? `running… ${runningRuntimeText}` : '—')}
-                    />
-                  </Box>
-
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Started:
-                    </Typography>
-                    <Chip size="small" variant="outlined" label={formatTimestampHuman(dialogJob?.startedAt ?? dialogJob?.createdAt)} />
-
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                      Finished:
-                    </Typography>
-                    <Chip size="small" variant="outlined" label={formatTimestampHuman(dialogJob?.finishedAt)} />
-                  </Box>
-
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Last output line:
-                    </Typography>
-                    <Box
-                      component="pre"
-                      sx={{
-                        m: 0,
-                        p: 1.25,
-                        borderRadius: 1,
-                        bgcolor: 'rgba(0,0,0,0.35)',
-                        fontFamily: 'monospace',
-                        fontSize: '0.8rem',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        maxHeight: 180,
-                        overflow: 'auto',
-                      }}
-                    >
-                      {lastOutputLine ?? '—'}
-                    </Box>
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Stack>
-        </DialogContent>
-
-        <DialogActions>
-          <Button variant="outlined" onClick={handleCloseDialog}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
