@@ -618,7 +618,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Build**           | Maven                  | 3.9.12  | Build automation   |
 | **Build**           | NPM                    | 11.6.2  | Package manager    |
 | **Framework**       | React                  | 19.2.3  | Frontend           |
-| **Framework**       | Next.js                | 16.1.2  | Frontend           |
+| **Framework**       | Next.js                | 16.1.3  | Frontend           |
 | **Framework**       | Node                   | 25.2.1  | Runtime JavaScript |
 | **Library**         | Material UI (MUI)      | 7.3.7   | Frontend           |
 | **Framework**       | Typescript             | 5.9.3   | Frontend           |

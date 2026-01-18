@@ -43,7 +43,7 @@ A Next.js-based dashboard UI for orchestrating and managing the Observability Be
 
 ## Technology Stack
 
-- **Next.js**: v16.1.2
+- **Next.js**: v16.1.3
 - **React**: v19.2.3
 - **Material-UI (MUI)**: v7.3.7
 - **TypeScript**: v5
