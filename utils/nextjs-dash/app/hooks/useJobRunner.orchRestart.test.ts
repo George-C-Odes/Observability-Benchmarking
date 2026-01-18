@@ -27,12 +27,17 @@ class MockEventSource {
 
   constructor(url: string) {
     this.url = url;
+    // Touch handler members so TS/IDEs don't flag them as unused; the hook sets them.
+    void this.onopen;
+    void this.onmessage;
+    void this.onerror;
     MockEventSource.instances.push(this);
   }
-}
 
-// Touch the members once so IDE/typecheck doesn't flag them as unused in this test-only file.
-// (Intentionally omitted; we rely on documented eslint-disable comments instead.)
+  emitError(): void {
+    this.onerror?.();
+  }
+}
 
 class MockBroadcastChannel {
   static channels = new Map<string, Set<MockBroadcastChannel>>();
@@ -46,26 +51,43 @@ class MockBroadcastChannel {
     MockBroadcastChannel.channels.set(name, set);
   }
 
-  postMessage() {
-    // No-op: this test focuses on SSE error path.
+  // noinspection JSUnusedGlobalSymbols
+  postMessage(data: unknown): void {
+    void data;
+    // No-op: this test focuses on the SSE error path.
   }
 
-  addEventListener(type: 'message', cb: (ev: MessageEvent) => void) {
+  // noinspection JSUnusedGlobalSymbols
+  addEventListener(type: 'message', cb: (ev: MessageEvent) => void): void {
     if (type === 'message') this.listeners.add(cb);
   }
 
-  removeEventListener(type: 'message', cb: (ev: MessageEvent) => void) {
+  // noinspection JSUnusedGlobalSymbols
+  removeEventListener(type: 'message', cb: (ev: MessageEvent) => void): void {
     if (type === 'message') this.listeners.delete(cb);
   }
 
-  close() {
+  // noinspection JSUnusedGlobalSymbols
+  close(): void {
     const peers = MockBroadcastChannel.channels.get(this.name);
     peers?.delete(this);
     this.listeners.clear();
   }
 }
 
+// noinspection JSUnusedGlobalSymbols
+declare global {
+  interface GlobalThis {
+    EventSource: typeof EventSource;
+    BroadcastChannel: typeof BroadcastChannel;
+    sessionStorage: Storage;
+  }
+}
+
 beforeEach(() => {
+  // Reference the merged type so IDE inspections don't mark the augmentation as unused.
+  void (globalThis as GlobalThis);
+
   MockEventSource.instances = [];
   globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
   globalThis.BroadcastChannel = MockBroadcastChannel as unknown as typeof BroadcastChannel;
@@ -81,19 +103,16 @@ beforeEach(() => {
       return store.size;
     },
   } as unknown as Storage;
-
-  vi.restoreAllMocks();
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('useJobRunner (orchestrator restart simulation)', () => {
   it('marks job as FAILED and stops reconnecting when events meta returns 404 after SSE error', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-
-    fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL): Promise<Response> => {
       const url = String(input);
 
       if (url.endsWith('/api/orchestrator/submit')) {
@@ -117,7 +136,7 @@ describe('useJobRunner (orchestrator restart simulation)', () => {
 
     await act(async () => {
       // Trigger SSE error – hook should call events/meta and then terminate.
-      MockEventSource.instances[0].onerror?.();
+      MockEventSource.instances[0].emitError();
       await Promise.resolve();
     });
 
