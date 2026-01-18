@@ -36,6 +36,8 @@ import { useScripts } from '@/app/hooks/useScripts';
 import type { Script } from '@/app/hooks/useScripts';
 import { createClientLogger } from '@/lib/clientLogger';
 import { ScriptSection } from './scripts/ScriptSection';
+import { InwardPulse } from './ui/InwardPulse';
+import { useTimedPulse } from '@/app/hooks/useTimedPulse';
 
 function formatTimestampHuman(iso?: string): string {
   if (!iso) return '—';
@@ -82,22 +84,53 @@ export default function ScriptRunner() {
   const [showFreeTextInput, setShowFreeTextInput] = useState(false);
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
   const [showEventLogs, setShowEventLogs] = useState(false);
+  const [showStreamIssueChip, setShowStreamIssueChip] = useState(false);
+  const [runtimeNowMs, setRuntimeNowMs] = useState<number>(() => Date.now());
 
   const executionLogRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
 
-  const prevStatusRef = useRef<string | null>(null);
-  const prevIsTerminalRef = useRef<boolean>(false);
-
-  const [statusPulseOn, setStatusPulseOn] = useState(false);
-  const [terminalPulseOn, setTerminalPulseOn] = useState(false);
-  const [showStreamIssueChip, setShowStreamIssueChip] = useState(false);
-  const [runtimeNowMs, setRuntimeNowMs] = useState<number>(() => Date.now());
+  const { on: statusPulseOn } = useTimedPulse({ durationMs: 650, trigger: lastJobStatus?.status, allowFalsy: false });
 
   const isRunning = lastJobStatus?.status === 'RUNNING' || lastJobStatus?.status === 'QUEUED';
   const isTerminal = lastJobStatus?.status === 'SUCCEEDED' || lastJobStatus?.status === 'FAILED' || lastJobStatus?.status === 'CANCELED';
+
+  const { on: terminalPulseOn } = useTimedPulse({
+    durationMs: 1600,
+    trigger: isTerminal ? 'TERMINAL' : 'NOT_TERMINAL',
+    allowFalsy: true,
+  });
+
   const executeBlocked = Boolean(currentJobId) && isRunning;
   const executeBlockedReason = executeBlocked ? 'Another job is still running. Wait for it to finish before starting a new one.' : '';
+
+  const [envValidation, setEnvValidation] = useState<{ loaded: boolean; hostRepoSet: boolean } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/env', { method: 'GET', headers: { Accept: 'application/json' } });
+        if (!res.ok) {
+          if (!cancelled) setEnvValidation({ loaded: false, hostRepoSet: false });
+          return;
+        }
+        const body = (await res.json()) as { validation?: { loaded?: unknown; hostRepoSet?: unknown } };
+        const loaded = Boolean(body.validation?.loaded);
+        const hostRepoSet = Boolean(body.validation?.hostRepoSet);
+        if (!cancelled) setEnvValidation({ loaded, hostRepoSet });
+      } catch {
+        if (!cancelled) setEnvValidation({ loaded: false, hostRepoSet: false });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const envBlocked = envValidation !== null && (!envValidation.loaded || !envValidation.hostRepoSet);
+  const envBlockedReason = 'HOST_REPO not set in .env';
 
   useEffect(() => {
     if (!isRunning) return;
@@ -218,39 +251,6 @@ export default function ScriptRunner() {
     }
   }, [eventLogs.length]);
 
-  // Status pulse (any status change)
-  useEffect(() => {
-    const next = lastJobStatus?.status ?? null;
-    const prev = prevStatusRef.current;
-
-    if (next && next !== prev) {
-      const frame = window.setTimeout(() => setStatusPulseOn(true), 0);
-      const t = window.setTimeout(() => setStatusPulseOn(false), 650);
-      prevStatusRef.current = next;
-      return () => {
-        window.clearTimeout(frame);
-        window.clearTimeout(t);
-      };
-    }
-
-    prevStatusRef.current = next;
-  }, [lastJobStatus?.status]);
-
-  // Terminal "inward closing" pulse (only when entering terminal)
-  useEffect(() => {
-    const prevTerminal = prevIsTerminalRef.current;
-    if (isTerminal && !prevTerminal) {
-      const frame = window.setTimeout(() => setTerminalPulseOn(true), 0);
-      const t = window.setTimeout(() => setTerminalPulseOn(false), 1600);
-      prevIsTerminalRef.current = true;
-      return () => {
-        window.clearTimeout(frame);
-        window.clearTimeout(t);
-      };
-    }
-    prevIsTerminalRef.current = isTerminal;
-  }, [isTerminal]);
-
   // Derive the banner message from current job status.
   const derivedMessage = (() => {
     const st = lastJobStatus?.status;
@@ -362,9 +362,19 @@ export default function ScriptRunner() {
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={loading}>
             Refresh
           </Button>
-          <Button variant="contained" startIcon={<CodeIcon />} onClick={() => setShowFreeTextInput(!showFreeTextInput)} color="secondary">
-            {showFreeTextInput ? 'Hide' : 'Custom Command'}
-          </Button>
+          <Tooltip title={envBlocked ? envBlockedReason : ''} arrow disableHoverListener={!envBlocked}>
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<CodeIcon />}
+                onClick={() => setShowFreeTextInput(!showFreeTextInput)}
+                color="secondary"
+                disabled={envBlocked}
+              >
+                {showFreeTextInput ? 'Hide' : 'Custom Command'}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
       </Box>
 
@@ -390,18 +400,22 @@ export default function ScriptRunner() {
               value={freeTextCommand}
               onChange={(e) => setFreeTextCommand(e.target.value)}
               placeholder="e.g., docker compose --project-directory compose ps"
-              disabled={executing || executeBlocked}
+              disabled={executing || executeBlocked || envBlocked}
               variant="outlined"
               sx={{ mb: 2 }}
             />
             <Box display="flex" gap={2}>
-              <Tooltip title={executeBlockedReason} arrow disableHoverListener={!executeBlocked}>
+              <Tooltip
+                title={envBlocked ? envBlockedReason : executeBlockedReason}
+                arrow
+                disableHoverListener={!(executeBlocked || envBlocked)}
+              >
                 <span>
                   <Button
                     variant="contained"
                     startIcon={<PlayArrowIcon />}
                     onClick={executeFreeText}
-                    disabled={executing || executeBlocked || !freeTextCommand.trim()}
+                    disabled={executing || executeBlocked || envBlocked || !freeTextCommand.trim()}
                   >
                     Execute
                   </Button>
@@ -454,27 +468,9 @@ export default function ScriptRunner() {
                     position: 'relative',
                     display: 'inline-flex',
                     borderRadius: 16,
-                    '@keyframes statusInwardPulse': {
-                      '0%': { transform: 'scale(2.6)', opacity: 0.0 },
-                      '18%': { transform: 'scale(2.25)', opacity: 0.38 },
-                      '45%': { transform: 'scale(1.55)', opacity: 0.52 },
-                      '75%': { transform: 'scale(1.12)', opacity: 0.32 },
-                      '100%': { transform: 'scale(1.0)', opacity: 0.0 },
-                    },
                   }}
                 >
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      inset: -12,
-                      borderRadius: 22,
-                      border: `2px solid ${statusPulseColor}`,
-                      opacity: terminalPulseOn ? 1 : 0,
-                      animation: terminalPulseOn ? 'statusInwardPulse 1000ms ease-in-out' : 'none',
-                      pointerEvents: 'none',
-                      filter: 'blur(0.2px)',
-                    }}
-                  />
+                  <InwardPulse active={terminalPulseOn} color={statusPulseColor} inset={12} borderRadius={22} durationMs={1000} />
 
                   <Chip
                     size="small"
@@ -742,8 +738,8 @@ export default function ScriptRunner() {
         scripts={byCategory('build-img')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked}
-        executeDisabledReason={executeBlockedReason}
+        executeDisabled={executeBlocked || envBlocked}
+        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
         accentColor="primary.main"
         chipColor="primary"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
@@ -755,8 +751,8 @@ export default function ScriptRunner() {
         scripts={byCategory('multi-cont')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked}
-        executeDisabledReason={executeBlockedReason}
+        executeDisabled={executeBlocked || envBlocked}
+        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
         accentColor="secondary.main"
         chipColor="secondary"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
@@ -768,8 +764,8 @@ export default function ScriptRunner() {
         scripts={byCategory('single-cont')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked}
-        executeDisabledReason={executeBlockedReason}
+        executeDisabled={executeBlocked || envBlocked}
+        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
         accentColor="info.main"
         chipColor="info"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
@@ -781,8 +777,8 @@ export default function ScriptRunner() {
         scripts={byCategory('test')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked}
-        executeDisabledReason={executeBlockedReason}
+        executeDisabled={executeBlocked || envBlocked}
+        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
         accentColor="success.main"
         chipColor="success"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}

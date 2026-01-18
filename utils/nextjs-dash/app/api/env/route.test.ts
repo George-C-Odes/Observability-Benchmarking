@@ -17,14 +17,30 @@ describe('/api/env route', () => {
     vi.resetAllMocks();
   });
 
-  it('GET returns env content', async () => {
+  it('GET returns env content (plus validation metadata)', async () => {
     vi.mocked(orch.getEnvFile).mockResolvedValue({ content: 'A: 1' });
 
     const req = new NextRequest('http://localhost/api/env', { method: 'GET' });
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ content: 'A: 1' });
+    expect(body).toEqual({
+      content: 'A: 1',
+      validation: {
+        loaded: true,
+        hostRepoSet: false,
+      },
+    });
+  });
+
+  it('GET sets hostRepoSet=true when HOST_REPO is present', async () => {
+    vi.mocked(orch.getEnvFile).mockResolvedValue({ content: 'A: 1\nHOST_REPO: /tmp/repo\nB: 2' });
+
+    const req = new NextRequest('http://localhost/api/env', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.validation).toEqual({ loaded: true, hostRepoSet: true });
   });
 
   it('POST returns 400 when content is not a string', async () => {

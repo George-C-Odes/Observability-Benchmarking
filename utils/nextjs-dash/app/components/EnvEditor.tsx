@@ -15,6 +15,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TuneIcon from '@mui/icons-material/Tune';
 import { createClientLogger } from '@/lib/clientLogger';
+import { InwardPulse } from '@/app/components/ui/InwardPulse';
+import { useTimedPulse } from '@/app/hooks/useTimedPulse';
 
 const clientLogger = createClientLogger('EnvEditor');
 
@@ -141,6 +143,17 @@ export default function EnvEditor() {
     void fetchEnvFile();
   }, [fetchEnvFile]);
 
+  const hostRepoVar = envVariables.find((v) => v.key === 'HOST_REPO');
+  const hostRepoExists = Boolean(hostRepoVar);
+  const hostRepoEmpty = hostRepoVar?.value.trim() === '';
+
+  // Only pulse if HOST_REPO exists as a key but is empty.
+  const { on: hostRepoPulseOn } = useTimedPulse({
+    durationMs: 1200,
+    trigger: hostRepoEmpty ? 'EMPTY' : 'OK',
+    allowFalsy: true,
+  });
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
@@ -167,13 +180,27 @@ export default function EnvEditor() {
       <Stack spacing={2} sx={{ mb: 3 }}>
         {envVariables.map((variable, index) => {
           const isReadOnly = typeof variable.comment === 'string' && variable.comment.includes('FYI');
+          const isHostRepo = variable.key === 'HOST_REPO';
+          const shouldWarn = isHostRepo && hostRepoExists && hostRepoEmpty;
+
           return (
-            <Box key={index}>
+            <Box key={index} sx={isHostRepo ? { position: 'relative' } : undefined}>
               {variable.comment && (
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
                   {variable.comment}
                 </Typography>
               )}
+
+              {isHostRepo && hostRepoExists && (
+                <InwardPulse
+                  active={hostRepoPulseOn}
+                  color="#ed6c02"
+                  inset={10}
+                  borderRadius={10}
+                  durationMs={1100}
+                />
+              )}
+
               <TextField
                 fullWidth
                 label={variable.key}
@@ -182,6 +209,8 @@ export default function EnvEditor() {
                 variant="outlined"
                 size="small"
                 disabled={isReadOnly}
+                error={Boolean(shouldWarn)}
+                helperText={shouldWarn ? 'HOST_REPO not set in .env' : undefined}
               />
             </Box>
           );

@@ -15,7 +15,24 @@ export const GET = withApiRoute({ name: 'ENV_API' }, async function GET() {
   try {
     serverLogger.debug('Fetching environment file from orchestrator');
     const envData = await getEnvFile();
-    return okJson(envData);
+
+    const content = typeof (envData as { content?: unknown })?.content === 'string' ? (envData as { content: string }).content : '';
+
+    // This repo uses YAML-style "KEY: VALUE" env files.
+    const hostRepoLine = content
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l.startsWith('HOST_REPO:'));
+
+    const hostRepoValue = hostRepoLine ? hostRepoLine.split(':').slice(1).join(':').trim() : '';
+
+    return okJson({
+      ...envData,
+      validation: {
+        loaded: true,
+        hostRepoSet: Boolean(hostRepoValue),
+      },
+    });
   } catch (error) {
     serverLogger.error('Error fetching environment', error);
     return errorFromUnknown(500, error, 'Failed to fetch env');
