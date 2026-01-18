@@ -338,7 +338,7 @@ export default function ScriptRunner() {
 
   // Use the job runner's canonical title/label (matches banner). Avoid falling back to submittedRun here,
   // because it can be stale relative to restored job state.
-  const jobTitleText = submittedRun?.label ?? pageJob?.title ?? lastLabel ?? '—';
+  const jobTitleText = submittedRun?.label ?? lastLabel ?? '—';
 
   const jobCommandText = (() => {
     // Prefer the persisted runner command; only use the local submitted value before the runner is populated.
