@@ -168,7 +168,7 @@ export default function EnvEditor() {
         <TuneIcon /> Environment Configuration Editor
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Edit the configuration values for the compose/.env file
+        Edit the configuration values of the compose/.env file
       </Typography>
 
       {message && (

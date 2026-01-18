@@ -4,12 +4,21 @@ import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 
 const DEFAULT_TIMEOUT_MS = 2000;
 
+function hasName(value: unknown): value is { name: unknown } {
+  return typeof value === 'object' && value !== null && 'name' in value;
+}
+
 function isAbortError(e: unknown) {
+  const name =
+    e instanceof Error
+      ? e.name
+      : hasName(e) && typeof e.name === 'string'
+        ? e.name
+        : undefined;
+
   return (
-    (e instanceof Error && (e.name === 'AbortError' || e.message.toLowerCase().includes('aborted'))) ||
-    // Node 18 sometimes uses DOMException
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((e as any)?.name === 'AbortError')
+    name === 'AbortError' ||
+    (e instanceof Error && e.message.toLowerCase().includes('aborted'))
   );
 }
 
