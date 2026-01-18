@@ -21,6 +21,8 @@ import SettingsEthernetIcon from '@mui/icons-material/SettingsEthernet';
 import StorageIcon from '@mui/icons-material/Storage';
 import MemoryIcon from '@mui/icons-material/Memory';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import EmailIcon from '@mui/icons-material/Email';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
 
 function AuthorGearIcon({ size = 36 }: { size?: number }) {
   // Using the app favicon as a visual 'engineering' mark.
@@ -132,6 +134,8 @@ export default function ProjectHub() {
   const author = {
     name: 'George Charalambous',
     email: 'georgecha@gmail.com',
+    githubUrl: 'https://github.com/George-C-Odes',
+    linkedInUrl: 'https://www.linkedin.com/in/george-charalambous-114648203/',
     tagline:
       'Benchmark workloads + telemetry pipelines, wired like production: repeatable, inspectable, and measurable.',
   };
@@ -367,15 +371,116 @@ export default function ProjectHub() {
                 <Divider sx={{ my: 2 }} />
 
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', position: 'relative' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Email:{' '}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 1.5,
+                      alignItems: 'center',
+                    }}
+                  >
                     <Link
                       href={`mailto:${author.email}`}
-                      sx={{ color: 'inherit', textDecoration: 'underline' }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      underline="none"
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 1.25,
+                        py: 0.75,
+                        borderRadius: 999,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        color: 'text.secondary',
+                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          borderColor: 'rgba(255,255,255,0.20)',
+                          color: 'text.primary',
+                        },
+                        '&:active': {
+                          transform: 'translateY(-1px)',
+                        },
+                      }}
                     >
-                      {author.email}
+                      <EmailIcon sx={{ fontSize: '1.05rem' }} />
+                      <Typography variant="body2" component="span" sx={{ lineHeight: 1 }}>
+                        Email
+                      </Typography>
                     </Link>
-                  </Typography>
+
+                    <Link
+                      href={author.linkedInUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      underline="none"
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 1.25,
+                        py: 0.75,
+                        borderRadius: 999,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        color: 'text.secondary',
+                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          borderColor: 'rgba(255,255,255,0.20)',
+                          color: 'text.primary',
+                        },
+                        '&:active': {
+                          transform: 'translateY(-1px)',
+                        },
+                      }}
+                    >
+                      <LinkedInIcon sx={{ fontSize: '1.05rem' }} />
+                      <Typography variant="body2" component="span" sx={{ lineHeight: 1 }}>
+                        LinkedIn
+                      </Typography>
+                    </Link>
+
+                    <Link
+                      href={author.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      underline="none"
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 1.25,
+                        py: 0.75,
+                        borderRadius: 999,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        color: 'text.secondary',
+                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          borderColor: 'rgba(255,255,255,0.20)',
+                          color: 'text.primary',
+                        },
+                        '&:active': {
+                          transform: 'translateY(-1px)',
+                        },
+                      }}
+                    >
+                      <GitHubIcon sx={{ fontSize: '1.05rem' }} />
+                      <Typography variant="body2" component="span" sx={{ lineHeight: 1 }}>
+                        GitHub
+                      </Typography>
+                    </Link>
+                  </Box>
 
                   <Typography variant="caption" color="text.secondary">
                     This dashboard provides a unified interface for managing and monitoring observability

@@ -5,7 +5,6 @@ This directory contains screenshots, diagrams, and other visual assets for the d
 ## Recommended Assets
 
 ### Grafana Dashboard Screenshots
-- `grafana-overview.png` - Main observability dashboard
 - `grafana-metrics.png` - Metrics dashboard showing RPS and latency
 - `grafana-traces.png` - Distributed tracing view
 - `grafana-logs.png` - Log aggregation and filtering

@@ -261,21 +261,21 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 The following results were obtained with containers limited to 4 vCPUs for fair comparison:
 
-| Rank | Implementation (Mode)     | RPS    | Notes |
-|------|---------------------------|--------|-------|
-| 1    | Quarkus JVM (reactive)    | 86,000 | Highest throughput |
-| 2    | Quarkus JVM (virtual)     | 68,000 | Project Loom efficiency |
-| 3    | Quarkus Native (reactive) | 56,000 | GraalVM Native Image |
-| 4    | Quarkus JVM (platform)    | 56,000 | Traditional threading |
+| Rank | Implementation (Mode)     | RPS    | Notes                    |
+|------|---------------------------|--------|--------------------------|
+| 1    | Quarkus JVM (reactive)    | 86,000 | Highest throughput       |
+| 2    | Quarkus JVM (virtual)     | 68,000 | Project Loom efficiency  |
+| 3    | Quarkus Native (reactive) | 56,000 | GraalVM Native Image     |
+| 4    | Quarkus JVM (platform)    | 56,000 | Traditional threading    |
 | 5    | Quarkus Native (virtual)  | 55,000 | Native + virtual threads |
-| 6    | Spring JVM (virtual)      | 38,000 | Spring Boot 4.0 |
-| 7    | Quarkus Native (platform) | 37,000 | Native baseline |
-| 8    | Spring JVM (platform)     | 35,000 | Traditional Spring |
-| 9    | Spring JVM (reactive)     | 29,000 | WebFlux |
-| 10   | Spring Native (virtual)   | TBA    | In development |
-| 11   | Spring Native (platform)  | TBA    | In development |
-| 12   | Spring Native (reactive)  | TBA    | In development |
-| -    | Go (Fiber)                | ~120k* | *Not apples-to-apples yet |
+| 6    | Spring JVM (virtual)      | 38,000 | Spring Boot 4.0          |
+| 7    | Quarkus Native (platform) | 37,000 | Native baseline          |
+| 8    | Spring JVM (platform)     | 35,000 | Traditional Spring       |
+| 9    | Spring JVM (reactive)     | 29,000 | WebFlux                  |
+| 10   | Spring Native (virtual)   | TBA    | In development           |
+| 11   | Spring Native (platform)  | TBA    | In development           |
+| 12   | Spring Native (reactive)  | TBA    | In development           |
+| -    | Go (Fiber)                | TBA    | In development           |
 
 **Note on Go results**: Initial Go implementation shows impressive throughput but lacks full observability instrumentation present in Java implementations.
 

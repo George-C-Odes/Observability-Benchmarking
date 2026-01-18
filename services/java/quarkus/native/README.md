@@ -153,9 +153,6 @@ Same metrics as JVM version:
 - **Pyroscope Java Agent**: Not available (JVM agent only)
 - **eBPF Profiling**: Supported via Alloy/Pyroscope eBPF collector
 
-### Known Metrics Issues
-⚠️ **Metrics may disappear after some time** - On native builds, metrics can stop being exported after the application has been running. Restarting the container brings them back. This is a known issue being investigated.
-
 ## Architecture
 
 ### Native Compilation Benefits
@@ -368,7 +365,6 @@ process_memory_rss_bytes{service_name="QuarkusNative"}
 - **Class Initialization Errors**: Adjust `--initialize-at-build-time` or `--initialize-at-run-time`
 
 ### Runtime Issues
-- **Metrics Disappearing**: Known issue - restart container
 - **Heap Dumps Not Generated**: Check `/var/log/error` volume mount
 - **Performance Lower Than Expected**: 
   - Native doesn't benefit from JIT optimization
@@ -388,7 +384,6 @@ process_memory_rss_bytes{service_name="QuarkusNative"}
 - Shared libraries for native binary
 
 ## Known Issues
-- Metrics can disappear after runtime (requires restart)
 - Limited Java agent support (no OTEL agent, no Pyroscope agent)
 - Profile-to-span correlation not available
 - Some Quarkus extensions don't support native compilation
