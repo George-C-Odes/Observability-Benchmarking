@@ -2,13 +2,15 @@ package com.benchmarking.application;
 
 import com.benchmarking.api.JobEvent;
 import com.benchmarking.api.JobStatusResponse;
+import com.benchmarking.application.job.CommandRunner;
+import com.benchmarking.application.job.JobHeartbeatScheduler;
+import com.benchmarking.application.job.JobTerminalStatus;
 import lombok.extern.jbosslog.JBossLog;
 import org.jboss.logging.MDC;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -19,10 +21,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.smallrye.mutiny.Multi;
@@ -78,6 +78,12 @@ public class JobManager {
     t.setDaemon(true);
     return t;
   });
+
+  /**
+   * Command runner port used to execute validated commands.
+   */
+  @Inject
+  CommandRunner commandRunner;
 
   /**
    * When true, the orchestrator is already running a job. We reject new submissions
@@ -183,147 +189,24 @@ public class JobManager {
     MDC.put("jobId", job.id.toString());
 
     ScheduledFuture<?> heartbeatFuture = null;
-    final long jobStartNanos = System.nanoTime();
-    final long[] heartbeatCounter = new long[] {
-      0L
-    };
-
     try {
-      job.status = Status.RUNNING;
-      job.startedAt = Instant.now();
-      job.emit(JobEvent.status("RUNNING"));
-      job.emit(JobEvent.summary(job.id,
-        job.status.name(),
-        job.createdAt,
-        job.startedAt,
-        job.finishedAt,
-        job.exitCode,
-        job.lastLine
-      ));
+      start(job);
 
-      // Emit periodic heartbeat status updates to keep SSE connections alive,
-      // especially during long commands with sparse output.
-      final long heartbeatMs = Math.max(1000L, heartbeatIntervalMs);
-      heartbeatFuture = heartbeatScheduler.scheduleAtFixedRate(() -> {
-        try {
-          if (!job.completed && (job.status == Status.RUNNING || job.status == Status.QUEUED)) {
-            heartbeatCounter[0] += 1;
-            long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
-            int subscribers = job.emitters.size();
-            int buffered = job.buffer.size();
+      heartbeatFuture = scheduleHeartbeat(job);
 
-            // IMPORTANT: send heartbeats as SSE comments (prefixed with ':')
-            // so the browser keeps the connection alive but does not surface
-            // them as "message" events (avoids client log buffer churn).
-            job.emit(
-              JobEvent.status(
-                ": heartbeat #" + heartbeatCounter[0] + " status=" + job.status.name() + " uptimeMs=" + uptimeMs
-              )
-            );
-            log.infof(
-              "Heartbeat #%d status=%s uptimeMs=%d subscribers=%d buffered=%d",
-              heartbeatCounter[0], job.status, uptimeMs, subscribers, buffered
-            );
-          }
-        } catch (Exception ignored) {
-          // Intentionally ignored
-        }
-      }, heartbeatMs, heartbeatMs, TimeUnit.MILLISECONDS);
+      var result = commandRunner.run(
+        cmd.argv(),
+        cmd.workspace(),
+        Map.of(
+          "DOCKER_BUILDKIT", "1",
+          "COMPOSE_DOCKER_CLI_BUILD", "1"
+        ),
+        job::emit
+      );
 
-      ProcessBuilder pb = new ProcessBuilder(cmd.argv());
-      pb.directory(new java.io.File(cmd.workspace()));
-      pb.redirectErrorStream(false);
-
-      Map<String, String> env = pb.environment();
-      env.putIfAbsent("DOCKER_BUILDKIT", "1");
-      env.putIfAbsent("COMPOSE_DOCKER_CLI_BUILD", "1");
-
-      log.infof("Executing: %s", String.join(" ", cmd.argv()));
-      job.emit(JobEvent.status("EXEC " + String.join(" ", cmd.argv())));
-
-      Process p = pb.start();
-
-      // Stream stdout/stderr
-      ExecutorService streams = Executors.newFixedThreadPool(2, r -> {
-        Thread t = new Thread(r, "orchestrator-stream-" + job.id);
-        t.setDaemon(true);
-        return t;
-      });
-
-      try {
-        Future<?> outF = streams.submit(() -> streamLines(job, p.getInputStream(), "stdout"));
-        Future<?> errF = streams.submit(() -> streamLines(job, p.getErrorStream(), "stderr"));
-
-        int exit = p.waitFor();
-        outF.get(10, TimeUnit.SECONDS);
-        errF.get(10, TimeUnit.SECONDS);
-
-        job.exitCode = exit;
-        job.finishedAt = Instant.now();
-
-        if (job.canceled) {
-          job.status = Status.CANCELED;
-          job.emit(JobEvent.status("CANCELED"));
-        } else if (exit == 0) {
-          job.status = Status.SUCCEEDED;
-          job.emit(JobEvent.status("SUCCEEDED"));
-        } else {
-          job.status = Status.FAILED;
-          job.emit(JobEvent.status("FAILED exitCode=" + exit));
-        }
-
-        // Also emit a final summary snapshot (same shape as non-terminal, but terminal fields filled).
-        job.emit(JobEvent.summary(job.id,
-          job.status.name(),
-          job.createdAt,
-          job.startedAt,
-          job.finishedAt,
-          job.exitCode,
-          job.lastLine
-        ));
-
-        // Machine-readable completion snapshot for UIs (used by nextjs-dash SSE-only mode).
-        job.emit(JobEvent.terminalSummary(job.id,
-          job.status.name(),
-          job.createdAt,
-          job.startedAt,
-          job.finishedAt,
-          job.exitCode,
-          job.lastLine
-        ));
-
-        log.infof("Finished status=%s exitCode=%s", job.status, exit);
-        job.complete();
-      } finally {
-        streams.shutdownNow();
-      }
-
+      finish(job, result.exitCode(), result.finishedAt());
     } catch (Exception e) {
-      job.finishedAt = Instant.now();
-      job.status = Status.FAILED;
-      String msg = "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage();
-      job.emit(JobEvent.status(msg));
-
-      job.emit(JobEvent.summary(job.id,
-        job.status.name(),
-        job.createdAt,
-        job.startedAt,
-        job.finishedAt,
-        job.exitCode,
-        job.lastLine
-      ));
-
-      job.emit(JobEvent.terminalSummary(job.id,
-        job.status.name(),
-        job.createdAt,
-        job.startedAt,
-        job.finishedAt,
-        job.exitCode,
-        job.lastLine
-      ));
-
-      log.error(msg, e);
-      job.complete();
+      fail(job, e);
     } finally {
       if (heartbeatFuture != null) {
         heartbeatFuture.cancel(true);
@@ -333,17 +216,99 @@ public class JobManager {
     }
   }
 
-  private void streamLines(Job job, java.io.InputStream in, String stream) {
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        job.emit(JobEvent.log(stream, line));
-        // Log to orchestrator stdout so Alloy can scrape
-        log.infof("[%s] %s", stream, line);
+  private void start(Job job) {
+    job.status = Status.RUNNING;
+    job.startedAt = Instant.now();
+
+    job.emit(JobEvent.status("RUNNING"));
+    emitSummary(job);
+  }
+
+  private ScheduledFuture<?> scheduleHeartbeat(Job job) {
+    final long jobStartNanos = System.nanoTime();
+    final long[] heartbeatCounter = new long[] {0L};
+
+    JobHeartbeatScheduler scheduler = new JobHeartbeatScheduler(heartbeatScheduler);
+
+    return scheduler.schedule(heartbeatIntervalMs, () -> {
+      try {
+        if (!job.completed && (job.status == Status.RUNNING || job.status == Status.QUEUED)) {
+          heartbeatCounter[0] += 1;
+          long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
+          int subscribers = job.emitters.size();
+          int buffered = job.buffer.size();
+
+          job.emit(JobEvent.status(
+            ": heartbeat #" + heartbeatCounter[0] + " status=" + job.status.name() + " uptimeMs=" + uptimeMs
+          ));
+
+          log.infof(
+            "Heartbeat #%d status=%s uptimeMs=%d subscribers=%d buffered=%d",
+            heartbeatCounter[0], job.status, uptimeMs, subscribers, buffered
+          );
+        }
+      } catch (Exception ignored) {
+        // Intentionally ignored
       }
-    } catch (Exception ignored) {
-      // Intentionally ignored
+    });
+  }
+
+  private void finish(Job job, int exitCode, Instant finishedAt) {
+    job.exitCode = exitCode;
+    job.finishedAt = finishedAt;
+
+    job.status = JobTerminalStatus.from(job.canceled, exitCode);
+
+    switch (job.status) {
+      case CANCELED -> job.emit(JobEvent.status("CANCELED"));
+      case SUCCEEDED -> job.emit(JobEvent.status("SUCCEEDED"));
+      case FAILED -> job.emit(JobEvent.status("FAILED exitCode=" + exitCode));
+      default -> job.emit(JobEvent.status(job.status.name()));
     }
+
+    emitSummary(job);
+    emitTerminalSummary(job);
+
+    log.infof("Finished status=%s exitCode=%s", job.status, exitCode);
+    job.complete();
+  }
+
+  private void fail(Job job, Exception e) {
+    job.finishedAt = Instant.now();
+    job.status = Status.FAILED;
+
+    String msg = "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage();
+    job.emit(JobEvent.status(msg));
+
+    emitSummary(job);
+    emitTerminalSummary(job);
+
+    log.error(msg, e);
+    job.complete();
+  }
+
+  private static void emitSummary(Job job) {
+    job.emit(JobEvent.summary(
+      job.id,
+      job.status.name(),
+      job.createdAt,
+      job.startedAt,
+      job.finishedAt,
+      job.exitCode,
+      job.lastLine
+    ));
+  }
+
+  private static void emitTerminalSummary(Job job) {
+    job.emit(JobEvent.terminalSummary(
+      job.id,
+      job.status.name(),
+      job.createdAt,
+      job.startedAt,
+      job.finishedAt,
+      job.exitCode,
+      job.lastLine
+    ));
   }
 
   /**
