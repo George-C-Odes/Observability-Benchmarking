@@ -103,10 +103,10 @@ class ServiceHealthServiceTest {
     ServiceHealthResponse lokiResp = resp.services().stream().filter(s -> s.name().equals("loki")).findFirst().orElseThrow();
 
     assertEquals("down", grafanaResp.status());
-    assertEquals("http://localhost:" + downPort, grafanaResp.url());
+    assertEquals("http://localhost:" + downPort, grafanaResp.baseUrl());
 
     assertEquals("up", lokiResp.status());
-    assertEquals("http://localhost:" + okPort, lokiResp.url());
+    assertEquals("http://localhost:" + okPort, lokiResp.baseUrl());
   }
 
   @Test
@@ -141,7 +141,7 @@ class ServiceHealthServiceTest {
 
     ServiceHealthResponse g = resp.services().getFirst();
     assertEquals("down", g.status());
-    assertEquals("::not-a-url::", g.url());
+    assertEquals("::not-a-url::", g.baseUrl());
     assertNotNull(g.error());
   }
 

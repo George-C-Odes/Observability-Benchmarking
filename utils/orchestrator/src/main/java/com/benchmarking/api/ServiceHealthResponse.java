@@ -10,7 +10,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param statusCode HTTP status code when available
  * @param responseTime response time in milliseconds
  * @param error error message / problem details when available
- * @param url base URL (what the caller/UI should use)
+ * @param baseUrl base URL (what the caller/UI should use)
  * @param body optional response body (for debugging)
  */
 @Schema(name = "ServiceHealthResponse")
@@ -31,7 +31,7 @@ public record ServiceHealthResponse(
   String error,
 
   @Schema(description = "Base URL")
-  String url,
+  String baseUrl,
 
   @Schema(description = "(Optional) response body")
   String body
