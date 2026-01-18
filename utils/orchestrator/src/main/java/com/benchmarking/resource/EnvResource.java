@@ -60,6 +60,8 @@ public class EnvResource {
 
     /**
      * Request body for updating environment file.
+     *
+     * @param content new content for the environment file
      */
     public record EnvUpdateRequest(String content) {
     }
