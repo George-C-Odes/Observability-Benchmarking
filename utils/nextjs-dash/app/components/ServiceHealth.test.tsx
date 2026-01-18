@@ -476,4 +476,18 @@ describe('ServiceHealth', () => {
     // To still validate the affordance exists, assert the warning icon is rendered.
     expect(within(goCard).getAllByTestId('WarningAmberIcon').length).toBeGreaterThan(0);
   });
+
+  it('renders Base URL as plain text (not a link)', async () => {
+    mockHealthResponse([{ name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' }]);
+
+    render(<ServiceHealth />);
+
+    expect(await screen.findByText('grafana')).toBeInTheDocument();
+
+    // Visible as text
+    expect(screen.getByText('http://grafana:3000')).toBeInTheDocument();
+
+    // Not rendered as an anchor
+    expect(screen.queryByRole('link', { name: 'http://grafana:3000' })).not.toBeInTheDocument();
+  });
 });

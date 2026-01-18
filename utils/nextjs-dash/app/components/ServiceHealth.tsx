@@ -13,7 +13,6 @@ import {
   IconButton,
   Tooltip,
   Stack,
-  Link,
   Divider,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -108,10 +107,6 @@ function normalizeServiceFromApi(raw: HealthApiService | null | undefined): Serv
 
 function byName(a: ServiceHealth, b: ServiceHealth) {
   return a.name.localeCompare(b.name);
-}
-
-function isProbablyHttpUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
 }
 
 function countByStatus(services: ServiceHealth[]): { up: number; down: number; pending: number; total: number } {
@@ -449,6 +444,55 @@ export default function ServiceHealth() {
       );
     };
 
+    const DataRow = (props: {
+      label: string;
+      value: React.ReactNode;
+      color?: 'default' | 'secondary' | 'error';
+      endAdornment?: React.ReactNode;
+    }) => {
+      return (
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1}
+          sx={{
+            minHeight: 22,
+            // keep data rows visually aligned with action rows
+            py: 0.125,
+            minWidth: 0,
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              width: 64,
+              color: 'text.secondary',
+              fontWeight: 600,
+              lineHeight: 1.2,
+              flex: '0 0 auto',
+            }}
+          >
+            {props.label}
+          </Typography>
+
+          <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: props.color === 'error' ? 'error.main' : props.color === 'secondary' ? 'text.secondary' : 'text.primary',
+                lineHeight: 1.2,
+                wordBreak: 'break-word',
+              }}
+            >
+              {props.value}
+            </Typography>
+          </Box>
+
+          {props.endAdornment && <Box sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>{props.endAdornment}</Box>}
+        </Box>
+      );
+    };
+
     return (
       <Card
         key={service.name}
@@ -518,48 +562,41 @@ export default function ServiceHealth() {
                 <Chip label={statusUI.label} color={statusUI.color} size="small" />
               </Box>
 
-              {/* Response data directly below Status (reduced whitespace) */}
+              {/* Response data directly below Status (aligned with action rows) */}
               <Box sx={{ mt: 0.5, minWidth: 0 }}>
+                {service.baseUrl && <DataRow label="Base URL" value={service.baseUrl} />}
+
                 {typeof service.responseTime === 'number' && (
-                  <Typography variant="caption" display="block" sx={{ mt: 0.25 }}>
-                    Response: {service.responseTime}ms
-                  </Typography>
+                  <DataRow label="Response" value={`${service.responseTime}ms`} />
                 )}
 
-                {service.baseUrl && (
-                  <Typography variant="caption" display="block" sx={{ mt: 0.25, wordBreak: 'break-word' }}>
-                    Base URL:{' '}
-                    {isProbablyHttpUrl(service.baseUrl) ? (
-                      <Link href={service.baseUrl} target="_blank" rel="noreferrer" underline="hover">
-                        {service.baseUrl}
-                      </Link>
-                    ) : (
-                      service.baseUrl
-                    )}
-                  </Typography>
-                )}
 
-                {service.error && (
-                  <Typography variant="caption" color="error" display="block" sx={{ mt: 0.25, wordBreak: 'break-word' }}>
-                    {service.error}
-                  </Typography>
-                )}
+                {service.error && <DataRow label="Error" value={service.error} color="error" />}
 
                 {service.body !== undefined && (
-                  <Box sx={{ mt: 0.25 }}>
-                    <Tooltip
-                      title={
-                        <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', maxWidth: 500 }}>
-                          {typeof service.body === 'string' ? service.body : JSON.stringify(service.body, null, 2)}
-                        </Box>
-                      }
-                      placement="bottom-start"
-                    >
-                      <Typography variant="caption" color="text.secondary" sx={{ cursor: 'help' }}>
-                        Response body (hover)
-                      </Typography>
-                    </Tooltip>
-                  </Box>
+                  <DataRow
+                    label="Body"
+                    color="secondary"
+                    value={
+                      <Tooltip
+                        title={
+                          <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', maxWidth: 500 }}>
+                            {typeof service.body === 'string' ? service.body : JSON.stringify(service.body, null, 2)}
+                          </Box>
+                        }
+                        placement="bottom-start"
+                      >
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ cursor: 'help', lineHeight: 1.2 }}
+                        >
+                          Response body (hover)
+                        </Typography>
+                      </Tooltip>
+                    }
+                  />
                 )}
               </Box>
             </Box>
