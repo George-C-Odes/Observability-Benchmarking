@@ -165,23 +165,27 @@ export default function EnvEditor() {
       )}
 
       <Stack spacing={2} sx={{ mb: 3 }}>
-        {envVariables.map((variable, index) => (
-          <Box key={index}>
-            {variable.comment && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                {variable.comment}
-              </Typography>
-            )}
-            <TextField
-              fullWidth
-              label={variable.key}
-              value={variable.value}
-              onChange={(e) => handleVariableChange(index, e.target.value)}
-              variant="outlined"
-              size="small"
-            />
-          </Box>
-        ))}
+        {envVariables.map((variable, index) => {
+          const isReadOnly = typeof variable.comment === 'string' && variable.comment.includes('FYI');
+          return (
+            <Box key={index}>
+              {variable.comment && (
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                  {variable.comment}
+                </Typography>
+              )}
+              <TextField
+                fullWidth
+                label={variable.key}
+                value={variable.value}
+                onChange={(e) => handleVariableChange(index, e.target.value)}
+                variant="outlined"
+                size="small"
+                disabled={isReadOnly}
+              />
+            </Box>
+          );
+        })}
       </Stack>
 
       <Divider sx={{ my: 3 }} />
