@@ -6,7 +6,9 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,27 +22,29 @@ class JobManagerCommandRunnerTest {
   CommandPolicy policy;
 
   @Test
-  void submit_usesCommandRunner_andJobReachesTerminalState() {
+  void submit_usesCommandRunner_andJobReachesTerminalState() throws Exception {
     var validated = policy.validate("docker compose version");
     var jobId = jobManager.submit(validated, "run-1");
 
-    // wait briefly for async job thread to finish
-    long deadline = System.currentTimeMillis() + 2000;
-    while (System.currentTimeMillis() < deadline) {
-      var st = jobManager.status(jobId);
-      if (List.of("SUCCEEDED", "FAILED", "CANCELED").contains(st.status())) {
-        assertEquals("SUCCEEDED", st.status());
-        assertEquals(0, st.exitCode());
-        return;
-      }
-      try {
-        Thread.sleep(25);
-      } catch (InterruptedException ignored) {
-        Thread.currentThread().interrupt();
-        break;
-      }
-    }
+    CountDownLatch terminal = new CountDownLatch(1);
+    AtomicReference<String> terminalStatus = new AtomicReference<>();
+    AtomicReference<Integer> terminalExitCode = new AtomicReference<>();
 
-    fail("Job did not finish in time");
+    var subscription = jobManager.events(jobId)
+      .subscribe().with(e -> {
+        if ("terminalSummary".equals(e.getType())) {
+          terminalStatus.set(e.getJobStatus());
+          terminalExitCode.set(e.getExitCode());
+          terminal.countDown();
+        }
+      });
+
+    try {
+      assertTrue(terminal.await(2, TimeUnit.SECONDS), "Job did not finish in time");
+      assertEquals("SUCCEEDED", terminalStatus.get());
+      assertEquals(0, terminalExitCode.get());
+    } finally {
+      subscription.cancel();
+    }
   }
 }
