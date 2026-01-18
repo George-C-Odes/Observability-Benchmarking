@@ -1,28 +1,30 @@
-name: Observability-Benchmarking
+﻿name: Observability-Benchmarking
 
 include:
   - ./obs.yml
   - ./utils.yml
 
-x-default-environment: &default_env
-  TZ: &default_TZ "Europe/Nicosia"
+x-default-environment:
+  timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
+  host_repo: ${HOST_REPO:-C:/}
+  cache_size: &default_cache_size ${CACHE_SIZE:-50000}
   cpu_limit: &default_cpu_limit ${CORES_LIMIT:-4}
-  mem_limit: &default_mem_limit ${MEM_LIMIT:-1792M}
-  heap_min: ${HEAP_MIN:-1280M}
-  heap_max: ${HEAP_MAX:-1280M}
-  off_heap_max: ${OFF_HEAP_MAX:-64M}
+  mem_limit: &default_mem_limit ${MEM_LIMIT:-512M}
+  heap_min: ${HEAP_MIN:-96M}
+  heap_max: ${HEAP_MAX:-96M}
+  off_heap_max: ${OFF_HEAP_MAX:-32M}
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
-  efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
   ulimit: &default_ulimit ${ULIMIT:-1048576}
-  spring_boot_version: ${SPRING_BOOT_VERSION:-4.0.0}
-  quarkus_version: ${QUARKUS_VERSION:-3.30.3}
+  spring_boot_version: ${SPRING_BOOT_VERSION:-4.0.1}
+  quarkus_version: ${QUARKUS_VERSION:-3.30.6}
   pyroscope_agent_enabled: &default_pyroscope_agent_enabled ${PROFILING_AGENT:-false}
   metric_mm_http: &default_metric_mm_http ${METRIC_MM_HTTP:-true}
   metric_mm_jvm: &default_metric_mm_jvm ${METRIC_MM_JVM:-false}
   metric_mm_tomcat: &default_metric_mm_tomcat ${METRIC_MM_TOMCAT:-false}
   metric_otel_http: &default_metric_otel_http ${METRIC_OTEL_HTTP:-true}
-  metric_otel_jvm: &default_metric_otel_jvm ${METRIC_OTEL_JVM:-false}
-  metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}
+  metric_otel_runtime: &default_metric_otel_runtime ${METRIC_OTEL_RUNTIME:-false}
+  metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}  # Does not seem to have an effect
+  metric_otel_interval: &default_metric_otel_interval ${METRIC_OTEL_INTERVAL:-15000}
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
@@ -47,8 +49,8 @@ x-default-environment: &default_env
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
     -XX:NativeMemoryTracking=summary \
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
-    -Xms${HEAP_MIN:-1280M} \
-    -Xmx${HEAP_MAX:-1280M} \
+    -Xms${HEAP_MIN:-96M} \
+    -Xmx${HEAP_MAX:-96M} \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
@@ -74,8 +76,8 @@ x-default-environment: &default_env
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
     -XX:NativeMemoryTracking=summary \
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
-    -Xms${HEAP_MIN:-1280M} \
-    -Xmx${HEAP_MAX:-1280M} \
+    -Xms${HEAP_MIN:-96M} \
+    -Xmx${HEAP_MAX:-96M} \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
@@ -95,8 +97,8 @@ x-default-environment: &default_env
   #   -Xlog:gc*,safepoint:file=gc-g1.log:time,uptime,level,tags
 ###################################################
   native_java_options: &default_native_java_options
-    - "-Xms${HEAP_MIN:-1280M}"
-    - "-Xmx${HEAP_MAX:-1280M}"
+    - "-Xms${HEAP_MIN:-96M}"
+    - "-Xmx${HEAP_MAX:-96M}"
     - "-XX:ActiveProcessorCount=${CORES_LIMIT:-4}"
     - "-XX:MaxGCPauseMillis=200"                      #Enterprise
     - "-XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M}"  #Enterprise
@@ -111,6 +113,28 @@ x-default-environment: &default_env
 #      - "-XX:+VerboseGC"
 ###################################################
 
+x-common-properties: &common_properties
+  restart: no
+  pull_policy: never
+  cpus: *default_cpu_limit
+  cpuset: *default_performance_cores
+  mem_limit: *default_mem_limit
+  mem_reservation: *default_mem_limit
+  deploy:
+    resources:
+      limits:
+        cpus: *default_cpu_limit
+        memory: *default_mem_limit
+      reservations:
+        cpus: *default_cpu_limit
+        memory: *default_mem_limit
+  ulimits:
+    nofile:
+      soft: *default_ulimit
+      hard: *default_ulimit
+  depends_on:
+    - alloy
+
 ######### Potential for OTEL fine-tuning #########
 #      OTEL_BLRP_MAX_EXPORT_BATCH_SIZE: 512
 #      OTEL_BLRP_MAX_QUEUE_SIZE: 2048
@@ -122,15 +146,18 @@ x-default-environment: &default_env
 #      OTEL_BSP_SCHEDULE_DELAY: "5s" #Default 5s
 #      OTEL_METRIC_EXPORT_TIMEOUT: 30000
 ###################################################
-#See also https://opentelemetry.io/docs/zero-code/java/agent/disable/#suppressing-specific-agent-instrumentation
-#See also https://quarkus.io/guides/opentelemetry,  https://quarkus.io/guides/opentelemetry-metrics
+# See also
+#   https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
+#   https://opentelemetry.io/docs/zero-code/java/agent/disable/#suppressing-specific-agent-instrumentation
+#   https://quarkus.io/guides/opentelemetry
+#   https://quarkus.io/guides/opentelemetry-metrics
 
 services:
   spring-jvm-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_PLATFORM:-skip}"]
     image: spring-jvm-tomcat-platform:${SPRING_BOOT_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: spring-jvm-tomcat:${SPRING_BOOT_VERSION}_latest
@@ -140,13 +167,16 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../data/services/spring/jvm/tomcat/platform/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/jvm/tomcat/platform/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-platform
+      SERVER_TOMCAT_MBEANREGISTRY_ENABLED: *default_metric_mm_tomcat
+      SPRING_JMX_ENABLED: false
       JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
       SPRING_THREADS_VIRTUAL_ENABLED: false
       LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
 
       MANAGEMENT_METRICS_ENABLE_EXECUTOR: false
       MANAGEMENT_METRICS_ENABLE_HTTP_SERVER_REQUESTS: *default_metric_mm_http
@@ -161,16 +191,16 @@ services:
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_INSTRUMENTATION_TOMCAT_ENABLED: *default_metric_otel_tomcat
       OTEL_SERVICE_NAME: "spring-jvm-tomcat-platform"
-      OTEL_RESOURCE_ATTRIBUTES: "service.name=spring-jvm-tomcat-platform,env=dev,runtime=jvm,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
 
       OTEL_PROFILING_ENABLED: true
@@ -193,29 +223,13 @@ services:
       PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
       PYROSCOPE_LOG_LEVEL: "warn"
       PYROSCOPE_GC_BEFORE_DUMP: false
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   spring-jvm-tomcat-virtual:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_VIRTUAL:-skip}"]
     image: spring-jvm-tomcat-virtual:${SPRING_BOOT_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: spring-jvm-tomcat:${SPRING_BOOT_VERSION}_latest
@@ -225,13 +239,16 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ../data/services/spring/jvm/tomcat/virtual/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/jvm/tomcat/virtual/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-jvm-tomcat-virtual
+      SERVER_TOMCAT_MBEANREGISTRY_ENABLED: *default_metric_mm_tomcat
+      SPRING_JMX_ENABLED: false
       JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
       SPRING_THREADS_VIRTUAL_ENABLED: true
       LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
 
       MANAGEMENT_METRICS_ENABLE_EXECUTOR: false
       MANAGEMENT_METRICS_ENABLE_HTTP_SERVER_REQUESTS: *default_metric_mm_http
@@ -246,16 +263,16 @@ services:
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_INSTRUMENTATION_TOMCAT_ENABLED: *default_metric_otel_tomcat
       OTEL_SERVICE_NAME: "spring-jvm-tomcat-virtual"
-      OTEL_RESOURCE_ATTRIBUTES: "service.name=spring-jvm-tomcat-virtual,env=dev,runtime=jvm,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
 
       OTEL_PROFILING_ENABLED: true
@@ -278,29 +295,13 @@ services:
       PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
       PYROSCOPE_LOG_LEVEL: "warn"
       PYROSCOPE_GC_BEFORE_DUMP: false
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   spring-jvm-netty:
     profiles: ["${DOCKER_PROF_SPRING_JVM_NETTY:-skip}"]
     image: spring-jvm-netty:${SPRING_BOOT_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: spring-jvm-netty:${SPRING_BOOT_VERSION}_latest
@@ -310,13 +311,14 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - ../data/services/spring/jvm/netty/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/jvm/netty/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-jvm-netty
       JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
       SPRING_THREADS_VIRTUAL_ENABLED: false
       LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
 
       MANAGEMENT_METRICS_ENABLE_EXECUTOR: false
       MANAGEMENT_METRICS_ENABLE_HTTP_SERVER_REQUESTS: *default_metric_mm_http
@@ -330,15 +332,15 @@ services:
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_SERVICE_NAME: "spring-jvm-netty"
-      OTEL_RESOURCE_ATTRIBUTES: "service.name=spring-jvm-netty,env=dev,runtime=jvm,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
 
       OTEL_PROFILING_ENABLED: true
@@ -361,29 +363,13 @@ services:
       PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
       PYROSCOPE_LOG_LEVEL: "warn"
       PYROSCOPE_GC_BEFORE_DUMP: false
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   spring-native-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_TOMCAT_PLATFORM:-skip}"]
     image: spring-native-tomcat-platform:${SPRING_BOOT_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: spring-native-tomcat-platform:${SPRING_BOOT_VERSION}_latest
@@ -394,13 +380,14 @@ services:
     ports:
       - "8083:8080"
     volumes:
-      - ../data/services/spring/native/tomcat/platform/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/native/tomcat/platform/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-native-tomcat-platform
       SERVER_TOMCAT_MBEANREGISTRY_ENABLED: false
       SPRING_JMX_ENABLED: false
       LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
 
       MANAGEMENT_METRICS_ENABLE_EXECUTOR: false
       MANAGEMENT_METRICS_ENABLE_HTTP_SERVER_REQUESTS: *default_metric_mm_http
@@ -414,44 +401,27 @@ services:
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_INSTRUMENTATION_TOMCAT_ENABLED: *default_metric_otel_tomcat
       OTEL_SERVICE_NAME: "spring-native-tomcat-platform"
-      OTEL_RESOURCE_ATTRIBUTES: "service.name=spring-native-tomcat-platform,env=dev,runtime=native,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
     entrypoint:
       - "./spring-native-tomcat-platform"
     command: *default_native_java_options
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   spring-native-tomcat-virtual:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_TOMCAT_VIRTUAL:-skip}"]
     image: spring-native-tomcat-virtual:${SPRING_BOOT_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: spring-native-tomcat-virtual:${SPRING_BOOT_VERSION}_latest
@@ -462,13 +432,14 @@ services:
     ports:
       - "8084:8080"
     volumes:
-      - ../data/services/spring/native/tomcat/virtual/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/native/tomcat/virtual/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-native-tomcat-virtual
       SERVER_TOMCAT_MBEANREGISTRY_ENABLED: false
       SPRING_JMX_ENABLED: false
       LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
 
       MANAGEMENT_METRICS_ENABLE_EXECUTOR: false
       MANAGEMENT_METRICS_ENABLE_HTTP_SERVER_REQUESTS: *default_metric_mm_http
@@ -482,44 +453,27 @@ services:
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_INSTRUMENTATION_TOMCAT_ENABLED: *default_metric_otel_tomcat
       OTEL_SERVICE_NAME: "spring-native-tomcat-virtual"
-      OTEL_RESOURCE_ATTRIBUTES: "service.name=spring-native-tomcat-virtual,env=dev,runtime=native,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
     entrypoint:
       - "./spring-native-tomcat-virtual"
     command: *default_native_java_options
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   spring-native-netty:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_NETTY:-skip}"]
     image: spring-native-netty:${SPRING_BOOT_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: spring-native-netty:${SPRING_BOOT_VERSION}_latest
@@ -530,11 +484,12 @@ services:
     ports:
       - "8085:8080"
     volumes:
-      - ../data/services/spring/native/netty/error:/var/log/error
+      - ${HOST_REPO}/data/services/spring/native/netty/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       SPRING_APPLICATION_NAME: spring-native-netty
       LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
 
       MANAGEMENT_METRICS_ENABLE_EXECUTOR: false
       MANAGEMENT_METRICS_ENABLE_HTTP_SERVER_REQUESTS: *default_metric_mm_http
@@ -547,43 +502,26 @@ services:
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_jvm
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_SERVICE_NAME: "spring-native-netty"
-      OTEL_RESOURCE_ATTRIBUTES: "service.name=spring-native-netty,env=dev,runtime=native,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,webengine.name=Spring Boot,webengine.version=${SPRING_BOOT_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
     entrypoint:
       - "./spring-native-netty"
     command: *default_native_java_options
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   quarkus-jvm:
     profiles: ["${DOCKER_PROF_QUARKUS_JVM:-skip}"]
     image: quarkus-jvm:${QUARKUS_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: quarkus/jvm/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: quarkus-jvm:${QUARKUS_VERSION}_latest
@@ -592,24 +530,26 @@ services:
     ports:
       - "8086:8080"
     volumes:
-      - ../data/services/quarkus/jvm/error:/var/log/error
+      - ${HOST_REPO}/data/services/quarkus/jvm/error:/var/log/error
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
       QUARKUS_LOG_LEVEL: "info"
+      CACHE_SIZE: *default_cache_size
 
+      OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_LOGS_LEVEL: "info"
       QUARKUS_OTEL_INSTRUMENT_HTTP_SERVER_METRICS: *default_metric_otel_http
-      QUARKUS_OTEL_INSTRUMENT_VERTX_HTTP: true
-      QUARKUS_OTEL_INSTRUMENT_JVM_METRICS: *default_metric_otel_jvm  # seems to add 10-20% overhead
+      QUARKUS_OTEL_INSTRUMENT_VERTX_HTTP: true                                # turns off tracing if disabled
+      QUARKUS_OTEL_INSTRUMENT_JVM_METRICS: *default_metric_otel_runtime       # seems to add 10-20% overhead
       QUARKUS_OTEL_SERVICE_NAME: "quarkus-jvm"
-      QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.name=quarkus-jvm,env=dev,runtime=jvm,telemetry.distro.name=quarkus-micrometer-opentelemetry"
+      QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,telemetry.distro.name=quarkus-micrometer-opentelemetry"
       QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       QUARKUS_OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      QUARKUS_OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
-
-########  Otel Java Agent approach (alternative)  ########
+      QUARKUS_OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+    <<: *common_properties
+    ########  Otel Java Agent approach (alternative)  ########
 #      OTEL_SDK_DISABLED: true
 #      OTEL_LOG_LEVEL: "info"
 #      OTEL_JAVAAGENT_DEBUG: false
@@ -621,13 +561,13 @@ services:
 #      OTEL_INSTRUMENTATION_QUARKUS_ENABLED: true
 #      OTEL_INSTRUMENTATION_VERTX_WEB_ENABLED: true
 #      OTEL_SERVICE_NAME: "quarkus-jvm"
-#      OTEL_RESOURCE_ATTRIBUTES: "service.name=quarkus-jvm,env=dev,runtime=jvm,webengine.name=Quarkus,webengine.version=${QUARKUS_VERSION}"
+#      OTEL_RESOURCE_ATTRIBUTES: "env=dev,runtime=jvm,webengine.name=Quarkus,webengine.version=${QUARKUS_VERSION}"
 #      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
 #      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
 #      OTEL_TRACES_EXPORTER: "otlp"
 #      OTEL_METRICS_EXPORTER: "otlp"
 #      OTEL_LOGS_EXPORTER: "otlp"
-#      OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
+#      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
 #      OTEL_TRACES_SAMPLER: "parentbased_always_on" #"always_on"
 
 #      OTEL_PROFILING_ENABLED: true
@@ -651,29 +591,12 @@ services:
 #      PYROSCOPE_LOG_LEVEL: "warn"
 #      PYROSCOPE_GC_BEFORE_DUMP: false
 ########################################################
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
 
   quarkus-native:
     profiles: ["${DOCKER_PROF_QUARKUS_NATIVE:-skip}"]
     image: quarkus-native:${QUARKUS_VERSION}_latest
     build:
-      context: ../services
+      context: ../services/java
       dockerfile: quarkus/native/Dockerfile
       args:
         BUILDKIT_BUILD_NAME: quarkus-native:${QUARKUS_VERSION}_latest
@@ -682,79 +605,99 @@ services:
     ports:
       - "8087:8080"
     volumes:
-      - ../data/services/quarkus/native/error:/var/log/error
+      - ${HOST_REPO}/data/services/quarkus/native/error:/var/log/error
     #      - ../data/services/quarkus/native/jfr:/tmp
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       QUARKUS_LOG_LEVEL: "info"
+      CACHE_SIZE: *default_cache_size
 
+      OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_SDK_DISABLED: false
       QUARKUS_OTEL_LOGS_LEVEL: "info"
       QUARKUS_OTEL_INSTRUMENT_HTTP_SERVER_METRICS: *default_metric_otel_http
-      QUARKUS_OTEL_INSTRUMENT_VERTX_HTTP: true
-      QUARKUS_OTEL_INSTRUMENT_JVM_METRICS: *default_metric_otel_jvm  # seems to add 10-20% overhead
+      QUARKUS_OTEL_INSTRUMENT_VERTX_HTTP: true                              # turns off tracing if disabled
+      QUARKUS_OTEL_INSTRUMENT_JVM_METRICS: *default_metric_otel_runtime     # seems to add 10-20% overhead
       QUARKUS_OTEL_SERVICE_NAME: "quarkus-native"
-      QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.name=quarkus-native,env=dev,runtime=native,telemetry.distro.name=quarkus-micrometer-opentelemetry"
+      QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,telemetry.distro.name=quarkus-micrometer-opentelemetry"
       QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       QUARKUS_OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      QUARKUS_OTEL_METRIC_EXPORT_INTERVAL: 15000  #ms
-
+      QUARKUS_OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
     entrypoint:
       - "./quarkus-native"
     command: *default_native_java_options
 #      - "-XX:+FlightRecorder"
 #      - "-XX:StartFlightRecording=disk=true,filename=/tmp/recording.jfr,settings=profile,dumponexit=true,maxsize=100M,maxage=1h"
 #      - "-XX:FlightRecorderOptions=repository=/tmp/jfr"
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-### Breaks metrics for some reason after a few minutes of load testing
-#    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    <<: *common_properties
 
   go:
     profiles: ["${DOCKER_PROF_GO:-skip}"]
     image: go:${GO_VERSION}_latest
     build:
-      context: ../services/go/hello
+      context: ../services/go/enhanced
       dockerfile: Dockerfile
       args:
         BUILDKIT_BUILD_NAME: go:${GO_VERSION}_latest
         GO_VERSION: ${GO_VERSION}
     container_name: go
-    environment:
-      TZ: *default_TZ
-      OTEL_EXPORTER_OTLP_ENDPOINT: "alloy:4317"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_SERVICE_NAME: "go"
     ports:
       - "8088:8080"
-    restart: no
-    pull_policy: never
-    deploy:
-      resources:
-        limits:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-        reservations:
-          cpus: *default_cpu_limit
-          memory: *default_mem_limit
-    cpuset: *default_performance_cores
-    ulimits:
-      nofile:
-        soft: *default_ulimit
-        hard: *default_ulimit
-    depends_on:
-      - alloy
+    environment:
+      TZ: *default_timezone
+      GOMAXPROCS: *default_cpu_limit
+#      GOMEMLIMIT: "${HEAP_MAX}iB"
+      GOGC: 200
+      LOG_LEVEL: "info"
+      CACHE_SIZE: *default_cache_size
+      CACHE_IMPL: "theine"                            # "slice", "map", "ristretto", "theine", "otter"
+
+      OTEL_SERVICE_NAME: "go"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=theine,env=dev,runtime=native,webengine.name=Go,webengine.version=${GO_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "alloy:4317"
+      OTEL_EXPORTER_OTLP_INSECURE: true
+      OTEL_LOGS_ENABLED: true
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_TRACES_SAMPLER_ARG: 1                            # applicable for 'traceidratio' sampler
+      OTEL_METRICS_ENABLED: true
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_RUNTIME_METRICS_ENABLED: *default_metric_otel_runtime
+      OTEL_GO_SCHEDULE_METRICS_ENABLED: *default_metric_otel_runtime
+      OTEL_HTTP_ENABLED: true
+      OTEL_HTTP_TRACES_ENABLED: true
+      OTEL_HTTP_TRACES_MODE: "otelfiber"                    # 'otelfiber' (close to java services), 'minimal' (much faster but unfair comparison)
+      OTEL_HTTP_SPAN_NAME_MODE: "method_route"              # 'constant' (fastest) → "http.request", 'method', 'route', 'path', 'method_route' (close to java services), 'method_path'
+      OTEL_HTTP_PROPAGATION_ENABLED: true
+      OTEL_HTTP_METRICS_ENABLED: *default_metric_otel_http  # shows oob 'http_server*' metrics
+      OTEL_HTTP_COLLECT_CLIENT_IP: false
+      OTEL_HTTP_IGNORE_PATHS: "/healthz,/readyz,/livez"
+      APP_HANDLER_SPANS_ENABLED: false
+      PYROSCOPE_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_APPLICATION_NAME: "agent/go"
+      PYROSCOPE_PROFILE_TYPES: "cpu,alloc,inuse,goroutines,mutex,block"
+      PYROSCOPE_UPLOAD_INTERVAL: 20s
+      PYROSCOPE_LOG_LEVEL: "warn"
+    <<: *common_properties
+
+  go-simple:
+    profiles: ["${DOCKER_PROF_GO_SIMPLE:-skip}"]
+    image: go-simple:${GO_VERSION}_latest
+    build:
+      context: ../services/go/simple
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: go-simple:${GO_VERSION}_latest
+        GO_VERSION: ${GO_VERSION}
+    container_name: go-simple
+    ports:
+      - "8089:8080"
+    environment:
+      TZ: *default_timezone
+      GOMAXPROCS: *default_cpu_limit
+#      GOMEMLIMIT: "${HEAP_MAX}iB"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "go-simple"
+      OTEL_RESOURCE_ATTRIBUTES: "env=dev,runtime=native,webengine.name=Go,webengine.version=${GO_VERSION}"
+    <<: *common_properties

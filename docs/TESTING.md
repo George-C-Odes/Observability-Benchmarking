@@ -71,8 +71,8 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.1 or Eclipse Temurin 25)
 Maven: 3.9+
-Spring Boot: 4.0.0 (3.5.8 also supported)
-Quarkus: 3.30.3
+Spring Boot: 4.0.1 (3.5.9 also supported)
+Quarkus: 3.30.6
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -148,7 +148,7 @@ public void testPlatformEndpoint() throws Exception {
 ```
 
 **Key Features Tested**:
-- Spring Boot 4.0.0 with OpenTelemetry Java Agent
+- Spring Boot 4.0.1 with OpenTelemetry Java Agent
 - Micrometer metrics integration
 - Platform vs Virtual thread behavior
 - POM refactoring (no parent dependency)
@@ -201,7 +201,7 @@ Build with Docker to ensure correct Java version:
 ```bash
 # Quarkus JVM
 docker build \
-  --build-arg QUARKUS_VERSION=3.30.3 \
+  --build-arg QUARKUS_VERSION=3.30.6 \
   --target builder \
   -t quarkus-jvm-test \
   -f services/quarkus/jvm/Dockerfile \
@@ -209,7 +209,7 @@ docker build \
 
 # Spring Boot Tomcat
 docker build \
-  --build-arg SPRING_BOOT_VERSION=4.0.0 \
+  --build-arg SPRING_BOOT_VERSION=4.0.1 \
   --build-arg PROFILE=tomcat \
   --target builder \
   -t spring-tomcat-test \
@@ -218,7 +218,7 @@ docker build \
 
 # Spring Boot Netty
 docker build \
-  --build-arg SPRING_BOOT_VERSION=4.0.0 \
+  --build-arg SPRING_BOOT_VERSION=4.0.1 \
   --build-arg PROFILE=netty \
   --target builder \
   -t spring-netty-test \
@@ -290,7 +290,7 @@ ok      hello/cmd/server        10.015s
 **Key Features Tested**:
 - Fiber web framework integration
 - OpenTelemetry SDK (not automatic instrumentation)
-- Custom metric counter (`go.request.count`)
+- Custom metric counter (`hello.request.count`)
 - Cache performance (map-based)
 
 **Note**: OpenTelemetry provider tests expect timeout errors in unit test environment (no OTLP endpoint available).
@@ -361,12 +361,34 @@ cd integration-tests
 
 ```bash
 # Override service URLs
-export QUARKUS_URL=http://localhost:8086
+# Spring JVM Services
 export SPRING_TOMCAT_PLATFORM_URL=http://localhost:8080
 export SPRING_TOMCAT_VIRTUAL_URL=http://localhost:8081
 export SPRING_NETTY_URL=http://localhost:8082
-export GO_URL=http://localhost:8083
+
+# Spring Native Services
+export SPRING_NATIVE_TOMCAT_PLATFORM_URL=http://localhost:8083
+export SPRING_NATIVE_TOMCAT_VIRTUAL_URL=http://localhost:8084
+export SPRING_NATIVE_NETTY_URL=http://localhost:8085
+
+# Quarkus Services
+export QUARKUS_JVM_URL=http://localhost:8086
+export QUARKUS_NATIVE_URL=http://localhost:8087
+
+# Go Service
+export GO_URL=http://localhost:8088
+
+# Observability
 export GRAFANA_URL=http://localhost:3000
+export ALLOY_URL=http://localhost:12345
+export LOKI_URL=http://localhost:3100
+export MIMIR_URL=http://localhost:9009
+export TEMPO_URL=http://localhost:3200
+export PYROSCOPE_URL=http://localhost:4040
+
+# Orchestration
+export NEXTJS_URL=http://localhost:3001
+export ORCHESTRATOR_URL=http://localhost:3002
 
 # Run tests
 ./run-integration-tests.sh
@@ -398,16 +420,15 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 
 #### Observability Verification (8+ scenarios)
 
-| Test | Component | Validation |
-|------|-----------|------------|
-| Metrics Collection | Prometheus endpoints | Metric availability, format |
-| Custom Counters | Java services | `hello_request_count_total` |
-| Custom Counters | Go service | `go_request_count_total` |
-| Health Endpoints | All services | Readiness, liveness |
-| Grafana UI | Dashboard | HTTP 200, UI accessible |
-| Grafana Data Sources | Prometheus, Loki, Tempo | Connected, healthy |
-| Trace Generation | Tempo | Spans created (smoke test) |
-| Log Aggregation | Loki | Logs collected (manual check) |
+| Test | Component               | Validation                  |
+|------|-------------------------|-----------------------------|
+| Metrics Collection | Prometheus endpoints    | Metric availability, format |
+| Custom Counters | All services          | `hello_request_count_total` |
+| Health Endpoints | All services            | Readiness, liveness         |
+| Grafana UI | Dashboard               | HTTP 200, UI accessible     |
+| Grafana Data Sources | Prometheus, Loki, Tempo | Connected, healthy          |
+| Trace Generation | Tempo                   | Spans created (smoke test)  |
+| Log Aggregation | Loki                    | Logs collected (smoke test) |
 
 ### Expected Output
 
@@ -416,8 +437,8 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 Integration Test Suite
 ==========================================
 Testing Framework Versions:
-- Quarkus: 3.30.3
-- Spring Boot: 4.0.0
+- Quarkus: 3.30.6
+- Spring Boot: 4.0.1
 - Go: 1.25.5
 
 ==========================================
@@ -450,8 +471,7 @@ Observability Mechanism Tests
 ✓ Spring Tomcat Platform metrics endpoint accessible
 ✓ Spring Tomcat Virtual metrics endpoint accessible
 ✓ Spring Netty metrics endpoint accessible
-✓ Custom counter 'hello.request.count' found in Java services
-✓ Custom counter 'go.request.count' found in Go service
+✓ Custom counter 'hello.request.count' found in services
 
 --- Grafana Stack Health ---
 ✓ Grafana UI accessible (http://localhost:3000)
@@ -583,7 +603,7 @@ curl http://localhost:8082/actuator/prometheus | grep hello_request_count
 
 ```bash
 # Custom application counter
-go_request_count_total 42
+hello_request_count_total 42
 
 # Runtime metrics
 go_goroutines 15
@@ -713,7 +733,7 @@ Based on 4 vCPU limits:
 
 ```bash
 # Run test
-./loadgen/run-test.sh quarkus-jvm
+./utils/wrk2/run-test.sh quarkus-jvm
 
 # Check results
 cat results/quarkus-jvm-$(date +%Y%m%d).txt
@@ -831,9 +851,9 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.30.3" }
-          - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.0" }
-          - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.0" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.30.6" }
+          - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.1" }
+          - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.1" }
           - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.5" }
     
     steps:

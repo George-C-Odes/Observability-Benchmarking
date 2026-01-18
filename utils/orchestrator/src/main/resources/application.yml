@@ -1,0 +1,109 @@
+# IntelliJ YAML schema validation doesn't understand Quarkus config keys here.
+# $schema: disable
+
+orchestrator:
+  api-key: '${ORCH_API_KEY:change-me}'
+  health:
+    timeout-ms: ${ORCH_HEALTH_TIMEOUT_MS:10000}
+    concurrency: ${ORCH_HEALTH_CONCURRENCY:8}
+    services:
+      spring-jvm-tomcat-platform:
+        base-url: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL:http://localhost:8080}'
+        health-path: /actuator/health/readiness
+      spring-jvm-tomcat-virtual:
+        base-url: '${ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-jvm-netty:
+        base-url: '${ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-native-tomcat-platform:
+        base-url: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_PLATFORM_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-native-tomcat-virtual:
+        base-url: '${ORCH_HEALTH_SPRING_NATIVE_TOMCAT_VIRTUAL_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+      spring-native-netty:
+        base-url: '${ORCH_HEALTH_SPRING_NATIVE_NETTY_BASE_URL:false}'
+        health-path: /actuator/health/readiness
+
+      quarkus-jvm:
+        base-url: '${ORCH_HEALTH_QUARKUS_JVM_BASE_URL:false}'
+        health-path: /q/health/ready
+      quarkus-native:
+        base-url: '${ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL:false}'
+        health-path: /q/health/ready
+
+      go:
+        base-url: '${ORCH_HEALTH_GO_BASE_URL:false}'
+        health-path: /readyz
+
+      # Observability
+      grafana:
+        base-url: '${ORCH_HEALTH_GRAFANA_BASE_URL:http://localhost:3000}'
+        health-path: /api/health
+      alloy:
+        base-url: '${ORCH_HEALTH_ALLOY_BASE_URL:http://localhost:12345}'
+        health-path: /-/ready
+      loki:
+        base-url: '${ORCH_HEALTH_LOKI_BASE_URL:http://localhost:3100}'
+        health-path: /ready
+      mimir:
+        base-url: '${ORCH_HEALTH_MIMIR_BASE_URL:http://localhost:9009}'
+        health-path: /ready
+      tempo:
+        base-url: '${ORCH_HEALTH_TEMPO_BASE_URL:http://localhost:3200}'
+        health-path: /ready
+      pyroscope:
+        base-url: '${ORCH_HEALTH_PYROSCOPE_BASE_URL:http://localhost:4040}'
+        health-path: /ready
+
+      # Utils
+      nextjs-dash:
+        base-url: '${ORCH_HEALTH_NEXTJS_DASH_BASE_URL:http://localhost:3001}'
+        health-path: /api/app-health
+      orchestrator:
+        base-url: '${ORCH_HEALTH_ORCHESTRATOR_BASE_URL:http://localhost:3002}'
+        health-path: /q/health/ready
+      wrk2:
+        base-url: '${ORCH_HEALTH_WRK2_BASE_URL:http://localhost:3003}'
+        health-path: /ready
+
+  max-buffer-lines: ${ORCH_MAX_BUFFER_LINES:10000}
+  heartbeat:
+    interval-ms: ${ORCH_HEARTBEAT_INTERVAL_MS:15000}
+  project-paths:
+    # When set, docker compose will be executed with this host-side project directory.
+    # Needed because orchestrator talks to the host Docker Engine via /var/run/docker.sock,
+    # so bind mount source paths must be valid on the host (e.g. C:/... on Windows).
+    host-compose: '${ORCH_HOST_PROJECT_DIR:}'
+    workspace:
+      # Intended to resolve user.dir when running orchestrator locally and when containerized feed in the environment var for '/workspace'
+      root: '${ORCH_WORKSPACE:${user.dir}/../..}'
+      compose: '${orchestrator.project-paths.workspace.root}/compose'
+      env: '${orchestrator.project-paths.workspace.root}/compose/.env'
+  serial-execution: ${ORCH_SERIAL_EXECUTION:true}
+
+quarkus:
+  analytics:
+    disabled: true
+  http:
+    host: 0.0.0.0
+    limits:
+      max-body-size: 10M
+    port: 3002
+    test-port: 3012
+  log:
+    console:
+      format: '%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX} %-5p [%c{2.}] (jobId=%X{jobId}) %s%e%n'
+  smallrye-health:
+    include-problem-details: true
+    ui:
+      always-include: true
+      enabled: true
+  smallrye-openapi:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    always-include: true
+    persist-authorization: true
+    show-mutated-request: true

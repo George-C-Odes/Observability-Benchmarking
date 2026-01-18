@@ -47,7 +47,7 @@ python3 -m http.server 8000
 # Visit http://localhost:8000
 ```
 
-### Option 2: Jekyll (for full GitHub Pages simulation)
+### Option 2: Jekyll (for full GitHub Pages simulation, preferred)
 ```bash
 # Install Bundler (one-time setup)
 gem install bundler

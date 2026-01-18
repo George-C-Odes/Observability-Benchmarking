@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.3-blue.svg)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.1-green.svg)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.6-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -71,14 +71,21 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
   - eBPF-based sampling (system-wide)
   - HTTP scrape endpoints
 
+### 🎛️ Orchestration Dashboard
+- **Next.js Dashboard**: Modern web UI for managing the benchmarking environment
+  - Edit environment configuration (`compose/.env`) through intuitive UI
+  - Execute IntelliJ IDEA run configurations from the browser
+  - Professional MUI-based interface with switchable themes
+  - Built with Next.js 16.1.3 and Material-UI 7.3.7
+
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Amazon Corretto)
-- **Spring Boot 4.0.0 (3.5.8 also supported)**
+- **Spring Boot 4.0.1 (3.5.9 also supported)**
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.3**
+- **Quarkus 3.30.6**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
@@ -146,6 +153,9 @@ docker compose --project-directory compose --profile=OBS up --no-recreate --buil
 **Access Grafana**: Navigate to [http://localhost:3000](http://localhost:3000)
 - Default credentials: `a` / `a`
 
+**Access Dashboard**: Navigate to [http://localhost:3001](http://localhost:3001)
+- Orchestration UI for managing environment and running scripts
+
 #### 2. Start Observability Stack + REST Services
 
 Run the full stack with all implemented services:
@@ -189,7 +199,7 @@ This project focuses primarily on performance benchmarking.
 
 **Load Testing & Benchmarking**
 - wrk2-based deterministic load generation with fixed request rates
-- Benchmark scripts in `loadgen/wrk2/` directory
+- Benchmark scripts in `utils/wrk2/` directory
 - Results captured in `results/` directory with timestamps and metadata
 - See [Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html) for detailed testing procedures
 
@@ -286,8 +296,8 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 #### Software Versions
 - **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
-- **Spring Boot**: 4.0.0 (3.5.8 also supported)
-- **Quarkus**: 3.30.3
+- **Spring Boot**: 4.0.1 (3.5.9 also supported)
+- **Quarkus**: 3.30.6
 - **Go**: 1.25.5 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -385,12 +395,6 @@ Use these PromQL queries in Grafana to analyze performance:
 ```promql
 # Total HTTP RPS across all services
 http_server_request_duration_seconds_count{} by (service_name)
-
-# Spring Boot specific RPS
-spring_request_count_total{} by (endpoint)
-
-# Quarkus specific RPS
-quarkus_request_count_total{} by (endpoint)
 
 # JVM Memory Usage
 jvm_memory_used_bytes{} by (jvm_memory_pool_name, area)
@@ -537,12 +541,12 @@ Observability-Benchmarking/
 │   ├── quarkus/             # Quarkus services
 │   │   ├── jvm/             # JVM builds (platform, virtual, reactive)
 │   │   └── native/          # GraalVM Native builds
-│   └── go/                  # Go services (WIP)
+│   └── go/                  # Go services
 ├── config/                  # Configuration files
 │   ├── grafana/             # Grafana dashboards and provisioning
 │   ├── loki/                # Loki configuration
 │   └── pyroscope/           # Pyroscope profiling config
-├── loadgen/                 # Load generation tools and scripts
+├── utils/                 # Load generation tools and scripts
 ├── results/                 # Benchmark results and outputs
 ├── docs/                    # Additional documentation
 │   ├── LINTING_AND_CODE_QUALITY.md
@@ -560,7 +564,7 @@ Observability-Benchmarking/
 - **`services/`**: Each subdirectory contains a complete REST service implementation with Dockerfile, source code, and README
 - **`compose/`**: Docker Compose files using profiles for flexible deployment (OBS, SERVICES, RAIN_FIRE)
 - **`config/`**: Centralized configuration for all observability tools
-- **`loadgen/`**: wrk2 wrappers and benchmark automation scripts
+- **`utils/`**: wrk2 wrappers and benchmark automation scripts
 - **`results/`**: Stores benchmark outputs with timestamps for reproducibility
 
 For a comprehensive breakdown of the directory structure with detailed notes, see **[docs/STRUCTURE.md](docs/STRUCTURE.md)**.

@@ -1,0 +1,38 @@
+logging:
+  pattern:
+    level: "%5p [traceId=%X{traceId:-}, spanId=%X{spanId:-}]"
+management:
+  endpoint:
+    health:
+      show-details: never
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,metrics,info
+otel:
+  instrumentation:
+    micrometer:
+      enabled: true
+server:
+  http2:
+    enabled: false
+  tomcat:
+    accept-count: 10000
+    connection-timeout: 60s
+    keep-alive-timeout: 60s
+    max-connections: 10000
+    max-keep-alive-requests: -1
+    mbeanregistry:
+      enabled: false
+    processor-cache: -1
+    threads:
+      max: 80
+      min-spare: 20
+      max-queue-capacity: 10000
+spring:
+  application:
+    name: SpringTomcat
+  threads:
+    virtual:
+      enabled: false

@@ -1,0 +1,19 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="OrchestratorOrchestratorResourceTest" type="JUnit" factoryName="JUnit">
+    <module name="orchestrator" />
+    <shortenClasspath name="ARGS_FILE" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.benchmarking.rest.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="com.benchmarking.rest" />
+    <option name="MAIN_CLASS_NAME" value="com.benchmarking.rest.OrchestratorResourceTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

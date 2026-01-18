@@ -1,34 +1,237 @@
-x-default-environment: &default_env
-  TZ: &default_TZ "Europe/Nicosia"
+x-default-environment:
+  timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
+  host_repo: ${HOST_REPO:-C:/}
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
+  mem_limit_wrk: &default_mem_limit_wrk ${MEM_LIMIT_WRK:-64M}
+  ulimit: &default_ulimit ${ULIMIT:-1048576}
+  orch_api_key: &default_orch_api_key ${ORCH_API_KEY:-change-me}
+  workspace: &default_workspace ${WORKSPACE:-/workspace}
 
 services:
+  nextjs-dash:
+    profiles: ["${DOCKER_PROF_NEXTJS_DASH:-skip}"]
+    build:
+      context: ../utils/nextjs-dash
+      dockerfile: Dockerfile
+    image: nextjs-dash:latest
+    container_name: nextjs-dash
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./.env:/app/compose/.env
+      - ../.run:/app/.run:ro
+    environment:
+      TZ: *default_timezone
+      NODE_ENV: production
+      PORT: 3001
+      ORCH_URL: http://orchestrator:3002
+      ORCH_API_KEY: *default_orch_api_key
+      SCRIPT_RUNNER_EXEC_LOG_MAX_LINES: ${SCRIPT_RUNNER_EXEC_LOG_MAX_LINES:-1000}
+      SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS: ${SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS:-1800000} # 30 minutes
+      NEXTJS_DASH_CLIENT_LOG_LEVEL: ${NEXTJS_DASH_CLIENT_LOG_LEVEL:-info} # debug|info|warn|error|silent
+      NEXTJS_DASH_SERVER_LOG_LEVEL: ${NEXTJS_DASH_SERVER_LOG_LEVEL:-info} # debug|info|warn|error|silent
+      NEXTJS_DASH_SERVER_LOG_OUTPUT: ${NEXTJS_DASH_SERVER_LOG_OUTPUT:-plain} # plain|json
+      APP_LOGS_CLIENT_MAX_ENTRIES: ${APP_LOGS_CLIENT_MAX_ENTRIES:-400}
+      APP_LOGS_SERVER_MAX_ENTRIES: ${APP_LOGS_SERVER_MAX_ENTRIES:-500}
+
+      # Feature flags to control whether a specific service can be actioned from the Service Health page.
+      # Main purpose is to make intuitive that when running locally instead of inside the container project, docker actions are not applicable.
+      # Global override (if true, enables actions for all services)
+      SERVICE_ACTIONS_ENABLE_ALL: ${SERVICE_ACTIONS_ENABLE_ALL:-false}
+      # OBS
+      ALLOY_ACTIONS_ENABLE: ${ALLOY_ACTIONS_ENABLE:-true}
+      GRAFANA_ACTIONS_ENABLE: ${GRAFANA_ACTIONS_ENABLE:-true}
+      LOKI_ACTIONS_ENABLE: ${LOKI_ACTIONS_ENABLE:-true}
+      MIMIR_ACTIONS_ENABLE: ${MIMIR_ACTIONS_ENABLE:-true}
+      PYROSCOPE_ACTIONS_ENABLE: ${PYROSCOPE_ACTIONS_ENABLE:-true}
+      TEMPO_ACTIONS_ENABLE: ${TEMPO_ACTIONS_ENABLE:-true}
+
+      # SERVICES
+      SPRING_JVM_TOMCAT_PLATFORM_ACTIONS_ENABLE: ${SPRING_JVM_TOMCAT_PLATFORM_ACTIONS_ENABLE:-true}
+      SPRING_JVM_TOMCAT_VIRTUAL_ACTIONS_ENABLE: ${SPRING_JVM_TOMCAT_VIRTUAL_ACTIONS_ENABLE:-true}
+      SPRING_JVM_NETTY_ACTIONS_ENABLE: ${SPRING_JVM_NETTY_ACTIONS_ENABLE:-true}
+      SPRING_NATIVE_TOMCAT_PLATFORM_ACTIONS_ENABLE: ${SPRING_NATIVE_TOMCAT_PLATFORM_ACTIONS_ENABLE:-true}
+      SPRING_NATIVE_TOMCAT_VIRTUAL_ACTIONS_ENABLE: ${SPRING_NATIVE_TOMCAT_VIRTUAL_ACTIONS_ENABLE:-true}
+      SPRING_NATIVE_NETTY_ACTIONS_ENABLE: ${SPRING_NATIVE_NETTY_ACTIONS_ENABLE:-true}
+      QUARKUS_JVM_ACTIONS_ENABLE: ${QUARKUS_JVM_ACTIONS_ENABLE:-true}
+      QUARKUS_NATIVE_ACTIONS_ENABLE: ${QUARKUS_NATIVE_ACTIONS_ENABLE:-true}
+      GO_ACTIONS_ENABLE: ${GO_ACTIONS_ENABLE:-true}
+
+      # UTILS
+      NEXTJS_DASH_ACTIONS_ENABLE: ${NEXTJS_DASH_ACTIONS_ENABLE:-true}
+      ORCHESTRATOR_ACTIONS_ENABLE: ${ORCHESTRATOR_ACTIONS_ENABLE:-true}
+      WRK2_ACTIONS_ENABLE: ${WRK2_ACTIONS_ENABLE:-true}
+
+    restart: no
+    pull_policy: never
+    cpuset: *default_efficiency_cores
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,mode=1777
+      - /app/.next/cache:rw,mode=1777
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:'+ (process.env.PORT||3001) +'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  orchestrator:
+    profiles: ["${DOCKER_PROF_ORCHESTRATOR:-skip}"]
+    build:
+      context: ../utils/orchestrator
+      dockerfile: Dockerfile
+    image: orchestrator:latest
+    container_name: orchestrator
+    ports:
+      - "3002:3002"
+    user: "nonroot:nonroot"
+    #    user: "1001:1001"
+    group_add:
+      - "0"
+    environment:
+      TZ: *default_timezone
+      QUARKUS_LOG_LEVEL: "info"
+      COMPOSE_DOCKER_CLI_BUILD: "1"
+      DOCKER_BUILDKIT: "1"
+      DOCKER_CONFIG: "/tmp/.docker"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+
+      ORCH_API_KEY: *default_orch_api_key
+      # Health aggregation upstreams (docker DNS base URLs)
+      ORCH_HEALTH_GRAFANA_BASE_URL: "http://grafana:3000"
+      ORCH_HEALTH_ALLOY_BASE_URL: "http://alloy:12345"
+      ORCH_HEALTH_LOKI_BASE_URL: "http://loki:3100"
+      ORCH_HEALTH_MIMIR_BASE_URL: "http://mimir:9009"
+      ORCH_HEALTH_TEMPO_BASE_URL: "http://tempo:3200"
+      ORCH_HEALTH_PYROSCOPE_BASE_URL: "http://pyroscope:4040"
+      # Can skip specific services from aggregated health check by setting base url to 'false'
+      ORCH_HEALTH_SPRING_JVM_TOMCAT_PLATFORM_BASE_URL: "http://spring-jvm-tomcat-platform:8080"
+      ORCH_HEALTH_SPRING_JVM_TOMCAT_VIRTUAL_BASE_URL: "http://spring-jvm-tomcat-virtual:8080"
+      ORCH_HEALTH_SPRING_JVM_NETTY_BASE_URL: "http://spring-jvm-netty:8080"
+      ORCH_HEALTH_SPRING_NATIVE_TOMCAT_PLATFORM_BASE_URL: "http://spring-native-tomcat-platform:8080"
+      ORCH_HEALTH_SPRING_NATIVE_TOMCAT_VIRTUAL_BASE_URL: "http://spring-native-tomcat-virtual:8080"
+      ORCH_HEALTH_SPRING_NATIVE_NETTY_BASE_URL: "http://spring-native-netty:8080"
+      ORCH_HEALTH_QUARKUS_JVM_BASE_URL: "http://quarkus-jvm:8080"
+      ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL: "http://quarkus-native:8080"
+      ORCH_HEALTH_GO_BASE_URL: "http://go:8080"
+      ORCH_HEALTH_NEXTJS_DASH_BASE_URL: "http://nextjs-dash:3001"
+      ORCH_HEALTH_ORCHESTRATOR_BASE_URL: "http://orchestrator:3002"
+      ORCH_HEALTH_WRK2_BASE_URL: "http://wrk2:3003"
+
+      # IMPORTANT: docker compose executed from inside orchestrator targets the host Docker Engine.
+      # Bind mounts must therefore use host-valid paths. On Windows, that's typically C:/... not /workspace.
+      # We default this to the same HOST_REPO that is already configured for the orchestrator bind mount.
+      ORCH_HOST_PROJECT_DIR: "${HOST_REPO}/compose"
+      ORCH_MAX_BUFFER_LINES: 10000
+      ORCH_SERIAL_EXECUTION: true
+      ORCH_WORKSPACE: *default_workspace
+      ORCH_HEARTBEAT_INTERVAL_MS: ${ORCH_HEARTBEAT_INTERVAL_MS:-15000}
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/.run
+        target: ${WORKSPACE}/.run
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/compose
+        target: ${WORKSPACE}/compose
+        read_only: false
+      - type: bind
+        source: ${HOST_REPO}/config
+        target: ${WORKSPACE}/config
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/services
+        target: ${WORKSPACE}/services
+        read_only: true
+      - type: bind
+        source: ${HOST_REPO}/utils
+        target: ${WORKSPACE}/utils
+        read_only: true
+    tmpfs:
+      - /tmp:rw,mode=1777
+    read_only: true
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: no
+    pull_policy: never
+    cpuset: *default_efficiency_cores
+
   wrk2:
     profiles: ["RAIN_FIRE"]
     image: wrk2:latest
     build:
-      context: ../loadgen/wrk2
+      context: ../utils/wrk2
       dockerfile: Dockerfile
     container_name: wrk2
+    ports:
+      - "3003:3003"
     volumes:
-      - ../results/benchmarks:/usr/local/bin/benchmarks
+      - ${HOST_REPO}/results/benchmarks:/exports
     environment:
-      TZ: *default_TZ
+      TZ: *default_timezone
       WRK_HOST: ${WRK_HOST}
       WRK_PORT: 8080
+      WRK_RESOURCE: ${WRK_RESOURCE:-hello}
       WRK_ENDPOINT: ${WRK_ENDPOINT}
+
+      WRK_AUTORUN: ${WRK_AUTORUN}
+      WRK_EXIT_AFTER_AUTORUN: ${WRK_EXIT_AFTER_AUTORUN}
+      WRK_ITERATIONS: ${WRK_ITERATIONS}
+      WRK_SLEEP_BETWEEN: ${WRK_SLEEP_BETWEEN}
+      WRK_SLEEP_INIT: ${WRK_SLEEP_INIT}
+
       WRK_THREADS: ${WRK_THREADS}
       WRK_CONNECTIONS: ${WRK_CONNECTIONS}
       WRK_DURATION: ${WRK_DURATION}
       WRK_RATE: ${WRK_RATE}
-      WRK_SLEEP_BETWEEN: ${WRK_SLEEP_BETWEEN}
-      WRK_SLEEP_INIT: ${WRK_SLEEP_INIT}
+
+      WRK_SAVE_LOGS: ${WRK_SAVE_LOGS}
+      WRK_BENCH_DIR: /benchmarks
+      WRK_EXPORT_DIR: /exports
+      WRK_READY_PORT: 3003
+    tmpfs:
+      - /tmp:rw,mode=1777
+      - /benchmarks:rw,mode=1777
+    # Default to root for portability. On Linux/WSL, may need to set WRK_UID/WRK_GID to match the host folder owner (e.g. 1000/1000).
+    user: "${WRK_UID:-0}:${WRK_GID:-0}"
+    healthcheck:
+      test: ["CMD", "busybox", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3003/ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: no
+    pull_policy: never
+    cpuset: *default_performance_cores
+    mem_limit: *default_mem_limit_wrk
+    mem_reservation: *default_mem_limit_wrk
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: *default_mem_limit_wrk
         reservations:
-          memory: 64M
-    cpuset: *default_performance_cores
-    command: ["/bin/sh", "-c", "sleep ${WRK_SLEEP_INIT} && /usr/local/bin/run.sh && tail -f /dev/null"]
+          memory: *default_mem_limit_wrk
+    ulimits:
+      nofile:
+        soft: *default_ulimit
+        hard: *default_ulimit

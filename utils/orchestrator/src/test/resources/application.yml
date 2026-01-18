@@ -1,0 +1,5 @@
+# For tests, replace the default CommandRunner bean with a fake one.
+quarkus:
+  arc:
+    selected-alternatives:
+      - com.benchmarking.application.job.FakeCommandRunner

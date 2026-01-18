@@ -1,13 +1,14 @@
-x-default-environment: &default_env
-  TZ: &default_TZ "Europe/Nicosia"
+x-default-environment:
+  timezone: ${TIMEZONE:-Europe/Nicosia}
+  host_repo: ${HOST_REPO:-C:/}
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   efficiency_cores: &default_efficiency_cores ${CORES_SECONDARY:-}
 
 services:
   alloy:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.0
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.2
     container_name: alloy
     command:
       - run
@@ -16,7 +17,7 @@ services:
       - --storage.path=/var/lib/alloy/data
       - --stability.level=experimental
     volumes:
-      - ../config/alloy:/etc/alloy
+      - ${HOST_REPO}/config/alloy:/etc/alloy
       - /var/run/docker.sock:/var/run/docker.sock:ro
     user: root
     privileged: true
@@ -40,8 +41,8 @@ services:
       - pyroscope
 
   grafana:
-    profiles: ["OBS"]
-    image: grafana/grafana:12.3.0
+    profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
+    image: grafana/grafana:12.3.1
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -53,8 +54,8 @@ services:
           2> >(/bin/grep -vE '"logger":"tsdb\.(pyroscope|tempo|loki|mimir)"' >&2)
       # start grafana and strip plugin debug lines from stdout
     volumes:
-      - ../config/grafana:/etc/grafana-config
-      - ../config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ${HOST_REPO}/config/grafana:/etc/grafana-config
+      - ${HOST_REPO}/config/grafana/datasources:/etc/grafana/provisioning/datasources
     ports:
       - "3000:3000"
     environment:
@@ -73,12 +74,12 @@ services:
     cpuset: *default_efficiency_cores
 
   loki:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_LOKI:-skip}"]
     image: grafana/loki:3.6.3
     container_name: loki
     volumes:
-      - ../data/loki:/loki
-      - ../config/loki:/etc/loki
+      - ${HOST_REPO}/data/loki:/loki
+      - ${HOST_REPO}/config/loki:/etc/loki
     ports:
       - "3100:3100"
     command: >
@@ -87,12 +88,11 @@ services:
     cpuset: *default_efficiency_cores
 
   mimir:
-    profiles: ["OBS"]
-    #2.17.2
-    image: grafana/mimir:3.0.1
+    profiles: ["${DOCKER_PROF_MIMIR:-skip}"]
+    image: grafana/mimir:3.0.2
     container_name: mimir
     volumes:
-      - ../config/mimir:/etc/mimir-config
+      - ${HOST_REPO}/config/mimir:/etc/mimir-config
     ports:
       - "9009:9009"
     command:
@@ -101,13 +101,13 @@ services:
     cpuset: *default_efficiency_cores
 
   pyroscope:
-    profiles: ["OBS"]
-    image: grafana/pyroscope:1.16.0
+    profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
+    image: grafana/pyroscope:1.18.0
     container_name: pyroscope
     ports:
       - "4040:4040"
     volumes:
-      - ../config/pyroscope/config.yaml:/etc/pyroscope/config.yaml:ro
+      - ${HOST_REPO}/config/pyroscope/config.yaml:/etc/pyroscope/config.yaml:ro
     command: >
       -log.level=warn
       -config.file=/etc/pyroscope/config.yaml
@@ -115,7 +115,7 @@ services:
     cpuset: *default_efficiency_cores
 
   tempo:
-    profiles: ["OBS"]
+    profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
     image: grafana/tempo:2.9.0
     container_name: tempo
     command:
@@ -124,8 +124,8 @@ services:
       - "-server.http-listen-port=3200"
       - "-log.level=warn"
     volumes:
-      - ../config/tempo:/etc/tempo-config:ro
-      - ../data/tempo:/var/tempo
+      - ${HOST_REPO}/config/tempo:/etc/tempo-config:ro
+      - ${HOST_REPO}/data/tempo:/var/tempo
     ports:
       - "3200:3200"   # Tempo HTTP / API / TraceQL
       - "4317:4317"   # OTLP gRPC

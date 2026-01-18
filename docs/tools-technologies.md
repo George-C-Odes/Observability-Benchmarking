@@ -19,7 +19,7 @@ A comprehensive overview of all tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.0.0
+### Spring Boot 4.0.1
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -30,7 +30,7 @@ A comprehensive overview of all tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.0.0** (latest major release)
+- **Spring Boot 4.0.1** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -78,7 +78,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.30.3
+### Quarkus 3.30.6
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -89,7 +89,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.30.3** (latest stable)
+- **Quarkus 3.30.6** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -433,7 +433,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/api/cache/key1
 - Reproducible builds
 
 **Images Used**:
-- **amazoncorretto:25-headless**: JVM base
+- **gcr.io/distroless/java25-debian13:nonroot**: JVM Runtime Base
 - **container-registry.oracle.com/graalvm/native-image:25**: Native builds
 - **grafana/grafana**: Visualization
 - **grafana/loki**: Logs
@@ -445,12 +445,12 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/api/cache/key1
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9-amazoncorretto-25 AS builder
+FROM maven:3.9.12-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
 # Stage 2: Runtime
-FROM amazoncorretto:25-headless
+FROM gcr.io/distroless/java25-debian13:nonroot
 COPY --from=builder /target/app.jar /app.jar
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 ```
@@ -595,26 +595,35 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ## Technology Stack Summary
 
-| Category | Technology | Version | Purpose            |
-|----------|-----------|---------|--------------------|
-| **Runtime** | Java (Corretto) | 25      | JVM services       |
-| **Runtime** | GraalVM | 25.0.1  | Native compilation |
-| **Runtime** | Go | 1.25.5  | Go services (WIP)  |
-| **Framework** | Spring Boot | 4.0.0   | Enterprise Java    |
-| **Framework** | Quarkus | 3.30.3  | Cloud-native Java  |
-| **Observability** | Grafana | 12.3.0  | Visualization      |
-| **Observability** | Loki | 3.6.3   | Logs               |
-| **Observability** | Tempo | 2.9.0   | Traces             |
-| **Observability** | Mimir | 3.0.1   | Metrics            |
-| **Observability** | Pyroscope | 1.16.0  | Profiles           |
-| **Observability** | Alloy | 1.10.2  | Collector          |
-| **Instrumentation** | OpenTelemetry | 1.57.0  | Telemetry SDK      |
-| **Instrumentation** | OpenTelemetry | 2.23.0  | Telemetry Distro   |
-| **Testing** | wrk2 | Latest  | Benchmarking       |
-| **Cache** | Caffeine | 3.2.3   | In-memory cache    |
-| **Container** | Docker | 24+     | Containerization   |
-| **Orchestration** | Docker Compose | v2      | Multi-container    |
-| **Build** | Maven | 3.9+    | Build automation   |
+| Category            | Technology             | Version | Purpose            |
+|---------------------|------------------------|---------|--------------------|
+| **Runtime**         | Java (Eclipse Temurin) | 25      | JVM services       |
+| **Runtime**         | GraalVM                | 25.0.1  | Native compilation |
+| **Runtime**         | Go                     | 1.25.5  | Go services        |
+| **Framework**       | Spring Boot            | 4.0.1   | Enterprise Java    |
+| **Framework**       | Quarkus                | 3.30.6  | Cloud-native Java  |
+| **Observability**   | Grafana                | 12.3.1  | Visualization      |
+| **Observability**   | Loki                   | 3.6.3   | Logs               |
+| **Observability**   | Tempo                  | 2.9.0   | Traces             |
+| **Observability**   | Mimir                  | 3.0.2   | Metrics            |
+| **Observability**   | Pyroscope              | 1.18.0  | Profiles           |
+| **Observability**   | Alloy                  | 1.10.2  | Collector          |
+| **Instrumentation** | OpenTelemetry          | 1.57.0  | Telemetry SDK      |
+| **Instrumentation** | OpenTelemetry          | 2.23.0  | Telemetry Distro   |
+| **Testing**         | wrk2                   | Latest  | Benchmarking       |
+| **Cache**           | Caffeine               | 3.2.3   | In-memory cache    |
+| **Container**       | Docker                 | 24+     | Containerization   |
+| **Orchestration**   | Docker Compose         | v2      | Multi-container    |
+| **Orchestration**   | Docker CLI             | 29.1.3  | Docker CLI         |
+| **Build**           | Maven                  | 3.9.12  | Build automation   |
+| **Build**           | NPM                    | 11.6.2  | Package manager    |
+| **Framework**       | React                  | 19.2.3  | Frontend           |
+| **Framework**       | Next.js                | 16.1.3  | Frontend           |
+| **Framework**       | Node                   | 25.2.1  | Runtime JavaScript |
+| **Library**         | Material UI (MUI)      | 7.3.7   | Frontend           |
+| **Framework**       | Typescript             | 5.9.3   | Frontend           |
+| **Testing**         | Vitest                 | 4.0.17  | Unit Testing       |
+| **Testing**         | JUnit                  | 5 / 6   | Unit Testing       |
 
 ---
 

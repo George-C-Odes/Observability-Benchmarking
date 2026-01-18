@@ -8,7 +8,7 @@ This directory contains integration tests that validate:
 - **JVM Services**: All JVM-based services (Spring Boot, Quarkus, Go)
 - **Native Services**: All GraalVM Native Image services (Spring Native, Quarkus Native)
 - **Observability Stack**: Metrics, traces, and logs are collected properly
-- **Framework Functionality**: Latest framework versions (Quarkus 3.30.3, Spring Boot 4.0.0, Go 1.25.5)
+- **Framework Functionality**: Latest framework versions (Quarkus 3.30.6, Spring Boot 4.0.1, Go 1.25.5)
 
 ## Quick Start
 
@@ -33,15 +33,29 @@ This directory contains integration tests that validate:
 
 ### Running Tests
 
+Run from the root directory of this repo.
+
+> Note: The test runner assumes the Docker Compose stack is already up. It does not start containers by itself.
+
+1. Set wrk2 to not autostart benchmarking (prevent skewing tests) and start everything via Docker Compose
+
+```powerShell
+#powershell
+$env:WRK_AUTORUN="false"; docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
+```
+or
 ```bash
-# 1. Start all services (JVM and Native)
-docker compose --project-directory ../compose --profile=OBS --profile=SERVICES up --build -d
+#bash
+WRK_AUTORUN=false docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
+```
 
-# 2. Wait for services to initialize (60-120 seconds for native images)
-sleep 120
+2. Wait for services to initialize (less than a minute if everything was pre-built / cached)
+   * For some reason Loki, Tempo and Pyroscope might need additional probe(s) after boot to reply with 200
 
-# 3. Run integration tests
-./run-integration-tests.sh
+
+3. Run integration tests
+```bash
+bash ./integration-tests/run-integration-tests.sh
 ```
 
 ## Test Script
@@ -54,18 +68,30 @@ sleep 120
 - **Configurable**: Override service URLs via environment variables
 - **Comprehensive**: Tests deployment, metrics, traces, and logs
 - **Resilient**: Continues testing even if individual tests fail
+- **Run logging**: Saves a timestamped log file under `integration-tests/output/` for every run
+- **wrk2 smoke checks**: Verifies wrk2 readiness endpoint and on-demand exec
+
+### Logging
+
+Each run writes a log file to:
+
+- `integration-tests/output/YYYYMMDD_HHmmss.log`
+
+The `integration-tests/output/` folder is intentionally **gitignored** (it contains per-run artifacts).
+
+At the top of the log you will see a **Run Environment** header with host/terminal details (useful for comparing runs across machines).
 
 ### Configuration
 
 Override default URLs (matches docker-compose.yml port order):
 
 ```bash
-# JVM Services
+# Spring JVM Services
 export SPRING_TOMCAT_PLATFORM_URL=http://localhost:8080
 export SPRING_TOMCAT_VIRTUAL_URL=http://localhost:8081
 export SPRING_NETTY_URL=http://localhost:8082
 
-# Native Services
+# Spring Native Services
 export SPRING_NATIVE_TOMCAT_PLATFORM_URL=http://localhost:8083
 export SPRING_NATIVE_TOMCAT_VIRTUAL_URL=http://localhost:8084
 export SPRING_NATIVE_NETTY_URL=http://localhost:8085
@@ -79,6 +105,21 @@ export GO_URL=http://localhost:8088
 
 # Observability
 export GRAFANA_URL=http://localhost:3000
+export ALLOY_URL=http://localhost:12345
+export LOKI_URL=http://localhost:3100
+export MIMIR_URL=http://localhost:9009
+export TEMPO_URL=http://localhost:3200
+export PYROSCOPE_URL=http://localhost:4040
+
+# Orchestration
+export NEXTJS_URL=http://localhost:3001
+export ORCHESTRATOR_URL=http://localhost:3002
+
+# wrk2 readiness + exec smoke test
+# - The script waits for WRK2_READY_URL to return 200, then runs a tiny wrk command inside the wrk2 container.
+# - The test only passes if the wrk output contains "Transfer/sec".
+export WRK2_READY_URL=http://localhost:3003/ready
+export WRK2_CONTAINER_NAME=wrk2
 
 ./run-integration-tests.sh
 ```
@@ -89,9 +130,9 @@ The tests are designed for these specific versions:
 
 | Framework | Version | Notes |
 |-----------|---------|-------|
-| Quarkus | 3.30.3 | OpenTelemetry SDK (not Java agent) |
-| Spring Boot | 4.0.0 | OpenTelemetry Java Agent, no parent POM |
-| Go | 1.25.5 | Fiber v2.52.10, OpenTelemetry Go SDK |
+| Quarkus | 3.30.6  | OpenTelemetry SDK (not Java agent) |
+| Spring Boot | 4.0.1   | OpenTelemetry Java Agent, no parent POM |
+| Go | 1.25.5  | Fiber v2.52.10, OpenTelemetry Go SDK |
 
 ## Service Port Mappings
 
@@ -137,7 +178,17 @@ Port mappings match the order in docker-compose.yml:
 
 | Service | Port | Endpoint | Expected Response |
 |---------|------|----------|-------------------|
-| Go Fiber | 8088 | `/hello/platform` | Contains "GO" |
+| Go Fiber | 8088 | `/hello/virtual` | Contains "GO" |
+
+### wrk2 Readiness + On-demand Exec (2 checks)
+
+The suite includes a small wrk2 validation:
+
+1. Waits for the wrk2 readiness endpoint to return 200:
+   - default: `http://localhost:3003/ready`
+2. Runs a minimal on-demand exec inside the wrk2 container:
+   - `/wrk2/wrk -t1 -c1 -d1s -R1 --timeout 3s http://0.0.0.0:3003/ready`
+   - the test **must** contain `Transfer/sec` in the output to pass
 
 ### Observability Verification (10+ tests)
 
@@ -149,9 +200,10 @@ Tests that observability mechanisms work:
 - ✅ Spring Boot Native services metrics (`/actuator/prometheus`)
 - ✅ Quarkus JVM metrics (`/q/metrics`)
 - ✅ Quarkus Native metrics (`/q/metrics`)
-- ✅ Custom counters present:
-  - `hello_request_count_total{endpoint="/hello/platform"}` (Java services)
-  - `go_request_count_total` (Go service)
+- ✅ Custom counters present in services:
+  - `hello_request_count_total{endpoint="/hello/platform"}`
+  - `hello_request_count_total{endpoint="/hello/virtual"}`
+  - `hello_request_count_total{endpoint="/hello/reactive"}`
 
 #### Grafana Stack
 
@@ -172,107 +224,54 @@ Tests that observability mechanisms work:
 
 ## Expected Output
 
+Example (trimmed):
+
 ```
+[integration-tests] logging to: integration-tests/output/20260113_201010.log
+
+==========================================
+Run Environment
+==========================================
+Host OS: ...
+Terminal / session:
+  stdin:  ...
+  stdout: ...
+  stderr: ...
+...
+Timestamp (host): 2026-01-13T20:10:10+02:00
+==========================================
+
 ==========================================
 Integration Test Suite
 ==========================================
 
-Testing Framework Versions:
-- Quarkus: 3.30.3
-- Spring Boot: 4.0.0
-- Go: 1.25.5
+...
 
-==========================================
-JVM Services - Deployment Tests
-==========================================
-
---- Spring Boot JVM Tomcat Platform (port 8080) ---
-Testing Spring Tomcat Platform - /hello/platform... ✓ PASSED
-
---- Spring Boot JVM Tomcat Virtual (port 8081) ---
-Testing Spring Tomcat Virtual - /hello/virtual... ✓ PASSED
-
---- Spring Boot JVM Netty (port 8082) ---
-Testing Spring Netty - /hello/reactive... ✓ PASSED
-
---- Quarkus JVM (port 8086) ---
-Testing Quarkus JVM - /hello/platform... ✓ PASSED
-Testing Quarkus JVM - /hello/virtual... ✓ PASSED
-Testing Quarkus JVM - /hello/reactive... ✓ PASSED
-
-==========================================
-Native Services - Deployment Tests
-==========================================
-
---- Spring Boot Native Tomcat Platform (port 8083) ---
-Testing Spring Native Tomcat Platform - /hello/platform... ✓ PASSED
-
---- Spring Boot Native Tomcat Virtual (port 8084) ---
-Testing Spring Native Tomcat Virtual - /hello/virtual... ✓ PASSED
-
---- Spring Boot Native Netty (port 8085) ---
-Testing Spring Native Netty - /hello/reactive... ✓ PASSED
-
---- Quarkus Native (port 8087) ---
-Testing Quarkus Native - /hello/platform... ✓ PASSED
-Testing Quarkus Native - /hello/virtual... ✓ PASSED
-Testing Quarkus Native - /hello/reactive... ✓ PASSED
-
-==========================================
-Go Service - Deployment Tests
-==========================================
-
---- Go Fiber (port 8088) ---
-Testing Go - /hello/platform... ✓ PASSED
-
-==========================================
-Observability Mechanism Tests
-==========================================
-
---- Metrics Collection ---
-Testing Spring Tomcat Platform Metrics... ✓ PASSED
-Testing Spring Tomcat Virtual Metrics... ✓ PASSED
-Testing Spring Netty Metrics... ✓ PASSED
-Testing Spring Native Tomcat Platform Metrics... ✓ PASSED
-Testing Spring Native Tomcat Virtual Metrics... ✓ PASSED
-Testing Spring Native Netty Metrics... ✓ PASSED
-Testing Quarkus JVM Metrics... ✓ PASSED
-Testing Quarkus Native Metrics... ✓ PASSED
-
---- Grafana Stack Health ---
-Testing Grafana UI... ✓ PASSED
+--- wrk2 Readiness + On-demand Exec ---
+Waiting for wrk2 (/ready) to be ready... ✓ READY
+wrk2 exec self-ready check (printing wrk output below):
+----- wrk2 exec output (begin) -----
+...
+Transfer/sec: ...
+----- wrk2 exec output (end) -----
+✓ PASSED
 
 --- Trace Generation (Smoke Test) ---
-Generating sample requests to create traces...
-✓ Sample requests sent for trace generation
-
---- Log Output Verification ---
-Note: Log verification requires checking container logs manually
-Run: docker compose --project-directory compose logs spring-jvm-tomcat-platform | grep -i 'hello'
-Run: docker compose --project-directory compose logs spring-jvm-tomcat-virtual | grep -i 'hello'
-Run: docker compose --project-directory compose logs spring-jvm-netty | grep -i 'hello'
-Run: docker compose --project-directory compose logs spring-native-tomcat-platform | grep -i 'hello'
-Run: docker compose --project-directory compose logs spring-native-tomcat-virtual | grep -i 'hello'
-Run: docker compose --project-directory compose logs spring-native-netty | grep -i 'hello'
-Run: docker compose --project-directory compose logs quarkus-jvm | grep -i 'hello'
-Run: docker compose --project-directory compose logs quarkus-native | grep -i 'hello'
-Run: docker compose --project-directory compose logs go | grep -i 'hello'
+Generating request to create trace and verify container log output...
+Trace log check Go Virtual (go)... ✓ PASSED (found 'goroutine')
 
 ==========================================
 Test Summary
 ==========================================
-Tests Passed: 25
+Tests Passed: 45
 Tests Failed: 0
 ==========================================
 
 ✅ All tests passed!
 
-Next Steps:
-1. Open Grafana: http://localhost:3000 (credentials: a/a)
-2. View metrics in Explore → Prometheus
-3. View traces in Explore → Tempo
-4. View logs in Explore → Loki
+[integration-tests] suite finished successfully
 ```
+
 
 ## Troubleshooting
 
@@ -304,8 +303,7 @@ docker compose --project-directory ../compose --profile=OBS --profile=SERVICES u
 **Solutions**:
 
 ```bash
-# Wait longer for services to start (especially native images)
-# Native images may take 60-120 seconds to start
+# Wait longer for services to start
 sleep 120
 ./run-integration-tests.sh
 
@@ -314,7 +312,7 @@ curl http://localhost:8080/hello/platform  # Spring JVM
 curl http://localhost:8083/hello/platform  # Spring Native
 curl http://localhost:8086/hello/platform  # Quarkus JVM
 curl http://localhost:8087/hello/platform  # Quarkus Native
-curl http://localhost:8088/hello/platform  # Go
+curl http://localhost:8088/hello/virtual   # Go
 
 # Verify Docker network
 docker network ls
