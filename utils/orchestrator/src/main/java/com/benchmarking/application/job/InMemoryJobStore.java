@@ -20,7 +20,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @ApplicationScoped
 public class InMemoryJobStore implements JobStore {
 
+  /**
+   * In-memory job storage.
+   */
   private final ConcurrentMap<UUID, Job> jobs = new ConcurrentHashMap<>();
+
+  /**
+   * Associates job IDs with dashboard run IDs to prevent cross-run mixing.
+   */
   private final ConcurrentMap<UUID, String> jobRunIds = new ConcurrentHashMap<>();
 
   @Override
@@ -141,20 +148,38 @@ public class InMemoryJobStore implements JobStore {
   }
 
   static final class Job {
+
+    /** Job identifier. */
     final UUID id;
 
+    /** Current status (e.g. QUEUED/RUNNING/SUCCEEDED/FAILED). */
     volatile String status = "QUEUED";
+
+    /** Job creation time. */
     volatile Instant createdAt = Instant.now();
+
+    /** Job start time (when execution begins). */
     volatile Instant startedAt;
+
+    /** Job finish time (when execution ends). */
     volatile Instant finishedAt;
+
+    /** Process exit code (if available). */
     volatile Integer exitCode;
 
+    /** Buffered events for replay to new subscribers. */
     final Deque<JobEvent> buffer;
+
+    /** Maximum buffered events. */
     final int maxLines;
 
+    /** Active SSE subscribers. */
     final CopyOnWriteArrayList<MultiEmitter<? super JobEvent>> emitters = new CopyOnWriteArrayList<>();
+
+    /** Whether the job has reached a terminal state and completed streaming. */
     volatile boolean completed = false;
 
+    /** Last log line observed (if any). */
     volatile String lastLine = null;
 
     Job(UUID id, int maxLines) {

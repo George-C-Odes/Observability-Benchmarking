@@ -12,6 +12,9 @@ import java.util.UUID;
 @ApplicationScoped
 public class JobStoreEventPublisher implements JobEventPublisher {
 
+  /**
+   * Target job store used to buffer/persist published events.
+   */
   @Inject
   JobStore jobStore;
 

@@ -13,8 +13,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import lombok.Getter;
-import lombok.Setter;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -63,13 +61,7 @@ public class EnvResource {
     /**
      * Request body for updating environment file.
      */
-    @Getter
-    @Setter
-    public static class EnvUpdateRequest {
-        /**
-         * New content for the environment file.
-         */
-        private String content;
+    public record EnvUpdateRequest(String content) {
     }
 
     /**
@@ -90,14 +82,14 @@ public class EnvResource {
             )
     )
     public Response updateEnvFile(EnvUpdateRequest request) {
-        if (request == null || request.getContent() == null) {
+        if (request == null || request.content() == null) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Content is required"))
                     .build();
         }
 
         try {
-            EnvFileUpdate update = envFileService.updateEnvFile(request.getContent());
+            EnvFileUpdate update = envFileService.updateEnvFile(request.content());
             return Response.ok(Map.of(
                     "message", update.message(),
                     "backup", update.backupFilename()

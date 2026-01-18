@@ -2,14 +2,15 @@ package com.benchmarking.api;
 
 import java.time.Instant;
 import java.util.UUID;
-import lombok.Getter;
-import lombok.Setter;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Event emitted during job execution for real-time updates.
  */
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 public class JobEvent {
   /**
    * Event type.
@@ -79,12 +80,6 @@ public class JobEvent {
    * Useful for tying SSE events back to orchestrator logs.
    */
   private String requestId;
-
-  /**
-   * Default constructor for JobEvent.
-   */
-  public JobEvent() {
-  }
 
   private static String currentRequestId() {
     try {

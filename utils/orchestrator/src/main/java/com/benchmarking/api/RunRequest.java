@@ -1,25 +1,16 @@
 package com.benchmarking.api;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Request to run a command via the orchestrator.
+ *
+ * @param command the command to execute
+ * @param runId optional client-provided run identifier used to correlate dashboard sessions
  */
-@Getter
-@Setter
-public class RunRequest {
-  /**
-   * The command to execute.
-   */
+public record RunRequest(
   @NotBlank
-  private String command;
-
-  /**
-   * Optional client-provided run identifier used to correlate dashboard sessions.
-   * When provided, it is bound to the created job and must be supplied on subsequent
-   * status/event requests to prevent cross-run mixing.
-   */
-  private String runId;
+  String command,
+  String runId
+) {
 }

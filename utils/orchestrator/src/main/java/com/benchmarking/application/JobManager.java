@@ -3,8 +3,9 @@ package com.benchmarking.application;
 import com.benchmarking.api.JobEvent;
 import com.benchmarking.api.JobStatusResponse;
 import com.benchmarking.application.job.CommandRunner;
+import com.benchmarking.application.job.HeartbeatScheduler;
+import com.benchmarking.application.job.JobAdmissionPolicy;
 import com.benchmarking.application.job.JobEventPublisher;
-import com.benchmarking.application.job.JobHeartbeatScheduler;
 import com.benchmarking.application.job.JobStore;
 import com.benchmarking.application.job.JobTerminalStatus;
 import io.smallrye.mutiny.Multi;
@@ -19,9 +20,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @JBossLog
 @ApplicationScoped
@@ -61,13 +59,16 @@ public class JobManager {
   private final ExecutorService executor;
 
   /**
-   * Scheduler for periodic heartbeat events (keeps SSE connections alive).
+   * Heartbeat scheduler port.
    */
-  private final ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-    Thread t = new Thread(r, "orchestrator-heartbeats");
-    t.setDaemon(true);
-    return t;
-  });
+  @Inject
+  HeartbeatScheduler heartbeatScheduler;
+
+  /**
+   * Admission policy port for controlling concurrent submissions.
+   */
+  @Inject
+  JobAdmissionPolicy admissionPolicy;
 
   /**
    * Command runner port used to execute validated commands.
@@ -87,12 +88,6 @@ public class JobManager {
   @Inject
   JobEventPublisher eventPublisher;
 
-  /**
-   * When true, the orchestrator is already running a job. We reject new submissions
-   * to avoid concurrent executions across tabs/sessions.
-   */
-  private final AtomicBoolean busy = new AtomicBoolean(false);
-
   public JobManager() {
     this.executor = Executors.newSingleThreadExecutor(r -> {
       Thread t = new Thread(r, "orchestrator-job-runner");
@@ -109,12 +104,9 @@ public class JobManager {
    * @return job id
    */
   public UUID submit(CommandPolicy.ValidatedCommand cmd, String runId) {
-    if (!busy.compareAndSet(false, true)) {
-      throw new jakarta.ws.rs.ServiceUnavailableException("Orchestrator is busy running another job");
-    }
-
+    JobAdmissionPolicy.Admission admission = admissionPolicy.acquire();
     UUID id = jobStore.create(maxBufferLines, runId);
-    executor.submit(() -> runJob(id, cmd));
+    executor.submit(() -> runJob(id, cmd, admission));
     return id;
   }
 
@@ -130,49 +122,48 @@ public class JobManager {
     return jobStore.events(id);
   }
 
-  private void runJob(UUID jobId, CommandPolicy.ValidatedCommand cmd) {
-    MDC.put("jobId", jobId.toString());
+  private void runJob(UUID jobId, CommandPolicy.ValidatedCommand cmd, JobAdmissionPolicy.Admission admission) {
+    try (admission) {
+      MDC.put("jobId", jobId.toString());
 
-    ScheduledFuture<?> heartbeatFuture = null;
-    try {
-      jobStore.markStarted(jobId, Instant.now());
+      HeartbeatScheduler.Cancellable heartbeat = null;
+      try {
+        jobStore.markStarted(jobId, Instant.now());
 
-      heartbeatFuture = scheduleHeartbeat(jobId);
+        heartbeat = scheduleHeartbeat(jobId);
 
-      var result = commandRunner.run(
-        cmd.argv(),
-        cmd.workspace(),
-        Map.of(
-          "DOCKER_BUILDKIT", "1",
-          "COMPOSE_DOCKER_CLI_BUILD", "1"
-        ),
-        event -> eventPublisher.publish(jobId, event)
-      );
+        var result = commandRunner.run(
+          cmd.argv(),
+          cmd.workspace(),
+          Map.of(
+            "DOCKER_BUILDKIT", "1",
+            "COMPOSE_DOCKER_CLI_BUILD", "1"
+          ),
+          event -> eventPublisher.publish(jobId, event)
+        );
 
-      Status terminal = JobTerminalStatus.from(false, result.exitCode());
-      jobStore.markFinished(jobId, terminal.name(), result.finishedAt(), result.exitCode());
-    } catch (Exception e) {
-      eventPublisher.publish(jobId, JobEvent.status(
-        "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()
-      ));
-      jobStore.markFinished(jobId, Status.FAILED.name(), Instant.now(), null);
-      log.errorf(e, "Job failed jobId=%s", jobId);
-    } finally {
-      if (heartbeatFuture != null) {
-        heartbeatFuture.cancel(true);
+        Status terminal = JobTerminalStatus.from(false, result.exitCode());
+        jobStore.markFinished(jobId, terminal.name(), result.finishedAt(), result.exitCode());
+      } catch (Exception e) {
+        eventPublisher.publish(jobId, JobEvent.status(
+          "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()
+        ));
+        jobStore.markFinished(jobId, Status.FAILED.name(), Instant.now(), null);
+        log.errorf(e, "Job failed jobId=%s", jobId);
+      } finally {
+        if (heartbeat != null) {
+          heartbeat.cancel();
+        }
+        MDC.remove("jobId");
       }
-      MDC.remove("jobId");
-      busy.set(false);
     }
   }
 
-  private ScheduledFuture<?> scheduleHeartbeat(UUID jobId) {
+  private HeartbeatScheduler.Cancellable scheduleHeartbeat(UUID jobId) {
     final long jobStartNanos = System.nanoTime();
-    final long[] heartbeatCounter = new long[] { 0L };
+    final long[] heartbeatCounter = new long[] {0L};
 
-    JobHeartbeatScheduler scheduler = new JobHeartbeatScheduler(heartbeatScheduler);
-
-    return scheduler.schedule(heartbeatIntervalMs, () -> {
+    return heartbeatScheduler.scheduleFixedRate(heartbeatIntervalMs, () -> {
       try {
         heartbeatCounter[0] += 1;
         long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
