@@ -1,8 +1,8 @@
-package com.benchmarking.rest;
+package com.benchmarking.resource;
 
 import com.benchmarking.security.RequireOrchestratorAuth;
-import com.benchmarking.service.CommandPolicy;
-import com.benchmarking.service.JobManager;
+import com.benchmarking.application.CommandPolicy;
+import com.benchmarking.application.JobManager;
 import io.smallrye.mutiny.Multi;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.BadRequestException;

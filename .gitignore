@@ -140,3 +140,5 @@ output-*.txt
 # Vitest / test report artifacts
 vitest-*.json
 /.profileconfig.json
+/.github/workflows/qodana_code_quality.yml
+/services/java/quarkus/jvm/src/main/resources/META-INF.native-image/

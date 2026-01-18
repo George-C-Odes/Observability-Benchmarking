@@ -1,7 +1,7 @@
-package com.benchmarking.rest;
+package com.benchmarking.resource;
 
 import com.benchmarking.api.HealthAggregateResponse;
-import com.benchmarking.service.ServiceHealthService;
+import com.benchmarking.application.ServiceHealthService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;

@@ -1,4 +1,4 @@
-package com.benchmarking.core;
+package com.benchmarking.domain;
 
 import lombok.extern.jbosslog.JBossLog;
 import org.apache.commons.lang3.StringUtils;

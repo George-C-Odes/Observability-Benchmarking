@@ -1,4 +1,4 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

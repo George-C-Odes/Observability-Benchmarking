@@ -1,7 +1,7 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
 import com.benchmarking.api.CommandPreset;
-import com.benchmarking.core.IntelliJRunXmlParser;
+import com.benchmarking.domain.IntelliJRunXmlParser;
 import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

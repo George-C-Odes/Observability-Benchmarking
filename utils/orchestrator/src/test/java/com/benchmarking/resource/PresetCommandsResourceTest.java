@@ -1,4 +1,4 @@
-package com.benchmarking.rest;
+package com.benchmarking.resource;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;

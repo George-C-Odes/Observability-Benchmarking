@@ -1,4 +1,4 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
 import com.benchmarking.api.HealthAggregateResponse;
 import com.benchmarking.api.ServiceHealthResponse;

@@ -1,4 +1,4 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;

@@ -1,7 +1,7 @@
-package com.benchmarking.rest;
+package com.benchmarking.resource;
 
 import com.benchmarking.api.CommandPreset;
-import com.benchmarking.service.RunPresetService;
+import com.benchmarking.application.RunPresetService;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;

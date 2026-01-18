@@ -1,4 +1,4 @@
-package com.benchmarking.core;
+package com.benchmarking.domain;
 
 import java.util.ArrayList;
 import java.util.List;

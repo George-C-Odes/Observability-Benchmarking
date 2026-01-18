@@ -1,10 +1,10 @@
-package com.benchmarking.rest;
+package com.benchmarking.resource;
 
 import com.benchmarking.security.RequireOrchestratorAuth;
-import com.benchmarking.service.EnvFileService;
-import com.benchmarking.service.EnvFileService.EnvFileContent;
-import com.benchmarking.service.EnvFileService.EnvFileException;
-import com.benchmarking.service.EnvFileService.EnvFileUpdate;
+import com.benchmarking.application.EnvFileService;
+import com.benchmarking.application.EnvFileService.EnvFileContent;
+import com.benchmarking.application.EnvFileService.EnvFileException;
+import com.benchmarking.application.EnvFileService.EnvFileUpdate;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;

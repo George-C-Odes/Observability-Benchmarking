@@ -1,6 +1,6 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
-import com.benchmarking.core.CommandTokenizer;
+import com.benchmarking.domain.CommandTokenizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

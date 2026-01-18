@@ -1,4 +1,4 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.Getter;

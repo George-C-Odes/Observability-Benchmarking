@@ -1,4 +1,4 @@
-package com.benchmarking.service;
+package com.benchmarking.application;
 
 import com.benchmarking.api.JobEvent;
 import com.benchmarking.api.JobStatusResponse;
@@ -53,12 +53,6 @@ public class JobManager {
    */
   @ConfigProperty(name = "orchestrator.max-buffer-lines")
   int maxBufferLines;
-
-  /**
-   * Whether to execute jobs serially (one at a time). For future use.
-   */
-  @ConfigProperty(name = "orchestrator.serial-execution")
-  boolean serialExecution;
 
   /**
    * Heartbeat (SSE keepalive) interval.
@@ -183,7 +177,9 @@ public class JobManager {
     return j;
   }
 
-  private void runJob(Job job, CommandPolicy.ValidatedCommand cmd) {
+  private void runJob(
+    Job job, CommandPolicy.ValidatedCommand cmd
+  ) {
     MDC.put("jobId", job.id.toString());
 
     ScheduledFuture<?> heartbeatFuture = null;
@@ -254,50 +250,54 @@ public class JobManager {
         return t;
       });
 
-      Future<?> outF = streams.submit(() -> streamLines(job, p.getInputStream(), "stdout"));
-      Future<?> errF = streams.submit(() -> streamLines(job, p.getErrorStream(), "stderr"));
+      try {
+        Future<?> outF = streams.submit(() -> streamLines(job, p.getInputStream(), "stdout"));
+        Future<?> errF = streams.submit(() -> streamLines(job, p.getErrorStream(), "stderr"));
 
-      int exit = p.waitFor();
-      outF.get(10, TimeUnit.SECONDS);
-      errF.get(10, TimeUnit.SECONDS);
-      streams.shutdownNow();
+        int exit = p.waitFor();
+        outF.get(10, TimeUnit.SECONDS);
+        errF.get(10, TimeUnit.SECONDS);
 
-      job.exitCode = exit;
-      job.finishedAt = Instant.now();
+        job.exitCode = exit;
+        job.finishedAt = Instant.now();
 
-      if (job.canceled) {
-        job.status = Status.CANCELED;
-        job.emit(JobEvent.status("CANCELED"));
-      } else if (exit == 0) {
-        job.status = Status.SUCCEEDED;
-        job.emit(JobEvent.status("SUCCEEDED"));
-      } else {
-        job.status = Status.FAILED;
-        job.emit(JobEvent.status("FAILED exitCode=" + exit));
+        if (job.canceled) {
+          job.status = Status.CANCELED;
+          job.emit(JobEvent.status("CANCELED"));
+        } else if (exit == 0) {
+          job.status = Status.SUCCEEDED;
+          job.emit(JobEvent.status("SUCCEEDED"));
+        } else {
+          job.status = Status.FAILED;
+          job.emit(JobEvent.status("FAILED exitCode=" + exit));
+        }
+
+        // Also emit a final summary snapshot (same shape as non-terminal, but terminal fields filled).
+        job.emit(JobEvent.summary(job.id,
+          job.status.name(),
+          job.createdAt,
+          job.startedAt,
+          job.finishedAt,
+          job.exitCode,
+          job.lastLine
+        ));
+
+        // Machine-readable completion snapshot for UIs (used by nextjs-dash SSE-only mode).
+        job.emit(JobEvent.terminalSummary(job.id,
+          job.status.name(),
+          job.createdAt,
+          job.startedAt,
+          job.finishedAt,
+          job.exitCode,
+          job.lastLine
+        ));
+
+        log.infof("Finished status=%s exitCode=%s", job.status, exit);
+        job.complete();
+      } finally {
+        streams.shutdownNow();
       }
 
-      // Also emit a final summary snapshot (same shape as non-terminal, but terminal fields filled).
-      job.emit(JobEvent.summary(job.id,
-        job.status.name(),
-        job.createdAt,
-        job.startedAt,
-        job.finishedAt,
-        job.exitCode,
-        job.lastLine
-      ));
-
-      // Machine-readable completion snapshot for UIs (used by nextjs-dash SSE-only mode).
-      job.emit(JobEvent.terminalSummary(job.id,
-        job.status.name(),
-        job.createdAt,
-        job.startedAt,
-        job.finishedAt,
-        job.exitCode,
-        job.lastLine
-      ));
-
-      log.infof("Finished status=%s exitCode=%s", job.status, exit);
-      job.complete();
     } catch (Exception e) {
       job.finishedAt = Instant.now();
       job.status = Status.FAILED;
