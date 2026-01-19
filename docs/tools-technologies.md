@@ -631,7 +631,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Cache**              | Caffeine                         | 3.2.3   | High-performance in-memory caching        |
 | **Container**          | Docker Engine                    | 24+     | Container runtime                         |
 | **Orchestration**      | Docker Compose                   | v2      | Multi-container orchestration             |
-| **Orchestration**      | Docker CLI                       | 29.1.3  | Image build and lifecycle management      |
+| **Orchestration**      | Docker CLI                       | 29.1.5  | Image build and lifecycle management      |
 | **Build**              | Maven                            | 3.9.12  | Java build and dependency management      |
 | **Build**              | npm                              | 11.6.2  | Frontend package management               |
 | **Testing / Load**     | wrk2                             | Latest  | HTTP benchmarking and load testing        |
