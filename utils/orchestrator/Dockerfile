@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG IMAGE_BUILDER=maven:3.9.12-eclipse-temurin-25-noble
-ARG IMAGE_DOCKER_CLI=docker:29.1.3-cli
+ARG IMAGE_DOCKER_CLI=docker:29.1.5-cli
 ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
 #ARG IMAGE_RUNTIME=amazoncorretto:25.0.1
 ## amazoncorretto includes curl for troubleshooting
