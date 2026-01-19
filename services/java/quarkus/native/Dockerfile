@@ -71,7 +71,7 @@ WORKDIR /workspace
 
 COPY --link --chown=1000:1000 quarkus/native/.mvn/ .mvn
 COPY --link --chown=1000:1000 quarkus/native/mvnw ./mvnw
-RUN chmod +x mvnw
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
 COPY --link --chown=1000:1000 quarkus/native/pom.xml pom.xml
 COPY --link --chown=1000:1000 checkstyle.xml checkstyle.xml
 COPY --link --chown=1000:1000 checkstyle-suppressions.xml checkstyle-suppressions.xml
