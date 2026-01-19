@@ -27,13 +27,13 @@ The project implements a comprehensive testing strategy covering:
 
 ### Test Coverage Summary
 
-| Component | Unit Tests | Integration Tests | Observability Tests |
-|-----------|------------|-------------------|---------------------|
-| Quarkus JVM | ✅ 9 tests | ✅ Covered | ✅ Metrics/Traces |
-| Spring Tomcat | ✅ 6 tests | ✅ Covered | ✅ Metrics/Traces |
-| Spring Netty | ✅ 3 tests | ✅ Covered | ✅ Metrics/Traces |
-| Go Fiber | ✅ 5 tests | ✅ Covered | ✅ Planned |
-| **Total** | **23 tests** | **15+ scenarios** | **Full stack** |
+| Component     | Unit Tests   | Integration Tests | Observability Tests |
+|---------------|--------------|-------------------|---------------------|
+| Quarkus JVM   | ✅ 9 tests    | ✅ Covered         | ✅ Metrics/Traces    |
+| Spring Tomcat | ✅ 6 tests    | ✅ Covered         | ✅ Metrics/Traces    |
+| Spring Netty  | ✅ 3 tests    | ✅ Covered         | ✅ Metrics/Traces    |
+| Go Fiber      | ✅ 5 tests    | ✅ Covered         | ✅ Planned           |
+| **Total**     | **23 tests** | **15+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -408,27 +408,27 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 
 #### Deployment Verification (7 scenarios)
 
-| Test | Endpoint | Validation |
-|------|----------|------------|
-| Quarkus Platform | `/hello/platform` | Status 200, JSON, content |
-| Quarkus Virtual | `/hello/virtual` | Status 200, JSON, content |
-| Quarkus Reactive | `/hello/reactive` | Status 200, JSON, content |
+| Test                   | Endpoint          | Validation                |
+|------------------------|-------------------|---------------------------|
+| Quarkus Platform       | `/hello/platform` | Status 200, JSON, content |
+| Quarkus Virtual        | `/hello/virtual`  | Status 200, JSON, content |
+| Quarkus Reactive       | `/hello/reactive` | Status 200, JSON, content |
 | Spring Tomcat Platform | `/hello/platform` | Status 200, JSON, content |
-| Spring Tomcat Virtual | `/hello/virtual` | Status 200, JSON, content |
-| Spring Netty Reactive | `/hello/reactive` | Status 200, JSON, content |
-| Go Platform | `/hello/platform` | Status 200, content |
+| Spring Tomcat Virtual  | `/hello/virtual`  | Status 200, JSON, content |
+| Spring Netty Reactive  | `/hello/reactive` | Status 200, JSON, content |
+| Go Platform            | `/hello/platform` | Status 200, content       |
 
 #### Observability Verification (8+ scenarios)
 
-| Test | Component               | Validation                  |
-|------|-------------------------|-----------------------------|
-| Metrics Collection | Prometheus endpoints    | Metric availability, format |
-| Custom Counters | All services          | `hello_request_count_total` |
-| Health Endpoints | All services            | Readiness, liveness         |
-| Grafana UI | Dashboard               | HTTP 200, UI accessible     |
+| Test                 | Component               | Validation                  |
+|----------------------|-------------------------|-----------------------------|
+| Metrics Collection   | Prometheus endpoints    | Metric availability, format |
+| Custom Counters      | All services            | `hello_request_count_total` |
+| Health Endpoints     | All services            | Readiness, liveness         |
+| Grafana UI           | Dashboard               | HTTP 200, UI accessible     |
 | Grafana Data Sources | Prometheus, Loki, Tempo | Connected, healthy          |
-| Trace Generation | Tempo                   | Spans created (smoke test)  |
-| Log Aggregation | Loki                    | Logs collected (smoke test) |
+| Trace Generation     | Tempo                   | Spans created (smoke test)  |
+| Log Aggregation      | Loki                    | Logs collected (smoke test) |
 
 ### Expected Output
 
@@ -721,13 +721,13 @@ docker run --rm --network compose_default \
 
 Based on 4 vCPU limits:
 
-| Service | Thread Model | RPS (approx) | p99 Latency |
-|---------|-------------|--------------|-------------|
-| Quarkus JVM | Reactive | 86,000 | <5ms |
-| Quarkus JVM | Virtual | 68,000 | <10ms |
-| Quarkus Native | Reactive | 56,000 | <3ms |
-| Spring Boot Tomcat | Platform | 48,000 | <15ms |
-| Spring Boot Netty | Reactive | 52,000 | <8ms |
+| Service            | Thread Model | RPS (approx) | p99 Latency |
+|--------------------|--------------|--------------|-------------|
+| Quarkus JVM        | Reactive     | 86,000       | <5ms        |
+| Quarkus JVM        | Virtual      | 68,000       | <10ms       |
+| Quarkus Native     | Reactive     | 56,000       | <3ms        |
+| Spring Boot Tomcat | Platform     | 48,000       | <15ms       |
+| Spring Boot Netty  | Reactive     | 52,000       | <8ms        |
 
 #### Performance Test Validation
 

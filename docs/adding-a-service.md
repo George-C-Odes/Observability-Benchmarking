@@ -119,15 +119,15 @@ See: `results/README.md`.
 
 ## Touchpoints map (where things usually need changes)
 
-| Concern | Folder(s) | What you update |
-|---|---|---|
-| Add a new benchmark target | `services/` | Source + Docker build context |
-| Start/stop the target | `compose/` | New Compose service under `SERVICES` |
-| Load generator target wiring | `compose/`, `utils/wrk2/` | New wrk2 target and/or container |
-| Control-plane integration | `utils/nextjs-dash/`, `utils/orchestrator/` | UI actions and orchestration endpoints |
-| Observability pipeline routing | `config/alloy/`, `config/grafana/` | OTLP pipeline and dashboards |
-| Published results | `results/` | Run artifacts and summary |
-| Public docs | `README.md`, `docs/` | Narrative + instructions |
+| Concern                        | Folder(s)                                   | What you update                        |
+|--------------------------------|---------------------------------------------|----------------------------------------|
+| Add a new benchmark target     | `services/`                                 | Source + Docker build context          |
+| Start/stop the target          | `compose/`                                  | New Compose service under `SERVICES`   |
+| Load generator target wiring   | `compose/`, `utils/wrk2/`                   | New wrk2 target and/or container       |
+| Control-plane integration      | `utils/nextjs-dash/`, `utils/orchestrator/` | UI actions and orchestration endpoints |
+| Observability pipeline routing | `config/alloy/`, `config/grafana/`          | OTLP pipeline and dashboards           |
+| Published results              | `results/`                                  | Run artifacts and summary              |
+| Public docs                    | `README.md`, `docs/`                        | Narrative + instructions               |
 
 ## Common pitfalls
 

@@ -16,21 +16,21 @@ Where details differ between documentation and code/config, the repository sourc
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
 
-| Implementation | Mode | RPS |
-|---|---:|----:|
-| Spring JVM | Platform | 28k |
-| Spring JVM | Virtual | 24k |
-| Spring JVM | Reactive | 19k |
-| Spring Native | Platform | 16k |
-| Spring Native | Virtual | 17k |
-| Spring Native | Reactive | 13k |
-| Quarkus JVM | Platform | 59k |
-| Quarkus JVM | Virtual | 70k |
-| Quarkus JVM | Reactive | 83k |
-| Quarkus Native | Platform | 39k |
-| Quarkus Native | Virtual | 47k |
-| Quarkus Native | Reactive | 39k |
-| Go (observability-aligned implementation) | — | 52k |
+| Implementation                            |     Mode | RPS |
+|-------------------------------------------|---------:|----:|
+| Spring JVM                                | Platform | 28k |
+| Spring JVM                                |  Virtual | 24k |
+| Spring JVM                                | Reactive | 19k |
+| Spring Native                             | Platform | 16k |
+| Spring Native                             |  Virtual | 17k |
+| Spring Native                             | Reactive | 13k |
+| Quarkus JVM                               | Platform | 59k |
+| Quarkus JVM                               |  Virtual | 70k |
+| Quarkus JVM                               | Reactive | 83k |
+| Quarkus Native                            | Platform | 39k |
+| Quarkus Native                            |  Virtual | 47k |
+| Quarkus Native                            | Reactive | 39k |
+| Go (observability-aligned implementation) |        — | 52k |
 
 ### Fairness note (Go vs go-simple)
 

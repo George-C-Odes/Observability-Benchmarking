@@ -39,19 +39,18 @@ Run from the root directory of this repo.
 
 1. Set wrk2 to not autostart benchmarking (prevent skewing tests) and start everything via Docker Compose
 
-```powerShell
-#powershell
-$env:WRK_AUTORUN="false"; docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
-```
-or
-```bash
-#bash
-WRK_AUTORUN=false docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
-```
+    ```powerShell
+    #powershell
+    $env:WRK_AUTORUN="false"; docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
+    ```
+    or
+    ```bash
+    #bash
+    WRK_AUTORUN=false docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE up --no-recreate -d
+    ```
 
 2. Wait for services to initialize (less than a minute if everything was pre-built / cached)
    * For some reason Loki, Tempo and Pyroscope might need additional probe(s) after boot to reply with 200
-
 
 3. Run integration tests
 ```bash
@@ -128,57 +127,57 @@ export WRK2_CONTAINER_NAME=wrk2
 
 The tests are designed for these specific versions:
 
-| Framework | Version | Notes |
-|-----------|---------|-------|
-| Quarkus | 3.30.6  | OpenTelemetry SDK (not Java agent) |
+| Framework   | Version | Notes                                   |
+|-------------|---------|-----------------------------------------|
+| Quarkus     | 3.30.6  | OpenTelemetry SDK (not Java agent)      |
 | Spring Boot | 4.0.1   | OpenTelemetry Java Agent, no parent POM |
-| Go | 1.25.6  | Fiber v2.52.10, OpenTelemetry Go SDK |
+| Go          | 1.25.6  | Fiber v2.52.10, OpenTelemetry Go SDK    |
 
 ## Service Port Mappings
 
 Port mappings match the order in docker-compose.yml:
 
-| Service | Container Name | Port | Type |
-|---------|---------------|------|------|
-| Spring Boot Tomcat Platform | spring-jvm-tomcat-platform | 8080 | JVM |
-| Spring Boot Tomcat Virtual | spring-jvm-tomcat-virtual | 8081 | JVM |
-| Spring Boot Netty | spring-jvm-netty | 8082 | JVM |
-| Spring Boot Native Tomcat Platform | spring-native-tomcat-platform | 8083 | Native |
-| Spring Boot Native Tomcat Virtual | spring-native-tomcat-virtual | 8084 | Native |
-| Spring Boot Native Netty | spring-native-netty | 8085 | Native |
-| Quarkus JVM | quarkus-jvm | 8086 | JVM |
-| Quarkus Native | quarkus-native | 8087 | Native |
-| Go | go | 8088 | Native (Go binary) |
+| Service                            | Container Name                | Port | Type               |
+|------------------------------------|-------------------------------|------|--------------------|
+| Spring Boot Tomcat Platform        | spring-jvm-tomcat-platform    | 8080 | JVM                |
+| Spring Boot Tomcat Virtual         | spring-jvm-tomcat-virtual     | 8081 | JVM                |
+| Spring Boot Netty                  | spring-jvm-netty              | 8082 | JVM                |
+| Spring Boot Native Tomcat Platform | spring-native-tomcat-platform | 8083 | Native             |
+| Spring Boot Native Tomcat Virtual  | spring-native-tomcat-virtual  | 8084 | Native             |
+| Spring Boot Native Netty           | spring-native-netty           | 8085 | Native             |
+| Quarkus JVM                        | quarkus-jvm                   | 8086 | JVM                |
+| Quarkus Native                     | quarkus-native                | 8087 | Native             |
+| Go                                 | go                            | 8088 | Native (Go binary) |
 
 ## Test Scenarios
 
 ### JVM Services - Deployment Tests (7 tests)
 
-| Service | Port | Endpoint | Expected Response |
-|---------|------|----------|-------------------|
-| Spring Tomcat Platform | 8080 | `/hello/platform` | Contains "Boot" |
-| Spring Tomcat Virtual | 8081 | `/hello/virtual` | Contains "Boot" |
-| Spring Netty | 8082 | `/hello/reactive` | Contains "Boot" |
-| Quarkus JVM | 8086 | `/hello/platform` | Contains "Quarkus" |
-| Quarkus JVM | 8086 | `/hello/virtual` | Contains "Quarkus" |
-| Quarkus JVM | 8086 | `/hello/reactive` | Contains "Quarkus" |
+| Service                | Port | Endpoint          | Expected Response  |
+|------------------------|------|-------------------|--------------------|
+| Spring Tomcat Platform | 8080 | `/hello/platform` | Contains "Boot"    |
+| Spring Tomcat Virtual  | 8081 | `/hello/virtual`  | Contains "Boot"    |
+| Spring Netty           | 8082 | `/hello/reactive` | Contains "Boot"    |
+| Quarkus JVM            | 8086 | `/hello/platform` | Contains "Quarkus" |
+| Quarkus JVM            | 8086 | `/hello/virtual`  | Contains "Quarkus" |
+| Quarkus JVM            | 8086 | `/hello/reactive` | Contains "Quarkus" |
 
 ### Native Services - Deployment Tests (7 tests)
 
-| Service | Port | Endpoint | Expected Response |
-|---------|------|----------|-------------------|
-| Spring Native Tomcat Platform | 8083 | `/hello/platform` | Contains "Boot" |
-| Spring Native Tomcat Virtual | 8084 | `/hello/virtual` | Contains "Boot" |
-| Spring Native Netty | 8085 | `/hello/reactive` | Contains "Boot" |
-| Quarkus Native | 8087 | `/hello/platform` | Contains "Quarkus" |
-| Quarkus Native | 8087 | `/hello/virtual` | Contains "Quarkus" |
-| Quarkus Native | 8087 | `/hello/reactive` | Contains "Quarkus" |
+| Service                       | Port | Endpoint          | Expected Response  |
+|-------------------------------|------|-------------------|--------------------|
+| Spring Native Tomcat Platform | 8083 | `/hello/platform` | Contains "Boot"    |
+| Spring Native Tomcat Virtual  | 8084 | `/hello/virtual`  | Contains "Boot"    |
+| Spring Native Netty           | 8085 | `/hello/reactive` | Contains "Boot"    |
+| Quarkus Native                | 8087 | `/hello/platform` | Contains "Quarkus" |
+| Quarkus Native                | 8087 | `/hello/virtual`  | Contains "Quarkus" |
+| Quarkus Native                | 8087 | `/hello/reactive` | Contains "Quarkus" |
 
 ### Go Service - Deployment Test (1 test)
 
-| Service | Port | Endpoint | Expected Response |
-|---------|------|----------|-------------------|
-| Go Fiber | 8088 | `/hello/virtual` | Contains "GO" |
+| Service  | Port | Endpoint         | Expected Response |
+|----------|------|------------------|-------------------|
+| Go Fiber | 8088 | `/hello/virtual` | Contains "GO"     |
 
 ### wrk2 Readiness + On-demand Exec (2 checks)
 

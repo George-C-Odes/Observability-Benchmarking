@@ -152,7 +152,7 @@ Use appropriate log levels (INFO/WARN/ERROR) to avoid over-logging.
 Ensure log rotation/retention is configured in the observability stack (Loki).
 
 Example of safe logging:
-```java
+```markdown
 // Safe
 log.info("User logged in: {}", username);
 
