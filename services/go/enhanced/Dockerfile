@@ -1,25 +1,22 @@
 # syntax=docker/dockerfile:1.7-labs
-# Multi-stage build with BuildKit cache mounts for fast, reproducible builds.
+ARG GO_VERSION=1.25.6
+ARG BASE_BUILDER=alpine3.23
 
-ARG GO_VERSION=1.25.5
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
-ARG BASE_BUILDER=alpine
-
+# ------------ BUILD STAGE -----------------------
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-${BASE_BUILDER} AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /src
 
-# Security + reproducible builds (alpine)
-#RUN apk add --no-cache ca-certificates git
-
-# Cache deps
-COPY go.mod go.sum ./
+# Cache dependencies
+COPY --link go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+  go mod download
 
 # Copy source
-COPY . .
+COPY --link . .
 
 # Build: pure Go static-ish binary, optimized for containers
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -29,6 +26,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       -ldflags="-s -w" \
       -o /out/app ./cmd/server
 
+# ------------ RUNTIME STAGE ----------------------
 FROM gcr.io/distroless/static-debian13:nonroot
 
 WORKDIR /

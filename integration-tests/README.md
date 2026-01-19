@@ -8,7 +8,7 @@ This directory contains integration tests that validate:
 - **JVM Services**: All JVM-based services (Spring Boot, Quarkus, Go)
 - **Native Services**: All GraalVM Native Image services (Spring Native, Quarkus Native)
 - **Observability Stack**: Metrics, traces, and logs are collected properly
-- **Framework Functionality**: Latest framework versions (Quarkus 3.30.6, Spring Boot 4.0.1, Go 1.25.5)
+- **Framework Functionality**: Latest framework versions (Quarkus 3.30.6, Spring Boot 4.0.1, Go 1.25.6)
 
 ## Quick Start
 
@@ -132,7 +132,7 @@ The tests are designed for these specific versions:
 |-----------|---------|-------|
 | Quarkus | 3.30.6  | OpenTelemetry SDK (not Java agent) |
 | Spring Boot | 4.0.1   | OpenTelemetry Java Agent, no parent POM |
-| Go | 1.25.5  | Fiber v2.52.10, OpenTelemetry Go SDK |
+| Go | 1.25.6  | Fiber v2.52.10, OpenTelemetry Go SDK |
 
 ## Service Port Mappings
 

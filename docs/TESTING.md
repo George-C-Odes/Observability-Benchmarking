@@ -233,7 +233,7 @@ docker build \
 #### Version Requirements
 
 ```
-Go: 1.25.5+
+Go: 1.25.6+
 Fiber: v2.52.10
 OpenTelemetry: Latest stable
 ```
@@ -439,7 +439,7 @@ Integration Test Suite
 Testing Framework Versions:
 - Quarkus: 3.30.6
 - Spring Boot: 4.0.1
-- Go: 1.25.5
+- Go: 1.25.6
 
 ==========================================
 Deployment Verification Tests
@@ -679,7 +679,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.25.5 | Build version: go1.25.5
+2025-12-16T10:30:00.123Z Runtime version: go1.25.6 | Build version: go1.25.6
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -799,10 +799,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Go 1.25.5
+      - name: Set up Go 1.25.6
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.5'
+          go-version: '1.25.6'
       
       - name: Test Go Service
         run: |
@@ -854,7 +854,7 @@ jobs:
           - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.30.6" }
           - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.1" }
           - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.1" }
-          - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.5" }
+          - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.6" }
     
     steps:
       - uses: actions/checkout@v4
@@ -938,7 +938,7 @@ test:spring-netty:
 
 test:go:
   stage: test
-  image: golang:1.25.5
+  image: golang:1.25.6
   script:
     - cd services/go/hello
     - go mod download

@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] ~Go *simple*" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="go-simple:1.25.5_latest" />
+        <option name="imageTag" value="go-simple:1.25.6_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="GO_VERSION" />
-              <option name="value" value="1.25.5" />
+              <option name="value" value="1.25.6" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="go:1.25.5_latest" />
+              <option name="value" value="go:1.25.6_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

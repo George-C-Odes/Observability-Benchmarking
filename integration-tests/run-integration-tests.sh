@@ -96,7 +96,7 @@ ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 # Framework versions
 QUARKUS_VERSION="3.30.6"
 SPRING_BOOT_VERSION="4.0.1"
-GO_VERSION="1.25.5"
+GO_VERSION="1.25.6"
 
 # Helper function to test HTTP endpoint
 test_endpoint() {
