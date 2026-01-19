@@ -17,7 +17,7 @@ Where details differ between documentation and code/config, the repository sourc
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
 
 | Implementation | Mode | RPS |
-|---|---:|---:|
+|---|---:|----:|
 | Spring JVM | Platform | 28k |
 | Spring JVM | Virtual | 24k |
 | Spring JVM | Reactive | 19k |
@@ -30,7 +30,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Quarkus Native | Platform | 39k |
 | Quarkus Native | Virtual | 47k |
 | Quarkus Native | Reactive | 39k |
-| Go (observability-aligned implementation) | — | 45k |
+| Go (observability-aligned implementation) | — | 52k |
 
 ### Fairness note (Go vs go-simple)
 
@@ -93,7 +93,7 @@ memory: 2GB        # Maximum memory
 **Frameworks**:
 - Spring Boot: 4.0.1 (3.5.9 also supported)
 - Quarkus: 3.30.6
-- Go: 1.25.5 with Fiber v2.52.10
+- Go: 1.25.6 with Fiber v2.52.10
 
 ### Third-party license note (native-image)
 

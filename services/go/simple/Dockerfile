@@ -1,21 +1,36 @@
-# ------------ BUILD STAGE -----------------------
-ARG GO_VERSION=1.25.5
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
-ARG BASE_BUILDER=alpine
+# syntax=docker/dockerfile:1.7-labs
+ARG GO_VERSION=1.25.6
+ARG BASE_BUILDER=alpine3.23
 
+# ------------ BUILD STAGE -----------------------
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-${BASE_BUILDER} AS builder
 
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN go build -o server ./cmd/server
+ARG TARGETOS
+ARG TARGETARCH
 
-#-----------------------  RUNTIME STAGE -----------------------
+WORKDIR /src
+
+# Cache dependencies
+COPY --link go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+  go mod download
+
+# Copy source
+COPY --link . .
+
+# Build: pure Go static-ish binary, optimized for containers
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -buildvcs=false \
+      -ldflags="-s -w" \
+      -o /out/app ./cmd/server
+
+# ------------ RUNTIME STAGE ----------------------
 FROM gcr.io/distroless/static-debian13:nonroot
 
-COPY --from=builder /app/server /server
+WORKDIR /
+COPY --from=builder /out/app /app
 EXPOSE 8080
 USER nonroot:nonroot
-CMD ["/server"]
+ENTRYPOINT ["/app"]

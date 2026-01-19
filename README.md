@@ -4,7 +4,7 @@
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.1-green.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.30.6-blue.svg)](https://quarkus.io/)
-[![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.25.6-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
@@ -101,7 +101,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
-#### Go (1.25.5)
+#### Go (1.25.6)
 - Fiber framework integration
 - Full observability setup
 
@@ -304,7 +304,7 @@ The numbers below are a curated summary of a representative run (18/01/2026). Fo
 #### Requests Per Second (RPS) — 18/01/2026 (to closest thousand)
 
 | Implementation | Mode | RPS |
-|---|---:|---:|
+|---|---:|----:|
 | Spring JVM | Platform | 28k |
 | Spring JVM | Virtual | 24k |
 | Spring JVM | Reactive | 19k |
@@ -317,7 +317,7 @@ The numbers below are a curated summary of a representative run (18/01/2026). Fo
 | Quarkus Native | Platform | 39k |
 | Quarkus Native | Virtual | 47k |
 | Quarkus Native | Reactive | 39k |
-| Go (observability-aligned implementation) | — | 45k |
+| Go (observability-aligned implementation) | — | 52k |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -348,7 +348,7 @@ The newer Go implementation targets a more apples-to-apples comparison (OpenTele
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
 - **Spring Boot**: 4.0.1 (3.5.9 also supported)
 - **Quarkus**: 3.30.6
-- **Go**: 1.25.5 (Fiber v2.52.10)
+- **Go**: 1.25.6 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
@@ -585,7 +585,7 @@ Observability-Benchmarking/
 │   ├── grafana/             # Grafana dashboards and provisioning
 │   ├── loki/                # Loki configuration
 │   └── pyroscope/           # Pyroscope profiling config
-├── utils/                 # Load generation tools and scripts
+├── utils/                   # Load generation tools and scripts
 ├── results/                 # Benchmark results and outputs
 ├── docs/                    # Additional documentation
 │   ├── LINTING_AND_CODE_QUALITY.md
@@ -748,7 +748,6 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 - [ ] **Micronaut**: Another popular JVM framework with reactive and GraalVM support
 - [ ] **Helidon**: Oracle's microservices framework (SE and MP editions)
 - [ ] **Ktor**: Kotlin-based asynchronous framework
-- [ ] **Complete Go implementation**: Full observability instrumentation
 - [ ] **Rust**: Actix-web or Axum framework with OTLP integration
 
 #### Enhanced Observability
