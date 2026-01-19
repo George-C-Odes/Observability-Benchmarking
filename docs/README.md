@@ -13,6 +13,8 @@ Visit the documentation at: [https://george-c-odes.github.io/Observability-Bench
 - **[benchmarking.md](benchmarking.md)** - Comprehensive benchmarking methodology and process
 - **[style.css](style.css)** - CSS styling for the documentation site
 - **[_config.yml](_config.yml)** - Jekyll configuration for GitHub Pages
+- **[adding-a-service.md](adding-a-service.md)** - How to add a new benchmark target and wire it into the environment
+- **[control-plane.md](control-plane.md)** - Control plane overview (dashboard + orchestrator reasoning and usage)
 
 ## Features
 
@@ -36,31 +38,28 @@ The documentation site showcases:
 - Framework documentation
 - Related blog posts and articles
 
+## What to commit
+
+Commit **source** files under `docs/` (Markdown, HTML, CSS, layouts, images). Do **not** commit generated output.
+
+- ✅ Commit: `docs/*.md`, `docs/*.html`, `docs/style.css`, `docs/_layouts/`, `docs/images/`, `docs/_config.yml`
+- ❌ Do not commit: `docs/_site/`, `docs/.jekyll-cache/`, `docs/.sass-cache/`
+
 ## Local Development
 
-To view the site locally:
+To preview the site locally in a way that matches GitHub Pages (including the repository baseurl):
 
-### Option 1: Simple HTTP Server (for HTML only)
 ```bash
-cd docs
-python3 -m http.server 8000
-# Visit http://localhost:8000
-```
-
-### Option 2: Jekyll (for full GitHub Pages simulation, preferred)
-```bash
-# Install Bundler (one-time setup)
-gem install bundler
-
-# Install project dependencies
 cd docs
 bundle install
-
-# Serve the site
-bundle exec jekyll serve
-
-# Visit http://localhost:4000/Observability-Benchmarking/
+bundle exec jekyll serve --port 4000 --baseurl /Observability-Benchmarking
 ```
+
+Then open:
+- http://127.0.0.1:4000/Observability-Benchmarking/
+
+> Tip: if you change `_config.yml` or layouts, restart `jekyll serve`.
+
 
 ## Design Principles
 

@@ -1,9 +1,35 @@
 # Orchestrator (Quarkus) — local Docker Compose runner
 
-This service is designed for **local testing** and developer automation.
-It runs inside Docker and exposes a small HTTP API to run **restricted** `docker compose ...` commands and stream their output via **SSE**.
+This service is a small **control plane** for the repo’s Docker Compose environment.
+
+It’s designed for **local benchmarking automation**: it runs inside Docker and exposes a small HTTP API to run **restricted** `docker compose ...` commands and stream their output via **Server-Sent Events (SSE)**.
 
 > Source code is the source of truth. This README documents the current implementation in `utils/orchestrator`.
+
+## Why it exists (the design reasoning)
+
+Running repeatable benchmarks quickly usually needs a “traffic cone” between a UI/script and your host Docker engine:
+
+- You want a **single place** that knows how to start/stop the stack.
+- You want a safe way to run only a **small allowlist** of commands (not arbitrary shell).
+- You want a real-time channel (SSE) so the UI can show progress without polling.
+
+The orchestrator provides that boundary.
+
+It also keeps the Next.js dashboard as a **presentation layer**: the dashboard proxies calls for convenience, but the orchestration logic stays here.
+
+## Where it fits
+
+High-level flow:
+
+- Browser → Next.js dashboard (`utils/nextjs-dash`) → Orchestrator
+- Or: CLI/client → Orchestrator (direct)
+
+The orchestrator then drives:
+
+- `docker compose ...` against the repo’s `compose/` project
+- Health aggregation across the running stack
+- Reads/writes the environment file used by compose
 
 ## What it does
 
@@ -11,6 +37,22 @@ It runs inside Docker and exposes a small HTTP API to run **restricted** `docker
 - Creates an async job and streams output/events over SSE.
 - Aggregates health checks for the rest of the stack (via `GET /v1/health`).
 - Manages a workspace `.env` (via `/v1/env`).
+
+## Job lifecycle (how SSE works here)
+
+A “run” request creates a job. You then watch it in two ways:
+
+1. **Snapshot**: `GET /v1/jobs/{id}` gives status + latest known state.
+2. **Stream**: `GET /v1/jobs/{id}/events` emits events as they happen.
+
+The event stream includes:
+
+- command start
+- stdout/stderr lines
+- heartbeat events (so UIs can detect a dead stream)
+- command exit (success/failure)
+
+The Next.js dashboard consumes this API (often via a proxy route) to power the Script Runner UI.
 
 ## Security model (important)
 
@@ -66,7 +108,15 @@ Typical container runtime setup (see the compose files in the repo):
 - Docker socket mounted at `/var/run/docker.sock`
 
 The orchestrator uses the host Docker engine through the socket. That means bind mount source paths must be valid on the **host**.
-For Windows/macOS, this often requires configuring host paths in `orchestrator.project-paths.host-compose`.
+
+### Windows / WSL2 note (paths)
+
+On Windows + Docker Desktop (WSL2 backend), path translation is the #1 source of startup issues.
+
+If you see bind-mount errors or “file not found” issues when running compose commands from the orchestrator, verify:
+
+- `HOST_REPO` is correct in `compose/.env`
+- `orchestrator.project-paths.*` points to the correct host-side compose directory
 
 ## Configuration highlights
 
@@ -120,6 +170,37 @@ Check stack health aggregation:
 ```bash
 curl "http://localhost:3002/v1/health"
 ```
+
+## Using the orchestrator via the dashboard
+
+If you start the dashboard, you normally don’t need to call orchestrator endpoints manually.
+
+- Dashboard URL: http://localhost:3001
+- It will:
+  - read/edit the env file through the orchestrator
+  - submit commands and stream events to show progress
+
+## Troubleshooting
+
+### 1) 401 Unauthorized
+
+- Confirm you’re sending `Authorization: Bearer <api-key>`.
+- Confirm the configured key matches `orchestrator.api-key`.
+
+### 2) SSE stream disconnects
+
+- Long-running compose commands can exceed client/proxy timeouts.
+- Prefer using the dashboard defaults (it’s configured for long event streams), or increase any reverse-proxy timeouts if you add one.
+
+### 3) Docker socket permission errors
+
+- Confirm the orchestrator container has `/var/run/docker.sock` mounted.
+- Confirm Docker Desktop is running.
+
+### 4) Compose bind-mount problems
+
+- Re-check `HOST_REPO` in `compose/.env`.
+- On Windows, ensure the directory is shared with Docker Desktop.
 
 ## Notes on logs & Grafana Alloy
 

@@ -1,6 +1,7 @@
 ---
 layout: default
 title: System Architecture
+permalink: /docs/architecture
 ---
 
 # System Architecture
@@ -47,7 +48,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Go 1.25 (in progress)
+- Go 1.25
   - Fiber framework
 
 **Service Characteristics**:

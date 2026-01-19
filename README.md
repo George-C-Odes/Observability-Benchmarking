@@ -7,7 +7,7 @@
 [![Go](https://img.shields.io/badge/Go-1.25.5-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
-> A comprehensive Docker Compose-based environment for benchmarking containerized REST services with full observability using the Grafana LGTM stack (Loki, Grafana, Tempo, Mimir), continuous profiling (Pyroscope), OpenTelemetry instrumentation (Alloy), and deterministic load generation (wrk2).
+> A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
 
 ---
 
@@ -23,7 +23,6 @@
   - [Running Benchmarks](#running-benchmarks)
   - [Results](#results)
   - [Test Environment](#test-environment)
-  - [Interpreting Results](#interpreting-results)
 - [Project Structure](#-project-structure)
 - [Observability & Profiling](#-observability--profiling)
 - [Code Quality & Security](#-code-quality--security)
@@ -57,6 +56,19 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 - **Educational**: Learn how different threading models and frameworks perform under load
 - **Portfolio ready**: Demonstrates expertise in performance engineering and observability
 
+### Search keywords (for reach)
+
+If you’re searching for projects like this, these are the topics it covers:
+
+- OpenTelemetry (OTel) benchmarking
+- observability benchmarking / performance engineering
+- Grafana LGTM stack (Loki + Tempo + Mimir + Grafana) 
+- continuous profiling (Grafana Pyroscope)
+- wrk2 constant-throughput load testing
+- Java virtual threads (Project Loom) vs platform threads vs reactive (WebFlux/Mutiny)
+- Quarkus vs Spring Boot performance
+- GraalVM native image benchmarking
+
 ## ✨ Features
 
 ### 🏗️ Complete Observability Stack (LGTM)
@@ -89,9 +101,9 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
-#### Go (1.25.5) - Work in Progress
+#### Go (1.25.5)
 - Fiber framework integration
-- Full observability setup in progress
+- Full observability setup
 
 ### 🎯 Load Generation
 - **wrk2**: Deterministic, constant-throughput HTTP benchmarking
@@ -119,10 +131,20 @@ Before you begin, ensure you have the following installed:
 
 - **Docker**: Version 20.10 or higher
 - **Docker Compose**: Version 2.0 or higher (modern Compose CLI)
-- **System Requirements**:
-  - Minimum: 8 GB RAM, 4 CPU cores
-  - Recommended: 16 GB RAM, 8 CPU cores
-  - Storage: At least 10 GB free space
+
+#### Required local path setting (`HOST_REPO`)
+
+This repo is orchestrated via the `compose/` project directory.
+
+⚠️ **Important**: in `compose/.env`, you must set `HOST_REPO` to the **absolute path** of the repository root on your machine (for example: `C:\Users\you\dev\Observability-Benchmarking`).
+
+If `HOST_REPO` is not set correctly, bind-mounts used by the dashboard/orchestrator and benchmark tooling won’t resolve and the environment won’t start cleanly.
+
+#### System requirements
+
+- Minimum: 8 GB RAM, 4 CPU cores
+- Recommended: 16 GB RAM, 8 CPU cores
+- Storage: At least 10 GB free space
 
 ### Installation
 
@@ -140,7 +162,17 @@ Before you begin, ensure you have the following installed:
 
 ### Quick Start
 
-The project uses Docker Compose profiles to control what gets deployed:
+There are multiple supported ways to get up and running. All options ultimately use Docker Compose under `compose/`.
+
+#### Option 1: IntelliJ IDEA Run/Debug scripts (recommended for development)
+
+If you prefer a guided workflow and repeatable “one-click” scripts, use the provided IntelliJ Run/Debug configurations.
+
+> Tip: this is the smoothest way to build and run native-image services because the scripts already respect the repository’s resource and ordering constraints.
+
+#### Option 2: Docker Compose directly (terminal)
+
+Use profiles to control what gets deployed:
 
 #### 1. Start Only the Observability Stack
 
@@ -185,6 +217,16 @@ docker compose --project-directory compose --profile=RAIN_FIRE up --force-recrea
 ### IntelliJ IDEA Integration
 
 Pre-configured run configurations are available in the `.run/` directory for convenient development and testing within IntelliJ IDEA.
+
+### Build time and resource notes (native images)
+
+⚠️ **Native-image builds are slow and CPU intensive.** On typical developer hardware, a single native image build can take **up to ~10 minutes**, and a first-time build of all services can take **30+ minutes**.
+
+To keep builds stable (especially on Windows + WSL2 / Docker Desktop), this repository defaults to **serial image builds**:
+
+- `COMPOSE_PARALLEL_LIMIT=1`
+
+Building **two native images in parallel** can exhaust RAM/CPU and has been observed to crash Docker Engine (at least in WSL2).
 
 ### Warming Up
 
@@ -257,27 +299,35 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 ### Results
 
-#### Requests Per Second (Quad-CPU Limited Containers)
+The numbers below are a curated summary of a representative run (18/01/2026). For methodology and how to reproduce: see the docs site.
 
-The following results were obtained with containers limited to 4 vCPUs for fair comparison:
+#### Requests Per Second (RPS) — 18/01/2026 (to closest thousand)
 
-| Rank | Implementation (Mode)     | RPS    | Notes |
-|------|---------------------------|--------|-------|
-| 1    | Quarkus JVM (reactive)    | 86,000 | Highest throughput |
-| 2    | Quarkus JVM (virtual)     | 68,000 | Project Loom efficiency |
-| 3    | Quarkus Native (reactive) | 56,000 | GraalVM Native Image |
-| 4    | Quarkus JVM (platform)    | 56,000 | Traditional threading |
-| 5    | Quarkus Native (virtual)  | 55,000 | Native + virtual threads |
-| 6    | Spring JVM (virtual)      | 38,000 | Spring Boot 4.0 |
-| 7    | Quarkus Native (platform) | 37,000 | Native baseline |
-| 8    | Spring JVM (platform)     | 35,000 | Traditional Spring |
-| 9    | Spring JVM (reactive)     | 29,000 | WebFlux |
-| 10   | Spring Native (virtual)   | TBA    | In development |
-| 11   | Spring Native (platform)  | TBA    | In development |
-| 12   | Spring Native (reactive)  | TBA    | In development |
-| -    | Go (Fiber)                | ~120k* | *Not apples-to-apples yet |
+| Implementation | Mode | RPS |
+|---|---:|---:|
+| Spring JVM | Platform | 28k |
+| Spring JVM | Virtual | 24k |
+| Spring JVM | Reactive | 19k |
+| Spring Native | Platform | 16k |
+| Spring Native | Virtual | 17k |
+| Spring Native | Reactive | 13k |
+| Quarkus JVM | Platform | 59k |
+| Quarkus JVM | Virtual | 70k |
+| Quarkus JVM | Reactive | 83k |
+| Quarkus Native | Platform | 39k |
+| Quarkus Native | Virtual | 47k |
+| Quarkus Native | Reactive | 39k |
+| Go (observability-aligned implementation) | — | 45k |
 
-**Note on Go results**: Initial Go implementation shows impressive throughput but lacks full observability instrumentation present in Java implementations.
+> Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
+
+#### Fairness note (Go vs go-simple)
+
+You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~120k RPS.
+
+That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
+
+The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
 ### Test Environment
 
@@ -301,37 +351,26 @@ The following results were obtained with containers limited to 4 vCPUs for fair 
 - **Go**: 1.25.5 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
-### Interpreting Results
+## 🔒 Legal and license notes (read this)
 
-⚠️ **Important Considerations**:
+This repository is licensed under **Apache-2.0** (see [LICENSE](LICENSE)).
 
-1. **Workload Specific**: These benchmarks test a simple non-blocking cache retrieval pattern. Real-world performance depends on:
-   - Database I/O characteristics
-   - Business logic complexity
-   - Network latency
-   - External service dependencies
+However, the environment pulls and builds **third-party container images and dependencies** that are governed by their own licenses.
 
-2. **Relative Comparisons**: Numbers are valuable for comparing different approaches under identical conditions, not as absolute performance metrics.
+In particular:
 
-3. **Cold Start Effects**: Initial benchmark runs may show different results. The `/results` directory data should be cross-referenced with Grafana metrics for accuracy.
+- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.1-ol10`.
+- If you build/run those images, **you are responsible** for reviewing and complying with Oracle’s applicable license terms.
 
-4. **GC Configuration**: All Java implementations use G1GC. Different workloads may benefit from different collectors (ZGC, Shenandoah, etc.).
+Nothing in this repository’s Apache-2.0 license changes the license terms of third-party dependencies or container base images.
 
-5. **Native Image Tradeoffs**: 
-   - GraalVM Enterprise (Oracle) with G1GC shows ~10% better performance than Community Edition
-   - Native images have faster startup but may show different throughput characteristics
+## 🧾 Attribution, provenance, and anti-plagiarism
 
-6. **Profiling Overhead**: Pyroscope Java agent is disabled by default as it adds measurable overhead (especially noticeable in Spring Boot).
+You’re free to fork and build upon this repository under Apache-2.0.
 
-### Monitoring During Benchmarks
+If you redistribute modified versions, please follow the Apache-2.0 requirements (retain notices, mark modified files, include the license).
 
-While benchmarks run, use Grafana to monitor:
-- **HTTP RPS**: `http_server_request_duration_seconds_count` grouped by `service_name`
-- **JVM Memory**: `jvm_memory_used_bytes` by pool and area
-- **GC Activity**: `jvm_memory_used_after_last_gc_bytes`
-- **Free Heap**: `sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 1024 / 1024`
-
-See [Interesting Metrics](#interesting-metrics) section below for more queries.
+If you cite benchmark results or reuse documentation text, please attribute the original project.
 
 ## 🔍 Observability & Profiling
 
@@ -637,6 +676,7 @@ Documentation is available on GitHub Pages: **[Full Documentation Site](https://
 - **[System Architecture](https://george-c-odes.github.io/Observability-Benchmarking/architecture.html)** - Detailed architecture, component descriptions, and design decisions
 - **[Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html)** - Complete testing procedures, reproducibility guidelines, and result interpretation
 - **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
+- **[Adding a New Service](https://george-c-odes.github.io/Observability-Benchmarking/adding-a-service.html)** - How to integrate a new benchmark target (compose + orchestrator + wrk2 + docs)
 
 The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
 
@@ -777,7 +817,6 @@ Interested in contributing to these goals? See the [Contributing](#-contributing
 
 ---
 
-**Note**: This roadmap is subject to change based on community feedback and project priorities. Timeline estimates are approximate.
 
 ## 🤝 Contributing
 
@@ -904,15 +943,5 @@ This project builds upon amazing open-source tools and frameworks. Special thank
 
 - 📖 Read the [docs/STRUCTURE.md](docs/STRUCTURE.md) for detailed architecture
 - 🐛 Check [Known Issues](#-known-issues) for common problems
-- 💬 Open an issue for bugs or questions
+- Open an issue for bugs or questions
 - 🌟 Star the repo if you find it useful!
-
----
-
-<div align="center">
-
-**Made with ❤️ for the performance engineering community**
-
-If this project helped you, please consider giving it a ⭐️!
-
-</div>

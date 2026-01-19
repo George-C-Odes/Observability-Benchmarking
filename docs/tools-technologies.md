@@ -1,11 +1,14 @@
 ---
 layout: default
 title: Tools & Technologies
+permalink: /docs/tools-technologies
 ---
 
 # Tools & Technologies
 
-A comprehensive overview of all tools, frameworks, and technologies used in this project.
+A comprehensive overview of the tools, frameworks, and technologies used in this project.
+
+> Terminology note: **concurrency** describes how a runtime handles many in-flight tasks (virtual threads/reactive/goroutines). **parallelism** describes work happening simultaneously across CPU cores.
 
 ## Table of Contents
 - [Application Frameworks](#application-frameworks)
@@ -148,7 +151,9 @@ mvn package -Pnative
 
 **Implementation Status**: 🚧 In Progress
 
-**Initial Results**: ~120,000 RPS (preliminary)
+**Headline benchmark (18/01/2026)**: ~45,000 RPS (observability-aligned implementation)
+
+**Fairness note**: An additional `go-simple` variant can reach ~120,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
 ---
 
@@ -493,6 +498,14 @@ services:
 
 ## Development Tools
 
+### Quality guards (linting / static analysis)
+
+This repository treats code quality tooling as a first-class part of “production readiness”:
+
+- **ESLint**: Used in the Next.js dashboard (`utils/nextjs-dash`).
+- **Checkstyle**: Enforces consistent style across Java services.
+- **Qodana**: Automated static analysis via GitHub Actions (see `qodana.yaml`).
+
 ### Maven
 
 **Official Site**: [https://maven.apache.org/](https://maven.apache.org/)
@@ -595,35 +608,35 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ## Technology Stack Summary
 
-| Category            | Technology             | Version | Purpose            |
-|---------------------|------------------------|---------|--------------------|
-| **Runtime**         | Java (Eclipse Temurin) | 25      | JVM services       |
-| **Runtime**         | GraalVM                | 25.0.1  | Native compilation |
-| **Runtime**         | Go                     | 1.25.5  | Go services        |
-| **Framework**       | Spring Boot            | 4.0.1   | Enterprise Java    |
-| **Framework**       | Quarkus                | 3.30.6  | Cloud-native Java  |
-| **Observability**   | Grafana                | 12.3.1  | Visualization      |
-| **Observability**   | Loki                   | 3.6.3   | Logs               |
-| **Observability**   | Tempo                  | 2.9.0   | Traces             |
-| **Observability**   | Mimir                  | 3.0.2   | Metrics            |
-| **Observability**   | Pyroscope              | 1.18.0  | Profiles           |
-| **Observability**   | Alloy                  | 1.10.2  | Collector          |
-| **Instrumentation** | OpenTelemetry          | 1.57.0  | Telemetry SDK      |
-| **Instrumentation** | OpenTelemetry          | 2.23.0  | Telemetry Distro   |
-| **Testing**         | wrk2                   | Latest  | Benchmarking       |
-| **Cache**           | Caffeine               | 3.2.3   | In-memory cache    |
-| **Container**       | Docker                 | 24+     | Containerization   |
-| **Orchestration**   | Docker Compose         | v2      | Multi-container    |
-| **Orchestration**   | Docker CLI             | 29.1.3  | Docker CLI         |
-| **Build**           | Maven                  | 3.9.12  | Build automation   |
-| **Build**           | NPM                    | 11.6.2  | Package manager    |
-| **Framework**       | React                  | 19.2.3  | Frontend           |
-| **Framework**       | Next.js                | 16.1.3  | Frontend           |
-| **Framework**       | Node                   | 25.2.1  | Runtime JavaScript |
-| **Library**         | Material UI (MUI)      | 7.3.7   | Frontend           |
-| **Framework**       | Typescript             | 5.9.3   | Frontend           |
-| **Testing**         | Vitest                 | 4.0.17  | Unit Testing       |
-| **Testing**         | JUnit                  | 5 / 6   | Unit Testing       |
+| Category               | Technology                       | Version   | Purpose / Role                            |
+|------------------------|----------------------------------|-----------|-------------------------------------------|
+| **Runtime**            | Java (Eclipse Temurin)           | 25        | JVM runtime for backend services          |
+| **Runtime**            | GraalVM                          | 25.0.1    | Native image compilation                  |
+| **Runtime**            | Go                               | 1.25.5    | High-performance Go services              |
+| **Runtime**            | Node.js                          | 25.2.1    | JavaScript runtime for frontend tooling   |
+| **Framework**          | Spring Boot                      | 4.0.1     | Enterprise Java framework                 |
+| **Framework**          | Quarkus                          | 3.30.6    | Cloud-native Java framework               |
+| **Framework**          | React                            | 19.2.3    | UI rendering layer                        |
+| **Framework**          | Next.js                          | 16.1.3    | Frontend application framework (SSR)      |
+| **Framework**          | TypeScript                       | 5.9.3     | Type-safe frontend development            |
+| **Library**            | Material UI (MUI)                | 7.3.7     | Component library and theming             |
+| **Observability**      | Grafana                          | 12.3.1    | Dashboards and visualization              |
+| **Observability**      | Loki                             | 3.6.3     | Log aggregation                           |
+| **Observability**      | Tempo                            | 2.9.0     | Distributed tracing                       |
+| **Observability**      | Mimir                            | 3.0.2     | Long-term metrics storage                 |
+| **Observability**      | Pyroscope                        | 1.18.0    | Continuous profiling                      |
+| **Observability**      | Grafana Alloy                    | 1.10.2    | Telemetry collection and pipelines        |
+| **Instrumentation**    | OpenTelemetry SDK                | 1.57.0    | Metrics, traces, and logs instrumentation |
+| **Instrumentation**    | OpenTelemetry Distribution       | 2.23.0    | Auto-instrumentation and exporters        |
+| **Cache**              | Caffeine                         | 3.2.3     | High-performance in-memory caching        |
+| **Container**          | Docker Engine                    | 24+       | Container runtime                         |
+| **Orchestration**      | Docker Compose                   | v2        | Multi-container orchestration             |
+| **Orchestration**      | Docker CLI                       | 29.1.3    | Image build and lifecycle management      |
+| **Build**              | Maven                            | 3.9.12    | Java build and dependency management      |
+| **Build**              | npm                              | 11.6.2    | Frontend package management               |
+| **Testing / Load**     | wrk2                             | Latest    | HTTP benchmarking and load testing        |
+| **Testing**            | Vitest                           | 4.0.17    | Frontend unit testing                     |
+| **Testing**            | JUnit                            | 5 / 6     | JVM unit and integration testing          |
 
 ---
 
@@ -649,4 +662,4 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ---
 
-**Next**: [Getting Started Guide](getting-started.html) | [Architecture](architecture.html) | [Benchmarking](benchmarking.html)
+**Next**: [Getting Started](getting-started.html) | [Architecture](architecture.html) | [Benchmarking](benchmarking.html) | [Adding a Service](adding-a-service.html)

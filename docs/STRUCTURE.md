@@ -1,143 +1,120 @@
 # Project Structure
 
-Below is the full repository tree. Descriptions and notes follow after the code block.
+This document describes the repository layout and the responsibility of each top-level folder.
 
-```
-.
-├── .github/
-│   ├── workflows/
-│   └── ISSUE_TEMPLATE.md
-├── charts/
-├── configs/
-│   ├── otel/
-│   ├── grafana/
-│   ├── loki/
-│   └── pyroscope/
-├── compose/
-│   ├── docker-compose.yml
-│   ├── docker-compose.override.yml
-│   └── docker-compose.ci.yml
-├── docker/
-│   └── base-java.Dockerfile
-├── services/
-│   ├── spring/
-│   │   ├── jvm/
-│   │   │   ├── platform/
-│   │   │   │   ├── Dockerfile
-│   │   │   │   ├── README.md
-│   │   │   │   └── src/
-│   │   │   ├── virtual/
-│   │   │   │   ├── Dockerfile
-│   │   │   │   ├── README.md
-│   │   │   │   └── src/
-│   │   │   └── reactive/
-│   │   │       ├── Dockerfile
-│   │   │       ├── README.md
-│   │   │       └── src/
-│   ├── quarkus/
-│   │   ├── jvm/
-│   │   │   ├── platform/
-│   │   │   │   ├── Dockerfile
-│   │   │   │   ├── README.md
-│   │   │   │   └── src/
-│   │   │   ├── virtual/
-│   │   │   │   ├── Dockerfile
-│   │   │   │   ├── README.md
-│   │   │   │   └── src/
-│   │   │   └── reactive/
-│   │   │       ├── Dockerfile
-│   │   │       ├── README.md
-│   │   │       └── src/
-│   │   └── native/
-│   │       ├── platform/
-│   │       │   ├── Dockerfile
-│   │       │   ├── README.md
-│   │       │   └── src/
-│   │       ├── virtual/
-│   │       │   ├── Dockerfile
-│   │       │   ├── README.md
-│   │       │   └── src/
-│   │       └── reactive/
-│   │           ├── Dockerfile
-│   │           ├── README.md
-│   │           └── src/
-│   └── go/
-│       └── (future)/
-├── utils/
-│   ├── wrk2/
-│   └── scripts/
-├── dashboards/
-│   ├── grafana/
-│   └── README.md
-├── pyroscope/
-├── alloy/
-├── results/
-│   └── 2025-11-01/
-├── docs/
-│   ├── STRUCTURE.md
-│   ├── HOWTO-BENCHMARK.md
-│   └── TROUBLESHOOTING.md
-├── scripts/
-│   ├── build-images.sh
-│   └── reproduce-results.sh
-├── .env.example
-├── README.md
-└── LICENSE
+> Source of truth: if this document drifts, the filesystem layout in the repository is the ground truth.
+
+## Repository tree (high level)
+
+```text
+Observability-Benchmarking/
+├── .github/                  # GitHub Actions workflows
+├── .run/                     # IntelliJ run configurations
+├── compose/                  # Docker Compose project (profiles: OBS / SERVICES / RAIN_FIRE)
+├── config/                   # Provisioned configs for Grafana + LGTM components
+├── data/                     # Local persisted volumes (dev/test only)
+├── docs/                     # GitHub Pages site sources (what you’re reading)
+├── integration-tests/        # Integration test harness
+├── results/                  # Benchmark artifacts and summaries
+├── services/                 # Benchmark targets (Go + Java frameworks)
+├── utils/                    # Supporting tooling (wrk2, dashboard, orchestrator)
+├── LICENSE
+├── qodana.yaml
+└── README.md
 ```
 
-Folder responsibilities and short notes
+## Folder responsibilities
 
-- .github/
-    - workflows: CI pipelines for building images, smoke benchmarks, and other automation.
-    - ISSUE_TEMPLATE.md: issue templates for contributors.
+### `.github/`
 
-- charts/
-    - Helm charts for Kubernetes (future).
+GitHub automation:
 
-- configs/
-    - otel/: OpenTelemetry Collector configs.
-    - grafana/: Grafana provisioning and datasources.
-    - loki/: Loki / promtail examples.
-    - pyroscope/: Pyroscope config snippets.
+- Workflows for GitHub Pages deployment and static analysis.
 
-- compose/
-    - docker-compose.yml: local LGTM + service compose.
-    - docker-compose.override.yml: developer overrides.
-    - docker-compose.ci.yml: deterministic compose used in CI.
+### `.run/`
 
-- docker/
-    - Base image Dockerfiles (pin versions and reproducible builds).
+IntelliJ IDEA run configurations used to build, start, and benchmark the stack.
 
-- services/
-    - Organized as services/<framework>/<distribution>/<thread-mode>.
-    - Each leaf folder should contain Dockerfile, README.md, and src/.
-    - Examples included for Spring and Quarkus (JVM + native variants); Go reserved for future.
+### `compose/`
 
-- utils/
-    - wrk2 wrappers and scripts used to run deterministic benchmarks.
-    - orchestrator TODO
-    - dashboard TODO
+The Docker Compose project directory. This is where the “environment” lives (observability stack, services, and load generators).
 
-- dashboards/
-    - Grafana JSON exports and instructions for importing/provisioning.
+Key notes:
 
-- pyroscope/
-    - Helpers, docs and config for profiling.
+- Compose profiles control what starts:
+  - **OBS**: Grafana + Loki + Tempo + Mimir + Pyroscope + Alloy
+  - **SERVICES**: Spring/Quarkus/Go service containers
+  - **RAIN_FIRE**: wrk2 load generator containers
+- `compose/.env` contains environment configuration (including required `HOST_REPO`).
 
-- alloy/
-    - Alloy/OpenTelemetry collector configs if maintained separately.
+### `config/`
 
-- results/
-    - Store raw outputs, CSVs, traces, and a metadata file per run (e.g., results/YYYY-MM-DD/metadata.json).
+Provisioned configuration used by the stack at runtime:
 
-- docs/
-    - Canonical docs including this STRUCTURE.md, HOWTOs and troubleshooting.
+- `config/grafana/` — Grafana provisioning, datasources, dashboards
+- `config/alloy/` — Alloy (OpenTelemetry collector) pipeline configuration
+- `config/loki/`, `config/tempo/`, `config/mimir/`, `config/pyroscope/` — LGTM component configs
 
-- scripts/
-    - Helper scripts to build images and reproduce results.
+### `data/`
 
-- .env.example
-    - Global env defaults for local runs.
+Local persisted volumes for the observability stack.
 
-- README.md / LICENSE
-    - Top-level project overview and license.
+- This is intended for local runs only.
+- Do not treat the content as a stable API.
+
+### `docs/`
+
+Documentation site source (GitHub Pages).
+
+- `docs/index.html` — landing page
+- `docs/getting-started.md` — setup guide (published at `/docs/getting-started`, with `/getting-started.html` as a stable entry link)
+- `docs/benchmarking.md` — benchmarking methodology (published at `/docs/benchmarking`, with `/benchmarking.html` as a stable entry link)
+- `docs/tools-technologies.md` — toolchain and technology overview (published at `/docs/tools-technologies`, with `/tools-technologies.html` as a stable entry link)
+- `docs/adding-a-service.md` — how to add a new benchmark target (published at `/docs/adding-a-service`, with `/adding-a-service.html` as a stable entry link)
+- `docs/images/` — screenshots and diagrams used in docs
+- `docs/_site/` — generated static site output (do not commit)
+
+### `integration-tests/`
+
+Integration test harness and logs.
+
+### `results/`
+
+Benchmark outputs and run summaries.
+
+- `results/benchmarks/…` contains timestamped runs.
+- See `results/README.md` for the recommended per-run folder structure and metadata.
+
+### `services/`
+
+Benchmark targets / service implementations.
+
+- `services/java/` contains JVM frameworks (Spring, Quarkus, Helidon, Micronaut, … depending on what’s implemented).
+- `services/go/` contains Go implementations.
+
+Each service folder typically includes a Docker build context and the application sources.
+
+### `utils/`
+
+Supporting utilities used by the environment:
+
+- `utils/wrk2/` — wrk2 container + scripts for load generation
+- `utils/nextjs-dash/` — dashboard UI (control plane)
+- `utils/orchestrator/` — orchestration helper service
+
+## “Do not edit” note (for documentation-only changes)
+
+During documentation polish passes, be careful not to change runtime behavior.
+
+As a rule of thumb, avoid editing these directories unless you explicitly intend to modify the running system:
+
+- `compose/`
+- `services/`
+- `utils/`
+- `integration-tests/`
+
+For documentation changes, prefer editing:
+
+- `README.md`
+- `docs/`
+- `results/README.md`

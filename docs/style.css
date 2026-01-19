@@ -46,6 +46,9 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* allow absolutely-positioned dropdowns to overflow without creating clipping */
+    overflow: visible;
+    position: relative; /* for fade overlay */
 }
 
 .logo {
@@ -54,28 +57,63 @@ body {
     gap: 0.5rem;
     font-size: 1.5rem;
     font-weight: bold;
-}
-
-.logo i {
-    color: var(--primary-color);
+    white-space: nowrap; /* prevent logo wrapping */
 }
 
 .nav-links {
     display: flex;
     list-style: none;
-    gap: 2rem;
+    gap: 1rem; /* slightly smaller gap for compactness */
     align-items: center;
+    flex-wrap: nowrap; /* prevent wrapping */
+    overflow-x: auto; /* allow horizontal scroll when necessary */
+    overflow-y: hidden; /* ensure no vertical scrollbar */
+    -webkit-overflow-scrolling: touch;
+    /* hide scrollbars in Firefox/IE */
+    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none; /* Firefox */
+    flex: 1 1 auto;
+    justify-content: flex-end; /* push links to the right */
 }
+
+.nav-links::-webkit-scrollbar { height: 6px; width: 0px; }
+.nav-links::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+.nav-links li { flex: 0 0 auto; }
 
 .nav-links a {
     color: white;
     text-decoration: none;
     transition: color 0.3s;
     font-weight: 500;
+    white-space: nowrap; /* prevent breaks inside link text */
+    font-size: 0.92rem; /* slightly smaller for compact layout */
+    padding: 0.25rem 0.35rem;
 }
 
-.nav-links a:hover {
-    color: var(--primary-color);
+/* subtle gradient fade on the right edge of the nav when there is overflow */
+.nav::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 60px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(52,73,94,0) 0%, rgba(52,73,94,0.95) 100%);
+}
+
+@media (max-width: 1100px) {
+    .nav { padding: 0 1rem; }
+    .logo { font-size: 1.25rem; }
+    .nav-links { gap: 0.7rem; }
+    .nav-links a { font-size: 0.88rem; }
+}
+
+@media (max-width: 768px) {
+    .nav { flex-direction: column; gap: 0.5rem; }
+    .nav-links { width: 100%; justify-content: center; }
+    .nav::after { display: none; }
 }
 
 /* Hero Section */
@@ -863,3 +901,60 @@ html {
 .doc-content nav[role="navigation"] li {
     margin-bottom: 0.25rem;
 }
+
+/* More dropdown styling */
+.nav-more {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.more-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+}
+
+.more-btn:focus {
+    outline: 2px solid rgba(244, 104, 0, 0.3);
+    outline-offset: 2px;
+}
+
+.nav-more .dropdown-menu {
+    display: none; /* shown via inline style toggle from script */
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 180px;
+    background: white;
+    color: var(--text-primary);
+    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    list-style: none;
+    padding: 0.4rem 0;
+    z-index: 1200;
+}
+
+.nav-more .dropdown-menu li {
+    padding: 0;
+    margin: 0;
+}
+
+.nav-more .dropdown-menu li a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-more .dropdown-menu li a:hover {
+    background: var(--light-bg);
+    color: var(--primary-color);
+}
+
+/* ensure dropdown items don't inherit nav link color */
+.nav-more .dropdown-menu li a .fab { color: inherit; }
