@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Plane (Dashboard + Orchestrator)</title>
+    <link rel="icon" type="image/x-icon" href="/Observability-Benchmarking/favicon.ico">
+    <link rel="stylesheet" href="/Observability-Benchmarking/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Control Plane (Dashboard + Orchestrator) | Observability Benchmarking</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Control Plane (Dashboard + Orchestrator)" />
+<meta name="author" content="George-C-Odes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<meta property="og:description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<link rel="canonical" href="https://george-c-odes.github.io/Observability-Benchmarking/docs/control-plane" />
+<meta property="og:url" content="https://george-c-odes.github.io/Observability-Benchmarking/docs/control-plane" />
+<meta property="og:site_name" content="Observability Benchmarking" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Control Plane (Dashboard + Orchestrator)" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"George-C-Odes"},"description":"A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack","headline":"Control Plane (Dashboard + Orchestrator)","url":"https://george-c-odes.github.io/Observability-Benchmarking/docs/control-plane"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/Observability-Benchmarking/index.html">Home</a></li>
+                <li><a href="/Observability-Benchmarking/getting-started.html">Get Started</a></li>
+                <li><a href="/Observability-Benchmarking/architecture.html">Architecture</a></li>
+                <li><a href="/Observability-Benchmarking/benchmarking.html">Benchmarking</a></li>
+                <li><a href="/Observability-Benchmarking/tools-technologies.html">Tools</a></li>
+                <li><a href="/Observability-Benchmarking/control-plane.html">Control</a></li>
+                <li><a href="/Observability-Benchmarking/adding-a-service.html">Add Service</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+
+                <!-- More dropdown: overflowed nav items will be moved into the nested .dropdown-menu -->
+                <li class="nav-more" style="display:none;">
+                    <button class="more-btn" aria-haspopup="true" aria-expanded="false">More ▾</button>
+                    <ul class="dropdown-menu" aria-label="More navigation items"></ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <h1 id="control-plane-dashboard--orchestrator">Control Plane (Dashboard + Orchestrator)</h1>
+
+<p>This repository includes a “control plane” layer to make local benchmarking workflows fast, repeatable, and observable.</p>
+
+<p>It consists of:</p>
+
+<ul>
+  <li><strong>Dashboard</strong>: Next.js UI (<code class="language-plaintext highlighter-rouge">utils/nextjs-dash</code>) on port <strong>3001</strong></li>
+  <li><strong>Orchestrator</strong>: Quarkus service (<code class="language-plaintext highlighter-rouge">utils/orchestrator</code>) on port <strong>3002</strong></li>
+</ul>
+
+<p>Last updated: <strong>2026-01-19</strong></p>
+
+<h2 id="why-a-control-plane-exists">Why a control plane exists</h2>
+
+<p>Benchmarking isn’t just “start service → run wrk2”. In practice you iterate repeatedly:</p>
+
+<ul>
+  <li>tweak <code class="language-plaintext highlighter-rouge">compose/.env</code></li>
+  <li>start/stop selected profiles (OBS / SERVICES / RAIN_FIRE)</li>
+  <li>rerun load generation</li>
+  <li>verify health + capture logs</li>
+</ul>
+
+<p>The control plane exists to make that loop:</p>
+
+<ul>
+  <li>faster (UI + presets)</li>
+  <li>safer (command allowlist)</li>
+  <li>easier to observe (job state + SSE output)</li>
+</ul>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>High-level flow:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Browser
+  → nextjs-dash (Next.js)
+    → /api/* proxy routes
+      → orchestrator (Quarkus)
+        → docker compose ... (host engine via docker socket)
+</code></pre></div></div>
+
+<h3 id="key-principle-keep-nextjs-thin">Key principle: keep Next.js “thin”</h3>
+
+<p>The Next.js dashboard should remain a presentation layer.</p>
+
+<ul>
+  <li>It proxies requests to avoid CORS issues.</li>
+  <li>It should not contain orchestration business rules.</li>
+</ul>
+
+<p>The orchestrator owns:</p>
+
+<ul>
+  <li>validation / allowlisting</li>
+  <li>job lifecycle</li>
+  <li>streaming output/events</li>
+</ul>
+
+<h2 id="what-you-can-do-with-it">What you can do with it</h2>
+
+<h3 id="1-edit-environment-configuration">1) Edit environment configuration</h3>
+
+<p>The dashboard exposes a UI to view/edit the environment file used by Compose (<code class="language-plaintext highlighter-rouge">compose/.env</code>).</p>
+
+<ul>
+  <li>The orchestrator persists the file</li>
+  <li>A backup is created on update</li>
+</ul>
+
+<h3 id="2-run-curated-command-presets">2) Run curated command presets</h3>
+
+<p>The orchestrator exposes an allowlisted “run” API.</p>
+
+<p>The dashboard can submit:</p>
+
+<ul>
+  <li>“start OBS”</li>
+  <li>“start SERVICES”</li>
+  <li>“rerun RAIN_FIRE”</li>
+</ul>
+
+<p>Depending on repo configuration, it may also expose IntelliJ <code class="language-plaintext highlighter-rouge">.run</code> presets.</p>
+
+<h3 id="3-stream-progress-sse">3) Stream progress (SSE)</h3>
+
+<p>Long-running tasks (builds, start/stop, reruns) report progress via Server-Sent Events.</p>
+
+<p>This gives a low-friction, browser-native “tail -f” experience.</p>
+
+<h3 id="4-health-aggregation">4) Health aggregation</h3>
+
+<p>The orchestrator can aggregate health/readiness across the stack so you can quickly verify:</p>
+
+<ul>
+  <li>who is up</li>
+  <li>who is ready</li>
+  <li>who is failing</li>
+</ul>
+
+<h2 id="how-to-use-it">How to use it</h2>
+
+<h3 id="option-a-use-the-dashboard-recommended">Option A: Use the dashboard (recommended)</h3>
+
+<ol>
+  <li>Start the stack (at least the control plane services) using the repository’s compose workflow.</li>
+  <li>Open the dashboard:</li>
+</ol>
+
+<ul>
+  <li>http://localhost:3001</li>
+</ul>
+
+<p>From there:</p>
+
+<ul>
+  <li>edit env values</li>
+  <li>run presets</li>
+  <li>follow job output via SSE</li>
+</ul>
+
+<h3 id="option-b-call-orchestrator-directly">Option B: Call orchestrator directly</h3>
+
+<p>Orchestrator API base:</p>
+
+<ul>
+  <li>http://localhost:3002</li>
+</ul>
+
+<p>Useful endpoints:</p>
+
+<ul>
+  <li>Swagger UI: <code class="language-plaintext highlighter-rouge">/q/swagger-ui/</code></li>
+  <li>Run a job: <code class="language-plaintext highlighter-rouge">POST /v1/run</code> (requires <code class="language-plaintext highlighter-rouge">Authorization: Bearer &lt;api-key&gt;</code>)</li>
+  <li>Job events (SSE): <code class="language-plaintext highlighter-rouge">GET /v1/jobs/{id}/events</code></li>
+</ul>
+
+<p>See also:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">utils/orchestrator/README.md</code></li>
+  <li><code class="language-plaintext highlighter-rouge">utils/nextjs-dash/README.md</code></li>
+</ul>
+
+<h2 id="gotchas-especially-on-windows--wsl2">“Gotchas” (especially on Windows + WSL2)</h2>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">HOST_REPO</code> in <code class="language-plaintext highlighter-rouge">compose/.env</code> must be correct (bind mounts depend on it).</li>
+  <li>Docker Desktop must have access to the repo directory.</li>
+  <li>SSE can be impacted by reverse proxies or aggressive corporate network middleware.</li>
+</ul>
+
+<h2 id="security-note">Security note</h2>
+
+<p>The orchestrator commonly mounts the Docker socket and can control the host Docker engine.</p>
+
+<p>Treat it as privileged and do not expose it publicly.</p>
+
+<hr />
+
+<h2 id="screenshots-control-plane-ui">Screenshots (control plane UI)</h2>
+
+<h3 id="dashboard-hub">Dashboard hub</h3>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/nextjs-dash/project_hub.png" alt="Next.js dashboard: hub" /></p>
+
+<h3 id="environment-configuration-editor">Environment configuration editor</h3>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/nextjs-dash/environment_config.png" alt="Next.js dashboard: environment configuration" /></p>
+
+<h3 id="running-scripts-and-following-output">Running scripts and following output</h3>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/nextjs-dash/script_runner_1.png" alt="Next.js dashboard: script runner (1)" /></p>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/nextjs-dash/script_runner_2.png" alt="Next.js dashboard: script runner (2)" /></p>
+
+<h3 id="service-health-overview">Service health overview</h3>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/nextjs-dash/service_health_1.png" alt="Next.js dashboard: service health (1)" /></p>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/nextjs-dash/service_health_2.png" alt="Next.js dashboard: service health (2)" /></p>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Observability Benchmarking</h4>
+                    <p>A comprehensive framework for performance analysis and observability</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking">GitHub</a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/issues">Issues</a></li>
+                        <li><a href="https://github.com/George-C-Odes">@George-C-Odes</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>License</h4>
+                    <p>Apache License 2.0<br>SPDX-License-Identifier: Apache-2.0</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 George-C-Odes. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Overflow management script: moves overflowing nav items into the More dropdown -->
+    <script>
+    (function(){
+      const debounce = (fn, wait=100)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
+
+      function redistributeNav(){
+        const nav = document.querySelector('.nav');
+        if(!nav) return;
+        const navLinks = nav.querySelector('.nav-links');
+        const moreLi = navLinks.querySelector('.nav-more');
+        const moreMenu = moreLi ? moreLi.querySelector('.dropdown-menu') : null;
+        const logo = nav.querySelector('.logo');
+        if(!navLinks || !moreLi || !moreMenu || !logo) return;
+
+        // move everything back from moreMenu into navLinks (before .nav-more)
+        while(moreMenu.firstChild){
+          navLinks.insertBefore(moreMenu.firstChild, moreLi);
+        }
+        moreLi.style.display = 'none';
+        moreLi.querySelector('.more-btn').setAttribute('aria-expanded','false');
+
+        // compute available width for links (nav width minus logo and some padding)
+        const navStyle = getComputedStyle(nav);
+        const navPaddingLeft = parseFloat(navStyle.paddingLeft) || 0;
+        const navPaddingRight = parseFloat(navStyle.paddingRight) || 0;
+        const available = nav.clientWidth - logo.offsetWidth - navPaddingLeft - navPaddingRight - 24; // safety buffer
+
+        // accumulate widths and move overflow items
+        let total = 0;
+        const items = Array.from(navLinks.children).filter(li=>!li.classList.contains('nav-more'));
+        for(let i=0;i<items.length;i++){
+          const li = items[i];
+          total += li.offsetWidth;
+          if(total > available){
+            // move this and subsequent items into moreMenu
+            for(let j=i;j<items.length;j++){
+              moreMenu.appendChild(items[j]);
+            }
+            moreLi.style.display = '';
+            break;
+          }
+        }
+
+        // hide More if empty
+        if(!moreMenu.children.length) moreLi.style.display = 'none';
+      }
+
+      // toggle dropdown on button click
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.more-btn');
+        if(!btn) return;
+        const moreLi = btn.closest('.nav-more');
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        const menu = moreLi.querySelector('.dropdown-menu');
+        if(menu) menu.style.display = expanded ? 'none' : 'block';
+      });
+
+      // close dropdown on outside click
+      document.addEventListener('click', function(e){
+        if(e.target.closest('.nav-more')) return;
+        document.querySelectorAll('.nav-more .dropdown-menu').forEach(m=>m.style.display='none');
+        document.querySelectorAll('.more-btn').forEach(b=>b.setAttribute('aria-expanded','false'));
+      });
+
+      // run on load and resize
+      window.addEventListener('load', redistributeNav);
+      window.addEventListener('resize', debounce(redistributeNav, 120));
+
+      // also run after images/fonts load via DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function(){ setTimeout(redistributeNav, 50); });
+    })();
+    </script>
+
+</body>
+</html>

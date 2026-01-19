@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observability Benchmarking - Performance Analysis Framework</title>
+    <meta name="description" content="Benchmark Spring Boot, Quarkus, and Go REST services under a full Grafana LGTM observability stack (Loki, Tempo, Mimir, Grafana) with OpenTelemetry, Pyroscope profiling, and wrk2 constant-throughput load generation." />
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="getting-started.html">Get Started</a></li>
+                <li><a href="architecture.html">Architecture</a></li>
+                <li><a href="benchmarking.html">Benchmarking</a></li>
+                <li><a href="tools-technologies.html">Tools</a></li>
+                <li><a href="control-plane.html">Control</a></li>
+                <li><a href="adding-a-service.html">Add Service</a></li>
+                <li><a href="#resources">Resources</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Observability Benchmarking</h1>
+            <p class="tagline">A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack</p>
+            <div class="hero-buttons">
+                <a href="https://github.com/George-C-Odes/Observability-Benchmarking" class="btn btn-primary">
+                    <i class="fab fa-github"></i> View on GitHub
+                </a>
+                <a href="#overview" class="btn btn-secondary">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="overview" class="section">
+        <div class="container">
+            <h2>Project Overview</h2>
+            <p class="lead">This project provides a production-ready Docker Compose environment for benchmarking REST service implementations while collecting comprehensive telemetry data including logs, metrics, traces, and CPU profiles.</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-rocket"></i>
+                    <h3>High Performance</h3>
+                    <p>Benchmark results up to 83,000 RPS on CPU-limited containers (4 vCPUs)</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-eye"></i>
+                    <h3>Full Observability</h3>
+                    <p>Complete LGTM stack: Loki, Grafana, Tempo, Mimir with Pyroscope profiling</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-code"></i>
+                    <h3>Multiple Frameworks</h3>
+                    <p>Spring Boot, Quarkus implementations with JVM and native compilation</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Thread Models</h3>
+                    <p>Compare platform threads, virtual threads, and reactive programming</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Reproducible</h3>
+                    <p>Deterministic load generation with wrk2 and containerized environment</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-docker"></i>
+                    <h3>Containerized</h3>
+                    <p>Complete Docker Compose orchestration for all services and tools</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture" class="section section-alt">
+        <div class="container">
+            <h2>System Architecture</h2>
+            <p class="lead">A modern, cloud-native architecture demonstrating industry best practices in observability and performance engineering.</p>
+            
+            <div class="architecture-diagram">
+                <div class="arch-layer">
+                    <h3>Load Generation Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">wrk2 Load Generator</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Service Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Spring Boot Services</div>
+                        <div class="arch-component">Quarkus Services</div>
+                        <div class="arch-component">Go Services</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Collection Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">OpenTelemetry</div>
+                        <div class="arch-component">Grafana Alloy</div>
+                        <div class="arch-component">Pyroscope Agent</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Storage &amp; Analysis Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Loki (Logs)</div>
+                        <div class="arch-component">Tempo (Traces)</div>
+                        <div class="arch-component">Mimir (Metrics)</div>
+                        <div class="arch-component">Pyroscope (Profiles)</div>
+                    </div>
+                </div>
+                
+                <div class="arch-layer">
+                    <h3>Visualization Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Grafana Dashboards</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arch-details">
+                <h3>Key Design Decisions</h3>
+                <ul>
+                    <li><strong>OpenTelemetry Integration:</strong> Standardized instrumentation across all services using OTLP over gRPC</li>
+                    <li><strong>Batched Telemetry:</strong> Optimized batch processing to minimize overhead on services under test</li>
+                    <li><strong>Resource Isolation:</strong> CPU-limited containers ensure fair comparison across implementations</li>
+                    <li><strong>Multi-dimensional Profiling:</strong> Combined eBPF and agent-based profiling for comprehensive insights</li>
+                    <li><strong>Deterministic Testing:</strong> wrk2 provides fixed-rate load generation for reproducible results</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="results" class="section">
+        <div class="container">
+            <h2>Benchmark Results</h2>
+            <p class="lead">Performance comparison of different frameworks and concurrency models on CPU-limited containers (4 vCPUs)</p>
+
+            <div class="results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Implementation</th>
+                            <th>Mode</th>
+                            <th>RPS (18/01/2026)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="highlight">
+                            <td>Quarkus JVM</td>
+                            <td>Reactive</td>
+                            <td>83,000</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus JVM</td>
+                            <td>Virtual</td>
+                            <td>70,000</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus JVM</td>
+                            <td>Platform</td>
+                            <td>59,000</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus Native</td>
+                            <td>Virtual</td>
+                            <td>47,000</td>
+                        </tr>
+                        <tr>
+                            <td>Go</td>
+                            <td>N/A</td>
+                            <td>45,000</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus Native</td>
+                            <td>Platform</td>
+                            <td>39,000</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus Native</td>
+                            <td>Reactive</td>
+                            <td>39,000</td>
+                        </tr>
+                        <tr>
+                            <td>Spring JVM</td>
+                            <td>Platform</td>
+                            <td>28,000</td>
+                        </tr>
+                        <tr>
+                            <td>Spring JVM</td>
+                            <td>Virtual</td>
+                            <td>24,000</td>
+                        </tr>
+                        <tr>
+                            <td>Spring JVM</td>
+                            <td>Reactive</td>
+                            <td>19,000</td>
+                        </tr>
+                        <tr>
+                            <td>Spring Native</td>
+                            <td>Virtual</td>
+                            <td>17,000</td>
+                        </tr>
+                        <tr>
+                            <td>Spring Native</td>
+                            <td>Platform</td>
+                            <td>16,000</td>
+                        </tr>
+                        <tr>
+                            <td>Spring Native</td>
+                            <td>Reactive</td>
+                            <td>13,000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p style="margin-top: 1rem;">
+                See <a href="benchmarking.html">Benchmarking Methodology</a> for reproducibility details and interpretation.
+            </p>
+
+            <div class="results-insights">
+                <h3>Key Insights</h3>
+                <div class="insight-grid">
+                    <div class="insight-card">
+                        <h4>Reactive Advantage</h4>
+                        <p>Quarkus reactive implementation shows exceptional throughput under fixed-rate load</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Virtual Threads</h4>
+                        <p>Java virtual threads provide strong throughput with a simpler concurrency model</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Native vs JVM</h4>
+                        <p>Native images offer faster startup; the JVM can deliver higher peak throughput</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4>Instrumentation Matters</h4>
+                        <p>All results here assume a comparable observability pipeline (OTel + LGTM + profiling)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="resources" class="section section-alt">
+        <div class="container">
+            <h2>Resources</h2>
+            <div class="resources-grid">
+                <a class="resource-card" href="getting-started.html">
+                    <i class="fas fa-play"></i>
+                    <h3>Getting Started</h3>
+                    <p>Set up Docker, start the stack, and run your first benchmark</p>
+                </a>
+                <a class="resource-card" href="architecture.html">
+                    <i class="fas fa-sitemap"></i>
+                    <h3>Architecture</h3>
+                    <p>Understand the end-to-end telemetry pipeline and system design</p>
+                </a>
+                <a class="resource-card" href="benchmarking.html">
+                    <i class="fas fa-stopwatch"></i>
+                    <h3>Benchmarking Methodology</h3>
+                    <p>Reproducible benchmarking: warmup, measurement, and interpretation</p>
+                </a>
+                <a class="resource-card" href="tools-technologies.html">
+                    <i class="fas fa-toolbox"></i>
+                    <h3>Tools &amp; Technologies</h3>
+                    <p>Frameworks, observability components, and quality guards</p>
+                </a>
+                <a class="resource-card" href="control-plane.html">
+                    <i class="fas fa-sliders-h"></i>
+                    <h3>Control Plane</h3>
+                    <p>Dashboard + orchestrator: reasoning, job/SSE model, and workflows</p>
+                </a>
+                <a class="resource-card" href="adding-a-service.html">
+                    <i class="fas fa-plug"></i>
+                    <h3>Adding a New Service</h3>
+                    <p>How to wire in a new benchmark target (compose + orchestrator + wrk2 + docs)</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>
+                <strong>License note:</strong> This repository is Apache-2.0 licensed, but it may build/pull third-party container images and dependencies.
+                Native-image builds may use <code>container-registry.oracle.com/graalvm/native-image:25.0.1-ol10</code>; you are responsible for reviewing and complying with applicable Oracle license terms.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
+
