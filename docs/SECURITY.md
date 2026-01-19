@@ -1,6 +1,8 @@
 # Security Guidelines
 
-This document outlines the security practices and guidelines implemented in the Observability-Benchmarking project.
+This document outlines practical security guidance for working with this repository.
+
+> Scope: this project is optimized for **local benchmarking**. It is not a hardened production deployment.
 
 ## Docker Security
 
@@ -69,11 +71,13 @@ RUN dnf install -y --setopt=install_weak_deps=False shadow-utils \
 
 ### No Hardcoded Secrets
 
-The project has been verified to contain **no hardcoded secrets** in:
-- Application configuration files (`application.yml`, `application.properties`)
-- Source code files
-- Docker configuration files
-- Compose files
+This repository is designed to avoid committing secrets.
+
+However, always assume any repo you clone may contain sensitive configuration over time (via forks or local changes). Before sharing logs/screenshots or publishing results, do a quick hygiene pass:
+
+- Don’t commit `.env` files containing secrets.
+- Don’t publish Grafana API keys/tokens.
+- Don’t include private hostnames or IPs in screenshots.
 
 ### Environment Variables
 
@@ -137,17 +141,22 @@ Services communicate over internal Docker networks:
 
 ### Secure Logging Practices
 
-- **No sensitive data in logs**: Passwords, tokens, and keys are never logged
-- **Structured logging**: JSON format for easier parsing and analysis
-- **Log levels**: Appropriate levels (INFO, WARN, ERROR) prevent over-logging
-- **Log rotation**: Configured in observability stack (Loki)
+Secure logging guidelines:
+
+No sensitive data in logs (passwords, tokens, and keys).
+
+Prefer structured logging (JSON) when practical.
+
+Use appropriate log levels (INFO/WARN/ERROR) to avoid over-logging.
+
+Ensure log rotation/retention is configured in the observability stack (Loki).
 
 Example of safe logging:
 ```java
-// ✅ Safe
+// Safe
 log.info("User logged in: {}", username);
 
-// ❌ Unsafe - never do this
+// Unsafe - never do this
 log.info("User logged in with password: {}", password);
 ```
 
@@ -206,6 +215,14 @@ Default credentials should be changed in production:
 - Old data is automatically cleaned up
 - Consider data privacy regulations (GDPR, etc.)
 
+## Third-party licenses
+
+This repository is Apache-2.0 licensed.
+
+When you build or run the stack, Docker may pull/build third-party container images and dependencies that are governed by their own licenses.
+
+In particular, native-image builds may use `container-registry.oracle.com/graalvm/native-image:25.0.1-ol10`. If you use those images, you are responsible for reviewing and complying with Oracle’s license terms.
+
 ## Security Checklist
 
 Before deploying to production:
@@ -236,12 +253,10 @@ In case of a security incident:
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability:
+If you discover a security vulnerability in the repository content:
 
-1. **Do not** create a public GitHub issue
-2. Contact the repository owner directly: @George-C-Odes
-3. Include detailed information about the vulnerability
-4. Allow reasonable time for response and fix
+- Please open a GitHub issue with a minimal repro and no secrets.
+- If the issue involves credentials or sensitive information, redact it and provide a safe description.
 
 ## References
 

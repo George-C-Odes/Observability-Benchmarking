@@ -1,11 +1,14 @@
 ---
 layout: default
 title: Getting Started Guide
+permalink: /docs/getting-started
 ---
 
 # Getting Started Guide
 
-This guide will help you set up and run the Observability Benchmarking environment on your local machine.
+This guide helps you set up and run the Observability Benchmarking environment on your local machine.
+
+It’s designed for **reproducible, like-for-like performance testing** under a consistent observability pipeline (OpenTelemetry + Grafana LGTM + profiling).
 
 ## Prerequisites
 
@@ -22,6 +25,24 @@ This guide will help you set up and run the Observability Benchmarking environme
    - Storage: 20 GB free space
    - OS: Windows 10/11 (WSL2), macOS, or Linux
 
+### Mandatory local path setting (`HOST_REPO`)
+
+⚠️ This repository is orchestrated via the `compose/` project directory.
+
+In `compose/.env`, you must set `HOST_REPO` to the **absolute path** of the repository root on your machine.
+
+If `HOST_REPO` is incorrect, bind mounts used by the dashboard/orchestrator and benchmark tooling won’t resolve and the environment will start in a broken state.
+
+### Native-image build time & stability notes
+
+Native-image builds are **CPU intensive** and can take **up to ~10 minutes per service**. A first-time build of the full set of services can take **30+ minutes**.
+
+On Windows + WSL2 / Docker Desktop, building native images in parallel can exhaust system resources and has been observed to crash Docker Engine.
+
+For stability, the repository defaults to serial image builds:
+
+- `COMPOSE_PARALLEL_LIMIT=1`
+
 ### Verify Installation
 
 ```bash
@@ -37,6 +58,19 @@ docker compose version
 docker ps
 # Should list containers (or show empty list if none running)
 ```
+
+## Getting started options
+
+There are three supported ways to run the stack. All of them ultimately use Docker Compose in `compose/`.
+
+1. **IntelliJ IDEA Run/Debug workflow** (recommended for development)
+   - Uses pre-configured run configurations under `.run/` to build and orchestrate repeatable tasks.
+
+2. **Docker Compose from your terminal**
+   - Best if you want to be explicit and scriptable.
+
+3. **Dashboard/orchestrator-driven workflow**
+   - Start the stack once, then use the Next.js dashboard (port `3001`) as a control plane to run scripts and adjust runtime configuration.
 
 ## Quick Start (5 Minutes)
 
@@ -106,11 +140,23 @@ This starts wrk2 load generators targeting all running services.
 
 Create a `.env` file in the project root for custom configuration:
 
+#### Windows (PowerShell)
+
+```powershell
+# Copy example configuration
+Copy-Item .env.example .env
+
+# Edit with your preferred editor
+notepad .env
+```
+
+#### macOS / Linux
+
 ```bash
 # Copy example configuration
 cp .env.example .env
 
-# Edit with your preferences
+# Edit with your preferred editor
 nano .env
 ```
 
@@ -214,10 +260,14 @@ docker compose --project-directory compose --profile=OBS ps
 
 # Start the service you want to benchmark
 docker compose --project-directory compose up -d spring-jvm-virtual
-
-# Wait for warmup
-sleep 30
 ```
+
+#### Wait / warm up (cross-platform)
+
+- Windows PowerShell:
+  - `Start-Sleep -Seconds 30`
+- macOS/Linux:
+  - `sleep 30`
 
 ### 2. Manual Benchmark with wrk2
 
@@ -247,225 +297,35 @@ docker compose --project-directory compose --profile=RAIN_FIRE up --force-recrea
 
 ### 4. Analyze Results
 
+#### Windows (PowerShell)
+
+```powershell
+# View wrk2 output (adjust file name/path to your run)
+Get-Content results\latest-benchmark.txt
+
+# Check Docker stats
+docker stats --no-stream
+```
+
+#### macOS / Linux
+
 ```bash
 # View wrk2 output
 cat results/latest-benchmark.txt
 
 # Check Docker stats
 docker stats --no-stream
-
-# Grafana dashboards
-# http://localhost:3000/dashboards
 ```
 
-## Troubleshooting
+## Screenshots and reporting
 
-### Services Won't Start
+Screenshots (for Grafana dashboards, traces, logs, and flame graphs) are kept under `docs/images/screenshots/`.
 
-**Issue**: Port already in use
-```
-Error: bind: address already in use
-```
+See `docs/images/README.md` for naming and inclusion guidance.
 
-**Solution**: Change ports in `.env` file or stop conflicting services
-```bash
-# Find what's using the port
-lsof -i :3000
-# or on Windows
-netstat -ano | findstr :3000
+## Next steps
 
-# Kill the process or change port in .env
-GRAFANA_PORT=3001
-```
-
-### Insufficient Resources
-
-**Issue**: Containers crash or perform poorly
-
-**Solution**: Allocate more resources to Docker
-- Docker Desktop → Settings → Resources
-- Increase CPU: 8+ cores
-- Increase Memory: 16+ GB
-
-### Services Not Appearing in Grafana
-
-**Issue**: No data in dashboards
-
-**Solution**:
-1. Wait 2-3 minutes for initial data collection
-2. Verify service is running: `docker ps`
-3. Check Alloy logs: `docker logs alloy`
-4. Verify data sources in Grafana → Configuration → Data Sources
-
-### Build Failures
-
-**Issue**: Docker build fails
-
-**Solution**:
-```bash
-# Clear Docker build cache
-docker builder prune -a
-
-# Rebuild with no cache
-docker compose --project-directory compose --profile=SERVICES build --no-cache
-
-# Check Docker disk space
-docker system df
-```
-
-### High CPU Usage
-
-**Issue**: System becomes sluggish
-
-**Solution**:
-- Run fewer services simultaneously
-- Reduce load generator rate in `.env`
-- Increase cooldown time between tests
-
-## Advanced Usage
-
-### Custom Service Configuration
-
-Modify service environment variables:
-
-```bash
-# Edit docker-compose.yml
-services:
-  spring-jvm-virtual:
-    environment:
-      - JAVA_OPTS=-Xmx1g -Xms512m
-      - SERVER_PORT=8081
-```
-
-### Persistent Storage
-
-By default, data is ephemeral. To persist:
-
-```yaml
-# Add to docker-compose.yml
-volumes:
-  grafana-storage:
-  loki-storage:
-  tempo-storage:
-
-services:
-  grafana:
-    volumes:
-      - grafana-storage:/var/lib/grafana
-```
-
-### Custom Dashboards
-
-```bash
-# Place dashboard JSON in config/grafana/dashboards/
-cp my-dashboard.json config/grafana/dashboards/
-
-# Restart Grafana
-docker restart grafana
-```
-
-### Network Configuration
-
-```bash
-# Use custom network
-docker network create obs-network
-
-# Update docker-compose.yml to use custom network
-```
-
-## CI/CD Integration
-
-### GitHub Actions Example
-
-```yaml
-name: Benchmark CI
-
-on: [push]
-
-jobs:
-  benchmark:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Start Stack
-        run: |
-          docker compose --project-directory compose --profile=OBS up -d
-          sleep 60
-          
-      - name: Run Benchmark
-        run: |
-          docker compose --project-directory compose --profile=SERVICES up -d
-          sleep 30
-          docker compose --project-directory compose --profile=RAIN_FIRE up -d
-          
-      - name: Collect Results
-        run: |
-          docker cp wrk2:/results ./results
-          
-      - name: Upload Results
-        uses: actions/upload-artifact@v3
-        with:
-          name: benchmark-results
-          path: results/
-```
-
-## Next Steps
-
-After completing setup:
-
-1. **Explore Grafana**: Familiarize yourself with pre-built dashboards
-2. **Read Architecture Docs**: Understand system design ([Architecture](architecture.html))
-3. **Review Benchmarking Guide**: Learn methodology ([Benchmarking](benchmarking.html))
-4. **Experiment**: Try different services and configurations
-5. **Contribute**: Share improvements via GitHub
-
-## Learning Resources
-
-### Grafana Observability
-- [Grafana Fundamentals](https://grafana.com/tutorials/grafana-fundamentals/)
-- [Loki Documentation](https://grafana.com/docs/loki/latest/)
-- [Tempo Tracing Guide](https://grafana.com/docs/tempo/latest/)
-
-### Performance Testing
-- [wrk2 GitHub Repository](https://github.com/giltene/wrk2)
-- [How NOT to Measure Latency (Video)](https://www.youtube.com/watch?v=lJ8ydIuPFeU)
-
-### Docker & Containers
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [Container Best Practices](https://docs.docker.com/develop/dev-best-practices/)
-
-## Getting Help
-
-- **GitHub Issues**: [Open an issue](https://github.com/George-C-Odes/Observability-Benchmarking/issues)
-- **Discussions**: Community Q&A
-- **Documentation**: This site and in-repo docs
-- **Examples**: `.run/` directory has IntelliJ configurations
-
-## Clean Up
-
-### Stop All Services
-
-```bash
-docker compose --project-directory compose --profile=OBS --profile=SERVICES --profile=RAIN_FIRE down
-```
-
-### Remove Volumes
-
-```bash
-docker compose --project-directory compose down -v
-```
-
-### Clean Docker System
-
-```bash
-# Remove unused images
-docker image prune -a
-
-# Remove all unused resources
-docker system prune -a --volumes
-```
-
----
-
-**Ready to benchmark?** Head back to [the main page](index.html) or dive into [benchmarking methodology](benchmarking.html)!
+- Read **Benchmarking Methodology**: `benchmarking.html`
+- Review **Tools & Technologies**: `tools-technologies.html`
+- If you’re adding a new benchmark target: `adding-a-service.html`
+- When you publish results, store raw outputs and summaries under `results/` (see `results/README.md`).

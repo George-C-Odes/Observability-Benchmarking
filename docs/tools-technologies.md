@@ -1,11 +1,14 @@
 ---
 layout: default
 title: Tools & Technologies
+permalink: /docs/tools-technologies
 ---
 
 # Tools & Technologies
 
-A comprehensive overview of all tools, frameworks, and technologies used in this project.
+A comprehensive overview of the tools, frameworks, and technologies used in this project.
+
+> Terminology note: **concurrency** describes how a runtime handles many in-flight tasks (virtual threads/reactive/goroutines). **parallelism** describes work happening simultaneously across CPU cores.
 
 ## Table of Contents
 - [Application Frameworks](#application-frameworks)
@@ -148,7 +151,9 @@ mvn package -Pnative
 
 **Implementation Status**: 🚧 In Progress
 
-**Initial Results**: ~120,000 RPS (preliminary)
+**Headline benchmark (18/01/2026)**: ~45,000 RPS (observability-aligned implementation)
+
+**Fairness note**: An additional `go-simple` variant can reach ~120,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
 ---
 
@@ -493,6 +498,14 @@ services:
 
 ## Development Tools
 
+### Quality guards (linting / static analysis)
+
+This repository treats code quality tooling as a first-class part of “production readiness”:
+
+- **ESLint**: Used in the Next.js dashboard (`utils/nextjs-dash`).
+- **Checkstyle**: Enforces consistent style across Java services.
+- **Qodana**: Automated static analysis via GitHub Actions (see `qodana.yaml`).
+
 ### Maven
 
 **Official Site**: [https://maven.apache.org/](https://maven.apache.org/)
@@ -649,4 +662,4 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ---
 
-**Next**: [Getting Started Guide](getting-started.html) | [Architecture](architecture.html) | [Benchmarking](benchmarking.html)
+**Next**: [Getting Started](getting-started.html) | [Architecture](architecture.html) | [Benchmarking](benchmarking.html) | [Adding a Service](adding-a-service.html)

@@ -1,13 +1,42 @@
 ---
 layout: default
 title: Benchmarking Methodology
+permalink: /docs/benchmarking
 ---
 
 # Benchmarking Methodology
 
 ## Overview
 
-This document describes the systematic approach used to benchmark REST service implementations, ensuring reproducible and meaningful results.
+This document describes the systematic approach used to benchmark REST service implementations, aiming for results that are **reproducible**, **comparable**, and **transparent**.
+
+Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
+
+## At-a-glance results (18/01/2026)
+
+The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
+
+| Implementation | Mode | RPS |
+|---|---:|---:|
+| Spring JVM | Platform | 28k |
+| Spring JVM | Virtual | 24k |
+| Spring JVM | Reactive | 19k |
+| Spring Native | Platform | 16k |
+| Spring Native | Virtual | 17k |
+| Spring Native | Reactive | 13k |
+| Quarkus JVM | Platform | 59k |
+| Quarkus JVM | Virtual | 70k |
+| Quarkus JVM | Reactive | 83k |
+| Quarkus Native | Platform | 39k |
+| Quarkus Native | Virtual | 47k |
+| Quarkus Native | Reactive | 39k |
+| Go (observability-aligned implementation) | — | 45k |
+
+### Fairness note (Go vs go-simple)
+
+A simpler Go variant in this repository can reach ~120k RPS, but it is intentionally kept out of the headline comparison because its observability setup is not equivalent to the Java services.
+
+The “observability-aligned” Go implementation is intended to match the same OpenTelemetry + LGTM pipeline, making the comparison more apples-to-apples.
 
 ## Benchmarking Philosophy
 
@@ -66,6 +95,12 @@ memory: 2GB        # Maximum memory
 - Quarkus: 3.30.6
 - Go: 1.25.5 with Fiber v2.52.10
 
+### Third-party license note (native-image)
+
+This repository is Apache-2.0 licensed.
+
+However, native builds may use Oracle GraalVM container images (for example: `container-registry.oracle.com/graalvm/native-image:25.0.1-ol10`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
+
 ## Workload Design
 
 ### Service Implementation
@@ -121,18 +156,38 @@ wrk2 -t 8 \                    # 8 threads
 
 ## Benchmarking Process
 
+### Before you run benchmarks (recommended)
+
+To maximize repeatability:
+
+- **Reboot** the host machine before benchmark sessions.
+- **Minimize background processes** (IDEs, downloads, antivirus scans, etc.).
+- Check your CPU topology (especially mixed performance/efficiency core designs) and consider pinning/affinity to avoid noisy neighbor effects.
+
+### Native-image build time & resource notes
+
+Native-image builds are **CPU intensive** and can take **up to ~10 minutes per service**. First-time builds of the full set can take **30+ minutes**.
+
+Building multiple native images in parallel can overwhelm Docker Desktop/WSL2. The repository therefore defaults to serial image builds using:
+
+- `COMPOSE_PARALLEL_LIMIT=1`
+
 ### 1. Preparation Phase
 
 **Environment Setup**:
+
 ```bash
 # Start observability stack
 docker compose --project-directory compose --profile=OBS up -d
 
 # Wait for all services to be healthy (60 seconds minimum)
 sleep 60
+```
 
-# Verify Grafana accessible
-curl -f http://localhost:3000/api/health
+Windows PowerShell alternative:
+
+```powershell
+Start-Sleep -Seconds 60
 ```
 
 **Service Deployment**:
@@ -142,10 +197,18 @@ docker compose --project-directory compose --profile=SERVICES up -d service-name
 
 # Wait for service warmup
 sleep 30
-
-# Verify service health
-curl -f http://localhost:8080/actuator/health
 ```
+
+Windows PowerShell alternative:
+
+```powershell
+Start-Sleep -Seconds 30
+```
+
+Health checks can be verified with curl (or a browser):
+
+- Spring: `/actuator/health`
+- Quarkus: `/q/health`
 
 ### 2. Warmup Phase
 
@@ -208,6 +271,14 @@ sleep 30
 docker stats --no-stream
 ```
 
+Windows PowerShell alternative:
+
+```powershell
+Start-Sleep -Seconds 30
+
+docker stats --no-stream
+```
+
 ### 5. Data Collection
 
 **Automated**:
@@ -219,6 +290,12 @@ docker stats --no-stream
 - Screenshot key dashboards
 - Note any anomalies
 - Record configuration details
+
+## Example output artifacts
+
+The repository stores benchmark artifacts under `results/` (see `results/README.md`).
+
+![Benchmark output location]({{ '/images/screenshots/exports/benchmark-file-location.png' | relative_url }})
 
 ## Result Interpretation
 

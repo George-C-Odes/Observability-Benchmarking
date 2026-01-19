@@ -2,6 +2,105 @@
 
 A Next.js-based dashboard UI for orchestrating and managing the Observability Benchmarking environment.
 
+## Why it exists (the design reasoning)
+
+Benchmarking workflows are repetitive:
+
+- edit the same `compose/.env` values
+- start/stop specific profiles and services
+- rerun load generation
+- watch logs and verify the stack is healthy
+
+You *can* do all of this from a terminal, but the dashboard provides a faster “control plane” loop:
+
+- A UI for editing the env file safely
+- A UI for running curated command presets
+- A single place to view buffered client + server logs
+
+Just as important: this dashboard is intentionally a **presentation layer**.
+
+- It avoids owning orchestration business logic.
+- It proxies to the orchestrator to reduce CORS friction.
+
+## How it fits (high level)
+
+Browser UI (Next.js / MUI) → Next.js API proxy (`/api/*`) → Orchestrator service (Quarkus)
+
+- UI components live under `app/components/*`.
+- Next.js should remain a *presentation layer*.
+  - It exposes `/api/*` routes for accessing the orchestrator and avoids CORS complexity.
+  - These routes should be **thin proxies** and avoid business rules.
+- The orchestration / business logic belongs in the **Quarkus orchestrator**.
+
+## What you can do with it
+
+Common workflows:
+
+1. **Edit environment configuration**
+   - Update values in `compose/.env` (for example: load generator targets, rates, enabled services).
+   - Save changes; the orchestrator persists the file (with a backup).
+
+2. **Run command presets**
+   - Start only the observability stack (OBS)
+   - Start stack + services
+   - Rerun load generators (RAIN_FIRE)
+   - Any other allowlisted preset commands (discovered from `.run/` configs)
+
+3. **Watch operational logs**
+   - Browser/client logs (captured from `console.*`)
+   - Next.js server logs (buffered and streamable)
+
+## Usage (recommended)
+
+### Option A: Run via Docker Compose (the normal path)
+
+The dashboard service is configured in the repository’s compose project.
+
+Once the stack is running, open:
+
+- http://localhost:3001
+
+### Option B: Local dev (Node)
+
+This is best when working on the UI itself.
+
+Prereqs:
+
+- Node.js 22+
+- npm
+
+```bash
+npm install
+npm run dev
+```
+
+Then open:
+
+- http://localhost:3001
+
+> Note: local dev still requires the orchestrator to be reachable, because the dashboard proxies orchestration.
+
+## Troubleshooting
+
+### The dashboard loads but actions fail
+
+- Confirm the orchestrator is running and reachable.
+- Ensure the dashboard container has correct env vars:
+  - `ORCH_URL` (server-to-server URL)
+  - `ORCH_API_KEY`
+
+### SSE streams stop early
+
+Some environments terminate long-lived HTTP connections.
+
+- Prefer using the compose-launched dashboard (it’s tuned for long streams).
+- If you put a reverse proxy in front, increase its SSE/idle timeout.
+
+### Env editing appears to “do nothing”
+
+- Verify `HOST_REPO` is correctly set in `compose/.env`.
+- Ensure Docker Desktop has access to the repo directory (Windows/macOS file sharing).
+
 ## Architecture (high-level)
 
 ### Today (MVP)
@@ -175,10 +274,21 @@ docker buildx build --load -t nextjs-dash:latest -f utils/nextjs-dash/Dockerfile
 
 ### Option 3: Run the container:
 
+macOS/Linux (bash):
+
 ```bash
 docker run -p 3001:3001 \
   -v $(pwd)/../compose/.env:/app/compose/.env \
   -v $(pwd)/../.run:/app/.run \
+  nextjs-dash:latest
+```
+
+Windows (PowerShell):
+
+```powershell
+docker run -p 3001:3001 `
+  -v "${PWD}\..\compose\.env:/app/compose/.env" `
+  -v "${PWD}\..\.run:/app/.run" `
   nextjs-dash:latest
 ```
 
