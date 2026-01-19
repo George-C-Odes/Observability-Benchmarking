@@ -303,21 +303,21 @@ The numbers below are a curated summary of a representative run (18/01/2026). Fo
 
 #### Requests Per Second (RPS) — 18/01/2026 (to closest thousand)
 
-| Implementation | Mode | RPS |
-|---|---:|----:|
-| Spring JVM | Platform | 28k |
-| Spring JVM | Virtual | 24k |
-| Spring JVM | Reactive | 19k |
-| Spring Native | Platform | 16k |
-| Spring Native | Virtual | 17k |
-| Spring Native | Reactive | 13k |
-| Quarkus JVM | Platform | 59k |
-| Quarkus JVM | Virtual | 70k |
-| Quarkus JVM | Reactive | 83k |
-| Quarkus Native | Platform | 39k |
-| Quarkus Native | Virtual | 47k |
-| Quarkus Native | Reactive | 39k |
-| Go (observability-aligned implementation) | — | 52k |
+| Implementation                            |     Mode | RPS |
+|-------------------------------------------|---------:|----:|
+| Spring JVM                                | Platform | 28k |
+| Spring JVM                                |  Virtual | 24k |
+| Spring JVM                                | Reactive | 19k |
+| Spring Native                             | Platform | 16k |
+| Spring Native                             |  Virtual | 17k |
+| Spring Native                             | Reactive | 13k |
+| Quarkus JVM                               | Platform | 59k |
+| Quarkus JVM                               |  Virtual | 70k |
+| Quarkus JVM                               | Reactive | 83k |
+| Quarkus Native                            | Platform | 39k |
+| Quarkus Native                            |  Virtual | 47k |
+| Quarkus Native                            | Reactive | 39k |
+| Go (observability-aligned implementation) |        — | 52k |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -545,14 +545,14 @@ For comprehensive security guidelines, configuration recommendations, and incide
 
 ### Security Summary
 
-| Aspect | Status | Details |
-|--------|--------|---------|
-| Non-root containers | ✅ Implemented | All JVM services run as UID 1001 |
-| File permissions | ✅ Configured | Restrictive permissions on all artifacts |
-| Hardcoded secrets | ✅ Clean | Zero secrets found in code/config |
-| CodeQL scan | ✅ Passed | 0 security alerts |
-| Multi-stage builds | ✅ Implemented | All Dockerfiles use multi-stage |
-| Documentation | ✅ Complete | Comprehensive security guide available |
+| Aspect              | Status        | Details                                  |
+|---------------------|---------------|------------------------------------------|
+| Non-root containers | ✅ Implemented | All JVM services run as UID 1001         |
+| File permissions    | ✅ Configured  | Restrictive permissions on all artifacts |
+| Hardcoded secrets   | ✅ Clean       | Zero secrets found in code/config        |
+| CodeQL scan         | ✅ Passed      | 0 security alerts                        |
+| Multi-stage builds  | ✅ Implemented | All Dockerfiles use multi-stage          |
+| Documentation       | ✅ Complete    | Comprehensive security guide available   |
 
 ### Development Standards
 

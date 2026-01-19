@@ -151,7 +151,7 @@ mvn package -Pnative
 
 **Implementation Status**: 🚧 In Progress
 
-**Headline benchmark (18/01/2026)**: ~45,000 RPS (observability-aligned implementation)
+**Headline benchmark (18/01/2026)**: ~52,000 RPS (observability-aligned implementation)
 
 **Fairness note**: An additional `go-simple` variant can reach ~120,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
@@ -376,12 +376,12 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/api/cache/key1
 
 **Comparison to Alternatives**:
 
-| Tool | Type | Coordinated Omission | Scripting |
-|------|------|---------------------|-----------|
-| wrk2 | ✅ Fixed rate | ✅ Yes | ✅ Lua |
-| wrk | ❌ Open loop | ❌ No | ✅ Lua |
-| ab | ❌ Open loop | ❌ No | ❌ No |
-| Gatling | ✅ Fixed rate | ✅ Yes | ✅ Scala |
+| Tool    | Type         | Coordinated Omission | Scripting |
+|---------|--------------|----------------------|-----------|
+| wrk2    | ✅ Fixed rate | ✅ Yes                | ✅ Lua     |
+| wrk     | ❌ Open loop  | ❌ No                 | ✅ Lua     |
+| ab      | ❌ Open loop  | ❌ No                 | ❌ No      |
+| Gatling | ✅ Fixed rate | ✅ Yes                | ✅ Scala   |
 
 ### OpenTelemetry
 
