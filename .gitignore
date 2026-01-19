@@ -127,8 +127,6 @@ venv.bak/
 /docs/_site/
 /docs/Gemfile.lock
 /qodana.yaml
-/services/quarkus/jvm/src/main/resources/META-INF.native-image/
-/services/quarkus/jvm/target/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
@@ -142,3 +140,8 @@ vitest-*.json
 /.profileconfig.json
 /.github/workflows/qodana_code_quality.yml
 /services/java/quarkus/jvm/src/main/resources/META-INF.native-image/
+/services/java/quarkus/jvm/target/
+
+# Jekyll / GitHub Pages (generated output + caches)
+/docs/.jekyll-cache/
+/docs/.sass-cache/
