@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adding a New Service (Legacy)</title>
+    <link rel="icon" type="image/x-icon" href="/Observability-Benchmarking/favicon.ico">
+    <link rel="stylesheet" href="/Observability-Benchmarking/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Adding a New Service (Legacy) | Observability Benchmarking</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Adding a New Service (Legacy)" />
+<meta name="author" content="George-C-Odes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<meta property="og:description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<link rel="canonical" href="https://george-c-odes.github.io/Observability-Benchmarking/docs/adding-a-service-legacy" />
+<meta property="og:url" content="https://george-c-odes.github.io/Observability-Benchmarking/docs/adding-a-service-legacy" />
+<meta property="og:site_name" content="Observability Benchmarking" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Adding a New Service (Legacy)" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"George-C-Odes"},"description":"A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack","headline":"Adding a New Service (Legacy)","url":"https://george-c-odes.github.io/Observability-Benchmarking/docs/adding-a-service-legacy"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/Observability-Benchmarking/index.html">Home</a></li>
+                <li><a href="/Observability-Benchmarking/getting-started.html">Get Started</a></li>
+                <li><a href="/Observability-Benchmarking/architecture.html">Architecture</a></li>
+                <li><a href="/Observability-Benchmarking/benchmarking.html">Benchmarking</a></li>
+                <li><a href="/Observability-Benchmarking/tools-technologies.html">Tools</a></li>
+                <li><a href="/Observability-Benchmarking/control-plane.html">Control</a></li>
+                <li><a href="/Observability-Benchmarking/adding-a-service.html">Add Service</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+
+                <!-- More dropdown: overflowed nav items will be moved into the nested .dropdown-menu -->
+                <li class="nav-more" style="display:none;">
+                    <button class="more-btn" aria-haspopup="true" aria-expanded="false">More ▾</button>
+                    <ul class="dropdown-menu" aria-label="More navigation items"></ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <h1 id="adding-a-new-service">Adding a New Service</h1>
+
+<p>This guide explains how to add a new benchmark target to the repository (a new REST service implementation) and make it show up in the existing environment:</p>
+
+<ul>
+  <li>Docker Compose orchestration (<code class="language-plaintext highlighter-rouge">compose/</code>)</li>
+  <li>Control-plane tooling (dashboard + orchestrator under <code class="language-plaintext highlighter-rouge">utils/</code>)</li>
+  <li>Load generation (wrk2 under <code class="language-plaintext highlighter-rouge">utils/wrk2/</code>)</li>
+  <li>Documentation and results tracking (<code class="language-plaintext highlighter-rouge">docs/</code> and <code class="language-plaintext highlighter-rouge">results/</code>)</li>
+</ul>
+
+<blockquote>
+  <p>Important: this page documents the integration points. It intentionally does not modify <code class="language-plaintext highlighter-rouge">compose/</code>, <code class="language-plaintext highlighter-rouge">services/</code>, or <code class="language-plaintext highlighter-rouge">utils/</code>.</p>
+</blockquote>
+
+<h2 id="contract-what-a-service-must-provide">Contract (what a “service” must provide)</h2>
+
+<p>At minimum, a new service should:</p>
+
+<ol>
+  <li>Expose a stable HTTP endpoint you can benchmark.
+    <ul>
+      <li>For comparability with existing targets, aim to implement:
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">GET /api/cache/{key}</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>Export telemetry under the same OTel pipeline where possible:
+    <ul>
+      <li>metrics</li>
+      <li>traces</li>
+      <li>logs</li>
+      <li>(optional) profiling</li>
+    </ul>
+  </li>
+  <li>
+    <p>Be buildable and runnable via Docker.</p>
+  </li>
+  <li>Identify itself consistently:
+    <ul>
+      <li>container/service name in Docker Compose</li>
+      <li><code class="language-plaintext highlighter-rouge">service.name</code> (OpenTelemetry resource attribute)</li>
+      <li>Grafana labels for logs/metrics/traces</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="step-by-step-integration-checklist">Step-by-step integration checklist</h2>
+
+<h3 id="1-add-the-implementation-under-services">1) Add the implementation under <code class="language-plaintext highlighter-rouge">services/</code></h3>
+
+<p>Create a new folder under <code class="language-plaintext highlighter-rouge">services/</code> that includes:</p>
+
+<ul>
+  <li>Docker build context (Dockerfile + build assets)</li>
+  <li>Source code</li>
+  <li>A small README describing:
+    <ul>
+      <li>how the endpoint behaves</li>
+      <li>how observability is configured</li>
+      <li>any runtime flags</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Keep the endpoint and response shape consistent with other implementations so that wrk2 scripts and dashboards remain comparable.</p>
+
+<h3 id="2-wire-it-into-docker-compose-compose">2) Wire it into Docker Compose (<code class="language-plaintext highlighter-rouge">compose/</code>)</h3>
+
+<p>Add a new Compose service for your implementation:</p>
+
+<ul>
+  <li>Put it under the <code class="language-plaintext highlighter-rouge">SERVICES</code> profile.</li>
+  <li>Ensure it has deterministic resource constraints (CPU limit / memory limit) consistent with other services.</li>
+  <li>Ensure it can reach the OTLP endpoint (Alloy) and uses the same network as the rest of the stack.</li>
+</ul>
+
+<p>Also add (or update) a matching load generator entry (usually under the <code class="language-plaintext highlighter-rouge">RAIN_FIRE</code> profile) that points wrk2 at your new service.</p>
+
+<h3 id="3-make-sure-telemetry-lands-in-the-right-places">3) Make sure telemetry lands in the right places</h3>
+
+<p>To show up in Grafana consistently, your service should propagate:</p>
+
+<ul>
+  <li>Metrics → Mimir/Prometheus datasource</li>
+  <li>Traces → Tempo datasource</li>
+  <li>Logs → Loki datasource</li>
+  <li>Profiles → Pyroscope datasource (optional)</li>
+</ul>
+
+<p>If you’re using OpenTelemetry, confirm:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">service.name</code> is set (and stable)</li>
+  <li>you can filter by it across Grafana Explore (logs and traces)</li>
+</ul>
+
+<h3 id="4-update-load-generation-wrk2">4) Update load generation (wrk2)</h3>
+
+<p>A good baseline is:</p>
+
+<ul>
+  <li>deterministic constant-throughput mode</li>
+  <li>fixed duration</li>
+  <li>fixed connections and threads</li>
+</ul>
+
+<p>If you add a new service, ensure:</p>
+
+<ul>
+  <li>there is an explicit target URL for it in the wrk2 tooling</li>
+  <li>the request path matches your service’s endpoint</li>
+</ul>
+
+<h3 id="5-add-dashboards-optional-but-recommended">5) Add dashboards (optional but recommended)</h3>
+
+<p>If you want your service to be “first-class” in Grafana:</p>
+
+<ul>
+  <li>add a service-specific dashboard panel group</li>
+  <li>ensure it’s queryable by <code class="language-plaintext highlighter-rouge">service_name</code> / <code class="language-plaintext highlighter-rouge">service.name</code></li>
+</ul>
+
+<p>Keep dashboard naming consistent so it’s easy to compare services.</p>
+
+<h3 id="6-document-the-new-service">6) Document the new service</h3>
+
+<p>Update documentation as follows:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">README.md</code>: add it to the “REST Service Implementations” list.</li>
+  <li><code class="language-plaintext highlighter-rouge">docs/tools-technologies.md</code>: add a section under Application Frameworks.</li>
+  <li><code class="language-plaintext highlighter-rouge">docs/benchmarking.md</code>: include it in the “at-a-glance results” table once you have numbers.</li>
+</ul>
+
+<h3 id="7-capture-results-in-results">7) Capture results in <code class="language-plaintext highlighter-rouge">results/</code></h3>
+
+<p>For every published run, create a run folder under <code class="language-plaintext highlighter-rouge">results/benchmarks/…</code>.</p>
+
+<p>Include:</p>
+
+<ul>
+  <li>wrk2 raw outputs</li>
+  <li>a <code class="language-plaintext highlighter-rouge">summary.md</code> explaining what changed vs previous runs</li>
+  <li>environment metadata (host, versions, parameters)</li>
+</ul>
+
+<p>See: <code class="language-plaintext highlighter-rouge">results/README.md</code>.</p>
+
+<h2 id="touchpoints-map-where-things-usually-need-changes">Touchpoints map (where things usually need changes)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Concern</th>
+      <th>Folder(s)</th>
+      <th>What you update</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Add a new benchmark target</td>
+      <td><code class="language-plaintext highlighter-rouge">services/</code></td>
+      <td>Source + Docker build context</td>
+    </tr>
+    <tr>
+      <td>Start/stop the target</td>
+      <td><code class="language-plaintext highlighter-rouge">compose/</code></td>
+      <td>New Compose service under <code class="language-plaintext highlighter-rouge">SERVICES</code></td>
+    </tr>
+    <tr>
+      <td>Load generator target wiring</td>
+      <td><code class="language-plaintext highlighter-rouge">compose/</code>, <code class="language-plaintext highlighter-rouge">utils/wrk2/</code></td>
+      <td>New wrk2 target and/or container</td>
+    </tr>
+    <tr>
+      <td>Control-plane integration</td>
+      <td><code class="language-plaintext highlighter-rouge">utils/nextjs-dash/</code>, <code class="language-plaintext highlighter-rouge">utils/orchestrator/</code></td>
+      <td>UI actions and orchestration endpoints</td>
+    </tr>
+    <tr>
+      <td>Observability pipeline routing</td>
+      <td><code class="language-plaintext highlighter-rouge">config/alloy/</code>, <code class="language-plaintext highlighter-rouge">config/grafana/</code></td>
+      <td>OTLP pipeline and dashboards</td>
+    </tr>
+    <tr>
+      <td>Published results</td>
+      <td><code class="language-plaintext highlighter-rouge">results/</code></td>
+      <td>Run artifacts and summary</td>
+    </tr>
+    <tr>
+      <td>Public docs</td>
+      <td><code class="language-plaintext highlighter-rouge">README.md</code>, <code class="language-plaintext highlighter-rouge">docs/</code></td>
+      <td>Narrative + instructions</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="common-pitfalls">Common pitfalls</h2>
+
+<ul>
+  <li><strong>Non-equivalent observability</strong>: If one service sends fewer signals (or no tracing/logs), its RPS will look better but the comparison isn’t fair.</li>
+  <li><strong>Different endpoints</strong>: If request path/logic differs, you’re benchmarking different work.</li>
+  <li><strong>Missing <code class="language-plaintext highlighter-rouge">service.name</code></strong>: Makes Grafana correlation and filtering painful.</li>
+  <li><strong>Parallel native builds</strong>: Native-image builds can exhaust Docker Desktop resources; prefer <code class="language-plaintext highlighter-rouge">COMPOSE_PARALLEL_LIMIT=1</code>.</li>
+</ul>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Observability Benchmarking</h4>
+                    <p>A comprehensive framework for performance analysis and observability</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking">GitHub</a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/issues">Issues</a></li>
+                        <li><a href="https://github.com/George-C-Odes">@George-C-Odes</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>License</h4>
+                    <p>Apache License 2.0<br>SPDX-License-Identifier: Apache-2.0</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 George-C-Odes. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Overflow management script: moves overflowing nav items into the More dropdown -->
+    <script>
+    (function(){
+      const debounce = (fn, wait=100)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
+
+      function redistributeNav(){
+        const nav = document.querySelector('.nav');
+        if(!nav) return;
+        const navLinks = nav.querySelector('.nav-links');
+        const moreLi = navLinks.querySelector('.nav-more');
+        const moreMenu = moreLi ? moreLi.querySelector('.dropdown-menu') : null;
+        const logo = nav.querySelector('.logo');
+        if(!navLinks || !moreLi || !moreMenu || !logo) return;
+
+        // move everything back from moreMenu into navLinks (before .nav-more)
+        while(moreMenu.firstChild){
+          navLinks.insertBefore(moreMenu.firstChild, moreLi);
+        }
+        moreLi.style.display = 'none';
+        moreLi.querySelector('.more-btn').setAttribute('aria-expanded','false');
+
+        // compute available width for links (nav width minus logo and some padding)
+        const navStyle = getComputedStyle(nav);
+        const navPaddingLeft = parseFloat(navStyle.paddingLeft) || 0;
+        const navPaddingRight = parseFloat(navStyle.paddingRight) || 0;
+        const available = nav.clientWidth - logo.offsetWidth - navPaddingLeft - navPaddingRight - 24; // safety buffer
+
+        // accumulate widths and move overflow items
+        let total = 0;
+        const items = Array.from(navLinks.children).filter(li=>!li.classList.contains('nav-more'));
+        for(let i=0;i<items.length;i++){
+          const li = items[i];
+          total += li.offsetWidth;
+          if(total > available){
+            // move this and subsequent items into moreMenu
+            for(let j=i;j<items.length;j++){
+              moreMenu.appendChild(items[j]);
+            }
+            moreLi.style.display = '';
+            break;
+          }
+        }
+
+        // hide More if empty
+        if(!moreMenu.children.length) moreLi.style.display = 'none';
+      }
+
+      // toggle dropdown on button click
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.more-btn');
+        if(!btn) return;
+        const moreLi = btn.closest('.nav-more');
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        const menu = moreLi.querySelector('.dropdown-menu');
+        if(menu) menu.style.display = expanded ? 'none' : 'block';
+      });
+
+      // close dropdown on outside click
+      document.addEventListener('click', function(e){
+        if(e.target.closest('.nav-more')) return;
+        document.querySelectorAll('.nav-more .dropdown-menu').forEach(m=>m.style.display='none');
+        document.querySelectorAll('.more-btn').forEach(b=>b.setAttribute('aria-expanded','false'));
+      });
+
+      // run on load and resize
+      window.addEventListener('load', redistributeNav);
+      window.addEventListener('resize', debounce(redistributeNav, 120));
+
+      // also run after images/fonts load via DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function(){ setTimeout(redistributeNav, 50); });
+    })();
+    </script>
+
+</body>
+</html>

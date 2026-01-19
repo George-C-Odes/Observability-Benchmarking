@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture</title>
+    <link rel="icon" type="image/x-icon" href="/Observability-Benchmarking/favicon.ico">
+    <link rel="stylesheet" href="/Observability-Benchmarking/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>System Architecture | Observability Benchmarking</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="System Architecture" />
+<meta name="author" content="George-C-Odes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<meta property="og:description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<link rel="canonical" href="https://george-c-odes.github.io/Observability-Benchmarking/docs/architecture" />
+<meta property="og:url" content="https://george-c-odes.github.io/Observability-Benchmarking/docs/architecture" />
+<meta property="og:site_name" content="Observability Benchmarking" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="System Architecture" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"George-C-Odes"},"description":"A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack","headline":"System Architecture","url":"https://george-c-odes.github.io/Observability-Benchmarking/docs/architecture"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/Observability-Benchmarking/index.html">Home</a></li>
+                <li><a href="/Observability-Benchmarking/getting-started.html">Get Started</a></li>
+                <li><a href="/Observability-Benchmarking/architecture.html">Architecture</a></li>
+                <li><a href="/Observability-Benchmarking/benchmarking.html">Benchmarking</a></li>
+                <li><a href="/Observability-Benchmarking/tools-technologies.html">Tools</a></li>
+                <li><a href="/Observability-Benchmarking/control-plane.html">Control</a></li>
+                <li><a href="/Observability-Benchmarking/adding-a-service.html">Add Service</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+
+                <!-- More dropdown: overflowed nav items will be moved into the nested .dropdown-menu -->
+                <li class="nav-more" style="display:none;">
+                    <button class="more-btn" aria-haspopup="true" aria-expanded="false">More ▾</button>
+                    <ul class="dropdown-menu" aria-label="More navigation items"></ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <h1 id="system-architecture">System Architecture</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>The Observability Benchmarking project is designed as a modular, cloud-native system that demonstrates modern software engineering practices. The architecture follows a layered approach with clear separation of concerns.</p>
+
+<h2 id="architectural-principles">Architectural Principles</h2>
+
+<h3 id="1-cloud-native-design">1. Cloud-Native Design</h3>
+<ul>
+  <li><strong>Containerization First</strong>: Every component runs in a container for consistency and portability</li>
+  <li><strong>Declarative Configuration</strong>: Infrastructure defined as code using Docker Compose</li>
+  <li><strong>12-Factor App Compliance</strong>: Configuration via environment variables, stateless services, port binding</li>
+</ul>
+
+<h3 id="2-observability-first-approach">2. Observability-First Approach</h3>
+<ul>
+  <li><strong>Telemetry from Day One</strong>: All services instrumented with OpenTelemetry from the start</li>
+  <li><strong>Comprehensive Coverage</strong>: Logs, metrics, traces, and profiles collected for every service</li>
+  <li><strong>Correlation</strong>: Ability to correlate data across all telemetry signals</li>
+</ul>
+
+<h3 id="3-performance-engineering">3. Performance Engineering</h3>
+<ul>
+  <li><strong>Reproducible Benchmarks</strong>: Fixed-rate load generation with deterministic results</li>
+  <li><strong>Resource Isolation</strong>: CPU and memory limits ensure fair comparisons</li>
+  <li><strong>Statistical Rigor</strong>: Multiple runs and warm-up periods for accurate measurements</li>
+</ul>
+
+<h2 id="system-components">System Components</h2>
+
+<h3 id="load-generation-layer">Load Generation Layer</h3>
+
+<p><strong>wrk2</strong> - HTTP benchmarking tool providing constant-throughput load generation</p>
+<ul>
+  <li>Deterministic rate limiting (requests per second)</li>
+  <li>Latency distribution tracking</li>
+  <li>Configurable connection pooling</li>
+  <li>Thread-based concurrency control</li>
+</ul>
+
+<h3 id="service-layer">Service Layer</h3>
+
+<p><strong>REST Services</strong> - Multiple implementations for comparison</p>
+<ul>
+  <li>Spring Boot 4.0 (JVM and Native)
+    <ul>
+      <li>Platform threads (traditional thread pool)</li>
+      <li>Virtual threads (Project Loom)</li>
+      <li>Reactive (WebFlux)</li>
+    </ul>
+  </li>
+  <li>Quarkus 3.30 (JVM and Native)
+    <ul>
+      <li>Platform threads</li>
+      <li>Virtual threads</li>
+      <li>Reactive (Mutiny)</li>
+    </ul>
+  </li>
+  <li>Go 1.25
+    <ul>
+      <li>Fiber framework</li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>Service Characteristics</strong>:</p>
+<ul>
+  <li>Simple cache retrieval workload (Caffeine)</li>
+  <li>Non-blocking I/O where applicable</li>
+  <li>OpenTelemetry instrumentation</li>
+  <li>Health check endpoints</li>
+  <li>Configurable heap and thread settings</li>
+</ul>
+
+<h3 id="collection-layer">Collection Layer</h3>
+
+<p><strong>Grafana Alloy</strong> - OpenTelemetry collector and distributor</p>
+<ul>
+  <li>OTLP receiver (gRPC and HTTP)</li>
+  <li>Batch processing for efficiency</li>
+  <li>Service discovery</li>
+  <li>eBPF-based profiling</li>
+</ul>
+
+<p><strong>Pyroscope Java Agent</strong> - Profiling agent for JVM services</p>
+<ul>
+  <li>CPU profiling</li>
+  <li>Allocation profiling</li>
+  <li>Lock contention detection</li>
+  <li>Integration with OpenTelemetry traces</li>
+</ul>
+
+<h3 id="storage-layer">Storage Layer</h3>
+
+<p><strong>Loki</strong> - Log aggregation system</p>
+<ul>
+  <li>Label-based indexing</li>
+  <li>Efficient log storage</li>
+  <li>LogQL query language</li>
+  <li>Integration with Grafana</li>
+</ul>
+
+<p><strong>Tempo</strong> - Distributed tracing backend</p>
+<ul>
+  <li>Trace ID-based storage</li>
+  <li>TraceQL query language</li>
+  <li>Tag-based search</li>
+  <li>Trace-to-metrics correlation</li>
+</ul>
+
+<p><strong>Mimir</strong> - Metrics storage (Prometheus-compatible)</p>
+<ul>
+  <li>Long-term metric storage</li>
+  <li>PromQL query engine</li>
+  <li>High-cardinality support</li>
+  <li>Exemplar support</li>
+</ul>
+
+<p><strong>Pyroscope</strong> - Continuous profiling storage</p>
+<ul>
+  <li>Flame graph generation</li>
+  <li>Profile aggregation</li>
+  <li>Tag-based filtering</li>
+  <li>Profile-to-trace correlation</li>
+</ul>
+
+<h3 id="visualization-layer">Visualization Layer</h3>
+
+<p><strong>Grafana</strong> - Unified observability platform</p>
+<ul>
+  <li>Dashboard provisioning</li>
+  <li>Data source configuration</li>
+  <li>Explore interface</li>
+  <li>Alerting (future)</li>
+</ul>
+
+<h2 id="data-flow">Data Flow</h2>
+
+<h3 id="telemetry-pipeline">Telemetry Pipeline</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Service → OpenTelemetry SDK → OTLP/gRPC → Alloy → {Loki, Tempo, Mimir}
+                                                  ↓
+                                              Pyroscope
+                                                  ↓
+                                              Grafana
+</code></pre></div></div>
+
+<h3 id="profiling-pipeline-java">Profiling Pipeline (Java)</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>JVM Service → Pyroscope Agent → Pyroscope Server
+                     ↓
+            OpenTelemetry Context
+                     ↓
+                  Alloy
+</code></pre></div></div>
+
+<h3 id="ebpf-profiling-pipeline">eBPF Profiling Pipeline</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Container → Alloy (eBPF) → Pyroscope Server
+</code></pre></div></div>
+
+<h2 id="network-architecture">Network Architecture</h2>
+
+<h3 id="service-communication">Service Communication</h3>
+<ul>
+  <li>Services expose REST endpoints on configurable ports</li>
+  <li>All services in the same Docker network</li>
+  <li>Service discovery via Docker DNS</li>
+</ul>
+
+<h3 id="observability-communication">Observability Communication</h3>
+<ul>
+  <li>OTLP over gRPC (preferred, lower overhead)</li>
+  <li>HTTP fallback for compatibility</li>
+  <li>Push-based telemetry (services push to Alloy)</li>
+  <li>Pull-based profiling (Pyroscope scrapes endpoints)</li>
+</ul>
+
+<h2 id="resource-management">Resource Management</h2>
+
+<h3 id="cpu-allocation">CPU Allocation</h3>
+<ul>
+  <li>Benchmarked services: 4 vCPU limit</li>
+  <li>Observability stack: Unlimited (to avoid measurement bias)</li>
+  <li>Host: Minimum 8 cores recommended</li>
+</ul>
+
+<h3 id="memory-allocation">Memory Allocation</h3>
+<ul>
+  <li>Spring JVM: 512MB-1GB heap</li>
+  <li>Quarkus JVM: 256MB-512MB heap</li>
+  <li>Native images: 256MB max</li>
+  <li>Observability services: Per-component tuning</li>
+</ul>
+
+<h3 id="storage">Storage</h3>
+<ul>
+  <li>Ephemeral by default for clean runs</li>
+  <li>Volume mounts available for persistence</li>
+  <li>Results exported to host filesystem</li>
+</ul>
+
+<h2 id="configuration-management">Configuration Management</h2>
+
+<h3 id="environment-variables">Environment Variables</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">.env</code> file for global configuration</li>
+  <li>Service-specific overrides in docker-compose</li>
+  <li>Runtime configuration (heap size, thread count, etc.)</li>
+  <li>Observability endpoints and credentials</li>
+</ul>
+
+<h3 id="docker-compose-profiles">Docker Compose Profiles</h3>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">OBS</code>: Observability stack only</li>
+  <li><code class="language-plaintext highlighter-rouge">SERVICES</code>: REST services</li>
+  <li><code class="language-plaintext highlighter-rouge">RAIN_FIRE</code>: Load generators</li>
+  <li>Composable for different scenarios</li>
+</ul>
+
+<h2 id="security-considerations">Security Considerations</h2>
+
+<h3 id="network-isolation">Network Isolation</h3>
+<ul>
+  <li>No external network access for services under test</li>
+  <li>Observability stack accessible on localhost only</li>
+  <li>Production deployment requires additional security</li>
+</ul>
+
+<h3 id="credentials">Credentials</h3>
+<ul>
+  <li>Default credentials for local development only</li>
+  <li>Environment variable override support</li>
+  <li>Secrets management recommended for production</li>
+</ul>
+
+<h3 id="container-security">Container Security</h3>
+<ul>
+  <li>Non-root users where applicable</li>
+  <li>Minimal base images</li>
+  <li>Regular dependency updates</li>
+</ul>
+
+<h2 id="scalability-considerations">Scalability Considerations</h2>
+
+<h3 id="horizontal-scaling">Horizontal Scaling</h3>
+<ul>
+  <li>Services designed to be stateless</li>
+  <li>Load balancing ready</li>
+  <li>Kubernetes manifests planned</li>
+</ul>
+
+<h3 id="vertical-scaling">Vertical Scaling</h3>
+<ul>
+  <li>Configurable resource limits</li>
+  <li>JVM tuning parameters exposed</li>
+  <li>GC algorithm selection</li>
+</ul>
+
+<h2 id="monitoring-the-monitors">Monitoring the Monitors</h2>
+
+<h3 id="alloy-metrics">Alloy Metrics</h3>
+<ul>
+  <li>Processing latency</li>
+  <li>Batch sizes</li>
+  <li>Error rates</li>
+</ul>
+
+<h3 id="storage-metrics">Storage Metrics</h3>
+<ul>
+  <li>Ingestion rate</li>
+  <li>Query performance</li>
+  <li>Storage utilization</li>
+</ul>
+
+<h2 id="future-architecture-enhancements">Future Architecture Enhancements</h2>
+
+<h3 id="planned-improvements">Planned Improvements</h3>
+<ol>
+  <li><strong>Kubernetes Support</strong>: Helm charts and operators</li>
+  <li><strong>gRPC - HTTP/2 - HTTP/3</strong>: Additional protocols</li>
+  <li><strong>CI/CD Integration</strong>: Automated benchmark runs</li>
+  <li><strong>Multi-region</strong>: Distributed load generation</li>
+  <li><strong>Service Mesh</strong>: Istio/Linkerd integration</li>
+  <li><strong>Chaos Engineering</strong>: Fault injection</li>
+  <li><strong>Cost Analysis</strong>: Resource utilization tracking</li>
+</ol>
+
+<h3 id="extensibility-points">Extensibility Points</h3>
+<ul>
+  <li>Plugin architecture for new services</li>
+  <li>Custom metrics exporters</li>
+  <li>Dashboard templates</li>
+  <li>Report generators</li>
+</ul>
+
+<h2 id="technology-choices">Technology Choices</h2>
+
+<h3 id="why-spring-boot">Why Spring Boot?</h3>
+<ul>
+  <li>Industry standard for enterprise Java</li>
+  <li>Extensive ecosystem</li>
+  <li>Multiple threading models</li>
+  <li>Good baseline for comparison</li>
+</ul>
+
+<h3 id="why-quarkus">Why Quarkus?</h3>
+<ul>
+  <li>Cloud-native optimization</li>
+  <li>Fast startup time</li>
+  <li>Low memory footprint</li>
+  <li>Native compilation support</li>
+</ul>
+
+<h3 id="why-grafana-lgtm-stack">Why Grafana LGTM Stack?</h3>
+<ul>
+  <li>Integrated observability</li>
+  <li>Open source</li>
+  <li>Production-ready</li>
+  <li>Active community</li>
+</ul>
+
+<h3 id="why-docker-compose">Why Docker Compose?</h3>
+<ul>
+  <li>Simple local development</li>
+  <li>Reproducible environments</li>
+  <li>Easy to understand</li>
+  <li>Good foundation for Kubernetes migration</li>
+</ul>
+
+<h2 id="design-trade-offs">Design Trade-offs</h2>
+
+<h3 id="performance-vs-observability">Performance vs. Observability</h3>
+<ul>
+  <li>Instrumentation adds overhead</li>
+  <li>Batching reduces impact</li>
+  <li>Agent-based profiling optional</li>
+  <li>Configurable sampling rates</li>
+</ul>
+
+<h3 id="simplicity-vs-realism">Simplicity vs. Realism</h3>
+<ul>
+  <li>Simple cache workload for controlled testing</li>
+  <li>Focus on concurrency behavior</li>
+  <li>Not representative of all workloads</li>
+  <li>Easy to understand and modify</li>
+</ul>
+
+<h3 id="local-vs-production">Local vs. Production</h3>
+<ul>
+  <li>Local development optimized</li>
+  <li>Production patterns demonstrated</li>
+  <li>Additional hardening needed for production</li>
+  <li>Good learning environment</li>
+</ul>
+
+<h2 id="references">References</h2>
+
+<ul>
+  <li><a href="https://12factor.net/">The Twelve-Factor App</a></li>
+  <li><a href="https://opentelemetry.io/docs/">OpenTelemetry Documentation</a></li>
+  <li><a href="https://grafana.com/docs/">Grafana Observability</a></li>
+  <li><a href="https://kubernetes.io/docs/concepts/cluster-administration/manage-deployment/">Container Patterns</a></li>
+</ul>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Observability Benchmarking</h4>
+                    <p>A comprehensive framework for performance analysis and observability</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking">GitHub</a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/issues">Issues</a></li>
+                        <li><a href="https://github.com/George-C-Odes">@George-C-Odes</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>License</h4>
+                    <p>Apache License 2.0<br>SPDX-License-Identifier: Apache-2.0</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 George-C-Odes. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Overflow management script: moves overflowing nav items into the More dropdown -->
+    <script>
+    (function(){
+      const debounce = (fn, wait=100)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
+
+      function redistributeNav(){
+        const nav = document.querySelector('.nav');
+        if(!nav) return;
+        const navLinks = nav.querySelector('.nav-links');
+        const moreLi = navLinks.querySelector('.nav-more');
+        const moreMenu = moreLi ? moreLi.querySelector('.dropdown-menu') : null;
+        const logo = nav.querySelector('.logo');
+        if(!navLinks || !moreLi || !moreMenu || !logo) return;
+
+        // move everything back from moreMenu into navLinks (before .nav-more)
+        while(moreMenu.firstChild){
+          navLinks.insertBefore(moreMenu.firstChild, moreLi);
+        }
+        moreLi.style.display = 'none';
+        moreLi.querySelector('.more-btn').setAttribute('aria-expanded','false');
+
+        // compute available width for links (nav width minus logo and some padding)
+        const navStyle = getComputedStyle(nav);
+        const navPaddingLeft = parseFloat(navStyle.paddingLeft) || 0;
+        const navPaddingRight = parseFloat(navStyle.paddingRight) || 0;
+        const available = nav.clientWidth - logo.offsetWidth - navPaddingLeft - navPaddingRight - 24; // safety buffer
+
+        // accumulate widths and move overflow items
+        let total = 0;
+        const items = Array.from(navLinks.children).filter(li=>!li.classList.contains('nav-more'));
+        for(let i=0;i<items.length;i++){
+          const li = items[i];
+          total += li.offsetWidth;
+          if(total > available){
+            // move this and subsequent items into moreMenu
+            for(let j=i;j<items.length;j++){
+              moreMenu.appendChild(items[j]);
+            }
+            moreLi.style.display = '';
+            break;
+          }
+        }
+
+        // hide More if empty
+        if(!moreMenu.children.length) moreLi.style.display = 'none';
+      }
+
+      // toggle dropdown on button click
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.more-btn');
+        if(!btn) return;
+        const moreLi = btn.closest('.nav-more');
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        const menu = moreLi.querySelector('.dropdown-menu');
+        if(menu) menu.style.display = expanded ? 'none' : 'block';
+      });
+
+      // close dropdown on outside click
+      document.addEventListener('click', function(e){
+        if(e.target.closest('.nav-more')) return;
+        document.querySelectorAll('.nav-more .dropdown-menu').forEach(m=>m.style.display='none');
+        document.querySelectorAll('.more-btn').forEach(b=>b.setAttribute('aria-expanded','false'));
+      });
+
+      // run on load and resize
+      window.addEventListener('load', redistributeNav);
+      window.addEventListener('resize', debounce(redistributeNav, 120));
+
+      // also run after images/fonts load via DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function(){ setTimeout(redistributeNav, 50); });
+    })();
+    </script>
+
+</body>
+</html>

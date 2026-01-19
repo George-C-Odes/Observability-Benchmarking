@@ -124,7 +124,6 @@ venv.bak/
 !/docs/
 !/.github/
 /services/spring/native/entrypoint.sh
-/docs/_site/
 /docs/Gemfile.lock
 /qodana.yaml
 
@@ -145,3 +144,12 @@ vitest-*.json
 # Jekyll / GitHub Pages (generated output + caches)
 /docs/.jekyll-cache/
 /docs/.sass-cache/
+
+# NOTE: The project publishes documentation via GitHub Pages.
+# For this repo, the generated site output under `docs/_site/` is expected to be committed
+# (it is what GitHub Pages serves). Do NOT ignore it, otherwise subpage navigation 404s.
+# See: https://george-c-odes.github.io/Observability-Benchmarking/
+#
+# If you switch to "Pages -> Deploy from a branch" using the `/docs` folder directly with
+# Jekyll build on GitHub, you may re-add this ignore.
+# /docs/_site/

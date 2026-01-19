@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benchmarking Methodology</title>
+    <link rel="icon" type="image/x-icon" href="/Observability-Benchmarking/favicon.ico">
+    <link rel="stylesheet" href="/Observability-Benchmarking/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Benchmarking Methodology | Observability Benchmarking</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Benchmarking Methodology" />
+<meta name="author" content="George-C-Odes" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<meta property="og:description" content="A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack" />
+<link rel="canonical" href="https://george-c-odes.github.io/Observability-Benchmarking/docs/benchmarking" />
+<meta property="og:url" content="https://george-c-odes.github.io/Observability-Benchmarking/docs/benchmarking" />
+<meta property="og:site_name" content="Observability Benchmarking" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Benchmarking Methodology" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","author":{"@type":"Person","name":"George-C-Odes"},"description":"A comprehensive framework for benchmarking containerized REST services under the Grafana LGTM observability stack","headline":"Benchmarking Methodology","url":"https://george-c-odes.github.io/Observability-Benchmarking/docs/benchmarking"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>Observability Benchmarking</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/Observability-Benchmarking/index.html">Home</a></li>
+                <li><a href="/Observability-Benchmarking/getting-started.html">Get Started</a></li>
+                <li><a href="/Observability-Benchmarking/architecture.html">Architecture</a></li>
+                <li><a href="/Observability-Benchmarking/benchmarking.html">Benchmarking</a></li>
+                <li><a href="/Observability-Benchmarking/tools-technologies.html">Tools</a></li>
+                <li><a href="/Observability-Benchmarking/control-plane.html">Control</a></li>
+                <li><a href="/Observability-Benchmarking/adding-a-service.html">Add Service</a></li>
+                <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a></li>
+
+                <!-- More dropdown: overflowed nav items will be moved into the nested .dropdown-menu -->
+                <li class="nav-more" style="display:none;">
+                    <button class="more-btn" aria-haspopup="true" aria-expanded="false">More ▾</button>
+                    <ul class="dropdown-menu" aria-label="More navigation items"></ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <h1 id="benchmarking-methodology">Benchmarking Methodology</h1>
+
+<h2 id="overview">Overview</h2>
+
+<p>This document describes the systematic approach used to benchmark REST service implementations, aiming for results that are <strong>reproducible</strong>, <strong>comparable</strong>, and <strong>transparent</strong>.</p>
+
+<p>Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.</p>
+
+<h2 id="at-a-glance-results-18012026">At-a-glance results (18/01/2026)</h2>
+
+<p>The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Implementation</th>
+      <th style="text-align: right">Mode</th>
+      <th style="text-align: right">RPS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Spring JVM</td>
+      <td style="text-align: right">Platform</td>
+      <td style="text-align: right">28k</td>
+    </tr>
+    <tr>
+      <td>Spring JVM</td>
+      <td style="text-align: right">Virtual</td>
+      <td style="text-align: right">24k</td>
+    </tr>
+    <tr>
+      <td>Spring JVM</td>
+      <td style="text-align: right">Reactive</td>
+      <td style="text-align: right">19k</td>
+    </tr>
+    <tr>
+      <td>Spring Native</td>
+      <td style="text-align: right">Platform</td>
+      <td style="text-align: right">16k</td>
+    </tr>
+    <tr>
+      <td>Spring Native</td>
+      <td style="text-align: right">Virtual</td>
+      <td style="text-align: right">17k</td>
+    </tr>
+    <tr>
+      <td>Spring Native</td>
+      <td style="text-align: right">Reactive</td>
+      <td style="text-align: right">13k</td>
+    </tr>
+    <tr>
+      <td>Quarkus JVM</td>
+      <td style="text-align: right">Platform</td>
+      <td style="text-align: right">59k</td>
+    </tr>
+    <tr>
+      <td>Quarkus JVM</td>
+      <td style="text-align: right">Virtual</td>
+      <td style="text-align: right">70k</td>
+    </tr>
+    <tr>
+      <td>Quarkus JVM</td>
+      <td style="text-align: right">Reactive</td>
+      <td style="text-align: right">83k</td>
+    </tr>
+    <tr>
+      <td>Quarkus Native</td>
+      <td style="text-align: right">Platform</td>
+      <td style="text-align: right">39k</td>
+    </tr>
+    <tr>
+      <td>Quarkus Native</td>
+      <td style="text-align: right">Virtual</td>
+      <td style="text-align: right">47k</td>
+    </tr>
+    <tr>
+      <td>Quarkus Native</td>
+      <td style="text-align: right">Reactive</td>
+      <td style="text-align: right">39k</td>
+    </tr>
+    <tr>
+      <td>Go (observability-aligned implementation)</td>
+      <td style="text-align: right">—</td>
+      <td style="text-align: right">45k</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="fairness-note-go-vs-go-simple">Fairness note (Go vs go-simple)</h3>
+
+<p>A simpler Go variant in this repository can reach ~120k RPS, but it is intentionally kept out of the headline comparison because its observability setup is not equivalent to the Java services.</p>
+
+<p>The “observability-aligned” Go implementation is intended to match the same OpenTelemetry + LGTM pipeline, making the comparison more apples-to-apples.</p>
+
+<h2 id="benchmarking-philosophy">Benchmarking Philosophy</h2>
+
+<h3 id="goals">Goals</h3>
+<ol>
+  <li><strong>Fair Comparison</strong>: Create equivalent test conditions for all implementations</li>
+  <li><strong>Reproducibility</strong>: Enable others to reproduce results</li>
+  <li><strong>Practical Relevance</strong>: Test realistic scenarios while maintaining simplicity</li>
+  <li><strong>Transparency</strong>: Document all assumptions and limitations</li>
+</ol>
+
+<h3 id="non-goals">Non-Goals</h3>
+<ul>
+  <li>Comprehensive real-world application benchmarks</li>
+  <li>Vendor-neutral framework comparison (some bias exists)</li>
+  <li>Production performance prediction</li>
+  <li>Marketing material generation</li>
+</ul>
+
+<h2 id="test-environment">Test Environment</h2>
+
+<h3 id="hardware-configuration">Hardware Configuration</h3>
+
+<p><strong>Host System</strong>:</p>
+<ul>
+  <li>CPU: Intel i9-14900HX (24 cores, 32 threads)</li>
+  <li>RAM: 32 GB DDR5</li>
+  <li>Storage: NVMe SSD</li>
+  <li>OS: Windows 11 with WSL2 (kernel 6.6.87.2-microsoft-standard)</li>
+</ul>
+
+<p><strong>Note</strong>: Results vary significantly with hardware. Always benchmark on target hardware.</p>
+
+<h3 id="container-configuration">Container Configuration</h3>
+
+<p><strong>Resource Limits</strong>:</p>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">cpus</span><span class="pi">:</span> <span class="m">4.0</span>          <span class="c1"># 4 virtual CPUs</span>
+<span class="na">memory</span><span class="pi">:</span> <span class="s">2GB</span>        <span class="c1"># Maximum memory</span>
+</code></pre></div></div>
+
+<p><strong>Why CPU Limiting?</strong></p>
+<ul>
+  <li>Creates fair comparison across implementations</li>
+  <li>Prevents single service from monopolizing resources</li>
+  <li>Simulates production resource constraints</li>
+  <li>Easier to detect efficiency differences</li>
+</ul>
+
+<h3 id="software-versions">Software Versions</h3>
+
+<p><strong>Java</strong>:</p>
+<ul>
+  <li>JDK: Amazon Corretto 25.0.1 (based on OpenJDK)</li>
+  <li>JVM Options: <code class="language-plaintext highlighter-rouge">-XX:+UseG1GC -XX:MaxGCPauseMillis=100</code></li>
+  <li>Heap: 512MB-1GB depending on implementation</li>
+</ul>
+
+<p><strong>Native</strong>:</p>
+<ul>
+  <li>GraalVM: 25.0.1 (Oracle Enterprise edition)</li>
+  <li>GC: G1 (only available in Enterprise edition)</li>
+  <li>Build: Optimized for throughput (<code class="language-plaintext highlighter-rouge">-O3</code>)</li>
+</ul>
+
+<p><strong>Frameworks</strong>:</p>
+<ul>
+  <li>Spring Boot: 4.0.1 (3.5.9 also supported)</li>
+  <li>Quarkus: 3.30.6</li>
+  <li>Go: 1.25.5 with Fiber v2.52.10</li>
+</ul>
+
+<h3 id="third-party-license-note-native-image">Third-party license note (native-image)</h3>
+
+<p>This repository is Apache-2.0 licensed.</p>
+
+<p>However, native builds may use Oracle GraalVM container images (for example: <code class="language-plaintext highlighter-rouge">container-registry.oracle.com/graalvm/native-image:25.0.1-ol10</code>). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.</p>
+
+<h2 id="workload-design">Workload Design</h2>
+
+<h3 id="service-implementation">Service Implementation</h3>
+
+<p><strong>Endpoint</strong>: <code class="language-plaintext highlighter-rouge">GET /api/cache/{key}</code></p>
+
+<p><strong>Logic</strong>:</p>
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">@GetMapping</span><span class="o">(</span><span class="s">"/api/cache/{key}"</span><span class="o">)</span>
+<span class="kd">public</span> <span class="nc">ResponseEntity</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="nf">getFromCache</span><span class="o">(</span><span class="nd">@PathVariable</span> <span class="nc">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">k</span> <span class="o">-&gt;</span> <span class="s">"value-"</span> <span class="o">+</span> <span class="n">k</span><span class="o">);</span>
+    <span class="k">return</span> <span class="nc">ResponseEntity</span><span class="o">.</span><span class="na">ok</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p><strong>Cache</strong>: Caffeine (high-performance, non-blocking)</p>
+<ul>
+  <li>Max size: 10,000 entries</li>
+  <li>No expiration</li>
+  <li>Pre-warmed with 1,000 entries</li>
+</ul>
+
+<p><strong>Why This Workload?</strong></p>
+<ul>
+  <li>Focuses on concurrency handling</li>
+  <li>Minimal business logic noise</li>
+  <li>Non-blocking I/O where applicable</li>
+  <li>Predictable, consistent response time</li>
+  <li>Representative of microservice patterns</li>
+</ul>
+
+<h3 id="load-generation">Load Generation</h3>
+
+<p><strong>Tool</strong>: wrk2 (constant throughput load generator)</p>
+
+<p><strong>Configuration</strong>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wrk2 <span class="nt">-t</span> 8 <span class="se">\ </span>                   <span class="c"># 8 threads</span>
+     <span class="nt">-c</span> 200 <span class="se">\ </span>                 <span class="c"># 200 connections</span>
+     <span class="nt">-d</span> 180s <span class="se">\ </span>                <span class="c"># 180 second duration</span>
+     <span class="nt">-R</span> 80000 <span class="se">\ </span>               <span class="c"># 80,000 requests/sec target</span>
+     <span class="nt">--latency</span> <span class="se">\ </span>              <span class="c"># Latency distribution</span>
+     http://service:8080/api/cache/key1
+</code></pre></div></div>
+
+<p><strong>Key Parameters</strong>:</p>
+<ul>
+  <li><strong>Threads</strong>: Match CPU cores for efficiency</li>
+  <li><strong>Connections</strong>: Sufficient to saturate service</li>
+  <li><strong>Duration</strong>: Long enough for JVM warmup (3+ minutes)</li>
+  <li><strong>Rate</strong>: Set above expected maximum (service becomes bottleneck)</li>
+</ul>
+
+<p><strong>Why wrk2?</strong></p>
+<ul>
+  <li>Constant throughput (not open-loop)</li>
+  <li>Coordinated omission correction</li>
+  <li>Latency distribution tracking</li>
+  <li>Deterministic load pattern</li>
+</ul>
+
+<h2 id="benchmarking-process">Benchmarking Process</h2>
+
+<h3 id="before-you-run-benchmarks-recommended">Before you run benchmarks (recommended)</h3>
+
+<p>To maximize repeatability:</p>
+
+<ul>
+  <li><strong>Reboot</strong> the host machine before benchmark sessions.</li>
+  <li><strong>Minimize background processes</strong> (IDEs, downloads, antivirus scans, etc.).</li>
+  <li>Check your CPU topology (especially mixed performance/efficiency core designs) and consider pinning/affinity to avoid noisy neighbor effects.</li>
+</ul>
+
+<h3 id="native-image-build-time--resource-notes">Native-image build time &amp; resource notes</h3>
+
+<p>Native-image builds are <strong>CPU intensive</strong> and can take <strong>up to ~10 minutes per service</strong>. First-time builds of the full set can take <strong>30+ minutes</strong>.</p>
+
+<p>Building multiple native images in parallel can overwhelm Docker Desktop/WSL2. The repository therefore defaults to serial image builds using:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">COMPOSE_PARALLEL_LIMIT=1</code></li>
+</ul>
+
+<h3 id="1-preparation-phase">1. Preparation Phase</h3>
+
+<p><strong>Environment Setup</strong>:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Start observability stack</span>
+docker compose <span class="nt">--project-directory</span> compose <span class="nt">--profile</span><span class="o">=</span>OBS up <span class="nt">-d</span>
+
+<span class="c"># Wait for all services to be healthy (60 seconds minimum)</span>
+<span class="nb">sleep </span>60
+</code></pre></div></div>
+
+<p>Windows PowerShell alternative:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Start-Sleep</span><span class="w"> </span><span class="nt">-Seconds</span><span class="w"> </span><span class="nx">60</span><span class="w">
+</span></code></pre></div></div>
+
+<p><strong>Service Deployment</strong>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Start specific service</span>
+docker compose <span class="nt">--project-directory</span> compose <span class="nt">--profile</span><span class="o">=</span>SERVICES up <span class="nt">-d</span> service-name
+
+<span class="c"># Wait for service warmup</span>
+<span class="nb">sleep </span>30
+</code></pre></div></div>
+
+<p>Windows PowerShell alternative:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Start-Sleep</span><span class="w"> </span><span class="nt">-Seconds</span><span class="w"> </span><span class="nx">30</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Health checks can be verified with curl (or a browser):</p>
+
+<ul>
+  <li>Spring: <code class="language-plaintext highlighter-rouge">/actuator/health</code></li>
+  <li>Quarkus: <code class="language-plaintext highlighter-rouge">/q/health</code></li>
+</ul>
+
+<h3 id="2-warmup-phase">2. Warmup Phase</h3>
+
+<p><strong>Purpose</strong>: Allow JVM to reach steady-state performance</p>
+<ul>
+  <li>JIT compilation</li>
+  <li>Class loading</li>
+  <li>Cache population</li>
+  <li>Connection pool warmup</li>
+</ul>
+
+<p><strong>Procedure</strong>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Low-rate warmup (30 seconds)</span>
+wrk2 <span class="nt">-t</span> 4 <span class="nt">-c</span> 50 <span class="nt">-d</span> 30s <span class="nt">-R</span> 10000 http://localhost:8080/api/cache/key1
+
+<span class="c"># Wait for GC to settle</span>
+<span class="nb">sleep </span>10
+
+<span class="c"># Medium-rate warmup (30 seconds)</span>
+wrk2 <span class="nt">-t</span> 6 <span class="nt">-c</span> 100 <span class="nt">-d</span> 30s <span class="nt">-R</span> 30000 http://localhost:8080/api/cache/key1
+
+<span class="c"># Wait for stabilization</span>
+<span class="nb">sleep </span>10
+</code></pre></div></div>
+
+<p><strong>Native Images</strong>: Shorter warmup acceptable (instant startup)</p>
+
+<h3 id="3-measurement-phase">3. Measurement Phase</h3>
+
+<p><strong>Primary Benchmark</strong>:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Full load test</span>
+wrk2 <span class="nt">-t</span> 8 <span class="nt">-c</span> 200 <span class="nt">-d</span> 180s <span class="nt">-R</span> 100000 <span class="nt">--latency</span> <span class="se">\</span>
+     http://localhost:8080/api/cache/key1 <span class="o">&gt;</span> results.txt
+</code></pre></div></div>
+
+<p><strong>What to Capture</strong>:</p>
+<ul>
+  <li>Requests per second (actual achieved)</li>
+  <li>Latency distribution (p50, p90, p99, p99.9)</li>
+  <li>Error rate</li>
+  <li>CPU utilization (from Docker stats)</li>
+  <li>Memory usage (heap and RSS)</li>
+  <li>GC events (from JVM logs)</li>
+</ul>
+
+<p><strong>Observability Data</strong>:</p>
+<ul>
+  <li>Open Grafana during test</li>
+  <li>Capture screenshots of dashboards</li>
+  <li>Export Prometheus metrics</li>
+  <li>Save trace samples</li>
+</ul>
+
+<h3 id="4-cooldown-phase">4. Cooldown Phase</h3>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Stop load generator</span>
+docker compose <span class="nt">--project-directory</span> compose <span class="nt">--profile</span><span class="o">=</span>RAIN_FIRE down
+
+<span class="c"># Wait for queues to drain</span>
+<span class="nb">sleep </span>30
+
+<span class="c"># Capture final metrics</span>
+docker stats <span class="nt">--no-stream</span>
+</code></pre></div></div>
+
+<p>Windows PowerShell alternative:</p>
+
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Start-Sleep</span><span class="w"> </span><span class="nt">-Seconds</span><span class="w"> </span><span class="nx">30</span><span class="w">
+
+</span><span class="n">docker</span><span class="w"> </span><span class="nx">stats</span><span class="w"> </span><span class="nt">--no-stream</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="5-data-collection">5. Data Collection</h3>
+
+<p><strong>Automated</strong>:</p>
+<ul>
+  <li>wrk2 output saved to <code class="language-plaintext highlighter-rouge">/results/</code></li>
+  <li>Grafana snapshots exported</li>
+  <li>Docker stats logged</li>
+</ul>
+
+<p><strong>Manual</strong>:</p>
+<ul>
+  <li>Screenshot key dashboards</li>
+  <li>Note any anomalies</li>
+  <li>Record configuration details</li>
+</ul>
+
+<h2 id="example-output-artifacts">Example output artifacts</h2>
+
+<p>The repository stores benchmark artifacts under <code class="language-plaintext highlighter-rouge">results/</code> (see <code class="language-plaintext highlighter-rouge">results/README.md</code>).</p>
+
+<p><img src="/Observability-Benchmarking/images/screenshots/exports/benchmark-file-location.png" alt="Benchmark output location" /></p>
+
+<h2 id="result-interpretation">Result Interpretation</h2>
+
+<h3 id="primary-metrics">Primary Metrics</h3>
+
+<p><strong>Requests Per Second (RPS)</strong>:</p>
+<ul>
+  <li>Actual throughput achieved</li>
+  <li>Limited by service capacity</li>
+  <li>Higher is better (but not the only metric)</li>
+</ul>
+
+<p><strong>Latency Percentiles</strong>:</p>
+<ul>
+  <li>p50: Median (typical user experience)</li>
+  <li>p99: Worst 1% (reliability indicator)</li>
+  <li>p99.9: Tail latency (system stability)</li>
+</ul>
+
+<p><strong>CPU Utilization</strong>:</p>
+<ul>
+  <li>Should approach 100% under max load</li>
+  <li>Lower than 100% indicates other bottleneck</li>
+  <li>Efficiency = RPS / CPU%</li>
+</ul>
+
+<p><strong>Memory Usage</strong>:</p>
+<ul>
+  <li>Heap utilization pattern</li>
+  <li>GC frequency and duration</li>
+  <li>Native memory (RSS)</li>
+</ul>
+
+<h3 id="secondary-metrics">Secondary Metrics</h3>
+
+<p><strong>Startup Time</strong>:</p>
+<ul>
+  <li>Time to first request</li>
+  <li>Relevant for serverless and scaling</li>
+</ul>
+
+<p><strong>Memory Footprint</strong>:</p>
+<ul>
+  <li>Baseline RSS</li>
+  <li>Relevant for cost optimization</li>
+</ul>
+
+<p><strong>Error Rate</strong>:</p>
+<ul>
+  <li>Should be 0% for valid comparison</li>
+  <li>Non-zero indicates configuration issue</li>
+</ul>
+
+<h2 id="comparing-results">Comparing Results</h2>
+
+<h3 id="fair-comparison-checklist">Fair Comparison Checklist</h3>
+
+<p>✓ <strong>Same hardware</strong>: All tests on same machine</p>
+
+<p>✓ <strong>Same resource limits</strong>: CPU and memory constraints identical</p>
+
+<p>✓ <strong>Same workload</strong>: Identical request pattern</p>
+
+<p>✓ <strong>Same warmup</strong>: Adequate warmup time for each</p>
+
+<p>✓ <strong>Multiple runs</strong>: At least 3 runs, report median</p>
+
+<p>✓ <strong>Same observability</strong>: Instrumentation overhead consistent</p>
+
+<h3 id="common-pitfalls">Common Pitfalls</h3>
+
+<p>❌ <strong>Cold start bias</strong>: Insufficient warmup</p>
+
+<p>❌ <strong>Thermal throttling</strong>: CPU temperature limiting performance</p>
+
+<p>❌ <strong>Background processes</strong>: Other workloads affecting results</p>
+
+<p>❌ <strong>Network saturation</strong>: Localhost loopback as bottleneck</p>
+
+<p>❌ <strong>Observer effect</strong>: Observability overhead not accounted for</p>
+
+<h2 id="statistical-rigor">Statistical Rigor</h2>
+
+<h3 id="multiple-runs">Multiple Runs</h3>
+
+<p><strong>Minimum</strong>: 3 runs per configuration</p>
+
+<p><strong>Report</strong>: Median RPS, range</p>
+
+<p><strong>Discard</strong>: Outliers with clear explanation</p>
+
+<h3 id="variance-analysis">Variance Analysis</h3>
+
+<p><strong>Acceptable</strong>: ±5% between runs</p>
+
+<p><strong>Investigate</strong>: &gt;10% variance suggests instability</p>
+
+<h3 id="significance">Significance</h3>
+
+<p>Results presented are indicative, not scientific proof</p>
+<ul>
+  <li>No formal hypothesis testing</li>
+  <li>Sample size not statistically significant</li>
+  <li>Designed for relative comparison</li>
+</ul>
+
+<h2 id="known-limitations">Known Limitations</h2>
+
+<h3 id="workload-simplicity">Workload Simplicity</h3>
+<ul>
+  <li>Real applications have more complex logic</li>
+  <li>Database I/O not tested</li>
+  <li>Network latency not simulated</li>
+  <li>Doesn’t test all framework features</li>
+</ul>
+
+<h3 id="local-testing">Local Testing</h3>
+<ul>
+  <li>Single machine limits scale</li>
+  <li>No distributed tracing overhead</li>
+  <li>No network partitions</li>
+  <li>No deployment complexity</li>
+</ul>
+
+<h3 id="tool-limitations">Tool Limitations</h3>
+<ul>
+  <li>wrk2 uses Lua scripting (adds overhead)</li>
+  <li>Docker networking introduces latency</li>
+  <li>WSL2 has performance implications</li>
+  <li>CPU affinity not controlled</li>
+</ul>
+
+<h2 id="recommendations-for-reproducibility">Recommendations for Reproducibility</h2>
+
+<h3 id="before-benchmarking">Before Benchmarking</h3>
+
+<ol>
+  <li><strong>Close unnecessary applications</strong>: Minimize interference</li>
+  <li><strong>Disable power management</strong>: Maximum performance mode</li>
+  <li><strong>Fix CPU frequency</strong>: Avoid turbo boost variations</li>
+  <li><strong>Warm up system</strong>: Run a test benchmark first</li>
+  <li><strong>Check thermals</strong>: Ensure adequate cooling</li>
+</ol>
+
+<h3 id="during-benchmarking">During Benchmarking</h3>
+
+<ol>
+  <li><strong>Monitor system</strong>: Watch for anomalies</li>
+  <li><strong>Consistent time of day</strong>: Avoid thermal variations</li>
+  <li><strong>Multiple iterations</strong>: Don’t trust single run</li>
+  <li><strong>Document everything</strong>: Configuration, versions, observations</li>
+</ol>
+
+<h3 id="after-benchmarking">After Benchmarking</h3>
+
+<ol>
+  <li><strong>Review observability data</strong>: Correlate with results</li>
+  <li><strong>Check for errors</strong>: Validate test validity</li>
+  <li><strong>Compare with baseline</strong>: Detect regression</li>
+  <li><strong>Archive results</strong>: Include metadata</li>
+</ol>
+
+<h2 id="advanced-benchmarking">Advanced Benchmarking</h2>
+
+<h3 id="latency-profiling">Latency Profiling</h3>
+
+<p>Use flamegraphs to identify hot paths:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># Pyroscope captures automatically during test</span>
+<span class="c"># View in Grafana: Explore → Pyroscope</span>
+</code></pre></div></div>
+
+<h3 id="concurrency-scaling">Concurrency Scaling</h3>
+
+<p>Test different connection counts:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for </span>conn <span class="k">in </span>50 100 200 400<span class="p">;</span> <span class="k">do
+    </span>wrk2 <span class="nt">-t</span> 8 <span class="nt">-c</span> <span class="nv">$conn</span> <span class="nt">-d</span> 60s <span class="nt">-R</span> 100000 http://localhost:8080/api/cache/key1
+<span class="k">done</span>
+</code></pre></div></div>
+
+<h3 id="stress-testing">Stress Testing</h3>
+
+<p>Find breaking point:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for </span>rate <span class="k">in </span>50000 100000 150000 200000<span class="p">;</span> <span class="k">do
+    </span>wrk2 <span class="nt">-t</span> 8 <span class="nt">-c</span> 200 <span class="nt">-d</span> 60s <span class="nt">-R</span> <span class="nv">$rate</span> http://localhost:8080/api/cache/key1
+<span class="k">done</span>
+</code></pre></div></div>
+
+<h2 id="references">References</h2>
+
+<ul>
+  <li><a href="https://www.youtube.com/watch?v=lJ8ydIuPFeU">How NOT to Measure Latency</a> - Gil Tene</li>
+  <li><a href="https://groups.google.com/g/mechanical-sympathy/c/icNZJejUHfE">Coordinated Omission</a> - Gil Tene</li>
+  <li><a href="https://github.com/giltene/wrk2">wrk2 Documentation</a></li>
+  <li><a href="https://www.brendangregg.com/systems-performance-2nd-edition-book.html">Systems Performance</a> - Brendan Gregg</li>
+</ul>
+
+<h2 id="continuous-improvement">Continuous Improvement</h2>
+
+<p>This methodology evolves based on:</p>
+<ul>
+  <li>Community feedback</li>
+  <li>New tools and techniques</li>
+  <li>Lessons learned from additional runs</li>
+  <li>Framework-specific optimizations discovered</li>
+</ul>
+
+<p>Contributions and suggestions welcome via GitHub issues!</p>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Observability Benchmarking</h4>
+                    <p>A comprehensive framework for performance analysis and observability</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking">GitHub</a></li>
+                        <li><a href="https://github.com/George-C-Odes/Observability-Benchmarking/issues">Issues</a></li>
+                        <li><a href="https://github.com/George-C-Odes">@George-C-Odes</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>License</h4>
+                    <p>Apache License 2.0<br>SPDX-License-Identifier: Apache-2.0</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 George-C-Odes. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Overflow management script: moves overflowing nav items into the More dropdown -->
+    <script>
+    (function(){
+      const debounce = (fn, wait=100)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
+
+      function redistributeNav(){
+        const nav = document.querySelector('.nav');
+        if(!nav) return;
+        const navLinks = nav.querySelector('.nav-links');
+        const moreLi = navLinks.querySelector('.nav-more');
+        const moreMenu = moreLi ? moreLi.querySelector('.dropdown-menu') : null;
+        const logo = nav.querySelector('.logo');
+        if(!navLinks || !moreLi || !moreMenu || !logo) return;
+
+        // move everything back from moreMenu into navLinks (before .nav-more)
+        while(moreMenu.firstChild){
+          navLinks.insertBefore(moreMenu.firstChild, moreLi);
+        }
+        moreLi.style.display = 'none';
+        moreLi.querySelector('.more-btn').setAttribute('aria-expanded','false');
+
+        // compute available width for links (nav width minus logo and some padding)
+        const navStyle = getComputedStyle(nav);
+        const navPaddingLeft = parseFloat(navStyle.paddingLeft) || 0;
+        const navPaddingRight = parseFloat(navStyle.paddingRight) || 0;
+        const available = nav.clientWidth - logo.offsetWidth - navPaddingLeft - navPaddingRight - 24; // safety buffer
+
+        // accumulate widths and move overflow items
+        let total = 0;
+        const items = Array.from(navLinks.children).filter(li=>!li.classList.contains('nav-more'));
+        for(let i=0;i<items.length;i++){
+          const li = items[i];
+          total += li.offsetWidth;
+          if(total > available){
+            // move this and subsequent items into moreMenu
+            for(let j=i;j<items.length;j++){
+              moreMenu.appendChild(items[j]);
+            }
+            moreLi.style.display = '';
+            break;
+          }
+        }
+
+        // hide More if empty
+        if(!moreMenu.children.length) moreLi.style.display = 'none';
+      }
+
+      // toggle dropdown on button click
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.more-btn');
+        if(!btn) return;
+        const moreLi = btn.closest('.nav-more');
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        const menu = moreLi.querySelector('.dropdown-menu');
+        if(menu) menu.style.display = expanded ? 'none' : 'block';
+      });
+
+      // close dropdown on outside click
+      document.addEventListener('click', function(e){
+        if(e.target.closest('.nav-more')) return;
+        document.querySelectorAll('.nav-more .dropdown-menu').forEach(m=>m.style.display='none');
+        document.querySelectorAll('.more-btn').forEach(b=>b.setAttribute('aria-expanded','false'));
+      });
+
+      // run on load and resize
+      window.addEventListener('load', redistributeNav);
+      window.addEventListener('resize', debounce(redistributeNav, 120));
+
+      // also run after images/fonts load via DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', function(){ setTimeout(redistributeNav, 50); });
+    })();
+    </script>
+
+</body>
+</html>

@@ -53,7 +53,7 @@ type HubResource = {
   badge?: string;
 };
 
-const SUPPLEMENTARY_DOCS_URL = 'http://127.0.0.1:4000/Observability-Benchmarking/';
+const SUPPLEMENTARY_DOCS_URL = 'https://george-c-odes.github.io/Observability-Benchmarking/';
 
 function ResourceCard({ resource }: { resource: HubResource }) {
   return (
