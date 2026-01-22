@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.1-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.6-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.7-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.6-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -88,7 +88,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.1.3 and Material-UI 7.3.7
+  - Built with Next.js 16.1.4 and Material-UI 7.3.7
 
 ### 🚀 REST Service Implementations
 
@@ -97,7 +97,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.6**
+- **Quarkus 3.30.7**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
@@ -299,25 +299,25 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 ### Results
 
-The numbers below are a curated summary of a representative run (18/01/2026). For methodology and how to reproduce: see the docs site.
+The numbers below are a curated summary of a representative run (22/01/2026). For methodology and how to reproduce: see the docs site.
 
-#### Requests Per Second (RPS) — 18/01/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 22/01/2026 (to closest thousand)
 
-| Implementation                            |     Mode | RPS |
-|-------------------------------------------|---------:|----:|
-| Spring JVM                                | Platform | 28k |
-| Spring JVM                                |  Virtual | 24k |
-| Spring JVM                                | Reactive | 19k |
-| Spring Native                             | Platform | 16k |
-| Spring Native                             |  Virtual | 17k |
-| Spring Native                             | Reactive | 13k |
-| Quarkus JVM                               | Platform | 59k |
-| Quarkus JVM                               |  Virtual | 70k |
-| Quarkus JVM                               | Reactive | 83k |
-| Quarkus Native                            | Platform | 39k |
-| Quarkus Native                            |  Virtual | 47k |
-| Quarkus Native                            | Reactive | 39k |
-| Go (observability-aligned implementation) |        — | 52k |
+| Implementation             |     Mode |  RPS |
+|----------------------------|---------:|-----:|
+| Spring JVM                 | Platform |  32k |
+| Spring JVM                 |  Virtual |  29k |
+| Spring JVM                 | Reactive |  22k |
+| Spring Native              | Platform |  20k |
+| Spring Native              |  Virtual |  20k |
+| Spring Native              | Reactive |  16k |
+| Quarkus JVM                | Platform |  70k |
+| Quarkus JVM                |  Virtual |  90k |
+| Quarkus JVM                | Reactive | 104k |
+| Quarkus Native             | Platform |  45k |
+| Quarkus Native             |  Virtual |  54k |
+| Quarkus Native             | Reactive |  51k |
+| Go (observability-aligned) |        — |  52k |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -344,10 +344,10 @@ The newer Go implementation targets a more apples-to-apples comparison (OpenTele
 - **Network**: Docker bridge network
 
 #### Software Versions
-- **Java JDK**: Amazon Corretto 25.0.1-al2023-headless
+- **Java JDK**: Eclipse Temurin 25.0.1
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
 - **Spring Boot**: 4.0.1 (3.5.9 also supported)
-- **Quarkus**: 3.30.6
+- **Quarkus**: 3.30.7
 - **Go**: 1.25.6 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 

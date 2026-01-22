@@ -12,25 +12,25 @@ This document describes the systematic approach used to benchmark REST service i
 
 Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
 
-## At-a-glance results (18/01/2026)
+## At-a-glance results (22/01/2026)
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
 
-| Implementation                            |     Mode | RPS |
-|-------------------------------------------|---------:|----:|
-| Spring JVM                                | Platform | 28k |
-| Spring JVM                                |  Virtual | 24k |
-| Spring JVM                                | Reactive | 19k |
-| Spring Native                             | Platform | 16k |
-| Spring Native                             |  Virtual | 17k |
-| Spring Native                             | Reactive | 13k |
-| Quarkus JVM                               | Platform | 59k |
-| Quarkus JVM                               |  Virtual | 70k |
-| Quarkus JVM                               | Reactive | 83k |
-| Quarkus Native                            | Platform | 39k |
-| Quarkus Native                            |  Virtual | 47k |
-| Quarkus Native                            | Reactive | 39k |
-| Go (observability-aligned implementation) |        — | 52k |
+| Implementation             |     Mode |  RPS |
+|----------------------------|---------:|-----:|
+| Spring JVM                 | Platform |  32k |
+| Spring JVM                 |  Virtual |  29k |
+| Spring JVM                 | Reactive |  22k |
+| Spring Native              | Platform |  20k |
+| Spring Native              |  Virtual |  20k |
+| Spring Native              | Reactive |  16k |
+| Quarkus JVM                | Platform |  70k |
+| Quarkus JVM                |  Virtual |  90k |
+| Quarkus JVM                | Reactive | 104k |
+| Quarkus Native             | Platform |  45k |
+| Quarkus Native             |  Virtual |  54k |
+| Quarkus Native             | Reactive |  51k |
+| Go (observability-aligned) |        — |  52k |
 
 ### Fairness note (Go vs go-simple)
 
@@ -92,7 +92,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.1 (3.5.9 also supported)
-- Quarkus: 3.30.6
+- Quarkus: 3.30.7
 - Go: 1.25.6 with Fiber v2.52.10
 
 ### Third-party license note (native-image)
