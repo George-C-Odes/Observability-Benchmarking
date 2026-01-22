@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.7
-ARG IMAGE_DEPS=node:25.3.0-alpine3.23
-ARG IMAGE_BUILDER=node:25.3.0-alpine3.23
-ARG IMAGE_RUNTIME=node:25.3.0-alpine3.23
-#ARG IMAGE_DEPS=node:25.3.0-bookworm-slim
-#ARG IMAGE_BUILDER=node:25.3.0-bookworm-slim
-#ARG IMAGE_RUNTIME=node:25.3.0-bookworm-slim
+ARG IMAGE_DEPS=node:25.4.0-alpine3.23
+ARG IMAGE_BUILDER=node:25.4.0-alpine3.23
+ARG IMAGE_RUNTIME=node:25.4.0-alpine3.23
+#ARG IMAGE_DEPS=node:25.4.0-bookworm-slim
+#ARG IMAGE_BUILDER=node:25.4.0-bookworm-slim
+#ARG IMAGE_RUNTIME=node:25.4.0-bookworm-slim
 # ------------ DEPS STAGE -----------------------
 FROM ${IMAGE_DEPS} AS deps
 WORKDIR /app

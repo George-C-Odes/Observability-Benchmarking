@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.30.6
+### Quarkus 3.30.7
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.30.6** (latest stable)
+- **Quarkus 3.30.7** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -613,16 +613,16 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Runtime**            | Java (Eclipse Temurin)           | 25      | JVM runtime for backend services          |
 | **Runtime**            | GraalVM                          | 25.0.1  | Native image compilation                  |
 | **Runtime**            | Go                               | 1.25.6  | High-performance Go services              |
-| **Runtime**            | Node.js                          | 25.3.0  | JavaScript runtime for frontend tooling   |
+| **Runtime**            | Node.js                          | 25.4.0  | JavaScript runtime for frontend tooling   |
 | **Framework**          | Spring Boot                      | 4.0.1   | Enterprise Java framework                 |
-| **Framework**          | Quarkus                          | 3.30.6  | Cloud-native Java framework               |
+| **Framework**          | Quarkus                          | 3.30.7  | Cloud-native Java framework               |
 | **Framework**          | React                            | 19.2.3  | UI rendering layer                        |
-| **Framework**          | Next.js                          | 16.1.3  | Frontend application framework (SSR)      |
+| **Framework**          | Next.js                          | 16.1.4  | Frontend application framework (SSR)      |
 | **Framework**          | TypeScript                       | 5.9.3   | Type-safe frontend development            |
 | **Library**            | Material UI (MUI)                | 7.3.7   | Component library and theming             |
 | **Observability**      | Grafana                          | 12.3.1  | Dashboards and visualization              |
-| **Observability**      | Loki                             | 3.6.3   | Log aggregation                           |
-| **Observability**      | Tempo                            | 2.9.0   | Distributed tracing                       |
+| **Observability**      | Loki                             | 3.6.4   | Log aggregation                           |
+| **Observability**      | Tempo                            | 2.9.1   | Distributed tracing                       |
 | **Observability**      | Mimir                            | 3.0.2   | Long-term metrics storage                 |
 | **Observability**      | Pyroscope                        | 1.18.0  | Continuous profiling                      |
 | **Observability**      | Grafana Alloy                    | 1.10.2  | Telemetry collection and pipelines        |
@@ -633,7 +633,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Orchestration**      | Docker Compose                   | v2      | Multi-container orchestration             |
 | **Orchestration**      | Docker CLI                       | 29.1.5  | Image build and lifecycle management      |
 | **Build**              | Maven                            | 3.9.12  | Java build and dependency management      |
-| **Build**              | npm                              | 11.6.2  | Frontend package management               |
+| **Build**              | npm                              | 11.7.0  | Frontend package management               |
 | **Testing / Load**     | wrk2                             | Latest  | HTTP benchmarking and load testing        |
 | **Testing**            | Vitest                           | 4.0.17  | Frontend unit testing                     |
 | **Testing**            | JUnit                            | 5 / 6   | JVM unit and integration testing          |

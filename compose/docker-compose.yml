@@ -16,7 +16,7 @@ x-default-environment:
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   ulimit: &default_ulimit ${ULIMIT:-1048576}
   spring_boot_version: ${SPRING_BOOT_VERSION:-4.0.1}
-  quarkus_version: ${QUARKUS_VERSION:-3.30.6}
+  quarkus_version: ${QUARKUS_VERSION:-3.30.7}
   pyroscope_agent_enabled: &default_pyroscope_agent_enabled ${PROFILING_AGENT:-false}
   metric_mm_http: &default_metric_mm_http ${METRIC_MM_HTTP:-true}
   metric_mm_jvm: &default_metric_mm_jvm ${METRIC_MM_JVM:-false}
