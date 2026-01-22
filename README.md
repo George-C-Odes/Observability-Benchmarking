@@ -299,25 +299,25 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 ### Results
 
-The numbers below are a curated summary of a representative run (18/01/2026). For methodology and how to reproduce: see the docs site.
+The numbers below are a curated summary of a representative run (22/01/2026). For methodology and how to reproduce: see the docs site.
 
-#### Requests Per Second (RPS) — 18/01/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 22/01/2026 (to closest thousand)
 
-| Implementation                            |     Mode | RPS |
-|-------------------------------------------|---------:|----:|
-| Spring JVM                                | Platform | 28k |
-| Spring JVM                                |  Virtual | 24k |
-| Spring JVM                                | Reactive | 19k |
-| Spring Native                             | Platform | 16k |
-| Spring Native                             |  Virtual | 17k |
-| Spring Native                             | Reactive | 13k |
-| Quarkus JVM                               | Platform | 59k |
-| Quarkus JVM                               |  Virtual | 70k |
-| Quarkus JVM                               | Reactive | 83k |
-| Quarkus Native                            | Platform | 39k |
-| Quarkus Native                            |  Virtual | 47k |
-| Quarkus Native                            | Reactive | 39k |
-| Go (observability-aligned implementation) |        — | 52k |
+| Implementation             |     Mode |  RPS |
+|----------------------------|---------:|-----:|
+| Spring JVM                 | Platform |  32k |
+| Spring JVM                 |  Virtual |  29k |
+| Spring JVM                 | Reactive |  22k |
+| Spring Native              | Platform |  20k |
+| Spring Native              |  Virtual |  20k |
+| Spring Native              | Reactive |  16k |
+| Quarkus JVM                | Platform |  70k |
+| Quarkus JVM                |  Virtual |  90k |
+| Quarkus JVM                | Reactive | 104k |
+| Quarkus Native             | Platform |  45k |
+| Quarkus Native             |  Virtual |  54k |
+| Quarkus Native             | Reactive |  51k |
+| Go (observability-aligned) |        — |  52k |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
