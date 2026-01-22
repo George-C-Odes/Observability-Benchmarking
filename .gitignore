@@ -123,7 +123,6 @@ venv.bak/
 # Keep docs and .github (explicit, in case of broader ignore rules)
 !/docs/
 !/.github/
-/services/spring/native/entrypoint.sh
 /docs/Gemfile.lock
 /qodana.yaml
 

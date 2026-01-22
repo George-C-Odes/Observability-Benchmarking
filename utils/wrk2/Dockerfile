@@ -88,12 +88,16 @@ COPY --from=builder /wrk2/src/wrk.lua /wrk2/wrk.lua
 # Container scripts
 COPY script /script
 
+# Normalize Windows CRLF -> LF and ensure executability
+RUN set -eux; \
+    find /script -type f -name '*.sh' -print0 | xargs -0 sed -i 's/\r$//'; \
+    chmod -R 0755 /script
+
 # Script working directory (contains only the benchmark/ready scripts)
 WORKDIR /script
 
 # Create a dedicated writable output directory for benchmarks.
 ENV WRK_BENCH_DIR=/benchmarks
-
 # Default: auto-run benchmarks on container start (set WRK_AUTORUN=false to only keep readiness + exec)
 ENV WRK_AUTORUN=true
 
