@@ -4,12 +4,12 @@
     <shortenClasspath name="ARGS_FILE" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.benchmarking.service.*" />
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.orchestrator.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="PACKAGE_NAME" value="com.benchmarking.service" />
-    <option name="MAIN_CLASS_NAME" value="com.benchmarking.service.ServiceHealthServiceTest" />
+    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.orchestrator.application" />
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.orchestrator.application.ServiceHealthServiceTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">

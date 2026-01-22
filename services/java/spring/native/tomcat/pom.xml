@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.georgecodes</groupId>
+    <groupId>io.github.georgecodes</groupId>
 	<artifactId>spring-native-tomcat</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>Spring NATIVE Tomcat</name>
@@ -26,7 +26,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
-        <exec.mainClass>com.benchmarking.TomcatApplication</exec.mainClass>
+        <exec.mainClass>io.github.georgecodes.benchmarking.spring.tomcat.TomcatApplication</exec.mainClass>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -266,7 +266,7 @@
                                 <buildArg>-H:-DeleteLocalSymbols</buildArg>
                                 <buildArg>-H:-StripDebugInfo</buildArg>
                                 <buildArg>-H:GenerateDebugInfo=1</buildArg>
-                                <buildArg>-H:ReflectionConfigurationResources=META-INF/native-image/com.benchmarking/spring-native-tomcat/reflect-config.json</buildArg>
+                                <buildArg>-H:ReflectionConfigurationResources=META-INF/native-image/io.github.georgecodes.benchmarking/spring-native-tomcat/reflect-config.json</buildArg>
                                 <buildArg>--enable-monitoring=heapdump,jfr</buildArg>
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
                                 <!--                        <buildArg>&#45;&#45;future-defaults=all</buildArg>-->

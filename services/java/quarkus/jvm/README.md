@@ -97,7 +97,7 @@ quarkus:
         enabled: true
       format: "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"
     category:
-      com.benchmarking:
+      io.github.georgecodes.benchmarking.quarkus:
         level: INFO
 ```
 

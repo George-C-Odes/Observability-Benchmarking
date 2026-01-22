@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.georgecodes</groupId>
+    <groupId>io.github.georgecodes</groupId>
 	<artifactId>spring-jvm-tomcat</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>Spring JVM Tomcat</name>
@@ -81,7 +81,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.benchmarking.TomcatApplication</mainClass>
+                    <mainClass>io.github.georgecodes.benchmarking.spring.tomcat.TomcatApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

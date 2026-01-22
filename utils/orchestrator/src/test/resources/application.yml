@@ -2,4 +2,4 @@
 quarkus:
   arc:
     selected-alternatives:
-      - com.benchmarking.application.job.FakeCommandRunner
+      - io.github.georgecodes.benchmarking.orchestrator.application.job.FakeCommandRunner

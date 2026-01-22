@@ -1,3 +1,6 @@
+include:
+  - ./obs.yml
+
 x-default-environment:
   timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
   host_repo: ${HOST_REPO:-C:/}
@@ -235,3 +238,5 @@ services:
       nofile:
         soft: *default_ulimit
         hard: *default_ulimit
+    depends_on:
+      - alloy
