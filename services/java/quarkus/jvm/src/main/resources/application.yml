@@ -15,7 +15,7 @@ quarkus:
     read-timeout: 1s
   log:
     category:
-      com.benchmarking:
+      io.github.georgecodes.benchmarking.quarkus:
         level: INFO
     console:
       format: "%d{yyyy-MM-dd HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n"

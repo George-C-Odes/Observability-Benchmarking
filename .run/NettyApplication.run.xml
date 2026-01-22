@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="NettyApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
     <module name="spring-jvm-netty" />
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.benchmarking.NettyApplication" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="io.github.georgecodes.benchmarking.spring.netty.NettyApplication" />
     <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
       <option name="credential" />
       <option name="region" />

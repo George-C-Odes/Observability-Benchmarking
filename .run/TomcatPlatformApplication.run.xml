@@ -4,7 +4,7 @@
       <env name="SPRING_THREADS_VIRTUAL_ENABLED" value="false" />
     </envs>
     <module name="spring-jvm-tomcat" />
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.benchmarking.TomcatApplication" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="io.github.georgecodes.benchmarking.spring.tomcat.TomcatApplication" />
     <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
       <option name="credential" />
       <option name="region" />
