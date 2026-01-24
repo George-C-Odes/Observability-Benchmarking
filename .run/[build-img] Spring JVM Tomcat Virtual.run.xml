@@ -2,7 +2,7 @@
   <configuration default="false" name="[build-img] Spring JVM Tomcat Virtual" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="spring-jvm-tomcat-virtual:4.0.1_latest" />
+        <option name="imageTag" value="spring-jvm-tomcat-virtual:4.0.2_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
@@ -11,11 +11,11 @@
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="SPRING_BOOT_VERSION" />
-              <option name="value" value="4.0.1" />
+              <option name="value" value="4.0.2" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="spring-jvm-tomcat:4.0.1_latest" />
+              <option name="value" value="spring-jvm-tomcat:4.0.2_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

@@ -91,8 +91,8 @@ memory: 2GB        # Maximum memory
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: 4.0.1 (3.5.9 also supported)
-- Quarkus: 3.30.7
+- Spring Boot: 4.0.2 (3.5.10 also supported)
+- Quarkus: 3.30.8
 - Go: 1.25.6 with Fiber v2.52.10
 
 ### Third-party license note (native-image)

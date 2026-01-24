@@ -29,10 +29,10 @@ Run from the project root directory.
 ```powershell
 docker buildx build `
   -f services/java/spring/jvm/Dockerfile `
-  -t spring-jvm-tomcat-platform:4.0.1_latest `
+  -t spring-jvm-tomcat-platform:4.0.2_latest `
   --build-arg PROFILE=tomcat `
-  --build-arg SPRING_BOOT_VERSION=4.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-platform:4.0.1_latest `
+  --build-arg SPRING_BOOT_VERSION=4.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-platform:4.0.2_latest `
   --load `
   services/java
 ```
@@ -40,10 +40,10 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/spring/jvm/Dockerfile `
-    -t spring-jvm-tomcat-virtual:4.0.1_latest `
+    -t spring-jvm-tomcat-virtual:4.0.2_latest `
     --build-arg PROFILE=tomcat `
-    --build-arg SPRING_BOOT_VERSION=4.0.1 `
-    --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-virtual:4.0.1_latest `
+    --build-arg SPRING_BOOT_VERSION=4.0.2 `
+    --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-virtual:4.0.2_latest `
     --load `
     services/java
 ```
@@ -51,10 +51,10 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/jvm/Dockerfile `
-  -t spring-jvm-netty:4.0.1_latest `
+  -t spring-jvm-netty:4.0.2_latest `
   --build-arg PROFILE=netty `
-  --build-arg SPRING_BOOT_VERSION=4.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-netty:4.0.1_latest `
+  --build-arg SPRING_BOOT_VERSION=4.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-netty:4.0.2_latest `
   --load `
   services/java
 ```
@@ -62,11 +62,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-tomcat-platform:4.0.1_latest `
+  -t spring-native-tomcat-platform:4.0.2_latest `
   --build-arg PROFILE=tomcat `
   --build-arg VIRTUAL_ENABLED=false `
-  --build-arg SPRING_BOOT_VERSION=4.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-platform:4.0.1_latest `
+  --build-arg SPRING_BOOT_VERSION=4.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-platform:4.0.2_latest `
   --load `
   services/java
 ```
@@ -74,11 +74,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-tomcat-virtual:4.0.1_latest `
+  -t spring-native-tomcat-virtual:4.0.2_latest `
   --build-arg PROFILE=tomcat `
   --build-arg VIRTUAL_ENABLED=true `
-  --build-arg SPRING_BOOT_VERSION=4.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-virtual:4.0.1_latest `
+  --build-arg SPRING_BOOT_VERSION=4.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-virtual:4.0.2_latest `
   --load `
   services/java
 ```
@@ -86,11 +86,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-netty:4.0.1_latest `
+  -t spring-native-netty:4.0.2_latest `
   --build-arg PROFILE=netty `
   --build-arg VIRTUAL_ENABLED=false `
-  --build-arg SPRING_BOOT_VERSION=4.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-netty:4.0.1_latest `
+  --build-arg SPRING_BOOT_VERSION=4.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-netty:4.0.2_latest `
   --load `
   services/java
 ```
@@ -98,9 +98,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.30.7_latest `
-  --build-arg QUARKUS_VERSION=3.30.7 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.30.7_latest `
+  -t quarkus-jvm:3.30.8_latest `
+  --build-arg QUARKUS_VERSION=3.30.8 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.30.8_latest `
   --load `
   services/java
 ```
@@ -108,9 +108,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.30.7_latest `
-    --build-arg QUARKUS_VERSION=3.30.7 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.30.7_latest `
+    -t quarkus-native:3.30.8_latest `
+    --build-arg QUARKUS_VERSION=3.30.8 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.30.8_latest `
     --load `
     services/java
 ```

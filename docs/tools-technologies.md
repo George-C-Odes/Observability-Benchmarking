@@ -22,7 +22,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.0.1
+### Spring Boot 4.0.2
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -33,7 +33,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.0.1** (latest major release)
+- **Spring Boot 4.0.2** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.30.7
+### Quarkus 3.30.8
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.30.7** (latest stable)
+- **Quarkus 3.30.8** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -614,8 +614,8 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Runtime**            | GraalVM                          | 25.0.1  | Native image compilation                  |
 | **Runtime**            | Go                               | 1.25.6  | High-performance Go services              |
 | **Runtime**            | Node.js                          | 25.4.0  | JavaScript runtime for frontend tooling   |
-| **Framework**          | Spring Boot                      | 4.0.1   | Enterprise Java framework                 |
-| **Framework**          | Quarkus                          | 3.30.7  | Cloud-native Java framework               |
+| **Framework**          | Spring Boot                      | 4.0.2   | Enterprise Java framework                 |
+| **Framework**          | Quarkus                          | 3.30.8  | Cloud-native Java framework               |
 | **Framework**          | React                            | 19.2.3  | UI rendering layer                        |
 | **Framework**          | Next.js                          | 16.1.4  | Frontend application framework (SSR)      |
 | **Framework**          | TypeScript                       | 5.9.3   | Type-safe frontend development            |
