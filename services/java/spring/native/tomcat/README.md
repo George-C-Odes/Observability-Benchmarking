@@ -1,7 +1,7 @@
 # Spring Boot Tomcat Native Service
 
 ## Overview
-A REST service implementation built with Spring Boot 4.0.1 compiled to a native executable using GraalVM Native Image. This service runs on embedded Tomcat and can be configured for either platform thread mode or virtual thread mode, offering fast startup times and low memory footprint.
+A REST service implementation built with Spring Boot 4.0.2 compiled to a native executable using GraalVM Native Image. This service runs on embedded Tomcat and can be configured for either platform thread mode or virtual thread mode, offering fast startup times and low memory footprint.
 
 ## Purpose
 - Demonstrate Spring Boot native compilation with traditional Spring Web (MVC)
@@ -12,7 +12,7 @@ A REST service implementation built with Spring Boot 4.0.1 compiled to a native 
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.0.1 + Spring Web MVC
+- **Framework**: Spring Boot 4.0.2 + Spring Web MVC
 - **Web Server**: Apache Tomcat (embedded)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.1

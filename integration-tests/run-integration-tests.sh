@@ -94,8 +94,8 @@ NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
 # Framework versions
-QUARKUS_VERSION="3.30.7"
-SPRING_BOOT_VERSION="4.0.1"
+QUARKUS_VERSION="3.30.8"
+SPRING_BOOT_VERSION="4.0.2"
 GO_VERSION="1.25.6"
 
 # Helper function to test HTTP endpoint

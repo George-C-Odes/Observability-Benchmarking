@@ -15,7 +15,7 @@ ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ARG PROFILE=tomcat
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
-ARG SPRING_BOOT_VERSION=4.0.1
+ARG SPRING_BOOT_VERSION=4.0.2
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
