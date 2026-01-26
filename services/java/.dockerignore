@@ -44,3 +44,9 @@
 !quarkus/native/.mvn/wrapper/maven-wrapper.properties
 !quarkus/native/.mvn/jvm.config
 !quarkus/native/pom.xml
+
+!spark/
+!spark/jvm/
+!spark/jvm/src/
+!spark/jvm/src/**
+!spark/jvm/pom.xml
