@@ -27,9 +27,11 @@ This directory contains integration tests that validate:
    ```
 
 3. **Port Availability**
-   - 8080-8088: Service ports
+   - 8080-8100: Java Service ports
+   - 9080-9081: Go Service ports
    - 3000: Grafana
-   - 4317-4318: OTLP endpoints
+   - 3001: NextJS Dash
+   - 4317, 4318: OTLP endpoints
 
 ### Running Tests
 
@@ -100,7 +102,7 @@ export QUARKUS_JVM_URL=http://localhost:8086
 export QUARKUS_NATIVE_URL=http://localhost:8087
 
 # Go Service
-export GO_URL=http://localhost:8088
+export GO_URL=http://localhost:9080
 
 # Observability
 export GRAFANA_URL=http://localhost:3000
@@ -147,7 +149,7 @@ Port mappings match the order in docker-compose.yml:
 | Spring Boot Native Netty           | spring-native-netty           | 8085 | Native             |
 | Quarkus JVM                        | quarkus-jvm                   | 8086 | JVM                |
 | Quarkus Native                     | quarkus-native                | 8087 | Native             |
-| Go                                 | go                            | 8088 | Native (Go binary) |
+| Go                                 | go                            | 9080 | Native (Go binary) |
 
 ## Test Scenarios
 
@@ -177,7 +179,7 @@ Port mappings match the order in docker-compose.yml:
 
 | Service  | Port | Endpoint         | Expected Response |
 |----------|------|------------------|-------------------|
-| Go Fiber | 8088 | `/hello/virtual` | Contains "GO"     |
+| Go Fiber | 9080 | `/hello/virtual` | Contains "GO"     |
 
 ### wrk2 Readiness + On-demand Exec (2 checks)
 
@@ -311,7 +313,7 @@ curl http://localhost:8080/hello/platform  # Spring JVM
 curl http://localhost:8083/hello/platform  # Spring Native
 curl http://localhost:8086/hello/platform  # Quarkus JVM
 curl http://localhost:8087/hello/platform  # Quarkus Native
-curl http://localhost:8088/hello/virtual   # Go
+curl http://localhost:9080/hello/virtual   # Go
 
 # Verify Docker network
 docker network ls

@@ -21,7 +21,7 @@ At minimum, a new service should:
 
 1. Expose a stable HTTP endpoint you can benchmark.
    - For comparability with existing targets, aim to implement:
-     - `GET /api/cache/{key}`
+     - `GET /hello/platform`
 
 2. Export telemetry under the same OTel pipeline where possible:
    - metrics

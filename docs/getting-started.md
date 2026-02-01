@@ -207,8 +207,12 @@ docker compose --project-directory compose --profile=SERVICES up -d
 
 Includes all service implementations:
 - Spring Boot (JVM: platform, virtual, reactive)
+- Spring Boot (Native: platform, virtual, reactive)
 - Quarkus (JVM: platform, virtual, reactive)
 - Quarkus (Native: platform, virtual, reactive)
+- Spark (JVM: platform, virtual)
+- Javalin (JVM: platform, virtual)
+- Go
 
 #### Profile: RAIN_FIRE (Load Generators)
 ```bash
@@ -242,11 +246,31 @@ docker compose --project-directory compose up -d quarkus-native-platform
 
 Once services are running:
 
-- **Spring JVM (Virtual)**: http://localhost:8081/api/cache/key1
-- **Spring JVM (Platform)**: http://localhost:8082/api/cache/key1
-- **Spring JVM (Reactive)**: http://localhost:8083/api/cache/key1
-- **Quarkus JVM (All modes)**: http://localhost:8090/api/cache/key1
-- **Quarkus Native (All modes)**: http://localhost:8091/api/cache/key1
+- **Spring JVM (Platform)**: http://localhost:8080/hello/platform
+- **Spring JVM (Virtual)**: http://localhost:8081/hello/virtual
+- **Spring JVM (Reactive)**: http://localhost:8082/hello/reactive
+- **Spring Native (Platform)**: http://localhost:8083/hello/platform
+- **Spring Native (Virtual)**: http://localhost:8084/hello/virtual
+- **Spring Native (Reactive)**: http://localhost:8085/hello/reactive
+- **Quarkus JVM (Platform)**: http://localhost:8086/hello/platform
+- **Quarkus JVM (Virtual)**: http://localhost:8086/hello/virtual
+- **Quarkus JVM (Reactive)**: http://localhost:8086/hello/reactive
+- **Quarkus Native (Platform)**: http://localhost:8087/hello/platform
+- **Quarkus Native (Virtual)**: http://localhost:8087/hello/virtual
+- **Quarkus Native (Reactive)**: http://localhost:8087/hello/reactive
+- **Spark JVM (Platform)**: http://localhost:8088/hello/platform
+- **Spark JVM (Virtual)**: http://localhost:8089/hello/virtual
+- **Javalin JVM (Platform)**: http://localhost:8090/hello/platform
+- **Javalin JVM (Virtual)**: http://localhost:8091/hello/virtual
+- **Micronaut JVM (Platform) TODO**: http://localhost:8092/hello/platform
+- **Micronaut JVM (Virtual) TODO**: http://localhost:8093/hello/virtual
+- **Micronaut JVM (Reactive) TODO**: http://localhost:8094/hello/reactive
+- **Micronaut Native (Platform) TODO**: http://localhost:8095/hello/platform
+- **Micronaut Native (Virtual) TODO**: http://localhost:8096/hello/virtual
+- **Micronaut Native (Reactive) TODO**: http://localhost:8097/hello/reactive
+- **Helidon JVM (Virtual) TODO**: http://localhost:8098/hello/virtual
+- **Helidon Native (Virtual) TODO**: http://localhost:8099/hello/virtual
+- **Go**: http://localhost:9080/hello/virtual
 
 Health checks available at `/q/health` (Quarkus) or `/actuator/health` (Spring).
 
@@ -282,7 +306,7 @@ sudo cp wrk /usr/local/bin/
 
 # Run benchmark
 wrk2 -t 8 -c 200 -d 180s -R 80000 --latency \
-  http://localhost:8081/api/cache/key1
+  http://localhost:8080/hello/platform
 ```
 
 ### 3. Automated Benchmark (Docker)

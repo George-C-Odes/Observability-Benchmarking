@@ -50,3 +50,9 @@
 !spark/jvm/src/
 !spark/jvm/src/**
 !spark/jvm/pom.xml
+
+!javalin/
+!javalin/jvm/
+!javalin/jvm/src/
+!javalin/jvm/src/**
+!javalin/jvm/pom.xml

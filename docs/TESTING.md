@@ -325,8 +325,10 @@ Before running integration tests:
 
 3. **Port Availability**
    Ensure these ports are free:
-   - 8080-8087: Service ports
+   - 8080-8100: Java Service ports
+   - 9080-9081: Go Service ports
    - 3000: Grafana
+   - 3001: NextJS Dash
    - 4317, 4318: OTLP endpoints
 
 ### Starting Services
@@ -376,7 +378,7 @@ export QUARKUS_JVM_URL=http://localhost:8086
 export QUARKUS_NATIVE_URL=http://localhost:8087
 
 # Go Service
-export GO_URL=http://localhost:8088
+export GO_URL=http://localhost:9080
 
 # Observability
 export GRAFANA_URL=http://localhost:3000

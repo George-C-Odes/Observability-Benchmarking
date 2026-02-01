@@ -80,8 +80,10 @@ SPRING_NATIVE_NETTY_URL="${SPRING_NATIVE_NETTY_URL:-http://localhost:8085}"
 QUARKUS_JVM_URL="${QUARKUS_JVM_URL:-http://localhost:8086}"
 QUARKUS_NATIVE_URL="${QUARKUS_NATIVE_URL:-http://localhost:8087}"
 
+#TODO: spark-jvm, javalin-jvm
+
 # Go Service
-GO_URL="${GO_URL:-http://localhost:8088}"
+GO_URL="${GO_URL:-http://localhost:9080}"
 
 # Observability
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
@@ -253,7 +255,7 @@ echo "Go Service - Deployment Tests"
 echo "=========================================="
 echo ""
 
-echo -e "${BLUE}--- Go Fiber (port 8088) ---${NC}"
+echo -e "${BLUE}--- Go Fiber (port 9080) ---${NC}"
 run_test "Go - /hello/virtual" test_endpoint "Go - /hello/virtual" "${GO_URL}/hello/virtual" 200 "GO"
 echo ""
 
@@ -296,7 +298,7 @@ echo -e "${BLUE}--- wrk2 Readiness + On-demand Exec ---${NC}"
 WRK2_READY_URL="${WRK2_READY_URL:-http://localhost:3003/ready}"
 WRK2_CONTAINER_NAME="${WRK2_CONTAINER_NAME:-wrk2}"
 
-if wait_for_endpoint "wrk2 (/ready)" "${WRK2_READY_URL}" 200 30; then
+if wait_for_endpoint "wrk2 (/ready)" "${WRK2_READY_URL}" 200 2; then
     echo "wrk2 exec self-ready check (printing wrk output below):"
 
     # Run wrk2 against its own readiness endpoint from inside the container.

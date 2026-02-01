@@ -14,8 +14,8 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG SPARK_VERSION=3.0.3
-ENV SPARK_VERSION=${SPARK_VERSION}
+ARG JAVALIN_VERSION=6.7.0
+ENV JAVALIN_VERSION=${JAVALIN_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
 ARG BUILD_UID=1000
@@ -30,27 +30,27 @@ RUN set -eux; \
 USER ${BUILD_UID}:${BUILD_GID}
 WORKDIR /workspace
 
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} spark/jvm/pom.xml pom.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} javalin/jvm/pom.xml pom.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 
 RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v &&  \
     mvn -B -q -ntp \
-      -Dquarkus.platform.version=${SPARK_VERSION} \
+      -Dquarkus.platform.version=${JAVALIN_VERSION} \
       dependency:go-offline
 
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} spark/jvm/src ./src
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} javalin/jvm/src ./src
 
 RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -B -ntp -T 1C \
-      -Dspark-core.version=${SPARK_VERSION} \
+      -Djavalin.version=${JAVALIN_VERSION} \
       -Dmaven.compiler.release=${JAVA_RELEASE} \
       -Dcheckstyle.config.location=checkstyle.xml \
       -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml \
       package && \
     mkdir -p /workspace/out && \
-    JAR="target/spark-jvm-1.0.0-SNAPSHOT.jar" && \
+    JAR="target/javalin-jvm-1.0.0-SNAPSHOT.jar" && \
     test -f "$JAR" && cp "$JAR" /workspace/out/app.jar
 
 # ------------ OTEL/PROFILING DEPS STAGE -----------------------

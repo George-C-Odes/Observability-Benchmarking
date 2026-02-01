@@ -60,10 +60,6 @@ Also binds `ProcessMemoryMetrics` and `ProcessThreadMetrics` (micrometer-jvm-ext
 Export is typically done via the OpenTelemetry Java agent in the benchmark stack.
 
 ## TODOs:
--eBPF profiling
+-healthcheck, include in orchestrator
 
--see if more memory allocations actually help benchmarks
-
--native implementations
-
--inclusion in 'combo' runs
+-integration tests
