@@ -13,7 +13,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.30.8</quarkus.platform.version>
+        <quarkus.platform.version>3.31.1</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
         <lombok.version>1.18.42</lombok.version>
@@ -76,12 +76,12 @@
         <!-- Unit Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.junit5</groupId>
-            <artifactId>junit5-virtual-threads</artifactId>
+            <groupId>io.quarkus.junit</groupId>
+            <artifactId>junit-virtual-threads</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -148,7 +148,7 @@
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                     <argLine>
-                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        @{argLine} --add-opens=java.base/java.lang=ALL-UNNAMED
                         -Djdk.tracePinnedThreads=full
                     </argLine>
                 </configuration>
@@ -170,6 +170,7 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
+                    <argLine>@{argLine}</argLine>
                 </configuration>
             </plugin>
             <!-- Checkstyle plugin for code style checking -->

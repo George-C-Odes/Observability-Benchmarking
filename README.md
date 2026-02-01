@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.2-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.8-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.1-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.6-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -88,7 +88,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.1.4 and Material-UI 7.3.7
+  - Built with Next.js 16.1.6 and Material-UI 7.3.7
 
 ### 🚀 REST Service Implementations
 
@@ -97,7 +97,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.8**
+- **Quarkus 3.31.1**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
@@ -142,7 +142,7 @@ If `HOST_REPO` is not set correctly, bind-mounts used by the dashboard/orchestra
 
 #### System requirements
 
-- Minimum: 8 GB RAM, 4 CPU cores
+- Minimum: 12 GB RAM, 4 CPU cores
 - Recommended: 16 GB RAM, 8 CPU cores
 - Storage: At least 10 GB free space
 
@@ -347,7 +347,7 @@ The newer Go implementation targets a more apples-to-apples comparison (OpenTele
 - **Java JDK**: Eclipse Temurin 25.0.1
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
 - **Spring Boot**: 4.0.2 (3.5.10 also supported)
-- **Quarkus**: 3.30.8
+- **Quarkus**: 3.31.1
 - **Go**: 1.25.6 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
