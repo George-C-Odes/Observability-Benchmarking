@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.2-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.30.8-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.1-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.25.6-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -14,6 +14,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
+- [Technology Stack Summary](#-technology-stack-summary)
 - [Features](#-features)
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
@@ -47,6 +48,40 @@ This repository provides a **production-ready Docker Compose environment** for c
 - **Visualize performance**: Pre-configured Grafana dashboards for deep performance insights
 
 Perfect for developers, architects, and DevOps engineers looking to make data-driven decisions about technology stack choices, optimize application performance, or build a performance testing pipeline.
+
+## 🧰 Technology Stack Summary
+
+| Layer             | Category           | Technology                 | Version | Purpose / Role                                                       |
+|-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25      | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.1  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Go                         | 1.25.6  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Node.js                    | 25.5.0  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.31.1  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST framework                                           |
+| **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
+| **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.7   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 12.3.2  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.6.4   | Log aggregation                                                      |
+| **Observability** | Tracing            | Tempo                      | 2.10.0  | Distributed tracing backend                                          |
+| **Observability** | Metrics            | Mimir                      | 3.0.2   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 1.18.0  | Continuous CPU and memory profiling                                  |
+| **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.58.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.24.0  | Auto-instrumentation and exporters                                   |
+| **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
+| **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
+| **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
+| **Platform**      | Tooling            | Docker CLI                 | 29.1.5  | Image build and lifecycle management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
+| **Build**         | Package Manager    | npm                        | 11.8.0  | Frontend dependency management                                       |
+| **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
+| **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -88,7 +123,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.1.4 and Material-UI 7.3.7
+  - Built with Next.js 16.1.6 and Material-UI 7.3.7
 
 ### 🚀 REST Service Implementations
 
@@ -97,7 +132,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.30.8**
+- **Quarkus 3.31.1**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
@@ -142,7 +177,7 @@ If `HOST_REPO` is not set correctly, bind-mounts used by the dashboard/orchestra
 
 #### System requirements
 
-- Minimum: 8 GB RAM, 4 CPU cores
+- Minimum: 12 GB RAM, 4 CPU cores
 - Recommended: 16 GB RAM, 8 CPU cores
 - Storage: At least 10 GB free space
 
@@ -301,33 +336,55 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 The numbers below are a curated summary of a representative run (22/01/2026). For methodology and how to reproduce: see the docs site.
 
-#### Requests Per Second (RPS) — 22/01/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 01/02/2026 (to closest thousand)
 
-| Implementation             |     Mode |  RPS |
-|----------------------------|---------:|-----:|
-| Spring JVM                 | Platform |  32k |
-| Spring JVM                 |  Virtual |  29k |
-| Spring JVM                 | Reactive |  22k |
-| Spring Native              | Platform |  20k |
-| Spring Native              |  Virtual |  20k |
-| Spring Native              | Reactive |  16k |
-| Quarkus JVM                | Platform |  70k |
-| Quarkus JVM                |  Virtual |  90k |
-| Quarkus JVM                | Reactive | 104k |
-| Quarkus Native             | Platform |  45k |
-| Quarkus Native             |  Virtual |  54k |
-| Quarkus Native             | Reactive |  51k |
-| Go (observability-aligned) |        — |  52k |
+| Framework                  | Runtime | Mode     |  RPS |
+|----------------------------|---------|----------|-----:|
+| Spring                     | JVM     | Platform |  32k |
+| Spring                     | JVM     | Virtual  |  29k |
+| Spring                     | JVM     | Reactive |  22k |
+| Spring                     | Native  | Platform |  20k |
+| Spring                     | Native  | Virtual  |  20k |
+| Spring                     | Native  | Reactive |  16k |
+| Quarkus                    | JVM     | Platform |  70k |
+| Quarkus                    | JVM     | Virtual  |  90k |
+| Quarkus                    | JVM     | Reactive | 104k |
+| Quarkus                    | Native  | Platform |  45k |
+| Quarkus                    | Native  | Virtual  |  54k |
+| Quarkus                    | Native  | Reactive |  51k |
+| Spark                      | JVM     | Platform |  40k |
+| Spark                      | JVM     | Virtual  |  38k |
+| Javalin                    | JVM     | Platform |  44k |
+| Javalin                    | JVM     | Virtual  |  38k |
+| Micronaut                  | JVM     | Platform |  WIP |
+| Micronaut                  | JVM     | Virtual  |  WIP |
+| Micronaut                  | JVM     | Reactive |  WIP |
+| Micronaut                  | Native  | Platform |  WIP |
+| Micronaut                  | Native  | Virtual  |  WIP |
+| Micronaut                  | Native  | Reactive |  WIP |
+| Helidon                    | JVM     | Virtual  |  WIP |
+| Helidon                    | Native  | Virtual  |  WIP |
+| Go (observability-aligned) | Native  | N/A      |  52k |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
-#### Fairness note (Go vs go-simple)
-
-You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~120k RPS.
-
-That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
-
-The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
+#### Fairness Notes 
+- Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
+- Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
+- Spark Java is blocking-only in its latest version.
+- Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
+- Native builds use GraalVM Native Image with framework-recommended settings.
+- All tests:
+  - same endpoint logic
+  - similar payload sizes
+  - keep-alive enabled
+  - no TLS
+  - identical load profiles
+  - inside the same docker network 
+- go vs go-simple
+  - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~120k RPS.
+  - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services. 
+  - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
 ### Test Environment
 
@@ -347,7 +404,7 @@ The newer Go implementation targets a more apples-to-apples comparison (OpenTele
 - **Java JDK**: Eclipse Temurin 25.0.1
 - **Java Native**: GraalVM Enterprise 25.0.1-ol10
 - **Spring Boot**: 4.0.2 (3.5.10 also supported)
-- **Quarkus**: 3.30.8
+- **Quarkus**: 3.31.1
 - **Go**: 1.25.6 (Fiber v2.52.10)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -732,7 +789,7 @@ The documentation includes portfolio-oriented content highlighting the skills de
 
 ---
 
-For troubleshooting help, please see existing issues or open a new one with:
+For troubleshooting help, please see existing issues or open a new issue with:
 - System information (OS, Docker version, hardware)
 - Complete error messages and logs
 - Steps to reproduce

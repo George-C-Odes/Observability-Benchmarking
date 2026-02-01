@@ -1,0 +1,18 @@
+<configuration>
+    <!--
+      Keep logs stable for benchmarking.
+      Root log level is controlled by env/system property LOGGING_LEVEL_ROOT (defaults to INFO).
+      Example: LOGGING_LEVEL_ROOT=DEBUG
+    -->
+    <property name="ROOT_LEVEL" value="${LOGGING_LEVEL_ROOT:-INFO}"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [traceId=%X{traceId:-}, spanId=%X{spanId:-}] [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${ROOT_LEVEL}">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

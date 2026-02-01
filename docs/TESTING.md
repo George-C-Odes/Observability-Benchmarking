@@ -72,7 +72,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.1 or Eclipse Temurin 25)
 Maven: 3.9+
 Spring Boot: 4.0.2 (3.5.10 also supported)
-Quarkus: 3.30.8
+Quarkus: 3.31.1
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -201,7 +201,7 @@ Build with Docker to ensure correct Java version:
 ```bash
 # Quarkus JVM
 docker build \
-  --build-arg QUARKUS_VERSION=3.30.8 \
+  --build-arg QUARKUS_VERSION=3.31.1 \
   --target builder \
   -t quarkus-jvm-test \
   -f services/quarkus/jvm/Dockerfile \
@@ -325,8 +325,10 @@ Before running integration tests:
 
 3. **Port Availability**
    Ensure these ports are free:
-   - 8080-8087: Service ports
+   - 8080-8100: Java Service ports
+   - 9080-9081: Go Service ports
    - 3000: Grafana
+   - 3001: NextJS Dash
    - 4317, 4318: OTLP endpoints
 
 ### Starting Services
@@ -376,7 +378,7 @@ export QUARKUS_JVM_URL=http://localhost:8086
 export QUARKUS_NATIVE_URL=http://localhost:8087
 
 # Go Service
-export GO_URL=http://localhost:8088
+export GO_URL=http://localhost:9080
 
 # Observability
 export GRAFANA_URL=http://localhost:3000
@@ -437,7 +439,7 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 Integration Test Suite
 ==========================================
 Testing Framework Versions:
-- Quarkus: 3.30.8
+- Quarkus: 3.31.1
 - Spring Boot: 4.0.2
 - Go: 1.25.6
 
@@ -851,7 +853,7 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.30.8" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.31.1" }
           - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.2" }
           - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.2" }
           - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.6" }

@@ -1,7 +1,7 @@
 # Quarkus JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.30.8 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Quarkus 3.31.1 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Quarkus performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Quarkus 3.30.8 running
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.30.8
+- **Framework**: Quarkus 3.31.1
 - **Java Version**: Amazon Corretto 25.0.1
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)

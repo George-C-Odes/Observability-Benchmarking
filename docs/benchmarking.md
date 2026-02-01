@@ -12,31 +12,55 @@ This document describes the systematic approach used to benchmark REST service i
 
 Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
 
-## At-a-glance results (22/01/2026)
+## At-a-glance results (01/02/2026)
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
 
-| Implementation             |     Mode |  RPS |
-|----------------------------|---------:|-----:|
-| Spring JVM                 | Platform |  32k |
-| Spring JVM                 |  Virtual |  29k |
-| Spring JVM                 | Reactive |  22k |
-| Spring Native              | Platform |  20k |
-| Spring Native              |  Virtual |  20k |
-| Spring Native              | Reactive |  16k |
-| Quarkus JVM                | Platform |  70k |
-| Quarkus JVM                |  Virtual |  90k |
-| Quarkus JVM                | Reactive | 104k |
-| Quarkus Native             | Platform |  45k |
-| Quarkus Native             |  Virtual |  54k |
-| Quarkus Native             | Reactive |  51k |
-| Go (observability-aligned) |        — |  52k |
+| Framework                  | Runtime | Mode     |  RPS |
+|----------------------------|---------|----------|-----:|
+| Spring                     | JVM     | Platform |  32k |
+| Spring                     | JVM     | Virtual  |  29k |
+| Spring                     | JVM     | Reactive |  22k |
+| Spring                     | Native  | Platform |  20k |
+| Spring                     | Native  | Virtual  |  20k |
+| Spring                     | Native  | Reactive |  16k |
+| Quarkus                    | JVM     | Platform |  70k |
+| Quarkus                    | JVM     | Virtual  |  90k |
+| Quarkus                    | JVM     | Reactive | 104k |
+| Quarkus                    | Native  | Platform |  45k |
+| Quarkus                    | Native  | Virtual  |  54k |
+| Quarkus                    | Native  | Reactive |  51k |
+| Spark                      | JVM     | Platform |  40k |
+| Spark                      | JVM     | Virtual  |  38k |
+| Javalin                    | JVM     | Platform |  44k |
+| Javalin                    | JVM     | Virtual  |  38k |
+| Micronaut                  | JVM     | Platform |  WIP |
+| Micronaut                  | JVM     | Virtual  |  WIP |
+| Micronaut                  | JVM     | Reactive |  WIP |
+| Micronaut                  | Native  | Platform |  WIP |
+| Micronaut                  | Native  | Virtual  |  WIP |
+| Micronaut                  | Native  | Reactive |  WIP |
+| Helidon                    | JVM     | Virtual  |  WIP |
+| Helidon                    | Native  | Virtual  |  WIP |
+| Go (observability-aligned) | Native  | N/A      |  52k |
 
-### Fairness note (Go vs go-simple)
-
-A simpler Go variant in this repository can reach ~120k RPS, but it is intentionally kept out of the headline comparison because its observability setup is not equivalent to the Java services.
-
-The “observability-aligned” Go implementation is intended to match the same OpenTelemetry + LGTM pipeline, making the comparison more apples-to-apples.
+### Fairness Notes
+- Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
+- Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
+- Spark Java is blocking-only in its latest version.
+- Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
+- Native builds use GraalVM Native Image with framework-recommended settings.
+- All tests:
+    - same endpoint logic
+    - similar payload sizes
+    - keep-alive enabled
+    - no TLS
+    - identical load profiles
+    - inside the same docker network
+- go vs go-simple
+    - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~120k RPS.
+    - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
+    - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
 ## Benchmarking Philosophy
 
@@ -92,7 +116,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.2 (3.5.10 also supported)
-- Quarkus: 3.30.8
+- Quarkus: 3.31.1
 - Go: 1.25.6 with Fiber v2.52.10
 
 ### Third-party license note (native-image)
@@ -105,12 +129,12 @@ However, native builds may use Oracle GraalVM container images (for example: `co
 
 ### Service Implementation
 
-**Endpoint**: `GET /api/cache/{key}`
+**Endpoint**: `GET /hello/platform`
 
 **Logic**:
 ```java
-@GetMapping("/api/cache/{key}")
-public ResponseEntity<String> getFromCache(@PathVariable String key) {
+@GetMapping("/hello/platform")
+public ResponseEntity<String> getFromCache() {
     String value = cache.get(key, k -> "value-" + k);
     return ResponseEntity.ok(value);
 }
@@ -139,7 +163,7 @@ wrk2 -t 8 \                    # 8 threads
      -d 180s \                 # 180 second duration
      -R 80000 \                # 80,000 requests/sec target
      --latency \               # Latency distribution
-     http://service:8080/api/cache/key1
+     http://service:8080/hello/platform
 ```
 
 **Key Parameters**:
@@ -221,13 +245,13 @@ Health checks can be verified with curl (or a browser):
 **Procedure**:
 ```bash
 # Low-rate warmup (30 seconds)
-wrk2 -t 4 -c 50 -d 30s -R 10000 http://localhost:8080/api/cache/key1
+wrk2 -t 4 -c 50 -d 30s -R 10000 http://localhost:8080/hello/platform
 
 # Wait for GC to settle
 sleep 10
 
 # Medium-rate warmup (30 seconds)
-wrk2 -t 6 -c 100 -d 30s -R 30000 http://localhost:8080/api/cache/key1
+wrk2 -t 6 -c 100 -d 30s -R 30000 http://localhost:8080/hello/platform
 
 # Wait for stabilization
 sleep 10
@@ -241,7 +265,7 @@ sleep 10
 ```bash
 # Full load test
 wrk2 -t 8 -c 200 -d 180s -R 100000 --latency \
-     http://localhost:8080/api/cache/key1 > results.txt
+     http://localhost:8080/hello/platform > results.txt
 ```
 
 **What to Capture**:
@@ -445,7 +469,7 @@ Use flamegraphs to identify hot paths:
 Test different connection counts:
 ```bash
 for conn in 50 100 200 400; do
-    wrk2 -t 8 -c $conn -d 60s -R 100000 http://localhost:8080/api/cache/key1
+    wrk2 -t 8 -c $conn -d 60s -R 100000 http://localhost:8080/hello/platform
 done
 ```
 
@@ -454,7 +478,7 @@ done
 Find breaking point:
 ```bash
 for rate in 50000 100000 150000 200000; do
-    wrk2 -t 8 -c 200 -d 60s -R $rate http://localhost:8080/api/cache/key1
+    wrk2 -t 8 -c 200 -d 60s -R $rate http://localhost:8080/hello/platform
 done
 ```
 

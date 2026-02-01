@@ -196,7 +196,11 @@ discovery.relabel "apps" {
                 ".*spring-native-tomcat-virtual.*|" +
                 ".*spring-native-netty.*|" +
                 ".*quarkus-jvm.*|" +
-                ".*quarkus-native.*)$"
+                ".*quarkus-native.*|" +
+                ".*spark-jvm-platform.*|" +
+                ".*spark-jvm-virtual.*|" +
+                ".*javalin-jvm-platform.*|" +
+                ".*javalin-jvm-virtual.*)$"
     }
     rule {
         action = "drop"

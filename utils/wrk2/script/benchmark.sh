@@ -199,13 +199,17 @@ fi
 benchmarks_per_iteration() {
   # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
   if [ "${HOST}" = "combo" ]; then
-    echo 13
+    echo 17
     return 0
   fi
 
   if [ "${ENDPOINT}" = "combo" ]; then
     if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* ]]; then
       echo 3
+      return 0
+    fi
+    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* ]]; then
+      echo 2
       return 0
     fi
     if [ "${HOST}" = "go" ]; then
@@ -251,6 +255,10 @@ while true; do
       "quarkus-native"
       "quarkus-native"
       "quarkus-native"
+      "spark-jvm-platform"
+      "spark-jvm-virtual"
+      "javalin-jvm-platform"
+      "javalin-jvm-virtual"
       "go"
     )
     endpoints=(
@@ -266,6 +274,10 @@ while true; do
       "platform"
       "virtual"
       "reactive"
+      "platform"
+      "virtual"
+      "platform"
+      "virtual"
       "virtual"
     )
     for i in "${!hosts[@]}"; do
@@ -275,24 +287,37 @@ while true; do
       echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
       sleep "${SLEEP_BETWEEN}"
     done
-
   elif [ "${ENDPOINT}" = "combo" ]; then
-    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* ]]; then
+    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* || "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* ]]; then
       if [[ "${HOST}" == spring-jvm* ]]; then
         hosts=(
           "spring-jvm-tomcat-platform"
           "spring-jvm-tomcat-virtual"
           "spring-jvm-netty"
         )
-      else
+        endpoints=("platform" "virtual" "reactive")
+      elif [[ "${HOST}" == spring-native* ]]; then
         hosts=(
           "spring-native-tomcat-platform"
           "spring-native-tomcat-virtual"
           "spring-native-netty"
         )
+        endpoints=("platform" "virtual" "reactive")
+      elif [[ "${HOST}" == spark-jvm* ]]; then
+        hosts=(
+          "spark-jvm-platform"
+          "spark-jvm-virtual"
+        )
+        endpoints=("platform" "virtual")
+      elif [[ "${HOST}" == javalin-jvm* ]]; then
+        hosts=(
+          "javalin-jvm-platform"
+          "javalin-jvm-virtual"
+        )
+        endpoints=("platform" "virtual")
+      else
+        exit 0
       fi
-      endpoints=("platform" "virtual" "reactive")
-
       for i in "${!hosts[@]}"; do
         iter_bench_idx=$((iter_bench_idx + 1))
         overall_count=$((overall_count + 1))

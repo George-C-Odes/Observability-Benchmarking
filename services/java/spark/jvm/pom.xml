@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.georgecodes</groupId>
+    <artifactId>spark-jvm</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Spark JVM</name>
+
+    <properties>
+        <maven.compiler.release>25</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spark-core.version>3.0.3</spark-core.version>
+        <caffeine.version>3.2.3</caffeine.version>
+        <micrometer.version>1.16.2</micrometer.version>
+        <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
+
+        <slf4j.version>2.0.17</slf4j.version>
+        <logback.version>1.5.26</logback.version>
+
+        <junit-jupiter.version>5.12.2</junit-jupiter.version>
+        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+
+        <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
+        <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
+    </properties>
+
+    <dependencies>
+        <!-- SparkJava (Zoomba fork) -->
+        <dependency>
+            <groupId>org.zoomba-lang</groupId>
+            <artifactId>spark-core</artifactId>
+            <version>${spark-core.version}</version>
+        </dependency>
+
+        <!-- Cache -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
+        </dependency>
+
+        <!-- Metrics -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>${micrometer.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mweirauch</groupId>
+            <artifactId>micrometer-jvm-extras</artifactId>
+            <version>${micrometer-jvm-extras.version}</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <!-- Tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>io.github.georgecodes.benchmarking.spark.jvm.SparkApplication</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+                <configuration>
+                    <argLine>
+                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --enable-native-access=ALL-UNNAMED
+                        -Djdk.tracePinnedThreads=full
+                    </argLine>
+                </configuration>
+            </plugin>
+
+            <!-- Checkstyle plugin for code style checking -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <configLocation>${checkstyle.config.location}</configLocation>
+                    <suppressionsLocation>${checkstyle.suppressions.location}</suppressionsLocation>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>false</failsOnError>
+                    <failOnViolation>false</failOnViolation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Build a self-contained runnable jar for containers (distroless runs java -jar) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <!-- Reduce noisy overlap warnings for common metadata files -->
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.*</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/NOTICE.*</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>io.github.georgecodes.benchmarking.spark.jvm.SparkApplication</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
