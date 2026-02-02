@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="JavalinApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.javalin.jvm.JavalinApplication" />
+    <module name="javalin-jvm" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.javalin.jvm.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

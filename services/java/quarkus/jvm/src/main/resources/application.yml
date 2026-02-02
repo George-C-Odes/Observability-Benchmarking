@@ -7,6 +7,7 @@ quarkus:
     accept-backlog: 10000
     http2: false
     idle-timeout: 60s
+    # Keep io-threads/event-loops aligned with CPU limits (often set via -XX:ActiveProcessorCount in JAVA_TOOL_OPTIONS).
     io-threads: 8
     limits:
       max-connections: 10000
@@ -72,6 +73,8 @@ quarkus:
   smallrye-health:
     ui:
       enabled: false
+  # platform endpoint uses blocking threads; max-threads should scale with expected concurrent blocking requests.
+  # For pure throughput/CPU-bound scenarios, keeping it closer to CPU count reduces context switching.
   thread-pool:
     max-threads: 32
   vertx:

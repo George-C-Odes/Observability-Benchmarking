@@ -1,24 +1,21 @@
 package io.github.georgecodes.benchmarking.quarkus.rest;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.github.georgecodes.benchmarking.quarkus.application.HelloService;
+import io.github.georgecodes.benchmarking.quarkus.application.port.HelloMode;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.core.MediaType;
 import lombok.extern.jbosslog.JBossLog;
-import com.github.benmanes.caffeine.cache.Cache;
-import org.jspecify.annotations.NonNull;
 
 /**
  * REST resource providing hello endpoints with different thread models.
- * Supports platform threads, virtual threads, and reactive programming models.
  * Used for benchmarking observability and performance characteristics.
  */
 @JBossLog
@@ -27,40 +24,13 @@ import org.jspecify.annotations.NonNull;
 public class HelloResource {
 
     /**
-     * Caffeine cache instance for storing key-value pairs.
+     * Use-case service containing benchmark logic.
      */
-    Cache<@NonNull String, String> cache;
-    
-    /**
-     * Micrometer counter for tracking platform thread requests.
-     */
-    private final Counter platformCounter;
-    
-    /**
-     * Micrometer counter for tracking virtual thread requests.
-     */
-    private final Counter virtualCounter;
-    
-    /**
-     * Micrometer counter for tracking reactive requests.
-     */
-    private final Counter reactiveCounter;
+    private final HelloService helloService;
 
-    /**
-     * Constructs the HelloResource with required dependencies.
-     *
-     * @param cache the Caffeine cache instance for storing key-value pairs
-     * @param meterRegistry the Micrometer registry for metrics collection
-     */
     @Inject
-    public HelloResource(Cache<@NonNull String, String> cache, MeterRegistry meterRegistry) {
-        this.cache = cache;
-        this.platformCounter = Counter.builder("hello.request.count")
-            .tag("endpoint", "/hello/platform").register(meterRegistry);
-        this.virtualCounter = Counter.builder("hello.request.count")
-            .tag("endpoint", "/hello/virtual").register(meterRegistry);
-        this.reactiveCounter = Counter.builder("hello.request.count")
-            .tag("endpoint", "/hello/reactive").register(meterRegistry);
+    public HelloResource(HelloService helloService) {
+        this.helloService = helloService;
         log.infov("Init thread: {0}", Thread.currentThread());
         var runtime = Runtime.getRuntime();
         long maxHeapMB = runtime.maxMemory() / 1024 / 1024;
@@ -85,15 +55,10 @@ public class HelloResource {
         @QueryParam("sleep") @DefaultValue("0") int sleepSeconds,
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) throws InterruptedException {
-        platformCounter.increment();
         if (printLog) {
             log.infov("platform thread: {0}", Thread.currentThread());
         }
-        if (sleepSeconds > 0) {
-            Thread.sleep(sleepSeconds * 1000L);
-        }
-        String v = cache.getIfPresent("1");
-        return "Hello from Quarkus platform REST " + v;
+        return helloService.hello(HelloMode.PLATFORM, sleepSeconds);
     }
 
     /**
@@ -111,15 +76,10 @@ public class HelloResource {
         @QueryParam("sleep") @DefaultValue("0") int sleepSeconds,
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) throws InterruptedException {
-        virtualCounter.increment();
         if (printLog) {
             log.infov("virtual thread: {0}", Thread.currentThread());
         }
-        if (sleepSeconds > 0) {
-            Thread.sleep(sleepSeconds * 1000L);
-        }
-        String v = cache.getIfPresent("1");
-        return "Hello from Quarkus virtual REST " + v;
+        return helloService.hello(HelloMode.VIRTUAL, sleepSeconds);
     }
 
     /**
@@ -136,20 +96,15 @@ public class HelloResource {
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) {
         return Uni.createFrom().item(() -> {
-            reactiveCounter.increment();
             if (printLog) {
                 log.infov("reactive thread: {0}", Thread.currentThread());
             }
-            if (sleepSeconds > 0) {
-                try {
-                    Thread.sleep(sleepSeconds * 1000L);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    // Restore interrupt status for reactive context
-                }
+            try {
+                return helloService.hello(HelloMode.REACTIVE, sleepSeconds);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return "Interrupted";
             }
-            String v = cache.getIfPresent("1");
-            return "Hello from Quarkus reactive REST " + v;
         });
     }
 }

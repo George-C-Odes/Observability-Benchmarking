@@ -13,8 +13,8 @@
       <option name="region" />
       <option name="useCurrentConnection" value="false" />
     </extension>
-    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.spring.netty.rest" />
-    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.spring.netty.rest.HelloReactiveControllerObservabilityTest" />
+    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.spring.netty.api" />
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.spring.netty.api.HelloReactiveControllerObservabilityTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">
