@@ -1,4 +1,4 @@
-package io.github.georgecodes.benchmarking.spring.tomcat.rest;
+package io.github.georgecodes.benchmarking.spring.tomcat.api;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package io.github.georgecodes.benchmarking.spring.netty.rest;
+package io.github.georgecodes.benchmarking.spring.netty.api;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

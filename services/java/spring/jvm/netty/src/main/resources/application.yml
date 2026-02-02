@@ -1,3 +1,6 @@
+benchmark:
+  cache:
+    size: ${CACHE_SIZE:50000}
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}, spanId=%X{spanId:-}]"
