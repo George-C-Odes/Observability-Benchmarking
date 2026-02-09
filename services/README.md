@@ -13,11 +13,11 @@ This directory contains the REST service implementations used for benchmarking.
 ### Base Image Builders
 Native builder image pull from Oracle Enterprise:
   ```bash
-docker pull container-registry.oracle.com/graalvm/native-image:25.0.1-ol10
+docker pull container-registry.oracle.com/graalvm/native-image:25.0.2-ol9
   ```
 Native builder image pull from GraalVM community:
   ```bash
-docker pull ghcr.io/graalvm/native-image-community:25.0.1-ol10
+docker pull ghcr.io/graalvm/native-image-community:25.0.2-ol9
   ```
 
 ### Service Image Builders
@@ -98,9 +98,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.31.1_latest `
-  --build-arg QUARKUS_VERSION=3.31.1 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.31.1_latest `
+  -t quarkus-jvm:3.31.2_latest `
+  --build-arg QUARKUS_VERSION=3.31.2 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.31.2_latest `
   --load `
   services/java
 ```
@@ -108,9 +108,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.31.1_latest `
-    --build-arg QUARKUS_VERSION=3.31.1 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.31.1_latest `
+    -t quarkus-native:3.31.2_latest `
+    --build-arg QUARKUS_VERSION=3.31.2 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.31.2_latest `
     --load `
     services/java
 ```
@@ -118,9 +118,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/go/enhanced/Dockerfile `
-    -t go:1.25.6_latest `
-    --build-arg GO_VERSION=1.25.6 `
-    --build-arg BUILDKIT_BUILD_NAME=go:1.25.6_latest `
+    -t go:1.25.7_latest `
+    --build-arg GO_VERSION=1.25.7 `
+    --build-arg BUILDKIT_BUILD_NAME=go:1.25.7_latest `
     --load `
     services/go/enhanced
 ```

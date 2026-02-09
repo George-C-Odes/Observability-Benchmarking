@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +29,6 @@ public class ModuleConfig {
             .maximumSize(cacheSize)
             .expireAfterWrite(Duration.ofDays(1))
             .build();
-
         for (long i = cacheSize; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
@@ -36,17 +36,39 @@ public class ModuleConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(
+        name = "spring.threads.virtual.enabled",
+        havingValue = "false",
+        matchIfMissing = true
+    )
     public Counter helloPlatformCounter(MeterRegistry registry) {
         return Counter.builder("hello.request.count")
             .tag("endpoint", "/hello/platform")
             .register(registry);
     }
 
+    @Bean(name = "helloRequestCounter")
+    @ConditionalOnProperty(
+        name = "spring.threads.virtual.enabled",
+        havingValue = "false",
+        matchIfMissing = true
+    )
+    public Counter helloPlatformRequestCounterAlias(Counter helloPlatformCounter) {
+        return helloPlatformCounter;
+    }
+
     @Bean
+    @ConditionalOnProperty(name = "spring.threads.virtual.enabled", havingValue = "true")
     public Counter helloVirtualCounter(MeterRegistry registry) {
         return Counter.builder("hello.request.count")
             .tag("endpoint", "/hello/virtual")
             .register(registry);
+    }
+
+    @Bean(name = "helloRequestCounter")
+    @ConditionalOnProperty(name = "spring.threads.virtual.enabled", havingValue = "true")
+    public Counter helloVirtualRequestCounterAlias(Counter helloVirtualCounter) {
+        return helloVirtualCounter;
     }
 
     @Bean

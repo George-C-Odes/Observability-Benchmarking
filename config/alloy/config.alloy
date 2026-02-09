@@ -73,7 +73,7 @@ loki.relabel "alloy_logs"{
 
 tracing {
 	// Write only a percentage of spans. Don't do 100% in production!
-	sampling_fraction = 0.1 //10%
+	sampling_fraction = 0.01 //1%
 
 	// Forward internal spans to the local Tempo instance.
 	write_to = [otelcol.exporter.otlp.tempo.input]
@@ -200,7 +200,8 @@ discovery.relabel "apps" {
                 ".*spark-jvm-platform.*|" +
                 ".*spark-jvm-virtual.*|" +
                 ".*javalin-jvm-platform.*|" +
-                ".*javalin-jvm-virtual.*)$"
+                ".*javalin-jvm-virtual.*|" +
+                ".*micronaut-jvm.*)$"
     }
     rule {
         action = "drop"

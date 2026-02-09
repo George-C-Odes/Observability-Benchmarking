@@ -49,6 +49,7 @@ x-default-environment:
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
     -Xms${HEAP_MIN:-96M} \
     -Xmx${HEAP_MAX:-96M} \
+    --add-opens=java.base/java.lang=ALL-UNNAMED \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
@@ -667,7 +668,7 @@ services:
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
       OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_SERVICE_NAME: "spark-jvm-platform"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=3.0.3"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=${SPARK_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
@@ -737,7 +738,7 @@ services:
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
       OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_SERVICE_NAME: "spark-jvm-virtual"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=3.0.3"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=${SPARK_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
@@ -806,7 +807,7 @@ services:
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
       OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_SERVICE_NAME: "javalin-jvm-platform"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=6.7.0"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=${JAVALIN_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
@@ -875,7 +876,7 @@ services:
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
       OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
       OTEL_SERVICE_NAME: "javalin-jvm-virtual"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=6.7.0"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=${JAVALIN_VERSION}"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_TRACES_EXPORTER: "otlp"
@@ -906,6 +907,77 @@ services:
       PYROSCOPE_GC_BEFORE_DUMP: false
     <<: *common_properties
 
+  micronaut-jvm:
+    profiles: ["${DOCKER_PROF_MICRONAUT_JVM:-skip}"]
+    image: micronaut-jvm:${MICRONAUT_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: micronaut/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: micronaut-jvm:${MICRONAUT_VERSION}_latest
+        MICRONAUT_VERSION: ${MICRONAUT_VERSION}
+    container_name: micronaut-jvm
+    ports:
+      - "8092:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/micronaut/jvm/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGER_LEVELS_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+
+      MICRONAUT_EXECUTORS_PLATFORM_CORE_POOL_SIZE: *default_cpu_limit
+      MICRONAUT_EXECUTORS_PLATFORM_NUMBER_OF_THREADS: *default_cpu_limit
+      MICRONAUT_EXECUTORS_PLATFORM_PARALLELISM: *default_cpu_limit
+        #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
+      MICRONAUT_EXECUTORS_PLATFORM_TYPE: "FIXED"
+        #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
+      MICRONAUT_EXECUTORS_VIRTUAL_TYPE: "THREAD_PER_TASK"
+      #Experimentally, seems to bump virtual threads performance by 15%
+      MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER: ${MICRONAUT_LOOM_CARRIER:-true}
+      MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_NUM_THREADS: *default_cpu_limit
+      #AUTO, MANUAL, IO, BLOCKING
+      MICRONAUT_SERVER_THREAD_SELECTION: "MANUAL"
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "micronaut-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Micronaut,webengine.version=${MICRONAUT_VERSION},loom.carrier=${MICRONAUT_LOOM_CARRIER}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/micronaut-jvm"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
 
   go:
     profiles: ["${DOCKER_PROF_GO:-skip}"]

@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.2-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.1-blue.svg)](https://quarkus.io/)
-[![Go](https://img.shields.io/badge/Go-1.25.6-00ADD8.svg)](https://golang.org/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.2-blue.svg)](https://quarkus.io/)
+[![Go](https://img.shields.io/badge/Go-1.25.7-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
@@ -53,11 +53,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 
 | Layer             | Category           | Technology                 | Version | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25      | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.1  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.25.6  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.5.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.31.1  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Go                         | 1.25.7  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Node.js                    | 25.6.0  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.31.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST framework                                           |
@@ -66,7 +66,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.7   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.3.2  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.4   | Log aggregation                                                      |
+| **Observability** | Logs               | Loki                       | 3.6.5   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.0  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.2   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.0  | Continuous CPU and memory profiling                                  |
@@ -76,7 +76,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.1.5  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
 | **Build**         | Package Manager    | npm                        | 11.8.0  | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
@@ -132,11 +132,11 @@ If you’re searching for projects like this, these are the topics it covers:
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.31.1**
+- **Quarkus 3.31.2**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
-#### Go (1.25.6)
+#### Go (1.25.7)
 - Fiber framework integration
 - Full observability setup
 
@@ -334,9 +334,9 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 ### Results
 
-The numbers below are a curated summary of a representative run (22/01/2026). For methodology and how to reproduce: see the docs site.
+The numbers below are a curated summary of a representative run (09/02/2026). For methodology and how to reproduce: see the docs site.
 
-#### Requests Per Second (RPS) — 01/02/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 09/02/2026 (to closest thousand)
 
 | Framework                  | Runtime | Mode     |  RPS |
 |----------------------------|---------|----------|-----:|
@@ -352,13 +352,13 @@ The numbers below are a curated summary of a representative run (22/01/2026). Fo
 | Quarkus                    | Native  | Platform |  45k |
 | Quarkus                    | Native  | Virtual  |  54k |
 | Quarkus                    | Native  | Reactive |  51k |
-| Spark                      | JVM     | Platform |  40k |
-| Spark                      | JVM     | Virtual  |  38k |
-| Javalin                    | JVM     | Platform |  44k |
-| Javalin                    | JVM     | Virtual  |  38k |
-| Micronaut                  | JVM     | Platform |  WIP |
-| Micronaut                  | JVM     | Virtual  |  WIP |
-| Micronaut                  | JVM     | Reactive |  WIP |
+| Spark                      | JVM     | Platform |  39k |
+| Spark                      | JVM     | Virtual  |  45k |
+| Javalin                    | JVM     | Platform |  41k |
+| Javalin                    | JVM     | Virtual  |  47k |
+| Micronaut                  | JVM     | Platform |  53k |
+| Micronaut                  | JVM     | Virtual  |  74k |
+| Micronaut                  | JVM     | Reactive |  63k |
 | Micronaut                  | Native  | Platform |  WIP |
 | Micronaut                  | Native  | Virtual  |  WIP |
 | Micronaut                  | Native  | Reactive |  WIP |
@@ -368,10 +368,11 @@ The numbers below are a curated summary of a representative run (22/01/2026). Fo
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
-#### Fairness Notes 
+#### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
+- Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
-- Spark Java is blocking-only in its latest version.
+- Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -401,11 +402,11 @@ The numbers below are a curated summary of a representative run (22/01/2026). Fo
 - **Network**: Docker bridge network
 
 #### Software Versions
-- **Java JDK**: Eclipse Temurin 25.0.1
-- **Java Native**: GraalVM Enterprise 25.0.1-ol10
+- **Java JDK**: Eclipse Temurin 25.0.2
+- **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.2 (3.5.10 also supported)
-- **Quarkus**: 3.31.1
-- **Go**: 1.25.6 (Fiber v2.52.10)
+- **Quarkus**: 3.31.2
+- **Go**: 1.25.7 (Fiber v2.52.11)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
@@ -416,7 +417,7 @@ However, the environment pulls and builds **third-party container images and dep
 
 In particular:
 
-- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.1-ol10`.
+- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.2-ol9`.
 - If you build/run those images, **you are responsible** for reviewing and complying with Oracle’s applicable license terms.
 
 Nothing in this repository’s Apache-2.0 license changes the license terms of third-party dependencies or container base images.

@@ -25,6 +25,12 @@ This service can run in either mode (one mode per deployment), controlled via en
 
 If the service is started in platform mode, `/hello/virtual` returns `500` and vice-versa, matching the Spring JVM behavior.
 
+> Note on `SPARK_VIRTUAL_EXECUTION_MODE` and `/hello/virtual`:
+> When `THREAD_MODE=virtual`, the `/hello/virtual` handler may still offload work to the executor when
+> `SPARK_VIRTUAL_EXECUTION_MODE=offload` (or when handler execution is set to `offload`).
+> This is intentional: it keeps Spark itself in platform-thread mode while forcing the business work to run on
+> virtual threads via the executor. This allows comparing “Spark-managed vthreads” vs “explicit offload to vthreads”.
+
 ## Configuration (env)
 - (Service listens on container port `8080`; host ports are configured by docker compose)
 - `THREAD_MODE` (default `platform`)

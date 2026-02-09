@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
-ARG JAVA_MINOR_RELEASE=.0.1
-ARG BASE_BUILDER=ol10
+ARG JAVA_MINOR_RELEASE=.0.2
+ARG BASE_BUILDER=ol9
 #ARG DISTRIBUTION=mandrel
 #mandrel, graalvmce
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
@@ -16,7 +16,7 @@ ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 #For J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings, N/A for J21
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG QUARKUS_VERSION=3.31.1
+ARG QUARKUS_VERSION=3.31.2
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=true

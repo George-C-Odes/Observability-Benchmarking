@@ -212,7 +212,7 @@ benchmarks_per_iteration() {
       echo 2
       return 0
     fi
-    if [ "${HOST}" = "go" ]; then
+    if [[ "${HOST}" == go* ]]; then
       echo 1
       return 0
     fi
@@ -259,6 +259,9 @@ while true; do
       "spark-jvm-virtual"
       "javalin-jvm-platform"
       "javalin-jvm-virtual"
+      "micronaut-jvm"
+      "micronaut-jvm"
+      "micronaut-jvm"
       "go"
     )
     endpoints=(
@@ -278,6 +281,9 @@ while true; do
       "virtual"
       "platform"
       "virtual"
+      "platform"
+      "virtual"
+      "reactive"
       "virtual"
     )
     for i in "${!hosts[@]}"; do
@@ -325,7 +331,7 @@ while true; do
         echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
         sleep "${SLEEP_BETWEEN}"
       done
-    elif [ "${HOST}" = "go" ]; then
+    elif [[ "${HOST}" == go* ]]; then
       iter_bench_idx=$((iter_bench_idx + 1))
       overall_count=$((overall_count + 1))
       run_wrk_one "${HOST}" "virtual" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true

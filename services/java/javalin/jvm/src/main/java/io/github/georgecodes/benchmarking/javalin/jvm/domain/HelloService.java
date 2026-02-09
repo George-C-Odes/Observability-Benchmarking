@@ -8,6 +8,7 @@ import org.jspecify.annotations.NonNull;
  */
 public final class HelloService {
 
+    /** Cache used to simulate typical service lookups and memory access patterns. */
     private final Cache<@NonNull String, String> cache;
 
     public HelloService(Cache<@NonNull String, String> cache) {

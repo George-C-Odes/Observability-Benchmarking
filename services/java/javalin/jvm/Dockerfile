@@ -37,7 +37,7 @@ COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checks
 RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v &&  \
     mvn -B -q -ntp \
-      -Dquarkus.platform.version=${JAVALIN_VERSION} \
+      -Djavalin.version=${JAVALIN_VERSION} \
       dependency:go-offline
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} javalin/jvm/src ./src

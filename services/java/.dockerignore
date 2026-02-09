@@ -56,3 +56,17 @@
 !javalin/jvm/src/
 !javalin/jvm/src/**
 !javalin/jvm/pom.xml
+
+!micronaut/
+!micronaut/jvm/
+!micronaut/jvm/src/
+!micronaut/jvm/src/**
+!micronaut/jvm/pom.xml
+
+!micronaut/native/
+!micronaut/native/mvnw
+!micronaut/native/.mvn/
+!micronaut/native/.mvn/wrapper/
+!micronaut/native/.mvn/wrapper/maven-wrapper.properties
+!micronaut/native/.mvn/jvm.config
+!micronaut/native/pom.xml

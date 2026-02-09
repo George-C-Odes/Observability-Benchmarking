@@ -7,7 +7,7 @@ ARG BASE_BUILDER=noble
 ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
 #ARG DISTRIBUTION=amazoncorretto
 #ARG BASE_BUILDER=debian
-#ARG IMAGE_RUNTIME=amazoncorretto:25.0.1-al2023-headless
+#ARG IMAGE_RUNTIME=amazoncorretto:25.0.2-al2023-headless
 #alpine, al2023-headless
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 #Option N/A for J21 set to "", for J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings

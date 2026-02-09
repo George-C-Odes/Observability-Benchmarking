@@ -221,7 +221,7 @@ This repository is Apache-2.0 licensed.
 
 When you build or run the stack, Docker may pull/build third-party container images and dependencies that are governed by their own licenses.
 
-In particular, native-image builds may use `container-registry.oracle.com/graalvm/native-image:25.0.1-ol10`. If you use those images, you are responsible for reviewing and complying with Oracle’s license terms.
+In particular, native-image builds may use `container-registry.oracle.com/graalvm/native-image:25.0.2-ol9`. If you use those images, you are responsible for reviewing and complying with Oracle’s license terms.
 
 ## Security Checklist
 

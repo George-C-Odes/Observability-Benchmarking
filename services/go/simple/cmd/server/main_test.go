@@ -36,7 +36,7 @@ func setupTestApp() *fiber.App {
 		if !ok {
 			return c.Status(fiber.StatusNotFound).SendString("value not found")
 		}
-		return c.SendString(fmt.Sprintf("Hello from GO REST %v", value))
+		return c.SendString(fmt.Sprintf("Hello from GO-simple REST %v", value))
 	})
 
 	return app

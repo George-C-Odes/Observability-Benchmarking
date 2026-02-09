@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
-ARG JAVA_MINOR_RELEASE=.0.1
-ARG BASE_BUILDER=ol10
+ARG JAVA_MINOR_RELEASE=.0.2
+ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 # ------------ BUILD STAGE -----------------------

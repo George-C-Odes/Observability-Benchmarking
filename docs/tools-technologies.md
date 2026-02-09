@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.31.1
+### Quarkus 3.31.2
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.31.1** (latest stable)
+- **Quarkus 3.31.2** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -139,7 +139,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Go with Fiber (Work in Progress)
+### Go with Fiber
 
 **Official Site**: [https://gofiber.io/](https://gofiber.io/)
 
@@ -578,8 +578,9 @@ native-image \
 **Configuration**:
 ```java
 Cache<String, String> cache = Caffeine.newBuilder()
-    .maximumSize(10000)
-    .build();
+   .maximumSize(50000)
+   .expireAfterWrite(Duration.ofDays(1))
+   .build();
 ```
 
 ### Reactor (Spring)
@@ -610,11 +611,11 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 | Layer             | Category           | Technology                 | Version | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25      | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.1  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.25.6  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.5.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.31.1  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Go                         | 1.25.7  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Node.js                    | 25.6.0  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.31.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST framework                                           |
@@ -623,7 +624,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.7   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.3.2  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.4   | Log aggregation                                                      |
+| **Observability** | Logs               | Loki                       | 3.6.5   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.0  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.2   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.0  | Continuous CPU and memory profiling                                  |
@@ -633,7 +634,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.1.5  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
 | **Build**         | Package Manager    | npm                        | 11.8.0  | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |

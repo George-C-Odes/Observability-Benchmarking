@@ -286,6 +286,9 @@ export default function ServiceHealth() {
       .sort(byName);
     const spring = services.filter((s) => s.name.startsWith('spring-')).sort(byName);
     const quarkus = services.filter((s) => s.name.startsWith('quarkus-')).sort(byName);
+    const spark = services.filter((s) => s.name.startsWith('spark-')).sort(byName);
+    const javalin = services.filter((s) => s.name.startsWith('javalin-')).sort(byName);
+    const micronaut = services.filter((s) => s.name.startsWith('micronaut-')).sort(byName);
     const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
     const utils = services.filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name)).sort(byName);
 
@@ -293,6 +296,9 @@ export default function ServiceHealth() {
       observability,
       spring,
       quarkus,
+      spark,
+      javalin,
+      micronaut,
       go,
       utils,
     };
@@ -1072,6 +1078,60 @@ export default function ServiceHealth() {
             {groupedServices.quarkus.map((service) => renderServiceCard(service))}
           </Box>
         </>
+      )}
+
+      {/* Spark Services */}
+      {groupedServices.spark.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Spark Services
+            </Typography>
+            <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2,
+                }}
+            >
+              {groupedServices.spark.map((service) => renderServiceCard(service))}
+            </Box>
+          </>
+      )}
+
+      {/* Javalin Services */}
+      {groupedServices.javalin.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Javalin Services
+            </Typography>
+            <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2,
+                }}
+            >
+              {groupedServices.javalin.map((service) => renderServiceCard(service))}
+            </Box>
+          </>
+      )}
+
+      {/* Micronaut Services */}
+      {groupedServices.micronaut.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Micronaut Services
+            </Typography>
+            <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2,
+                }}
+            >
+              {groupedServices.micronaut.map((service) => renderServiceCard(service))}
+            </Box>
+          </>
       )}
 
       {/* Go Services */}

@@ -1,0 +1,64 @@
+benchmark:
+  cache:
+    size: ${CACHE_SIZE:50000}
+endpoints:
+  all:
+    enabled: true
+    path: /
+  env:
+    enabled: true
+    sensitive: false
+  health:
+    details-visible: AUTHENTICATED
+    disk-space:
+      enabled: true
+    enabled: true
+    sensitive: false
+    service-ready-indicator-enabled: true
+  info:
+    enabled: true
+    sensitive: false
+  metrics:
+    enabled: true
+    sensitive: false
+micrometer:
+  enabled: false
+  export:
+    otlp:
+      enabled: false
+  registry:
+    otlp:
+      enabled: false
+logger:
+  levels:
+    ROOT: INFO
+micronaut:
+  application:
+    name: micronaut-jvm
+  executors:
+    platform:
+      type: FIXED
+      nThreads: 4
+      virtual: false
+    virtual:
+      type: THREAD_PER_TASK
+      virtual: true
+  http:
+    client:
+      event-loop-group: default
+      pool:
+        connection-locality: PREFERRED
+  metrics:
+    enabled: true
+  netty:
+    event-loops:
+      default:
+        loom-carrier: true
+        num-threads: 4
+        transport: [io_uring, epoll, kqueue, nio]
+  server:
+    netty:
+      access-logger:
+        enabled: false
+    port: 8080
+    thread-selection: MANUAL

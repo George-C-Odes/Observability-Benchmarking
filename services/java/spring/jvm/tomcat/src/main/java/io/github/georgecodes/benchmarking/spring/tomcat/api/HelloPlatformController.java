@@ -36,7 +36,8 @@ public class HelloPlatformController {
         @RequestParam(name = "log", defaultValue = "false") boolean printLog
     ) {
         if (printLog) {
-            log.info("platform thread: '{}'", Thread.currentThread());
+            var currentThread = Thread.currentThread();
+            log.info("platform thread: '{}', isVirtual: '{}'", currentThread, currentThread.isVirtual());
         }
         return helloService.platformHello(sleepSeconds);
     }

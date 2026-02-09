@@ -69,10 +69,10 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto 25.0.1 or Eclipse Temurin 25)
+Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
 Maven: 3.9+
 Spring Boot: 4.0.2 (3.5.10 also supported)
-Quarkus: 3.31.1
+Quarkus: 3.31.2
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -201,7 +201,7 @@ Build with Docker to ensure correct Java version:
 ```bash
 # Quarkus JVM
 docker build \
-  --build-arg QUARKUS_VERSION=3.31.1 \
+  --build-arg QUARKUS_VERSION=3.31.2 \
   --target builder \
   -t quarkus-jvm-test \
   -f services/quarkus/jvm/Dockerfile \
@@ -233,8 +233,8 @@ docker build \
 #### Version Requirements
 
 ```
-Go: 1.25.6+
-Fiber: v2.52.10
+Go: 1.25.7+
+Fiber: v2.52.11
 OpenTelemetry: Latest stable
 ```
 
@@ -439,9 +439,9 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 Integration Test Suite
 ==========================================
 Testing Framework Versions:
-- Quarkus: 3.31.1
+- Quarkus: 3.31.2
 - Spring Boot: 4.0.2
-- Go: 1.25.6
+- Go: 1.25.7
 
 ==========================================
 Deployment Verification Tests
@@ -681,7 +681,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.25.6 | Build version: go1.25.6
+2025-12-16T10:30:00.123Z Runtime version: go1.25.7 | Build version: go1.25.7
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -801,10 +801,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Go 1.25.6
+      - name: Set up Go 1.25.7
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.6'
+          go-version: '1.25.7'
       
       - name: Test Go Service
         run: |
@@ -853,10 +853,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.31.1" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.31.2" }
           - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.2" }
           - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.2" }
-          - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.6" }
+          - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.25.7" }
     
     steps:
       - uses: actions/checkout@v4
@@ -940,7 +940,7 @@ test:spring-netty:
 
 test:go:
   stage: test
-  image: golang:1.25.6
+  image: golang:1.25.7
   script:
     - cd services/go/hello
     - go mod download

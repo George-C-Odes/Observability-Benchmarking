@@ -15,7 +15,7 @@ A REST service implementation built with Spring Boot 4.0.2 compiled to a native 
 - **Framework**: Spring Boot 4.0.2 + Spring Web MVC
 - **Web Server**: Apache Tomcat (embedded)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
-- **Base Java**: 25.0.1
+- **Base Java**: 25.0.2
 - **Thread Models**: Platform OR Virtual (single mode per build)
 
 ### Endpoints
@@ -210,7 +210,7 @@ Consider JVM for:
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.1+ (Enterprise or Community)
+- GraalVM Native Image 25.0.2+ (Enterprise or Community)
 - Maven 3.9+
 - Docker (for containerized build recommended)
 - 16GB+ RAM (for native compilation)
@@ -284,7 +284,7 @@ docker compose --project-directory compose \
 ### Dockerfile Highlights
 ```dockerfile
 # Builder stage - GraalVM Native Image
-FROM container-registry.oracle.com/graalvm/native-image:25.0.1-ol10
+FROM container-registry.oracle.com/graalvm/native-image:25.0.2-ol9
 
 # Install yq for YAML manipulation
 RUN curl -L "https://github.com/mikefarah/yq/releases/download/v4.49.2/yq_linux_amd64" \

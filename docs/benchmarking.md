@@ -12,7 +12,7 @@ This document describes the systematic approach used to benchmark REST service i
 
 Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
 
-## At-a-glance results (01/02/2026)
+## At-a-glance results (09/02/2026)
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
 
@@ -30,13 +30,13 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Quarkus                    | Native  | Platform |  45k |
 | Quarkus                    | Native  | Virtual  |  54k |
 | Quarkus                    | Native  | Reactive |  51k |
-| Spark                      | JVM     | Platform |  40k |
-| Spark                      | JVM     | Virtual  |  38k |
-| Javalin                    | JVM     | Platform |  44k |
-| Javalin                    | JVM     | Virtual  |  38k |
-| Micronaut                  | JVM     | Platform |  WIP |
-| Micronaut                  | JVM     | Virtual  |  WIP |
-| Micronaut                  | JVM     | Reactive |  WIP |
+| Spark                      | JVM     | Platform |  39k |
+| Spark                      | JVM     | Virtual  |  45k |
+| Javalin                    | JVM     | Platform |  41k |
+| Javalin                    | JVM     | Virtual  |  47k |
+| Micronaut                  | JVM     | Platform |  53k |
+| Micronaut                  | JVM     | Virtual  |  74k |
+| Micronaut                  | JVM     | Reactive |  63k |
 | Micronaut                  | Native  | Platform |  WIP |
 | Micronaut                  | Native  | Virtual  |  WIP |
 | Micronaut                  | Native  | Reactive |  WIP |
@@ -46,8 +46,9 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
+- Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
-- Spark Java is blocking-only in its latest version.
+- Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -105,25 +106,25 @@ memory: 2GB        # Maximum memory
 ### Software Versions
 
 **Java**:
-- JDK: Amazon Corretto 25.0.1 (based on OpenJDK)
+- JDK: Eclipse Temurin 25.0.2
 - JVM Options: `-XX:+UseG1GC -XX:MaxGCPauseMillis=100`
 - Heap: 512MB-1GB depending on implementation
 
 **Native**:
-- GraalVM: 25.0.1 (Oracle Enterprise edition)
+- GraalVM: 25.0.2 (Oracle Enterprise edition)
 - GC: G1 (only available in Enterprise edition)
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
 - Spring Boot: 4.0.2 (3.5.10 also supported)
-- Quarkus: 3.31.1
-- Go: 1.25.6 with Fiber v2.52.10
+- Quarkus: 3.31.2
+- Go: 1.25.7 with Fiber v2.52.11
 
 ### Third-party license note (native-image)
 
 This repository is Apache-2.0 licensed.
 
-However, native builds may use Oracle GraalVM container images (for example: `container-registry.oracle.com/graalvm/native-image:25.0.1-ol10`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
+However, native builds may use Oracle GraalVM container images (for example: `container-registry.oracle.com/graalvm/native-image:25.0.2-ol9`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
 
 ## Workload Design
 
