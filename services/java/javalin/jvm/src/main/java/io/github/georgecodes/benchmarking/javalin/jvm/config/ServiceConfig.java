@@ -28,7 +28,9 @@ public record ServiceConfig(
 ) {
 
     public enum ThreadMode {
+        /** Use platform (OS) threads. */
         PLATFORM,
+        /** Use Java virtual threads (Project Loom). */
         VIRTUAL;
 
         public static ThreadMode fromEnv(String value) {
@@ -45,7 +47,9 @@ public record ServiceConfig(
     }
 
     public enum HandlerExecutionMode {
+        /** Run the handler logic directly on the framework request thread. */
         DIRECT,
+        /** Offload handler logic onto the configured executor. */
         OFFLOAD;
 
         public static HandlerExecutionMode fromEnv(String value) {

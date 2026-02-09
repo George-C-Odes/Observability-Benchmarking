@@ -25,12 +25,13 @@ import java.util.concurrent.Executors;
  */
 public final class JavalinApplication {
 
+    /** Logger for application lifecycle and configuration output. */
     private static final Logger LOG = LoggerFactory.getLogger(JavalinApplication.class);
 
     private JavalinApplication() {
     }
 
-    public static void main(String[] args) {
+    static void main() {
         ServiceConfig config = ServiceConfig.fromEnvironment();
 
         MeterRegistry meterRegistry = MetricsProvider.bindToGlobal();

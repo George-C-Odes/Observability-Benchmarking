@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jspecify.annotations.NonNull;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
  * Infrastructure adapter for a simple in-memory cache.
@@ -31,9 +31,8 @@ public class CaffeineCacheAdapter implements CachePort {
     void init() {
         cache = Caffeine.newBuilder()
             .maximumSize(cacheSize)
-            .expireAfterWrite(1, TimeUnit.DAYS)
+            .expireAfterWrite(Duration.ofDays(1))
             .build();
-
         // Pre-populate cache with some entries.
         for (long i = cacheSize; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);

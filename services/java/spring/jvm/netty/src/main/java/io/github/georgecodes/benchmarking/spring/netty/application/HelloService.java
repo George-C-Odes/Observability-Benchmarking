@@ -22,7 +22,8 @@ public class HelloService {
 
     public @NonNull String reactiveHello(int sleepSeconds, boolean printLog) {
         if (printLog) {
-            log.info("reactive thread: '{}'", Thread.currentThread());
+            var currentThread = Thread.currentThread();
+            log.info("reactive thread: '{}', isVirtual: '{}'", currentThread, currentThread.isVirtual());
         }
         reactiveCounter.increment();
         if (sleepSeconds > 0) {

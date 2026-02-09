@@ -28,10 +28,35 @@ public final class HelloRoutes {
     /** Domain handler. */
     private final HelloService helloService;
 
-    /** Counter for /hello/platform. */
-    private final Counter platformCounter;
-    /** Counter for /hello/virtual. */
-    private final Counter virtualCounter;
+    /** Minimal metrics boundary for the web layer. */
+    private interface HelloMetrics {
+        void incrementHello();
+    }
+
+    private static final class MicrometerHelloMetrics implements HelloMetrics {
+        private final Counter helloCounter;
+
+        private MicrometerHelloMetrics(Counter helloCounter) {
+            this.helloCounter = Objects.requireNonNull(helloCounter, "helloCounter");
+        }
+
+        @Override
+        public void incrementHello() {
+            helloCounter.increment();
+        }
+    }
+
+    /** Parsed request params for /hello endpoints. */
+    private record HelloParams(int sleepSeconds, boolean log) {
+        static HelloParams from(spark.Request req) {
+            int sleepSeconds = parseInt(req.queryParams("sleep"), 0);
+            boolean log = Boolean.parseBoolean(req.queryParams("log"));
+            return new HelloParams(sleepSeconds, log);
+        }
+    }
+
+    /** Counter for the active endpoint. */
+    private final HelloMetrics metrics;
 
     public HelloRoutes(
         ServiceConfig config,
@@ -42,53 +67,69 @@ public final class HelloRoutes {
         this.config = Objects.requireNonNull(config, "config");
         this.executor = Objects.requireNonNull(executor, "executor");
         this.helloService = Objects.requireNonNull(helloService, "helloService");
+        Objects.requireNonNull(meterRegistry, "meterRegistry");
 
-        this.platformCounter = Counter.builder("hello.request.count")
-            .tag("endpoint", "/hello/platform")
+        String endpoint = switch (config.threadMode()) {
+            case PLATFORM -> "/hello/platform";
+            case VIRTUAL -> "/hello/virtual";
+        };
+
+        Counter counter = Counter.builder("hello.request.count")
+            .tag("endpoint", endpoint)
             .register(meterRegistry);
-        this.virtualCounter = Counter.builder("hello.request.count")
-            .tag("endpoint", "/hello/virtual")
-            .register(meterRegistry);
+        this.metrics = new MicrometerHelloMetrics(counter);
     }
 
     public void register() {
-        get("/hello/platform", (req, res) -> {
-            if (config.threadMode() != ServiceConfig.ThreadMode.PLATFORM) {
-                throw new IllegalStateException("Virtual threads are enabled");
-            }
-            platformCounter.increment();
-            boolean printLog = Boolean.parseBoolean(req.queryParams("log"));
-            int sleepSeconds = parseInt(req.queryParams("sleep"), 0);
-            if (printLog) {
-                LOG.info("platform thread: '{}'", Thread.currentThread());
+        // Minimal readiness endpoint for orchestration/liveness checks.
+        // Independent of thread/offload configuration for minimal overhead.
+        get("/ready", (_, res) -> {
+            res.status(200);
+            res.type("text/plain");
+            return "UP";
+        });
+
+        switch (config.threadMode()) {
+            case PLATFORM -> registerPlatform();
+            case VIRTUAL -> registerVirtual();
+            default -> throw new IllegalStateException("Unsupported THREAD_MODE: " + config.threadMode());
+        }
+    }
+
+    private void registerPlatform() {
+        get("/hello/platform", (req, _) -> {
+            metrics.incrementHello();
+            HelloParams params = HelloParams.from(req);
+            if (params.log()) {
+                var currentThread = Thread.currentThread();
+                LOG.info("platform thread: '{}', isVirtual: '{}'", currentThread, currentThread.isVirtual());
             }
 
             if (config.handlerExecutionMode() == ServiceConfig.HandlerExecutionMode.DIRECT) {
-                return helloService.handle("Hello from Spark platform REST ", sleepSeconds);
+                return helloService.handle("Hello from Spark platform REST ", params.sleepSeconds());
             }
 
-            return submitAndJoin(() -> helloService.handle("Hello from Spark platform REST ", sleepSeconds));
+            return submitAndJoin(() -> helloService.handle("Hello from Spark platform REST ", params.sleepSeconds()));
         });
+    }
 
-        get("/hello/virtual", (req, res) -> {
-            if (config.threadMode() != ServiceConfig.ThreadMode.VIRTUAL) {
-                throw new IllegalStateException("Virtual threads are disabled");
-            }
-            virtualCounter.increment();
-            boolean printLog = Boolean.parseBoolean(req.queryParams("log"));
-            int sleepSeconds = parseInt(req.queryParams("sleep"), 0);
-            if (printLog) {
-                LOG.info("virtual thread: '{}'", Thread.currentThread());
+    private void registerVirtual() {
+        get("/hello/virtual", (req, _) -> {
+            metrics.incrementHello();
+            HelloParams params = HelloParams.from(req);
+            if (params.log()) {
+                var currentThread = Thread.currentThread();
+                LOG.info("virtual thread: '{}', isVirtual: '{}'", currentThread, currentThread.isVirtual());
             }
 
             boolean mustOffload = config.handlerExecutionMode() == ServiceConfig.HandlerExecutionMode.OFFLOAD
                 || config.virtualExecutionMode() == ServiceConfig.VirtualExecutionMode.OFFLOAD;
 
             if (!mustOffload) {
-                return helloService.handle("Hello from Spark virtual REST ", sleepSeconds);
+                return helloService.handle("Hello from Spark virtual REST ", params.sleepSeconds());
             }
 
-            return submitAndJoin(() -> helloService.handle("Hello from Spark virtual REST ", sleepSeconds));
+            return submitAndJoin(() -> helloService.handle("Hello from Spark virtual REST ", params.sleepSeconds()));
         });
     }
 

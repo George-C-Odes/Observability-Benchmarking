@@ -56,7 +56,8 @@ public class HelloResource {
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) throws InterruptedException {
         if (printLog) {
-            log.infov("platform thread: {0}", Thread.currentThread());
+            var currentThread = Thread.currentThread();
+            log.infov("platform thread: {0}, isVirtual: {1}", currentThread, currentThread.isVirtual());
         }
         return helloService.hello(HelloMode.PLATFORM, sleepSeconds);
     }
@@ -77,7 +78,8 @@ public class HelloResource {
         @QueryParam("log") @DefaultValue("false") boolean printLog
     ) throws InterruptedException {
         if (printLog) {
-            log.infov("virtual thread: {0}", Thread.currentThread());
+            var currentThread = Thread.currentThread();
+            log.infov("virtual thread: {0}, isVirtual: {1}", currentThread, currentThread.isVirtual());
         }
         return helloService.hello(HelloMode.VIRTUAL, sleepSeconds);
     }
@@ -97,7 +99,8 @@ public class HelloResource {
     ) {
         return Uni.createFrom().item(() -> {
             if (printLog) {
-                log.infov("reactive thread: {0}", Thread.currentThread());
+                var currentThread = Thread.currentThread();
+                log.infov("reactive thread: {0}, isVirtual: {1}", currentThread, currentThread.isVirtual());
             }
             try {
                 return helloService.hello(HelloMode.REACTIVE, sleepSeconds);

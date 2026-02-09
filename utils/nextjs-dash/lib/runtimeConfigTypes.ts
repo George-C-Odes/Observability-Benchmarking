@@ -51,11 +51,16 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'spring-native-netty': false,
     'quarkus-jvm': false,
     'quarkus-native': false,
-    go: false,
+    'spark-jvm-platform': false,
+    'spark-jvm-virtual': false,
+    'javalin-jvm-platform': false,
+    'javalin-jvm-virtual': false,
+    'micronaut-jvm': false,
+    'go': false,
 
     // UTILS
     'nextjs-dash': false,
-    orchestrator: false,
-    wrk2: false,
+    'orchestrator': false,
+    'wrk2': false,
   },
 };

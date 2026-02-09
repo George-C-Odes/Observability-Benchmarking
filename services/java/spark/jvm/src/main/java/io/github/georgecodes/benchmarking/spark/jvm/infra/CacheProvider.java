@@ -6,7 +6,7 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
  * Provides the pre-populated Caffeine cache used by request handlers.
@@ -22,13 +22,11 @@ public final class CacheProvider {
     public static Cache<@NonNull String, String> create(long cacheSize) {
         Cache<@NonNull String, String> cache = Caffeine.newBuilder()
             .maximumSize(cacheSize)
-            .expireAfterWrite(1, TimeUnit.DAYS)
+            .expireAfterWrite(Duration.ofDays(1))
             .build();
-
         for (long i = cacheSize; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
-
         LOG.info("Cache size: {}", cache.asMap().size());
         return cache;
     }

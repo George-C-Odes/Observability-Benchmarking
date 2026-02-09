@@ -12,30 +12,22 @@ public class HelloService {
     /** Cache port (injected adapter) used to fetch pre-warmed values. */
     private final CachePort cache;
 
-    /** Request counter for the platform-thread endpoint. */
-    private final Counter platformCounter;
+    /** Request counter for whichever endpoint is active in this runtime. */
+    private final Counter requestCounter;
 
-    /** Request counter for the virtual-thread endpoint. */
-    private final Counter virtualCounter;
-
-    public HelloService(
-        CachePort cache,
-        @Qualifier("helloPlatformCounter") Counter platformCounter,
-        @Qualifier("helloVirtualCounter") Counter virtualCounter
-    ) {
+    public HelloService(CachePort cache, @Qualifier("helloRequestCounter") Counter requestCounter) {
         this.cache = cache;
-        this.platformCounter = platformCounter;
-        this.virtualCounter = virtualCounter;
+        this.requestCounter = requestCounter;
     }
 
     public @NonNull String platformHello(int sleepSeconds) {
-        platformCounter.increment();
+        requestCounter.increment();
         sleep(sleepSeconds);
         return "Hello from Boot platform REST " + cache.get("1");
     }
 
     public @NonNull String virtualHello(int sleepSeconds) {
-        virtualCounter.increment();
+        requestCounter.increment();
         sleep(sleepSeconds);
         return "Hello from Boot virtual REST " + cache.get("1");
     }

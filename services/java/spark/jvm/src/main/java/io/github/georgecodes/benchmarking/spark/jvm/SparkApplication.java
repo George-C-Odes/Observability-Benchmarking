@@ -32,7 +32,7 @@ public final class SparkApplication {
     private SparkApplication() {
     }
 
-    static void main(String[] args) {
+    static void main() {
         ServiceConfig config = ServiceConfig.fromEnvironment();
 
         MeterRegistry meterRegistry = MetricsProvider.bindToGlobal();

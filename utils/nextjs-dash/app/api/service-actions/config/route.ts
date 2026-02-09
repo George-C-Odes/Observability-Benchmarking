@@ -21,6 +21,11 @@ const SERVICES = [
   'spring-native-netty',
   'quarkus-jvm',
   'quarkus-native',
+  'spark-jvm-platform',
+  'spark-jvm-virtual',
+  'javalin-jvm-platform',
+  'javalin-jvm-virtual',
+  'micronaut-jvm',
   'go',
 
   // UTILS

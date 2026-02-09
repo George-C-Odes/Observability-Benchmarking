@@ -1,0 +1,24 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="MicronautApplication" type="MicronautRunConfigurationType" factoryName="Micronaut">
+    <envs>
+      <env name="JAVA_TOOL_OPTIONS" value="--add-opens=java.base/java.lang=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.micronaut.jvm.Application" />
+    <module name="micronaut-jvm" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.micronaut.jvm.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="alternativeJrePath" />
+    <option name="alternativeJrePathEnabled" value="false" />
+    <option name="mainClass" value="io.github.georgecodes.benchmarking.micronaut.jvm.Application" />
+    <option name="passParentEnvs" value="true" />
+    <option name="programParameters" value="" />
+    <option name="vmParameters" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

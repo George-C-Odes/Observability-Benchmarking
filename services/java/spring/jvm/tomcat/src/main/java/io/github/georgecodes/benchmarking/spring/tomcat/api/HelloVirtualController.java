@@ -32,7 +32,8 @@ public class HelloVirtualController {
         @RequestParam(name = "log", defaultValue = "false") boolean printLog
     ) {
         if (printLog) {
-            log.info("virtual thread: '{}'", Thread.currentThread());
+            var currentThread = Thread.currentThread();
+            log.info("virtual thread: '{}', isVirtual: '{}'", currentThread, currentThread.isVirtual());
         }
         return helloService.virtualHello(sleepSeconds);
     }

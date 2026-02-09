@@ -8,7 +8,7 @@ services:
   alloy:
     profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.12.2
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.13.0
     container_name: alloy
     command:
       - run
@@ -75,7 +75,7 @@ services:
 
   loki:
     profiles: ["${DOCKER_PROF_LOKI:-skip}"]
-    image: grafana/loki:3.6.4
+    image: grafana/loki:3.6.5
     container_name: loki
     volumes:
       - ${HOST_REPO}/data/loki:/loki

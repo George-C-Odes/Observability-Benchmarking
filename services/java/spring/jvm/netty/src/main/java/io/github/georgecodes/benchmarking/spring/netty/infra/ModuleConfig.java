@@ -28,7 +28,6 @@ public class ModuleConfig {
             .maximumSize(cacheSize)
             .expireAfterWrite(Duration.ofDays(1))
             .build();
-
         for (long i = cacheSize; i > 0; i--) {
             cache.put(String.valueOf(i), "value-" + i);
         }
