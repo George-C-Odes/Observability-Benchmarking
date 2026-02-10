@@ -14,6 +14,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import lombok.extern.jbosslog.JBossLog;
 
+import java.util.Objects;
+
 /**
  * REST resource providing hello endpoints with different thread models.
  * Used for benchmarking observability and performance characteristics.
@@ -30,14 +32,7 @@ public class HelloResource {
 
     @Inject
     public HelloResource(HelloService helloService) {
-        this.helloService = helloService;
-        log.infov("Init thread: {0}", Thread.currentThread());
-        var runtime = Runtime.getRuntime();
-        long maxHeapMB = runtime.maxMemory() / 1024 / 1024;
-        long totalHeapMB = runtime.totalMemory() / 1024 / 1024;
-        long freeHeapMB = runtime.freeMemory() / 1024 / 1024;
-        log.infov("Heap in MB = Max:{0}, Total:{1}, Free:{2}", maxHeapMB, totalHeapMB, freeHeapMB);
-        log.infov("Available Processors:{0}", runtime.availableProcessors());
+        this.helloService = Objects.requireNonNull(helloService, "helloService");
     }
 
     /**
