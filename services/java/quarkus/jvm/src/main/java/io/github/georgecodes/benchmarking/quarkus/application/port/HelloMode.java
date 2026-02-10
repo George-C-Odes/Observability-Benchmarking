@@ -20,9 +20,13 @@ public enum HelloMode {
     /** Stable endpoint tag value used for metrics. */
     private final String endpointTag;
 
+    /** Stable response prefix used by {@code HelloService} to avoid repeated concatenation. */
+    private final String responsePrefix;
+
     HelloMode(String label, String endpointTag) {
         this.label = label;
         this.endpointTag = endpointTag;
+        this.responsePrefix = "Hello from Quarkus " + label + " REST ";
     }
 
     public String label() {
@@ -31,5 +35,9 @@ public enum HelloMode {
 
     public String endpointTag() {
         return endpointTag;
+    }
+
+    public String responsePrefix() {
+        return responsePrefix;
     }
 }
