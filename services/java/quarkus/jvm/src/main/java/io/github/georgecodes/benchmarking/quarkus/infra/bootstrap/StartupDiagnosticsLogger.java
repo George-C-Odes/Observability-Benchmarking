@@ -27,4 +27,3 @@ public class StartupDiagnosticsLogger {
         log.infov("Available Processors:{0}", runtime.availableProcessors());
     }
 }
-
