@@ -8,7 +8,7 @@ services:
   alloy:
     profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.13.0
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.13.1
     container_name: alloy
     command:
       - run
