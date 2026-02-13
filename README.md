@@ -128,14 +128,30 @@ If you’re searching for projects like this, these are the topics it covers:
 
 ### 🚀 REST Service Implementations
 
-#### Java (JDK 25 - Amazon Corretto)
-- **Spring Boot 4.0.2 (3.5.10 also supported)**
-  - Platform threads (traditional)
-  - Virtual threads (Project Loom)
-  - Reactive (WebFlux)
+#### Java (JDK 25 - Eclipse Temurin)
+- **Spring Boot 4.0.2 (3.5.10 also supported) JVM & Native**
+  - JVM builds
+    - Platform threads
+    - Virtual threads
+    - Reactive (WebFlux)
+  - Native builds
+    - Platform threads
+    - Virtual threads
+    - Reactive (WebFlux)
 - **Quarkus 3.31.3**
-  - JVM builds (all three thread modes)
-  - Native builds with GraalVM (all three thread modes)
+  - JVM build (all three thread modes)
+  - Native build (all three thread modes)
+- **Spark**: 3.0.3
+  - JVM builds
+    - Platform threads
+    - Virtual threads
+- **Javalin**: 6.7.0
+  - JVM builds
+    - Platform threads
+    - Virtual threads
+- **Micronaut**: 4.10.14
+  - JVM build (all three thread modes)
+  - Native WIP
 
 #### Go (1.26.0)
 - Fiber framework integration
@@ -407,6 +423,9 @@ The numbers below are a curated summary of a representative run (09/02/2026). Fo
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.2 (3.5.10 also supported)
 - **Quarkus**: 3.31.3
+- **Spark**: 3.0.3
+- **Javalin**: 6.7.0
+- **Micronaut**: 4.10.14
 - **Go**: 1.26.0 (Fiber v2.52.11)
 - **Garbage Collector**: G1GC (all Java implementations)
 
