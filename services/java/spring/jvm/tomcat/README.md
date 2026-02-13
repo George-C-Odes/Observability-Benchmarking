@@ -267,7 +267,7 @@ Unlike Quarkus (which supports all modes in one deployment), Spring Tomcat requi
 ## Building and Running
 
 ### Prerequisites
-- Java 25 (Amazon Corretto recommended)
+- Java 25 (Eclipse Temurin recommended)
 - Maven 3.9+
 - Docker (for containerized deployment)
 
