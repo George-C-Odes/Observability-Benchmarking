@@ -719,18 +719,6 @@ docker run --rm --network compose_default \
   http://quarkus-jvm:8080/hello/platform
 ```
 
-#### Expected Performance
-
-Based on 4 vCPU limits:
-
-| Service            | Thread Model | RPS (approx) | p99 Latency |
-|--------------------|--------------|--------------|-------------|
-| Quarkus JVM        | Reactive     | 86,000       | <5ms        |
-| Quarkus JVM        | Virtual      | 68,000       | <10ms       |
-| Quarkus Native     | Reactive     | 56,000       | <3ms        |
-| Spring Boot Tomcat | Platform     | 48,000       | <15ms       |
-| Spring Boot Netty  | Reactive     | 52,000       | <8ms        |
-
 #### Performance Test Validation
 
 ```bash

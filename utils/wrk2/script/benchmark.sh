@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+# Unify output streams: Docker/Compose can merge stdout/stderr out-of-order.
+# Redirect stderr to stdout so log ordering reflects actual execution order.
+exec 2>&1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib.sh"
@@ -40,7 +44,7 @@ mkdir -p "${BENCH_DIR}" || true
 if ! can_write_dir "${BENCH_DIR}"; then
   fallback_base="${WRK_BENCH_FALLBACK_DIR:-/tmp/benchmarks}"
   fallback="${fallback_base}/${DATE_DIR}_uid$(id -u)_$(now_time_stamp)"
-  echo "[wrk2] WARN: ${BENCH_DIR} is not writable; using ${fallback} instead" >&2
+  echo "[wrk2] WARN: ${BENCH_DIR} is not writable; using ${fallback} instead"
   BENCH_DIR="${fallback}"
   mkdir -p "${BENCH_DIR}" || true
 fi
@@ -49,14 +53,14 @@ if [ "${SAVE_LOGS}" = "auto" ]; then
   if can_write_dir "${BENCH_DIR}"; then
     SAVE_LOGS=true
   else
-    echo "[wrk2] WARN: ${BENCH_DIR} is not writable; falling back to console-only output (WRK_SAVE_LOGS=false)" >&2
+    echo "[wrk2] WARN: ${BENCH_DIR} is not writable; falling back to console-only output (WRK_SAVE_LOGS=false)"
     SAVE_LOGS=false
   fi
 fi
 
 if [ "${SAVE_LOGS}" = "true" ] && ! can_write_dir "${BENCH_DIR}"; then
-  echo "[wrk2] ERROR: ${BENCH_DIR} is not writable (cannot create benchmark log files)." >&2
-  echo "[wrk2] HINT: fix host folder permissions/mount options or set WRK_SAVE_LOGS=false/auto." >&2
+  echo "[wrk2] ERROR: ${BENCH_DIR} is not writable (cannot create benchmark log files)."
+  echo "[wrk2] HINT: fix host folder permissions/mount options or set WRK_SAVE_LOGS=false/auto."
   exit 13
 fi
 
@@ -67,7 +71,7 @@ if [ -n "${EXPORT_DIR}" ]; then
   if can_write_dir "${EXPORT_DIR}"; then
     EXPORT_ENABLED=true
   else
-    echo "[wrk2] WARN: WRK_EXPORT_DIR=${EXPORT_DIR} is set but not writable; exports will be skipped" >&2
+    echo "[wrk2] WARN: WRK_EXPORT_DIR=${EXPORT_DIR} is set but not writable; exports will be skipped"
   fi
 fi
 
@@ -98,11 +102,11 @@ export_log() {
   dest_file="${dest_dir}/$(basename "${src_file}")"
 
   cp -f "${src_file}" "${dest_file}" 2>/dev/null || {
-    echo "[wrk2] WARN: failed to export ${src_file} -> ${dest_file}" >&2
+    echo "[wrk2] WARN: failed to export ${src_file} -> ${dest_file}"
     return 0
   }
 
-  echo "[wrk2] exported: ${dest_file}" >&2
+  echo "[wrk2] exported: ${dest_file}"
 }
 
 # Enhanced run printout:
@@ -121,12 +125,12 @@ run_wrk_one() {
   local overall_total=$9
 
   if [ -z "${target_host}" ]; then
-    echo "[wrk2] ERROR: target_host is empty" >&2
+    echo "[wrk2] ERROR: target_host is empty"
     return 2
   fi
 
   if [ -z "${RATE}" ]; then
-    echo "[wrk2] ERROR: WRK_RATE must be set for wrk2 (-R)." >&2
+    echo "[wrk2] ERROR: WRK_RATE must be set for wrk2 (-R)."
     return 2
   fi
 
@@ -181,7 +185,7 @@ run_wrk_one() {
 # Main
 # ========================
 
-echo "[wrk2] benchmark script ready (exec /script/benchmark.sh to run on-demand)" >&2
+echo "[wrk2] benchmark script ready (exec /script/benchmark.sh to run on-demand)"
 
 # Avoid printing config twice when WRK_AUTORUN=true:
 # - entrypoint.sh prints config once on container boot
