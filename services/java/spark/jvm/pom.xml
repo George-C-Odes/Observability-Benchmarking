@@ -14,7 +14,7 @@
 
         <spark-core.version>3.0.3</spark-core.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <micrometer.version>1.16.2</micrometer.version>
+        <micrometer.version>1.16.3</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <slf4j.version>2.0.17</slf4j.version>
@@ -90,19 +90,6 @@
                 <configuration>
                     <release>${maven.compiler.release}</release>
                     <parameters>true</parameters>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.2</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>io.github.georgecodes.benchmarking.spark.jvm.SparkApplication</mainClass>
-                        </manifest>
-                    </archive>
                 </configuration>
             </plugin>
 

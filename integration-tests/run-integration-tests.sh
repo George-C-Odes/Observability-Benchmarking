@@ -105,12 +105,12 @@ NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
 # Framework versions
-QUARKUS_VERSION="3.31.2"
+QUARKUS_VERSION="3.31.3"
 SPRING_BOOT_VERSION="4.0.2"
 SPARK_VERSION="3.0.3"
 JAVALIN_VERSION="6.7.0"
 MICRONAUT_VERSION="4.10.14"
-GO_VERSION="1.25.7"
+GO_VERSION="1.26.0"
 
 # Helper function to test HTTP endpoint
 test_endpoint() {
@@ -228,8 +228,11 @@ echo "Integration Test Suite"
 echo "=========================================="
 echo ""
 echo "Testing Framework Versions:"
-echo "- Quarkus: ${QUARKUS_VERSION}"
 echo "- Spring Boot: ${SPRING_BOOT_VERSION}"
+echo "- Quarkus: ${QUARKUS_VERSION}"
+echo "- Spark: ${SPARK_VERSION}"
+echo "- Javalin: ${JAVALIN_VERSION}"
+echo "- Micronaut: ${MICRONAUT_VERSION}"
 echo "- Go: ${GO_VERSION}"
 echo ""
 

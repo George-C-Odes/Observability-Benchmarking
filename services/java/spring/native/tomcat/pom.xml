@@ -35,7 +35,7 @@
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom</artifactId>
-                <version>1.58.0</version>
+                <version>1.59.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -135,7 +135,7 @@
                         --add-opens=java.base/java.lang=ALL-UNNAMED
                         --enable-native-access=ALL-UNNAMED
                         -Djdk.tracePinnedThreads=full
-                        -javaagent:${project.build.directory}/test-agents/mockito-core.jar
+                        -javaagent:"${project.basedir}/target/test-agents/mockito-core.jar"
                         -Xshare:off
                     </argLine>
                 </configuration>

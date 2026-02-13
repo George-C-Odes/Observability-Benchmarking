@@ -80,7 +80,8 @@ desktop.ini
 
 # IDEs and editors
 # IntelliJ
-/.idea/
+/.idea/**
+!/.idea/misc.xml
 /*.iml
 /.idea_modules/
 .idea/**/workspace.xml

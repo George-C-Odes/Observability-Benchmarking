@@ -26,6 +26,7 @@
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mockito.version>5.21.0</mockito.version>
     </properties>
 
     <dependencyManagement>
@@ -78,6 +79,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 	<build>
@@ -110,11 +117,12 @@
                         --add-opens=java.base/java.lang=ALL-UNNAMED
                         --enable-native-access=ALL-UNNAMED
                         -Djdk.tracePinnedThreads=full
-                        -javaagent:${project.build.directory}/test-agents/mockito-core.jar
+                        -javaagent:"${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar"
                         -Xshare:off
                     </argLine>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -145,21 +153,6 @@
                         <configuration>
                             <includeScope>runtime</includeScope>
                             <outputProperty>depClasspath</outputProperty>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-mockito-agent</id>
-                        <phase>process-test-classes</phase>
-                        <goals><goal>copy</goal></goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.mockito</groupId>
-                                    <artifactId>mockito-core</artifactId>
-                                    <outputDirectory>${project.build.directory}/test-agents</outputDirectory>
-                                    <destFileName>mockito-core.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
                         </configuration>
                     </execution>
                 </executions>
