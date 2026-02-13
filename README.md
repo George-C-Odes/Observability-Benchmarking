@@ -129,7 +129,7 @@ If you’re searching for projects like this, these are the topics it covers:
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Eclipse Temurin)
-- **Spring Boot 4.0.2 (3.5.10 also supported) JVM & Native**
+- **Spring Boot 4.0.2 (3.5.10 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
