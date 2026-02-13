@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="FrameworkDetectionExcludesConfiguration">
+    <file type="Quarkus" url="file://$PROJECT_DIR$/services/java/quarkus" />
+    <file type="Quarkus" url="file://$PROJECT_DIR$/utils/orchestrator" />
+  </component>
+  <component name="MavenProjectsManager">
+    <option name="originalFiles">
+      <list>
+        <option value="$PROJECT_DIR$/services/java/spring/jvm/tomcat/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/spring/jvm/netty/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/spring/native/tomcat/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/spring/native/netty/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/quarkus/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/quarkus/native/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/spark/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/javalin/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/micronaut/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/utils/orchestrator/pom.xml" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="1" languageLevel="JDK_25" default="true" project-jdk-name="temurin-25" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+</project>
