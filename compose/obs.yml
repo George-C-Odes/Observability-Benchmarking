@@ -42,7 +42,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:12.3.2
+    image: grafana/grafana:12.3.3
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -89,7 +89,7 @@ services:
 
   mimir:
     profiles: ["${DOCKER_PROF_MIMIR:-skip}"]
-    image: grafana/mimir:3.0.2
+    image: grafana/mimir:3.0.3
     container_name: mimir
     volumes:
       - ${HOST_REPO}/config/mimir:/etc/mimir-config
@@ -102,7 +102,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:1.18.0
+    image: grafana/pyroscope:1.18.1
     container_name: pyroscope
     ports:
       - "4040:4040"

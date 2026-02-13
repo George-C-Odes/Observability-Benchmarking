@@ -14,7 +14,7 @@
 
         <javalin.version>6.7.0</javalin.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <micrometer.version>1.16.2</micrometer.version>
+        <micrometer.version>1.16.3</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <slf4j.version>2.0.17</slf4j.version>

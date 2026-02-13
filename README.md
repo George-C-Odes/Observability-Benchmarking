@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.2-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.2-blue.svg)](https://quarkus.io/)
-[![Go](https://img.shields.io/badge/Go-1.25.7-00ADD8.svg)](https://golang.org/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.3-blue.svg)](https://quarkus.io/)
+[![Go](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
@@ -55,30 +55,31 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.25.7  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.6.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.31.2  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Node.js                    | 25.6.1  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.31.3  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST framework                                           |
+| **Backend**       | Framework          | Micronaut                  | 4.10.14 | Compile-time optimized JVM microservices framework                   |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.7   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.3.2  | Metrics, logs, traces dashboards                                     |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.8   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 12.3.3  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.5   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.0  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.2   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.18.0  | Continuous CPU and memory profiling                                  |
+| **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.58.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.59.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.24.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.8.0  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.9.0  | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
@@ -123,7 +124,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.1.6 and Material-UI 7.3.7
+  - Built with Next.js 16.1.6 and Material-UI 7.3.8
 
 ### 🚀 REST Service Implementations
 
@@ -132,11 +133,11 @@ If you’re searching for projects like this, these are the topics it covers:
   - Platform threads (traditional)
   - Virtual threads (Project Loom)
   - Reactive (WebFlux)
-- **Quarkus 3.31.2**
+- **Quarkus 3.31.3**
   - JVM builds (all three thread modes)
   - Native builds with GraalVM (all three thread modes)
 
-#### Go (1.25.7)
+#### Go (1.26.0)
 - Fiber framework integration
 - Full observability setup
 
@@ -405,8 +406,8 @@ The numbers below are a curated summary of a representative run (09/02/2026). Fo
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.2 (3.5.10 also supported)
-- **Quarkus**: 3.31.2
-- **Go**: 1.25.7 (Fiber v2.52.11)
+- **Quarkus**: 3.31.3
+- **Go**: 1.26.0 (Fiber v2.52.11)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

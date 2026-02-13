@@ -40,16 +40,28 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 ### Service Layer
 
 **REST Services** - Multiple implementations for comparison
-- Spring Boot 4.0 (JVM and Native)
-  - Platform threads (traditional thread pool)
-  - Virtual threads (Project Loom)
-  - Reactive (WebFlux)
-- Quarkus 3.30 (JVM and Native)
+- Spring Boot 4.0.2 (JVM and Native)
+  - Platform threads
+  - Virtual threads
+  - Reactive (WebFlux - Reactor)
+- Quarkus 3.31.3 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Go 1.25
-  - Fiber framework
+- Spark 3.0.3 (JVM)
+  - Platform threads
+  - Virtual threads
+- Javalin 6.7.0 (JVM)
+  - Platform threads
+  - Virtual threads
+- Micronaut 4.10.14 (JVM and Native)
+  - Platform threads
+  - Virtual threads
+  - Reactive (Reactor)
+- Helidon 4.3.4 (JVM and Native)
+  - WIP
+- Go 1.26.0
+  - Fiber framework (v2.52.11)
 
 **Service Characteristics**:
 - Simple cache retrieval workload (Caffeine)

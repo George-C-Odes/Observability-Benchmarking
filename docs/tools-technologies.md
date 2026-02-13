@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.31.2
+### Quarkus 3.31.3
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.31.2** (latest stable)
+- **Quarkus 3.31.3** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -613,30 +613,31 @@ Cache<String, String> cache = Caffeine.newBuilder()
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.25.7  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.6.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.31.2  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Node.js                    | 25.6.1  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.31.3  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST framework                                           |
+| **Backend**       | Framework          | Micronaut                  | 4.10.14 | Compile-time optimized JVM microservices framework                   |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.7   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.3.2  | Metrics, logs, traces dashboards                                     |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.8   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 12.3.3  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.5   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.0  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.2   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.18.0  | Continuous CPU and memory profiling                                  |
+| **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.58.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.59.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.24.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.8.0  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.9.0  | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
