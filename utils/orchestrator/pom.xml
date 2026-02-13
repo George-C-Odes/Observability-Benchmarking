@@ -126,6 +126,14 @@
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <argLine>@{argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
         </configuration>
