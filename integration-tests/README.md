@@ -19,16 +19,16 @@ This directory contains an integration test runner script (`run-integration-test
 ### Prerequisites
 
 1. **Docker & Docker Compose**
-   ```bash
-   docker --version      # Requires 20.10+
-   docker compose version # Requires 2.0+
-   ```
+```bash
+  docker --version      # Requires 20.10+
+  docker compose version # Requires 2.0+
+```
 
 2. **Command-line Tools**
-   ```bash
-  
-   bash --version        # Requires 4.0+
-   ```
+```bash
+  curl --version        # Requires curl
+  bash --version        # Requires 4.0+
+```
 
 3. **Port Availability (defaults)**
    - 8080-8092, 9080: service ports

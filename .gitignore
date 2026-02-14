@@ -82,7 +82,7 @@ desktop.ini
 # IntelliJ
 /.idea/**
 !/.idea/misc.xml
-/*.iml
+*.iml
 /.idea_modules/
 .idea/**/workspace.xml
 .idea/**/tasks.xml
