@@ -144,8 +144,7 @@ vitest-*.json
 # Jekyll / GitHub Pages (generated output + caches)
 /docs/.jekyll-cache/
 /docs/.sass-cache/
-/docs/_site/docs/**
-/docs/_site/images/**
+/docs/_site/**
 
 # NOTE: The project publishes documentation via GitHub Pages.
 # For this repo, the generated site output under `docs/_site/` is expected to be committed
