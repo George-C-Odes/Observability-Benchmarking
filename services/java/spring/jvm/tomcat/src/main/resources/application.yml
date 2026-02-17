@@ -32,8 +32,8 @@ server:
     threads:
       # Default thread sizing for throughput; override per benchmark run.
       # CORES_LIMIT is already applied to the JVM via -XX:ActiveProcessorCount.
-      max: ${TOMCAT_MAX_THREADS:${CORES_LIMIT:4}0}
-      min-spare: ${TOMCAT_MIN_SPARE_THREADS:${CORES_LIMIT:4}0}
+      max: ${TOMCAT_MAX_THREADS:${CORES_LIMIT:2}0}
+      min-spare: ${TOMCAT_MIN_SPARE_THREADS:${CORES_LIMIT:2}0}
       max-queue-capacity: 10000
 spring:
   application:

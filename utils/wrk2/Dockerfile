@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # --- Stage 1: Build wrk2 ------------------------------------------------------
-FROM alpine:3.23.2 AS builder
+FROM alpine:3.23.3 AS builder
 
 # Toolchain + dependencies for building wrk2
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -50,7 +50,7 @@ RUN --mount=type=cache,target=/wrk2/obj \
     strip wrk
 
 # --- Stage 2: Minimal runtime -------------------------------------------------
-FROM alpine:3.23.2 as runtime
+FROM alpine:3.23.3 as runtime
 
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add --no-cache \

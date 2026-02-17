@@ -85,14 +85,14 @@ Handles requests using reactive programming with Mutiny.
 
 #### Environment Variables
 
-| Variable | Description | Default/Configured |
-|----------|-------------|-------------------|
-| `QUARKUS_HTTP_HOST` | Bind address | `0.0.0.0` |
-| `QUARKUS_HTTP_PORT` | HTTP server port | `8080` |
-| `QUARKUS_PROFILE` | Active configuration profile | `stage` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317` |
-| `OTEL_SERVICE_NAME` | Service name for telemetry | `QuarkusNative` |
-| `OTEL_SDK_DISABLED` | Disable OTEL during build | `true` (build only) |
+| Variable                      | Description                      | Default/Configured  |
+|-------------------------------|----------------------------------|---------------------|
+| `QUARKUS_HTTP_HOST`           | Bind address                     | `0.0.0.0`           |
+| `QUARKUS_HTTP_PORT`           | HTTP server port                 | `8080`              |
+| `QUARKUS_PROFILE`             | Active configuration profile     | `stage`             |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317`        |
+| `OTEL_SERVICE_NAME`           | Service name for telemetry       | `QuarkusNative`     |
+| `OTEL_SDK_DISABLED`           | Disable OTEL during build        | `true` (build only) |
 
 #### Application Configuration
 Same as JVM version - see `services/quarkus/jvm/src/main/resources/application.yml`:
@@ -182,13 +182,13 @@ Same as JVM version:
 
 ## Performance Characteristics
 
-### Benchmark Results (4 vCPU limit)
+### Benchmark Results (2 vCPU limit)
 
-| Mode | RPS | Rank | vs JVM |
-|------|-----|------|--------|
-| Reactive | 56,000 | #3 | -35% |
-| Virtual | 55,000 | #5 | -19% |
-| Platform | 37,000 | #7 | -34% |
+| Mode     | RPS    | vs JVM |
+|----------|--------|--------|
+| Virtual  | 27,000 | -40%   |
+| Reactive | 20,000 | -56%   |
+| Platform | 20,000 | -44%   |
 
 ### Analysis
 - Native compilation doesn't always mean better throughput
@@ -330,13 +330,13 @@ process_memory_rss_bytes{service_name="QuarkusNative"}
 
 ### Enterprise vs Community
 
-| Feature | Enterprise | Community |
-|---------|-----------|-----------|
-| G1 GC | ✅ Yes | ❌ No (serial/epsilon only) |
-| Performance | ~10% better | Baseline |
-| Build Time | Faster | Slower |
-| Image | Oracle | GraalVM |
-| License | Oracle License | GPL v2 + CPE |
+| Feature     | Enterprise     | Community                  |
+|-------------|----------------|----------------------------|
+| G1 GC       | ✅ Yes          | ❌ No (serial/epsilon only) |
+| Performance | ~10% better    | Baseline                   |
+| Build Time  | Faster         | Slower                     |
+| Image       | Oracle         | GraalVM                    |
+| License     | Oracle License | GPL v2 + CPE               |
 
 **Recommendation**: Use Enterprise for production benchmarks. The repository defaults to Enterprise.
 

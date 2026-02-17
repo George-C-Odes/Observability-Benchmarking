@@ -86,7 +86,7 @@ The service is configured through code in `cmd/server/main.go`:
 - **Startup Time**: Sub-second (compiled binary)
 - **Memory Footprint**: Minimal (~10-20 MB base + cache)
 - **Request Handling**: Non-blocking, goroutine-per-request model
-- **Throughput**: ~120,000 RPS (preliminary results, not directly comparable yet)
+- **Throughput**: ~60,000 RPS (preliminary results, not directly comparable yet)
 
 ## Building and Running
 

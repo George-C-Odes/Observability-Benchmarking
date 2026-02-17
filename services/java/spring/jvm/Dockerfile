@@ -84,10 +84,10 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
 #    -DskipTests
 
 # ------------ OTEL/PROFILING DEPS STAGE -----------------------
-FROM alpine:3.23.2 AS otel_deps
+FROM alpine:3.23.3 AS otel_deps
 
-ARG OTEL_PYROSCOPE_VERSION=1.0.4
-ARG OTEL_JAVA_AGENT_VERSION=2.24.0
+ARG OTEL_PYROSCOPE_VERSION=1.0.5
+ARG OTEL_JAVA_AGENT_VERSION=2.25.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 ### Snapshots - prereleased:

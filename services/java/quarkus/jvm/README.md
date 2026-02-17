@@ -52,12 +52,12 @@ Handles requests using reactive programming with Mutiny (non-blocking I/O).
 
 ### Environment Variables
 
-| Variable | Description | Default/Configured |
-|----------|-------------|-------------------|
-| `JAVA_TOOL_OPTIONS` | JVM options (GC, memory, OTEL agent, etc.) | Set by compose |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317` |
-| `OTEL_SERVICE_NAME` | Service name for telemetry | `QuarkusJVM` |
-| `OTEL_RESOURCE_ATTRIBUTES` | Additional OTEL resource attributes | - |
+| Variable                      | Description                                | Default/Configured |
+|-------------------------------|--------------------------------------------|--------------------|
+| `JAVA_TOOL_OPTIONS`           | JVM options (GC, memory, OTEL agent, etc.) | Set by compose     |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint           | `alloy:4317`       |
+| `OTEL_SERVICE_NAME`           | Service name for telemetry                 | `QuarkusJVM`       |
+| `OTEL_RESOURCE_ATTRIBUTES`    | Additional OTEL resource attributes        | -                  |
 
 ### Application Configuration (application.yml)
 
@@ -258,17 +258,17 @@ Tracks request count per endpoint.
 
 ## Performance Characteristics
 
-### Benchmark Results (4 vCPU limit)
+### Benchmark Results (2 vCPU limit)
 
-| Mode | RPS | Rank |
-|------|-----|------|
-| Reactive | 86,000 | 🥇 #1 |
-| Virtual | 68,000 | 🥈 #2 |
-| Platform | 56,000 | #4 |
+| Mode     | RPS    |
+|----------|--------|
+| Reactive | 46,000 |
+| Virtual  | 45,000 |
+| Platform | 36,000 |
 
 ### Resource Usage
-- **Heap Memory**: 1280 MB (configurable)
-- **Off-Heap Memory**: 64 MB max
+- **Heap Memory**: 640 MB (configurable)
+- **Off-Heap Memory**: 32 MB max
 - **Startup Time**: ~2-3 seconds (JVM)
 - **Container Size**: ~400 MB (with JDK)
 

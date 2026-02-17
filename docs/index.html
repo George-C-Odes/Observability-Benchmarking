@@ -54,7 +54,7 @@
                 <div class="feature-card">
                     <i class="fas fa-rocket"></i>
                     <h3>High Performance</h3>
-                    <p>Benchmark results up to 83,000 RPS on CPU-limited containers (4 vCPUs)</p>
+                    <p>Benchmark results up to 46,000 RPS on CPU-limited containers (2 vCPUs)</p>
                 </div>
                 <div class="feature-card">
                     <i class="fas fa-eye"></i>
@@ -150,117 +150,158 @@
     <section id="results" class="section">
         <div class="container">
             <h2>Benchmark Results</h2>
-            <p class="lead">Performance comparison of different frameworks and concurrency models on CPU-limited containers (4 vCPUs)</p>
-
+            <p class="lead"><strong>At-a-glance results [17/02/2026] [2 vCPUs] </strong>Performance comparison of different frameworks and concurrency models on CPU-limited containers, ordered by RPS.</p>
             <div class="results-table-container">
                 <table class="results-table">
                     <thead>
                         <tr>
                             <th>Implementation</th>
                             <th>Mode</th>
-                            <th>RPS (09/02/2026)</th>
+                            <th>RPS</th>
+                            <th>Peak Mem (MB)</th>
+                            <th>Image Size (MB)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr class="highlight">
                             <td>Quarkus JVM</td>
                             <td>Reactive</td>
-                            <td>104,000</td>
+                            <td>46,000</td>
+                            <td>495</td>
+                            <td>423</td>
                         </tr>
                         <tr>
                             <td>Quarkus JVM</td>
                             <td>Virtual</td>
-                            <td>90,000</td>
-                        </tr>
-                        <tr>
-                            <td>Micronaut JVM</td>
-                            <td>Virtual</td>
-                            <td>74,000</td>
+                            <td>45,000</td>
+                            <td>495</td>
+                            <td>423</td>
                         </tr>
                         <tr>
                             <td>Quarkus JVM</td>
                             <td>Platform</td>
-                            <td>70,000</td>
+                            <td>36,000</td>
+                            <td>495</td>
+                            <td>423</td>
+                        </tr>
+                        <tr>
+                            <td>Micronaut JVM</td>
+                            <td>Virtual</td>
+                            <td>33,000</td>
+                            <td>465</td>
+                            <td>400</td>
                         </tr>
                         <tr>
                             <td>Micronaut JVM</td>
                             <td>Reactive</td>
-                            <td>63,000</td>
-                        </tr>
-                        <tr>
-                            <td>Quarkus Native</td>
-                            <td>Virtual</td>
-                            <td>54,000</td>
+                            <td>28,000</td>
+                            <td>465</td>
+                            <td>400</td>
                         </tr>
                         <tr>
                             <td>Micronaut JVM</td>
                             <td>Platform</td>
-                            <td>53,000</td>
+                            <td>28,000</td>
+                            <td>465</td>
+                            <td>400</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus Native</td>
+                            <td>Reactive</td>
+                            <td>27,000</td>
+                            <td>207</td>
+                            <td>571</td>
+                        </tr>
+                        <tr>
+                            <td>Javalin JVM</td>
+                            <td>Platform</td>
+                            <td>26,000</td>
+                            <td>696</td>
+                            <td>374</td>
+                        </tr>
+                        <tr>
+                            <td>Javalin JVM</td>
+                            <td>Virtual</td>
+                            <td>25,000</td>
+                            <td>495</td>
+                            <td>374</td>
                         </tr>
                         <tr>
                             <td>Go</td>
                             <td>N/A</td>
-                            <td>52,000</td>
-                        </tr>
-                        <tr>
-                            <td>Quarkus Native</td>
-                            <td>Reactive</td>
-                            <td>51,000</td>
-                        </tr>
-                        <tr>
-                            <td>Javalin JVM</td>
-                            <td>Virtual</td>
-                            <td>47,000</td>
-                        </tr>
-                        <tr>
-                            <td>Quarkus Native</td>
-                            <td>Platform</td>
-                            <td>45,000</td>
-                        </tr>
-                        <tr>
-                            <td>Spark JVM</td>
-                            <td>Virtual</td>
-                            <td>45,000</td>
-                        </tr>
-                        <tr>
-                            <td>Javalin JVM</td>
-                            <td>Platform</td>
-                            <td>41,000</td>
+                            <td>24,000</td>
+                            <td>58</td>
+                            <td>33</td>
                         </tr>
                         <tr>
                             <td>Spark JVM</td>
                             <td>Platform</td>
-                            <td>39,000</td>
+                            <td>23,000</td>
+                            <td>413</td>
+                            <td>373</td>
+                        </tr>
+                        <tr>
+                            <td>Spark JVM</td>
+                            <td>Virtual</td>
+                            <td>21,000</td>
+                            <td>383</td>
+                            <td>373</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus Native</td>
+                            <td>Virtual</td>
+                            <td>20,000</td>
+                            <td>207</td>
+                            <td>571</td>
+                        </tr>
+                        <tr>
+                            <td>Quarkus Native</td>
+                            <td>Platform</td>
+                            <td>20,000</td>
+                            <td>207</td>
+                            <td>571</td>
                         </tr>
                         <tr>
                             <td>Spring JVM</td>
                             <td>Platform</td>
-                            <td>32,000</td>
+                            <td>18,000</td>
+                            <td>545</td>
+                            <td>404</td>
                         </tr>
                         <tr>
                             <td>Spring JVM</td>
                             <td>Virtual</td>
-                            <td>29,000</td>
-                        </tr>
-                        <tr>
-                            <td>Spring JVM</td>
-                            <td>Reactive</td>
-                            <td>22,000</td>
-                        </tr>
-                        <tr>
-                            <td>Spring Native</td>
-                            <td>Virtual</td>
-                            <td>20,000</td>
-                        </tr>
-                        <tr>
-                            <td>Spring Native</td>
-                            <td>Platform</td>
-                            <td>20,000</td>
-                        </tr>
-                        <tr>
-                            <td>Spring Native</td>
-                            <td>Reactive</td>
                             <td>16,000</td>
+                            <td>427</td>
+                            <td>404</td>
+                        </tr>
+                        <tr>
+                            <td>Spring JVM</td>
+                            <td>Reactive</td>
+                            <td>13,000</td>
+                            <td>457</td>
+                            <td>435</td>
+                        </tr>
+                        <tr>
+                            <td>Spring Native</td>
+                            <td>Virtual</td>
+                            <td>10,000</td>
+                            <td>141</td>
+                            <td>384</td>
+                        </tr>
+                        <tr>
+                            <td>Spring Native</td>
+                            <td>Platform</td>
+                            <td>9,000</td>
+                            <td>185</td>
+                            <td>384</td>
+                        </tr>
+                        <tr>
+                            <td>Spring Native</td>
+                            <td>Reactive</td>
+                            <td>7,000</td>
+                            <td>179</td>
+                            <td>437</td>
                         </tr>
                     </tbody>
                 </table>

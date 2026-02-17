@@ -12,37 +12,37 @@ This document describes the systematic approach used to benchmark REST service i
 
 Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
 
-## At-a-glance results (09/02/2026)
+## At-a-glance results (17/02/2026)
 
-The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (4 vCPUs).
+The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (2 vCPUs).
 
-| Framework                  | Runtime | Mode     |  RPS |
-|----------------------------|---------|----------|-----:|
-| Spring                     | JVM     | Platform |  32k |
-| Spring                     | JVM     | Virtual  |  29k |
-| Spring                     | JVM     | Reactive |  22k |
-| Spring                     | Native  | Platform |  20k |
-| Spring                     | Native  | Virtual  |  20k |
-| Spring                     | Native  | Reactive |  16k |
-| Quarkus                    | JVM     | Platform |  70k |
-| Quarkus                    | JVM     | Virtual  |  90k |
-| Quarkus                    | JVM     | Reactive | 104k |
-| Quarkus                    | Native  | Platform |  45k |
-| Quarkus                    | Native  | Virtual  |  54k |
-| Quarkus                    | Native  | Reactive |  51k |
-| Spark                      | JVM     | Platform |  39k |
-| Spark                      | JVM     | Virtual  |  45k |
-| Javalin                    | JVM     | Platform |  41k |
-| Javalin                    | JVM     | Virtual  |  47k |
-| Micronaut                  | JVM     | Platform |  53k |
-| Micronaut                  | JVM     | Virtual  |  74k |
-| Micronaut                  | JVM     | Reactive |  63k |
-| Micronaut                  | Native  | Platform |  WIP |
-| Micronaut                  | Native  | Virtual  |  WIP |
-| Micronaut                  | Native  | Reactive |  WIP |
-| Helidon                    | JVM     | Virtual  |  WIP |
-| Helidon                    | Native  | Virtual  |  WIP |
-| Go (observability-aligned) | Native  | N/A      |  52k |
+| Framework | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
+|-----------|---------|----------|-----|---------------|-----------------|
+| Spring    | JVM     | Platform | 18k | 545           | 404             |
+| Spring    | JVM     | Virtual  | 16k | 427           | 404             |
+| Spring    | JVM     | Reactive | 13k | 457           | 435             |
+| Spring    | Native  | Platform | 9k  | 185           | 384             |
+| Spring    | Native  | Virtual  | 10k | 141           | 384             |
+| Spring    | Native  | Reactive | 7k  | 179           | 437             |
+| Quarkus   | JVM     | Platform | 36k | 495           | 423             |
+| Quarkus   | JVM     | Virtual  | 45k | 495           | 423             |
+| Quarkus   | JVM     | Reactive | 46k | 495           | 423             |
+| Quarkus   | Native  | Platform | 20k | 207           | 571             |
+| Quarkus   | Native  | Virtual  | 20k | 207           | 571             |
+| Quarkus   | Native  | Reactive | 27k | 207           | 571             |
+| Spark     | JVM     | Platform | 23k | 413           | 373             |
+| Spark     | JVM     | Virtual  | 21k | 383           | 373             |
+| Javalin   | JVM     | Platform | 26k | 696           | 374             |
+| Javalin   | JVM     | Virtual  | 25k | 495           | 374             |
+| Micronaut | JVM     | Platform | 28k | 465           | 400             |
+| Micronaut | JVM     | Virtual  | 33k | 465           | 400             |
+| Micronaut | JVM     | Reactive | 28k | 465           | 400             |
+| Micronaut | Native  | Platform | WIP |               |                 |
+| Micronaut | Native  | Virtual  | WIP |               |                 |
+| Micronaut | Native  | Reactive | WIP |               |                 |
+| Helidon   | JVM     | Virtual  | WIP |               |                 |
+| Helidon   | Native  | Virtual  | WIP |               |                 |
+| Go        | Native  | N/A      | 24k | 58            | 33              |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
@@ -59,7 +59,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
     - identical load profiles
     - inside the same docker network
 - go vs go-simple
-    - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~120k RPS.
+    - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~60k RPS.
     - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
     - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
@@ -93,13 +93,13 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 
 **Resource Limits**:
 ```yaml
-cpus: 4.0          # 4 virtual CPUs
+cpus: 2.0          # 4 virtual CPUs
 memory: 2GB        # Maximum memory
 ```
 
 **Why CPU Limiting?**
 - Creates fair comparison across implementations
-- Prevents single service from monopolizing resources
+- Prevents a single service from monopolizing resources
 - Simulates production resource constraints
 - Easier to detect efficiency differences
 
@@ -283,6 +283,16 @@ wrk2 -t 8 -c 200 -d 180s -R 100000 --latency \
 - Export Prometheus metrics
 - Save trace samples
 
+#### Example: request rate drilldown (Grafana)
+
+These are examples of how request rate can be inspected via `hello_request_count_total` and then broken down by labels like `service_name` and `endpoint`.
+
+![Grafana request count broken down by endpoint]({{ '/images/screenshots/grafana/metrics_by_endpoint.png' | relative_url }})
+
+![Grafana request count broken down by service_name]({{ '/images/screenshots/grafana/metrics_by_service_name.png' | relative_url }})
+
+![Grafana request count broken down by multiple labels]({{ '/images/screenshots/grafana/metrics_misc_1.png' | relative_url }})
+
 ### 4. Cooldown Phase
 
 ```bash
@@ -303,6 +313,12 @@ Start-Sleep -Seconds 30
 
 docker stats --no-stream
 ```
+
+#### Example: capturing peak memory in Docker Desktop
+
+When summarizing peak memory, it’s useful to capture a “post-benchmark” snapshot of container memory usage (either via `docker stats` or Docker Desktop).
+
+![Docker Desktop container list showing memory usage after a benchmark run]({{ '/images/screenshots/docker/post_benchmark_2026-02-14.png' | relative_url }})
 
 ### 5. Data Collection
 
@@ -476,7 +492,7 @@ done
 
 ### Stress Testing
 
-Find breaking point:
+Find the breaking point:
 ```bash
 for rate in 50000 100000 150000 200000; do
     wrk2 -t 8 -c 200 -d 60s -R $rate http://localhost:8080/hello/platform

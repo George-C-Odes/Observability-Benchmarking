@@ -76,11 +76,11 @@ Spring Native plugin handles:
 
 #### Environment Variables
 
-| Variable | Description | Default/Configured |
-|----------|-------------|-------------------|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317` |
-| `OTEL_SERVICE_NAME` | Service name for telemetry | `SpringNativeTomcat` |
-| `SPRING_APPLICATION_NAME` | Spring application name | Set at build time |
+| Variable                      | Description                      | Default/Configured   |
+|-------------------------------|----------------------------------|----------------------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317`         |
+| `OTEL_SERVICE_NAME`           | Service name for telemetry       | `SpringNativeTomcat` |
+| `SPRING_APPLICATION_NAME`     | Spring application name          | Set at build time    |
 
 #### Application Configuration
 Same as JVM version (baked in at compile time):
@@ -422,12 +422,12 @@ process_threads{service_name="SpringNativeTomcat"}
 
 ### Enterprise vs Community
 
-| Feature | Enterprise | Community |
-|---------|-----------|-----------|
-| Build Speed | Faster | Slower |
-| Binary Performance | ~10% better | Baseline |
-| Advanced Optimizations | Yes | No |
-| License | Oracle | GPL v2 + CPE |
+| Feature                | Enterprise  | Community    |
+|------------------------|-------------|--------------|
+| Build Speed            | Faster      | Slower       |
+| Binary Performance     | ~10% better | Baseline     |
+| Advanced Optimizations | Yes         | No           |
+| License                | Oracle      | GPL v2 + CPE |
 
 The repository defaults to Enterprise.
 
@@ -449,14 +449,14 @@ The repository defaults to Enterprise.
 
 ## Comparison: Native vs JVM
 
-| Aspect | Native | JVM |
-|--------|--------|-----|
-| Startup | ~1s | ~3-4s |
-| Memory | ~250 MB | ~400+ MB |
-| Throughput | Lower (no JIT) | Higher (JIT optimized) |
-| Build Time | 5-10 min | <1 min |
-| Observability | Limited | Comprehensive |
-| Best For | Microservices, Serverless | Long-running, High throughput |
+| Aspect        | Native                    | JVM                           |
+|---------------|---------------------------|-------------------------------|
+| Startup       | ~1s                       | ~3-4s                         |
+| Memory        | ~250 MB                   | ~400+ MB                      |
+| Throughput    | Lower (no JIT)            | Higher (JIT optimized)        |
+| Build Time    | 5-10 min                  | <1 min                        |
+| Observability | Limited                   | Comprehensive                 |
+| Best For      | Microservices, Serverless | Long-running, High throughput |
 
 ## Future Enhancements
 - [ ] Complete benchmark results
