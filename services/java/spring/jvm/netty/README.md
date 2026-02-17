@@ -133,8 +133,6 @@ Tracks request count for the reactive endpoint.
 - `http.server.requests` - Request duration and count
 - Tags include: `uri`, `method`, `status`, `outcome`
 
-⚠️ **Known Issue**: Not all Spring Boot 4.0 metrics are available due to OTEL Java agent compatibility issues (see [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906))
-
 #### JVM Metrics
 - `jvm.memory.used` - Heap and non-heap memory usage
 - `jvm.memory.committed` - Committed memory by pool
@@ -350,11 +348,6 @@ jvm_memory_used_bytes{service_name="SpringNetty",id="direct"}
 - Pyroscope OTEL extension (injected at runtime)
 
 ## Known Issues
-
-### Metrics Compatibility (Spring Boot 4.0)
-⚠️ **OTEL SDK not fully compatible** with Spring Boot 4 yet:
-- Some metrics may be missing
-- Issue: [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906)
 
 ### Performance Lower Than Expected
 - Reactive model underperforms for this simple cache-lookup workload

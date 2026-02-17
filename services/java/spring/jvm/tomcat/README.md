@@ -161,8 +161,6 @@ Tracks request count per endpoint.
 - `http.server.requests` - Request duration and count
 - Tags include: `uri`, `method`, `status`, `outcome`
 
-⚠️ **Known Issue**: Not all Spring Boot 4.0 metrics are available due to OTEL Java agent compatibility issues (see [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906))
-
 #### JVM Metrics
 - `jvm.memory.used` - Heap and non-heap memory usage
 - `jvm.memory.committed` - Committed memory by pool
@@ -391,12 +389,6 @@ tomcat_threads_busy_threads{service_name="SpringTomcat"}
 - Pyroscope OTEL extension (injected at runtime)
 
 ## Known Issues
-
-### Metrics Compatibility (Spring Boot 4.0)
-⚠️ **OTEL SDK not fully compatible** with Spring Boot 4 yet:
-- Some metrics may be missing
-- Workaround: Use native Spring metrics or wait for OTEL update
-- Issue: [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906)
 
 ### Pyroscope Agent Overhead
 - Java profiling agent adds measurable overhead (~5-10% throughput reduction)

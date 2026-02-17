@@ -760,15 +760,6 @@ The documentation includes portfolio-oriented content highlighting the skills de
 
 ## ⚠️ Known Issues
 
-### OpenTelemetry & Spring Boot 4.0
-**Issue**: Not all metrics are available for Spring Boot applications.
-
-**Cause**: The OpenTelemetry Java agent and SDK are not fully compatible with Spring Boot 4.0 yet.
-
-**Workaround**: Basic metrics are still collected. Full metric support expected in future OTel releases.
-
-**Tracking**: [opentelemetry-java-instrumentation#14906](https://github.com/open-telemetry/opentelemetry-java-instrumentation/issues/14906)
-
 ### Alloy eBPF Profiler on WSL2
 **Issue**: eBPF profiling doesn't work with Alloy version >= 1.11.0 on Windows WSL2 Docker.
 
