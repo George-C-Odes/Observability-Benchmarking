@@ -93,7 +93,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 
 **Resource Limits**:
 ```yaml
-cpus: 2.0          # 4 virtual CPUs
+cpus: 2.0          # 2 virtual CPUs
 memory: 2GB        # Maximum memory
 ```
 
