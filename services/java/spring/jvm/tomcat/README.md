@@ -48,13 +48,13 @@ Handles requests using Java virtual threads.
 
 ### Environment Variables
 
-| Variable | Description | Default/Configured |
-|----------|-------------|-------------------|
-| `JAVA_TOOL_OPTIONS` | JVM options (GC, memory, OTEL agent, etc.) | Set by compose |
-| `SPRING_THREADS_VIRTUAL_ENABLED` | Enable virtual threads | `true` or `false` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317` |
-| `OTEL_SERVICE_NAME` | Service name for telemetry | `SpringTomcat` |
-| `SPRING_APPLICATION_NAME` | Spring application name | `SpringTomcat` |
+| Variable                         | Description                                | Default/Configured |
+|----------------------------------|--------------------------------------------|--------------------|
+| `JAVA_TOOL_OPTIONS`              | JVM options (GC, memory, OTEL agent, etc.) | Set by compose     |
+| `SPRING_THREADS_VIRTUAL_ENABLED` | Enable virtual threads                     | `true` or `false`  |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`    | OpenTelemetry collector endpoint           | `alloy:4317`       |
+| `OTEL_SERVICE_NAME`              | Service name for telemetry                 | `SpringTomcat`     |
+| `SPRING_APPLICATION_NAME`        | Spring application name                    | `SpringTomcat`     |
 
 ### Application Configuration (application.yml)
 
@@ -244,12 +244,12 @@ Unlike Quarkus (which supports all modes in one deployment), Spring Tomcat requi
 
 ## Performance Characteristics
 
-### Benchmark Results (4 vCPU limit)
+### Benchmark Results (2 vCPU limit)
 
-| Mode | RPS | Rank |
-|------|-----|------|
-| Virtual | 38,000 | #6 |
-| Platform | 35,000 | #8 |
+| Mode     | RPS    |
+|----------|--------|
+| Virtual  | 16,000 |
+| Platform | 18,000 |
 
 ### Analysis
 - Virtual threads provide ~9% improvement over platform threads
@@ -405,13 +405,13 @@ tomcat_threads_busy_threads{service_name="SpringTomcat"}
 
 ## Comparison: Tomcat vs Netty
 
-| Feature | Tomcat | Netty |
-|---------|--------|-------|
-| Model | Thread-per-request (traditional) | Event-driven (reactive) |
-| Spring Mode | Imperative (WebMVC) | Reactive (WebFlux) |
-| Thread Naming | `http-nio-...` | `reactor-http-nio-...` |
-| Maturity | Very mature, widely used | Modern, reactive stack |
-| Spring Integration | Deep, extensive | Reactive-specific |
+| Feature            | Tomcat                           | Netty                   |
+|--------------------|----------------------------------|-------------------------|
+| Model              | Thread-per-request (traditional) | Event-driven (reactive) |
+| Spring Mode        | Imperative (WebMVC)              | Reactive (WebFlux)      |
+| Thread Naming      | `http-nio-...`                   | `reactor-http-nio-...`  |
+| Maturity           | Very mature, widely used         | Modern, reactive stack  |
+| Spring Integration | Deep, extensive                  | Reactive-specific       |
 
 ## Contributing
 When modifying this service:

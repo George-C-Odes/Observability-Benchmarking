@@ -148,12 +148,11 @@ mvn package -Pnative
 - Built-in concurrency (goroutines)
 - Fast HTTP routing
 - Cross-language comparison
+- Ultralightweight
 
-**Implementation Status**: 🚧 In Progress
+**Headline benchmark (17/02/2026)**: ~24,000 RPS (observability-aligned implementation)
 
-**Headline benchmark (18/01/2026)**: ~52,000 RPS (observability-aligned implementation)
-
-**Fairness note**: An additional `go-simple` variant can reach ~120,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
+**Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
 ---
 
@@ -631,7 +630,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.59.0  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.24.0  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.25.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |

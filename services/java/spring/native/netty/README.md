@@ -58,11 +58,11 @@ Spring Native automatically configures:
 
 #### Environment Variables
 
-| Variable | Description | Default/Configured |
-|----------|-------------|-------------------|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317` |
-| `OTEL_SERVICE_NAME` | Service name for telemetry | `SpringNativeNetty` |
-| `SPRING_APPLICATION_NAME` | Spring application name | `spring-native-netty` |
+| Variable                      | Description                      | Default/Configured    |
+|-------------------------------|----------------------------------|-----------------------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317`          |
+| `OTEL_SERVICE_NAME`           | Service name for telemetry       | `SpringNativeNetty`   |
+| `SPRING_APPLICATION_NAME`     | Spring application name          | `spring-native-netty` |
 
 #### Application Configuration
 Same as JVM version - see `services/spring/jvm/netty/src/main/resources/application.yml`:
@@ -339,13 +339,13 @@ process_memory_rss_bytes{service_name="SpringNativeNetty"}
 
 ### Enterprise vs Community
 
-| Feature | Enterprise | Community |
-|---------|-----------|-----------|
-| Performance | Better | Good |
-| Build Time | Faster | Slower |
-| Optimizations | Advanced | Standard |
-| Support | Commercial | Community |
-| License | Oracle | GPL v2 + CPE |
+| Feature       | Enterprise | Community    |
+|---------------|------------|--------------|
+| Performance   | Better     | Good         |
+| Build Time    | Faster     | Slower       |
+| Optimizations | Advanced   | Standard     |
+| Support       | Commercial | Community    |
+| License       | Oracle     | GPL v2 + CPE |
 
 The repository defaults to Enterprise for consistency.
 

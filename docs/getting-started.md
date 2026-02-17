@@ -163,24 +163,38 @@ nano .env
 Example `.env` settings:
 
 ```env
-# Load Generator Configuration
-WRK_THREADS=8
-WRK_CONNECTIONS=200
-WRK_DURATION=180s
-WRK_RATE=80000
+# Typically container name or 'combo' for all
+WRK_HOST: quarkus-jvm
+# 'platform', 'virtual', 'reactive' or 'combo' for all
+WRK_ENDPOINT: platform
+# If false, wrk2 container still boots and available to docker exec benchmarks on demand
+WRK_AUTORUN: true
+# If true, wrk2 container stops after autorun completion
+WRK_EXIT_AFTER_AUTORUN: false
+# 0 means indefinitely
+WRK_ITERATIONS: 1
+# Sleep in seconds between endpoints / iterations
+WRK_SLEEP_BETWEEN: 10
+# Sleep in seconds on boot
+WRK_SLEEP_INIT: 20
 
-# Service Configuration
-SPRING_HEAP_SIZE=1024m
-QUARKUS_HEAP_SIZE=512m
+# wrk2 client number of concurrent threads
+WRK_THREADS: 5
+# wrk2 client number of concurrent open connections
+WRK_CONNECTIONS: 200
+# wrk2 client test duration (per endpoint)
+WRK_DURATION: 3m
+# wrk2 client target rate of requests per second, total across all threads
+WRK_RATE: 120000
+# If true, exports the wrk2 benchmark log to file
+WRK_SAVE_LOGS: true
 
-# Resource Limits
-SERVICE_CPU_LIMIT=4.0
-SERVICE_MEMORY_LIMIT=2g
-
-# Observability Configuration
-GRAFANA_PORT=3000
-LOKI_PORT=3100
-TEMPO_PORT=3200
+# Specific max number of CPU core and Memory TOTAL allocations to be used in every container of benchmarked services
+CORES_LIMIT: 2
+MEM_LIMIT: 768M
+HEAP_MIN: 64M
+HEAP_MAX: 640M
+OFF_HEAP_MAX: 32M
 ```
 
 ### Profile-Based Deployment
@@ -262,9 +276,9 @@ Once services are running:
 - **Spark JVM (Virtual)**: http://localhost:8089/hello/virtual
 - **Javalin JVM (Platform)**: http://localhost:8090/hello/platform
 - **Javalin JVM (Virtual)**: http://localhost:8091/hello/virtual
-- **Micronaut JVM (Platform) TODO**: http://localhost:8092/hello/platform
-- **Micronaut JVM (Virtual) TODO**: http://localhost:8093/hello/virtual
-- **Micronaut JVM (Reactive) TODO**: http://localhost:8094/hello/reactive
+- **Micronaut JVM (Platform)**: http://localhost:8092/hello/platform
+- **Micronaut JVM (Virtual)**: http://localhost:8092/hello/virtual
+- **Micronaut JVM (Reactive)**: http://localhost:8092/hello/reactive
 - **Micronaut Native (Platform) TODO**: http://localhost:8095/hello/platform
 - **Micronaut Native (Virtual) TODO**: http://localhost:8096/hello/virtual
 - **Micronaut Native (Reactive) TODO**: http://localhost:8097/hello/reactive

@@ -73,7 +73,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.59.0  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.24.0  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.25.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
@@ -351,37 +351,37 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 ### Results
 
-The numbers below are a curated summary of a representative run (09/02/2026). For methodology and how to reproduce: see the docs site.
+The numbers below are a curated summary of a representative run (17/02/2026). For methodology and how to reproduce: see the docs site.
 
-#### Requests Per Second (RPS) — 09/02/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 17/02/2026 (to closest thousand)
 
-| Framework                  | Runtime | Mode     |  RPS |
-|----------------------------|---------|----------|-----:|
-| Spring                     | JVM     | Platform |  32k |
-| Spring                     | JVM     | Virtual  |  29k |
-| Spring                     | JVM     | Reactive |  22k |
-| Spring                     | Native  | Platform |  20k |
-| Spring                     | Native  | Virtual  |  20k |
-| Spring                     | Native  | Reactive |  16k |
-| Quarkus                    | JVM     | Platform |  70k |
-| Quarkus                    | JVM     | Virtual  |  90k |
-| Quarkus                    | JVM     | Reactive | 104k |
-| Quarkus                    | Native  | Platform |  45k |
-| Quarkus                    | Native  | Virtual  |  54k |
-| Quarkus                    | Native  | Reactive |  51k |
-| Spark                      | JVM     | Platform |  39k |
-| Spark                      | JVM     | Virtual  |  45k |
-| Javalin                    | JVM     | Platform |  41k |
-| Javalin                    | JVM     | Virtual  |  47k |
-| Micronaut                  | JVM     | Platform |  53k |
-| Micronaut                  | JVM     | Virtual  |  74k |
-| Micronaut                  | JVM     | Reactive |  63k |
-| Micronaut                  | Native  | Platform |  WIP |
-| Micronaut                  | Native  | Virtual  |  WIP |
-| Micronaut                  | Native  | Reactive |  WIP |
-| Helidon                    | JVM     | Virtual  |  WIP |
-| Helidon                    | Native  | Virtual  |  WIP |
-| Go (observability-aligned) | Native  | N/A      |  52k |
+| Framework | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
+|-----------|---------|----------|-----|---------------|-----------------|
+| Spring    | JVM     | Platform | 18k | 545           | 404             |
+| Spring    | JVM     | Virtual  | 16k | 427           | 404             |
+| Spring    | JVM     | Reactive | 13k | 457           | 435             |
+| Spring    | Native  | Platform | 9k  | 185           | 384             |
+| Spring    | Native  | Virtual  | 10k | 141           | 384             |
+| Spring    | Native  | Reactive | 7k  | 179           | 437             |
+| Quarkus   | JVM     | Platform | 36k | 495           | 423             |
+| Quarkus   | JVM     | Virtual  | 45k | 495           | 423             |
+| Quarkus   | JVM     | Reactive | 46k | 495           | 423             |
+| Quarkus   | Native  | Platform | 20k | 207           | 571             |
+| Quarkus   | Native  | Virtual  | 20k | 207           | 571             |
+| Quarkus   | Native  | Reactive | 27k | 207           | 571             |
+| Spark     | JVM     | Platform | 23k | 413           | 373             |
+| Spark     | JVM     | Virtual  | 21k | 383           | 373             |
+| Javalin   | JVM     | Platform | 26k | 696           | 374             |
+| Javalin   | JVM     | Virtual  | 25k | 495           | 374             |
+| Micronaut | JVM     | Platform | 28k | 465           | 400             |
+| Micronaut | JVM     | Virtual  | 33k | 465           | 400             |
+| Micronaut | JVM     | Reactive | 28k | 465           | 400             |
+| Micronaut | Native  | Platform | WIP |               |                 |
+| Micronaut | Native  | Virtual  | WIP |               |                 |
+| Micronaut | Native  | Reactive | WIP |               |                 |
+| Helidon   | JVM     | Virtual  | WIP |               |                 |
+| Helidon   | Native  | Virtual  | WIP |               |                 |
+| Go        | Native  | N/A      | 24k | 58            | 33              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -400,7 +400,7 @@ The numbers below are a curated summary of a representative run (09/02/2026). Fo
   - identical load profiles
   - inside the same docker network 
 - go vs go-simple
-  - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~120k RPS.
+  - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~60k RPS.
   - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services. 
   - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
@@ -414,7 +414,7 @@ The numbers below are a curated summary of a representative run (09/02/2026). Fo
 - **Container Runtime**: Docker Desktop
 
 #### Container Configuration
-- **CPU Limit**: 4 vCPUs per service container
+- **CPU Limit**: 2 vCPUs per service container
 - **Memory**: Dynamically allocated
 - **Network**: Docker bridge network
 
@@ -700,7 +700,7 @@ WRK_RATE=50000             # Target requests per second
 WRK_DURATION=60s           # Test duration
 
 # Container Resource Limits
-CPU_LIMIT=4                # vCPU limit per service container
+CPU_LIMIT=2                # vCPU limit per service container
 MEMORY_LIMIT=2g            # Memory limit per service container
 
 # Observability Configuration

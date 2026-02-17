@@ -162,7 +162,7 @@ Container → Alloy (eBPF) → Pyroscope Server
 ## Resource Management
 
 ### CPU Allocation
-- Benchmarked services: 4 vCPU limit
+- Benchmarked services: 2 vCPU limit
 - Observability stack: Unlimited (to avoid measurement bias)
 - Host: Minimum 8 cores recommended
 

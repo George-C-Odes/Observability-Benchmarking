@@ -37,12 +37,12 @@ Handles requests using reactive programming model with Mono (single async value)
 
 ### Environment Variables
 
-| Variable | Description | Default/Configured |
-|----------|-------------|-------------------|
-| `JAVA_TOOL_OPTIONS` | JVM options (GC, memory, OTEL agent, etc.) | Set by compose |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint | `alloy:4317` |
-| `OTEL_SERVICE_NAME` | Service name for telemetry | `SpringNetty` |
-| `SPRING_APPLICATION_NAME` | Spring application name | `SpringNetty` |
+| Variable                      | Description                                | Default/Configured |
+|-------------------------------|--------------------------------------------|--------------------|
+| `JAVA_TOOL_OPTIONS`           | JVM options (GC, memory, OTEL agent, etc.) | Set by compose     |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry collector endpoint           | `alloy:4317`       |
+| `OTEL_SERVICE_NAME`           | Service name for telemetry                 | `SpringNetty`      |
+| `SPRING_APPLICATION_NAME`     | Spring application name                    | `SpringNetty`      |
 
 ### Application Configuration (application.yml)
 
@@ -217,11 +217,11 @@ Tracks request count for the reactive endpoint.
 
 ### Performance Characteristics
 
-#### Benchmark Results (4 vCPU limit)
+#### Benchmark Results (2 vCPU limit)
 
-| Mode | RPS | Rank | vs Tomcat Platform |
-|------|-----|------|--------------------|
-| Reactive | 29,000 | #9 | -17% |
+| Mode     | RPS    | vs Tomcat Platform |
+|----------|--------|--------------------|
+| Reactive | 13,000 | -27%               |
 
 #### Analysis
 - **Lower than expected**: Reactive model performs worse than platform threads
@@ -384,16 +384,16 @@ jvm_memory_used_bytes{service_name="SpringNetty",id="direct"}
 
 ## Comparison: Netty (Reactive) vs Tomcat (Imperative)
 
-| Aspect | Netty/Reactive | Tomcat/Imperative |
-|--------|----------------|-------------------|
-| Model | Event-driven, non-blocking | Thread-per-request |
-| Threads | Few event loops | Large thread pool |
-| Blocking | Must avoid | Can block freely |
-| Concurrency | Very high (millions) | Limited by threads |
-| Complexity | Higher (reactive chains) | Lower (imperative) |
-| Learning Curve | Steep | Gentle |
-| Best For | I/O-bound, streaming | CPU-bound, CRUD |
-| This Benchmark | Underperforms | Better suited |
+| Aspect         | Netty/Reactive             | Tomcat/Imperative  |
+|----------------|----------------------------|--------------------|
+| Model          | Event-driven, non-blocking | Thread-per-request |
+| Threads        | Few event loops            | Large thread pool  |
+| Blocking       | Must avoid                 | Can block freely   |
+| Concurrency    | Very high (millions)       | Limited by threads |
+| Complexity     | Higher (reactive chains)   | Lower (imperative) |
+| Learning Curve | Steep                      | Gentle             |
+| Best For       | I/O-bound, streaming       | CPU-bound, CRUD    |
+| This Benchmark | Underperforms              | Better suited      |
 
 ## Improving Reactive Performance
 
