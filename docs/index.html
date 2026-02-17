@@ -89,24 +89,18 @@
         <div class="container">
             <h2>System Architecture</h2>
             <p class="lead">A modern, cloud-native architecture demonstrating industry best practices in observability and performance engineering.</p>
-            
             <div class="architecture-diagram">
-                <div class="arch-layer">
-                    <h3>Load Generation Layer</h3>
-                    <div class="arch-components">
-                        <div class="arch-component">wrk2 Load Generator</div>
-                    </div>
-                </div>
-                
                 <div class="arch-layer">
                     <h3>Service Layer</h3>
                     <div class="arch-components">
                         <div class="arch-component">Spring Boot Services</div>
                         <div class="arch-component">Quarkus Services</div>
+                        <div class="arch-component">Spark Services</div>
+                        <div class="arch-component">Javalin Services</div>
+                        <div class="arch-component">Micronaut Services</div>
                         <div class="arch-component">Go Services</div>
                     </div>
                 </div>
-                
                 <div class="arch-layer">
                     <h3>Collection Layer</h3>
                     <div class="arch-components">
@@ -115,7 +109,6 @@
                         <div class="arch-component">Pyroscope Agent</div>
                     </div>
                 </div>
-                
                 <div class="arch-layer">
                     <h3>Storage &amp; Analysis Layer</h3>
                     <div class="arch-components">
@@ -125,11 +118,22 @@
                         <div class="arch-component">Pyroscope (Profiles)</div>
                     </div>
                 </div>
-                
                 <div class="arch-layer">
                     <h3>Visualization Layer</h3>
                     <div class="arch-components">
                         <div class="arch-component">Grafana Dashboards</div>
+                    </div>
+                </div>
+                <div class="arch-layer">
+                    <h3>Load Generation Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">wrk2 Load Generator</div>
+                    </div>
+                </div>
+                <div class="arch-layer">
+                    <h3>Control Layer</h3>
+                    <div class="arch-components">
+                        <div class="arch-component">Orchestration, Healthcheck</div>
                     </div>
                 </div>
             </div>
@@ -140,7 +144,7 @@
                     <li><strong>OpenTelemetry Integration:</strong> Standardized instrumentation across all services using OTLP over gRPC</li>
                     <li><strong>Batched Telemetry:</strong> Optimized batch processing to minimize overhead on services under test</li>
                     <li><strong>Resource Isolation:</strong> CPU-limited containers ensure fair comparison across implementations</li>
-                    <li><strong>Multi-dimensional Profiling:</strong> Combined eBPF and agent-based profiling for comprehensive insights</li>
+                    <li><strong>Multidimensional Profiling:</strong> Combined eBPF and agent-based profiling for comprehensive insights</li>
                     <li><strong>Deterministic Testing:</strong> wrk2 provides fixed-rate load generation for reproducible results</li>
                 </ul>
             </div>
