@@ -61,14 +61,14 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST framework                                           |
-| **Backend**       | Framework          | Micronaut                  | 4.10.14 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 4.10.15 | Compile-time optimized JVM microservices framework                   |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.8   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.3.3  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.5   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.0  | Distributed tracing backend                                          |
+| **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
@@ -149,7 +149,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Micronaut**: 4.10.14
+- **Micronaut**: 4.10.15
   - JVM build (all three thread modes)
   - Native WIP
 
@@ -363,9 +363,9 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 | Spring    | Native  | Platform | 9k  | 185           | 384             |
 | Spring    | Native  | Virtual  | 10k | 141           | 384             |
 | Spring    | Native  | Reactive | 7k  | 179           | 437             |
-| Quarkus   | JVM     | Platform | 36k | 495           | 423             |
-| Quarkus   | JVM     | Virtual  | 45k | 495           | 423             |
-| Quarkus   | JVM     | Reactive | 46k | 495           | 423             |
+| Quarkus   | JVM     | Platform | 36k | 495           | 367             |
+| Quarkus   | JVM     | Virtual  | 45k | 495           | 367             |
+| Quarkus   | JVM     | Reactive | 46k | 495           | 367             |
 | Quarkus   | Native  | Platform | 20k | 207           | 571             |
 | Quarkus   | Native  | Virtual  | 20k | 207           | 571             |
 | Quarkus   | Native  | Reactive | 27k | 207           | 571             |
@@ -373,9 +373,9 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 | Spark     | JVM     | Virtual  | 21k | 383           | 373             |
 | Javalin   | JVM     | Platform | 26k | 696           | 374             |
 | Javalin   | JVM     | Virtual  | 25k | 495           | 374             |
-| Micronaut | JVM     | Platform | 28k | 465           | 400             |
-| Micronaut | JVM     | Virtual  | 33k | 465           | 400             |
-| Micronaut | JVM     | Reactive | 28k | 465           | 400             |
+| Micronaut | JVM     | Platform | 30k | 537           | 350             |
+| Micronaut | JVM     | Virtual  | 37k | 537           | 350             |
+| Micronaut | JVM     | Reactive | 31k | 537           | 350             |
 | Micronaut | Native  | Platform | WIP |               |                 |
 | Micronaut | Native  | Virtual  | WIP |               |                 |
 | Micronaut | Native  | Reactive | WIP |               |                 |
@@ -425,7 +425,7 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 - **Quarkus**: 3.31.3
 - **Spark**: 3.0.3
 - **Javalin**: 6.7.0
-- **Micronaut**: 4.10.14
+- **Micronaut**: 4.10.15
 - **Go**: 1.26.0 (Fiber v2.52.11)
 - **Garbage Collector**: G1GC (all Java implementations)
 

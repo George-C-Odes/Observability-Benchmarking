@@ -142,7 +142,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Quarkus     | 3.31.3  |
 | Spark       | 3.0.3   |
 | Javalin     | 6.7.0   |
-| Micronaut   | 4.10.14 |
+| Micronaut   | 4.10.15 |
 | Go          | 1.26.0  |
 
 ## Service Port Mappings

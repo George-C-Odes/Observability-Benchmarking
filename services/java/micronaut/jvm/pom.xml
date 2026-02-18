@@ -12,32 +12,28 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <micronaut.version>4.10.14</micronaut.version>
-        <micronaut.runtime>netty</micronaut.runtime>
-
-        <!-- Micronaut platform add-ons (not covered by micronaut-core-bom) -->
-        <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
-        <micronaut.cache.version>5.3.0</micronaut.cache.version>
-        <micronaut.test.version>4.10.2</micronaut.test.version>
-
         <caffeine.version>3.2.3</caffeine.version>
-        <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
-
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
-
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
-
         <lombok.version>1.18.42</lombok.version>
-
-        <!-- Logging versions (aligned with Javalin) -->
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.26</logback.version>
 
+        <micronaut.version>4.10.15</micronaut.version>
+        <micronaut.runtime>netty</micronaut.runtime>
+        <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
+        <micronaut.cache.version>5.3.0</micronaut.cache.version>
+        <micronaut.test.version>4.10.2</micronaut.test.version>
         <micronaut.processing.incremental>true</micronaut.processing.incremental>
         <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.jvm.*</micronaut.processing.annotations>
+        <micronaut.tracing.version>7.2.0</micronaut.tracing.version>
+
+        <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
+
+        <opentelemetry.version>1.59.0</opentelemetry.version>
+        <opentelemetry.instrumentation.version>2.25.0</opentelemetry.instrumentation.version>
     </properties>
 
     <dependencyManagement>
@@ -49,6 +45,24 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Align OTel artifacts with a single version -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom</artifactId>
+                <version>${opentelemetry.instrumentation.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -78,29 +92,6 @@
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-management</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.micrometer</groupId>-->
-<!--            <artifactId>micrometer-core</artifactId>-->
-<!--            <version>1.16.2</version>-->
-<!--        </dependency>-->
-
-        <!-- Metrics (used at runtime; OTLP registry kept as Micronaut integration, but OTLP sender excluded for tests/lean builds) -->
-        <dependency>
-            <groupId>io.micronaut.micrometer</groupId>
-            <artifactId>micronaut-micrometer-core</artifactId>
-            <version>${micronaut.micrometer.version}</version>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.micronaut.micrometer</groupId>-->
-<!--            <artifactId>micronaut-micrometer-registry-otlp</artifactId>-->
-<!--            <version>${micronaut.micrometer.version}</version>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>io.micrometer</groupId>-->
-<!--                    <artifactId>micrometer-core</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
 
         <!-- Reactor types (Mono/Flux) -->
         <dependency>
@@ -137,7 +128,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
         </dependency>
 
         <dependency>
@@ -180,6 +175,66 @@
             <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- ① TRACES — auto-instruments inbound/outbound HTTP.
+               Transitively pulls in micronaut-tracing-opentelemetry
+               which wires AutoConfiguredOpenTelemetrySdk as a bean. -->
+        <dependency>
+            <groupId>io.micronaut.tracing</groupId>
+            <artifactId>micronaut-tracing-opentelemetry-http</artifactId>
+            <version>${micronaut.tracing.version}</version>
+        </dependency>
+
+        <!-- ② OTLP EXPORTER — provides OtlpGrpc{Span,Metric,LogRecord}Exporter.
+               SDK Autoconfigure detects these on the classpath and wires
+               all three signal pipelines automatically.
+               Default transport = OkHttp (handles gRPC over HTTP/2). -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+
+        <!-- ③ MICROMETER CORE — Micronaut's meter-registry infrastructure.
+               Provides CompositeMeterRegistry bean so you can @Inject MeterRegistry. -->
+        <dependency>
+            <groupId>io.micronaut.micrometer</groupId>
+            <artifactId>micronaut-micrometer-core</artifactId>
+            <version>${micronaut.micrometer.version}</version>
+        </dependency>
+
+        <!-- ④ METRICS BRIDGE — Micrometer MeterRegistry → OTel MeterProvider.
+               Metrics recorded via Micrometer flow through OTel's SDK pipeline
+               and out the OTLP gRPC metric exporter. -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-micrometer-1.5</artifactId>
+            <version>${opentelemetry.instrumentation.version}-alpha</version>
+        </dependency>
+
+        <!-- ⑤ LOGS — Logback appender that feeds log records into
+               OTel's BatchLogRecordProcessor → OtlpGrpcLogRecordExporter.
+               Automatically correlates logs with active trace/span IDs. -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <version>${opentelemetry.instrumentation.version}-alpha</version>
+        </dependency>
+
+        <!-- Align OTel incubator API with the OTel core version (fixes ExtendedOpenTelemetry CNFEs) -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api-incubator</artifactId>
+            <version>${opentelemetry.version}-alpha</version>
+        </dependency>
+
+
+        <!-- ── 4. Micronaut OTel annotation processing ────────────
+             Enables @NewSpan, @ContinueSpan, @SpanTag.             -->
+<!--        <dependency>-->
+<!--            <groupId>io.micronaut.tracing</groupId>-->
+<!--            <artifactId>micronaut-tracing-opentelemetry-annotation</artifactId>-->
+<!--            <version>${micronaut.tracing.version}</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -283,6 +338,9 @@
                                         <exclude>META-INF/config-properties.adoc</exclude>
                                         <exclude>META-INF/spring-configuration-metadata.json</exclude>
                                         <exclude>META-INF/io.netty.versions.properties</exclude>
+
+                                        <!-- Duplicate Maven metadata (causes overlap warnings with Netty + OTel); not used at runtime. -->
+                                        <exclude>META-INF/maven/org.jctools/jctools-core/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

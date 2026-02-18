@@ -4,6 +4,7 @@ import io.github.georgecodes.benchmarking.micronaut.jvm.application.HelloService
 import io.github.georgecodes.benchmarking.micronaut.jvm.application.port.HelloMode;
 import io.micronaut.core.annotation.Blocking;
 import io.micronaut.core.annotation.NonBlocking;
+import io.micronaut.core.version.VersionUtils;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
@@ -22,6 +23,7 @@ public class HelloController {
     private final HelloService helloService;
 
     public HelloController(HelloService helloService) {
+        log.info("Micronaut version: {}", VersionUtils.getMicronautVersion());
         this.helloService = helloService;
         log.info("Init thread: {}", Thread.currentThread());
         Runtime runtime = Runtime.getRuntime();

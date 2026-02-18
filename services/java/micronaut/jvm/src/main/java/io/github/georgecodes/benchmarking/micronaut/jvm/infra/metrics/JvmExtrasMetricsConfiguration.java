@@ -7,6 +7,9 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micronaut.context.annotation.Factory;
 import jakarta.inject.Singleton;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Infrastructure configuration that wires Micrometer JVM extras meter binders.
  *
@@ -18,12 +21,13 @@ import jakarta.inject.Singleton;
 public final class JvmExtrasMetricsConfiguration {
 
     /**
-     * Tracks whether the JVM extras meter binders have been bound to the global registry.
+     * Tracks which binder classes have been bound to the global registry.
      *
-     * <p>Volatile is used to ensure visibility across threads and to avoid binding the same
-     * metrics multiple times when multiple beans are initialized concurrently.
+     * <p>Micronaut tests can start multiple application contexts in the same JVM.
+     * We bind these meters to Micrometer's global registry, so without this guard
+     * we'd try to register the same meter IDs multiple times.
      */
-    private static volatile boolean bound;
+    private static final Set<String> BOUND_BINDERS = ConcurrentHashMap.newKeySet();
 
     /**
      * Creates a meter binder for process memory metrics.
@@ -33,7 +37,7 @@ public final class JvmExtrasMetricsConfiguration {
     @Singleton
     public MeterBinder processMemoryMetrics() {
         MeterBinder binder = new ProcessMemoryMetrics();
-        bindOnce(binder);
+        bindOncePerBinder(binder);
         return binder;
     }
 
@@ -45,20 +49,15 @@ public final class JvmExtrasMetricsConfiguration {
     @Singleton
     public MeterBinder processThreadMetrics() {
         MeterBinder binder = new ProcessThreadMetrics();
-        bindOnce(binder);
+        bindOncePerBinder(binder);
         return binder;
     }
 
-    private static void bindOnce(MeterBinder binder) {
-        if (bound) {
+    private static void bindOncePerBinder(MeterBinder binder) {
+        String key = binder.getClass().getName();
+        if (!BOUND_BINDERS.add(key)) {
             return;
         }
-        synchronized (JvmExtrasMetricsConfiguration.class) {
-            if (bound) {
-                return;
-            }
-            binder.bindTo(Metrics.globalRegistry);
-            bound = true;
-        }
+        binder.bindTo(Metrics.globalRegistry);
     }
 }

@@ -1,0 +1,18 @@
+# Test profile overrides
+#
+# Unit tests shouldn't try to export telemetry over OTLP. It makes test output noisy
+# and can fail when the collector isn't running or doesn't have the receiver/pipeline enabled.
+#
+# Traces/metrics can be enabled when desired by overriding via env vars.
+otel:
+  logs:
+    exporter: none
+  metrics:
+    exporter: none
+  traces:
+    exporter: none
+micronaut:
+  netty:
+    event-loops:
+      default:
+        loom-carrier: false

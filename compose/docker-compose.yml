@@ -8,7 +8,7 @@ x-default-environment:
   timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
   host_repo: ${HOST_REPO:-C:/}
   cache_size: &default_cache_size ${CACHE_SIZE:-50000}
-  cpu_limit: &default_cpu_limit ${CORES_LIMIT:-4}
+  cpu_limit: &default_cpu_limit ${CORES_LIMIT:-2}
   mem_limit: &default_mem_limit ${MEM_LIMIT:-512M}
   heap_min: ${HEAP_MIN:-96M}
   heap_max: ${HEAP_MAX:-96M}
@@ -28,7 +28,7 @@ x-default-environment:
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
-    -Dreactor.netty.ioWorkerCount=${CORES_LIMIT:-4} \
+    -Dreactor.netty.ioWorkerCount=${CORES_LIMIT:-2} \
     -Dreactor.netty.ioSelectCount=-1 \
     -Dreactor.netty.native=true \
     -XX:+UnlockDiagnosticVMOptions \
@@ -41,7 +41,7 @@ x-default-environment:
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
     -XX:+UseStringDeduplication \
-    -XX:ActiveProcessorCount=${CORES_LIMIT:-4} \
+    -XX:ActiveProcessorCount=${CORES_LIMIT:-2} \
     -XX:HeapDumpPath=/var/log/error \
     -XX:MaxGCPauseMillis=200 \
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
@@ -49,7 +49,6 @@ x-default-environment:
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
     -Xms${HEAP_MIN:-96M} \
     -Xmx${HEAP_MAX:-96M} \
-    --add-opens=java.base/java.lang=ALL-UNNAMED \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
@@ -69,7 +68,7 @@ x-default-environment:
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
     -XX:+UseStringDeduplication \
-    -XX:ActiveProcessorCount=${CORES_LIMIT:-4} \
+    -XX:ActiveProcessorCount=${CORES_LIMIT:-2} \
     -XX:HeapDumpPath=/var/log/error \
     -XX:MaxGCPauseMillis=200 \
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
@@ -77,6 +76,37 @@ x-default-environment:
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
     -Xms${HEAP_MIN:-96M} \
     -Xmx${HEAP_MAX:-96M} \
+    --enable-native-access=ALL-UNNAMED \
+    --sun-misc-unsafe-memory-access=allow \
+    -Xlog:class+path=info \
+    -Xlog:gc+init=info \
+    -Xlog:gc+exit=info \
+"
+  micronaut_java_tool_options: &default_micronaut_java_tool_options "\
+    -Djava.security.egd=file:/dev/./urandom \
+    -Djdk.tracePinnedThreads=full \
+    -Dreactor.netty.ioWorkerCount=${CORES_LIMIT:-2} \
+    -Dreactor.netty.ioSelectCount=-1 \
+    -Dreactor.netty.native=true \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+AlwaysPreTouch \
+    -XX:+DebugNonSafepoints \
+    -XX:+ExitOnOutOfMemoryError \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:+PreserveFramePointer \
+    -XX:+PrintNMTStatistics \
+    -XX:+UseContainerSupport \
+    -XX:+UseG1GC \
+    -XX:+UseStringDeduplication \
+    -XX:ActiveProcessorCount=${CORES_LIMIT:-2} \
+    -XX:HeapDumpPath=/var/log/error \
+    -XX:MaxGCPauseMillis=200 \
+    -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
+    -XX:NativeMemoryTracking=summary \
+    -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
+    -Xms${HEAP_MIN:-96M} \
+    -Xmx${HEAP_MAX:-96M} \
+    --add-opens=java.base/java.lang=ALL-UNNAMED \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
@@ -98,7 +128,7 @@ x-default-environment:
   native_java_options: &default_native_java_options
     - "-Xms${HEAP_MIN:-96M}"
     - "-Xmx${HEAP_MAX:-96M}"
-    - "-XX:ActiveProcessorCount=${CORES_LIMIT:-4}"
+    - "-XX:ActiveProcessorCount=${CORES_LIMIT:-2}"
     - "-XX:MaxGCPauseMillis=200"                      #Enterprise
     - "-XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M}"  #Enterprise
     - "-XX:+ExitOnOutOfMemoryError"
@@ -923,13 +953,14 @@ services:
       - ${HOST_REPO}/data/services/micronaut/jvm/error:/var/log/error
     environment:
       TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      JAVA_TOOL_OPTIONS: *default_micronaut_java_tool_options
       LOGGER_LEVELS_ROOT: "INFO"
       CACHE_SIZE: *default_cache_size
 
       MICRONAUT_EXECUTORS_PLATFORM_CORE_POOL_SIZE: *default_cpu_limit
       MICRONAUT_EXECUTORS_PLATFORM_NUMBER_OF_THREADS: *default_cpu_limit
       MICRONAUT_EXECUTORS_PLATFORM_PARALLELISM: *default_cpu_limit
+      MICRONAUT_EXECUTORS_PLATFORM_NTHREADS: *default_cpu_limit
         #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
       MICRONAUT_EXECUTORS_PLATFORM_TYPE: "FIXED"
         #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
@@ -940,9 +971,16 @@ services:
       #AUTO, MANUAL, IO, BLOCKING
       MICRONAUT_SERVER_THREAD_SELECTION: "MANUAL"
 
+      MICRONAUT_METRICS_BINDERS_JVM_ENABLED: *default_metric_mm_jvm
+      MICRONAUT_METRICS_BINDERS_PROCESSOR_ENABLED: true
+      MICRONAUT_METRICS_BINDERS_UPTIME_ENABLED: false
+      MICRONAUT_METRICS_BINDERS_FILES_ENABLED: false
+      MICRONAUT_METRICS_BINDERS_LOGBACK_ENABLED: false
+      MICRONAUT_METRICS_BINDERS_WEB_ENABLED: true
+      MICRONAUT_METRICS_ENABLED: true
+
       OTEL_SDK_DISABLED: false
       OTEL_LOG_LEVEL: "info"
-      OTEL_JAVAAGENT_DEBUG: false
       OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
       OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
       OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
@@ -956,27 +994,6 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
-      OTEL_PROFILING_ENABLED: true
-      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
-      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
-      OTEL_PYROSCOPE_START_PROFILING: true
-      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
-      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
-      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
-      PYROSCOPE_APPLICATION_NAME: "agent/micronaut-jvm"
-      PYROSCOPE_PROFILING_INTERVAL: "10ms"
-      PYROSCOPE_UPLOAD_INTERVAL: "20s"
-      PYROSCOPE_PROFILER_LOCK: "10ms"
-      PYROSCOPE_PROFILER_ALLOC: "512k"
-      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
-      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
-      PYROSCOPE_FORMAT: "jfr"
-      PYROSCOPE_PROFILER_EVENT: "itimer"
-      PYROSCOPE_ALLOC_LIVE: false
-      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
-      PYROSCOPE_LOG_LEVEL: "warn"
-      PYROSCOPE_GC_BEFORE_DUMP: false
     <<: *common_properties
 
   go:
