@@ -24,7 +24,6 @@
         <micronaut.version>4.10.15</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
-        <micronaut.cache.version>5.3.0</micronaut.cache.version>
         <micronaut.test.version>4.10.2</micronaut.test.version>
         <micronaut.processing.incremental>true</micronaut.processing.incremental>
         <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.jvm.*</micronaut.processing.annotations>
