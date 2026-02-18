@@ -338,6 +338,9 @@
                                         <exclude>META-INF/config-properties.adoc</exclude>
                                         <exclude>META-INF/spring-configuration-metadata.json</exclude>
                                         <exclude>META-INF/io.netty.versions.properties</exclude>
+
+                                        <!-- Duplicate Maven metadata (causes overlap warnings with Netty + OTel); not used at runtime. -->
+                                        <exclude>META-INF/maven/org.jctools/jctools-core/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
