@@ -17,8 +17,7 @@
         <micrometer.version>1.16.3</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
-        <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.26</logback.version>
+        <logback.version>1.5.32</logback.version>
 
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
@@ -33,6 +32,12 @@
             <groupId>org.zoomba-lang</groupId>
             <artifactId>spark-core</artifactId>
             <version>${spark-core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Cache -->
@@ -57,15 +62,14 @@
                     <groupId>io.micrometer</groupId>
                     <artifactId>micrometer-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
         <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>

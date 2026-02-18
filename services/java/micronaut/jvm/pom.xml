@@ -18,13 +18,11 @@
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <lombok.version>1.18.42</lombok.version>
-        <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.26</logback.version>
+        <logback.version>1.5.32</logback.version>
 
         <micronaut.version>4.10.15</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
-        <micronaut.cache.version>5.3.0</micronaut.cache.version>
         <micronaut.test.version>4.10.2</micronaut.test.version>
         <micronaut.processing.incremental>true</micronaut.processing.incremental>
         <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.jvm.*</micronaut.processing.annotations>
@@ -108,6 +106,10 @@
                     <groupId>io.micrometer</groupId>
                     <artifactId>micrometer-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -118,20 +120,9 @@
             <version>${caffeine.version}</version>
         </dependency>
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
         </dependency>
 

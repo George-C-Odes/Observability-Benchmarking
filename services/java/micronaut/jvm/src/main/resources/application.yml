@@ -1,10 +1,6 @@
 benchmark:
   cache:
     size: ${CACHE_SIZE:50000}
-  metrics:
-    bridge:
-      micrometer-to-otel:
-        enabled: ${MICROMETER_TO_OTEL_BRIDGE_ENABLED:true}
 endpoints:
   all:
     enabled: true
