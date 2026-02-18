@@ -24,9 +24,9 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Spring    | Native  | Platform | 9k  | 185           | 384             |
 | Spring    | Native  | Virtual  | 10k | 141           | 384             |
 | Spring    | Native  | Reactive | 7k  | 179           | 437             |
-| Quarkus   | JVM     | Platform | 36k | 495           | 423             |
-| Quarkus   | JVM     | Virtual  | 45k | 495           | 423             |
-| Quarkus   | JVM     | Reactive | 46k | 495           | 423             |
+| Quarkus   | JVM     | Platform | 36k | 495           | 367             |
+| Quarkus   | JVM     | Virtual  | 45k | 495           | 367             |
+| Quarkus   | JVM     | Reactive | 46k | 495           | 367             |
 | Quarkus   | Native  | Platform | 20k | 207           | 571             |
 | Quarkus   | Native  | Virtual  | 20k | 207           | 571             |
 | Quarkus   | Native  | Reactive | 27k | 207           | 571             |
@@ -34,9 +34,9 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Spark     | JVM     | Virtual  | 21k | 383           | 373             |
 | Javalin   | JVM     | Platform | 26k | 696           | 374             |
 | Javalin   | JVM     | Virtual  | 25k | 495           | 374             |
-| Micronaut | JVM     | Platform | 28k | 465           | 400             |
-| Micronaut | JVM     | Virtual  | 33k | 465           | 400             |
-| Micronaut | JVM     | Reactive | 28k | 465           | 400             |
+| Micronaut | JVM     | Platform | 30k | 537           | 350             |
+| Micronaut | JVM     | Virtual  | 37k | 537           | 350             |
+| Micronaut | JVM     | Reactive | 31k | 537           | 350             |
 | Micronaut | Native  | Platform | WIP |               |                 |
 | Micronaut | Native  | Virtual  | WIP |               |                 |
 | Micronaut | Native  | Reactive | WIP |               |                 |

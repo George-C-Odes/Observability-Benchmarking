@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Micronaut JVM" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="micronaut-jvm:4.10.14_latest" />
+        <option name="imageTag" value="micronaut-jvm:4.10.15_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="MICRONAUT_VERSION" />
-              <option name="value" value="4.10.14" />
+              <option name="value" value="4.10.15" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="micronaut-jvm:4.10.14_latest" />
+              <option name="value" value="micronaut-jvm:4.10.15_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

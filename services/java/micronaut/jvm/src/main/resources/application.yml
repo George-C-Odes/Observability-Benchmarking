@@ -1,6 +1,10 @@
 benchmark:
   cache:
     size: ${CACHE_SIZE:50000}
+  metrics:
+    bridge:
+      micrometer-to-otel:
+        enabled: ${MICROMETER_TO_OTEL_BRIDGE_ENABLED:true}
 endpoints:
   all:
     enabled: true
@@ -21,17 +25,20 @@ endpoints:
   metrics:
     enabled: true
     sensitive: false
+logger:
+  levels:
+    ROOT: INFO
+# Micrometer is kept enabled for local /metrics endpoint and any in-process meters,
+# but we do NOT use Micrometer's OTLP registry because it exports over OTLP/HTTP.
+# Metrics export is handled via OpenTelemetry SDK (OTLP/gRPC) using OTEL_* env vars.
 micrometer:
-  enabled: false
+  enabled: true
   export:
     otlp:
       enabled: false
   registry:
     otlp:
       enabled: false
-logger:
-  levels:
-    ROOT: INFO
 micronaut:
   application:
     name: micronaut-jvm
@@ -54,7 +61,7 @@ micronaut:
     event-loops:
       default:
         loom-carrier: true
-        num-threads: 4
+        num-threads: 2
         transport: [io_uring, epoll, kqueue, nio]
   server:
     netty:
@@ -62,3 +69,16 @@ micronaut:
         enabled: false
     port: 8080
     thread-selection: MANUAL
+  tracing:
+    opentelemetry:
+      enabled: true
+otel:
+  exporter:
+    otlp:
+      protocol: grpc
+  logs:
+    exporter: otlp
+  metrics:
+    exporter: otlp
+  traces:
+    exporter: otlp

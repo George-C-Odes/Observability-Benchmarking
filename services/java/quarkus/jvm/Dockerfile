@@ -63,35 +63,6 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
 #-DskipTests
 #uber-jar
 
-# ------------ OTEL/PROFILING DEPS STAGE -----------------------
-FROM alpine:3.23.3 AS otel_deps
-
-ARG OTEL_PYROSCOPE_VERSION=1.0.5
-ARG OTEL_JAVA_AGENT_VERSION=2.25.0
-ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
-ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
-### Snapshots - prereleased:
-#ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}-20251212.043721-77.jar
-#ARG OTEL_JAVA_AGENT_URL="https://central.sonatype.com/repository/maven-snapshots/io/opentelemetry/javaagent/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}-SNAPSHOT/${OTEL_JAVA_AGENT_FILENAME}"
-
-RUN apk add --no-cache ca-certificates curl
-WORKDIR /out
-
-# Download with BuildKit cache to speed rebuilds
-RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
-    set -e; \
-    PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/pyroscope-otel.jar"; \
-    PYRO_CACHE="/cache/pyroscope-otel-${OTEL_PYROSCOPE_VERSION}.jar"; \
-    if [ ! -f "$PYRO_CACHE" ]; then \
-      curl -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
-    fi; \
-    cp "$PYRO_CACHE" ./pyroscope-otel-extension.jar; \
-    AGENT_CACHE="/cache/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar"; \
-    if [ ! -f "$AGENT_CACHE" ]; then \
-      curl -fsSL --retry 5 --retry-all-errors -o "$AGENT_CACHE" "${OTEL_JAVA_AGENT_URL}"; \
-    fi; \
-    cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
-
 #-----------------------  RUNTIME STAGE -----------------------
 FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
@@ -116,14 +87,10 @@ WORKDIR /work
 #    && dnf clean all && rm -rf /var/cache/dnf/*
 
 COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/target/quarkus-app/ /deployments/
-COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/pyroscope-otel-extension.jar /work/pyroscope-otel-extension.jar
-COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/opentelemetry-javaagent.jar    /work/opentelemetry-javaagent.jar
 
 EXPOSE 8080
 
 ENV JAVA_TOOL_OPTIONS="\
-    -javaagent:/work/opentelemetry-javaagent.jar \
-    -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
     -XX:+UnlockDiagnosticVMOptions \
