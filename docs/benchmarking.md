@@ -46,7 +46,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
-- Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use).
+- Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use for jvm, not supported in native).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
@@ -117,7 +117,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.2 (3.5.10 also supported)
-- Quarkus: 3.31.3
+- Quarkus: 3.31.4
 - Go: 1.26.0 with Fiber v2.52.11
 
 ### Third-party license note (native-image)

@@ -237,7 +237,7 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>0.11.3</version>
+                        <version>0.11.4</version>
                         <executions>
                             <execution>
                                 <id>add-reachability-metadata</id>

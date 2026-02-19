@@ -72,7 +72,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
 Maven: 3.9+
 Spring Boot: 4.0.2 (3.5.10 also supported)
-Quarkus: 3.31.3
+Quarkus: 3.31.4
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -201,7 +201,7 @@ Build with Docker to ensure correct Java version:
 ```bash
 # Quarkus JVM
 docker build \
-  --build-arg QUARKUS_VERSION=3.31.3 \
+  --build-arg QUARKUS_VERSION=3.31.4 \
   --target builder \
   -t quarkus-jvm-test \
   -f services/quarkus/jvm/Dockerfile \
@@ -439,7 +439,7 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 Integration Test Suite
 ==========================================
 Testing Framework Versions:
-- Quarkus: 3.31.3
+- Quarkus: 3.31.4
 - Spring Boot: 4.0.2
 - Go: 1.26.0
 
@@ -841,7 +841,7 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.31.3" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.31.4" }
           - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.2" }
           - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.2" }
           - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.26.0" }
