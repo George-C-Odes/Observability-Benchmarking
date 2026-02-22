@@ -144,7 +144,7 @@ docker compose --project-directory compose --profile=RAIN_FIRE up -d
 - Full observability setup is not yet complete compared to Java services
 - Missing comprehensive logging integration with Loki
 - Profile integration with Pyroscope not yet implemented
-- Performance comparison fairness not close to Java services
+- Performance comparison fairness is not close to Java services
 
 ## Future Enhancements
 - [ ] Complete Loki logging integration

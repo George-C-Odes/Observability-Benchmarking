@@ -100,22 +100,6 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-spring-boot-starter</artifactId>
-            <exclusions>
-                <!-- Prevent the OTel starter from pulling its own Netty/Reactor Netty versions -->
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.projectreactor.netty</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <!-- (grpc-netty-shaded is occasionally pulled via tracing exporters) -->
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-netty-shaded</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
