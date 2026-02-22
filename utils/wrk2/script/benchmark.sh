@@ -203,7 +203,7 @@ fi
 benchmarks_per_iteration() {
   # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
   if [ "${HOST}" = "combo" ]; then
-    echo 20
+    echo 23
     return 0
   fi
 
@@ -266,6 +266,9 @@ while true; do
       "micronaut-jvm"
       "micronaut-jvm"
       "micronaut-jvm"
+      "micronaut-native"
+      "micronaut-native"
+      "micronaut-native"
       "go"
     )
     endpoints=(
@@ -285,6 +288,9 @@ while true; do
       "virtual"
       "platform"
       "virtual"
+      "platform"
+      "virtual"
+      "reactive"
       "platform"
       "virtual"
       "reactive"

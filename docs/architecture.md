@@ -40,11 +40,11 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 ### Service Layer
 
 **REST Services** - Multiple implementations for comparison
-- Spring Boot 4.0.2 (JVM and Native)
+- Spring Boot 4.0.3 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (WebFlux - Reactor)
-- Quarkus 3.31.3 (JVM and Native)
+- Quarkus 3.31.4 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)

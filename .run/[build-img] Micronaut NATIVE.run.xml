@@ -1,17 +1,17 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="[build-img] Quarkus NATIVE" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
+  <configuration default="false" name="[build-img] Micronaut NATIVE" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="quarkus-native:3.31.4_latest" />
+        <option name="imageTag" value="micronaut-native:4.10.15_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
-              <option name="name" value="QUARKUS_VERSION" />
-              <option name="value" value="3.31.4" />
+              <option name="name" value="MICRONAUT_VERSION" />
+              <option name="value" value="4.10.15" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="quarkus-native:3.31.4_latest" />
+              <option name="value" value="micronaut-native:4.10.15_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>
@@ -19,7 +19,7 @@
         <option name="containerName" value="" />
         <option name="contextFolderPath" value="services/java" />
         <option name="showCommandPreview" value="true" />
-        <option name="sourceFilePath" value="services/java/quarkus/native/Dockerfile" />
+        <option name="sourceFilePath" value="services/java/micronaut/native/Dockerfile" />
       </settings>
     </deployment>
     <method v="2" />

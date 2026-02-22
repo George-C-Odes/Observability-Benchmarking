@@ -75,7 +75,7 @@ services:
 
   loki:
     profiles: ["${DOCKER_PROF_LOKI:-skip}"]
-    image: grafana/loki:3.6.5
+    image: grafana/loki:3.6.6
     container_name: loki
     volumes:
       - ${HOST_REPO}/data/loki:/loki

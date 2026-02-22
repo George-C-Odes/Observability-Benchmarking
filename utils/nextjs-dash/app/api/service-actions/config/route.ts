@@ -26,6 +26,7 @@ const SERVICES = [
   'javalin-jvm-platform',
   'javalin-jvm-virtual',
   'micronaut-jvm',
+  'micronaut-native',
   'go',
 
   // UTILS

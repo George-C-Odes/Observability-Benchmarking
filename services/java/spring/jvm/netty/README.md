@@ -1,7 +1,7 @@
 # Spring Boot Netty JVM Service
 
 ## Overview
-A reactive REST service implementation built with Spring Boot 4.0.2 running on Netty web server (via Spring WebFlux) with the Java Virtual Machine (JVM 25). This service uses reactive programming with Project Reactor for non-blocking, event-driven request handling.
+A reactive REST service implementation built with Spring Boot 4.0.3 running on Netty web server (via Spring WebFlux) with the Java Virtual Machine (JVM 25). This service uses reactive programming with Project Reactor for non-blocking, event-driven request handling.
 
 ## Purpose
 - Benchmark Spring Boot with reactive WebFlux stack on Netty
@@ -12,7 +12,7 @@ A reactive REST service implementation built with Spring Boot 4.0.2 running on N
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.0.2 + Spring WebFlux
+- **Framework**: Spring Boot 4.0.3 + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
 - **Java Version**: Eclipse Temurin 25.0.2
 - **JVM GC**: G1 Garbage Collector

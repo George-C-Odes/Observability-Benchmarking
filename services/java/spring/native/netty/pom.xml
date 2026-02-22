@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>io.github.georgecodes</groupId>
+    <groupId>io.github.georgecodes</groupId>
 	<artifactId>spring-native-netty</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>Spring NATIVE Netty</name>
@@ -21,21 +21,32 @@
 		<url/>
 	</scm>
 	<properties>
-        <spring-boot.version>4.0.2</spring-boot.version>
+        <spring-boot.version>4.0.3</spring-boot.version>
         <java.version>25</java.version>
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <exec.mainClass>io.github.georgecodes.benchmarking.spring.netty.NettyApplication</exec.mainClass>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <opentelemetry.version>1.59.0</opentelemetry.version>
+        <opentelemetry.instrumentation.version>2.25.0</opentelemetry.instrumentation.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom</artifactId>
-                <version>1.59.0</version>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom-alpha</artifactId>
+                <version>${opentelemetry.version}-alpha</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -43,7 +54,7 @@
             <dependency>
                 <groupId>io.opentelemetry.instrumentation</groupId>
                 <artifactId>opentelemetry-instrumentation-bom</artifactId>
-                <version>2.25.0</version>
+                <version>${opentelemetry.instrumentation.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -63,6 +74,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+            <exclusions>
+                <!--
+                  Exclude native epoll transport so Reactor Netty falls back to NIO.
+                  Netty 4.1.x epoll event loops don't function correctly in GraalVM native
+                  images with runtime-initialized io.netty classes, causing requests to hang.
+                  NIO works reliably and is the recommended transport for native images.
+                  Boot 4.0.3 (Netty 4.2.x) also works fine with NIO.
+                -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -76,7 +100,24 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-spring-boot-starter</artifactId>
+            <exclusions>
+                <!-- Prevent the OTel starter from pulling its own Netty/Reactor Netty versions -->
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.projectreactor.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <!-- (grpc-netty-shaded is occasionally pulled via tracing exporters) -->
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-netty-shaded</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
@@ -237,7 +278,7 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>0.11.3</version>
+                        <version>0.11.4</version>
                         <executions>
                             <execution>
                                 <id>add-reachability-metadata</id>
@@ -260,6 +301,7 @@
                             </metadataRepository>
                             <buildArgs>
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                <buildArg>--no-fallback</buildArg>
                                 <buildArg>-J--sun-misc-unsafe-memory-access=allow</buildArg>
                                 <buildArg>-march=native</buildArg>
                                 <buildArg>-R:+AlwaysPreTouch</buildArg>
@@ -272,38 +314,18 @@
                                 <buildArg>-H:-DeleteLocalSymbols</buildArg>
                                 <buildArg>-H:-StripDebugInfo</buildArg>
                                 <buildArg>-H:GenerateDebugInfo=1</buildArg>
+                                <buildArg>-H:IncludeResources=logback.xml|application.yml</buildArg>
                                 <buildArg>-H:ReflectionConfigurationResources=META-INF/native-image/io.github.georgecodes.benchmarking/spring-native-netty/reflect-config.json</buildArg>
                                 <buildArg>--enable-monitoring=heapdump,jfr</buildArg>
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
-                                <!--                        <buildArg>&#45;&#45;future-defaults=all</buildArg>-->
+<!--                            <buildArg>&#45;&#45;future-defaults=all</buildArg>-->
                                 <buildArg>--gc=G1</buildArg>
 
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.BasicConfigurator</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.Level</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.Logger</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.LoggerContext</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.layout.TTLLLayout</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.BasicStatusManager</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.ConsoleAppender</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.layout</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.pattern</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.spi</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.classic.util</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.encoder</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.helpers</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.joran.spi</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.spi</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.status</buildArg>
-                                <buildArg>--initialize-at-build-time=ch.qos.logback.core.util</buildArg>
-
-                                <buildArg>--initialize-at-run-time=io.netty.buffer.Unpooled</buildArg>
-                                <buildArg>--initialize-at-run-time=io.netty.handler.codec.http2.CleartextHttp2ServerUpgradeHandler</buildArg>
-                                <buildArg>--initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils</buildArg>
-                                <buildArg>--initialize-at-run-time=io.netty.util.internal.shaded.org.jctools.util.UnsafeLongArrayAccess</buildArg>
-                                <buildArg>--initialize-at-run-time=reactor.netty.ReactorNetty</buildArg>
-                                <!--                        <buildArg>&#45;&#45;link-at-build-time=ALL</buildArg>-->
+                                <buildArg>--initialize-at-build-time=io.netty.util.internal.shaded.org.jctools</buildArg>
+                                <buildArg>--initialize-at-run-time=io.netty</buildArg>
+                                <buildArg>--initialize-at-run-time=io.opentelemetry.instrumentation.logback</buildArg>
+                                <buildArg>--initialize-at-run-time=reactor.netty</buildArg>
+<!--                            <buildArg>&#45;&#45;link-at-build-time=ALL</buildArg>-->
                                 <buildArg>--verbose</buildArg>
                                 <buildArg>-H:-UnlockExperimentalVMOptions</buildArg>
                             </buildArgs>

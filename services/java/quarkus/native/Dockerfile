@@ -16,7 +16,7 @@ ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 #For J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings, N/A for J21
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG QUARKUS_VERSION=3.31.3
+ARG QUARKUS_VERSION=3.31.4
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=true
@@ -45,6 +45,7 @@ ENV QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 --initialize-at-run-time=org.fusesource.jansi.internal,\
 --link-at-build-time=ALL,\
 --future-defaults=all,\
+--no-fallback,\
 --gc=G1,\
 --verbose,\
 -H:-UnlockExperimentalVMOptions"

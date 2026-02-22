@@ -56,6 +56,7 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'javalin-jvm-platform': false,
     'javalin-jvm-virtual': false,
     'micronaut-jvm': false,
+    'micronaut-native': false,
     'go': false,
 
     // UTILS

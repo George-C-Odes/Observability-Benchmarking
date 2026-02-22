@@ -1,5 +1,82 @@
 [
   {
+    "name": "io.netty.buffer.AbstractByteBufAllocator",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.buffer.PooledByteBufAllocator",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.buffer.UnpooledByteBufAllocator",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.util.ResourceLeakDetector",
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.netty.util.ReferenceCountUtil",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.buffer.AdvancedLeakAwareByteBuf",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+    "allDeclaredFields": true,
+    "unsafeAllocated": true,
+    "fields": [{"name": "producerIndex", "allowUnsafeAccess": true}]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueuePad1",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+    "allDeclaredFields": true,
+    "fields": [{"name": "consumerIndex", "allowUnsafeAccess": true}]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueuePad2",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+    "allDeclaredFields": true,
+    "fields": [
+      {"name": "producerLimit", "allowUnsafeAccess": true},
+      {"name": "producerMask", "allowUnsafeAccess": true},
+      {"name": "producerBuffer", "allowUnsafeAccess": true}
+    ]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField",
+    "allDeclaredFields": true,
+    "fields": [{"name": "producerIndex", "allowUnsafeAccess": true}]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField",
+    "allDeclaredFields": true,
+    "fields": [{"name": "producerLimit", "allowUnsafeAccess": true}]
+  },
+  {
+    "name": "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField",
+    "allDeclaredFields": true,
+    "fields": [{"name": "consumerIndex", "allowUnsafeAccess": true}]
+  },
+  {
+    "name": "io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "io.opentelemetry.common.ComponentLoader",
+    "allDeclaredMethods": true
+  },
+  {
     "name": "com.github.benmanes.caffeine.cache.SSMSW",
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
@@ -10,5 +87,33 @@
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
     "allDeclaredFields": true
+  },
+  {
+    "name": "ch.qos.logback.core.status.NopStatusListener",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.core.ConsoleAppender",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.util.DefaultJoranConfigurator",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.BasicConfigurator",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.model.processor.ConfigurationModelHandlerFull",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
   }
 ]

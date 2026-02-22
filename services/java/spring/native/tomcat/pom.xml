@@ -21,21 +21,24 @@
 		<url/>
 	</scm>
 	<properties>
-        <spring-boot.version>4.0.2</spring-boot.version>
+        <spring-boot.version>4.0.3</spring-boot.version>
         <java.version>25</java.version>
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <exec.mainClass>io.github.georgecodes.benchmarking.spring.tomcat.TomcatApplication</exec.mainClass>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <opentelemetry.version>1.59.0</opentelemetry.version>
+        <opentelemetry.instrumentation.version>2.25.0</opentelemetry.instrumentation.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom</artifactId>
-                <version>1.59.0</version>
+                <version>${opentelemetry.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -43,7 +46,7 @@
             <dependency>
                 <groupId>io.opentelemetry.instrumentation</groupId>
                 <artifactId>opentelemetry-instrumentation-bom</artifactId>
-                <version>2.25.0</version>
+                <version>${opentelemetry.instrumentation.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -237,7 +240,7 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>0.11.3</version>
+                        <version>0.11.4</version>
                         <executions>
                             <execution>
                                 <id>add-reachability-metadata</id>
@@ -260,6 +263,7 @@
                             </metadataRepository>
                             <buildArgs>
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                <buildArg>--no-fallback</buildArg>
                                 <buildArg>-J--sun-misc-unsafe-memory-access=allow</buildArg>
                                 <buildArg>-march=native</buildArg>
                                 <buildArg>-R:+AlwaysPreTouch</buildArg>
@@ -272,12 +276,14 @@
                                 <buildArg>-H:-DeleteLocalSymbols</buildArg>
                                 <buildArg>-H:-StripDebugInfo</buildArg>
                                 <buildArg>-H:GenerateDebugInfo=1</buildArg>
+                                <buildArg>-H:IncludeResources=logback.xml|application.yml</buildArg>
                                 <buildArg>-H:ReflectionConfigurationResources=META-INF/native-image/io.github.georgecodes.benchmarking/spring-native-tomcat/reflect-config.json</buildArg>
                                 <buildArg>--enable-monitoring=heapdump,jfr</buildArg>
                                 <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
-                                <!--                        <buildArg>&#45;&#45;future-defaults=all</buildArg>-->
+<!--                            <buildArg>&#45;&#45;future-defaults=all</buildArg>-->
                                 <buildArg>--gc=G1</buildArg>
-                                <!--                        <buildArg>&#45;&#45;link-at-build-time=ALL</buildArg>-->
+
+<!--                            <buildArg>&#45;&#45;link-at-build-time=ALL</buildArg>-->
                                 <buildArg>--verbose</buildArg>
                                 <buildArg>-H:-UnlockExperimentalVMOptions</buildArg>
                             </buildArgs>

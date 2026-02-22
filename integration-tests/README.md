@@ -31,7 +31,7 @@ This directory contains an integration test runner script (`run-integration-test
 ```
 
 3. **Port Availability (defaults)**
-   - 8080-8092, 9080: service ports
+   - 8080-8093, 9080: service ports
    - 3000: Grafana
    - 3001: NextJS UI
    - 3002: Orchestrator
@@ -109,6 +109,7 @@ export JAVALIN_JVM_VIRTUAL_URL=http://localhost:8091
 
 # Micronaut Services
 export MICRONAUT_JVM_URL=http://localhost:8092
+export MICRONAUT_NATIVE_URL=http://localhost:8093
 
 # Go Service
 export GO_URL=http://localhost:9080
@@ -138,8 +139,8 @@ The runner prints the versions it is designed against (these values are embedded
 
 | Framework   | Version |
 |-------------|---------|
-| Spring Boot | 4.0.2   |
-| Quarkus     | 3.31.3  |
+| Spring Boot | 4.0.3   |
+| Quarkus     | 3.31.4  |
 | Spark       | 3.0.3   |
 | Javalin     | 6.7.0   |
 | Micronaut   | 4.10.15 |
@@ -164,6 +165,7 @@ Port mappings match the order in `compose/docker-compose.yml`.
 | Javalin JVM Platform               | javalin-jvm-platform          | 8090 | JVM                |
 | Javalin JVM Virtual                | javalin-jvm-virtual           | 8091 | JVM                |
 | Micronaut JVM                      | micronaut-jvm                 | 8092 | JVM                |
+| Micronaut Native                   | micronaut-native              | 8093 | Native             |
 | Go                                 | go                            | 9080 | Native (Go binary) |
 
 ## What’s Tested (by the runner)

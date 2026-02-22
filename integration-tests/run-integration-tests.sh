@@ -90,6 +90,7 @@ JAVALIN_JVM_VIRTUAL_URL="${JAVALIN_JVM_VIRTUAL_URL:-http://localhost:8091}"
 
 # Micronaut Services
 MICRONAUT_JVM_URL="${MICRONAUT_JVM_URL:-http://localhost:8092}"
+MICRONAUT_NATIVE_URL="${MICRONAUT_NATIVE_URL:-http://localhost:8093}"
 
 # Go Service
 GO_URL="${GO_URL:-http://localhost:9080}"
@@ -105,8 +106,8 @@ NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
 # Framework versions
-QUARKUS_VERSION="3.31.3"
-SPRING_BOOT_VERSION="4.0.2"
+QUARKUS_VERSION="3.31.4"
+SPRING_BOOT_VERSION="4.0.3"
 SPARK_VERSION="3.0.3"
 JAVALIN_VERSION="6.7.0"
 MICRONAUT_VERSION="4.10.15"
@@ -309,6 +310,13 @@ run_test "Quarkus Native - /hello/virtual" test_endpoint "Quarkus Native - /hell
 run_test "Quarkus Native - /hello/reactive" test_endpoint "Quarkus Native - /hello/reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" 200 "Quarkus"
 echo ""
 
+echo -e "${BLUE}--- Micronaut Native (port 8093) ---${NC}"
+run_test "Micronaut Native - /hello/platform" test_endpoint "Micronaut Native - /hello/platform" "${MICRONAUT_NATIVE_URL}/hello/platform" 200 "Micronaut"
+run_test "Micronaut Native - /hello/virtual" test_endpoint "Micronaut Native - /hello/virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" 200 "Micronaut"
+run_test "Micronaut Native - /hello/reactive" test_endpoint "Micronaut Native - /hello/reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" 200 "Micronaut"
+run_test "Micronaut Native - /health" test_endpoint "Micronaut Native - /health" "${MICRONAUT_NATIVE_URL}/health" 200 ""
+echo ""
+
 echo "=========================================="
 echo "Go Service - Deployment Tests"
 echo "=========================================="
@@ -337,6 +345,7 @@ run_test "Spark JVM Virtual ready" test_ready_endpoint "Spark JVM Virtual" "${SP
 run_test "Javalin JVM Platform ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
 run_test "Javalin JVM Virtual ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
 run_test "Micronaut JVM metrics" test_micronaut_metrics "Micronaut JVM" "${MICRONAUT_JVM_URL}"
+run_test "Micronaut Native metrics" test_micronaut_metrics "Micronaut Native" "${MICRONAUT_NATIVE_URL}"
 run_test "Go metrics" test_go_metrics "Go" "${GO_URL}"
 echo ""
 
@@ -471,6 +480,10 @@ run_test "Trace Javalin JVM Virtual" run_trace_and_verify "Javalin JVM Virtual" 
 run_test "Trace Micronaut JVM Platform" run_trace_and_verify "Micronaut JVM Platform" "${MICRONAUT_JVM_URL}/hello/platform" "micronaut-jvm" "isVirtual: 'false'"
 run_test "Trace Micronaut JVM Virtual" run_trace_and_verify "Micronaut JVM Virtual" "${MICRONAUT_JVM_URL}/hello/virtual" "micronaut-jvm" "isVirtual: 'true'"
 run_test "Trace Micronaut JVM Reactive" run_trace_and_verify "Micronaut JVM Reactive" "${MICRONAUT_JVM_URL}/hello/reactive" "micronaut-jvm" "EventLoopGroup"
+
+run_test "Trace Micronaut Native Platform" run_trace_and_verify "Micronaut Native Platform" "${MICRONAUT_NATIVE_URL}/hello/platform" "micronaut-native" "isVirtual: 'false'"
+run_test "Trace Micronaut Native Virtual" run_trace_and_verify "Micronaut Native Virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" "micronaut-native" "isVirtual: 'true'"
+run_test "Trace Micronaut Native Reactive" run_trace_and_verify "Micronaut Native Reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" "micronaut-native" "EventLoopGroup"
 
 run_test "Trace Go Virtual" run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
 

@@ -15,7 +15,7 @@ ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ARG PROFILE=tomcat
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
-ARG SPRING_BOOT_VERSION=4.0.2
+ARG SPRING_BOOT_VERSION=4.0.3
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -68,6 +68,8 @@ RUN if [ "$PROFILE" = "netty" ]; then \
         rm -f ./netty/pom.xml; \
         rm -rf ./netty/src; \
     fi
+
+COPY --link --chown=1000:1000 spring/native/logback.xml ./src/main/resources/logback.xml
 
 RUN echo "VIRTUAL_ENABLED=$VIRTUAL_ENABLED"
 
