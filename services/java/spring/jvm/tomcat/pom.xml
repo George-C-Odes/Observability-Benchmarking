@@ -21,7 +21,7 @@
 		<url/>
 	</scm>
 	<properties>
-        <spring-boot.version>4.0.2</spring-boot.version>
+        <spring-boot.version>4.0.3</spring-boot.version>
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>

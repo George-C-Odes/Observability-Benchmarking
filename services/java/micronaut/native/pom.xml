@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.georgecodes</groupId>
+    <artifactId>micronaut-native</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Micronaut Native</name>
+
+    <properties>
+        <maven.compiler.release>25</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <caffeine.version>3.2.3</caffeine.version>
+        <junit-jupiter.version>5.12.2</junit-jupiter.version>
+        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
+        <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
+        <lombok.version>1.18.42</lombok.version>
+        <logback.version>1.5.32</logback.version>
+
+        <micronaut.version>4.10.15</micronaut.version>
+        <micronaut.runtime>netty</micronaut.runtime>
+        <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
+        <micronaut.test.version>4.10.2</micronaut.test.version>
+        <micronaut.processing.incremental>true</micronaut.processing.incremental>
+        <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.jvm.*</micronaut.processing.annotations>
+        <micronaut.tracing.version>7.2.0</micronaut.tracing.version>
+
+        <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
+
+        <opentelemetry.version>1.59.0</opentelemetry.version>
+        <opentelemetry.instrumentation.version>2.25.0</opentelemetry.instrumentation.version>
+
+        <native.image.name>micronaut-native</native.image.name>
+        <exec.mainClass>io.github.georgecodes.benchmarking.micronaut.jvm.Application</exec.mainClass>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.micronaut</groupId>
+                <artifactId>micronaut-core-bom</artifactId>
+                <version>${micronaut.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Align OTel artifacts with a single version -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom</artifactId>
+                <version>${opentelemetry.instrumentation.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Micronaut runtime -->
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-server-netty</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Health / management -->
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-management</artifactId>
+        </dependency>
+
+        <!-- Reactor types (Mono/Flux) -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.mweirauch</groupId>
+            <artifactId>micrometer-jvm-extras</artifactId>
+            <version>${micrometer-jvm-extras.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Cache -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Annotation processor API (compile-time) -->
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-inject-java</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut.test</groupId>
+            <artifactId>micronaut-test-junit5</artifactId>
+            <version>${micronaut.test.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut</groupId>
+            <artifactId>micronaut-http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Nullness annotations (compile-time only) -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ① TRACES — auto-instruments inbound/outbound HTTP.
+               Transitively pulls in micronaut-tracing-opentelemetry
+               which wires AutoConfiguredOpenTelemetrySdk as a bean. -->
+        <dependency>
+            <groupId>io.micronaut.tracing</groupId>
+            <artifactId>micronaut-tracing-opentelemetry-http</artifactId>
+            <version>${micronaut.tracing.version}</version>
+        </dependency>
+
+        <!-- ② OTLP EXPORTER — provides OtlpGrpc{Span,Metric,LogRecord}Exporter.
+               SDK Autoconfigure detects these on the classpath and wires
+               all three signal pipelines automatically.
+               Default transport = OkHttp (handles gRPC over HTTP/2). -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+
+        <!-- ③ MICROMETER CORE — Micronaut's meter-registry infrastructure.
+               Provides CompositeMeterRegistry bean so you can @Inject MeterRegistry. -->
+        <dependency>
+            <groupId>io.micronaut.micrometer</groupId>
+            <artifactId>micronaut-micrometer-core</artifactId>
+            <version>${micronaut.micrometer.version}</version>
+        </dependency>
+
+        <!-- ④ METRICS BRIDGE — Micrometer MeterRegistry → OTel MeterProvider.
+               Metrics recorded via Micrometer flow through OTel's SDK pipeline
+               and out the OTLP gRPC metric exporter. -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-micrometer-1.5</artifactId>
+            <version>${opentelemetry.instrumentation.version}-alpha</version>
+        </dependency>
+
+        <!-- ⑤ LOGS — Logback appender that feeds log records into
+               OTel's BatchLogRecordProcessor → OtlpGrpcLogRecordExporter.
+               Automatically correlates logs with active trace/span IDs. -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <version>${opentelemetry.instrumentation.version}-alpha</version>
+        </dependency>
+
+        <!-- Align OTel incubator API with the OTel core version (fixes ExtendedOpenTelemetry CNFEs) -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api-incubator</artifactId>
+            <version>${opentelemetry.version}-alpha</version>
+        </dependency>
+
+
+        <!-- ── 4. Micronaut OTel annotation processing ────────────
+             Enables @NewSpan, @ContinueSpan, @SpanTag.             -->
+<!--        <dependency>-->
+<!--            <groupId>io.micronaut.tracing</groupId>-->
+<!--            <artifactId>micronaut-tracing-opentelemetry-annotation</artifactId>-->
+<!--            <version>${micronaut.tracing.version}</version>-->
+<!--        </dependency>-->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Reuse sources/resources from the JVM module (single codebase) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>add-jvm-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>../jvm/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-jvm-resources</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>../jvm/src/main/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-jvm-test-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>../jvm/src/test/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.micronaut.maven</groupId>
+                <artifactId>micronaut-maven-plugin</artifactId>
+                <version>4.11.6</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.15.0</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                    <parameters>true</parameters>
+                    <compilerArgs>
+                        <arg>-Amicronaut.processing.incremental=${micronaut.processing.incremental}</arg>
+                        <arg>-Amicronaut.processing.annotations=${micronaut.processing.annotations}</arg>
+                    </compilerArgs>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.micronaut</groupId>
+                            <artifactId>micronaut-inject-java</artifactId>
+                            <version>${micronaut.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+                <configuration>
+                    <argLine>
+                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --enable-native-access=ALL-UNNAMED
+                        -Djdk.tracePinnedThreads=full
+                    </argLine>
+                </configuration>
+            </plugin>
+
+            <!-- Checkstyle plugin for code style checking -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <configLocation>${checkstyle.config.location}</configLocation>
+                    <suppressionsLocation>${checkstyle.suppressions.location}</suppressionsLocation>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>false</failsOnError>
+                    <failOnViolation>false</failOnViolation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Build an executable jar for native-image input -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.*</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/NOTICE.*</exclude>
+
+                                        <!-- Shading generates overlap warnings for these; they are not needed at runtime. -->
+                                        <exclude>META-INF/config-properties.adoc</exclude>
+                                        <exclude>META-INF/spring-configuration-metadata.json</exclude>
+                                        <exclude>META-INF/io.netty.versions.properties</exclude>
+
+                                        <!-- Duplicate Maven metadata (causes overlap warnings with Netty + OTel); not used at runtime. -->
+                                        <exclude>META-INF/maven/org.jctools/jctools-core/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${exec.mainClass}</mainClass>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <activation>
+                <property>
+                    <name>native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- Native image build (runs in Dockerfile's GraalVM image) -->
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>0.11.4</version>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <imageName>${native.image.name}</imageName>
+                            <mainClass>${exec.mainClass}</mainClass>
+                            <buildArgs>
+                                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                <buildArg>--no-fallback</buildArg>
+                                <buildArg>-J--sun-misc-unsafe-memory-access=allow</buildArg>
+                                <buildArg>-march=native</buildArg>
+                                <buildArg>-R:+AlwaysPreTouch</buildArg>
+                                <buildArg>-R:MaxGCPauseMillis=200</buildArg>
+                                <buildArg>-R:MaxDirectMemorySize=64m</buildArg>
+                                <buildArg>-R:MaxHeapSize=1280m</buildArg>
+                                <buildArg>-R:MinHeapSize=1280m</buildArg>
+                                <buildArg>-H:+PreserveFramePointer</buildArg>
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                                <buildArg>-H:-DeleteLocalSymbols</buildArg>
+                                <buildArg>-H:-StripDebugInfo</buildArg>
+                                <buildArg>-H:GenerateDebugInfo=1</buildArg>
+                                <buildArg>-H:IncludeResources=logback.xml|application.yml</buildArg>
+                                <buildArg>--enable-monitoring=heapdump,jfr</buildArg>
+                                <buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
+<!--                                <buildArg>&#45;&#45;future-defaults=all</buildArg>-->
+                                <buildArg>--gc=G1</buildArg>
+                                <buildArg>--initialize-at-run-time=io.netty</buildArg>
+                                <buildArg>--initialize-at-run-time=io.opentelemetry.instrumentation.logback</buildArg>
+                                <buildArg>--initialize-at-run-time=reactor.netty</buildArg>
+<!--                                <buildArg>&#45;&#45;link-at-build-time=ALL</buildArg>-->
+                                <buildArg>--verbose</buildArg>
+                                <buildArg>-H:-UnlockExperimentalVMOptions</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

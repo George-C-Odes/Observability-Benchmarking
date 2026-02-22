@@ -22,7 +22,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.0.2
+### Spring Boot 4.0.3
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -33,7 +33,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.0.2** (latest major release)
+- **Spring Boot 4.0.3** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -615,7 +615,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.6.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Quarkus                    | 3.31.4  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Micronaut                  | 4.10.15 | Compile-time optimized JVM microservices framework                   |

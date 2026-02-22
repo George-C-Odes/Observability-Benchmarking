@@ -138,7 +138,6 @@ output-*.txt
 vitest-*.json
 /.profileconfig.json
 /.github/workflows/qodana_code_quality.yml
-/services/java/quarkus/jvm/src/main/resources/META-INF.native-image/
 /services/java/quarkus/jvm/target/
 
 # Jekyll / GitHub Pages (generated output + caches)

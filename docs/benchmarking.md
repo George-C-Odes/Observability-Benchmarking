@@ -18,18 +18,18 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 
 | Framework | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
 |-----------|---------|----------|-----|---------------|-----------------|
-| Spring    | JVM     | Platform | 18k | 545           | 404             |
-| Spring    | JVM     | Virtual  | 16k | 427           | 404             |
+| Spring    | JVM     | Platform | 21k | 545           | 404             |
+| Spring    | JVM     | Virtual  | 17k | 427           | 404             |
 | Spring    | JVM     | Reactive | 13k | 457           | 435             |
-| Spring    | Native  | Platform | 9k  | 185           | 384             |
-| Spring    | Native  | Virtual  | 10k | 141           | 384             |
-| Spring    | Native  | Reactive | 7k  | 179           | 437             |
+| Spring    | Native  | Platform | 10k | 185           | 386             |
+| Spring    | Native  | Virtual  | 11k | 141           | 386             |
+| Spring    | Native  | Reactive | 7k  | 179           | 445             |
 | Quarkus   | JVM     | Platform | 36k | 495           | 367             |
 | Quarkus   | JVM     | Virtual  | 45k | 495           | 367             |
 | Quarkus   | JVM     | Reactive | 46k | 495           | 367             |
-| Quarkus   | Native  | Platform | 20k | 207           | 571             |
-| Quarkus   | Native  | Virtual  | 20k | 207           | 571             |
-| Quarkus   | Native  | Reactive | 27k | 207           | 571             |
+| Quarkus   | Native  | Platform | 21k | 220           | 571             |
+| Quarkus   | Native  | Virtual  | 27k | 220           | 571             |
+| Quarkus   | Native  | Reactive | 20k | 220           | 571             |
 | Spark     | JVM     | Platform | 23k | 413           | 373             |
 | Spark     | JVM     | Virtual  | 21k | 383           | 373             |
 | Javalin   | JVM     | Platform | 26k | 696           | 374             |
@@ -37,9 +37,9 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Micronaut | JVM     | Platform | 30k | 537           | 350             |
 | Micronaut | JVM     | Virtual  | 37k | 537           | 350             |
 | Micronaut | JVM     | Reactive | 31k | 537           | 350             |
-| Micronaut | Native  | Platform | WIP |               |                 |
-| Micronaut | Native  | Virtual  | WIP |               |                 |
-| Micronaut | Native  | Reactive | WIP |               |                 |
+| Micronaut | Native  | Platform | 16k | 130           | 346             |
+| Micronaut | Native  | Virtual  | 15k | 130           | 346             |
+| Micronaut | Native  | Reactive | 14k | 130           | 346             |
 | Helidon   | JVM     | Virtual  | WIP |               |                 |
 | Helidon   | Native  | Virtual  | WIP |               |                 |
 | Go        | Native  | N/A      | 24k | 58            | 33              |
@@ -116,7 +116,7 @@ memory: 2GB        # Maximum memory
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: 4.0.2 (3.5.10 also supported)
+- Spring Boot: 4.0.3 (3.5.11 also supported)
 - Quarkus: 3.31.4
 - Go: 1.26.0 with Fiber v2.52.11
 

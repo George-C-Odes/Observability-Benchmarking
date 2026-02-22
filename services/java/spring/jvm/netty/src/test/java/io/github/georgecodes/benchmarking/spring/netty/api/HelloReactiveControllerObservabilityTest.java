@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * These tests validate:
  * - Micrometer metrics with custom counters (hello.request.count)
  * - OpenTelemetry Java Agent integration
- * - Spring Boot 4.0.2 actuator endpoints (reactive)
+ * - Spring Boot 4.0.3 actuator endpoints (reactive)
  * - WebFlux health endpoints
  * - Reactor Netty metrics
  */

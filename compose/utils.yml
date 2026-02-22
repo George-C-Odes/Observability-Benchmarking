@@ -137,7 +137,7 @@ services:
       ORCH_HEALTH_JAVALIN_JVM_PLATFORM_BASE_URL: "http://javalin-jvm-platform:8080"
       ORCH_HEALTH_JAVALIN_JVM_VIRTUAL_BASE_URL: "http://javalin-jvm-virtual:8080"
       ORCH_HEALTH_MICRONAUT_JVM_BASE_URL: "http://micronaut-jvm:8080"
-      ORCH_HEALTH_MICRONAUT_NATIVE_BASE_URL: false
+      ORCH_HEALTH_MICRONAUT_NATIVE_BASE_URL: "http://micronaut-native:8080"
       ORCH_HEALTH_GO_BASE_URL: "http://go:8080"
 
       ORCH_HEALTH_NEXTJS_DASH_BASE_URL: "http://nextjs-dash:3001"

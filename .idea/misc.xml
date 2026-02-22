@@ -17,6 +17,7 @@
         <option value="$PROJECT_DIR$/services/java/spark/jvm/pom.xml" />
         <option value="$PROJECT_DIR$/services/java/javalin/jvm/pom.xml" />
         <option value="$PROJECT_DIR$/services/java/micronaut/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/micronaut/native/pom.xml" />
         <option value="$PROJECT_DIR$/utils/orchestrator/pom.xml" />
       </list>
     </option>

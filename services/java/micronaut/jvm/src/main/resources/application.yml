@@ -56,7 +56,7 @@ micronaut:
   netty:
     event-loops:
       default:
-        loom-carrier: true
+        loom-carrier: ${MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER:false}
         num-threads: 2
         transport: [io_uring, epoll, kqueue, nio]
   server:

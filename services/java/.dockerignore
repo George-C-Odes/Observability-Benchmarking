@@ -26,6 +26,7 @@
 !spring/native/.mvn/wrapper/
 !spring/native/.mvn/wrapper/maven-wrapper.properties
 !spring/native/.mvn/jvm.config
+!spring/native/logback.xml
 !spring/native/tomcat/
 !spring/native/tomcat/pom.xml
 !spring/native/netty/

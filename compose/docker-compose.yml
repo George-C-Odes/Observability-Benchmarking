@@ -1,4 +1,4 @@
-﻿name: Observability-Benchmarking
+name: Observability-Benchmarking
 
 include:
   - ./obs.yml
@@ -22,7 +22,7 @@ x-default-environment:
   metric_otel_http: &default_metric_otel_http ${METRIC_OTEL_HTTP:-true}
   metric_otel_runtime: &default_metric_otel_runtime ${METRIC_OTEL_RUNTIME:-false}
   metric_otel_tomcat: &default_metric_otel_tomcat ${METRIC_OTEL_TOMCAT:-false}  # Does not seem to have an effect
-  metric_otel_interval: &default_metric_otel_interval ${METRIC_OTEL_INTERVAL:-15000}
+  metric_otel_interval: &default_metric_otel_interval ${METRIC_OTEL_INTERVAL:-15s}
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
@@ -965,7 +965,7 @@ services:
       MICRONAUT_EXECUTORS_PLATFORM_TYPE: "FIXED"
         #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
       MICRONAUT_EXECUTORS_VIRTUAL_TYPE: "THREAD_PER_TASK"
-      #Experimentally, seems to bump virtual threads performance by 15%
+      #Experimentally, seems to bump virtual threads performance by 10%
       MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER: ${MICRONAUT_LOOM_CARRIER:-true}
       MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_NUM_THREADS: *default_cpu_limit
       #AUTO, MANUAL, IO, BLOCKING
@@ -994,6 +994,70 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+    <<: *common_properties
+
+  micronaut-native:
+    profiles: ["${DOCKER_PROF_MICRONAUT_NATIVE:-skip}"]
+    image: micronaut-native:${MICRONAUT_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: micronaut/native/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: micronaut-native:${MICRONAUT_VERSION}_latest
+        MICRONAUT_VERSION: ${MICRONAUT_VERSION}
+    container_name: micronaut-native
+    ports:
+      - "8093:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/micronaut/native/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      LOGGER_LEVELS_ROOT: "INFO"
+      LOGGER_LEVELS_IO_MICRONAUT: "INFO"
+      LOGGER_LEVELS_IO_NETTY: "INFO"
+      CACHE_SIZE: *default_cache_size
+
+      MICRONAUT_EXECUTORS_PLATFORM_CORE_POOL_SIZE: *default_cpu_limit
+      MICRONAUT_EXECUTORS_PLATFORM_NUMBER_OF_THREADS: *default_cpu_limit
+      MICRONAUT_EXECUTORS_PLATFORM_PARALLELISM: *default_cpu_limit
+      MICRONAUT_EXECUTORS_PLATFORM_NTHREADS: *default_cpu_limit
+      #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
+      MICRONAUT_EXECUTORS_PLATFORM_TYPE: "FIXED"
+      #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
+      MICRONAUT_EXECUTORS_VIRTUAL_TYPE: "THREAD_PER_TASK"
+      # Native images can't use JVM-style --add-opens to access VirtualThread internals, keep Loom carrier disabled
+      MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER: false
+      MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_NUM_THREADS: *default_cpu_limit
+      #AUTO, MANUAL, IO, BLOCKING
+      MICRONAUT_SERVER_THREAD_SELECTION: "MANUAL"
+
+      MICRONAUT_METRICS_BINDERS_JVM_ENABLED: *default_metric_mm_jvm
+      MICRONAUT_METRICS_BINDERS_PROCESSOR_ENABLED: true
+      MICRONAUT_METRICS_BINDERS_UPTIME_ENABLED: false
+      MICRONAUT_METRICS_BINDERS_FILES_ENABLED: false
+      MICRONAUT_METRICS_BINDERS_LOGBACK_ENABLED: false
+      MICRONAUT_METRICS_BINDERS_WEB_ENABLED: true
+      MICRONAUT_METRICS_ENABLED: true
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "micronaut-native"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,webengine.name=Micronaut,webengine.version=${MICRONAUT_VERSION},loom.carrier=false"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
+    entrypoint:
+      - "./micronaut-native"
+    command: *default_native_java_options
     <<: *common_properties
 
   go:

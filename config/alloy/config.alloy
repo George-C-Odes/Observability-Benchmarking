@@ -201,7 +201,8 @@ discovery.relabel "apps" {
                 ".*spark-jvm-virtual.*|" +
                 ".*javalin-jvm-platform.*|" +
                 ".*javalin-jvm-virtual.*|" +
-                ".*micronaut-jvm.*)$"
+                ".*micronaut-jvm.*|" +
+                ".*micronaut-native.*)$"
     }
     rule {
         action = "drop"
@@ -250,6 +251,13 @@ discovery.relabel "apps" {
         target_label = "service_name"
         regex = "^ebpf/native/spring-native-netty_spring-native-netty$"
         replacement = "ebpf/native/spring-native-netty"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/micronaut-native_micronaut-native$"
+        replacement = "ebpf/native/micronaut-native"
     }
     rule {
         action = "labelkeep"

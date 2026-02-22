@@ -45,6 +45,7 @@ ENV QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 --initialize-at-run-time=org.fusesource.jansi.internal,\
 --link-at-build-time=ALL,\
 --future-defaults=all,\
+--no-fallback,\
 --gc=G1,\
 --verbose,\
 -H:-UnlockExperimentalVMOptions"

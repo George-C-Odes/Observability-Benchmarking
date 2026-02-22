@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.2-green.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.31.4-blue.svg)](https://quarkus.io/)
 [![Go](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
@@ -58,7 +58,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.6.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Quarkus                    | 3.31.4  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Spring Boot                | 4.0.2   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Micronaut                  | 4.10.15 | Compile-time optimized JVM microservices framework                   |
@@ -129,7 +129,7 @@ If you’re searching for projects like this, these are the topics it covers:
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Eclipse Temurin)
-- **Spring Boot 4.0.2 (3.5.10 also supported)**
+- **Spring Boot 4.0.3 (3.5.11 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -151,7 +151,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Virtual threads
 - **Micronaut**: 4.10.15
   - JVM build (all three thread modes)
-  - Native WIP
+  - Native (all three thread modes)
 
 #### Go (1.26.0)
 - Fiber framework integration
@@ -357,18 +357,18 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 
 | Framework | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
 |-----------|---------|----------|-----|---------------|-----------------|
-| Spring    | JVM     | Platform | 18k | 545           | 404             |
-| Spring    | JVM     | Virtual  | 16k | 427           | 404             |
+| Spring    | JVM     | Platform | 21k | 545           | 404             |
+| Spring    | JVM     | Virtual  | 17k | 427           | 404             |
 | Spring    | JVM     | Reactive | 13k | 457           | 435             |
-| Spring    | Native  | Platform | 9k  | 185           | 384             |
-| Spring    | Native  | Virtual  | 10k | 141           | 384             |
-| Spring    | Native  | Reactive | 7k  | 179           | 437             |
+| Spring    | Native  | Platform | 10k | 185           | 386             |
+| Spring    | Native  | Virtual  | 11k | 141           | 386             |
+| Spring    | Native  | Reactive | 7k  | 179           | 445             |
 | Quarkus   | JVM     | Platform | 36k | 495           | 367             |
 | Quarkus   | JVM     | Virtual  | 45k | 495           | 367             |
 | Quarkus   | JVM     | Reactive | 46k | 495           | 367             |
-| Quarkus   | Native  | Platform | 20k | 207           | 571             |
-| Quarkus   | Native  | Virtual  | 20k | 207           | 571             |
-| Quarkus   | Native  | Reactive | 27k | 207           | 571             |
+| Quarkus   | Native  | Platform | 21k | 220           | 571             |
+| Quarkus   | Native  | Virtual  | 27k | 220           | 571             |
+| Quarkus   | Native  | Reactive | 20k | 220           | 571             |
 | Spark     | JVM     | Platform | 23k | 413           | 373             |
 | Spark     | JVM     | Virtual  | 21k | 383           | 373             |
 | Javalin   | JVM     | Platform | 26k | 696           | 374             |
@@ -376,9 +376,9 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 | Micronaut | JVM     | Platform | 30k | 537           | 350             |
 | Micronaut | JVM     | Virtual  | 37k | 537           | 350             |
 | Micronaut | JVM     | Reactive | 31k | 537           | 350             |
-| Micronaut | Native  | Platform | WIP |               |                 |
-| Micronaut | Native  | Virtual  | WIP |               |                 |
-| Micronaut | Native  | Reactive | WIP |               |                 |
+| Micronaut | Native  | Platform | 16k | 130           | 346             |
+| Micronaut | Native  | Virtual  | 15k | 130           | 346             |
+| Micronaut | Native  | Reactive | 14k | 130           | 346             |
 | Helidon   | JVM     | Virtual  | WIP |               |                 |
 | Helidon   | Native  | Virtual  | WIP |               |                 |
 | Go        | Native  | N/A      | 24k | 58            | 33              |
@@ -421,7 +421,7 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 #### Software Versions
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
-- **Spring Boot**: 4.0.2 (3.5.10 also supported)
+- **Spring Boot**: 4.0.3 (3.5.11 also supported)
 - **Quarkus**: 3.31.4
 - **Spark**: 3.0.3
 - **Javalin**: 6.7.0

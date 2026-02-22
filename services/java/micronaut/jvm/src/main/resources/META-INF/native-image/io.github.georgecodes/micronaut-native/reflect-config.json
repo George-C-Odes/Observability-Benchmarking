@@ -1,17 +1,5 @@
 [
   {
-    "name": "com.github.benmanes.caffeine.cache.SSMSW",
-    "allDeclaredConstructors": true,
-    "allDeclaredMethods": true,
-    "allDeclaredFields": true
-  },
-  {
-    "name": "com.github.benmanes.caffeine.cache.PSWMS",
-    "allDeclaredConstructors": true,
-    "allDeclaredMethods": true,
-    "allDeclaredFields": true
-  },
-  {
     "name": "ch.qos.logback.core.status.NopStatusListener",
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
   },
