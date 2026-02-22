@@ -2,7 +2,6 @@
 ARG JAVA_RELEASE=25
 ARG JAVA_MINOR_RELEASE=.0.2
 ARG BASE_BUILDER=ol9
-# Use a package-manager-enabled base in the runtime stage so we can install tzdata.
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 
 # ------------ BUILD STAGE -----------------------
