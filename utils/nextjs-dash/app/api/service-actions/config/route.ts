@@ -27,6 +27,10 @@ const SERVICES = [
   'javalin-jvm-virtual',
   'micronaut-jvm',
   'micronaut-native',
+  'helidon-se-jvm',
+  'helidon-se-native',
+  'helidon-mp-jvm',
+  'helidon-mp-native',
   'go',
 
   // UTILS
