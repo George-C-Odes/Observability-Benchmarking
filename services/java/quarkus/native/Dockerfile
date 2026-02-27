@@ -16,7 +16,7 @@ ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 #For J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings, N/A for J21
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG QUARKUS_VERSION=3.31.4
+ARG QUARKUS_VERSION=3.32.1
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=true
@@ -35,10 +35,11 @@ ENV QUARKUS_NATIVE_ADDITIONAL_BUILD_ARGS="\
 -J--sun-misc-unsafe-memory-access=allow,\
 -R:+AlwaysPreTouch,\
 -R:MaxGCPauseMillis=200,\
--R:MaxDirectMemorySize=64m,\
--R:MaxHeapSize=1280m,\
--R:MinHeapSize=1280m,\
+-R:MaxDirectMemorySize=32M,\
+-R:MaxHeapSize=640M,\
+-R:MinHeapSize=64M,\
 -march=native,\
+-O2,\
 --enable-native-access=ALL-UNNAMED,\
 --enable-monitoring=heapdump\\,jfr,\
 --initialize-at-build-time=jdk.nio.zipfs.ZipFileSystemProvider\\,jdk.nio.zipfs.ZipFileSystem\\,sun.nio.fs.LinuxFileSystemProvider\\,sun.nio.fs.LinuxFileSystem,\

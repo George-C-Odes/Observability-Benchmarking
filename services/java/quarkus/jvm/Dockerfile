@@ -19,7 +19,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG QUARKUS_VERSION=3.31.4
+ARG QUARKUS_VERSION=3.32.1
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 ENV QUARKUS_NATIVE_ENABLED=false
 ENV HOME=/home/maven
@@ -101,7 +101,7 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
     -XX:+UseStringDeduplication \
-    -XX:MaxDirectMemorySize=256m \
+    -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
     -Xms1536m \
     -Xmx1536m \

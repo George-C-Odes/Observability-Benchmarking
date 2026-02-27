@@ -20,7 +20,7 @@
         <logback.version>1.5.32</logback.version>
 
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
-        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <surefire-plugin.version>3.5.5</surefire-plugin.version>
 
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
@@ -165,7 +165,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.github.georgecodes.benchmarking.spark.jvm.SparkApplication</mainClass>
+                                    <mainClass>io.github.georgecodes.benchmarking.spark.SparkApplication</mainClass>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
