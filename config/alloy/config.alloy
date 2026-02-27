@@ -202,7 +202,11 @@ discovery.relabel "apps" {
                 ".*javalin-jvm-platform.*|" +
                 ".*javalin-jvm-virtual.*|" +
                 ".*micronaut-jvm.*|" +
-                ".*micronaut-native.*)$"
+                ".*micronaut-native.*|" +
+                ".*helidon-se-jvm.*|" +
+                ".*helidon-se-native.*|" +
+                ".*helidon-mp-jvm.*|" +
+                ".*helidon-mp-native.*)$"
     }
     rule {
         action = "drop"
@@ -258,6 +262,20 @@ discovery.relabel "apps" {
         target_label = "service_name"
         regex = "^ebpf/native/micronaut-native_micronaut-native$"
         replacement = "ebpf/native/micronaut-native"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/helidon-se-native_helidon-se-native$"
+        replacement = "ebpf/native/helidon-se-native"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["service_name"]
+        target_label = "service_name"
+        regex = "^ebpf/native/helidon-mp-native_helidon-mp-native$"
+        replacement = "ebpf/native/helidon-mp-native"
     }
     rule {
         action = "labelkeep"

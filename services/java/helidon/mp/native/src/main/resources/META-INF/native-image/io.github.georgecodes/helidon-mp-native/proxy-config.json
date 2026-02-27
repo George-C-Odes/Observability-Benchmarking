@@ -1,0 +1,27 @@
+[
+  {
+    "interfaces": [
+      "jakarta.enterprise.event.Event",
+      "java.io.Serializable"
+    ]
+  },
+  {
+    "interfaces": [
+      "jakarta.enterprise.inject.Instance",
+      "java.io.Serializable"
+    ]
+  },
+  {
+    "interfaces": [
+      "jakarta.enterprise.inject.Instance",
+      "jakarta.enterprise.event.Event",
+      "java.io.Serializable"
+    ]
+  },
+  {
+    "interfaces": [
+      "jakarta.ws.rs.container.ResourceInfo",
+      "org.glassfish.hk2.api.ProxyCtl"
+    ]
+  }
+]

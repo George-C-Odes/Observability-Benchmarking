@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Native-image logging configuration.
+
+  IMPORTANT: Do NOT reference the OpenTelemetry Logback appender here.
+  Logback is initialized at build time (required by Weld/JBoss Logging).
+  If the OTEL appender class appears in logback.xml, Logback will instantiate
+  it during analysis, placing it in the image heap. That conflicts with
+  - -initialize-at-run-time=io.opentelemetry.instrumentation.logback
+  causing a fatal GraalVM error.
+
+  Instead, StartupListener programmatically adds the appender at runtime
+  using OpenTelemetryAppender.install(otel).
+-->
+<configuration>
+
+    <!-- Suppress Logback's internal status messages -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+</configuration>

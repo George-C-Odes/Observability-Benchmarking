@@ -1,0 +1,19 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="HelidonSEHelloServiceTest" type="JUnit" factoryName="JUnit">
+    <module name="helidon-se-jvm" />
+    <shortenClasspath name="ARGS_FILE" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.helidon.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.helidon.se" />
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.helidon.se.HelloServiceTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

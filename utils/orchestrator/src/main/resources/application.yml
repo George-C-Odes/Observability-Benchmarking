@@ -58,6 +58,19 @@ orchestrator:
         base-url: '${ORCH_HEALTH_MICRONAUT_NATIVE_BASE_URL:false}'
         health-path: /health
 
+      helidon-se-jvm:
+        base-url: '${ORCH_HEALTH_HELIDON_SE_JVM_BASE_URL:false}'
+        health-path: /observe/health
+      helidon-se-native:
+        base-url: '${ORCH_HEALTH_HELIDON_SE_NATIVE_BASE_URL:false}'
+        health-path: /observe/health
+      helidon-mp-jvm:
+        base-url: '${ORCH_HEALTH_HELIDON_MP_JVM_BASE_URL:false}'
+        health-path: /health
+      helidon-mp-native:
+        base-url: '${ORCH_HEALTH_HELIDON_MP_NATIVE_BASE_URL:false}'
+        health-path: /health
+
       # Observability
       grafana:
         base-url: '${ORCH_HEALTH_GRAFANA_BASE_URL:http://localhost:3000}'
