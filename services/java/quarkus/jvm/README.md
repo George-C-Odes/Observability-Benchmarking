@@ -1,7 +1,7 @@
 # Quarkus JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.31.4 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Quarkus 3.32.1 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Quarkus performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Quarkus 3.31.4 running
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.31.4
+- **Framework**: Quarkus 3.32.1
 - **Java Version**: Eclipse Temurin 25.0.2
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
@@ -134,7 +134,7 @@ quarkus:
 ```bash
 # Memory Management
 -Xms1280M -Xmx1280M
--XX:MaxDirectMemorySize=64M
+-XX:MaxDirectMemorySize=32M
 
 # Garbage Collection
 -XX:+UseG1GC

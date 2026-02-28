@@ -12,56 +12,60 @@ This document describes the systematic approach used to benchmark REST service i
 
 Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
 
-## At-a-glance results (17/02/2026)
+## At-a-glance results (28/02/2026)
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (2 vCPUs).
 
-| Framework | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
-|-----------|---------|----------|-----|---------------|-----------------|
-| Spring    | JVM     | Platform | 21k | 545           | 404             |
-| Spring    | JVM     | Virtual  | 17k | 427           | 404             |
-| Spring    | JVM     | Reactive | 13k | 457           | 435             |
-| Spring    | Native  | Platform | 10k | 185           | 386             |
-| Spring    | Native  | Virtual  | 11k | 141           | 386             |
-| Spring    | Native  | Reactive | 7k  | 179           | 445             |
-| Quarkus   | JVM     | Platform | 36k | 495           | 367             |
-| Quarkus   | JVM     | Virtual  | 45k | 495           | 367             |
-| Quarkus   | JVM     | Reactive | 46k | 495           | 367             |
-| Quarkus   | Native  | Platform | 21k | 220           | 571             |
-| Quarkus   | Native  | Virtual  | 27k | 220           | 571             |
-| Quarkus   | Native  | Reactive | 20k | 220           | 571             |
-| Spark     | JVM     | Platform | 23k | 413           | 373             |
-| Spark     | JVM     | Virtual  | 21k | 383           | 373             |
-| Javalin   | JVM     | Platform | 26k | 696           | 374             |
-| Javalin   | JVM     | Virtual  | 25k | 495           | 374             |
-| Micronaut | JVM     | Platform | 30k | 537           | 350             |
-| Micronaut | JVM     | Virtual  | 37k | 537           | 350             |
-| Micronaut | JVM     | Reactive | 31k | 537           | 350             |
-| Micronaut | Native  | Platform | 16k | 130           | 346             |
-| Micronaut | Native  | Virtual  | 15k | 130           | 346             |
-| Micronaut | Native  | Reactive | 14k | 130           | 346             |
-| Helidon   | JVM     | Virtual  | WIP |               |                 |
-| Helidon   | Native  | Virtual  | WIP |               |                 |
-| Go        | Native  | N/A      | 24k | 58            | 33              |
+| Framework  | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
+|------------|---------|----------|-----|---------------|-----------------|
+| Spring     | JVM     | Platform | 21k | 545           | 404             |
+| Spring     | JVM     | Virtual  | 17k | 427           | 404             |
+| Spring     | JVM     | Reactive | 13k | 457           | 435             |
+| Spring     | Native  | Platform | 10k | 185           | 386             |
+| Spring     | Native  | Virtual  | 11k | 141           | 386             |
+| Spring     | Native  | Reactive | 7k  | 179           | 445             |
+| Quarkus    | JVM     | Platform | 36k | 596           | 370             |
+| Quarkus    | JVM     | Virtual  | 45k | 596           | 370             |
+| Quarkus    | JVM     | Reactive | 46k | 596           | 370             |
+| Quarkus    | Native  | Platform | 21k | 194           | 636             |
+| Quarkus    | Native  | Virtual  | 27k | 194           | 636             |
+| Quarkus    | Native  | Reactive | 20k | 194           | 636             |
+| Spark      | JVM     | Platform | 23k | 433           | 376             |
+| Spark      | JVM     | Virtual  | 21k | 428           | 376             |
+| Javalin    | JVM     | Platform | 26k | 696           | 380             |
+| Javalin    | JVM     | Virtual  | 25k | 525           | 380             |
+| Micronaut  | JVM     | Platform | 30k | 431           | 352             |
+| Micronaut  | JVM     | Virtual  | 37k | 431           | 352             |
+| Micronaut  | JVM     | Reactive | 31k | 431           | 352             |
+| Micronaut  | Native  | Platform | 16k | 180           | 348             |
+| Micronaut  | Native  | Virtual  | 15k | 180           | 348             |
+| Micronaut  | Native  | Reactive | 14k | 180           | 348             |
+| Helidon SE | JVM     | Virtual  | 66k | 386           | 169             |
+| Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
+| Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
+| Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
+| Go         | Native  | N/A      | 24k | 45            | 33              |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
+- Helidon JVM builds have been optimized with jlink which reduces image size significantly.
+- Helidon MP adds MicroProfile CDI/JAX-RS overhead on top of the SE engine.
 - Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use for jvm, not supported in native).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
-    - same endpoint logic
-    - similar payload sizes
-    - keep-alive enabled
-    - no TLS
-    - identical load profiles
-    - inside the same docker network
+  - same endpoint logic
+  - similar payload sizes
+  - keep-alive enabled
+  - no TLS
+  - identical load profiles
+  - inside the same docker network
 - go vs go-simple
-    - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~60k RPS.
-    - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
-    - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
+  - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~60k RPS.
+  - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
+  - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
 ## Benchmarking Philosophy
 
@@ -117,7 +121,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.3 (3.5.11 also supported)
-- Quarkus: 3.31.4
+- Quarkus: 3.32.1
 - Go: 1.26.0 with Fiber v2.52.11
 
 ### Third-party license note (native-image)

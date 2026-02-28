@@ -137,14 +137,15 @@ bash ./integration-tests/run-integration-tests.sh
 
 The runner prints the versions it is designed against (these values are embedded in the script):
 
-| Framework   | Version |
-|-------------|---------|
-| Spring Boot | 4.0.3   |
-| Quarkus     | 3.31.4  |
-| Spark       | 3.0.3   |
-| Javalin     | 6.7.0   |
-| Micronaut   | 4.10.15 |
-| Go          | 1.26.0  |
+| Framework       | Version |
+|-----------------|---------|
+| Spring Boot     | 4.0.3   |
+| Quarkus         | 3.32.1  |
+| Spark           | 3.0.3   |
+| Javalin         | 7.0.0   |
+| Micronaut       | 4.10.16 |
+| Helidon SE & MP | 4.3.4   |
+| Go              | 1.26.0  |
 
 ## Service Port Mappings
 
@@ -152,9 +153,9 @@ Port mappings match the order in `compose/docker-compose.yml`.
 
 | Service                            | Container Name                | Port | Type               |
 |------------------------------------|-------------------------------|------|--------------------|
-| Spring Boot Tomcat Platform        | spring-jvm-tomcat-platform    | 8080 | JVM                |
-| Spring Boot Tomcat Virtual         | spring-jvm-tomcat-virtual     | 8081 | JVM                |
-| Spring Boot Netty                  | spring-jvm-netty              | 8082 | JVM                |
+| Spring Boot JVM Tomcat Platform    | spring-jvm-tomcat-platform    | 8080 | JVM                |
+| Spring Boot JVM Tomcat Virtual     | spring-jvm-tomcat-virtual     | 8081 | JVM                |
+| Spring Boot JVM Netty              | spring-jvm-netty              | 8082 | JVM                |
 | Spring Boot Native Tomcat Platform | spring-native-tomcat-platform | 8083 | Native             |
 | Spring Boot Native Tomcat Virtual  | spring-native-tomcat-virtual  | 8084 | Native             |
 | Spring Boot Native Netty           | spring-native-netty           | 8085 | Native             |
@@ -166,6 +167,10 @@ Port mappings match the order in `compose/docker-compose.yml`.
 | Javalin JVM Virtual                | javalin-jvm-virtual           | 8091 | JVM                |
 | Micronaut JVM                      | micronaut-jvm                 | 8092 | JVM                |
 | Micronaut Native                   | micronaut-native              | 8093 | Native             |
+| Helidon SE JVM                     | helidon-se-jvm                | 8094 | JVM                |
+| Helidon SE Native                  | helidon-se-native             | 8095 | Native             |
+| Helidon MP JVM                     | helidon-mp-jvm                | 8096 | JVM                |
+| Helidon MP Native                  | helidon-mp-native             | 8097 | Native             |
 | Go                                 | go                            | 9080 | Native (Go binary) |
 
 ## What’s Tested (by the runner)

@@ -279,11 +279,13 @@ Once services are running:
 - **Micronaut JVM (Platform)**: http://localhost:8092/hello/platform
 - **Micronaut JVM (Virtual)**: http://localhost:8092/hello/virtual
 - **Micronaut JVM (Reactive)**: http://localhost:8092/hello/reactive
-- **Micronaut Native (Platform) TODO**: http://localhost:8095/hello/platform
-- **Micronaut Native (Virtual) TODO**: http://localhost:8096/hello/virtual
-- **Micronaut Native (Reactive) TODO**: http://localhost:8097/hello/reactive
-- **Helidon JVM (Virtual) TODO**: http://localhost:8098/hello/virtual
-- **Helidon Native (Virtual) TODO**: http://localhost:8099/hello/virtual
+- **Micronaut Native (Platform)**: http://localhost:8093/hello/platform
+- **Micronaut Native (Virtual)**: http://localhost:8093/hello/virtual
+- **Micronaut Native (Reactive)**: http://localhost:8093/hello/reactive
+- **Helidon SE JVM (Virtual)**: http://localhost:8094/hello/virtual
+- **Helidon SE Native (Virtual)**: http://localhost:8095/hello/virtual
+- **Helidon MP JVM (Virtual)**: http://localhost:8096/hello/virtual
+- **Helidon MP Native (Virtual)**: http://localhost:8097/hello/virtual
 - **Go**: http://localhost:9080/hello/virtual
 
 Health checks available at `/q/health` (Quarkus) or `/actuator/health` (Spring).

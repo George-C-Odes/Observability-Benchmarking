@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.31.4
+### Quarkus 3.32.1
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.31.4** (latest stable)
+- **Quarkus 3.32.1** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -153,6 +153,167 @@ mvn package -Pnative
 **Headline benchmark (17/02/2026)**: ~24,000 RPS (observability-aligned implementation)
 
 **Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
+
+### SparkJava 3.0.3 (Zoomba fork)
+
+**Official Site**: [https://sparkjava.com/](https://sparkjava.com/) | [Zoomba fork](https://github.com/nicholaszoomba/spark)
+
+**Why We Use It**:
+- Extremely minimal HTTP micro-framework — ideal as a lightweight baseline
+- Simple, expressive API for defining routes
+- The Zoomba fork adds virtual thread support to the original Spark codebase
+- Useful for isolating framework overhead in benchmarks
+
+**Implementation Details**:
+- **SparkJava 3.0.3** (Zoomba fork with virtual thread support)
+- Embedded Jetty server
+- JVM builds only (no native image support)
+
+**Thread Models Implemented**:
+1. **Platform Threads**
+   - Traditional Jetty thread pool
+   - Blocking I/O model
+
+2. **Virtual Threads** (via Zoomba fork)
+   - Lightweight threads from Java 21+
+   - Drop-in replacement for the platform thread executor
+
+**Pros**:
+- Near-zero learning curve
+- Very small dependency footprint
+- Fast startup
+- Great for micro-benchmarks and prototyping
+
+**Cons**:
+- No reactive/non-blocking mode
+- Limited ecosystem (no built-in DI, validation, etc.)
+- No native image support
+- Official project is largely unmaintained; the Zoomba fork keeps it viable
+
+### Javalin 7.0.0
+
+**Official Site**: [https://javalin.io/](https://javalin.io/)
+
+**Why We Use It**:
+- Lightweight yet feature-rich REST framework built on top of Jetty
+- First-class Kotlin support (useful for future polyglot benchmarks)
+- Simple, declarative API similar to Express.js / Koa
+- Good middle ground between Spark's minimalism and Spring's richness
+
+**Implementation Details**:
+- **Javalin 7.0.0** (latest major release)
+- Embedded Jetty server
+- JVM builds only (no native image support)
+
+**Thread Models Implemented**:
+1. **Platform Threads**
+   - Standard Jetty thread pool
+   - Blocking I/O model
+
+2. **Virtual Threads**
+   - Java 21+ virtual threads via Jetty's virtual thread executor
+   - Blocking code on virtual threads
+
+**Pros**:
+- Concise, readable API
+- Lightweight with fast startup
+- Active community and regular releases
+- Built-in OpenAPI / Swagger support
+
+**Cons**:
+- No reactive/non-blocking HTTP model
+- No native image support out of the box
+- Smaller ecosystem than Spring or Micronaut
+
+### Micronaut 4.10.16
+
+**Official Site**: [https://micronaut.io/](https://micronaut.io/)
+
+**Why We Use It**:
+- Compile-time dependency injection and AOP — avoids reflection-heavy runtime costs
+- Fast startup and low memory footprint, rivaling Quarkus
+- First-class GraalVM native image support
+- Provides all three concurrency modes for a well-rounded comparison
+
+**Implementation Details**:
+- **Micronaut 4.10.16** (latest stable)
+- **Micronaut HTTP Server** (Netty-based)
+- **GraalVM** for native compilation
+- Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
+
+**Thread Models Implemented**:
+1. **Platform Threads**
+   - Traditional Netty worker pool with blocking dispatch
+   - Standard thread-per-request model
+
+2. **Virtual Threads**
+   - Java 21+ virtual threads with Netty carrier threads
+   - Combines Netty's event loop with virtual-thread blocking
+
+3. **Reactive**
+   - Netty event-loop architecture
+   - Reactor / RxJava integration
+   - Non-blocking I/O with backpressure
+
+**Native Compilation**:
+```bash
+# Build native image
+./mvnw package -Dpackaging=native-image
+```
+
+**Pros**:
+- Compile-time DI eliminates reflection overhead
+- Fast startup (sub-second JVM, near-instant native)
+- Excellent GraalVM support
+- Rich feature set (HTTP client, service discovery, config management)
+
+**Cons**:
+- Smaller community than Spring
+- Compile-time DI can be harder to debug
+- Some libraries require Micronaut-specific adapters
+
+### Helidon 4.3.4
+
+**Official Site**: [https://helidon.io/](https://helidon.io/)
+
+**Why We Use It**:
+- Oracle's open-source microservices framework, purpose-built for Java 21+ virtual threads
+- Two distinct flavours (SE and MP) let us benchmark minimal vs full-stack overhead
+- Excellent native image support via GraalVM
+- `jlink`-optimised JVM builds produce notably small Docker images
+
+**Implementation Details**:
+- **Helidon 4.3.4** (latest stable, virtual-thread–first architecture)
+- **Helidon SE**: Programmatic, functional-style routing with minimal overhead (Níma)
+- **Helidon MP**: MicroProfile-compliant layer on top of SE (CDI + JAX-RS)
+- Both flavours support JVM and GraalVM native builds
+
+**Thread Model**:
+- **Virtual Threads only** — Helidon 4 removed the legacy reactive Netty-based HTTP server; every request is dispatched on a virtual thread by default. Platform-thread and reactive modes are N/A by design.
+
+**Helidon SE vs Helidon MP**:
+
+| Aspect      | Helidon SE                         | Helidon MP                            |
+|-------------|------------------------------------|---------------------------------------|
+| Routing     | Programmatic / functional          | CDI + JAX-RS annotations              |
+| Overhead    | Minimal                            | MicroProfile CDI container overhead   |
+| Best for    | Maximum throughput, tiny footprint | Standards compliance, enterprise APIs |
+| Typical RPS | ~66k (JVM), ~31k (native)          | ~15k (JVM), ~10k (native)             |
+
+**Build Highlights**:
+- **jlink-optimised JVM images**: Custom JRE with unused JDK modules stripped, yielding Docker images as small as ~169 MB (SE) / ~189 MB (MP)
+- **Shared native sources**: Native modules reuse JVM sources via `build-helper-maven-plugin`; only the build toolchain differs
+
+**Pros**:
+- Best-in-class virtual thread performance (SE variant)
+- Very small Docker images thanks to jlink
+- Clean separation between SE (minimal) and MP (full-stack)
+- Strong GraalVM native support
+
+**Cons**:
+- Virtual-thread–only model limits concurrency model comparisons
+- Smaller community and ecosystem than Spring or Quarkus
+- Helidon MP's CDI overhead is significant compared to SE
 
 ---
 
@@ -613,18 +774,20 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.6.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.31.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Runtime            | Node.js                    | 25.7.0  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST server                                              |
-| **Backend**       | Framework          | Micronaut                  | 4.10.15 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Javalin                    | 7.0.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Micronaut                  | 4.10.16 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.8   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.3.3  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.6   | Log aggregation                                                      |
+| **Observability** | Visualization      | Grafana                    | 12.4.0  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
@@ -636,7 +799,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.9.0  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.10.1 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
@@ -648,6 +811,10 @@ Cache<String, String> cache = Caffeine.newBuilder()
 ### Official Documentation
 - [Spring Boot Reference](https://docs.spring.io/spring-boot/docs/current/reference/html/)
 - [Quarkus Guides](https://quarkus.io/guides/)
+- [SparkJava Documentation](https://sparkjava.com/documentation)
+- [Javalin Documentation](https://javalin.io/documentation)
+- [Micronaut Documentation](https://docs.micronaut.io/latest/guide/)
+- [Helidon Documentation](https://helidon.io/docs/latest/)
 - [Grafana Documentation](https://grafana.com/docs/)
 - [OpenTelemetry Docs](https://opentelemetry.io/docs/)
 - [Docker Documentation](https://docs.docker.com/)
@@ -655,6 +822,8 @@ Cache<String, String> cache = Caffeine.newBuilder()
 ### Community Resources
 - [Spring Blog](https://spring.io/blog)
 - [Quarkus Blog](https://quarkus.io/blog/)
+- [Micronaut Blog](https://micronaut.io/blog/)
+- [Helidon Blog](https://medium.com/helidon)
 - [Grafana Blog](https://grafana.com/blog/)
 - [CNCF Projects](https://www.cncf.io/projects/)
 

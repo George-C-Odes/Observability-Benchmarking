@@ -17,7 +17,6 @@
                 <span>Observability Benchmarking</span>
             </div>
             <ul class="nav-links">
-                <li><a href="#overview">Overview</a></li>
                 <li><a href="getting-started.html">Get Started</a></li>
                 <li><a href="architecture.html">Architecture</a></li>
                 <li><a href="benchmarking.html">Benchmarking</a></li>
@@ -54,7 +53,7 @@
                 <div class="feature-card">
                     <i class="fas fa-rocket"></i>
                     <h3>High Performance</h3>
-                    <p>Benchmark results up to 46,000 RPS on CPU-limited containers (2 vCPUs)</p>
+                    <p>Benchmark results up to 66,000 RPS on CPU-limited containers (2 vCPUs)</p>
                 </div>
                 <div class="feature-card">
                     <i class="fas fa-eye"></i>
@@ -64,7 +63,7 @@
                 <div class="feature-card">
                     <i class="fas fa-code"></i>
                     <h3>Multiple Frameworks</h3>
-                    <p>Spring Boot, Quarkus implementations with JVM and native compilation</p>
+                    <p>Spring Boot, Quarkus, Spark, Javalin, Micronaut, Helidon, and Go — JVM &amp; native</p>
                 </div>
                 <div class="feature-card">
                     <i class="fas fa-cogs"></i>
@@ -98,6 +97,7 @@
                         <div class="arch-component">Spark Services</div>
                         <div class="arch-component">Javalin Services</div>
                         <div class="arch-component">Micronaut Services</div>
+                        <div class="arch-component">Helidon Services</div>
                         <div class="arch-component">Go Services</div>
                     </div>
                 </div>
@@ -154,203 +154,293 @@
     <section id="results" class="section">
         <div class="container">
             <h2>Benchmark Results</h2>
-            <p class="lead"><strong>At-a-glance results [17/02/2026] [2 vCPUs] </strong>Performance comparison of different frameworks and concurrency models on CPU-limited containers, ordered by RPS.</p>
+            <p class="lead"><strong>At-a-glance results [28/02/2026] [2 vCPUs] </strong>Performance comparison of different frameworks and concurrency models on CPU-limited containers, ordered by RPS.</p>
+
+            <div class="tier-legend">
+                <span class="tier-badge tier-elite"><i class="fas fa-bolt"></i> Elite (40k+)</span>
+                <span class="tier-badge tier-high"><i class="fas fa-fire"></i> High (25k–39k)</span>
+                <span class="tier-badge tier-mid"><i class="fas fa-tachometer-alt"></i> Mid (15k–24k)</span>
+                <span class="tier-badge tier-entry"><i class="fas fa-seedling"></i> Entry (&lt;15k)</span>
+            </div>
+
             <div class="results-table-container">
                 <table class="results-table">
                     <thead>
                         <tr>
-                            <th>Implementation</th>
+                            <th>#</th>
+                            <th>Framework</th>
+                            <th>Runtime</th>
                             <th>Mode</th>
                             <th>RPS</th>
                             <th>Peak Mem (MB)</th>
                             <th>Image Size (MB)</th>
-                            <th>Rank</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="highlight">
-                            <td>Quarkus JVM</td>
-                            <td>Reactive</td>
-                            <td>46,000</td>
-                            <td>495</td>
-                            <td>367</td>
-                            <td>1</td>
+                    <!-- ── Elite Tier  (40k+) ── -->
+                    <tbody class="tier-group tier-elite-group">
+                        <tr class="tier-header-row tier-elite-header">
+                            <td colspan="7"><i class="fas fa-bolt"></i> Elite Tier — 40,000+ RPS</td>
                         </tr>
-                        <tr>
-                            <td>Quarkus JVM</td>
+                        <tr class="highlight tier-elite-row">
+                            <td><span class="medal gold">🥇</span></td>
+                            <td>Helidon SE</td>
+                            <td>JVM</td>
                             <td>Virtual</td>
-                            <td>45,000</td>
-                            <td>495</td>
-                            <td>367</td>
-                            <td>2</td>
+                            <td><strong>66,000</strong></td>
+                            <td>386</td>
+                            <td>169</td>
                         </tr>
-                        <tr>
-                            <td>Micronaut JVM</td>
+                        <tr class="tier-elite-row">
+                            <td><span class="medal silver">🥈</span></td>
+                            <td>Quarkus</td>
+                            <td>JVM</td>
+                            <td>Reactive</td>
+                            <td><strong>46,000</strong></td>
+                            <td>596</td>
+                            <td>370</td>
+                        </tr>
+                        <tr class="tier-elite-row">
+                            <td><span class="medal bronze">🥉</span></td>
+                            <td>Quarkus</td>
+                            <td>JVM</td>
+                            <td>Virtual</td>
+                            <td><strong>45,000</strong></td>
+                            <td>596</td>
+                            <td>370</td>
+                        </tr>
+                    </tbody>
+                    <!-- ── High Tier  (25k–39k) ── -->
+                    <tbody class="tier-group tier-high-group">
+                        <tr class="tier-header-row tier-high-header">
+                            <td colspan="7"><i class="fas fa-fire"></i> High Tier — 25,000–39,000 RPS</td>
+                        </tr>
+                        <tr class="tier-high-row">
+                            <td>4</td>
+                            <td>Micronaut</td>
+                            <td>JVM</td>
                             <td>Virtual</td>
                             <td>37,000</td>
-                            <td>537</td>
-                            <td>350</td>
-                            <td>3</td>
+                            <td>431</td>
+                            <td>352</td>
                         </tr>
-                        <tr>
-                            <td>Quarkus JVM</td>
+                        <tr class="tier-high-row">
+                            <td>5</td>
+                            <td>Quarkus</td>
+                            <td>JVM</td>
                             <td>Platform</td>
                             <td>36,000</td>
-                            <td>495</td>
-                            <td>367</td>
-                            <td>4</td>
+                            <td>596</td>
+                            <td>370</td>
                         </tr>
-                        <tr>
-                            <td>Micronaut JVM</td>
+                        <tr class="tier-high-row">
+                            <td>6</td>
+                            <td>Helidon SE</td>
+                            <td>Native</td>
+                            <td>Virtual</td>
+                            <td>31,000</td>
+                            <td>111</td>
+                            <td>253</td>
+                        </tr>
+                        <tr class="tier-high-row">
+                            <td>7</td>
+                            <td>Micronaut</td>
+                            <td>JVM</td>
                             <td>Reactive</td>
                             <td>31,000</td>
-                            <td>537</td>
-                            <td>350</td>
-                            <td>5</td>
+                            <td>431</td>
+                            <td>352</td>
                         </tr>
-                        <tr>
-                            <td>Micronaut JVM</td>
+                        <tr class="tier-high-row">
+                            <td>8</td>
+                            <td>Micronaut</td>
+                            <td>JVM</td>
                             <td>Platform</td>
                             <td>30,000</td>
-                            <td>537</td>
-                            <td>350</td>
-                            <td>6</td>
+                            <td>431</td>
+                            <td>352</td>
                         </tr>
-                        <tr>
-                            <td>Quarkus Native</td>
+                        <tr class="tier-high-row">
+                            <td>9</td>
+                            <td>Quarkus</td>
+                            <td>Native</td>
                             <td>Virtual</td>
                             <td>27,000</td>
-                            <td>220</td>
-                            <td>571</td>
-                            <td>7</td>
+                            <td>194</td>
+                            <td>636</td>
                         </tr>
-                        <tr>
-                            <td>Javalin JVM</td>
+                        <tr class="tier-high-row">
+                            <td>10</td>
+                            <td>Javalin</td>
+                            <td>JVM</td>
                             <td>Platform</td>
                             <td>26,000</td>
                             <td>696</td>
-                            <td>374</td>
-                            <td>8</td>
+                            <td>380</td>
                         </tr>
-                        <tr>
-                            <td>Javalin JVM</td>
+                        <tr class="tier-high-row">
+                            <td>11</td>
+                            <td>Javalin</td>
+                            <td>JVM</td>
                             <td>Virtual</td>
                             <td>25,000</td>
-                            <td>495</td>
-                            <td>374</td>
-                            <td>9</td>
+                            <td>525</td>
+                            <td>380</td>
                         </tr>
-                        <tr>
+                    </tbody>
+                    <!-- ── Mid Tier  (15k–24k) ── -->
+                    <tbody class="tier-group tier-mid-group">
+                        <tr class="tier-header-row tier-mid-header">
+                            <td colspan="7"><i class="fas fa-tachometer-alt"></i> Mid Tier — 15,000–24,000 RPS</td>
+                        </tr>
+                        <tr class="tier-mid-row">
+                            <td>12</td>
                             <td>Go</td>
+                            <td>Native</td>
                             <td>N/A</td>
                             <td>24,000</td>
-                            <td>58</td>
+                            <td>45</td>
                             <td>33</td>
-                            <td>10</td>
                         </tr>
-                        <tr>
-                            <td>Spark JVM</td>
+                        <tr class="tier-mid-row">
+                            <td>13</td>
+                            <td>Spark</td>
+                            <td>JVM</td>
                             <td>Platform</td>
                             <td>23,000</td>
-                            <td>413</td>
-                            <td>373</td>
-                            <td>11</td>
+                            <td>433</td>
+                            <td>376</td>
                         </tr>
-                        <tr>
-                            <td>Quarkus Native</td>
+                        <tr class="tier-mid-row">
+                            <td>14</td>
+                            <td>Quarkus</td>
+                            <td>Native</td>
                             <td>Platform</td>
                             <td>21,000</td>
-                            <td>220</td>
-                            <td>571</td>
-                            <td>12</td>
+                            <td>194</td>
+                            <td>636</td>
                         </tr>
-                        <tr>
-                            <td>Spark JVM</td>
+                        <tr class="tier-mid-row">
+                            <td>15</td>
+                            <td>Spark</td>
+                            <td>JVM</td>
                             <td>Virtual</td>
                             <td>21,000</td>
-                            <td>383</td>
-                            <td>373</td>
-                            <td>13</td>
+                            <td>428</td>
+                            <td>376</td>
                         </tr>
-                        <tr>
-                            <td>Spring JVM</td>
+                        <tr class="tier-mid-row">
+                            <td>16</td>
+                            <td>Spring</td>
+                            <td>JVM</td>
                             <td>Platform</td>
                             <td>21,000</td>
                             <td>545</td>
                             <td>404</td>
-                            <td>14</td>
                         </tr>
-                        <tr>
-                            <td>Quarkus Native</td>
+                        <tr class="tier-mid-row">
+                            <td>17</td>
+                            <td>Quarkus</td>
+                            <td>Native</td>
                             <td>Reactive</td>
                             <td>20,000</td>
-                            <td>220</td>
-                            <td>571</td>
-                            <td>15</td>
+                            <td>194</td>
+                            <td>636</td>
                         </tr>
-                        <tr>
-                            <td>Spring JVM</td>
+                        <tr class="tier-mid-row">
+                            <td>18</td>
+                            <td>Spring</td>
+                            <td>JVM</td>
                             <td>Virtual</td>
                             <td>17,000</td>
                             <td>427</td>
                             <td>404</td>
-                            <td>16</td>
                         </tr>
-                        <tr>
-                            <td>Micronaut Native</td>
+                        <tr class="tier-mid-row">
+                            <td>19</td>
+                            <td>Micronaut</td>
+                            <td>Native</td>
                             <td>Platform</td>
                             <td>16,000</td>
-                            <td>130</td>
-                            <td>346</td>
-                            <td>17</td>
+                            <td>180</td>
+                            <td>348</td>
                         </tr>
-                        <tr>
-                            <td>Micronaut Native</td>
+                        <tr class="tier-mid-row">
+                            <td>20</td>
+                            <td>Micronaut</td>
+                            <td>Native</td>
                             <td>Virtual</td>
                             <td>15,000</td>
-                            <td>130</td>
-                            <td>346</td>
-                            <td>18</td>
+                            <td>180</td>
+                            <td>348</td>
                         </tr>
-                        <tr>
-                            <td>Micronaut Native</td>
+                        <tr class="tier-mid-row">
+                            <td>21</td>
+                            <td>Helidon MP</td>
+                            <td>JVM</td>
+                            <td>Virtual</td>
+                            <td>15,000</td>
+                            <td>462</td>
+                            <td>189</td>
+                        </tr>
+                    </tbody>
+                    <!-- ── Entry Tier  (<15k) ── -->
+                    <tbody class="tier-group tier-entry-group">
+                        <tr class="tier-header-row tier-entry-header">
+                            <td colspan="7"><i class="fas fa-seedling"></i> Entry Tier — Below 15,000 RPS</td>
+                        </tr>
+                        <tr class="tier-entry-row">
+                            <td>22</td>
+                            <td>Micronaut</td>
+                            <td>Native</td>
                             <td>Reactive</td>
                             <td>14,000</td>
-                            <td>130</td>
-                            <td>346</td>
-                            <td>19</td>
+                            <td>180</td>
+                            <td>348</td>
                         </tr>
-                        <tr>
-                            <td>Spring JVM</td>
+                        <tr class="tier-entry-row">
+                            <td>23</td>
+                            <td>Spring</td>
+                            <td>JVM</td>
                             <td>Reactive</td>
                             <td>13,000</td>
                             <td>457</td>
                             <td>435</td>
-                            <td>20</td>
                         </tr>
-                        <tr>
-                            <td>Spring Native</td>
+                        <tr class="tier-entry-row">
+                            <td>24</td>
+                            <td>Spring</td>
+                            <td>Native</td>
                             <td>Virtual</td>
                             <td>11,000</td>
                             <td>141</td>
                             <td>386</td>
-                            <td>21</td>
                         </tr>
-                        <tr>
-                            <td>Spring Native</td>
+                        <tr class="tier-entry-row">
+                            <td>25</td>
+                            <td>Helidon MP</td>
+                            <td>Native</td>
+                            <td>Virtual</td>
+                            <td>10,000</td>
+                            <td>177</td>
+                            <td>356</td>
+                        </tr>
+                        <tr class="tier-entry-row">
+                            <td>26</td>
+                            <td>Spring</td>
+                            <td>Native</td>
                             <td>Platform</td>
                             <td>10,000</td>
                             <td>185</td>
                             <td>386</td>
-                            <td>22</td>
                         </tr>
-                        <tr>
-                            <td>Spring Native</td>
+                        <tr class="tier-entry-row">
+                            <td>27</td>
+                            <td>Spring</td>
+                            <td>Native</td>
                             <td>Reactive</td>
                             <td>7,000</td>
                             <td>179</td>
                             <td>445</td>
-                            <td>23</td>
                         </tr>
                     </tbody>
                 </table>
