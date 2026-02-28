@@ -13,6 +13,7 @@
     </extension>
     <method v="2">
       <option name="Make" enabled="true" />
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/services/java/helidon/se/jvm/pom.xml" goal="compile" />
     </method>
   </configuration>
 </component>

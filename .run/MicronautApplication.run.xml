@@ -19,6 +19,7 @@
     <option name="vmParameters" />
     <method v="2">
       <option name="Make" enabled="true" />
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/services/java/micronaut/jvm/pom.xml" goal="compile" />
     </method>
   </configuration>
 </component>
