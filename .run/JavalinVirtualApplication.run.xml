@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="JavalinApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+  <configuration default="false" name="JavalinVirtualApplication" type="Application" factoryName="Application">
+    <envs>
+      <env name="THREAD_MODE" value="virtual" />
+    </envs>
     <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.javalin.JavalinApplication" />
     <module name="javalin-jvm" />
     <extension name="coverage">

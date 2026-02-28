@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SparkVirtualApplication" type="Application" factoryName="Application">
+    <envs>
+      <env name="THREAD_MODE" value="virtual" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.spark.SparkApplication" />
+    <module name="spark-jvm" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.spark.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

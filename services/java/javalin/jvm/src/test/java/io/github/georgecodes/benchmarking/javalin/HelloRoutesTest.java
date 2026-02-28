@@ -1,8 +1,9 @@
-package io.github.georgecodes.benchmarking.spark;
+package io.github.georgecodes.benchmarking.javalin;
 
-import io.github.georgecodes.benchmarking.spark.config.ServiceConfig;
-import io.github.georgecodes.benchmarking.spark.domain.HelloService;
-import io.github.georgecodes.benchmarking.spark.web.HelloRoutes;
+import io.github.georgecodes.benchmarking.javalin.config.ServiceConfig;
+import io.github.georgecodes.benchmarking.javalin.domain.HelloService;
+import io.github.georgecodes.benchmarking.javalin.infra.CacheProvider;
+import io.github.georgecodes.benchmarking.javalin.web.HelloRoutes;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for {@link HelloRoutes} construction and wiring.
- * Spark keeps a singleton server, so we avoid calling {@code register()} in unit tests.
+ * Javalin requires a running server to actually register routes, so we test
+ * constructor validation and metric registration only.
  */
 class HelloRoutesTest {
 
@@ -30,8 +32,7 @@ class HelloRoutesTest {
             100,
             0, 0, 10000, 60000L,
             ServiceConfig.HandlerExecutionMode.DIRECT,
-            0,
-            ServiceConfig.VirtualExecutionMode.SPARK
+            0
         );
     }
 
@@ -42,15 +43,13 @@ class HelloRoutesTest {
             100,
             0, 0, 10000, 60000L,
             ServiceConfig.HandlerExecutionMode.DIRECT,
-            0,
-            ServiceConfig.VirtualExecutionMode.SPARK
+            0
         );
     }
 
     @Test
     void constructionPlatformMode() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         HelloRoutes routes = assertDoesNotThrow(
             () -> new HelloRoutes(platformConfig(), executor, service, registry));
@@ -59,8 +58,7 @@ class HelloRoutesTest {
 
     @Test
     void constructionVirtualMode() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         HelloRoutes routes = assertDoesNotThrow(
             () -> new HelloRoutes(virtualConfig(), executor, service, registry));
@@ -69,8 +67,7 @@ class HelloRoutesTest {
 
     @Test
     void counterRegisteredInPlatformMode() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         new HelloRoutes(platformConfig(), executor, service, registry);
 
@@ -82,8 +79,7 @@ class HelloRoutesTest {
     @Test
     void counterRegisteredInVirtualMode() {
         MeterRegistry reg = new SimpleMeterRegistry();
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         new HelloRoutes(virtualConfig(), executor, service, reg);
 
@@ -94,8 +90,7 @@ class HelloRoutesTest {
 
     @Test
     void rejectsNullConfig() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(null, executor, service, registry));
@@ -103,8 +98,7 @@ class HelloRoutesTest {
 
     @Test
     void rejectsNullExecutor() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(platformConfig(), null, service, registry));
@@ -118,10 +112,10 @@ class HelloRoutesTest {
 
     @Test
     void rejectsNullMeterRegistry() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(platformConfig(), executor, service, null));
     }
 }
+

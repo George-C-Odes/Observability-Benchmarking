@@ -1,5 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="SparkApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+  <configuration default="false" name="SparkPlatformApplication" type="Application" factoryName="Application">
+    <envs>
+      <env name="THREAD_MODE" value="platform" />
+    </envs>
     <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.spark.SparkApplication" />
     <module name="spark-jvm" />
     <extension name="coverage">
