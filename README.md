@@ -450,7 +450,7 @@ The numbers below are a curated summary of a representative run.
 - **Javalin**: 7.0.0
 - **Micronaut**: 4.10.16
 - **Helidon**: 4.3.4
-- **Go**: 1.26.0 (Fiber v2.52.11)
+- **Go**: 1.26.0 (Fiber v2.52.12)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

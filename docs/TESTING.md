@@ -234,7 +234,7 @@ docker build \
 
 ```
 Go: 1.26.0+
-Fiber: v2.52.11
+Fiber: v2.52.12
 OpenTelemetry: Latest stable
 ```
 

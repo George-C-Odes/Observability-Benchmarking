@@ -1,7 +1,7 @@
 # Go Hello Service
 
 ## Overview
-A high-performance REST service implementation written in Go using the Fiber web framework (v2.52.11). This service provides a simple endpoint for benchmarking under high concurrency scenarios with full observability integration.
+A high-performance REST service implementation written in Go using the Fiber web framework (v2.52.12). This service provides a simple endpoint for benchmarking under high concurrency scenarios with full observability integration.
 
 ## Purpose
 - Demonstrates Go's excellent concurrency performance for REST services
@@ -13,7 +13,7 @@ A high-performance REST service implementation written in Go using the Fiber web
 
 ### Framework & Runtime
 - **Language**: Go 1.26.0
-- **Web Framework**: Fiber v2.52.11 (Express-inspired web framework)
+- **Web Framework**: Fiber v2.52.12 (Express-inspired web framework)
 - **Concurrency Model**: Goroutines (native Go concurrency)
 
 ### Endpoints
