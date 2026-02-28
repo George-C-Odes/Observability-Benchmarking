@@ -3,7 +3,11 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.31.4-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.1-blue.svg)](https://quarkus.io/)
+[![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.0.0-purple.svg)](https://javalin.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-4.10.16-1a1a2e.svg)](https://micronaut.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
 [![Go](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
@@ -41,7 +45,7 @@
 
 This repository provides a **production-ready Docker Compose environment** for comprehensive performance benchmarking of REST service implementations. It enables you to:
 
-- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus (JVM & Native), Go, and more
+- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus, Spark, Javalin, Micronaut, Helidon (JVM & Native), Go, and more
 - **Test concurrency models**: Platform threads, virtual threads (Project Loom), and reactive programming
 - **Collect full observability data**: Logs, metrics, traces, and continuous profiling in one unified stack
 - **Run deterministic benchmarks**: Use wrk2 for controlled, reproducible load testing
@@ -56,18 +60,20 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.6.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.31.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Runtime            | Node.js                    | 25.7.0  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 6.7.0   | Lightweight REST server                                              |
-| **Backend**       | Framework          | Micronaut                  | 4.10.15 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Javalin                    | 7.0.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Micronaut                  | 4.10.16 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.8   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.3.3  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.6   | Log aggregation                                                      |
+| **Observability** | Visualization      | Grafana                    | 12.4.0  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
@@ -79,7 +85,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.9.0  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.10.1 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
@@ -138,20 +144,29 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.31.4**
+- **Quarkus 3.32.1**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
 - **Spark**: 3.0.3
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Javalin**: 6.7.0
+- **Javalin**: 7.0.0
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Micronaut**: 4.10.15
+- **Micronaut**: 4.10.16
   - JVM build (all three thread modes)
   - Native (all three thread modes)
+- **Helidon**: 4.3.4
+  - SE JVM build
+    - Virtual threads
+  - SE Native build
+    - Virtual threads
+  - MP JVM build
+    - Virtual threads
+  - MP Native build
+    - Virtual threads
 
 #### Go (1.26.0)
 - Fiber framework integration
@@ -351,42 +366,50 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 ### Results
 
-The numbers below are a curated summary of a representative run (17/02/2026). For methodology and how to reproduce: see the docs site.
+The numbers below are a curated summary of a representative run.
 
-#### Requests Per Second (RPS) — 17/02/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 28/02/2026 (to closest thousand)
 
-| Framework | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
-|-----------|---------|----------|-----|---------------|-----------------|
-| Spring    | JVM     | Platform | 21k | 545           | 404             |
-| Spring    | JVM     | Virtual  | 17k | 427           | 404             |
-| Spring    | JVM     | Reactive | 13k | 457           | 435             |
-| Spring    | Native  | Platform | 10k | 185           | 386             |
-| Spring    | Native  | Virtual  | 11k | 141           | 386             |
-| Spring    | Native  | Reactive | 7k  | 179           | 445             |
-| Quarkus   | JVM     | Platform | 36k | 495           | 367             |
-| Quarkus   | JVM     | Virtual  | 45k | 495           | 367             |
-| Quarkus   | JVM     | Reactive | 46k | 495           | 367             |
-| Quarkus   | Native  | Platform | 21k | 220           | 571             |
-| Quarkus   | Native  | Virtual  | 27k | 220           | 571             |
-| Quarkus   | Native  | Reactive | 20k | 220           | 571             |
-| Spark     | JVM     | Platform | 23k | 413           | 373             |
-| Spark     | JVM     | Virtual  | 21k | 383           | 373             |
-| Javalin   | JVM     | Platform | 26k | 696           | 374             |
-| Javalin   | JVM     | Virtual  | 25k | 495           | 374             |
-| Micronaut | JVM     | Platform | 30k | 537           | 350             |
-| Micronaut | JVM     | Virtual  | 37k | 537           | 350             |
-| Micronaut | JVM     | Reactive | 31k | 537           | 350             |
-| Micronaut | Native  | Platform | 16k | 130           | 346             |
-| Micronaut | Native  | Virtual  | 15k | 130           | 346             |
-| Micronaut | Native  | Reactive | 14k | 130           | 346             |
-| Helidon   | JVM     | Virtual  | WIP |               |                 |
-| Helidon   | Native  | Virtual  | WIP |               |                 |
-| Go        | Native  | N/A      | 24k | 58            | 33              |
+| Framework  | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
+|------------|---------|----------|-----|---------------|-----------------|
+| Spring     | JVM     | Platform | 21k | 545           | 404             |
+| Spring     | JVM     | Virtual  | 17k | 427           | 404             |
+| Spring     | JVM     | Reactive | 13k | 457           | 435             |
+| Spring     | Native  | Platform | 10k | 185           | 386             |
+| Spring     | Native  | Virtual  | 11k | 141           | 386             |
+| Spring     | Native  | Reactive | 7k  | 179           | 445             |
+| Quarkus    | JVM     | Platform | 36k | 596           | 370             |
+| Quarkus    | JVM     | Virtual  | 45k | 596           | 370             |
+| Quarkus    | JVM     | Reactive | 46k | 596           | 370             |
+| Quarkus    | Native  | Platform | 21k | 194           | 636             |
+| Quarkus    | Native  | Virtual  | 27k | 194           | 636             |
+| Quarkus    | Native  | Reactive | 20k | 194           | 636             |
+| Spark      | JVM     | Platform | 23k | 433           | 376             |
+| Spark      | JVM     | Virtual  | 21k | 428           | 376             |
+| Javalin    | JVM     | Platform | 26k | 696           | 380             |
+| Javalin    | JVM     | Virtual  | 25k | 525           | 380             |
+| Micronaut  | JVM     | Platform | 30k | 431           | 352             |
+| Micronaut  | JVM     | Virtual  | 37k | 431           | 352             |
+| Micronaut  | JVM     | Reactive | 31k | 431           | 352             |
+| Micronaut  | Native  | Platform | 16k | 180           | 348             |
+| Micronaut  | Native  | Virtual  | 15k | 180           | 348             |
+| Micronaut  | Native  | Reactive | 14k | 180           | 348             |
+| Helidon SE | JVM     | Virtual  | 66k | 386           | 169             |
+| Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
+| Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
+| Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
+| Go         | Native  | N/A      | 24k | 45            | 33              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
+> For ranking, methodology and how to reproduce see also:
+> - https://george-c-odes.github.io/Observability-Benchmarking/#results
+> - https://george-c-odes.github.io/Observability-Benchmarking/benchmarking
+
 #### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
+- Helidon JVM builds have been optimized with jlink which reduces image size significantly.
+- Helidon MP adds MicroProfile CDI/JAX-RS overhead on top of the SE engine.
 - Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use for jvm, not supported in native).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
@@ -398,10 +421,10 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
   - keep-alive enabled
   - no TLS
   - identical load profiles
-  - inside the same docker network 
+  - inside the same docker network
 - go vs go-simple
   - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~60k RPS.
-  - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services. 
+  - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
   - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
 
 ### Test Environment
@@ -422,10 +445,11 @@ The numbers below are a curated summary of a representative run (17/02/2026). Fo
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.3 (3.5.11 also supported)
-- **Quarkus**: 3.31.4
+- **Quarkus**: 3.32.1
 - **Spark**: 3.0.3
-- **Javalin**: 6.7.0
-- **Micronaut**: 4.10.15
+- **Javalin**: 7.0.0
+- **Micronaut**: 4.10.16
+- **Helidon**: 4.3.4
 - **Go**: 1.26.0 (Fiber v2.52.11)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -539,20 +563,25 @@ This project implements comprehensive code quality and security practices to ens
 #### Checkstyle Linting
 - **Configuration**: Enforces Google Java Style Guide with customizations
 - **Version**: maven-checkstyle-plugin 3.6.0 with Checkstyle 12.2.0
-- **Coverage**: All Java modules (Quarkus JVM, Spring JVM Netty, Spring JVM Tomcat)
+- **Coverage**: All Java modules (Quarkus, Spring, Spark, Javalin, Micronaut, Helidon SE, Helidon MP)
 - **Integration**: Runs automatically during Maven `validate` phase
 - **Results**: 0 violations across all projects
 
 **Running Checkstyle**:
 ```bash
 # For any module
-cd services/quarkus/jvm
+cd services/java/quarkus/jvm
 mvn checkstyle:check
 
 # Or across all modules
-cd services/quarkus/jvm && mvn checkstyle:check
-cd services/spring/jvm/netty && mvn checkstyle:check
-cd services/spring/jvm/tomcat && mvn checkstyle:check
+cd services/java/quarkus/jvm && mvn checkstyle:check
+cd services/java/spring/jvm/netty && mvn checkstyle:check
+cd services/java/spring/jvm/tomcat && mvn checkstyle:check
+cd services/java/spark/jvm && mvn checkstyle:check
+cd services/java/javalin/jvm && mvn checkstyle:check
+cd services/java/micronaut/jvm && mvn checkstyle:check
+cd services/java/helidon/se/jvm && mvn checkstyle:check
+cd services/java/helidon/mp/jvm && mvn checkstyle:check
 ```
 
 #### Code Standards Enforced
@@ -652,12 +681,27 @@ Observability-Benchmarking/
 │   ├── obs.yml              # Observability stack configuration
 │   └── utils.yml            # Utility services
 ├── services/                # REST service implementations
-│   ├── spring/              # Spring Boot services
-│   │   ├── jvm/             # JVM builds (tomcat, netty variants)
-│   │   └── native/          # GraalVM Native builds
-│   ├── quarkus/             # Quarkus services
-│   │   ├── jvm/             # JVM builds (platform, virtual, reactive)
-│   │   └── native/          # GraalVM Native builds
+│   ├── java/                # Java service implementations
+│   │   ├── spring/              # Spring Boot services
+│   │   │   ├── jvm/             # JVM builds (tomcat, netty variants)
+│   │   │   └── native/          # GraalVM Native builds
+│   │   ├── quarkus/             # Quarkus services
+│   │   │   ├── jvm/             # JVM builds (platform, virtual, reactive)
+│   │   │   └── native/          # GraalVM Native builds
+│   │   ├── spark/               # SparkJava (Zoomba fork) services
+│   │   │   └── jvm/             # JVM builds (platform, virtual)
+│   │   ├── javalin/             # Javalin services
+│   │   │   └── jvm/             # JVM builds (platform, virtual)
+│   │   ├── micronaut/           # Micronaut services
+│   │   │   ├── jvm/             # JVM builds (platform, virtual, reactive)
+│   │   │   └── native/          # GraalVM Native builds
+│   │   └── helidon/             # Helidon services
+│   │       ├── se/              # Helidon SE (Níma) — programmatic routing
+│   │       │   ├── jvm/         # JVM build (virtual threads)
+│   │       │   └── native/      # GraalVM Native build (virtual threads)
+│   │       └── mp/              # Helidon MP — CDI + JAX-RS
+│   │           ├── jvm/         # JVM build (virtual threads)
+│   │           └── native/      # GraalVM Native build (virtual threads)
 │   └── go/                  # Go services
 ├── config/                  # Configuration files
 │   ├── grafana/             # Grafana dashboards and provisioning
@@ -738,6 +782,12 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 - **Single deployment** serves all three thread modes (platform, virtual, reactive)
 - Mode selection via endpoint routing
 - Simpler configuration, fewer containers
+
+#### Helidon
+- **Two flavours**: SE (programmatic routing, minimal overhead) and MP (CDI + JAX-RS, MicroProfile compliant)
+- **Virtual-thread–first**: Helidon 4 removed the reactive HTTP server; every request runs on a virtual thread by default — platform and reactive modes are N/A by design
+- **Shared sources**: Native modules reuse the JVM sources via `build-helper-maven-plugin`; only the build toolchain differs
+- **jlink-optimised JVM builds**: Runtime image is a custom JRE with unused JDK modules stripped, yielding significantly smaller Docker images
 
 ### Recommendations for Production
 
@@ -827,8 +877,8 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🎯 Short-term Goals (Next 3-6 months)
 
 #### Additional Framework Support
-- [ ] **Micronaut**: Another popular JVM framework with reactive and GraalVM support
-- [ ] **Helidon**: Oracle's microservices framework (SE and MP editions)
+- [ ] **Helm charts** for easy Kubernetes deployment
+- [ ] **ArgoCD manifests** for GitOps workflows
 - [ ] **Ktor**: Kotlin-based asynchronous framework
 - [ ] **Rust**: Actix-web or Axum framework with OTLP integration
 
@@ -846,8 +896,6 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🌐 Medium-term Goals (6-12 months)
 
 #### Kubernetes & Cloud Native
-- [ ] **Helm charts** for easy Kubernetes deployment
-- [ ] **ArgoCD manifests** for GitOps workflows
 - [ ] **Cluster-scale benchmarking** with distributed load generation
 - [ ] **Multi-node performance testing** scenarios
 - [ ] **Cloud provider integrations** (AWS, GCP, Azure)
@@ -979,8 +1027,8 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 - ✅ Private use allowed
 - ⚠️ License and copyright notice required
 - ⚠️ State changes required
-- ❌ Trademark use not allowed
-- ❌ Liability and warranty not provided
+- ❌ Trademark use is not allowed
+- ❌ Liability and warranty are not provided
 
 **SPDX-License-Identifier**: Apache-2.0
 
@@ -1008,6 +1056,7 @@ This project builds upon amazing open-source tools and frameworks. Special thank
 - [Spark](https://sparkjava.com/) - Minimal HTTP server
 - [Javalin](https://javalin.io/) - Lightweight REST server
 - [Micronaut](https://micronaut.io/) - Compile-time optimized JVM microservices framework
+- [Helidon](https://helidon.io/) - Lightweight Java microservices and APIs for cloud apps
 - [wrk2](https://github.com/giltene/wrk2) - Constant throughput HTTP benchmarking tool
 - [Docker](https://www.docker.com/) - Containerization platform
 

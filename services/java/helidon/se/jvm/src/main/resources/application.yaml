@@ -1,0 +1,11 @@
+benchmark:
+  cache:
+    size: 50000
+server:
+  port: 8080
+  host: 0.0.0.0
+  backlog: 8192
+  max-concurrent-requests: 512
+  idle-connection-timeout: PT15S
+  receive-buffer-size: 4096
+  write-queue-length: 0

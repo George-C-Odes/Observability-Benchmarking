@@ -1,0 +1,8 @@
+# Test profile overrides — disable OTel exporters during tests
+benchmark:
+  cache:
+    size: 100
+
+server:
+  port: 0
+  host: 0.0.0.0

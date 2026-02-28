@@ -15,6 +15,7 @@ export function needsServicesProfiles(serviceName: string): boolean {
     serviceName.startsWith('spark-') ||
     serviceName.startsWith('javalin-') ||
     serviceName.startsWith('micronaut-') ||
+    serviceName.startsWith('helidon-') ||
     serviceName.startsWith('go');
 }
 

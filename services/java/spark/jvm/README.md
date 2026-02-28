@@ -64,8 +64,3 @@ Defines a Micrometer counter:
 Also binds `ProcessMemoryMetrics` and `ProcessThreadMetrics` (micrometer-jvm-extras).
 
 Export is typically done via the OpenTelemetry Java agent in the benchmark stack.
-
-## TODOs:
--healthcheck, include in orchestrator
-
--integration tests

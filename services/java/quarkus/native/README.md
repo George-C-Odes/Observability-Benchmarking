@@ -1,7 +1,7 @@
 # Quarkus Native Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.31.4 compiled to a native executable using GraalVM Native Image. This service supports three different thread models in a single deployment, offering fast startup times and low memory footprint.
+A high-performance REST service implementation built with Quarkus 3.32.1 compiled to a native executable using GraalVM Native Image. This service supports three different thread models in a single deployment, offering fast startup times and low memory footprint.
 
 ## Purpose
 - Demonstrate Quarkus native compilation performance benefits
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Quarkus 3.31.4 compile
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.31.4
+- **Framework**: Quarkus 3.32.1
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.2
 - **GC**: G1 Garbage Collector (Enterprise only)
@@ -58,9 +58,9 @@ Handles requests using reactive programming with Mutiny.
 # Memory Management (Enterprise)
 -R:+AlwaysPreTouch
 -R:MaxGCPauseMillis=200
--R:MaxDirectMemorySize=64m
--R:MaxHeapSize=1280m
--R:MinHeapSize=1280m
+-R:MaxDirectMemorySize=32M
+-R:MaxHeapSize=640M
+-R:MinHeapSize=64M
 
 # Performance Optimization
 -march=native
@@ -113,7 +113,7 @@ Same as JVM version - see `services/quarkus/jvm/src/main/resources/application.y
 -XX:MaxGCPauseMillis=200
 
 # Direct Memory
--XX:MaxDirectMemorySize=64M
+-XX:MaxDirectMemorySize=32M
 
 # Error Handling
 -XX:+ExitOnOutOfMemoryError

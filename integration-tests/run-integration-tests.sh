@@ -92,6 +92,14 @@ JAVALIN_JVM_VIRTUAL_URL="${JAVALIN_JVM_VIRTUAL_URL:-http://localhost:8091}"
 MICRONAUT_JVM_URL="${MICRONAUT_JVM_URL:-http://localhost:8092}"
 MICRONAUT_NATIVE_URL="${MICRONAUT_NATIVE_URL:-http://localhost:8093}"
 
+# Helidon SE Services
+HELIDON_SE_JVM_URL="${HELIDON_SE_JVM_URL:-http://localhost:8094}"
+HELIDON_SE_NATIVE_URL="${HELIDON_SE_NATIVE_URL:-http://localhost:8095}"
+
+# Helidon MP Services
+HELIDON_MP_JVM_URL="${HELIDON_MP_JVM_URL:-http://localhost:8096}"
+HELIDON_MP_NATIVE_URL="${HELIDON_MP_NATIVE_URL:-http://localhost:8097}"
+
 # Go Service
 GO_URL="${GO_URL:-http://localhost:9080}"
 
@@ -106,14 +114,16 @@ NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
 # Framework versions
-QUARKUS_VERSION="3.31.4"
+QUARKUS_VERSION="3.32.1"
 SPRING_BOOT_VERSION="4.0.3"
 SPARK_VERSION="3.0.3"
-JAVALIN_VERSION="6.7.0"
-MICRONAUT_VERSION="4.10.15"
+JAVALIN_VERSION="7.0.0"
+MICRONAUT_VERSION="4.10.16"
+HELIDON_VERSION="4.3.4"
 GO_VERSION="1.26.0"
 
 # Helper function to test HTTP endpoint
+# expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")
 test_endpoint() {
     local name=$1
     local url=$2
@@ -127,8 +137,22 @@ test_endpoint() {
     http_code=$(echo "${response}" | tail -n1)
     body=$(echo "${response}" | head -n-1)
 
-    if [ "${http_code}" = "${expected_status}" ]; then
-        if [ -z "${expected_content}" ] || echo "${body}" | grep -q "${expected_content}"; then
+    # Support multiple allowed statuses via comma-separated list
+    local status_ok=1
+    IFS=',' read -r -a allowed_statuses <<< "${expected_status}"
+    for s in "${allowed_statuses[@]}"; do
+        # trim spaces
+        s="${s//[[:space:]]/}"
+        if [ -n "${s}" ] && [ "${http_code}" = "${s}" ]; then
+            status_ok=0
+            break
+        fi
+    done
+
+    if [ ${status_ok} -eq 0 ]; then
+        # If expected_content is set, only validate when there's a body to search.
+        # (204 responses have no content by definition.)
+        if [ -z "${expected_content}" ] || { [ -n "${body}" ] && echo "${body}" | grep -q "${expected_content}"; }; then
             echo -e "${GREEN}✓ PASSED${NC}"
             TESTS_PASSED=$((TESTS_PASSED + 1))
             return 0
@@ -212,7 +236,12 @@ test_ready_endpoint() {
     local url=$2
     local path=$3
 
-    test_endpoint "${name} Ready" "${url}${path}" 200 ""
+    # Helidon SE health endpoints may respond with 204 (No Content) when healthy.
+    if [ "${path}" = "/observe/health" ]; then
+        test_endpoint "${name} Ready" "${url}${path}" "200,204" ""
+    else
+        test_endpoint "${name} Ready" "${url}${path}" 200 ""
+    fi
 }
 
 test_micronaut_metrics() {
@@ -234,6 +263,7 @@ echo "- Quarkus: ${QUARKUS_VERSION}"
 echo "- Spark: ${SPARK_VERSION}"
 echo "- Javalin: ${JAVALIN_VERSION}"
 echo "- Micronaut: ${MICRONAUT_VERSION}"
+echo "- Helidon: ${HELIDON_VERSION}"
 echo "- Go: ${GO_VERSION}"
 echo ""
 
@@ -287,6 +317,16 @@ run_test "Micronaut JVM - /hello/reactive" test_endpoint "Micronaut JVM - /hello
 run_test "Micronaut JVM - /health" test_endpoint "Micronaut JVM - /health" "${MICRONAUT_JVM_URL}/health" 200 ""
 echo ""
 
+echo -e "${BLUE}--- Helidon SE JVM (port 8094) ---${NC}"
+run_test "Helidon SE JVM - /hello/virtual" test_endpoint "Helidon SE JVM - /hello/virtual" "${HELIDON_SE_JVM_URL}/hello/virtual" 200 "Helidon"
+run_test "Helidon SE JVM - /observe/health" test_endpoint "Helidon SE JVM - /observe/health" "${HELIDON_SE_JVM_URL}/observe/health" "200,204" ""
+echo ""
+
+echo -e "${BLUE}--- Helidon MP JVM (port 8096) ---${NC}"
+run_test "Helidon MP JVM - /hello/virtual" test_endpoint "Helidon MP JVM - /hello/virtual" "${HELIDON_MP_JVM_URL}/hello/virtual" 200 "Helidon MP"
+run_test "Helidon MP JVM - /health" test_endpoint "Helidon MP JVM - /health" "${HELIDON_MP_JVM_URL}/health" 200 ""
+echo ""
+
 echo "=========================================="
 echo "Native Services - Deployment Tests"
 echo "=========================================="
@@ -315,6 +355,16 @@ run_test "Micronaut Native - /hello/platform" test_endpoint "Micronaut Native - 
 run_test "Micronaut Native - /hello/virtual" test_endpoint "Micronaut Native - /hello/virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" 200 "Micronaut"
 run_test "Micronaut Native - /hello/reactive" test_endpoint "Micronaut Native - /hello/reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" 200 "Micronaut"
 run_test "Micronaut Native - /health" test_endpoint "Micronaut Native - /health" "${MICRONAUT_NATIVE_URL}/health" 200 ""
+echo ""
+
+echo -e "${BLUE}--- Helidon SE Native (port 8095) ---${NC}"
+run_test "Helidon SE Native - /hello/virtual" test_endpoint "Helidon SE Native - /hello/virtual" "${HELIDON_SE_NATIVE_URL}/hello/virtual" 200 "Helidon"
+run_test "Helidon SE Native - /observe/health" test_endpoint "Helidon SE Native - /observe/health" "${HELIDON_SE_NATIVE_URL}/observe/health" "200,204" ""
+echo ""
+
+echo -e "${BLUE}--- Helidon MP Native (port 8097) ---${NC}"
+run_test "Helidon MP Native - /hello/virtual" test_endpoint "Helidon MP Native - /hello/virtual" "${HELIDON_MP_NATIVE_URL}/hello/virtual" 200 "Helidon MP"
+run_test "Helidon MP Native - /health" test_endpoint "Helidon MP Native - /health" "${HELIDON_MP_NATIVE_URL}/health" 200 ""
 echo ""
 
 echo "=========================================="
@@ -346,6 +396,11 @@ run_test "Javalin JVM Platform ready" test_ready_endpoint "Javalin JVM Platform"
 run_test "Javalin JVM Virtual ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
 run_test "Micronaut JVM metrics" test_micronaut_metrics "Micronaut JVM" "${MICRONAUT_JVM_URL}"
 run_test "Micronaut Native metrics" test_micronaut_metrics "Micronaut Native" "${MICRONAUT_NATIVE_URL}"
+run_test "Helidon SE JVM health" test_ready_endpoint "Helidon SE JVM" "${HELIDON_SE_JVM_URL}" "/observe/health"
+run_test "Helidon SE Native health" test_ready_endpoint "Helidon SE Native" "${HELIDON_SE_NATIVE_URL}" "/observe/health"
+
+run_test "Helidon MP JVM health" test_ready_endpoint "Helidon MP JVM" "${HELIDON_MP_JVM_URL}" "/health"
+run_test "Helidon MP Native health" test_ready_endpoint "Helidon MP Native" "${HELIDON_MP_NATIVE_URL}" "/health"
 run_test "Go metrics" test_go_metrics "Go" "${GO_URL}"
 echo ""
 
@@ -484,6 +539,12 @@ run_test "Trace Micronaut JVM Reactive" run_trace_and_verify "Micronaut JVM Reac
 run_test "Trace Micronaut Native Platform" run_trace_and_verify "Micronaut Native Platform" "${MICRONAUT_NATIVE_URL}/hello/platform" "micronaut-native" "isVirtual: 'false'"
 run_test "Trace Micronaut Native Virtual" run_trace_and_verify "Micronaut Native Virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" "micronaut-native" "isVirtual: 'true'"
 run_test "Trace Micronaut Native Reactive" run_trace_and_verify "Micronaut Native Reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" "micronaut-native" "EventLoopGroup"
+
+run_test "Trace Helidon SE JVM Virtual" run_trace_and_verify "Helidon SE JVM Virtual" "${HELIDON_SE_JVM_URL}/hello/virtual" "helidon-se-jvm" "isVirtual: 'true'"
+run_test "Trace Helidon SE Native Virtual" run_trace_and_verify "Helidon SE Native Virtual" "${HELIDON_SE_NATIVE_URL}/hello/virtual" "helidon-se-native" "isVirtual: 'true'"
+
+run_test "Trace Helidon MP JVM Virtual" run_trace_and_verify "Helidon MP JVM Virtual" "${HELIDON_MP_JVM_URL}/hello/virtual" "helidon-mp-jvm" "isVirtual: 'true'"
+run_test "Trace Helidon MP Native Virtual" run_trace_and_verify "Helidon MP Native Virtual" "${HELIDON_MP_NATIVE_URL}/hello/virtual" "helidon-mp-native" "isVirtual: 'true'"
 
 run_test "Trace Go Virtual" run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
 

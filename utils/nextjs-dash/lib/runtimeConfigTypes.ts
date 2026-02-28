@@ -57,6 +57,10 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'javalin-jvm-virtual': false,
     'micronaut-jvm': false,
     'micronaut-native': false,
+    'helidon-se-jvm': false,
+    'helidon-se-native': false,
+    'helidon-mp-jvm': false,
+    'helidon-mp-native': false,
     'go': false,
 
     // UTILS

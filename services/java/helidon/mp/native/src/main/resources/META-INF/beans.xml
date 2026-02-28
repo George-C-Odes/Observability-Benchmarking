@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="https://jakarta.ee/xml/ns/jakartaee"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd"
+       bean-discovery-mode="annotated"
+       version="4.0">
+    <!--
+      Exclusions:
+        1. graalvm package – contains GraalVM Feature and @Substitute classes
+           that implement org.graalvm.nativeimage.hosted.Feature (hosted-only
+           interface). Without this exclusion with bean-discovery-mode="all",
+           Jersey/CDI scanning would pick up these classes.
+        2. helidon tracing – prevents WELD-001409 "Ambiguous dependencies for
+           type Tracer": Helidon's MpTracingCdiExtension registers
+           TracerProducer programmatically; scanning also discovers it, causing
+           ambiguous dependency.
+    -->
+    <scan>
+        <exclude name="io.github.georgecodes.benchmarking.helidon.mp.graalvm.**"/>
+        <exclude name="io.helidon.microprofile.tracing.**"/>
+    </scan>
+</beans>

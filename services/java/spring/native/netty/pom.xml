@@ -151,7 +151,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.5.5</version>
                 <configuration>
                     <systemPropertyVariables>
                         <maven.home>${maven.home}</maven.home>
@@ -288,11 +288,12 @@
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>-J--sun-misc-unsafe-memory-access=allow</buildArg>
                                 <buildArg>-march=native</buildArg>
+                                <buildArg>-O2</buildArg>
                                 <buildArg>-R:+AlwaysPreTouch</buildArg>
                                 <buildArg>-R:MaxGCPauseMillis=200</buildArg>
-                                <buildArg>-R:MaxDirectMemorySize=64m</buildArg>
-                                <buildArg>-R:MaxHeapSize=1280m</buildArg>
-                                <buildArg>-R:MinHeapSize=1280m</buildArg>
+                                <buildArg>-R:MaxDirectMemorySize=32M</buildArg>
+                                <buildArg>-R:MaxHeapSize=640M</buildArg>
+                                <buildArg>-R:MinHeapSize=64M</buildArg>
                                 <buildArg>-H:+PreserveFramePointer</buildArg>
                                 <buildArg>-H:+ReportExceptionStackTraces</buildArg>
                                 <buildArg>-H:-DeleteLocalSymbols</buildArg>

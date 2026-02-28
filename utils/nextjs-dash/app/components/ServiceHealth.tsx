@@ -289,6 +289,7 @@ export default function ServiceHealth() {
     const spark = services.filter((s) => s.name.startsWith('spark-')).sort(byName);
     const javalin = services.filter((s) => s.name.startsWith('javalin-')).sort(byName);
     const micronaut = services.filter((s) => s.name.startsWith('micronaut-')).sort(byName);
+    const helidon = services.filter((s) => s.name.startsWith('helidon-')).sort(byName);
     const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
     const utils = services.filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name)).sort(byName);
 
@@ -299,6 +300,7 @@ export default function ServiceHealth() {
       spark,
       javalin,
       micronaut,
+      helidon,
       go,
       utils,
     };
@@ -1130,6 +1132,24 @@ export default function ServiceHealth() {
                 }}
             >
               {groupedServices.micronaut.map((service) => renderServiceCard(service))}
+            </Box>
+          </>
+      )}
+
+      {/* Helidon Services */}
+      {groupedServices.helidon.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Helidon Services
+            </Typography>
+            <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2,
+                }}
+            >
+              {groupedServices.helidon.map((service) => renderServiceCard(service))}
             </Box>
           </>
       )}

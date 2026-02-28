@@ -14,18 +14,18 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <caffeine.version>3.2.3</caffeine.version>
         <junit-jupiter.version>5.12.2</junit-jupiter.version>
-        <surefire-plugin.version>3.5.4</surefire-plugin.version>
+        <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <lombok.version>1.18.42</lombok.version>
         <logback.version>1.5.32</logback.version>
 
-        <micronaut.version>4.10.15</micronaut.version>
+        <micronaut.version>4.10.16</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
         <micronaut.test.version>4.10.2</micronaut.test.version>
         <micronaut.processing.incremental>true</micronaut.processing.incremental>
-        <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.jvm.*</micronaut.processing.annotations>
+        <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.*</micronaut.processing.annotations>
         <micronaut.tracing.version>7.2.0</micronaut.tracing.version>
 
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
@@ -337,7 +337,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.github.georgecodes.benchmarking.micronaut.jvm.Application</mainClass>
+                                    <mainClass>io.github.georgecodes.benchmarking.micronaut.MicronautApplication</mainClass>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>

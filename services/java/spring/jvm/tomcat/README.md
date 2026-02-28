@@ -115,7 +115,7 @@ management:
 ```bash
 # Memory Management
 -Xms1280M -Xmx1280M
--XX:MaxDirectMemorySize=64M
+-XX:MaxDirectMemorySize=32M
 
 # Garbage Collection
 -XX:+UseG1GC

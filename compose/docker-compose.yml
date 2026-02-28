@@ -10,8 +10,8 @@ x-default-environment:
   cache_size: &default_cache_size ${CACHE_SIZE:-50000}
   cpu_limit: &default_cpu_limit ${CORES_LIMIT:-2}
   mem_limit: &default_mem_limit ${MEM_LIMIT:-512M}
-  heap_min: ${HEAP_MIN:-96M}
-  heap_max: ${HEAP_MAX:-96M}
+  heap_min: ${HEAP_MIN:-64M}
+  heap_max: ${HEAP_MAX:-640M}
   off_heap_max: ${OFF_HEAP_MAX:-32M}
   performance_cores: &default_performance_cores ${CORES_PRIMARY:-}
   ulimit: &default_ulimit ${ULIMIT:-1048576}
@@ -47,15 +47,15 @@ x-default-environment:
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
     -XX:NativeMemoryTracking=summary \
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
-    -Xms${HEAP_MIN:-96M} \
-    -Xmx${HEAP_MAX:-96M} \
+    -Xms${HEAP_MIN:-64M} \
+    -Xmx${HEAP_MAX:-640M} \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
     -Xlog:gc+init=info \
     -Xlog:gc+exit=info \
 "
-  quarkus_java_tool_options: &default_quarkus_java_tool_options "\
+  common_java_tool_options: &default_common_java_tool_options "\
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
     -XX:+UnlockDiagnosticVMOptions \
@@ -74,8 +74,8 @@ x-default-environment:
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
     -XX:NativeMemoryTracking=summary \
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
-    -Xms${HEAP_MIN:-96M} \
-    -Xmx${HEAP_MAX:-96M} \
+    -Xms${HEAP_MIN:-64M} \
+    -Xmx${HEAP_MAX:-640M} \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
     -Xlog:class+path=info \
@@ -104,8 +104,8 @@ x-default-environment:
     -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
     -XX:NativeMemoryTracking=summary \
     -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
-    -Xms${HEAP_MIN:-96M} \
-    -Xmx${HEAP_MAX:-96M} \
+    -Xms${HEAP_MIN:-64M} \
+    -Xmx${HEAP_MAX:-640M} \
     --add-opens=java.base/java.lang=ALL-UNNAMED \
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow \
@@ -126,8 +126,8 @@ x-default-environment:
   #   -Xlog:gc*,safepoint:file=gc-g1.log:time,uptime,level,tags
 ###################################################
   native_java_options: &default_native_java_options
-    - "-Xms${HEAP_MIN:-96M}"
-    - "-Xmx${HEAP_MAX:-96M}"
+    - "-Xms${HEAP_MIN:-64M}"
+    - "-Xmx${HEAP_MAX:-640M}"
     - "-XX:ActiveProcessorCount=${CORES_LIMIT:-2}"
     - "-XX:MaxGCPauseMillis=200"                      #Enterprise
     - "-XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M}"  #Enterprise
@@ -562,7 +562,7 @@ services:
       - ${HOST_REPO}/data/services/quarkus/jvm/error:/var/log/error
     environment:
       TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_quarkus_java_tool_options
+      JAVA_TOOL_OPTIONS: *default_common_java_tool_options
       QUARKUS_LOG_LEVEL: "info"
       CACHE_SIZE: *default_cache_size
 
@@ -1057,6 +1057,163 @@ services:
       OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
     entrypoint:
       - "./micronaut-native"
+    command: *default_native_java_options
+    <<: *common_properties
+
+  helidon-se-jvm:
+    profiles: ["${DOCKER_PROF_HELIDON_SE_JVM:-skip}"]
+    image: helidon-se-jvm:${HELIDON_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: helidon/se/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: helidon-se-jvm:${HELIDON_VERSION}_latest
+        HELIDON_VERSION: ${HELIDON_VERSION}
+    container_name: helidon-se-jvm
+    ports:
+      - "8094:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/helidon/se/jvm/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_common_java_tool_options
+      CACHE_SIZE: *default_cache_size
+      HELIDON_MICROMETER_ENABLED: *default_metric_otel_http
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "helidon-se-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Helidon SE,webengine.version=${HELIDON_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+    <<: *common_properties
+
+  helidon-se-native:
+    profiles: ["${DOCKER_PROF_HELIDON_SE_NATIVE:-skip}"]
+    image: helidon-se-native:${HELIDON_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: helidon/se/native/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: helidon-se-native:${HELIDON_VERSION}_latest
+        HELIDON_VERSION: ${HELIDON_VERSION}
+    container_name: helidon-se-native
+    ports:
+      - "8095:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/helidon/se/native/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      CACHE_SIZE: *default_cache_size
+      HELIDON_MICROMETER_ENABLED: *default_metric_otel_http
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "helidon-se-native"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,webengine.name=Helidon SE,webengine.version=${HELIDON_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
+    entrypoint:
+      - "./helidon-se-native"
+    command: *default_native_java_options
+    <<: *common_properties
+
+  helidon-mp-jvm:
+    profiles: ["${DOCKER_PROF_HELIDON_MP_JVM:-skip}"]
+    image: helidon-mp-jvm:${HELIDON_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: helidon/mp/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: helidon-mp-jvm:${HELIDON_VERSION}_latest
+        HELIDON_VERSION: ${HELIDON_VERSION}
+    container_name: helidon-mp-jvm
+    ports:
+      - "8096:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/helidon/mp/jvm/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_common_java_tool_options
+      CACHE_SIZE: *default_cache_size
+      HELIDON_MICROMETER_ENABLED: *default_metric_otel_http
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "helidon-mp-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Helidon MP,webengine.version=${HELIDON_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+    <<: *common_properties
+
+  helidon-mp-native:
+    profiles: ["${DOCKER_PROF_HELIDON_MP_NATIVE:-skip}"]
+    image: helidon-mp-native:${HELIDON_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: helidon/mp/native/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: helidon-mp-native:${HELIDON_VERSION}_latest
+        HELIDON_VERSION: ${HELIDON_VERSION}
+    container_name: helidon-mp-native
+    ports:
+      - "8097:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/helidon/mp/native/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      CACHE_SIZE: *default_cache_size
+      HELIDON_MICROMETER_ENABLED: *default_metric_otel_http
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "helidon-mp-native"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=native,webengine.name=Helidon MP,webengine.version=${HELIDON_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
+    entrypoint:
+      - "./helidon-mp-native"
+      - "-Dotel.java.global-autoconfigure.enabled=true"
+      - "-Dorg.jboss.weld.bootstrap.api.helpers.SingletonProvider=org.jboss.weld.bootstrap.api.helpers.Singletons"
+      - "-Dorg.jboss.weld.bootstrap.events.ContainerLifecycleEvents.PRELOAD_PROCESS_INJECTION_TARGET=false"
     command: *default_native_java_options
     <<: *common_properties
 

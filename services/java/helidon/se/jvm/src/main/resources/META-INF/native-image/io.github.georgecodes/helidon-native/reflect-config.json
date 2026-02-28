@@ -1,0 +1,201 @@
+[
+  {
+    "name": "ch.qos.logback.core.status.NopStatusListener",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.core.ConsoleAppender",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.util.DefaultJoranConfigurator",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.BasicConfigurator",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "ch.qos.logback.classic.model.processor.ConfigurationModelHandlerFull",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.common.config.ConfigFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.common.mapper.MappersImpl__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.common.mapper.DefaultResolverService__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.common.mapper.MappersFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.common.mapper.DefaultMapperProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.config.ConfigProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.config.ConfigurationValueFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.config.MetaConfigFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.http.Headers__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.http.HttpPrologue__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.http.ServerRequestHeaders__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.service.registry.ServiceRegistry__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.service.registry.ServiceLoader__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.service.registry.EventManagerImpl__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.service.registry.InterceptionMetadata__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.service.registry.InstanceName__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.service.registry.Scopes__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.service.registry.PerRequestScopeHandler__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.webclient.api.DefaultErrorHandling__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.webserver.LoomServer__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.RequestScopeFeatureProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.WebServerService__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.WebServerStarterService__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.http.HttpEntryPointsImpl__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.http.ServerRequest__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.http.ServerResponse__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.webserver.observe.ObserveFeatureProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.observe.health.HealthObserverProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.health.HealthCheckProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.webserver.observe.tracing.TracingObserverProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.observe.tracing.HelidonTracingSemanticConventionsProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
+    "name": "io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  }
+]

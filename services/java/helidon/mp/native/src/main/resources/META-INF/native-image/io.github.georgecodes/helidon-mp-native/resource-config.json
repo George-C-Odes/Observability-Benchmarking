@@ -1,0 +1,20 @@
+{
+  "resources": {
+    "includes": [
+      { "pattern": "^META-INF/helidon/.*" },
+      { "pattern": "^META-INF/services/.*" },
+      { "pattern": "^META-INF/native-image/.*" },
+      { "pattern": "^META-INF/beans\\.xml$" },
+      { "pattern": "^META-INF/jandex\\.idx$" },
+      { "pattern": "^META-INF/weld/.*" },
+      { "pattern": "^META-INF/jersey/.*" },
+      { "pattern": "^META-INF/microprofile-.*" },
+      { "pattern": "^META-INF/maven/.*" },
+      { "pattern": "^META-INF/hk2-locator/.*" },
+      { "pattern": "^application\\.yaml$" },
+      { "pattern": "^logback\\.xml$" },
+      { "pattern": "^beans\\.xml$" },
+      { "pattern": "^service\\.loader$" }
+    ]
+  }
+}

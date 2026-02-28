@@ -15,6 +15,10 @@
     --shadow-hover: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -26,6 +30,11 @@ body {
     line-height: 1.6;
     color: var(--text-primary);
     background: #fff;
+}
+
+/* Anchor offset for sticky header */
+section[id] {
+    scroll-margin-top: 5rem;
 }
 
 /* Header and Navigation */
@@ -76,7 +85,7 @@ body {
     justify-content: flex-end; /* push links to the right */
 }
 
-.nav-links::-webkit-scrollbar { height: 6px; width: 0px; }
+.nav-links::-webkit-scrollbar { height: 6px; width: 0; }
 .nav-links::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 
 .nav-links li { flex: 0 0 auto; }
@@ -301,8 +310,7 @@ body {
 }
 
 .arch-details li {
-    padding: 0.5rem 0;
-    padding-left: 1.5rem;
+    padding: 0.5rem 0 0.5rem 1.5rem;
     position: relative;
 }
 
@@ -354,6 +362,96 @@ body {
 .results-table .highlight {
     background: rgba(244, 104, 0, 0.1);
 }
+
+/* Tier Legend */
+.tier-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    justify-content: center;
+}
+
+.tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.tier-badge.tier-elite  { background: #b8860b; }
+.tier-badge.tier-high   { background: #e25822; }
+.tier-badge.tier-mid    { background: #3498db; }
+.tier-badge.tier-entry  { background: #7f8c8d; }
+
+/* Tier header rows inside the table */
+.tier-header-row td {
+    font-weight: 700;
+    font-size: 0.92rem;
+    letter-spacing: 0.02em;
+    padding: 0.65rem 1rem;
+    border-bottom: 2px solid;
+    color: #fff;
+}
+
+.tier-header-row td i {
+    margin-right: 0.35rem;
+}
+
+.tier-elite-header td  { background: #b8860b; border-color: #996f00; }
+.tier-high-header td   { background: #e25822; border-color: #c44a1a; }
+.tier-mid-header td    { background: #3498db; border-color: #2980b9; }
+.tier-entry-header td  { background: #7f8c8d; border-color: #6c7a7b; }
+
+/* Subtle left-border accent on data rows */
+.tier-elite-row td:first-child { border-left: 4px solid #b8860b; }
+.tier-high-row  td:first-child { border-left: 4px solid #e25822; }
+.tier-mid-row   td:first-child { border-left: 4px solid #3498db; }
+.tier-entry-row td:first-child { border-left: 4px solid #7f8c8d; }
+
+/* Zebra-striping within tiers */
+.tier-group tr:nth-child(even):not(.tier-header-row) {
+    background: rgba(0, 0, 0, 0.025);
+}
+
+.tier-group tr:nth-child(odd):not(.tier-header-row) {
+    background: #fff;
+}
+
+.tier-group tr:hover:not(.tier-header-row) {
+    background: var(--light-bg);
+}
+
+/* Override highlight for #1 row */
+.results-table tr.highlight.tier-elite-row {
+    background: rgba(184, 134, 11, 0.10);
+}
+
+/* Rank column — fixed width, centered */
+.results-table th:first-child,
+.results-table td:first-child {
+    width: 3.2rem;
+    min-width: 3.2rem;
+    text-align: center;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Medal icons — sized to match row text */
+.medal {
+    display: inline-block;
+    font-size: 1.45rem;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.medal.gold   { filter: drop-shadow(0 1px 3px rgba(255, 215, 0, 0.6)); }
+.medal.silver { filter: drop-shadow(0 1px 3px rgba(192, 192, 192, 0.6)); }
+.medal.bronze { filter: drop-shadow(0 1px 3px rgba(205, 127, 50, 0.6)); }
 
 .badge {
     padding: 0.3rem 0.8rem;
@@ -446,8 +544,7 @@ body {
 }
 
 .skill-category li {
-    padding: 0.5rem 0;
-    padding-left: 1.5rem;
+    padding: 0.5rem 0 0.5rem 1.5rem;
     position: relative;
     color: var(--text-secondary);
 }
@@ -650,11 +747,10 @@ body {
 
 .footer-content {
     max-width: 1200px;
-    margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 2rem;
-    margin-bottom: 2rem;
+    margin: 0 auto 2rem;
 }
 
 .footer-section h4 {

@@ -4,12 +4,12 @@
     <shortenClasspath name="ARGS_FILE" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="io.github.georgecodes.benchmarking.micronaut.jvm.*" />
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.micronaut.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.micronaut.jvm" />
-    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.micronaut.jvm.MetricsWiringTest" />
+    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.micronaut" />
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.micronaut.MetricsWiringTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">

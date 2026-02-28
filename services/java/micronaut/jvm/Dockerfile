@@ -14,7 +14,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG MICRONAUT_VERSION=4.10.15
+ARG MICRONAUT_VERSION=4.10.16
 ENV MICRONAUT_VERSION=${MICRONAUT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -79,7 +79,7 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
     -XX:+UseStringDeduplication \
-    -XX:MaxDirectMemorySize=256m \
+    -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
     -Xms1536m \
     -Xmx1536m \

@@ -1,0 +1,4 @@
+# Ensure Helidon's own OpenTelemetryTracerProvider is listed here so the
+# ServicesResourceTransformer produces a non-empty merged file in the uber-jar.
+# (The Helidon library also contributes this entry; duplicates are harmless.)
+io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerProvider

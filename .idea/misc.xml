@@ -19,10 +19,14 @@
         <option value="$PROJECT_DIR$/services/java/micronaut/jvm/pom.xml" />
         <option value="$PROJECT_DIR$/services/java/micronaut/native/pom.xml" />
         <option value="$PROJECT_DIR$/utils/orchestrator/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/helidon/se/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/helidon/se/native/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/helidon/mp/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/helidon/mp/native/pom.xml" />
       </list>
     </option>
   </component>
-  <component name="ProjectRootManager" version="1" languageLevel="JDK_25" default="true" project-jdk-name="temurin-25" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_25" project-jdk-name="temurin-25" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

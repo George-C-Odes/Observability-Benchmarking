@@ -484,7 +484,7 @@ export default function ProjectHub() {
 
                   <Typography variant="caption" color="text.secondary">
                     This dashboard provides a unified interface for managing and monitoring observability
-                    benchmarking workloads across Spring Boot, Quarkus, Spark, Javalin, Micronaut and Go services with comprehensive
+                    benchmarking workloads across Spring Boot, Quarkus, Spark, Javalin, Micronaut, Helidon and Go services with comprehensive
                     telemetry integration (Grafana, Alloy, Loki, Mimir, Tempo, Pyroscope).
                   </Typography>
                 </Box>

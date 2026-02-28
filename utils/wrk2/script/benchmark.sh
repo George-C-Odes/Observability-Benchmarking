@@ -203,7 +203,7 @@ fi
 benchmarks_per_iteration() {
   # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
   if [ "${HOST}" = "combo" ]; then
-    echo 23
+    echo 27
     return 0
   fi
 
@@ -212,8 +212,12 @@ benchmarks_per_iteration() {
       echo 3
       return 0
     fi
-    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* ]]; then
+    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == helidon-se* || "${HOST}" == helidon-mp* ]]; then
       echo 2
+      return 0
+    fi
+    if [[ "${HOST}" == helidon* ]]; then
+      echo 4
       return 0
     fi
     if [[ "${HOST}" == go* ]]; then
@@ -269,6 +273,10 @@ while true; do
       "micronaut-native"
       "micronaut-native"
       "micronaut-native"
+      "helidon-se-jvm"
+      "helidon-se-native"
+      "helidon-mp-jvm"
+      "helidon-mp-native"
       "go"
     )
     endpoints=(
@@ -294,6 +302,10 @@ while true; do
       "platform"
       "virtual"
       "reactive"
+      "virtual"
+      "virtual"
+      "virtual"
+      "virtual"
       "virtual"
     )
     for i in "${!hosts[@]}"; do
@@ -338,6 +350,32 @@ while true; do
         iter_bench_idx=$((iter_bench_idx + 1))
         overall_count=$((overall_count + 1))
         run_wrk_one "${hosts[$i]}" "${endpoints[$i]}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
+        echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
+        sleep "${SLEEP_BETWEEN}"
+      done
+    elif [[ "${HOST}" == helidon* ]]; then
+      if [[ "${HOST}" == helidon-se* ]]; then
+        hosts=(
+          "helidon-se-jvm"
+          "helidon-se-native"
+        )
+      elif [[ "${HOST}" == helidon-mp* ]]; then
+        hosts=(
+          "helidon-mp-jvm"
+          "helidon-mp-native"
+        )
+      else
+        hosts=(
+          "helidon-se-jvm"
+          "helidon-se-native"
+          "helidon-mp-jvm"
+          "helidon-mp-native"
+        )
+      fi
+      for i in "${!hosts[@]}"; do
+        iter_bench_idx=$((iter_bench_idx + 1))
+        overall_count=$((overall_count + 1))
+        run_wrk_one "${hosts[$i]}" "virtual" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
         echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
         sleep "${SLEEP_BETWEEN}"
       done

@@ -98,9 +98,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.31.4_latest `
-  --build-arg QUARKUS_VERSION=3.31.4 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.31.4_latest `
+  -t quarkus-jvm:3.32.1_latest `
+  --build-arg QUARKUS_VERSION=3.32.1 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.32.1_latest `
   --load `
   services/java
 ```
@@ -108,11 +108,111 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.31.4_latest `
-    --build-arg QUARKUS_VERSION=3.31.4 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.31.4_latest `
+    -t quarkus-native:3.32.1_latest `
+    --build-arg QUARKUS_VERSION=3.32.1 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.32.1_latest `
     --load `
     services/java
+```
+**spark-jvm-platform**
+```powershell
+docker buildx build `
+  -f services/java/spark/jvm/Dockerfile `
+  -t spark-jvm-platform:3.0.3_latest `
+  --build-arg SPARK_VERSION=3.0.3 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
+  --load `
+  services/java
+```
+**spark-jvm-virtual**
+```powershell
+docker buildx build `
+  -f services/java/spark/jvm/Dockerfile `
+  -t spark-jvm-virtual:3.0.3_latest `
+  --build-arg SPARK_VERSION=3.0.3 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
+  --load `
+  services/java
+```
+**javalin-jvm-platform**
+```powershell
+docker buildx build `
+  -f services/java/javalin/jvm/Dockerfile `
+  -t javalin-jvm-platform:7.0.0_latest `
+  --build-arg JAVALIN_VERSION=7.0.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.0_latest `
+  --load `
+  services/java
+```
+**javalin-jvm-virtual**
+```powershell
+docker buildx build `
+  -f services/java/javalin/jvm/Dockerfile `
+  -t javalin-jvm-virtual:7.0.0_latest `
+  --build-arg JAVALIN_VERSION=7.0.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.0_latest `
+  --load `
+  services/java
+```
+**micronaut-jvm**
+```powershell
+docker buildx build `
+  -f services/java/micronaut/jvm/Dockerfile `
+  -t micronaut-jvm:4.10.16_latest `
+  --build-arg MICRONAUT_VERSION=4.10.16 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.16_latest `
+  --load `
+  services/java
+```
+**micronaut-native**
+```powershell
+docker buildx build `
+  -f services/java/micronaut/native/Dockerfile `
+  -t micronaut-native:4.10.16_latest `
+  --build-arg MICRONAUT_VERSION=4.10.16 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.16_latest `
+  --load `
+  services/java
+```
+**helidon-se-jvm**
+```powershell
+docker buildx build `
+  -f services/java/helidon/se/jvm/Dockerfile `
+  -t helidon-se-jvm:4.3.4_latest `
+  --build-arg HELIDON_VERSION=4.3.4 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.3.4_latest `
+  --load `
+  services/java
+```
+**helidon-se-native**
+```powershell
+docker buildx build `
+  -f services/java/helidon/se/native/Dockerfile `
+  -t helidon-se-native:4.3.4_latest `
+  --build-arg HELIDON_VERSION=4.3.4 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.3.4_latest `
+  --load `
+  services/java
+```
+**helidon-mp-jvm**
+```powershell
+docker buildx build `
+  -f services/java/helidon/mp/jvm/Dockerfile `
+  -t helidon-mp-jvm:4.3.4_latest `
+  --build-arg HELIDON_VERSION=4.3.4 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.3.4_latest `
+  --load `
+  services/java
+```
+**helidon-mp-native**
+```powershell
+docker buildx build `
+  -f services/java/helidon/mp/native/Dockerfile `
+  -t helidon-mp-native:4.3.4_latest `
+  --build-arg HELIDON_VERSION=4.3.4 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.3.4_latest `
+  --load `
+  services/java
 ```
 **go**
 ```powershell
