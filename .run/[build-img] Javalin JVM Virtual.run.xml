@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Javalin JVM Virtual" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="javalin-jvm-virtual:7.0.0_latest" />
+        <option name="imageTag" value="javalin-jvm-virtual:7.0.1_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="JAVALIN_VERSION" />
-              <option name="value" value="7.0.0" />
+              <option name="value" value="7.0.1" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="javalin-jvm:7.0.0_latest" />
+              <option name="value" value="javalin-jvm:7.0.1_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>
