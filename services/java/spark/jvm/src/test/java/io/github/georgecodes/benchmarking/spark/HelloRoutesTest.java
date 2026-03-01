@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for {@link HelloRoutes} construction and wiring.
@@ -26,9 +27,18 @@ class HelloRoutesTest {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
     @AfterEach
-    void tearDown() throws InterruptedException {
+    void tearDown() {
         executor.shutdownNow();
-        executor.awaitTermination(5, TimeUnit.SECONDS);
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+                assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS),
+                    "ExecutorService did not terminate in time");
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     private ServiceConfig platformConfig() {
