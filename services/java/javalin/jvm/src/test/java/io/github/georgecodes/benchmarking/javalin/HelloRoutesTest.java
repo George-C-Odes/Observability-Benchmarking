@@ -6,10 +6,12 @@ import io.github.georgecodes.benchmarking.javalin.infra.CacheProvider;
 import io.github.georgecodes.benchmarking.javalin.web.HelloRoutes;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,6 +26,12 @@ class HelloRoutesTest {
 
     private final MeterRegistry registry = new SimpleMeterRegistry();
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+
+    @AfterEach
+    void tearDown() throws InterruptedException {
+        executor.shutdownNow();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+    }
 
     private ServiceConfig platformConfig() {
         return new ServiceConfig(
