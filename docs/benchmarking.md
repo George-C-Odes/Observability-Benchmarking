@@ -32,8 +32,8 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Quarkus    | Native  | Reactive | 20k | 194           | 636             |
 | Spark      | JVM     | Platform | 23k | 433           | 376             |
 | Spark      | JVM     | Virtual  | 21k | 428           | 376             |
-| Javalin    | JVM     | Platform | 26k | 696           | 380             |
-| Javalin    | JVM     | Virtual  | 25k | 525           | 380             |
+| Javalin    | JVM     | Platform | 29k | 656           | 380             |
+| Javalin    | JVM     | Virtual  | 25k | 546           | 380             |
 | Micronaut  | JVM     | Platform | 30k | 431           | 352             |
 | Micronaut  | JVM     | Virtual  | 37k | 431           | 352             |
 | Micronaut  | JVM     | Reactive | 31k | 431           | 352             |

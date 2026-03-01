@@ -51,7 +51,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 - Spark 3.0.3 (JVM)
   - Platform threads
   - Virtual threads
-- Javalin 7.0.0 (JVM)
+- Javalin 7.0.1 (JVM)
   - Platform threads
   - Virtual threads
 - Micronaut 4.10.16 (JVM and Native)

@@ -190,7 +190,7 @@ mvn package -Pnative
 - No native image support
 - Official project is largely unmaintained; the Zoomba fork keeps it viable
 
-### Javalin 7.0.0
+### Javalin 7.0.1
 
 **Official Site**: [https://javalin.io/](https://javalin.io/)
 
@@ -201,7 +201,7 @@ mvn package -Pnative
 - Good middle ground between Spark's minimalism and Spring's richness
 
 **Implementation Details**:
-- **Javalin 7.0.0** (latest major release)
+- **Javalin 7.0.1** (latest major release)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -778,7 +778,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.0.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Micronaut                  | 4.10.16 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |

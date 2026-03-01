@@ -5,7 +5,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.32.1-blue.svg)](https://quarkus.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-7.0.0-purple.svg)](https://javalin.io/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.0.1-purple.svg)](https://javalin.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.16-1a1a2e.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
 [![Go](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg)](https://golang.org/)
@@ -64,7 +64,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.0.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Micronaut                  | 4.10.16 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
@@ -151,7 +151,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Javalin**: 7.0.0
+- **Javalin**: 7.0.1
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -386,8 +386,8 @@ The numbers below are a curated summary of a representative run.
 | Quarkus    | Native  | Reactive | 20k | 194           | 636             |
 | Spark      | JVM     | Platform | 23k | 433           | 376             |
 | Spark      | JVM     | Virtual  | 21k | 428           | 376             |
-| Javalin    | JVM     | Platform | 26k | 696           | 380             |
-| Javalin    | JVM     | Virtual  | 25k | 525           | 380             |
+| Javalin    | JVM     | Platform | 29k | 656           | 380             |
+| Javalin    | JVM     | Virtual  | 25k | 546           | 380             |
 | Micronaut  | JVM     | Platform | 30k | 431           | 352             |
 | Micronaut  | JVM     | Virtual  | 37k | 431           | 352             |
 | Micronaut  | JVM     | Reactive | 31k | 431           | 352             |
@@ -447,7 +447,7 @@ The numbers below are a curated summary of a representative run.
 - **Spring Boot**: 4.0.3 (3.5.11 also supported)
 - **Quarkus**: 3.32.1
 - **Spark**: 3.0.3
-- **Javalin**: 7.0.0
+- **Javalin**: 7.0.1
 - **Micronaut**: 4.10.16
 - **Helidon**: 4.3.4
 - **Go**: 1.26.0 (Fiber v2.52.12)

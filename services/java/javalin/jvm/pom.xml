@@ -12,7 +12,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <javalin.version>7.0.0</javalin.version>
+        <javalin.version>7.0.1</javalin.version>
         <caffeine.version>3.2.3</caffeine.version>
         <micrometer.version>1.16.3</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
