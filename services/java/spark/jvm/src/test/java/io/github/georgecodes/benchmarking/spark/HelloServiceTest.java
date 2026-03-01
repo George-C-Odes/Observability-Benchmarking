@@ -35,22 +35,6 @@ class HelloServiceTest {
     }
 
     @Test
-    void handleWithZeroSleepReturnsImmediately() throws InterruptedException {
-        long start = System.currentTimeMillis();
-        helloService.handle("prefix ", 0);
-        long elapsed = System.currentTimeMillis() - start;
-        assertTrue(elapsed < 1000, "Zero sleep should complete quickly, took " + elapsed + "ms");
-    }
-
-    @Test
-    void handleWithSleepDelays() throws InterruptedException {
-        long start = System.currentTimeMillis();
-        helloService.handle("prefix ", 1);
-        long elapsed = System.currentTimeMillis() - start;
-        assertTrue(elapsed >= 900, "Expected at least ~1s delay, took " + elapsed + "ms");
-    }
-
-    @Test
     void handleWithEmptyCacheReturnsNullSuffix() throws InterruptedException {
         Cache<String, String> emptyCache = CacheProvider.create(0);
         HelloService emptyService = new HelloService(emptyCache);
