@@ -147,9 +147,10 @@ func TestVirtual_BadParams(t *testing.T) {
 }
 
 func TestParseNonNegInt_OverflowRejected(t *testing.T) {
-	// MaxInt + 1 should be rejected (previous implementation could wrap silently).
-	maxPlusOne := []byte(strconv.Itoa(math.MaxInt) + "1")
-	if _, ok := parseNonNegInt(maxPlusOne); ok {
-		t.Fatalf("expected overflow to be rejected for MaxInt+1")
+	// A value larger than MaxInt should be rejected (previous implementation could wrap silently).
+	// Note: this is not MaxInt+1; it appends an extra digit, guaranteeing the value exceeds MaxInt.
+	overMax := []byte(strconv.Itoa(math.MaxInt) + "1")
+	if _, ok := parseNonNegInt(overMax); ok {
+		t.Fatalf("expected overflow to be rejected for value > MaxInt")
 	}
 }
