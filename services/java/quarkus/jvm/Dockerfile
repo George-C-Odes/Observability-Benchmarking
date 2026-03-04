@@ -4,7 +4,7 @@ ARG JAVA_RELEASE=25
 #25, 23, 21
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 #ARG DISTRIBUTION=amazoncorretto
 #ARG BASE_BUILDER=debian
 #ARG IMAGE_RUNTIME=amazoncorretto:25.0.2-al2023-headless
@@ -63,6 +63,31 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
 #-DskipTests
 #uber-jar
 
+# ── jlink: create a stripped-down custom JRE ──
+# Quarkus fast-jar spreads classes across lib/, app/, and quarkus/ directories.
+# We collect all JARs into the classpath so jdeps can resolve cross-jar references.
+# java.net.http  – OTel OTLP exporter resolves HTTP sender via SPI (invisible to jdeps)
+# java.management – Micrometer JVM metrics + MBeans
+RUN set -eux; \
+    CLASSPATH=$(find /workspace/target/quarkus-app/lib -name '*.jar' -printf '%p:' 2>/dev/null) && \
+    DEPS=$(jdeps \
+      --ignore-missing-deps \
+      --print-module-deps \
+      --multi-release ${JAVA_RELEASE} \
+      --class-path "$CLASSPATH" \
+      /workspace/target/quarkus-app/quarkus-run.jar \
+      /workspace/target/quarkus-app/app/*.jar \
+      /workspace/target/quarkus-app/quarkus/*.jar 2>/dev/null || echo "java.base") && \
+    DEPS="${DEPS},java.net.http,java.management" && \
+    echo "jlink modules: $DEPS" && \
+    jlink \
+      --add-modules "$DEPS" \
+      --strip-debug \
+      --compress zip-6 \
+      --no-header-files \
+      --no-man-pages \
+      --output /workspace/out/jre
+
 #-----------------------  RUNTIME STAGE -----------------------
 FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
@@ -86,6 +111,7 @@ WORKDIR /work
 #    && mkdir -p /work /deployments \
 #    && dnf clean all && rm -rf /var/cache/dnf/*
 
+COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/jre/ /opt/jre/
 COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/target/quarkus-app/ /deployments/
 
 EXPOSE 8080
@@ -112,4 +138,4 @@ ENV JAVA_TOOL_OPTIONS="\
     ${JAVA_ARGS}"
 
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
-ENTRYPOINT ["java", "-jar", "/deployments/quarkus-run.jar"]
+ENTRYPOINT ["/opt/jre/bin/java", "-jar", "/deployments/quarkus-run.jar"]
