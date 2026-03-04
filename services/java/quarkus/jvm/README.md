@@ -19,7 +19,7 @@ A high-performance REST service implementation built with Quarkus 3.32.1 running
 
 ### Docker
 
-**Image**: `quarkus-jvm:${QUARKUS_VERSION}_latest_jlink`
+**Image**: `quarkus-jvm:${QUARKUS_VERSION}_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -287,7 +287,7 @@ Tracks request count per endpoint.
 - **Heap Memory**: 640 MB (configurable)
 - **Off-Heap Memory**: 32 MB max
 - **Startup Time**: ~2-3 seconds (JVM)
-- **Container Size**: ~235MB (distroless + custom jlink JRE)
+- **Container Size**: ~235 MB (distroless + custom jlink JRE)
 
 ## Building and Running
 
