@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"os"
 	"runtime"
 	"sync/atomic"
@@ -25,9 +26,6 @@ type HelloHandler struct {
 	logger       *slog.Logger
 	tracer       trace.Tracer
 	spansEnabled *bool
-
-	// Pre-computed response bytes (avoids per-request string→[]byte conversion).
-	responseBytes []byte
 
 	// Fast, per-process request count. Exported as an ObservableCounter (no per-request OTEL calls).
 	reqCount      atomic.Uint64
@@ -69,20 +67,11 @@ func NewHelloHandler(opts HelloHandlerOpts) (*HelloHandler, error) {
 		opts.SpansEnabled = &enabled
 	}
 
-	// Pre-compute the JSON response body so the hot path does zero formatting.
-	// The response is a JSON-quoted string to match the Java services' format.
-	value, ok := opts.Cache.Get("1")
-	var responseBytes []byte
-	if ok {
-		responseBytes = []byte(`"Hello from GO REST ` + value + `"`)
-	}
-
 	h := &HelloHandler{
 		cache:         opts.Cache,
 		logger:        opts.Logger,
 		tracer:        opts.Tracer,
 		spansEnabled:  opts.SpansEnabled,
-		responseBytes: responseBytes,
 		reqCountAttrs: attribute.NewSet(attribute.String("endpoint", "/hello/virtual")),
 	}
 
@@ -138,18 +127,14 @@ func (h *HelloHandler) Virtual(c fiber.Ctx) error {
 		time.Sleep(time.Duration(sleepSeconds) * time.Second)
 	}
 
-	if h.responseBytes == nil {
-		// Fallback: cache miss at init time (should not happen with valid config).
-		value, ok := h.cache.Get("1")
-		if !ok {
-			return fiber.NewError(fiber.StatusNotFound, "value not found")
-		}
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-		return c.SendString(`"Hello from GO REST ` + value + `"`)
+	// Keep cache lookup on the hot path to preserve the intended benchmark workload.
+	value, ok := h.cache.Get("1")
+	if !ok {
+		return fiber.NewError(fiber.StatusNotFound, "value not found")
 	}
 
 	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-	return c.Send(h.responseBytes)
+	return c.SendString(`"Hello from GO REST ` + value + `"`)
 }
 
 // parseHelloParams does zero-allocation query string parsing for the two
@@ -177,16 +162,16 @@ func parseHelloParams(rawQuery []byte) (logEnabled bool, sleepSeconds int, err e
 		key := pair[:eqIdx]
 		val := pair[eqIdx+1:]
 
-		if bytesEqual(key, []byte("log")) {
+		if bytesEqualString(key, "log") {
 			switch {
-			case bytesEqual(val, []byte("true")) || bytesEqual(val, []byte("1")):
+			case bytesEqualString(val, "true") || bytesEqualString(val, "1"):
 				logEnabled = true
-			case bytesEqual(val, []byte("false")) || bytesEqual(val, []byte("0")) || len(val) == 0:
+			case bytesEqualString(val, "false") || bytesEqualString(val, "0") || len(val) == 0:
 				logEnabled = false
 			default:
 				return false, 0, fiber.NewError(fiber.StatusBadRequest, "invalid log value (expected true/false)")
 			}
-		} else if bytesEqual(key, []byte("sleep")) {
+		} else if bytesEqualString(key, "sleep") {
 			n, ok := parseNonNegInt(val)
 			if !ok {
 				return false, 0, fiber.NewError(fiber.StatusBadRequest, "invalid sleep value (expected non-negative integer seconds)")
@@ -206,12 +191,12 @@ func indexByte(b []byte, c byte) int {
 	return -1
 }
 
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
+func bytesEqualString(b []byte, s string) bool {
+	if len(b) != len(s) {
 		return false
 	}
-	for i := range a {
-		if a[i] != b[i] {
+	for i := range b {
+		if b[i] != s[i] {
 			return false
 		}
 	}
@@ -223,15 +208,18 @@ func parseNonNegInt(b []byte) (int, bool) {
 	if len(b) == 0 {
 		return 0, false
 	}
+	// Mirror internal/cache.parsePositiveIntFast overflow behavior.
+	const maxSafe = (math.MaxInt - 9) / 10
+
 	n := 0
 	for _, ch := range b {
 		if ch < '0' || ch > '9' {
 			return 0, false
 		}
+		if n > maxSafe {
+			return 0, false // overflow
+		}
 		n = n*10 + int(ch-'0')
-	}
-	if n < 0 { // overflow
-		return 0, false
 	}
 	return n, true
 }
