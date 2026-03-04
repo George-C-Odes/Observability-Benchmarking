@@ -12,9 +12,13 @@ linters:
     - gocritic
     - gofmt
     - goimports
+    - unused
+    - gosec
+    - unconvert
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
         - errcheck
+        - gosec

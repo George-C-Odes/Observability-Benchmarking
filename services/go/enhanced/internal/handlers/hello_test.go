@@ -63,6 +63,23 @@ func TestVirtual_Defaults(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
+
+	// Verify JSON content type.
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "application/json") {
+		t.Fatalf("expected Content-Type application/json, got %q", ct)
+	}
+
+	// Verify JSON-quoted body.
+	body, _ := io.ReadAll(resp.Body)
+	bodyStr := string(body)
+	if !strings.Contains(bodyStr, "Hello from GO REST") {
+		t.Fatalf("expected body to contain 'Hello from GO REST', got: %s", bodyStr)
+	}
+	if bodyStr[0] != '"' || bodyStr[len(bodyStr)-1] != '"' {
+		t.Fatalf("expected JSON-quoted string, got: %s", bodyStr)
+	}
+
 	// No log output unless log=true.
 	if strings.Contains(buf.String(), "goroutine thread") {
 		t.Fatalf("did not expect log output; got: %s", buf.String())
@@ -92,7 +109,7 @@ func TestVirtual_Sleep(t *testing.T) {
 
 	start := time.Now()
 	req := httptest.NewRequest("GET", "/hello/virtual?sleep=1", nil)
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 5 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
 	}

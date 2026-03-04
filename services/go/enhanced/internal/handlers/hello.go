@@ -3,13 +3,9 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -20,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"hello/internal/cache"
+	"hello/internal/config"
 )
 
 // HelloHandler serves the /hello/* endpoints.
@@ -27,7 +24,10 @@ type HelloHandler struct {
 	cache        cache.Cache
 	logger       *slog.Logger
 	tracer       trace.Tracer
-	spansEnabled bool
+	spansEnabled *bool
+
+	// Pre-computed response bytes (avoids per-request string→[]byte conversion).
+	responseBytes []byte
 
 	// Fast, per-process request count. Exported as an ObservableCounter (no per-request OTEL calls).
 	reqCount      atomic.Uint64
@@ -61,19 +61,28 @@ func NewHelloHandler(opts HelloHandlerOpts) (*HelloHandler, error) {
 		opts.Meter = otel.Meter("hello/internal/handlers")
 	}
 
-	spansEnabled := false
-	if opts.SpansEnabled != nil {
-		spansEnabled = *opts.SpansEnabled
-	} else if v, ok := os.LookupEnv("APP_HANDLER_SPANS_ENABLED"); ok {
-		// Allow pure env-based enable/disable without wiring config through.
-		spansEnabled = parseBoolLoose(v, false)
+	if opts.SpansEnabled == nil {
+		enabled := false
+		if v, ok := os.LookupEnv("APP_HANDLER_SPANS_ENABLED"); ok {
+			enabled = config.ParseBoolLoose(v, false)
+		}
+		opts.SpansEnabled = &enabled
+	}
+
+	// Pre-compute the JSON response body so the hot path does zero formatting.
+	// The response is a JSON-quoted string to match the Java services' format.
+	value, ok := opts.Cache.Get("1")
+	var responseBytes []byte
+	if ok {
+		responseBytes = []byte(`"Hello from GO REST ` + value + `"`)
 	}
 
 	h := &HelloHandler{
 		cache:         opts.Cache,
 		logger:        opts.Logger,
 		tracer:        opts.Tracer,
-		spansEnabled:  spansEnabled,
+		spansEnabled:  opts.SpansEnabled,
+		responseBytes: responseBytes,
 		reqCountAttrs: attribute.NewSet(attribute.String("endpoint", "/hello/virtual")),
 	}
 
@@ -108,7 +117,7 @@ func (h *HelloHandler) Virtual(c fiber.Ctx) error {
 
 	ctx := c.Context()
 	var span trace.Span
-	if h.spansEnabled {
+	if *h.spansEnabled {
 		ctx, span = h.tracer.Start(ctx, "hello.virtual")
 		defer span.End()
 	}
@@ -119,8 +128,6 @@ func (h *HelloHandler) Virtual(c fiber.Ctx) error {
 	}
 
 	if logEnabled {
-		// Go doesn't expose a stable "goroutine id" or OS thread id in the standard library.
-		// For benchmarking, keep this extremely cheap.
 		h.logger.InfoContext(ctx, "goroutine thread :",
 			slog.Int("goroutines", runtime.NumGoroutine()),
 			slog.Int("pid", os.Getpid()),
@@ -131,52 +138,100 @@ func (h *HelloHandler) Virtual(c fiber.Ctx) error {
 		time.Sleep(time.Duration(sleepSeconds) * time.Second)
 	}
 
-	value, ok := h.cache.Get("1")
-	if !ok {
-		return fiber.NewError(fiber.StatusNotFound, "value not found")
+	if h.responseBytes == nil {
+		// Fallback: cache miss at init time (should not happen with valid config).
+		value, ok := h.cache.Get("1")
+		if !ok {
+			return fiber.NewError(fiber.StatusNotFound, "value not found")
+		}
+		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
+		return c.SendString(`"Hello from GO REST ` + value + `"`)
 	}
 
-	return c.SendString(fmt.Sprintf("Hello from GO REST %v", value))
+	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
+	return c.Send(h.responseBytes)
 }
 
+// parseHelloParams does zero-allocation query string parsing for the two
+// known parameters ("log" and "sleep"). It avoids url.ParseQuery entirely.
 func parseHelloParams(rawQuery []byte) (logEnabled bool, sleepSeconds int, err error) {
 	if len(rawQuery) == 0 {
 		return false, 0, nil
 	}
-	q, err := url.ParseQuery(string(rawQuery))
-	if err != nil {
-		return false, 0, fmt.Errorf("invalid query: %w", err)
-	}
 
-	// log=true|false (default false)
-	if v := strings.TrimSpace(q.Get("log")); v != "" {
-		b, err := strconv.ParseBool(v)
-		if err != nil {
-			return false, 0, fmt.Errorf("invalid log=%q (expected true/false)", v)
+	// Walk ampersand-separated pairs.
+	for len(rawQuery) > 0 {
+		var pair []byte
+		if idx := indexByte(rawQuery, '&'); idx >= 0 {
+			pair = rawQuery[:idx]
+			rawQuery = rawQuery[idx+1:]
+		} else {
+			pair = rawQuery
+			rawQuery = nil
 		}
-		logEnabled = b
-	}
 
-	// sleep=<seconds> (default 0)
-	if v := strings.TrimSpace(q.Get("sleep")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 0 {
-			return logEnabled, 0, fmt.Errorf("invalid sleep=%q (expected non-negative integer seconds)", v)
+		eqIdx := indexByte(pair, '=')
+		if eqIdx < 0 {
+			continue
 		}
-		sleepSeconds = n
-	}
+		key := pair[:eqIdx]
+		val := pair[eqIdx+1:]
 
+		if bytesEqual(key, []byte("log")) {
+			switch {
+			case bytesEqual(val, []byte("true")) || bytesEqual(val, []byte("1")):
+				logEnabled = true
+			case bytesEqual(val, []byte("false")) || bytesEqual(val, []byte("0")) || len(val) == 0:
+				logEnabled = false
+			default:
+				return false, 0, fiber.NewError(fiber.StatusBadRequest, "invalid log value (expected true/false)")
+			}
+		} else if bytesEqual(key, []byte("sleep")) {
+			n, ok := parseNonNegInt(val)
+			if !ok {
+				return false, 0, fiber.NewError(fiber.StatusBadRequest, "invalid sleep value (expected non-negative integer seconds)")
+			}
+			sleepSeconds = n
+		}
+	}
 	return logEnabled, sleepSeconds, nil
 }
 
-func parseBoolLoose(v string, def bool) bool {
-	v = strings.ToLower(strings.TrimSpace(v))
-	if v == "" {
-		return def
+func indexByte(b []byte, c byte) int {
+	for i, v := range b {
+		if v == c {
+			return i
+		}
 	}
-	b, err := strconv.ParseBool(v)
-	if err != nil {
-		return def
+	return -1
+}
+
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
 	}
-	return b
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// parseNonNegInt parses a non-negative integer from a byte slice without allocating.
+func parseNonNegInt(b []byte) (int, bool) {
+	if len(b) == 0 {
+		return 0, false
+	}
+	n := 0
+	for _, ch := range b {
+		if ch < '0' || ch > '9' {
+			return 0, false
+		}
+		n = n*10 + int(ch-'0')
+	}
+	if n < 0 { // overflow
+		return 0, false
+	}
+	return n, true
 }

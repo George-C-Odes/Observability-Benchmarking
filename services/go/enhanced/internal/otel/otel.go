@@ -3,6 +3,7 @@ package otel
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"hello/internal/buildinfo"
 	"hello/internal/config"
@@ -30,7 +31,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
-	"go.opentelemetry.io/otel/trace"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -200,10 +200,13 @@ func Setup(ctx context.Context, cfg config.Config, baseLogger *slog.Logger) (*Te
 		Enabled:        true,
 		OtelLogHandler: otelHandler,
 		Shutdown: func(ctx context.Context) error {
+			var errs []error
 			for i := len(shutdowns) - 1; i >= 0; i-- {
-				_ = shutdowns[i](ctx)
+				if err := shutdowns[i](ctx); err != nil {
+					errs = append(errs, err)
+				}
 			}
-			return nil
+			return errors.Join(errs...)
 		},
 	}, nil
 }
@@ -245,7 +248,9 @@ func newOTLPConn(target string, insecure bool) (*grpc.ClientConn, error) {
 	if insecure {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
 	} else {
-		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+			MinVersion: tls.VersionTLS12,
+		})))
 	}
 
 	// grpc.NewClient replaces grpc.Dial/grpc.DialContext (deprecated in newer grpc-go).
@@ -308,6 +313,3 @@ func profileTypes(names []string) []pyroscope.ProfileType {
 	}
 	return out
 }
-
-// Compile-time assertion that we import trace (used by downstream packages).
-var _ trace.Span
