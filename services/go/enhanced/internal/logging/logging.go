@@ -2,11 +2,9 @@ package logging
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
-	"runtime"
-	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -40,12 +38,15 @@ func (m *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 func (m *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
+	var errs []error
 	for _, h := range m.handlers {
 		if h.Enabled(ctx, r.Level) {
-			_ = h.Handle(ctx, r)
+			if err := h.Handle(ctx, r); err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (m *MultiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
@@ -95,27 +96,4 @@ func (h *TraceContextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 func (h *TraceContextHandler) WithGroup(name string) slog.Handler {
 	return &TraceContextHandler{inner: h.inner.WithGroup(name)}
-}
-
-// GoroutineID returns the current goroutine id.
-//
-// Note: Go does not expose goroutine IDs as a public API. This helper parses
-// runtime.Stack output and is intended for debugging/demo purposes only.
-func GoroutineID() int64 {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	// First line: "goroutine 123 [running]:"
-	line := strings.TrimSpace(string(buf[:n]))
-	if !strings.HasPrefix(line, "goroutine ") {
-		return -1
-	}
-	fields := strings.Fields(line)
-	if len(fields) < 2 {
-		return -1
-	}
-	id, err := strconv.ParseInt(fields[1], 10, 64)
-	if err != nil {
-		return -1
-	}
-	return id
 }

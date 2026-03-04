@@ -44,7 +44,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
-| Go         | Native  | N/A      | 24k | 45            | 33              |
+| Go         | Native  | N/A      | 25k | 114           | 36              |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
@@ -122,7 +122,7 @@ memory: 2GB        # Maximum memory
 **Frameworks**:
 - Spring Boot: 4.0.3 (3.5.11 also supported)
 - Quarkus: 3.32.1
-- Go: 1.26.0 with Fiber v2.52.12
+- Go: 1.26.0 with Fiber v3.1.0
 
 ### Third-party license note (native-image)
 

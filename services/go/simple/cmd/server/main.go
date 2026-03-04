@@ -9,7 +9,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -105,9 +105,9 @@ func main() {
 	// Fiber app
 	app := fiber.New()
 
-	app.Get("/hello/virtual", func(c *fiber.Ctx) error {
+	app.Get("/hello/virtual", func(c fiber.Ctx) error {
 		// Start a span for tracing
-		reqCtx, span := tracer.Start(c.Context(), "hello-handler")
+		reqCtx, span := tracer.Start(c.RequestCtx(), "hello-handler")
 		defer span.End()
 
 		// Record metric

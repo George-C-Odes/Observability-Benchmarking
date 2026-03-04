@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -17,6 +18,8 @@ type Cache interface {
 	Get(key string) (string, bool)
 	// Size returns the configured maximum size (not the current occupancy).
 	Size() int
+	// Close releases any resources held by the cache (goroutines, memory, etc.).
+	Close() error
 }
 
 // New creates and pre-populates a cache with keys "1".."size" and values "value-<key>".
@@ -78,19 +81,24 @@ func (c *sliceCache) Get(key string) (string, bool) {
 	return v, true
 }
 
-func (c *sliceCache) Size() int { return c.size }
+func (c *sliceCache) Size() int    { return c.size }
+func (c *sliceCache) Close() error { return nil }
 
 // parsePositiveIntFast parses a base-10 positive integer string without allocations.
-// Returns (0,false) for invalid input.
+// Returns (0,false) for invalid input or overflow.
 func parsePositiveIntFast(s string) (int, bool) {
 	if s == "" {
 		return 0, false
 	}
+	const maxSafe = (math.MaxInt - 9) / 10
 	n := 0
 	for i := 0; i < len(s); i++ {
 		ch := s[i]
 		if ch < '0' || ch > '9' {
 			return 0, false
+		}
+		if n > maxSafe {
+			return 0, false // overflow
 		}
 		n = n*10 + int(ch-'0')
 	}
@@ -132,7 +140,8 @@ func (c *mapCache) Get(key string) (string, bool) {
 	return v, ok
 }
 
-func (c *mapCache) Size() int { return c.size }
+func (c *mapCache) Size() int    { return c.size }
+func (c *mapCache) Close() error { return nil }
 
 // ---------------------------
 // ristretto cache
@@ -171,7 +180,7 @@ func (c *ristrettoCache) Get(key string) (string, bool) {
 
 func (c *ristrettoCache) Size() int { return c.size }
 
-func (c *ristrettoCache) Close() { c.c.Close() }
+func (c *ristrettoCache) Close() error { c.c.Close(); return nil }
 
 func retrySetRistretto(c *ristretto.Cache[string, string], key, value string, cost int64, ttl time.Duration) {
 	for i := 0; i < 16; i++ {
@@ -206,7 +215,7 @@ func newTheineCache(size int) (*theineCache, error) {
 
 func (c *theineCache) Get(key string) (string, bool) { return c.c.Get(key) }
 func (c *theineCache) Size() int                     { return c.size }
-func (c *theineCache) Close()                        { c.c.Close() }
+func (c *theineCache) Close() error                  { c.c.Close(); return nil }
 
 // ---------------------------
 // otter cache (Caffeine-like API)
@@ -236,4 +245,4 @@ func newOtterCache(size int) (*otterCache, error) {
 
 func (c *otterCache) Get(key string) (string, bool) { return c.c.GetIfPresent(key) }
 func (c *otterCache) Size() int                     { return c.size }
-func (c *otterCache) StopAllGoroutines()            { c.c.StopAllGoroutines() }
+func (c *otterCache) Close() error                  { c.c.StopAllGoroutines(); return nil }

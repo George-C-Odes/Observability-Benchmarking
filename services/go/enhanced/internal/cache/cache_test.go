@@ -58,13 +58,7 @@ func TestSliceCache_ParseFast(t *testing.T) {
 
 func closeIfPossible(t *testing.T, c Cache) {
 	t.Helper()
-
-	switch v := any(c).(type) {
-	case interface{ Close() }:
-		v.Close()
-	case interface{ Close() error }:
-		_ = v.Close()
-	case interface{ StopAllGoroutines() }:
-		v.StopAllGoroutines()
+	if err := c.Close(); err != nil {
+		t.Errorf("Close() error: %v", err)
 	}
 }

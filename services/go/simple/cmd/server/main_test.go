@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"go.opentelemetry.io/otel"
 )
 
@@ -24,9 +24,9 @@ func setupTestApp() *fiber.App {
 	// Create Fiber app
 	app := fiber.New()
 
-	app.Get("/hello/virtual", func(c *fiber.Ctx) error {
+	app.Get("/hello/virtual", func(c fiber.Ctx) error {
 		// Start a span for tracing
-		reqCtx, span := tracer.Start(c.Context(), "hello-handler")
+		reqCtx, span := tracer.Start(c.RequestCtx(), "hello-handler")
 		defer span.End()
 
 		// Record metric

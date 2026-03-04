@@ -60,7 +60,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.7.0  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.8.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -85,7 +85,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.10.1 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.11.0 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
@@ -398,7 +398,7 @@ The numbers below are a curated summary of a representative run.
 | Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
-| Go         | Native  | N/A      | 24k | 45            | 33              |
+| Go         | Native  | N/A      | 25k | 114           | 36              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -450,7 +450,7 @@ The numbers below are a curated summary of a representative run.
 - **Javalin**: 7.0.1
 - **Micronaut**: 4.10.16
 - **Helidon**: 4.3.4
-- **Go**: 1.26.0 (Fiber v2.52.12)
+- **Go**: 1.26.0 (Fiber v3.1.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

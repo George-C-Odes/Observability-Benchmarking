@@ -116,7 +116,7 @@ func LoadFromEnv() (Config, error) {
 
 	// Pyroscope enablement: explicit switch wins, otherwise enable only when address+app name exist.
 	if v, ok := os.LookupEnv("PYROSCOPE_ENABLED"); ok {
-		cfg.PyroscopeEnabled = parseBoolLoose(v, false)
+		cfg.PyroscopeEnabled = ParseBoolLoose(v, false)
 	} else {
 		cfg.PyroscopeEnabled = strings.TrimSpace(cfg.PyroscopeServerAddress) != "" && strings.TrimSpace(cfg.PyroscopeApplicationName) != ""
 	}
@@ -184,10 +184,12 @@ func getenvBool(key string, def bool) bool {
 	if !ok {
 		return def
 	}
-	return parseBoolLoose(v, def)
+	return ParseBoolLoose(v, def)
 }
 
-func parseBoolLoose(v string, def bool) bool {
+// ParseBoolLoose parses a boolean-ish string (case-insensitive, trimmed).
+// Returns def when the value is empty or unparseable.
+func ParseBoolLoose(v string, def bool) bool {
 	v = strings.ToLower(strings.TrimSpace(v))
 	if v == "" {
 		return def
