@@ -70,14 +70,14 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
 # java.management – Micrometer JVM metrics + MBeans
 RUN set -eux; \
     CLASSPATH=$(find /workspace/target/quarkus-app/lib -name '*.jar' -printf '%p:' 2>/dev/null) && \
+    APP_JARS="$(find /workspace/target/quarkus-app/app /workspace/target/quarkus-app/quarkus -maxdepth 1 -type f -name '*.jar' 2>/dev/null)" && \
     DEPS=$(jdeps \
       --ignore-missing-deps \
       --print-module-deps \
       --multi-release ${JAVA_RELEASE} \
       --class-path "$CLASSPATH" \
       /workspace/target/quarkus-app/quarkus-run.jar \
-      /workspace/target/quarkus-app/app/*.jar \
-      /workspace/target/quarkus-app/quarkus/*.jar 2>/dev/null || echo "java.base") && \
+      $APP_JARS 2>/dev/null || echo "java.base") && \
     DEPS="${DEPS},java.net.http,java.management" && \
     echo "jlink modules: $DEPS" && \
     jlink \

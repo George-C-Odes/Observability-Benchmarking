@@ -28,10 +28,10 @@ A high-performance REST service implementation built with Quarkus 3.32.1 running
 
 This Docker image uses a multi-stage build:
 - Builds a Quarkus **fast-jar**
-- Uses `jdeps` + `jlink` to generate a **stripped-down custom JRE** containing only the required JDK modules
+- Uses `jdeps` + `jlink` to generate a **stripped-down custom JRE** (only required JDK modules)
 - Runs on a **distroless** base image for a smaller attack surface (no package manager / shell)
 
-> Note: `jdeps` can miss modules that are loaded via reflection/SPI at runtime.
+> Note: `jdeps` is static analysis and can miss modules that are loaded via reflection/SPI at runtime.
 > The Dockerfile intentionally forces `java.net.http` (OTLP exporters may resolve HTTP senders via SPI) and `java.management` (JVM metrics / MBeans).
 
 ### Endpoints
