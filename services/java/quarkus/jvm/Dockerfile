@@ -65,27 +65,21 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
 
 # ── jlink: create a stripped-down custom JRE ──
 # Quarkus fast-jar spreads classes across lib/, app/, and quarkus/ directories.
-# We build a complete classpath from discovered JARs (avoids brittle shell globs).
+# We collect all JARs into the classpath so jdeps can resolve cross-jar references.
 # java.net.http  – OTel OTLP exporter resolves HTTP sender via SPI (invisible to jdeps)
 # java.management – Micrometer JVM metrics + MBeans
 RUN set -eux; \
-    CP="/workspace/target/quarkus-app/quarkus-run.jar"; \
-    # Collect all jars that may be needed for classpath resolution. \
-    # We avoid process substitution (< <(...)) because RUN often executes under /bin/sh. \
-    JARS=$(find /workspace/target/quarkus-app \( -path '*/lib/*.jar' -o -path '*/app/*.jar' -o -path '*/quarkus/*.jar' \) -type f | sort); \
-    for JAR in $JARS; do \
-      CP="$CP:$JAR"; \
-    done; \
+    CLASSPATH=$(find /workspace/target/quarkus-app/lib -name '*.jar' -printf '%p:' 2>/dev/null) && \
+    APP_JARS="$(find /workspace/target/quarkus-app/app /workspace/target/quarkus-app/quarkus -maxdepth 1 -type f -name '*.jar' 2>/dev/null)" && \
     DEPS=$(jdeps \
       --ignore-missing-deps \
       --print-module-deps \
       --multi-release ${JAVA_RELEASE} \
-      --class-path "$CP" \
-      /workspace/target/quarkus-app/quarkus-run.jar || true); \
-    # jdeps can legitimately return an empty string; jlink requires at least one module. \
-    if [ -z "$DEPS" ]; then DEPS="java.base"; fi; \
-    DEPS="${DEPS},java.net.http,java.management"; \
-    echo "jlink modules: $DEPS"; \
+      --class-path "$CLASSPATH" \
+      /workspace/target/quarkus-app/quarkus-run.jar \
+      $APP_JARS 2>/dev/null || echo "java.base") && \
+    DEPS="${DEPS},java.net.http,java.management" && \
+    echo "jlink modules: $DEPS" && \
     jlink \
       --add-modules "$DEPS" \
       --strip-debug \
