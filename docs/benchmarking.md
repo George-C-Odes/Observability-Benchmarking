@@ -44,7 +44,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
-| Go         | Native  | N/A      | 24k | 45            | 33              |
+| Go         | Native  | N/A      | 24k | 100           | 36              |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
