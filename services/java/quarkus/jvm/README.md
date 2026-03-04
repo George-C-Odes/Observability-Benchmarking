@@ -17,6 +17,23 @@ A high-performance REST service implementation built with Quarkus 3.32.1 running
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
+### Docker
+
+**Image**: `quarkus-jvm:${QUARKUS_VERSION}_latest`
+
+| Stage   | Image                                                        |
+|---------|--------------------------------------------------------------|
+| Build   | `maven:3.9.12-eclipse-temurin-25-noble`                      |
+| Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
+
+This Docker image uses a multi-stage build:
+- Builds a Quarkus **fast-jar**
+- Uses `jdeps` + `jlink` to generate a **stripped-down custom JRE** containing only the required JDK modules
+- Runs on a **distroless** base image for a smaller attack surface (no package manager / shell)
+
+> Note: `jdeps` can miss modules that are loaded via reflection/SPI at runtime.
+> The Dockerfile intentionally forces `java.net.http` (OTLP exporters may resolve HTTP senders via SPI) and `java.management` (JVM metrics / MBeans).
+
 ### Endpoints
 
 #### `GET /hello/platform`
@@ -270,7 +287,7 @@ Tracks request count per endpoint.
 - **Heap Memory**: 640 MB (configurable)
 - **Off-Heap Memory**: 32 MB max
 - **Startup Time**: ~2-3 seconds (JVM)
-- **Container Size**: ~400 MB (with JDK)
+- **Container Size**: ~235 MB (distroless + custom jlink JRE)
 
 ## Building and Running
 
@@ -292,9 +309,14 @@ cd services/quarkus/jvm
 ```
 
 ### Docker Build
-```bash
-cd services/quarkus/jvm
-docker build -t quarkus-jvm:latest .
+```powershell
+docker buildx build `
+  -f services/java/quarkus/jvm/Dockerfile `
+  -t quarkus-jvm:3.32.1_latest `
+  --build-arg QUARKUS_VERSION=3.32.1 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.32.1_latest `
+  --load `
+  services/java
 ```
 
 ### Docker Compose
