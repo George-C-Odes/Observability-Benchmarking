@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"io"
 	"log/slog"
+	"math"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -141,5 +143,13 @@ func TestVirtual_BadParams(t *testing.T) {
 		if resp.StatusCode != 400 {
 			t.Fatalf("expected 400 for %s, got %d", url, resp.StatusCode)
 		}
+	}
+}
+
+func TestParseNonNegInt_OverflowRejected(t *testing.T) {
+	// MaxInt + 1 should be rejected (previous implementation could wrap silently).
+	maxPlusOne := []byte(strconv.Itoa(math.MaxInt) + "1")
+	if _, ok := parseNonNegInt(maxPlusOne); ok {
+		t.Fatalf("expected overflow to be rejected for MaxInt+1")
 	}
 }

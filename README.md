@@ -398,7 +398,7 @@ The numbers below are a curated summary of a representative run.
 | Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
-| Go         | Native  | N/A      | 25k | 114           | 36              |
+| Go         | Native  | N/A      | 24k | 114           | 36              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 

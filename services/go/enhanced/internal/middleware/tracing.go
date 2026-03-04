@@ -9,9 +9,16 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Pre-allocated keys used by TraceContext propagator.
+// Returned by fiberTraceContextCarrier.Keys() to avoid per-request allocations.
+var traceContextHeaderKeys = []string{"traceparent", "tracestate"}
+
 // MinimalHTTPTracingMiddleware returns a lightweight Fiber handler that creates
-// a single server span per request using the provided tracer. Paths in
-// ignorePaths are skipped entirely (no span created).
+// a single server span per request using the provided tracer.
+//
+// ignorePaths must be pre-normalised (trimmed, with empty entries removed), e.g.
+// via NormalisePaths. This keeps the hot path allocation-free and avoids
+// ambiguity about who owns normalisation.
 //
 // Compared to otelfiber this avoids attribute-heavy spans and per-request
 // allocations while keeping distributed-trace propagation intact.
@@ -21,8 +28,8 @@ func MinimalHTTPTracingMiddleware(
 	propagators propagation.TextMapPropagator,
 	ignorePaths []string,
 ) fiber.Handler {
-	// Pre-normalise ignored paths once so we never TrimSpace per request.
-	trimmed := normalisePaths(ignorePaths)
+	// ignorePaths is expected to already be normalised (see docstring).
+	trimmed := ignorePaths
 
 	return func(c fiber.Ctx) error {
 		if isIgnoredPath(c.Path(), trimmed) {
@@ -69,7 +76,7 @@ func (h fiberTraceContextCarrier) Set(string, string) {
 
 func (h fiberTraceContextCarrier) Keys() []string {
 	// Only the keys TraceContext uses; keeps it fast.
-	return []string{"traceparent", "tracestate"}
+	return traceContextHeaderKeys
 }
 
 // MakeSpanNameFormatter returns a function that derives the OTel span name
