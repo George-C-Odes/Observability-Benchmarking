@@ -63,7 +63,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 - Helidon MP 4.3.4 (JVM and Native)
   - Virtual threads (MicroProfile / CDI / JAX-RS)
 - Go 1.26.0
-  - Fiber framework (v2.52.12)
+  - Fiber framework (v3.1.0)
 
 **Service Characteristics**:
 - Simple cache retrieval workload (Caffeine)

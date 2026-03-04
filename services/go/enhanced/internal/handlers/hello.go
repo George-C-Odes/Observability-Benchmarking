@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -103,17 +103,17 @@ func NewHelloHandler(opts HelloHandlerOpts) (*HelloHandler, error) {
 // Virtual handles: GET /hello/virtual?log=true&sleep=1
 // - log (default false): prints minimal goroutine/thread-ish info
 // - sleep (default 0): sleeps N seconds before continuing
-func (h *HelloHandler) Virtual(c *fiber.Ctx) error {
+func (h *HelloHandler) Virtual(c fiber.Ctx) error {
 	h.reqCount.Add(1)
 
-	ctx := c.UserContext()
+	ctx := c.Context()
 	var span trace.Span
 	if h.spansEnabled {
 		ctx, span = h.tracer.Start(ctx, "hello.virtual")
 		defer span.End()
 	}
 
-	logEnabled, sleepSeconds, err := parseHelloParams(c.Context().URI().QueryString())
+	logEnabled, sleepSeconds, err := parseHelloParams(c.RequestCtx().URI().QueryString())
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}

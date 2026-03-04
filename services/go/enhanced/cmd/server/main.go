@@ -23,9 +23,9 @@ import (
 	"hello/internal/logging"
 	appotel "hello/internal/otel"
 
-	"github.com/gofiber/contrib/otelfiber/v2"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	otelfiber "github.com/gofiber/contrib/v3/otel"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -100,10 +100,9 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage: false,
-		ReadTimeout:           10 * time.Second,
-		WriteTimeout:          10 * time.Second,
-		IdleTimeout:           60 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	})
 
 	app.Use(recover.New())
@@ -125,10 +124,10 @@ func main() {
 		case "otelfiber":
 			opts := []otelfiber.Option{
 				otelfiber.WithPort(cfg.Port),
-				otelfiber.WithNext(func(c *fiber.Ctx) bool {
+				otelfiber.WithNext(func(c fiber.Ctx) bool {
 					return isIgnoredPath(c.Path(), cfg.HTTPIgnorePaths)
 				}),
-				otelfiber.WithCollectClientIP(cfg.HTTPCollectClientIP),
+				otelfiber.WithClientIP(cfg.HTTPCollectClientIP),
 				otelfiber.WithSpanNameFormatter(spanNameFn),
 				otelfiber.WithPropagators(propagators),
 			}
@@ -163,10 +162,10 @@ func main() {
 				// Metrics-only: otelfiber will still execute, but spans are no-op.
 				opts := []otelfiber.Option{
 					otelfiber.WithPort(cfg.Port),
-					otelfiber.WithNext(func(c *fiber.Ctx) bool {
+					otelfiber.WithNext(func(c fiber.Ctx) bool {
 						return isIgnoredPath(c.Path(), cfg.HTTPIgnorePaths)
 					}),
-					otelfiber.WithCollectClientIP(cfg.HTTPCollectClientIP),
+					otelfiber.WithClientIP(cfg.HTTPCollectClientIP),
 					otelfiber.WithSpanNameFormatter(spanNameFn),
 					otelfiber.WithPropagators(propagators),
 
@@ -185,9 +184,9 @@ func main() {
 	}
 
 	// Lightweight liveness/readiness endpoints
-	app.Get("/healthz", func(c *fiber.Ctx) error { return c.SendStatus(fiber.StatusOK) })
-	app.Get("/readyz", func(c *fiber.Ctx) error { return c.SendStatus(fiber.StatusOK) })
-	app.Get("/livez", func(c *fiber.Ctx) error { return c.SendStatus(fiber.StatusOK) })
+	app.Get("/healthz", func(c fiber.Ctx) error { return c.SendStatus(fiber.StatusOK) })
+	app.Get("/readyz", func(c fiber.Ctx) error { return c.SendStatus(fiber.StatusOK) })
+	app.Get("/livez", func(c fiber.Ctx) error { return c.SendStatus(fiber.StatusOK) })
 
 	// Main endpoint
 	app.Get("/hello/virtual", h.Virtual)
@@ -197,7 +196,7 @@ func main() {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		serverErr <- app.Listen(addr)
+		serverErr <- app.Listen(addr, fiber.ListenConfig{DisableStartupMessage: false})
 	}()
 
 	// Wait for signal or server error
@@ -220,39 +219,39 @@ func main() {
 	_ = tel.Shutdown(shutdownCtx)
 }
 
-func makeSpanNameFormatter(mode string) func(c *fiber.Ctx) string {
+func makeSpanNameFormatter(mode string) func(c fiber.Ctx) string {
 	mode = strings.ToLower(strings.TrimSpace(mode))
 	switch mode {
 	case "method":
-		return func(c *fiber.Ctx) string {
+		return func(c fiber.Ctx) string {
 			return c.Method()
 		}
 	case "route":
-		return func(c *fiber.Ctx) string {
+		return func(c fiber.Ctx) string {
 			return routeTemplate(c)
 		}
 	case "path":
-		return func(c *fiber.Ctx) string {
+		return func(c fiber.Ctx) string {
 			return c.Path()
 		}
 	case "method_route":
-		return func(c *fiber.Ctx) string {
+		return func(c fiber.Ctx) string {
 			return c.Method() + " " + routeTemplate(c)
 		}
 	case "method_path":
-		return func(c *fiber.Ctx) string {
+		return func(c fiber.Ctx) string {
 			return c.Method() + " " + c.Path()
 		}
 	case "constant":
 		fallthrough
 	default:
-		return func(*fiber.Ctx) string {
+		return func(fiber.Ctx) string {
 			return "http.request"
 		}
 	}
 }
 
-func routeTemplate(c *fiber.Ctx) string {
+func routeTemplate(c fiber.Ctx) string {
 	if r := c.Route(); r != nil && strings.TrimSpace(r.Path) != "" {
 		return r.Path
 	}
@@ -261,23 +260,23 @@ func routeTemplate(c *fiber.Ctx) string {
 
 func minimalHTTPTracingMiddleware(
 	tracer trace.Tracer,
-	spanNameFn func(*fiber.Ctx) string,
+	spanNameFn func(fiber.Ctx) string,
 	propagators propagation.TextMapPropagator,
 	ignorePaths []string,
 ) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		if isIgnoredPath(c.Path(), ignorePaths) {
 			return c.Next()
 		}
 
-		ctx := c.UserContext()
+		ctx := c.Context()
 
 		// Avoid allocating a full map of request headers. TraceContext needs only these.
 		// If propagation is "disabled", the propagators passed in is effectively no-op.
 		ctx = propagators.Extract(ctx, fiberTraceContextCarrier{c: c})
 
 		ctx, span := tracer.Start(ctx, spanNameFn(c), trace.WithSpanKind(trace.SpanKindServer))
-		c.SetUserContext(ctx)
+		c.SetContext(ctx)
 
 		err := c.Next()
 
@@ -296,7 +295,7 @@ func minimalHTTPTracingMiddleware(
 
 // fiberTraceContextCarrier is a small carrier optimized for TraceContext extraction.
 type fiberTraceContextCarrier struct {
-	c *fiber.Ctx
+	c fiber.Ctx
 }
 
 func (h fiberTraceContextCarrier) Get(key string) string {
