@@ -14,13 +14,13 @@ All containers run as non-root users to minimize security risks:
 - User: `quarkus` (UID 1001, GID 1001)
 - Home directory: `/nonexistent`
 - Shell: `/sbin/nologin`
-- Configuration: `services/quarkus/jvm/Dockerfile`
+- Configuration: `services/java/quarkus/jvm/Dockerfile`
 
 #### Spring Services
 - User: `spring` (UID 1001, GID 1001)
 - Home directory: `/nonexistent`
 - Shell: `/sbin/nologin`
-- Configuration: `services/spring/jvm/Dockerfile`
+- Configuration: `services/java/spring/jvm/Dockerfile`
 
 **Note**: UID/GID 1001 is chosen for OpenShift compatibility, as it falls within the standard range for non-root users.
 

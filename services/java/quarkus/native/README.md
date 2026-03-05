@@ -95,7 +95,7 @@ Handles requests using reactive programming with Mutiny.
 | `OTEL_SDK_DISABLED`           | Disable OTEL during build        | `true` (build only) |
 
 #### Application Configuration
-Same as JVM version - see `services/quarkus/jvm/src/main/resources/application.yml`:
+Same as JVM version - see `services/java/quarkus/jvm/src/main/resources/application.yml`:
 
 - HTTP server configuration (port 8080, backlog 10000, etc.)
 - Thread pool configuration (max 200 threads)
@@ -213,7 +213,7 @@ Same as JVM version:
 
 ### Native Build (Local)
 ```bash
-cd services/quarkus/native
+cd services/java/quarkus/native
 
 # Install dependencies
 ./mvnw dependency:go-offline
@@ -228,7 +228,7 @@ cd services/quarkus/native
 ### Docker Build (Recommended)
 ```bash
 # Use multi-stage Dockerfile
-cd services/quarkus
+cd services/java/quarkus
 docker build -f native/Dockerfile -t quarkus-native:latest .
 
 # Builder stage: GraalVM Native Image compilation
