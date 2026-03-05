@@ -218,7 +218,7 @@ Consider JVM for:
 
 ### Native Build (Local)
 ```bash
-cd services/spring/native/tomcat
+cd services/java/spring/native/tomcat
 
 # Install dependencies
 ../mvnw dependency:go-offline
@@ -233,7 +233,7 @@ cd services/spring/native/tomcat
 
 #### Platform Threads
 ```bash
-cd services/spring
+cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=tomcat \
   --build-arg VIRTUAL_ENABLED=false \
@@ -242,7 +242,7 @@ docker build -f native/Dockerfile \
 
 #### Virtual Threads
 ```bash
-cd services/spring
+cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=tomcat \
   --build-arg VIRTUAL_ENABLED=true \

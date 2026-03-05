@@ -65,7 +65,7 @@ Spring Native automatically configures:
 | `SPRING_APPLICATION_NAME`     | Spring application name          | `spring-native-netty` |
 
 #### Application Configuration
-Same as JVM version - see `services/spring/jvm/netty/src/main/resources/application.yml`:
+Same as JVM version - see `services/java/spring/jvm/netty/src/main/resources/application.yml`:
 - Management endpoints
 - Metrics configuration
 - Logging patterns
@@ -184,7 +184,7 @@ Native may not be best for:
 
 ### Native Build (Local)
 ```bash
-cd services/spring/native/netty
+cd services/java/spring/native/netty
 
 # Install dependencies
 ../mvnw dependency:go-offline
@@ -195,7 +195,7 @@ cd services/spring/native/netty
 
 ### Docker Build (Recommended)
 ```bash
-cd services/spring
+cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=netty \
   -t spring-native-netty:latest .

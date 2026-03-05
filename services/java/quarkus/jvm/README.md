@@ -298,13 +298,13 @@ Tracks request count per endpoint.
 
 ### Local Development
 ```bash
-cd services/quarkus/jvm
+cd services/java/quarkus/jvm
 ./mvnw quarkus:dev
 ```
 
 ### Production Build
 ```bash
-cd services/quarkus/jvm
+cd services/java/quarkus/jvm
 ./mvnw clean package -DskipTests
 ```
 

@@ -96,14 +96,14 @@ The service is configured through code in `cmd/server/main.go`:
 
 ### Local Development
 ```bash
-cd services/go/hello
+cd services/go/simple
 go mod download
 go run cmd/server/main.go
 ```
 
 ### Docker Build
 ```bash
-cd services/go/hello
+cd services/go/simple
 docker build -t go-hello:latest .
 ```
 

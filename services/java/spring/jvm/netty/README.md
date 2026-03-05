@@ -250,19 +250,19 @@ Tracks request count for the reactive endpoint.
 
 ### Local Development
 ```bash
-cd services/spring/jvm/netty
+cd services/java/spring/jvm/netty
 ./mvnw spring-boot:run
 ```
 
 ### Production Build
 ```bash
-cd services/spring/jvm/netty
+cd services/java/spring/jvm/netty
 ./mvnw clean package -DskipTests
 ```
 
 ### Docker Build
 ```bash
-cd services/spring/jvm
+cd services/java/spring/jvm
 docker build --build-arg PROFILE=netty -t spring-jvm-netty:latest .
 ```
 

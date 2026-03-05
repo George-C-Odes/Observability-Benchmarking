@@ -23,15 +23,15 @@ To run Checkstyle on a specific module:
 
 ```bash
 # For Quarkus JVM module
-cd services/quarkus/jvm
+cd services/java/quarkus/jvm
 mvn checkstyle:check
 
 # For Spring JVM Netty module
-cd services/spring/jvm/netty
+cd services/java/spring/jvm/netty
 mvn checkstyle:check
 
 # For Spring JVM Tomcat module
-cd services/spring/jvm/tomcat
+cd services/java/spring/jvm/tomcat
 mvn checkstyle:check
 ```
 

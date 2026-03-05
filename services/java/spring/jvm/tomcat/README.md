@@ -271,7 +271,7 @@ Unlike Quarkus (which supports all modes in one deployment), Spring Tomcat requi
 
 ### Local Development
 ```bash
-cd services/spring/jvm/tomcat
+cd services/java/spring/jvm/tomcat
 
 # Platform threads
 ./mvnw spring-boot:run
@@ -282,13 +282,13 @@ SPRING_THREADS_VIRTUAL_ENABLED=true ./mvnw spring-boot:run
 
 ### Production Build
 ```bash
-cd services/spring/jvm/tomcat
+cd services/java/spring/jvm/tomcat
 ./mvnw clean package -DskipTests
 ```
 
 ### Docker Build
 ```bash
-cd services/spring/jvm
+cd services/java/spring/jvm
 docker build --build-arg PROFILE=tomcat -t spring-jvm-tomcat:latest .
 ```
 

@@ -643,7 +643,7 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 ```yaml
 services:
   spring-jvm-virtual:
-    build: ./services/spring/jvm/virtual
+    build: ./services/java/spring/jvm/virtual
     profiles: [SERVICES]
     environment:
       - JAVA_OPTS=-Xmx1g

@@ -91,7 +91,7 @@ services/
 #### Running Quarkus Tests
 
 ```bash
-cd services/quarkus/jvm
+cd services/java/quarkus/jvm
 mvn clean test
 ```
 
@@ -125,7 +125,7 @@ public void testPlatformEndpoint() {
 #### Running Spring Boot Tomcat Tests
 
 ```bash
-cd services/spring/jvm/tomcat
+cd services/java/spring/jvm/tomcat
 mvn clean test
 ```
 
@@ -156,7 +156,7 @@ public void testPlatformEndpoint() throws Exception {
 #### Running Spring Boot Netty Tests
 
 ```bash
-cd services/spring/jvm/netty
+cd services/java/spring/jvm/netty
 mvn clean test
 ```
 
@@ -189,9 +189,9 @@ public void testReactiveEndpoint() {
 
 ```bash
 # From project root
-cd services/quarkus/jvm && mvn test && cd -
-cd services/spring/jvm/tomcat && mvn test && cd -
-cd services/spring/jvm/netty && mvn test && cd -
+cd services/java/quarkus/jvm && mvn test && cd -
+cd services/java/spring/jvm/tomcat && mvn test && cd -
+cd services/java/spring/jvm/netty && mvn test && cd -
 ```
 
 #### Docker-Based Testing (Recommended)
@@ -204,7 +204,7 @@ docker build \
   --build-arg QUARKUS_VERSION=3.32.2 \
   --target builder \
   -t quarkus-jvm-test \
-  -f services/quarkus/jvm/Dockerfile \
+  -f services/java/quarkus/jvm/Dockerfile \
   services
 
 # Spring Boot Tomcat
@@ -213,7 +213,7 @@ docker build \
   --build-arg PROFILE=tomcat \
   --target builder \
   -t spring-tomcat-test \
-  -f services/spring/jvm/Dockerfile \
+  -f services/java/spring/jvm/Dockerfile \
   services
 
 # Spring Boot Netty
@@ -222,7 +222,7 @@ docker build \
   --build-arg PROFILE=netty \
   --target builder \
   -t spring-netty-test \
-  -f services/spring/jvm/Dockerfile \
+  -f services/java/spring/jvm/Dockerfile \
   services
 ```
 
@@ -241,13 +241,13 @@ OpenTelemetry: Latest stable
 #### Test Structure
 
 ```
-services/go/hello/cmd/server/main_test.go
+services/go/enhanced/internal/handlers/hello_test.go
 ```
 
 #### Running Go Tests
 
 ```bash
-cd services/go/hello
+cd services/go/enhanced
 
 # Download dependencies (first time only)
 go mod download
@@ -764,17 +764,17 @@ jobs:
       
       - name: Test Quarkus JVM
         run: |
-          cd services/quarkus/jvm
+          cd services/java/quarkus/jvm
           mvn clean test
       
       - name: Test Spring Boot Tomcat
         run: |
-          cd services/spring/jvm/tomcat
+          cd services/java/spring/jvm/tomcat
           mvn clean test
       
       - name: Test Spring Boot Netty
         run: |
-          cd services/spring/jvm/netty
+          cd services/java/spring/jvm/netty
           mvn clean test
       
       - name: Upload Test Reports
@@ -796,14 +796,14 @@ jobs:
       
       - name: Test Go Service
         run: |
-          cd services/go/hello
+          cd services/go/enhanced
           go mod download
           go test ./... -v -cover -coverprofile=coverage.out
       
       - name: Upload Coverage
         uses: codecov/codecov-action@v4
         with:
-          files: ./services/go/hello/coverage.out
+          files: ./services/go/enhanced/coverage.out
           flags: go-service
 
   integration-tests:
@@ -841,10 +841,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/quarkus/jvm/Dockerfile, version: "3.32.2" }
-          - { name: spring-tomcat, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.3" }
-          - { name: spring-netty, context: services, dockerfile: services/spring/jvm/Dockerfile, profile: netty, version: "4.0.3" }
-          - { name: go, context: services/go/hello, dockerfile: services/go/hello/Dockerfile, version: "1.26.0" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.32.2" }
+          - { name: spring-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.3" }
+          - { name: spring-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.3" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.0" }
     
     steps:
       - uses: actions/checkout@v4
@@ -897,40 +897,40 @@ test:quarkus:
   stage: test
   image: amazoncorretto:25
   script:
-    - cd services/quarkus/jvm
+    - cd services/java/quarkus/jvm
     - mvn clean test
   artifacts:
     reports:
-      junit: services/quarkus/jvm/target/surefire-reports/TEST-*.xml
+      junit: services/java/quarkus/jvm/target/surefire-reports/TEST-*.xml
     expire_in: 1 week
 
 test:spring-tomcat:
   stage: test
   image: amazoncorretto:25
   script:
-    - cd services/spring/jvm/tomcat
+    - cd services/java/spring/jvm/tomcat
     - mvn clean test
   artifacts:
     reports:
-      junit: services/spring/jvm/tomcat/target/surefire-reports/TEST-*.xml
+      junit: services/java/spring/jvm/tomcat/target/surefire-reports/TEST-*.xml
     expire_in: 1 week
 
 test:spring-netty:
   stage: test
   image: amazoncorretto:25
   script:
-    - cd services/spring/jvm/netty
+    - cd services/java/spring/jvm/netty
     - mvn clean test
   artifacts:
     reports:
-      junit: services/spring/jvm/netty/target/surefire-reports/TEST-*.xml
+      junit: services/java/spring/jvm/netty/target/surefire-reports/TEST-*.xml
     expire_in: 1 week
 
 test:go:
   stage: test
   image: golang:1.26.0
   script:
-    - cd services/go/hello
+    - cd services/go/enhanced
     - go mod download
     - go test ./... -v -cover
   coverage: '/coverage: \d+.\d+% of statements/'
@@ -1139,10 +1139,10 @@ bash -x ./run-integration-tests.sh
 **Java (Surefire Reports)**:
 ```bash
 # View test reports
-cat services/quarkus/jvm/target/surefire-reports/*.txt
+cat services/java/quarkus/jvm/target/surefire-reports/*.txt
 
 # Open HTML report
-open services/quarkus/jvm/target/surefire-reports/index.html
+open services/java/quarkus/jvm/target/surefire-reports/index.html
 ```
 
 **Go (Test Output)**:
