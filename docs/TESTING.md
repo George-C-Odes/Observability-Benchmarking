@@ -438,15 +438,15 @@ Run Environment
 ==========================================
 Host OS: Linux <HOST> 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
 Terminal / session:
-  stdin:  TTY
-  stdout: not a TTY
-  stderr: not a TTY
-  TERM:   xterm-256color
-  SHELL:  /bin/bash
-  argv0:  run-integration-tests.sh
-  USER:   <USER>
-  LOGNAME:<USER>
-  WSL:    Ubuntu
+  stdin:   TTY
+  stdout:  not a TTY
+  stderr:  not a TTY
+  TERM:    xterm-256color
+  SHELL:   /bin/bash
+  argv0:   run-integration-tests.sh
+  USER:    <USER>
+  LOGNAME: <USER>
+  WSL:     Ubuntu
 Timestamp (host): 2026-03-05T15:06:29+02:00
 ==========================================
 
