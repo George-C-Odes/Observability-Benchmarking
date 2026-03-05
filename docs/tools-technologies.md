@@ -371,13 +371,13 @@ limits_config:
 **Query Examples**:
 ```logql
 # All logs from service
-{service_name="spring-jvm-virtual"}
+{service_name="quarkus-jvm"}
 
 # Error logs only
-{service_name="quarkus-jvm-reactive"} |= "ERROR"
+{service_name="quarkus-jvm"} |= "ERROR"
 
 # Request duration parsing
-{service_name="spring-jvm-virtual"} | json | duration > 100ms
+{service_name="quarkus-jvm"} | json | duration > 100ms
 ```
 
 ### Tempo
@@ -404,7 +404,7 @@ limits_config:
 { duration > 100ms }
 
 # Specific service spans
-{ service.name = "spring-jvm-virtual" }
+{ service.name = "quarkus-jvm" }
 
 # Error traces
 { status = error }
@@ -633,7 +633,7 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 - Network management
 
 **Compose Features Used**:
-- Profiles (OBS, SERVICES, RAIN_FIRE)
+- Profiles (OBS, SERVICES, CONTROL, RAIN_FIRE)
 - Environment variables
 - Volume management
 - Network isolation
@@ -642,16 +642,18 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 **Example**:
 ```yaml
 services:
-  spring-jvm-virtual:
-    build: ./services/java/spring/jvm/virtual
-    profiles: [SERVICES]
+  quarkus-jvm:
+    build:
+      context: ../services/java
+      dockerfile: quarkus/jvm/Dockerfile
+    container_name: quarkus-jvm
     environment:
       - JAVA_OPTS=-Xmx1g
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 2G
+          cpus: 2
+          memory: 768M
 ```
 
 ---

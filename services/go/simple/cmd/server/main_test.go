@@ -17,9 +17,9 @@ func setupTestApp() *fiber.App {
 	initNumberCache(50000)
 
 	// Create instruments
-	meter := otel.Meter("go-hello-fiber-test")
+	meter := otel.Meter("go-simple")
 	counter, _ := meter.Int64Counter("hello.request.count")
-	tracer := otel.Tracer("go-hello-fiber-test")
+	tracer := otel.Tracer("go-simple")
 
 	// Create Fiber app
 	app := fiber.New()

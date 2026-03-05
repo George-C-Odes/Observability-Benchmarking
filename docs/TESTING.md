@@ -212,7 +212,7 @@ docker build \
   --build-arg SPRING_BOOT_VERSION=4.0.3 \
   --build-arg PROFILE=tomcat \
   --target builder \
-  -t spring-tomcat-test \
+  -t spring-jvm-tomcat-test \
   -f services/java/spring/jvm/Dockerfile \
   services
 
@@ -221,7 +221,7 @@ docker build \
   --build-arg SPRING_BOOT_VERSION=4.0.3 \
   --build-arg PROFILE=netty \
   --target builder \
-  -t spring-netty-test \
+  -t spring-jvm-netty-test \
   -f services/java/spring/jvm/Dockerfile \
   services
 ```
@@ -242,6 +242,7 @@ OpenTelemetry: Latest stable
 
 ```
 services/go/enhanced/internal/handlers/hello_test.go
+services/go/enhanced/internal/cache/cache_test.go
 ```
 
 #### Running Go Tests
@@ -252,48 +253,45 @@ cd services/go/enhanced
 # Download dependencies (first time only)
 go mod download
 
-# Run tests with verbose output
+# Run all tests with verbose output
 go test ./... -v
 
-# Run tests with coverage
+# Run tests with coverage summary
 go test ./... -cover
 
-# Run specific test
-go test -run TestPlatformEndpoint -v
+# Run a focused handler test
+# (the enhanced service exercises the /hello/virtual endpoint)
+go test ./... -run TestVirtual_Defaults -v
 ```
 
 **Test Coverage**:
-- ✅ HTTP endpoint (`/hello/platform`)
-- ✅ Cache initialization and validation
-- ✅ OpenTelemetry meter provider setup
-- ✅ OpenTelemetry tracer provider setup
+- ✅ HTTP endpoint (`/hello/virtual`)
+- ✅ Query parameters (`sleep`, `log`) including bad-parameter validation (400)
+- ✅ Cache implementations and basic hit/miss behavior
+- ✅ OpenTelemetry wiring (uses noop providers in unit tests for determinism)
 - ✅ Fiber framework integration
 
 **Example Test Output**:
 ```
-=== RUN   TestPlatformEndpoint
---- PASS: TestPlatformEndpoint (0.00s)
-=== RUN   TestPlatformEndpointWithCache
---- PASS: TestPlatformEndpointWithCache (0.00s)
-=== RUN   TestInitNumberCache
---- PASS: TestInitNumberCache (0.00s)
-=== RUN   TestInitMeterProvider
-    main_test.go:112: Expected error in test environment: context deadline exceeded
---- PASS: TestInitMeterProvider (5.00s)
-=== RUN   TestInitTracerProvider
-    main_test.go:127: Expected error in test environment: context deadline exceeded
---- PASS: TestInitTracerProvider (5.00s)
+=== RUN   TestVirtual_Defaults
+--- PASS: TestVirtual_Defaults (0.00s)
+=== RUN   TestVirtual_LogEnabled
+--- PASS: TestVirtual_LogEnabled (0.00s)
+=== RUN   TestVirtual_Sleep
+--- PASS: TestVirtual_Sleep (1.00s)
+=== RUN   TestVirtual_BadParams
+--- PASS: TestVirtual_BadParams (0.00s)
 PASS
-ok      hello/cmd/server        10.015s
+ok      hello/internal/handlers  1.0s
 ```
 
 **Key Features Tested**:
-- Fiber web framework integration
-- OpenTelemetry SDK (not automatic instrumentation)
-- Custom metric counter (`hello.request.count`)
-- Cache performance (map-based)
+- Fiber web framework routing + request testing via `httptest`
+- OpenTelemetry SDK usage (but unit tests use noop providers)
+- Custom metric counter (`hello.request.count`) (exported via observable counter)
+- Cache behavior across different implementations
 
-**Note**: OpenTelemetry provider tests expect timeout errors in unit test environment (no OTLP endpoint available).
+**Note**: The Go module name is `hello` (see `services/go/enhanced/go.mod`), so `go test` output uses `hello/...` package paths.
 
 ## Integration Tests
 
@@ -436,70 +434,223 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 
 ```
 ==========================================
+Run Environment
+==========================================
+Host OS: Linux fellorus 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Terminal / session:
+  stdin:  TTY
+  stdout: not a TTY
+  stderr: not a TTY
+  TERM:   xterm-256color
+  SHELL:  /bin/bash
+  argv0:  run-integration-tests.sh
+  USER:   fell
+  LOGNAME:fell
+  WSL:    Ubuntu
+Timestamp (host): 2026-03-05T15:06:29+02:00
+==========================================
+
+==========================================
 Integration Test Suite
 ==========================================
+
 Testing Framework Versions:
-- Quarkus: 3.32.2
 - Spring Boot: 4.0.3
+- Quarkus: 3.32.2
+- Spark: 3.0.3
+- Javalin: 7.0.1
+- Micronaut: 4.10.16
+- Helidon: 4.3.4
 - Go: 1.26.0
 
 ==========================================
-Deployment Verification Tests
+JVM Services - Deployment Tests
 ==========================================
 
---- Quarkus JVM Service (port 8086) ---
-✓ Platform endpoint test passed
-✓ Virtual endpoint test passed
-✓ Reactive endpoint test passed
+--- Spring Boot JVM Tomcat Platform (port 8080) ---
+Testing Spring Tomcat Platform - /hello/platform... ✓ PASSED
 
---- Spring Boot Tomcat (Platform - port 8080) ---
-✓ Platform endpoint test passed
+--- Spring Boot JVM Tomcat Virtual (port 8081) ---
+Testing Spring Tomcat Virtual - /hello/virtual... ✓ PASSED
 
---- Spring Boot Tomcat (Virtual - port 8081) ---
-✓ Virtual endpoint test passed
+--- Spring Boot JVM Netty (port 8082) ---
+Testing Spring Netty - /hello/reactive... ✓ PASSED
 
---- Spring Boot Netty (port 8082) ---
-✓ Reactive endpoint test passed
+--- Quarkus JVM (port 8086) ---
+Testing Quarkus JVM - /hello/platform... ✓ PASSED
+Testing Quarkus JVM - /hello/virtual... ✓ PASSED
+Testing Quarkus JVM - /hello/reactive... ✓ PASSED
 
---- Go Fiber (port 8083) ---
-✓ Platform endpoint test passed
+--- Spark JVM Platform (port 8088) ---
+Testing Spark JVM Platform - /hello/platform... ✓ PASSED
+Testing Spark JVM Platform Ready... ✓ PASSED
+
+--- Spark JVM Virtual (port 8089) ---
+Testing Spark JVM Virtual - /hello/virtual... ✓ PASSED
+Testing Spark JVM Virtual Ready... ✓ PASSED
+
+--- Javalin JVM Platform (port 8090) ---
+Testing Javalin JVM Platform - /hello/platform... ✓ PASSED
+Testing Javalin JVM Platform Ready... ✓ PASSED
+
+--- Javalin JVM Virtual (port 8091) ---
+Testing Javalin JVM Virtual - /hello/virtual... ✓ PASSED
+Testing Javalin JVM Virtual Ready... ✓ PASSED
+
+--- Micronaut JVM (port 8092) ---
+Testing Micronaut JVM - /hello/platform... ✓ PASSED
+Testing Micronaut JVM - /hello/virtual... ✓ PASSED
+Testing Micronaut JVM - /hello/reactive... ✓ PASSED
+Testing Micronaut JVM - /health... ✓ PASSED
+
+--- Helidon SE JVM (port 8094) ---
+Testing Helidon SE JVM - /hello/virtual... ✓ PASSED
+Testing Helidon SE JVM - /observe/health... ✓ PASSED
+
+--- Helidon MP JVM (port 8096) ---
+Testing Helidon MP JVM - /hello/virtual... ✓ PASSED
+Testing Helidon MP JVM - /health... ✓ PASSED
+
+==========================================
+Native Services - Deployment Tests
+==========================================
+
+--- Spring Boot Native Tomcat Platform (port 8083) ---
+Testing Spring Native Tomcat Platform - /hello/platform... ✓ PASSED
+
+--- Spring Boot Native Tomcat Virtual (port 8084) ---
+Testing Spring Native Tomcat Virtual - /hello/virtual... ✓ PASSED
+
+--- Spring Boot Native Netty (port 8085) ---
+Testing Spring Native Netty - /hello/reactive... ✓ PASSED
+
+--- Quarkus Native (port 8087) ---
+Testing Quarkus Native - /hello/platform... ✓ PASSED
+Testing Quarkus Native - /hello/virtual... ✓ PASSED
+Testing Quarkus Native - /hello/reactive... ✓ PASSED
+
+--- Micronaut Native (port 8093) ---
+Testing Micronaut Native - /hello/platform... ✓ PASSED
+Testing Micronaut Native - /hello/virtual... ✓ PASSED
+Testing Micronaut Native - /hello/reactive... ✓ PASSED
+Testing Micronaut Native - /health... ✓ PASSED
+
+--- Helidon SE Native (port 8095) ---
+Testing Helidon SE Native - /hello/virtual... ✓ PASSED
+Testing Helidon SE Native - /observe/health... ✓ PASSED
+
+--- Helidon MP Native (port 8097) ---
+Testing Helidon MP Native - /hello/virtual... ✓ PASSED
+Testing Helidon MP Native - /health... ✓ PASSED
+
+==========================================
+Go Service - Deployment Tests
+==========================================
+
+--- Go Fiber (port 9080) ---
+Testing Go - /hello/virtual... ✓ PASSED
 
 ==========================================
 Observability Mechanism Tests
 ==========================================
 
 --- Metrics Collection ---
-✓ Quarkus metrics endpoint accessible
-✓ Spring Tomcat Platform metrics endpoint accessible
-✓ Spring Tomcat Virtual metrics endpoint accessible
-✓ Spring Netty metrics endpoint accessible
-✓ Custom counter 'hello.request.count' found in services
+Testing Spring Tomcat Platform Metrics... ✓ PASSED
+Testing Spring Tomcat Virtual Metrics... ✓ PASSED
+Testing Spring Netty Metrics... ✓ PASSED
+Testing Spring Native Tomcat Platform Metrics... ✓ PASSED
+Testing Spring Native Tomcat Virtual Metrics... ✓ PASSED
+Testing Spring Native Netty Metrics... ✓ PASSED
+Testing Quarkus JVM Metrics... ✓ PASSED
+Testing Quarkus Native Metrics... ✓ PASSED
+Testing Spark JVM Platform Ready... ✓ PASSED
+Testing Spark JVM Virtual Ready... ✓ PASSED
+Testing Javalin JVM Platform Ready... ✓ PASSED
+Testing Javalin JVM Virtual Ready... ✓ PASSED
+Testing Micronaut JVM Metrics... ✓ PASSED
+Testing Micronaut Native Metrics... ✓ PASSED
+Testing Helidon SE JVM Ready... ✓ PASSED
+Testing Helidon SE Native Ready... ✓ PASSED
+Testing Helidon MP JVM Ready... ✓ PASSED
+Testing Helidon MP Native Ready... ✓ PASSED
+Testing Go Metrics... ✓ PASSED
 
---- Grafana Stack Health ---
-✓ Grafana UI accessible (http://localhost:3000)
-✓ Prometheus data source connected
-✓ Loki data source connected
-✓ Tempo data source connected
+--- Grafana Stack Readiness ---
+Testing Grafana UI... ✓ PASSED
+Testing Alloy... ✓ PASSED
+Testing Loki... ✓ PASSED
+Testing Mimir... ✓ PASSED
+Testing Tempo... ✓ PASSED
+Testing Pyroscope... ✓ PASSED
+
+--- Orchestration Stack Readiness ---
+Testing NextJS UI... ✓ PASSED
+Testing Orchestrator... ✓ PASSED
+Testing Orchestrator Aggregated... ✓ PASSED
+
+--- wrk2 Readiness + On-demand Exec ---
+Waiting for wrk2 (/ready) to be ready... ✓ READY
+wrk2 exec self-ready check (printing wrk output below):
+----- wrk2 exec output (begin) -----
+Running 1s test @ http://0.0.0.0:3003/ready
+  1 threads and 1 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   470.00us    0.00us 470.00us  100.00%
+    Req/Sec       -nan      -nan   0.00      0.00%
+  2 requests in 1.00s, 370.00B read
+Requests/sec:      2.00
+Transfer/sec:     369.10B
+----- wrk2 exec output (end) -----
+✓ PASSED
 
 --- Trace Generation (Smoke Test) ---
-✓ Sample requests sent for trace generation
-✓ Traces should be visible in Grafana Tempo
+Generating request to create trace and verify container log output...
+Trace log check Spring JVM Tomcat Platform (spring-jvm-tomcat-platform)... ✓ PASSED (found 'http-nio')
+Trace log check Spring JVM Tomcat Virtual (spring-jvm-tomcat-virtual)... ✓ PASSED (found 'VirtualThread')
+Trace log check Spring JVM Netty Reactive (spring-jvm-netty)... ✓ PASSED (found 'reactor-http')
+Trace log check Spring Native Tomcat Platform (spring-native-tomcat-platform)... ✓ PASSED (found 'http-nio')
+Trace log check Spring Native Tomcat Virtual (spring-native-tomcat-virtual)... ✓ PASSED (found 'VirtualThread')
+Trace log check Spring Native Netty Reactive (spring-native-netty)... ✓ PASSED (found 'reactor-http')
+Trace log check Quarkus JVM Platform (quarkus-jvm)... ✓ PASSED (found 'executor-thread')
+Trace log check Quarkus JVM Virtual (quarkus-jvm)... ✓ PASSED (found 'vthread')
+Trace log check Quarkus JVM Reactive (quarkus-jvm)... ✓ PASSED (found 'vert.x-eventloop-thread')
+Trace log check Quarkus Native Platform (quarkus-native)... ✓ PASSED (found 'executor-thread')
+Trace log check Quarkus Native Virtual (quarkus-native)... ✓ PASSED (found 'vthread')
+Trace log check Quarkus Native Reactive (quarkus-native)... ✓ PASSED (found 'vert.x-eventloop-thread')
+Trace log check Spark JVM Platform (spark-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Spark JVM Virtual (spark-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Javalin JVM Platform (javalin-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Javalin JVM Virtual (javalin-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Micronaut JVM Platform (micronaut-jvm)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Micronaut JVM Virtual (micronaut-jvm)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Micronaut JVM Reactive (micronaut-jvm)... ✓ PASSED (found 'EventLoopGroup')
+Trace log check Micronaut Native Platform (micronaut-native)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Micronaut Native Virtual (micronaut-native)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Micronaut Native Reactive (micronaut-native)... ✓ PASSED (found 'EventLoopGroup')
+Trace log check Helidon SE JVM Virtual (helidon-se-jvm)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Helidon SE Native Virtual (helidon-se-native)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Helidon MP JVM Virtual (helidon-mp-jvm)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Helidon MP Native Virtual (helidon-mp-native)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Go Virtual (go)... ✓ PASSED (found 'goroutine')
 
 ==========================================
 Test Summary
 ==========================================
-Total Tests: 18
-Passed: 18
-Failed: 0
+Tests Passed: 93
+Tests Failed: 0
 ==========================================
 
-✅ All integration tests passed!
+✅ All tests passed!
 
 Next Steps:
 1. Open Grafana: http://localhost:3000 (credentials: a/a)
-2. View metrics in Explore → Prometheus
-3. View traces in Explore → Tempo
-4. View logs in Explore → Loki
+2. Navigate to Drilldown
+3. View Metrics [Mimir]
+4. View Logs [Loki]
+5. View Traces [Tempo]
+6. View Profiles [Pyroscope]
+
+[integration-tests] suite finished successfully
 ```
 
 ### Troubleshooting Integration Tests
@@ -657,7 +808,7 @@ sleep 10
 - Span names: `GET /hello/platform`, servlet/webflux spans
 
 **Go**:
-- Service name: `go-hello-fiber`
+- Service name: `go`
 - Instrumentation: OpenTelemetry Go SDK
 - Span names: `hello-handler`
 
@@ -842,8 +993,8 @@ jobs:
       matrix:
         service:
           - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.32.2" }
-          - { name: spring-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.3" }
-          - { name: spring-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.3" }
+          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.3" }
+          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.3" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.0" }
     
     steps:
@@ -851,29 +1002,21 @@ jobs:
       
       - name: Build ${{ matrix.service.name }}
         run: |
-          if [ "${{ matrix.service.name }}" = "quarkus-jvm" ]; then
-            docker build \
-              --build-arg QUARKUS_VERSION=${{ matrix.service.version }} \
-              -f ${{ matrix.service.dockerfile }} \
-              -t ${{ matrix.service.name }}:test \
-              ${{ matrix.service.context }}
-          elif [ "${{ matrix.service.name }}" = "go" ]; then
-            docker build \
-              --build-arg GO_VERSION=${{ matrix.service.version }} \
-              -f ${{ matrix.service.dockerfile }} \
-              -t ${{ matrix.service.name }}:test \
-              ${{ matrix.service.context }}
+          # NOTE: Use explicit Dockerfile paths/contexts to match the repo layout.
+          if [ "$SERVICE" = "quarkus-jvm" ]; then
+            docker build -t quarkus-jvm:$CI_COMMIT_SHA -f services/java/quarkus/jvm/Dockerfile services
+          elif [ "$SERVICE" = "spring-jvm-tomcat" ]; then
+            docker build -t spring-jvm-tomcat:$CI_COMMIT_SHA -f services/java/spring/jvm/Dockerfile --build-arg PROFILE=tomcat services
+          elif [ "$SERVICE" = "spring-jvm-netty" ]; then
+            docker build -t spring-jvm-netty:$CI_COMMIT_SHA -f services/java/spring/jvm/Dockerfile --build-arg PROFILE=netty services
+          elif [ "$SERVICE" = "go" ]; then
+            docker build -t go:$CI_COMMIT_SHA -f services/go/enhanced/Dockerfile services/go/enhanced
           else
-            docker build \
-              --build-arg SPRING_BOOT_VERSION=${{ matrix.service.version }} \
-              --build-arg PROFILE=${{ matrix.service.profile }} \
-              -f ${{ matrix.service.dockerfile }} \
-              -t ${{ matrix.service.name }}:test \
-              ${{ matrix.service.context }}
+            echo "Unknown SERVICE=$SERVICE"; exit 1
           fi
-      
-      - name: Verify Build
-        run: docker images | grep ${{ matrix.service.name }}
+  only:
+    - main
+    - tags
 ```
 
 ### GitLab CI
@@ -904,7 +1047,7 @@ test:quarkus:
       junit: services/java/quarkus/jvm/target/surefire-reports/TEST-*.xml
     expire_in: 1 week
 
-test:spring-tomcat:
+test:spring-jvm-tomcat:
   stage: test
   image: amazoncorretto:25
   script:
@@ -915,7 +1058,7 @@ test:spring-tomcat:
       junit: services/java/spring/jvm/tomcat/target/surefire-reports/TEST-*.xml
     expire_in: 1 week
 
-test:spring-netty:
+test:spring-jvm-netty:
   stage: test
   image: amazoncorretto:25
   script:
@@ -963,9 +1106,21 @@ build:docker:
     - docker:dind
   parallel:
     matrix:
-      - SERVICE: [quarkus-jvm, spring-tomcat, spring-netty, go]
+      - SERVICE: [quarkus-jvm, spring-jvm-tomcat, spring-jvm-netty, go]
   script:
-    - docker build -t $SERVICE:$CI_COMMIT_SHA -f services/$SERVICE/Dockerfile services/
+    # NOTE: Use explicit Dockerfile paths/contexts to match the repo layout.
+    - |
+      if [ "$SERVICE" = "quarkus-jvm" ]; then
+        docker build -t quarkus-jvm:$CI_COMMIT_SHA -f services/java/quarkus/jvm/Dockerfile services
+      elif [ "$SERVICE" = "spring-jvm-tomcat" ]; then
+        docker build -t spring-jvm-tomcat:$CI_COMMIT_SHA -f services/java/spring/jvm/Dockerfile --build-arg PROFILE=tomcat services
+      elif [ "$SERVICE" = "spring-jvm-netty" ]; then
+        docker build -t spring-jvm-netty:$CI_COMMIT_SHA -f services/java/spring/jvm/Dockerfile --build-arg PROFILE=netty services
+      elif [ "$SERVICE" = "go" ]; then
+        docker build -t go:$CI_COMMIT_SHA -f services/go/enhanced/Dockerfile services/go/enhanced
+      else
+        echo "Unknown SERVICE=$SERVICE"; exit 1
+      fi
   only:
     - main
     - tags

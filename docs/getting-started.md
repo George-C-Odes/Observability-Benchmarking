@@ -110,10 +110,9 @@ Expected output:
 
 ### Step 4: Start a Service
 
-Launch a Spring Boot service with virtual threads:
-
+Launch the Quarkus JVM service:
 ```bash
-docker compose --project-directory compose --profile=SERVICES up --no-recreate --build -d spring-jvm-virtual
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d quarkus-jvm
 ```
 
 Wait 30 seconds for service startup and JVM initialization.
@@ -246,14 +245,62 @@ docker compose --project-directory compose \
 ### Starting Individual Services
 
 ```bash
-# Spring Boot with virtual threads
-docker compose --project-directory compose up -d spring-jvm-virtual
+# Spring Boot JVM with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spring-jvm-tomcat-platform
 
-# Quarkus reactive (JVM)
-docker compose --project-directory compose up -d quarkus-jvm-reactive
+# Spring Boot JVM with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spring-jvm-tomcat-virtual
 
-# Quarkus native with platform threads
-docker compose --project-directory compose up -d quarkus-native-platform
+# Spring Boot JVM with reactive
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spring-jvm-netty
+
+# Spring Boot Native with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spring-native-tomcat-platform
+
+# Spring Boot Native with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spring-native-tomcat-virtual
+
+# Spring Boot Native with reactive
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spring-native-netty
+
+# Quarkus JVM
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d quarkus-jvm
+
+# Quarkus Native
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d quarkus-native
+
+# Spark JVM with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spark-jvm-platform
+
+# Spark JVM with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spark-jvm-virtual
+
+# Javalin JVM with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d javalin-jvm-platform
+
+# Javalin JVM with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d javalin-jvm-virtual
+
+# Micronaut JVM
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d micronaut-jvm
+
+# Micronaut Native
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d micronaut-native
+
+# Helidon SE JVM (only virtual threads applicable)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d helidon-se-jvm
+
+# Helidon SE Native (only virtual threads applicable)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d helidon-se-native
+
+# Helidon MP JVM (only virtual threads applicable)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d helidon-mp-jvm
+
+# Helidon MP Native (only virtual threads applicable)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d helidon-mp-native
+
+# Go
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d go
 ```
 
 ### Service Endpoints
@@ -296,10 +343,10 @@ Health checks available at `/q/health` (Quarkus) or `/actuator/health` (Spring).
 
 ```bash
 # Ensure observability stack is running
-docker compose --project-directory compose --profile=OBS ps
+docker compose --project-directory compose --profile=OBS up --no-recreate -d
 
 # Start the service you want to benchmark
-docker compose --project-directory compose up -d spring-jvm-virtual
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d quarkus-jvm
 ```
 
 #### Wait / warm up (cross-platform)
