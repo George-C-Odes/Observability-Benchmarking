@@ -121,7 +121,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.3 (3.5.11 also supported)
-- Quarkus: 3.32.1
+- Quarkus: 3.32.2
 - Go: 1.26.0 with Fiber v3.1.0
 
 ### Third-party license note (native-image)

@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.32.1
+### Quarkus 3.32.2
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.32.1** (latest stable)
+- **Quarkus 3.32.2** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -775,7 +775,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |

@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.1-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.2-blue.svg)](https://quarkus.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.0.1-purple.svg)](https://javalin.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.16-1a1a2e.svg)](https://micronaut.io/)
@@ -61,7 +61,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.32.1  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
@@ -144,7 +144,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.32.1**
+- **Quarkus 3.32.2**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
 - **Spark**: 3.0.3
@@ -251,6 +251,10 @@ docker compose --project-directory compose --profile=OBS up --no-recreate --buil
 
 **Access Grafana**: Navigate to [http://localhost:3000](http://localhost:3000)
 - Default credentials: `a` / `a`
+
+**Control plane (optional)**: The Dashboard (port 3001) + Orchestrator (port 3002) are started via the `CONTROL` Compose profile.
+- Docs: https://george-c-odes.github.io/Observability-Benchmarking/control-plane.html
+- Example: `docker compose --project-directory compose --profile=OBS --profile=CONTROL up --no-recreate --build -d`
 
 **Access Dashboard**: Navigate to [http://localhost:3001](http://localhost:3001)
 - Orchestration UI for managing environment and running scripts
@@ -445,7 +449,7 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.3 (3.5.11 also supported)
-- **Quarkus**: 3.32.1
+- **Quarkus**: 3.32.2
 - **Spark**: 3.0.3
 - **Javalin**: 7.0.1
 - **Micronaut**: 4.10.16
@@ -817,6 +821,7 @@ Documentation is available on GitHub Pages: **[Full Documentation Site](https://
 - **[System Architecture](https://george-c-odes.github.io/Observability-Benchmarking/architecture.html)** - Detailed architecture, component descriptions, and design decisions
 - **[Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html)** - Complete testing procedures, reproducibility guidelines, and result interpretation
 - **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
+- **[Control Plane](https://george-c-odes.github.io/Observability-Benchmarking/control-plane.html)** - Dashboard + orchestrator (the `CONTROL` Compose profile)
 - **[Adding a New Service](https://george-c-odes.github.io/Observability-Benchmarking/adding-a-service.html)** - How to integrate a new benchmark target (compose + orchestrator + wrk2 + docs)
 
 The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
