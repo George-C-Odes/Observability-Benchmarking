@@ -436,17 +436,17 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 ==========================================
 Run Environment
 ==========================================
-Host OS: Linux fellorus 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Host OS: Linux <HOST> 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
 Terminal / session:
-  stdin:  TTY
-  stdout: not a TTY
-  stderr: not a TTY
-  TERM:   xterm-256color
-  SHELL:  /bin/bash
-  argv0:  run-integration-tests.sh
-  USER:   fell
-  LOGNAME:fell
-  WSL:    Ubuntu
+  stdin:   TTY
+  stdout:  not a TTY
+  stderr:  not a TTY
+  TERM:    xterm-256color
+  SHELL:   /bin/bash
+  argv0:   run-integration-tests.sh
+  USER:    <USER>
+  LOGNAME: <USER>
+  WSL:     Ubuntu
 Timestamp (host): 2026-03-05T15:06:29+02:00
 ==========================================
 
@@ -1002,21 +1002,17 @@ jobs:
       
       - name: Build ${{ matrix.service.name }}
         run: |
-          # NOTE: Use explicit Dockerfile paths/contexts to match the repo layout.
-          if [ "$SERVICE" = "quarkus-jvm" ]; then
-            docker build -t quarkus-jvm:$CI_COMMIT_SHA -f services/java/quarkus/jvm/Dockerfile services
-          elif [ "$SERVICE" = "spring-jvm-tomcat" ]; then
-            docker build -t spring-jvm-tomcat:$CI_COMMIT_SHA -f services/java/spring/jvm/Dockerfile --build-arg PROFILE=tomcat services
-          elif [ "$SERVICE" = "spring-jvm-netty" ]; then
-            docker build -t spring-jvm-netty:$CI_COMMIT_SHA -f services/java/spring/jvm/Dockerfile --build-arg PROFILE=netty services
-          elif [ "$SERVICE" = "go" ]; then
-            docker build -t go:$CI_COMMIT_SHA -f services/go/enhanced/Dockerfile services/go/enhanced
-          else
-            echo "Unknown SERVICE=$SERVICE"; exit 1
+          # GitHub Actions: use matrix values + github.sha (not GitLab's $SERVICE / $CI_COMMIT_SHA).
+          PROFILE_ARG=""
+          if [ -n "${{ matrix.service.profile }}" ]; then
+            PROFILE_ARG="--build-arg PROFILE=${{ matrix.service.profile }}"
           fi
-  only:
-    - main
-    - tags
+
+          docker build \
+            -t ${{ matrix.service.name }}:${{ github.sha }} \
+            -f ${{ matrix.service.dockerfile }} \
+            $PROFILE_ARG \
+            ${{ matrix.service.context }}
 ```
 
 ### GitLab CI
@@ -1121,9 +1117,6 @@ build:docker:
       else
         echo "Unknown SERVICE=$SERVICE"; exit 1
       fi
-  only:
-    - main
-    - tags
 ```
 
 ## Troubleshooting

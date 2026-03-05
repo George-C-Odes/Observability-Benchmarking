@@ -24,16 +24,16 @@ echo "=========================================="
 echo "Host OS: $(uname -a 2>/dev/null || echo 'unknown')"
 
 echo "Terminal / session:"
-if [ -t 0 ]; then echo "  stdin:  TTY"; else echo "  stdin:  not a TTY"; fi
-if [ -t 1 ]; then echo "  stdout: TTY"; else echo "  stdout: not a TTY"; fi
-if [ -t 2 ]; then echo "  stderr: TTY"; else echo "  stderr: not a TTY"; fi
-if [ -n "${TERM-}" ]; then echo "  TERM:   ${TERM}"; else echo "  TERM:   <not set>"; fi
-if [ -n "${SHELL-}" ]; then echo "  SHELL:  ${SHELL}"; else echo "  SHELL:  <not set>"; fi
-if [ -n "${0-}" ]; then echo "  argv0:  ${0}"; fi
-if [ -n "${USER-}" ]; then echo "  USER:   ${USER}"; fi
-if [ -n "${LOGNAME-}" ]; then echo "  LOGNAME:${LOGNAME}"; fi
-if [ -n "${WSL_DISTRO_NAME-}" ]; then echo "  WSL:    ${WSL_DISTRO_NAME}"; fi
-if [ -n "${WT_SESSION-}" ]; then echo "  WT_SESSION: ${WT_SESSION}"; fi
+if [ -t 0 ]; then echo "  stdin:   TTY"; else echo "  stdin:   not a TTY"; fi
+if [ -t 1 ]; then echo "   stdout: TTY"; else echo "  stdout:  not a TTY"; fi
+if [ -t 2 ]; then echo "   stderr: TTY"; else echo "  stderr:  not a TTY"; fi
+if [ -n "${TERM-}" ]; then echo "  TERM:    ${TERM}"; else echo "  TERM:    <not set>"; fi
+if [ -n "${SHELL-}" ]; then echo "  SHELL:   ${SHELL}"; else echo "  SHELL:   <not set>"; fi
+if [ -n "${0-}" ]; then echo "  argv0:   ${0}"; fi
+if [ -n "${USER-}" ]; then echo "  USER:    ${USER}"; fi
+if [ -n "${LOGNAME-}" ]; then echo "  LOGNAME: ${LOGNAME}"; fi
+if [ -n "${WSL_DISTRO_NAME-}" ]; then echo "  WSL:     ${WSL_DISTRO_NAME}"; fi
+if [ -n "${WT_SESSION-}" ]; then echo "  WT_SESSION:  ${WT_SESSION}"; fi
 
 echo "Timestamp (host): $(date -Iseconds)"
 echo "=========================================="
