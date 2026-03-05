@@ -59,12 +59,12 @@ The service is configured through code in `cmd/server/main.go`:
 - **Exporter**: OTLP gRPC
 - **Provider**: OpenTelemetry SDK Metrics
 - **Reader**: Periodic (5-second intervals)
-- **Meter Name**: `go-hello-fiber`
+- **Meter Name**: `go-simple`
 
 #### Tracing
 - **Exporter**: OTLP gRPC  
 - **Provider**: OpenTelemetry SDK Trace
-- **Tracer Name**: `go-hello-fiber`
+- **Tracer Name**: `go-simple`
 - **Spans**: Each request creates a span named `hello-handler`
 - **Batching**: Automatic span batching enabled
 
@@ -104,14 +104,14 @@ go run cmd/server/main.go
 ### Docker Build
 ```bash
 cd services/go/simple
-docker build -t go-hello:latest .
+docker build -t go-simple:latest .
 ```
 
 ### Docker Run
 ```bash
 docker run -p 8080:8080 \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=alloy:4317 \
-  go-hello:latest
+  go-simple:latest
 ```
 
 ### Docker Compose

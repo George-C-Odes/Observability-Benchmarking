@@ -98,9 +98,9 @@ func main() {
 	defer func() { _ = tp.Shutdown(ctx) }()
 
 	// Create instruments
-	meter := otel.Meter("go-hello-fiber")
+	meter := otel.Meter("go-simple")
 	counter, _ := meter.Int64Counter("hello.request.count")
-	tracer := otel.Tracer("go-hello-fiber")
+	tracer := otel.Tracer("go-simple")
 
 	// Fiber app
 	app := fiber.New()
