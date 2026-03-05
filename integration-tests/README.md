@@ -140,7 +140,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Framework       | Version |
 |-----------------|---------|
 | Spring Boot     | 4.0.3   |
-| Quarkus         | 3.32.1  |
+| Quarkus         | 3.32.2  |
 | Spark           | 3.0.3   |
 | Javalin         | 7.0.1   |
 | Micronaut       | 4.10.16 |
