@@ -598,7 +598,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 - Reproducible builds
 
 **Images Used**:
-- **gcr.io/distroless/java25-debian13:nonroot**: JVM Runtime Base
+- **gcr.io/distroless/base-debian13:nonroot**: Runtime Base for JVM Builds
 - **container-registry.oracle.com/graalvm/native-image:25**: Native builds
 - **grafana/grafana**: Visualization
 - **grafana/loki**: Logs
