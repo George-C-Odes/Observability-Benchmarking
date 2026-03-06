@@ -222,7 +222,7 @@ The native module uses `maven-shade-plugin` to produce a single fat JAR before `
 ### Prerequisites
 - GraalVM Native Image 25.0.2+ (Enterprise recommended for G1 GC)
 - Maven 3.9+ (bundled via `mvnw`)
-- Docker (for containerised build)
+- Docker (for containerized build)
 - 16 GB+ RAM (for native compilation)
 
 ### Docker Build (Recommended)

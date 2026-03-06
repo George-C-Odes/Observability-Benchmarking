@@ -12,39 +12,39 @@ This document describes the systematic approach used to benchmark REST service i
 
 Where details differ between documentation and code/config, the repository source (Docker/compose/service implementations) is the source of truth.
 
-## At-a-glance results (28/02/2026)
+## At-a-glance results (06/03/2026)
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (2 vCPUs).
 
 | Framework  | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
 |------------|---------|----------|-----|---------------|-----------------|
-| Spring     | JVM     | Platform | 21k | 545           | 404             |
-| Spring     | JVM     | Virtual  | 17k | 427           | 404             |
-| Spring     | JVM     | Reactive | 13k | 457           | 435             |
-| Spring     | Native  | Platform | 10k | 185           | 386             |
-| Spring     | Native  | Virtual  | 11k | 141           | 386             |
-| Spring     | Native  | Reactive | 7k  | 179           | 445             |
-| Quarkus    | JVM     | Platform | 36k | 596           | 235             |
-| Quarkus    | JVM     | Virtual  | 45k | 596           | 235             |
-| Quarkus    | JVM     | Reactive | 46k | 596           | 235             |
-| Quarkus    | Native  | Platform | 21k | 194           | 636             |
-| Quarkus    | Native  | Virtual  | 27k | 194           | 636             |
-| Quarkus    | Native  | Reactive | 20k | 194           | 636             |
-| Spark      | JVM     | Platform | 23k | 433           | 376             |
-| Spark      | JVM     | Virtual  | 21k | 428           | 376             |
-| Javalin    | JVM     | Platform | 29k | 656           | 380             |
-| Javalin    | JVM     | Virtual  | 25k | 546           | 380             |
-| Micronaut  | JVM     | Platform | 30k | 431           | 352             |
-| Micronaut  | JVM     | Virtual  | 37k | 431           | 352             |
-| Micronaut  | JVM     | Reactive | 31k | 431           | 352             |
-| Micronaut  | Native  | Platform | 16k | 180           | 348             |
-| Micronaut  | Native  | Virtual  | 15k | 180           | 348             |
-| Micronaut  | Native  | Reactive | 14k | 180           | 348             |
-| Helidon SE | JVM     | Virtual  | 66k | 386           | 169             |
-| Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
-| Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
-| Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
-| Go         | Native  | N/A      | 24k | 114           | 36              |
+| Spring     | JVM     | Platform | 21k | 552           | 246             |
+| Spring     | JVM     | Virtual  | 17k | 439           | 246             |
+| Spring     | JVM     | Reactive | 14k | 427           | 277             |
+| Spring     | Native  | Platform | 10k | 237           | 388             |
+| Spring     | Native  | Virtual  | 11k | 163           | 388             |
+| Spring     | Native  | Reactive | 7k  | 176           | 447             |
+| Quarkus    | JVM     | Platform | 36k | 540           | 235             |
+| Quarkus    | JVM     | Virtual  | 45k | 540           | 235             |
+| Quarkus    | JVM     | Reactive | 46k | 540           | 235             |
+| Quarkus    | Native  | Platform | 21k | 263           | 636             |
+| Quarkus    | Native  | Virtual  | 27k | 263           | 636             |
+| Quarkus    | Native  | Reactive | 20k | 263           | 636             |
+| Spark      | JVM     | Platform | 24k | 396           | 215             |
+| Spark      | JVM     | Virtual  | 22k | 395           | 215             |
+| Javalin    | JVM     | Platform | 27k | 687           | 219             |
+| Javalin    | JVM     | Virtual  | 24k | 550           | 219             |
+| Micronaut  | JVM     | Platform | 30k | 441           | 193             |
+| Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
+| Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
+| Micronaut  | Native  | Platform | 16k | 165           | 348             |
+| Micronaut  | Native  | Virtual  | 15k | 165           | 348             |
+| Micronaut  | Native  | Reactive | 13k | 165           | 348             |
+| Helidon SE | JVM     | Virtual  | 65k | 430           | 169             |
+| Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
+| Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
+| Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
+| Go         | Native  | N/A      | 24k | 120           | 36              |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
@@ -122,7 +122,7 @@ memory: 2GB        # Maximum memory
 **Frameworks**:
 - Spring Boot: 4.0.3 (3.5.11 also supported)
 - Quarkus: 3.32.2
-- Go: 1.26.0 with Fiber v3.1.0
+- Go: 1.26.1 with Fiber v3.1.0
 
 ### Third-party license note (native-image)
 

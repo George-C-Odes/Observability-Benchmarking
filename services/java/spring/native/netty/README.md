@@ -172,7 +172,7 @@ Native may not be best for:
 - **Heap Memory**: Configured at build time
 - **RSS**: ~200-300 MB typical
 - **Startup Time**: <1 second
-- **Container Size**: ~150-200 MB
+- **Container Image Size**: ~447 MB
 
 ## Building and Running
 

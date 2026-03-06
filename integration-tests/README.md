@@ -145,7 +145,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Javalin         | 7.0.1   |
 | Micronaut       | 4.10.16 |
 | Helidon SE & MP | 4.3.4   |
-| Go              | 1.26.0  |
+| Go              | 1.26.1  |
 
 ## Service Port Mappings
 

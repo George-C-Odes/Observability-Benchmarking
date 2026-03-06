@@ -205,7 +205,7 @@ Consider JVM for:
 - **Heap Memory**: Configured at build time
 - **RSS**: ~200-300 MB typical
 - **Startup Time**: 0.5-1 second
-- **Container Size**: ~150-200 MB
+- **Container Image Size**: ~388 MB
 
 ## Building and Running
 

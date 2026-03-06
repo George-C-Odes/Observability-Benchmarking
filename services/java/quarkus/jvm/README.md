@@ -287,7 +287,7 @@ Tracks request count per endpoint.
 - **Heap Memory**: 640 MB (configurable)
 - **Off-Heap Memory**: 32 MB max
 - **Startup Time**: ~2-3 seconds (JVM)
-- **Container Size**: ~235 MB (distroless + custom jlink JRE)
+- **Container Image Size**: ~235 MB (distroless + custom jlink JRE)
 
 ## Building and Running
 

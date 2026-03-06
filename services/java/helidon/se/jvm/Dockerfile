@@ -3,6 +3,7 @@ ARG MAVEN_RELEASE=3.9.12
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------
@@ -34,9 +35,9 @@ COPY --link --chown=${BUILD_UID}:${BUILD_GID} helidon/se/jvm/pom.xml pom.xml
 RUN --mount=type=cache,id=maven-m2-helidon-se-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v && \
     mvn -B -q -ntp  \
-    -Dhelidon.version=${HELIDON_VERSION} \
-    -Dcheckstyle.skip=true \
-    dependency:go-offline
+        -Dhelidon.version=${HELIDON_VERSION} \
+        -Dcheckstyle.skip=true \
+        dependency:go-offline
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
@@ -73,7 +74,7 @@ RUN set -eux; \
 
 #-----------------------  RUNTIME STAGE -----------------------
 # Use a minimal distroless base — the jlink JRE is self-contained
-FROM gcr.io/distroless/base-debian13:nonroot AS runner
+FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
 ARG RUNTIME_GROUP=nonroot
 ENV RUNTIME_USER=${RUNTIME_USER}
@@ -96,13 +97,12 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+ExitOnOutOfMemoryError \
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
-    -XX:ActiveProcessorCount=2 \
     -XX:G1HeapRegionSize=1m \
     -XX:G1ReservePercent=20 \
     -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
-    -Xms96m \
-    -Xmx96m \
+    -Xms64m \
+    -Xmx640m \
     --enable-native-access=ALL-UNNAMED \
     ${JAVA_ARGS}"
 

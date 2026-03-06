@@ -120,7 +120,7 @@ SPARK_VERSION="3.0.3"
 JAVALIN_VERSION="7.0.1"
 MICRONAUT_VERSION="4.10.16"
 HELIDON_VERSION="4.3.4"
-GO_VERSION="1.26.0"
+GO_VERSION="1.26.1"
 
 # Helper function to test HTTP endpoint
 # expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")

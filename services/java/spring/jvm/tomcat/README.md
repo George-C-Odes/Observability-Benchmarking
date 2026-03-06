@@ -260,7 +260,7 @@ Unlike Quarkus (which supports all modes in one deployment), Spring Tomcat requi
 - **Heap Memory**: 1280 MB (configurable)
 - **Off-Heap Memory**: 64 MB max
 - **Startup Time**: ~3-4 seconds
-- **Container Size**: ~400 MB (with JDK)
+- **Container Image Size**: ~246 MB (with JDK)
 
 ## Building and Running
 

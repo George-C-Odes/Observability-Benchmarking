@@ -233,7 +233,7 @@ docker build \
 #### Version Requirements
 
 ```
-Go: 1.26.0+
+Go: 1.26.1+
 Fiber: v3.1.0
 OpenTelemetry: Latest stable
 ```
@@ -461,7 +461,7 @@ Testing Framework Versions:
 - Javalin: 7.0.1
 - Micronaut: 4.10.16
 - Helidon: 4.3.4
-- Go: 1.26.0
+- Go: 1.26.1
 
 ==========================================
 JVM Services - Deployment Tests
@@ -832,7 +832,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.26.0 | Build version: go1.26.0
+2025-12-16T10:30:00.123Z Runtime version: go1.26.1 | Build version: go1.26.1
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -940,10 +940,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Go 1.26.0
+      - name: Set up Go 1.26.1
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.0'
+          go-version: '1.26.1'
       
       - name: Test Go Service
         run: |
@@ -995,7 +995,7 @@ jobs:
           - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.32.2" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.3" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.3" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.0" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.1" }
     
     steps:
       - uses: actions/checkout@v4
@@ -1067,7 +1067,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.26.0
+  image: golang:1.26.1
   script:
     - cd services/go/enhanced
     - go mod download

@@ -3,13 +3,16 @@ ARG MAVEN_RELEASE=3.9.12
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
+ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------
 FROM maven:${MAVEN_RELEASE}-${DISTRIBUTION}-${JAVA_RELEASE}-${BASE_BUILDER} AS builder
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
-# Build-time JVM flags only — JAVA_ARGS for runtime is set in the runner stage.
-ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
+ARG JAVA_ARGS
+ENV JAVA_ARGS=${JAVA_ARGS}
+ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
 ARG HELIDON_VERSION=4.3.4
 ENV HELIDON_VERSION=${HELIDON_VERSION}
@@ -34,9 +37,9 @@ COPY --link --chown=${BUILD_UID}:${BUILD_GID} helidon/mp/jvm/pom.xml pom.xml
 RUN --mount=type=cache,id=maven-m2-helidon-mp-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v && \
     mvn -B -q -ntp  \
-    -Dhelidon.version=${HELIDON_VERSION} \
-    -Dcheckstyle.skip=true \
-    dependency:go-offline
+        -Dhelidon.version=${HELIDON_VERSION} \
+        -Dcheckstyle.skip=true \
+        dependency:go-offline
 
 # ── Layer 3: Checkstyle config (changes rarely) ──
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
@@ -84,7 +87,8 @@ RUN set -eux; \
       --output /workspace/out/jre
 
 #-----------------------  RUNTIME STAGE -----------------------
-FROM gcr.io/distroless/base-debian13:nonroot AS runner
+# Use a minimal distroless base — the jlink JRE is self-contained
+FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
 ARG RUNTIME_GROUP=nonroot
 # Runtime-only JVM args — declared here so changes don't invalidate the build stage.
@@ -105,13 +109,12 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+ExitOnOutOfMemoryError \
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
-    -XX:ActiveProcessorCount=2 \
     -XX:G1HeapRegionSize=1m \
     -XX:G1ReservePercent=20 \
     -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
-    -Xms96m \
-    -Xmx96m \
+    -Xms64m \
+    -Xmx640m \
     --enable-native-access=ALL-UNNAMED \
     ${JAVA_ARGS}"
 

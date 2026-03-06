@@ -8,7 +8,7 @@
 [![Javalin](https://img.shields.io/badge/Javalin-7.0.1-purple.svg)](https://javalin.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.16-1a1a2e.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
-[![Go](https://img.shields.io/badge/Go-1.26.0-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.1-00ADD8.svg)](https://golang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
@@ -59,7 +59,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.0  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
@@ -71,7 +71,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.8   | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.4.0  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
@@ -83,7 +83,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.2.1  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
 | **Build**         | Package Manager    | npm                        | 11.11.0 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
@@ -93,7 +93,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 ### Why This Project?
 
 - **All-in-one solution**: No need to configure multiple observability tools separately
-- **Framework agnostic**: Easily add new language implementations
+- **Framework-agnostic**: Easily add new language implementations
 - **Real-world scenarios**: Tests actual REST endpoints with caching, not synthetic benchmarks
 - **Educational**: Learn how different threading models and frameworks perform under load
 - **Portfolio ready**: Demonstrates expertise in performance engineering and observability
@@ -130,7 +130,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Edit environment configuration (`compose/.env`) through intuitive UI
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.1.6 and Material-UI 7.3.8
+  - Built with Next.js 16.1.6 and Material-UI 7.3.9
 
 ### 🚀 REST Service Implementations
 
@@ -168,7 +168,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - MP Native build
     - Virtual threads
 
-#### Go (1.26.0)
+#### Go (1.26.1)
 - Fiber framework integration
 - Full observability setup
 
@@ -372,37 +372,37 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 The numbers below are a curated summary of a representative run.
 
-#### Requests Per Second (RPS) — 28/02/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 06/03/2026 (to closest thousand)
 
 | Framework  | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
 |------------|---------|----------|-----|---------------|-----------------|
-| Spring     | JVM     | Platform | 21k | 545           | 404             |
-| Spring     | JVM     | Virtual  | 17k | 427           | 404             |
-| Spring     | JVM     | Reactive | 13k | 457           | 435             |
-| Spring     | Native  | Platform | 10k | 185           | 386             |
-| Spring     | Native  | Virtual  | 11k | 141           | 386             |
-| Spring     | Native  | Reactive | 7k  | 179           | 445             |
-| Quarkus    | JVM     | Platform | 36k | 596           | 235             |
-| Quarkus    | JVM     | Virtual  | 45k | 596           | 235             |
-| Quarkus    | JVM     | Reactive | 46k | 596           | 235             |
-| Quarkus    | Native  | Platform | 21k | 194           | 636             |
-| Quarkus    | Native  | Virtual  | 27k | 194           | 636             |
-| Quarkus    | Native  | Reactive | 20k | 194           | 636             |
-| Spark      | JVM     | Platform | 23k | 433           | 376             |
-| Spark      | JVM     | Virtual  | 21k | 428           | 376             |
-| Javalin    | JVM     | Platform | 29k | 656           | 380             |
-| Javalin    | JVM     | Virtual  | 25k | 546           | 380             |
-| Micronaut  | JVM     | Platform | 30k | 431           | 352             |
-| Micronaut  | JVM     | Virtual  | 37k | 431           | 352             |
-| Micronaut  | JVM     | Reactive | 31k | 431           | 352             |
-| Micronaut  | Native  | Platform | 16k | 180           | 348             |
-| Micronaut  | Native  | Virtual  | 15k | 180           | 348             |
-| Micronaut  | Native  | Reactive | 14k | 180           | 348             |
-| Helidon SE | JVM     | Virtual  | 66k | 386           | 169             |
-| Helidon SE | Native  | Virtual  | 31k | 111           | 253             |
-| Helidon MP | JVM     | Virtual  | 15k | 462           | 189             |
-| Helidon MP | Native  | Virtual  | 10k | 177           | 356             |
-| Go         | Native  | N/A      | 24k | 114           | 36              |
+| Spring     | JVM     | Platform | 21k | 552           | 246             |
+| Spring     | JVM     | Virtual  | 17k | 439           | 246             |
+| Spring     | JVM     | Reactive | 14k | 427           | 277             |
+| Spring     | Native  | Platform | 10k | 237           | 388             |
+| Spring     | Native  | Virtual  | 11k | 163           | 388             |
+| Spring     | Native  | Reactive | 7k  | 176           | 447             |
+| Quarkus    | JVM     | Platform | 36k | 540           | 235             |
+| Quarkus    | JVM     | Virtual  | 45k | 540           | 235             |
+| Quarkus    | JVM     | Reactive | 46k | 540           | 235             |
+| Quarkus    | Native  | Platform | 21k | 263           | 636             |
+| Quarkus    | Native  | Virtual  | 27k | 263           | 636             |
+| Quarkus    | Native  | Reactive | 20k | 263           | 636             |
+| Spark      | JVM     | Platform | 24k | 396           | 215             |
+| Spark      | JVM     | Virtual  | 22k | 395           | 215             |
+| Javalin    | JVM     | Platform | 27k | 687           | 219             |
+| Javalin    | JVM     | Virtual  | 24k | 550           | 219             |
+| Micronaut  | JVM     | Platform | 30k | 441           | 193             |
+| Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
+| Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
+| Micronaut  | Native  | Platform | 16k | 165           | 348             |
+| Micronaut  | Native  | Virtual  | 15k | 165           | 348             |
+| Micronaut  | Native  | Reactive | 13k | 165           | 348             |
+| Helidon SE | JVM     | Virtual  | 65k | 430           | 169             |
+| Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
+| Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
+| Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
+| Go         | Native  | N/A      | 24k | 120           | 36              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -454,7 +454,7 @@ The numbers below are a curated summary of a representative run.
 - **Javalin**: 7.0.1
 - **Micronaut**: 4.10.16
 - **Helidon**: 4.3.4
-- **Go**: 1.26.0 (Fiber v3.1.0)
+- **Go**: 1.26.1 (Fiber v3.1.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

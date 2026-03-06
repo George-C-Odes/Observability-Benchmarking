@@ -12,7 +12,7 @@ A high-performance REST service implementation written in Go using the Fiber web
 ## Service Details
 
 ### Framework & Runtime
-- **Language**: Go 1.26.0
+- **Language**: Go 1.26.1
 - **Web Framework**: Fiber v3.1.0 (Express-inspired web framework)
 - **Concurrency Model**: Goroutines (native Go concurrency)
 
@@ -91,7 +91,7 @@ The service is configured through code in `cmd/server/main.go`:
 ## Building and Running
 
 ### Prerequisites
-- Go 1.26.0 or later
+- Go 1.26.1 or later
 - Docker (for containerized deployment)
 
 ### Local Development
