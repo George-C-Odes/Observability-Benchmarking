@@ -239,7 +239,7 @@ Tracks request count for the reactive endpoint.
 - **Off-Heap Memory**: 64 MB max (Netty uses direct buffers)
 - **Event Loop Threads**: Small number (default: available processors)
 - **Startup Time**: ~3-4 seconds
-- **Container Size**: ~400 MB (with JDK)
+- **Container Image Size**: ~277 MB (with JDK)
 
 ## Building and Running
 

@@ -40,6 +40,31 @@ If the service is started in platform mode, `/hello/virtual` returns `500` and v
   - `offload` – handler work is offloaded to an executor
 - `JAVALIN_PLATFORM_EXECUTOR_THREADS` (default `0` → computed) – only used when `THREAD_MODE=platform` and `JAVALIN_HANDLER_EXECUTION_MODE=offload`
 
+## Docker
+
+**Image**: `javalin-jvm:latest`
+
+| Stage   | Image                                                        |
+|---------|--------------------------------------------------------------|
+| Build   | `maven:3.9.12-eclipse-temurin-25-noble`                      |
+| Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
+
+- Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
+- The runtime image contains only the application JAR + a minimal custom JRE in `/opt/jre`
+- **Container Image Size**: ~219 MB
+
+### Build Command
+
+```powershell
+docker buildx build `
+  -f services/java/javalin/jvm/Dockerfile `
+  -t javalin-jvm:latest `
+  --build-arg JAVALIN_VERSION=7.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
+  --load `
+  services/java
+```
+
 ## Metrics
 Defines a Micrometer counter:
 - `hello.request.count{endpoint="/hello/platform"}`

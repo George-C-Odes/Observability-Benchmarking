@@ -237,7 +237,7 @@ Tracks request count per endpoint.
 - **Heap Memory**: 640 MB (configurable)
 - **Off-Heap**: 32 MB max
 - **Peak Memory (observed)**: ~431 MB
-- **Container Image Size**: ~352 MB
+- **Container Image Size**: ~193 MB
 - **Startup Time**: ~2–3 seconds (JVM)
 
 ## Building and Running
@@ -245,12 +245,30 @@ Tracks request count per endpoint.
 ### Prerequisites
 - Java 25 (Eclipse Temurin recommended)
 - Maven 3.9+
-- Docker (for containerised deployment)
+- Docker (for containerized deployment)
+
+### Docker
+
+**Image**: `micronaut-jvm:4.10.16_latest`
+
+| Stage   | Image                                                        |
+|---------|--------------------------------------------------------------|
+| Build   | `maven:3.9.12-eclipse-temurin-25-noble`                      |
+| Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
+
+- Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
+- The runtime image contains only the application JAR + a minimal custom JRE in `/opt/jre`
 
 ### Docker Build
-```bash
-cd services/java
-docker build -f micronaut/jvm/Dockerfile -t micronaut-jvm:latest .
+
+```powershell
+docker buildx build `
+  -f services/java/micronaut/jvm/Dockerfile `
+  -t micronaut-jvm:4.10.16_latest `
+  --build-arg MICRONAUT_VERSION=4.10.16 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.16_latest `
+  --load `
+  services/java
 ```
 
 ### Docker Compose
@@ -366,4 +384,3 @@ When modifying this service:
 - [Micronaut Micrometer](https://micronaut-projects.github.io/micronaut-micrometer/latest/guide/)
 - [Caffeine Cache](https://github.com/ben-manes/caffeine)
 - [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/)
-

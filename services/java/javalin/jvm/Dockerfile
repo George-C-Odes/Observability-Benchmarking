@@ -3,7 +3,7 @@ ARG MAVEN_RELEASE=3.9.12
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------
@@ -31,18 +31,19 @@ USER ${BUILD_UID}:${BUILD_GID}
 WORKDIR /workspace
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} javalin/jvm/pom.xml pom.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 
-RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
+RUN --mount=type=cache,id=maven-m2-javalin-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v &&  \
     mvn -B -q -ntp \
       -Djavalin.version=${JAVALIN_VERSION} \
+      -Dcheckstyle.skip=true \
       dependency:go-offline
 
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} javalin/jvm/src ./src
 
-RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
+RUN --mount=type=cache,id=maven-m2-javalin-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -B -ntp -T 1C \
       -Djavalin.version=${JAVALIN_VERSION} \
       -Dmaven.compiler.release=${JAVA_RELEASE} \
@@ -52,6 +53,27 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
     mkdir -p /workspace/out && \
     JAR="target/javalin-jvm-1.0.0-SNAPSHOT.jar" && \
     test -f "$JAR" && cp "$JAR" /workspace/out/app.jar
+
+# ── jlink: create a stripped-down custom JRE ──
+# Analyse the shaded uber-jar for required JDK modules and build a minimal runtime.
+# java.instrument & jdk.management are added explicitly — they are required at
+# runtime by the -javaagent flag (OpenTelemetry) and profiling extensions but
+# are invisible to jdeps static analysis.
+RUN set -eux; \
+    DEPS=$(jdeps \
+      --ignore-missing-deps \
+      --print-module-deps \
+      --multi-release ${JAVA_RELEASE} \
+      /workspace/out/app.jar 2>/dev/null || echo "java.base") && \
+    DEPS="$DEPS,java.instrument,jdk.management" && \
+    echo "jlink modules: $DEPS" && \
+    jlink \
+      --add-modules "$DEPS" \
+      --strip-debug \
+      --compress zip-6 \
+      --no-header-files \
+      --no-man-pages \
+      --output /workspace/out/jre
 
 # ------------ OTEL/PROFILING DEPS STAGE -----------------------
 FROM alpine:3.23.3 AS otel_deps
@@ -79,17 +101,19 @@ RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
     cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
 
 #-----------------------  RUNTIME STAGE -----------------------
+# Use a minimal distroless base — the jlink JRE is self-contained
 FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
 ARG RUNTIME_GROUP=nonroot
 ENV RUNTIME_USER=${RUNTIME_USER}
 ENV RUNTIME_GROUP=${RUNTIME_GROUP}
-ARG JAVA_ARGS
+ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 ENV JAVA_ARGS=${JAVA_ARGS}
 
 WORKDIR /work/
 
-COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/ /deployments/
+COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/jre/ /opt/jre/
+COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/app.jar /deployments/app.jar
 COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/pyroscope-otel-extension.jar /work/pyroscope-otel-extension.jar
 COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/opentelemetry-javaagent.jar    /work/opentelemetry-javaagent.jar
 
@@ -104,23 +128,16 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+AlwaysPreTouch \
     -XX:+DebugNonSafepoints \
     -XX:+ExitOnOutOfMemoryError \
-    -XX:+HeapDumpOnOutOfMemoryError \
     -XX:+PreserveFramePointer \
-    -XX:+PrintNMTStatistics \
     -XX:+UseContainerSupport \
     -XX:+UseG1GC \
     -XX:+UseStringDeduplication \
-    -XX:ActiveProcessorCount=2 \
-    -XX:HeapDumpPath=/var/log/error \
     -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
-    -XX:NativeMemoryTracking=summary \
     -Xms64m \
     -Xmx640m \
     --enable-native-access=ALL-UNNAMED \
-    -Xlog:gc+init=info \
-    -Xlog:gc+exit=info \
     ${JAVA_ARGS}"
 
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
-ENTRYPOINT ["java", "-jar", "/deployments/app.jar"]
+ENTRYPOINT ["/opt/jre/bin/java", "-jar", "/deployments/app.jar"]

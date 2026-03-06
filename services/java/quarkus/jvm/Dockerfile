@@ -40,16 +40,17 @@ USER ${BUILD_UID}:${BUILD_GID}
 WORKDIR /workspace
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} quarkus/jvm/pom.xml pom.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 
 # Warm dependencies (won't be busted by source changes)
 RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v &&  \
     mvn -B -q -ntp \
       -Dquarkus.platform.version=${QUARKUS_VERSION} \
+      -Dcheckstyle.skip=true \
       dependency:go-offline
 
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} quarkus/jvm/src ./src
 
 RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
@@ -89,6 +90,7 @@ RUN set -eux; \
       --output /workspace/out/jre
 
 #-----------------------  RUNTIME STAGE -----------------------
+# Use a minimal distroless base — the jlink JRE is self-contained
 FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
 ARG RUNTIME_GROUP=nonroot
@@ -129,11 +131,8 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+UseStringDeduplication \
     -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
-    -Xms1536m \
-    -Xmx1536m \
-    -Xlog:class+path=info \
-    -Xlog:gc+init=info \
-    -Xlog:gc+exit=info \
+    -Xms64m \
+    -Xmx640m \
     --enable-native-access=ALL-UNNAMED \
     ${JAVA_ARGS}"
 

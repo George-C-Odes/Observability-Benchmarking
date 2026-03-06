@@ -201,7 +201,7 @@ Same as JVM version:
 - **Heap Memory**: 1280 MB (configured)
 - **RSS**: ~200-300 MB typical
 - **Startup Time**: <100ms
-- **Container Size**: ~150 MB
+- **Container Image Size**: ~636 MB
 
 ## Building and Running
 

@@ -4,7 +4,7 @@ ARG JAVA_RELEASE=25
 #25, 23, 21
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 #ARG DISTRIBUTION=amazoncorretto
 #ARG BASE_BUILDER=debian
 #ARG IMAGE_RUNTIME=amazoncorretto:25.0.2-al2023-headless
@@ -42,17 +42,17 @@ WORKDIR /workspace
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} spring/jvm/tomcat/pom.xml ./tomcat/pom.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} spring/jvm/netty/pom.xml ./netty/pom.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 
 # Warm dependencies (won't be busted by source changes)
-RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
+RUN --mount=type=cache,id=maven-m2-spring-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -v && \
     mvn -B -q -ntp  \
-      -Dspring-boot.version=${SPRING_BOOT_VERSION} -f tomcat/pom.xml dependency:go-offline && \
+      -Dspring-boot.version=${SPRING_BOOT_VERSION} -Dcheckstyle.skip=true -f tomcat/pom.xml dependency:go-offline && \
     mvn -B -q -ntp  \
-      -Dspring-boot.version=${SPRING_BOOT_VERSION} -f netty/pom.xml  dependency:go-offline
+      -Dspring-boot.version=${SPRING_BOOT_VERSION} -Dcheckstyle.skip=true -f netty/pom.xml  dependency:go-offline
 
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} spring/jvm/tomcat/src ./tomcat/src
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} spring/jvm/netty/src ./netty/src
 
@@ -71,7 +71,7 @@ RUN if [ "$PROFILE" = "netty" ]; then \
         rm -rf ./netty/src; \
     fi
 
-RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
+RUN --mount=type=cache,id=maven-m2-spring-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -B -ntp -T 1C \
       -Dspring-boot.version=${SPRING_BOOT_VERSION} \
       -Dmaven.compiler.release=${JAVA_RELEASE} \
@@ -82,6 +82,32 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=${
     JAR="$(ls -1 target/*.jar | grep -vE '(^|/)original-|(-sources|-javadoc)\.jar$' | head -n1)" && \
     test -n "$JAR" && cp "$JAR" /workspace/out/app.jar
 #    -DskipTests
+
+# ── jlink: create a stripped-down custom JRE ──
+# Analyse the Spring Boot uber-jar for required JDK modules and build a minimal runtime.
+# Spring Boot's nested-jar class loader hides dependencies from jdeps, so several
+# modules must be added explicitly:
+#   java.instrument    – required by -javaagent (OpenTelemetry agent)
+#   java.logging       – OTel agent uses java.util.logging
+#   java.desktop       – Spring Boot property binding needs java.beans (lives in java.desktop)
+#   java.naming        – Tomcat JNDI (javax.naming.NamingException)
+#   java.security.jgss – Tomcat default realm (org.ietf.jgss.GSSException)
+#   jdk.management     – profiling extensions (Pyroscope) and JMX runtime info
+RUN set -eux; \
+    DEPS=$(jdeps \
+      --ignore-missing-deps \
+      --print-module-deps \
+      --multi-release ${JAVA_RELEASE} \
+      /workspace/out/app.jar 2>/dev/null || echo "java.base") && \
+    DEPS="$DEPS,java.instrument,java.logging,java.desktop,java.naming,java.security.jgss,jdk.management" && \
+    echo "jlink modules: $DEPS" && \
+    jlink \
+      --add-modules "$DEPS" \
+      --strip-debug \
+      --compress zip-6 \
+      --no-header-files \
+      --no-man-pages \
+      --output /workspace/out/jre
 
 # ------------ OTEL/PROFILING DEPS STAGE -----------------------
 FROM alpine:3.23.3 AS otel_deps
@@ -113,6 +139,7 @@ RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
     cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
 
 #-----------------------  RUNTIME STAGE -----------------------
+# Use a minimal distroless base — the jlink JRE is self-contained
 FROM  ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
 ARG RUNTIME_GROUP=nonroot
@@ -120,7 +147,7 @@ ARG RUNTIME_GROUP=nonroot
 #ARG RUNTIME_GROUP=1001
 ENV RUNTIME_USER=${RUNTIME_USER}
 ENV RUNTIME_GROUP=${RUNTIME_GROUP}
-ARG JAVA_ARGS
+ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 ENV JAVA_ARGS=${JAVA_ARGS}
 
 WORKDIR /work/
@@ -133,7 +160,8 @@ WORKDIR /work/
 #    && mkdir -p /work /deployments \
 #    && dnf clean all && rm -rf /var/cache/dnf/*
 
-COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/ /deployments/
+COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/jre/ /opt/jre/
+COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/app.jar /deployments/app.jar
 COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/pyroscope-otel-extension.jar /work/pyroscope-otel-extension.jar
 COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/opentelemetry-javaagent.jar    /work/opentelemetry-javaagent.jar
 
@@ -154,13 +182,10 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:+UseStringDeduplication \
     -XX:MaxDirectMemorySize=32M \
     -XX:MaxGCPauseMillis=200 \
-    -Xms1536m \
-    -Xmx1536m \
-    -Xlog:class+path=info \
-    -Xlog:gc+init=info \
-    -Xlog:gc+exit=info \
+    -Xms64m \
+    -Xmx640m \
     --enable-native-access=ALL-UNNAMED \
     ${JAVA_ARGS}"
 
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
-ENTRYPOINT ["java", "-jar", "/deployments/app.jar"]
+ENTRYPOINT ["/opt/jre/bin/java", "-jar", "/deployments/app.jar"]

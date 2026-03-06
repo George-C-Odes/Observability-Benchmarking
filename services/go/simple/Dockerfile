@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7-labs
-ARG GO_VERSION=1.26.0
+ARG GO_VERSION=1.26.1
 ARG BASE_BUILDER=alpine3.23
 
 # ------------ BUILD STAGE -----------------------

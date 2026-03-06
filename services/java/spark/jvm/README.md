@@ -56,6 +56,31 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 - `JETTY_ACCEPT_QUEUE_SIZE`
 - `JETTY_IDLE_TIMEOUT_MS`
 
+## Docker
+
+**Image**: `spark-jvm:latest`
+
+| Stage   | Image                                                        |
+|---------|--------------------------------------------------------------|
+| Build   | `maven:3.9.12-eclipse-temurin-25-noble`                      |
+| Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
+
+- Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
+- The runtime image contains only the application JAR + a minimal custom JRE in `/opt/jre`
+- **Container Image Size**: ~215 MB
+
+### Build Command
+
+```powershell
+docker buildx build `
+  -f services/java/spark/jvm/Dockerfile `
+  -t spark-jvm:latest `
+  --build-arg SPARK_VERSION=3.0.3 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:latest `
+  --load `
+  services/java
+```
+
 ## Metrics
 Defines a Micrometer counter:
 - `hello.request.count{endpoint="/hello/platform"}`

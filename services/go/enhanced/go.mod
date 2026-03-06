@@ -1,6 +1,6 @@
 module hello
 
-go 1.26.0
+go 1.26.1
 
 require (
 	github.com/Yiling-J/theine-go v0.6.2
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.17.0
 	go.opentelemetry.io/otel/sdk/metric v1.41.0
 	go.opentelemetry.io/otel/trace v1.41.0
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 )
 
 require (

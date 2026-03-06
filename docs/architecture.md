@@ -62,7 +62,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Virtual threads (Helidon 4 is virtual-thread–first)
 - Helidon MP 4.3.4 (JVM and Native)
   - Virtual threads (MicroProfile / CDI / JAX-RS)
-- Go 1.26.0
+- Go 1.26.1
   - Fiber framework (v3.1.0)
 
 **Service Characteristics**:
