@@ -323,7 +323,7 @@ Before running integration tests:
 
 3. **Port Availability**
    Ensure these ports are free:
-   - 8080-8100: Java Service ports
+   - 8080-8099: Java Service ports
    - 9080-9081: Go Service ports
    - 3000: Grafana
    - 3001: NextJS Dash
@@ -374,6 +374,30 @@ export SPRING_NATIVE_NETTY_URL=http://localhost:8085
 # Quarkus Services
 export QUARKUS_JVM_URL=http://localhost:8086
 export QUARKUS_NATIVE_URL=http://localhost:8087
+
+# Micronaut Services
+export MICRONAUT_JVM_URL=http://localhost:8088
+export MICRONAUT_NATIVE_URL=http://localhost:8089
+
+# Helidon SE Services
+export HELIDON_SE_JVM_URL=http://localhost:8090
+export HELIDON_SE_NATIVE_URL=http://localhost:8091
+
+# Helidon MP Services
+export HELIDON_MP_JVM_URL=http://localhost:8092
+export HELIDON_MP_NATIVE_URL=http://localhost:8093
+
+# Spark Services
+export SPARK_JVM_PLATFORM_URL=http://localhost:8094
+export SPARK_JVM_VIRTUAL_URL=http://localhost:8095
+
+# Javalin Services
+export JAVALIN_JVM_PLATFORM_URL=http://localhost:8096
+export JAVALIN_JVM_VIRTUAL_URL=http://localhost:8097
+
+# Dropwizard Services
+export DROPWIZARD_JVM_PLATFORM_URL=http://localhost:8098
+export DROPWIZARD_JVM_VIRTUAL_URL=http://localhost:8099
 
 # Go Service
 export GO_URL=http://localhost:9080
@@ -436,7 +460,7 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 ==========================================
 Run Environment
 ==========================================
-Host OS: Linux <HOST> 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Host OS: Linux <HOST> 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
 Terminal / session:
   stdin:   TTY
   stdout:  not a TTY
@@ -447,7 +471,7 @@ Terminal / session:
   USER:    <USER>
   LOGNAME: <USER>
   WSL:     Ubuntu
-Timestamp (host): 2026-03-05T15:06:29+02:00
+Timestamp (host): 2026-03-07T22:37:15+02:00
 ==========================================
 
 ==========================================
@@ -457,10 +481,11 @@ Integration Test Suite
 Testing Framework Versions:
 - Spring Boot: 4.0.3
 - Quarkus: 3.32.2
-- Spark: 3.0.3
-- Javalin: 7.0.1
 - Micronaut: 4.10.16
 - Helidon: 4.3.4
+- Spark: 3.0.3
+- Javalin: 7.0.1
+- Dropwizard: 5.0.1
 - Go: 1.26.1
 
 ==========================================
@@ -481,35 +506,43 @@ Testing Quarkus JVM - /hello/platform... ✓ PASSED
 Testing Quarkus JVM - /hello/virtual... ✓ PASSED
 Testing Quarkus JVM - /hello/reactive... ✓ PASSED
 
---- Spark JVM Platform (port 8088) ---
-Testing Spark JVM Platform - /hello/platform... ✓ PASSED
-Testing Spark JVM Platform Ready... ✓ PASSED
-
---- Spark JVM Virtual (port 8089) ---
-Testing Spark JVM Virtual - /hello/virtual... ✓ PASSED
-Testing Spark JVM Virtual Ready... ✓ PASSED
-
---- Javalin JVM Platform (port 8090) ---
-Testing Javalin JVM Platform - /hello/platform... ✓ PASSED
-Testing Javalin JVM Platform Ready... ✓ PASSED
-
---- Javalin JVM Virtual (port 8091) ---
-Testing Javalin JVM Virtual - /hello/virtual... ✓ PASSED
-Testing Javalin JVM Virtual Ready... ✓ PASSED
-
---- Micronaut JVM (port 8092) ---
+--- Micronaut JVM (port 8088) ---
 Testing Micronaut JVM - /hello/platform... ✓ PASSED
 Testing Micronaut JVM - /hello/virtual... ✓ PASSED
 Testing Micronaut JVM - /hello/reactive... ✓ PASSED
 Testing Micronaut JVM - /health... ✓ PASSED
 
---- Helidon SE JVM (port 8094) ---
+--- Helidon SE JVM (port 8090) ---
 Testing Helidon SE JVM - /hello/virtual... ✓ PASSED
 Testing Helidon SE JVM - /observe/health... ✓ PASSED
 
---- Helidon MP JVM (port 8096) ---
+--- Helidon MP JVM (port 8092) ---
 Testing Helidon MP JVM - /hello/virtual... ✓ PASSED
 Testing Helidon MP JVM - /health... ✓ PASSED
+
+--- Spark JVM Platform (port 8094) ---
+Testing Spark JVM Platform - /hello/platform... ✓ PASSED
+Testing Spark JVM Platform Ready... ✓ PASSED
+
+--- Spark JVM Virtual (port 8095) ---
+Testing Spark JVM Virtual - /hello/virtual... ✓ PASSED
+Testing Spark JVM Virtual Ready... ✓ PASSED
+
+--- Javalin JVM Platform (port 8096) ---
+Testing Javalin JVM Platform - /hello/platform... ✓ PASSED
+Testing Javalin JVM Platform Ready... ✓ PASSED
+
+--- Javalin JVM Virtual (port 8097) ---
+Testing Javalin JVM Virtual - /hello/virtual... ✓ PASSED
+Testing Javalin JVM Virtual Ready... ✓ PASSED
+
+--- Dropwizard JVM Platform (port 8098) ---
+Testing Dropwizard JVM Platform - /hello/platform... ✓ PASSED
+Testing Dropwizard JVM Platform Ready... ✓ PASSED
+
+--- Dropwizard JVM Virtual (port 8099) ---
+Testing Dropwizard JVM Virtual - /hello/virtual... ✓ PASSED
+Testing Dropwizard JVM Virtual Ready... ✓ PASSED
 
 ==========================================
 Native Services - Deployment Tests
@@ -529,17 +562,17 @@ Testing Quarkus Native - /hello/platform... ✓ PASSED
 Testing Quarkus Native - /hello/virtual... ✓ PASSED
 Testing Quarkus Native - /hello/reactive... ✓ PASSED
 
---- Micronaut Native (port 8093) ---
+--- Micronaut Native (port 8089) ---
 Testing Micronaut Native - /hello/platform... ✓ PASSED
 Testing Micronaut Native - /hello/virtual... ✓ PASSED
 Testing Micronaut Native - /hello/reactive... ✓ PASSED
 Testing Micronaut Native - /health... ✓ PASSED
 
---- Helidon SE Native (port 8095) ---
+--- Helidon SE Native (port 8091) ---
 Testing Helidon SE Native - /hello/virtual... ✓ PASSED
 Testing Helidon SE Native - /observe/health... ✓ PASSED
 
---- Helidon MP Native (port 8097) ---
+--- Helidon MP Native (port 8093) ---
 Testing Helidon MP Native - /hello/virtual... ✓ PASSED
 Testing Helidon MP Native - /health... ✓ PASSED
 
@@ -563,16 +596,18 @@ Testing Spring Native Tomcat Virtual Metrics... ✓ PASSED
 Testing Spring Native Netty Metrics... ✓ PASSED
 Testing Quarkus JVM Metrics... ✓ PASSED
 Testing Quarkus Native Metrics... ✓ PASSED
-Testing Spark JVM Platform Ready... ✓ PASSED
-Testing Spark JVM Virtual Ready... ✓ PASSED
-Testing Javalin JVM Platform Ready... ✓ PASSED
-Testing Javalin JVM Virtual Ready... ✓ PASSED
 Testing Micronaut JVM Metrics... ✓ PASSED
 Testing Micronaut Native Metrics... ✓ PASSED
 Testing Helidon SE JVM Ready... ✓ PASSED
 Testing Helidon SE Native Ready... ✓ PASSED
 Testing Helidon MP JVM Ready... ✓ PASSED
 Testing Helidon MP Native Ready... ✓ PASSED
+Testing Spark JVM Platform Ready... ✓ PASSED
+Testing Spark JVM Virtual Ready... ✓ PASSED
+Testing Javalin JVM Platform Ready... ✓ PASSED
+Testing Javalin JVM Virtual Ready... ✓ PASSED
+Testing Dropwizard JVM Platform Ready... ✓ PASSED
+Testing Dropwizard JVM Virtual Ready... ✓ PASSED
 Testing Go Metrics... ✓ PASSED
 
 --- Grafana Stack Readiness ---
@@ -595,11 +630,11 @@ wrk2 exec self-ready check (printing wrk output below):
 Running 1s test @ http://0.0.0.0:3003/ready
   1 threads and 1 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   470.00us    0.00us 470.00us  100.00%
+    Latency   458.00us    0.00us 458.00us  100.00%
     Req/Sec       -nan      -nan   0.00      0.00%
   2 requests in 1.00s, 370.00B read
 Requests/sec:      2.00
-Transfer/sec:     369.10B
+Transfer/sec:     369.25B
 ----- wrk2 exec output (end) -----
 ✓ PASSED
 
@@ -617,10 +652,6 @@ Trace log check Quarkus JVM Reactive (quarkus-jvm)... ✓ PASSED (found 'vert.x-
 Trace log check Quarkus Native Platform (quarkus-native)... ✓ PASSED (found 'executor-thread')
 Trace log check Quarkus Native Virtual (quarkus-native)... ✓ PASSED (found 'vthread')
 Trace log check Quarkus Native Reactive (quarkus-native)... ✓ PASSED (found 'vert.x-eventloop-thread')
-Trace log check Spark JVM Platform (spark-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
-Trace log check Spark JVM Virtual (spark-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
-Trace log check Javalin JVM Platform (javalin-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
-Trace log check Javalin JVM Virtual (javalin-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
 Trace log check Micronaut JVM Platform (micronaut-jvm)... ✓ PASSED (found 'isVirtual: 'false'')
 Trace log check Micronaut JVM Virtual (micronaut-jvm)... ✓ PASSED (found 'isVirtual: 'true'')
 Trace log check Micronaut JVM Reactive (micronaut-jvm)... ✓ PASSED (found 'EventLoopGroup')
@@ -631,12 +662,18 @@ Trace log check Helidon SE JVM Virtual (helidon-se-jvm)... ✓ PASSED (found 'is
 Trace log check Helidon SE Native Virtual (helidon-se-native)... ✓ PASSED (found 'isVirtual: 'true'')
 Trace log check Helidon MP JVM Virtual (helidon-mp-jvm)... ✓ PASSED (found 'isVirtual: 'true'')
 Trace log check Helidon MP Native Virtual (helidon-mp-native)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Spark JVM Platform (spark-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Spark JVM Virtual (spark-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Javalin JVM Platform (javalin-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Javalin JVM Virtual (javalin-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
+Trace log check Dropwizard JVM Platform (dropwizard-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
+Trace log check Dropwizard JVM Virtual (dropwizard-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
 Trace log check Go Virtual (go)... ✓ PASSED (found 'goroutine')
 
 ==========================================
 Test Summary
 ==========================================
-Tests Passed: 93
+Tests Passed: 101
 Tests Failed: 0
 ==========================================
 

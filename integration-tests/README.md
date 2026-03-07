@@ -31,7 +31,7 @@ This directory contains an integration test runner script (`run-integration-test
 ```
 
 3. **Port Availability (defaults)**
-   - 8080-8093, 9080: service ports
+   - 8080-8099: Java Service ports
    - 3000: Grafana
    - 3001: NextJS UI
    - 3002: Orchestrator
@@ -99,17 +99,29 @@ export SPRING_NATIVE_NETTY_URL=http://localhost:8085
 export QUARKUS_JVM_URL=http://localhost:8086
 export QUARKUS_NATIVE_URL=http://localhost:8087
 
+# Micronaut Services
+export MICRONAUT_JVM_URL=http://localhost:8088
+export MICRONAUT_NATIVE_URL=http://localhost:8089
+
+# Helidon SE Services
+export HELIDON_SE_JVM_URL=http://localhost:8090
+export HELIDON_SE_NATIVE_URL=http://localhost:8091
+
+# Helidon MP Services
+export HELIDON_MP_JVM_URL=http://localhost:8092
+export HELIDON_MP_NATIVE_URL=http://localhost:8093
+
 # Spark Services
-export SPARK_JVM_PLATFORM_URL=http://localhost:8088
-export SPARK_JVM_VIRTUAL_URL=http://localhost:8089
+export SPARK_JVM_PLATFORM_URL=http://localhost:8094
+export SPARK_JVM_VIRTUAL_URL=http://localhost:8095
 
 # Javalin Services
-export JAVALIN_JVM_PLATFORM_URL=http://localhost:8090
-export JAVALIN_JVM_VIRTUAL_URL=http://localhost:8091
+export JAVALIN_JVM_PLATFORM_URL=http://localhost:8096
+export JAVALIN_JVM_VIRTUAL_URL=http://localhost:8097
 
-# Micronaut Services
-export MICRONAUT_JVM_URL=http://localhost:8092
-export MICRONAUT_NATIVE_URL=http://localhost:8093
+# Dropwizard Services
+export DROPWIZARD_JVM_PLATFORM_URL=http://localhost:8098
+export DROPWIZARD_JVM_VIRTUAL_URL=http://localhost:8099
 
 # Go Service
 export GO_URL=http://localhost:9080
@@ -141,10 +153,11 @@ The runner prints the versions it is designed against (these values are embedded
 |-----------------|---------|
 | Spring Boot     | 4.0.3   |
 | Quarkus         | 3.32.2  |
-| Spark           | 3.0.3   |
-| Javalin         | 7.0.1   |
 | Micronaut       | 4.10.16 |
 | Helidon SE & MP | 4.3.4   |
+| Spark           | 3.0.3   |
+| Javalin         | 7.0.1   |
+| Dropwizard      | 5.0.1   |
 | Go              | 1.26.1  |
 
 ## Service Port Mappings
@@ -161,16 +174,18 @@ Port mappings match the order in `compose/docker-compose.yml`.
 | Spring Boot Native Netty           | spring-native-netty           | 8085 | Native             |
 | Quarkus JVM                        | quarkus-jvm                   | 8086 | JVM                |
 | Quarkus Native                     | quarkus-native                | 8087 | Native             |
-| Spark JVM Platform                 | spark-jvm-platform            | 8088 | JVM                |
-| Spark JVM Virtual                  | spark-jvm-virtual             | 8089 | JVM                |
-| Javalin JVM Platform               | javalin-jvm-platform          | 8090 | JVM                |
-| Javalin JVM Virtual                | javalin-jvm-virtual           | 8091 | JVM                |
-| Micronaut JVM                      | micronaut-jvm                 | 8092 | JVM                |
-| Micronaut Native                   | micronaut-native              | 8093 | Native             |
-| Helidon SE JVM                     | helidon-se-jvm                | 8094 | JVM                |
-| Helidon SE Native                  | helidon-se-native             | 8095 | Native             |
-| Helidon MP JVM                     | helidon-mp-jvm                | 8096 | JVM                |
-| Helidon MP Native                  | helidon-mp-native             | 8097 | Native             |
+| Micronaut JVM                      | micronaut-jvm                 | 8088 | JVM                |
+| Micronaut Native                   | micronaut-native              | 8089 | Native             |
+| Helidon SE JVM                     | helidon-se-jvm                | 8090 | JVM                |
+| Helidon SE Native                  | helidon-se-native             | 8091 | Native             |
+| Helidon MP JVM                     | helidon-mp-jvm                | 8092 | JVM                |
+| Helidon MP Native                  | helidon-mp-native             | 8093 | Native             |
+| Spark JVM Platform                 | spark-jvm-platform            | 8094 | JVM                |
+| Spark JVM Virtual                  | spark-jvm-virtual             | 8095 | JVM                |
+| Javalin JVM Platform               | javalin-jvm-platform          | 8096 | JVM                |
+| Javalin JVM Virtual                | javalin-jvm-virtual           | 8097 | JVM                |
+| Dropwizard JVM Platform            | dropwizard-jvm-platform       | 8098 | JVM                |
+| Dropwizard JVM Virtual             | dropwizard-jvm-virtual        | 8099 | JVM                |
 | Go                                 | go                            | 9080 | Native (Go binary) |
 
 ## What’s Tested (by the runner)
@@ -189,6 +204,14 @@ The runner checks these endpoints and response substrings:
   - `/hello/virtual` contains `Quarkus`
   - `/hello/reactive` contains `Quarkus`
 
+- **Micronaut**
+  - `/hello/platform`, `/hello/virtual`, `/hello/reactive` contains `Micronaut`
+  - `/health` returns 200
+
+- **Helidon SE & MP**
+  - `/hello/virtual` contains `Helidon` / `Helidon MP`
+  - health: `/observe/health` (SE) or `/health` (MP) returns 200 or 204
+
 - **Spark**
   - `/hello/platform` or `/hello/virtual` contains `Spark`
   - readiness: `/ready` returns 200
@@ -197,9 +220,9 @@ The runner checks these endpoints and response substrings:
   - `/hello/platform` or `/hello/virtual` contains `Javalin`
   - readiness: `/ready` returns 200
 
-- **Micronaut**
-  - `/hello/platform`, `/hello/virtual`, `/hello/reactive` contains `Micronaut`
-  - `/health` returns 200
+- **Dropwizard**
+  - `/hello/platform` or `/hello/virtual` contains `Dropwizard`
+  - readiness: `/ready` returns 200
 
 - **Go**
   - `/hello/virtual` contains `GO`
@@ -221,6 +244,15 @@ The runner is intentionally tolerant and will accept **any one** of these endpoi
 - **Micronaut**
   - `/metrics` OR
   - `/health`
+
+- **Helidon SE**
+  - `/observe/health` (returns 200 or 204)
+
+- **Helidon MP**
+  - `/health`
+
+- **Spark / Javalin / Dropwizard**
+  - readiness: `/ready`
 
 - **Go**
   - `/healthz` OR
@@ -272,7 +304,8 @@ Example expectations (not exhaustive):
 - Spring virtual expects `VirtualThread`
 - Spring Netty expects `reactor-http`
 - Quarkus expects `executor-thread` / `vthread` / `vert.x-eventloop-thread`
-- Spark/Javalin/Micronaut virtual vs platform checks expect `isVirtual: 'true'` / `isVirtual: 'false'`
+- Micronaut/Spark/Javalin/Dropwizard virtual vs platform checks expect `isVirtual: 'true'` / `isVirtual: 'false'`
+- Helidon SE/MP checks expect `isVirtual: 'true'`
 - Go expects `goroutine`
 
 This is a **smoke test** for “a request caused a log line with the expected threading/runtime markers”. It does *not* query Tempo directly.

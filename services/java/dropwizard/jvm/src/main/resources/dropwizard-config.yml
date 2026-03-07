@@ -1,0 +1,29 @@
+# Dropwizard benchmark service configuration.
+# Most settings are env-driven via ServiceConfig; this file configures
+# Dropwizard's server factory and logging subsystem.
+
+server:
+  applicationConnectors:
+    - type: http
+      port: 8080
+      # Disable Date and Server headers to reduce per-response overhead.
+      useServerHeader: false
+      useDateHeader: false
+  # Disable the admin connector — readiness is served on the app port via /ready.
+  # Dropwizard 5.x provides a built-in /healthcheck on the admin connector, but
+  # for benchmarking we avoid the overhead of a second connector. Re-enable with
+  # e.g. "adminConnectors: [{type: http, port: 8081}]" if /healthcheck is needed.
+  adminConnectors: []
+  # Disable request logging for benchmarking clarity.
+  requestLog:
+    appenders: []
+  # Disable response compression: short JSON payloads don't benefit from GZIP
+  # and the per-request CPU cost is significant under high concurrency.
+  gzip:
+    enabled: false
+
+logging:
+  level: ${LOGGING_LEVEL_ROOT:-INFO}
+  appenders:
+    - type: console
+      logFormat: "%d{yyyy-MM-dd HH:mm:ss} %-5level [traceId=%X{traceId:-}, spanId=%X{spanId:-}] [%thread] %logger{36} - %msg%n"

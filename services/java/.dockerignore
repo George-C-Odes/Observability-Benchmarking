@@ -58,6 +58,12 @@
 !javalin/jvm/src/**
 !javalin/jvm/pom.xml
 
+!dropwizard/
+!dropwizard/jvm/
+!dropwizard/jvm/src/
+!dropwizard/jvm/src/**
+!dropwizard/jvm/pom.xml
+
 !micronaut/
 !micronaut/jvm/
 !micronaut/jvm/src/

@@ -15,4 +15,5 @@
     
     <!-- Suppress checks for Spring Boot and Quarkus Application classes (simple main methods) -->
     <suppress checks="HideUtilityClassConstructor" files=".*[\\/](Tomcat|Netty)Application\.java"/>
+    <suppress checks="HideUtilityClassConstructor" files=".*[\\/]DropwizardApplication\.java"/>
 </suppressions>

@@ -43,7 +43,7 @@ Key notes:
 
 - Compose profiles control what starts:
   - **OBS**: Grafana + Loki + Tempo + Mimir + Pyroscope + Alloy
-  - **SERVICES**: Spring/Quarkus/Go service containers
+  - **SERVICES**: Spring/Quarkus/Micronaut/Helidon/Spark/Javalin/Dropwizard/Go service containers
   - **RAIN_FIRE**: wrk2 load generator containers
 - `compose/.env` contains environment configuration (including required `HOST_REPO`).
 
@@ -89,7 +89,7 @@ Benchmark outputs and run summaries.
 
 Benchmark targets / service implementations.
 
-- `services/java/` contains JVM frameworks (Spring, Quarkus, Helidon, Micronaut, … depending on what’s implemented).
+- `services/java/` contains JVM frameworks (Spring, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, … depending on what's implemented).
 - `services/go/` contains Go implementations.
 
 Each service folder typically includes a Docker build context and the application sources.

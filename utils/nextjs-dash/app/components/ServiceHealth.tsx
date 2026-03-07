@@ -286,10 +286,11 @@ export default function ServiceHealth() {
       .sort(byName);
     const spring = services.filter((s) => s.name.startsWith('spring-')).sort(byName);
     const quarkus = services.filter((s) => s.name.startsWith('quarkus-')).sort(byName);
-    const spark = services.filter((s) => s.name.startsWith('spark-')).sort(byName);
-    const javalin = services.filter((s) => s.name.startsWith('javalin-')).sort(byName);
     const micronaut = services.filter((s) => s.name.startsWith('micronaut-')).sort(byName);
     const helidon = services.filter((s) => s.name.startsWith('helidon-')).sort(byName);
+    const spark = services.filter((s) => s.name.startsWith('spark-')).sort(byName);
+    const javalin = services.filter((s) => s.name.startsWith('javalin-')).sort(byName);
+    const dropwizard = services.filter((s) => s.name.startsWith('dropwizard-')).sort(byName);
     const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
     const utils = services.filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name)).sort(byName);
 
@@ -297,10 +298,11 @@ export default function ServiceHealth() {
       observability,
       spring,
       quarkus,
-      spark,
-      javalin,
       micronaut,
       helidon,
+      spark,
+      javalin,
+      dropwizard,
       go,
       utils,
     };
@@ -1082,6 +1084,42 @@ export default function ServiceHealth() {
         </>
       )}
 
+      {/* Micronaut Services */}
+      {groupedServices.micronaut.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Micronaut Services
+            </Typography>
+            <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2,
+                }}
+            >
+              {groupedServices.micronaut.map((service) => renderServiceCard(service))}
+            </Box>
+          </>
+      )}
+
+      {/* Helidon Services */}
+      {groupedServices.helidon.length > 0 && (
+          <>
+            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+              Helidon Services
+            </Typography>
+            <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2,
+                }}
+            >
+              {groupedServices.helidon.map((service) => renderServiceCard(service))}
+            </Box>
+          </>
+      )}
+
       {/* Spark Services */}
       {groupedServices.spark.length > 0 && (
           <>
@@ -1118,11 +1156,11 @@ export default function ServiceHealth() {
           </>
       )}
 
-      {/* Micronaut Services */}
-      {groupedServices.micronaut.length > 0 && (
+      {/* Dropwizard Services */}
+      {groupedServices.dropwizard.length > 0 && (
           <>
             <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Micronaut Services
+              Dropwizard Services
             </Typography>
             <Box
                 sx={{
@@ -1131,25 +1169,7 @@ export default function ServiceHealth() {
                   gap: 2,
                 }}
             >
-              {groupedServices.micronaut.map((service) => renderServiceCard(service))}
-            </Box>
-          </>
-      )}
-
-      {/* Helidon Services */}
-      {groupedServices.helidon.length > 0 && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Helidon Services
-            </Typography>
-            <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 2,
-                }}
-            >
-              {groupedServices.helidon.map((service) => renderServiceCard(service))}
+              {groupedServices.dropwizard.map((service) => renderServiceCard(service))}
             </Box>
           </>
       )}

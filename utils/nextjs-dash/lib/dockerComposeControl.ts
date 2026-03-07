@@ -12,10 +12,11 @@ export interface DockerControlCommandParams {
 export function needsServicesProfiles(serviceName: string): boolean {
   return serviceName.startsWith('spring-') ||
     serviceName.startsWith('quarkus-') ||
-    serviceName.startsWith('spark-') ||
-    serviceName.startsWith('javalin-') ||
     serviceName.startsWith('micronaut-') ||
     serviceName.startsWith('helidon-') ||
+    serviceName.startsWith('spark-') ||
+    serviceName.startsWith('javalin-') ||
+    serviceName.startsWith('dropwizard-') ||
     serviceName.startsWith('go');
 }
 

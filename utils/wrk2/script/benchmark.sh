@@ -203,16 +203,20 @@ fi
 benchmarks_per_iteration() {
   # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
   if [ "${HOST}" = "combo" ]; then
-    echo 27
+    echo 29
     return 0
   fi
-
+  if [ "${HOST}" = "jetty" ]; then
+    #spark, javalin, dropwizard : jvm platform + virtual
+    echo 6
+    return 0
+  fi
   if [ "${ENDPOINT}" = "combo" ]; then
     if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* ]]; then
       echo 3
       return 0
     fi
-    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == helidon-se* || "${HOST}" == helidon-mp* ]]; then
+    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* || "${HOST}" == helidon-se* || "${HOST}" == helidon-mp* ]]; then
       echo 2
       return 0
     fi
@@ -246,10 +250,33 @@ count=0
 overall_count=0
 while true; do
   count=$((count + 1))
-
   iter_bench_idx=0
 
-  if [ "${HOST}" = "combo" ]; then
+  if [ "${HOST}" = "jetty" ]; then
+    hosts=(
+      "spark-jvm-platform"
+      "spark-jvm-virtual"
+      "javalin-jvm-platform"
+      "javalin-jvm-virtual"
+      "dropwizard-jvm-platform"
+      "dropwizard-jvm-virtual"
+    )
+    endpoints=(
+      "platform"
+      "virtual"
+      "platform"
+      "virtual"
+      "platform"
+      "virtual"
+    )
+    for i in "${!hosts[@]}"; do
+      iter_bench_idx=$((iter_bench_idx + 1))
+      overall_count=$((overall_count + 1))
+      run_wrk_one "${hosts[$i]}" "${endpoints[$i]}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
+      echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
+      sleep "${SLEEP_BETWEEN}"
+    done
+  elif [ "${HOST}" = "combo" ]; then
     hosts=(
       "spring-jvm-tomcat-platform"
       "spring-jvm-tomcat-virtual"
@@ -263,10 +290,6 @@ while true; do
       "quarkus-native"
       "quarkus-native"
       "quarkus-native"
-      "spark-jvm-platform"
-      "spark-jvm-virtual"
-      "javalin-jvm-platform"
-      "javalin-jvm-virtual"
       "micronaut-jvm"
       "micronaut-jvm"
       "micronaut-jvm"
@@ -277,6 +300,12 @@ while true; do
       "helidon-se-native"
       "helidon-mp-jvm"
       "helidon-mp-native"
+      "spark-jvm-platform"
+      "spark-jvm-virtual"
+      "javalin-jvm-platform"
+      "javalin-jvm-virtual"
+      "dropwizard-jvm-platform"
+      "dropwizard-jvm-virtual"
       "go"
     )
     endpoints=(
@@ -294,10 +323,6 @@ while true; do
       "reactive"
       "platform"
       "virtual"
-      "platform"
-      "virtual"
-      "platform"
-      "virtual"
       "reactive"
       "platform"
       "virtual"
@@ -305,6 +330,12 @@ while true; do
       "virtual"
       "virtual"
       "virtual"
+      "virtual"
+      "platform"
+      "virtual"
+      "platform"
+      "virtual"
+      "platform"
       "virtual"
       "virtual"
     )
@@ -316,7 +347,7 @@ while true; do
       sleep "${SLEEP_BETWEEN}"
     done
   elif [ "${ENDPOINT}" = "combo" ]; then
-    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* || "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* ]]; then
+    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* || "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* ]]; then
       if [[ "${HOST}" == spring-jvm* ]]; then
         hosts=(
           "spring-jvm-tomcat-platform"
@@ -341,6 +372,12 @@ while true; do
         hosts=(
           "javalin-jvm-platform"
           "javalin-jvm-virtual"
+        )
+        endpoints=("platform" "virtual")
+      elif [[ "${HOST}" == dropwizard-jvm* ]]; then
+        hosts=(
+          "dropwizard-jvm-platform"
+          "dropwizard-jvm-virtual"
         )
         endpoints=("platform" "virtual")
       else
@@ -407,4 +444,3 @@ while true; do
   fi
 
 done
-

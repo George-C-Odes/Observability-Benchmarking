@@ -33,24 +33,6 @@ orchestrator:
         base-url: '${ORCH_HEALTH_QUARKUS_NATIVE_BASE_URL:false}'
         health-path: /q/health/ready
 
-      go:
-        base-url: '${ORCH_HEALTH_GO_BASE_URL:false}'
-        health-path: /readyz
-
-      spark-jvm-platform:
-        base-url: '${ORCH_HEALTH_SPARK_JVM_PLATFORM_BASE_URL:false}'
-        health-path: /ready
-      spark-jvm-virtual:
-        base-url: '${ORCH_HEALTH_SPARK_JVM_VIRTUAL_BASE_URL:false}'
-        health-path: /ready
-
-      javalin-jvm-platform:
-        base-url: '${ORCH_HEALTH_JAVALIN_JVM_PLATFORM_BASE_URL:false}'
-        health-path: /ready
-      javalin-jvm-virtual:
-        base-url: '${ORCH_HEALTH_JAVALIN_JVM_VIRTUAL_BASE_URL:false}'
-        health-path: /ready
-
       micronaut-jvm:
         base-url: '${ORCH_HEALTH_MICRONAUT_JVM_BASE_URL:false}'
         health-path: /health
@@ -70,6 +52,31 @@ orchestrator:
       helidon-mp-native:
         base-url: '${ORCH_HEALTH_HELIDON_MP_NATIVE_BASE_URL:false}'
         health-path: /health
+
+      spark-jvm-platform:
+        base-url: '${ORCH_HEALTH_SPARK_JVM_PLATFORM_BASE_URL:false}'
+        health-path: /ready
+      spark-jvm-virtual:
+        base-url: '${ORCH_HEALTH_SPARK_JVM_VIRTUAL_BASE_URL:false}'
+        health-path: /ready
+
+      javalin-jvm-platform:
+        base-url: '${ORCH_HEALTH_JAVALIN_JVM_PLATFORM_BASE_URL:false}'
+        health-path: /ready
+      javalin-jvm-virtual:
+        base-url: '${ORCH_HEALTH_JAVALIN_JVM_VIRTUAL_BASE_URL:false}'
+        health-path: /ready
+
+      dropwizard-jvm-platform:
+        base-url: '${ORCH_HEALTH_DROPWIZARD_JVM_PLATFORM_BASE_URL:false}'
+        health-path: /ready
+      dropwizard-jvm-virtual:
+        base-url: '${ORCH_HEALTH_DROPWIZARD_JVM_VIRTUAL_BASE_URL:false}'
+        health-path: /ready
+
+      go:
+        base-url: '${ORCH_HEALTH_GO_BASE_URL:false}'
+        health-path: /readyz
 
       # Observability
       grafana:

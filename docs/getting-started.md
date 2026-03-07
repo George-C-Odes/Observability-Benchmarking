@@ -223,8 +223,13 @@ Includes all service implementations:
 - Spring Boot (Native: platform, virtual, reactive)
 - Quarkus (JVM: platform, virtual, reactive)
 - Quarkus (Native: platform, virtual, reactive)
+- Micronaut (JVM: platform, virtual, reactive)
+- Micronaut (Native: platform, virtual, reactive)
+- Helidon SE (JVM & Native: virtual)
+- Helidon MP (JVM & Native: virtual)
 - Spark (JVM: platform, virtual)
 - Javalin (JVM: platform, virtual)
+- Dropwizard (JVM: platform, virtual)
 - Go
 
 #### Profile: RAIN_FIRE (Load Generators)
@@ -269,18 +274,6 @@ docker compose --project-directory compose --profile=OBS --profile=SERVICES up -
 # Quarkus Native
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d quarkus-native
 
-# Spark JVM with platform threads
-docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spark-jvm-platform
-
-# Spark JVM with virtual threads
-docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spark-jvm-virtual
-
-# Javalin JVM with platform threads
-docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d javalin-jvm-platform
-
-# Javalin JVM with virtual threads
-docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d javalin-jvm-virtual
-
 # Micronaut JVM
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d micronaut-jvm
 
@@ -298,6 +291,24 @@ docker compose --project-directory compose --profile=OBS --profile=SERVICES up -
 
 # Helidon MP Native (only virtual threads applicable)
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d helidon-mp-native
+
+# Spark JVM with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spark-jvm-platform
+
+# Spark JVM with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d spark-jvm-virtual
+
+# Javalin JVM with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d javalin-jvm-platform
+
+# Javalin JVM with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d javalin-jvm-virtual
+
+# Dropwizard JVM with platform threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d dropwizard-jvm-platform
+
+# Dropwizard JVM with virtual threads
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d dropwizard-jvm-virtual
 
 # Go
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d go
@@ -319,23 +330,25 @@ Once services are running:
 - **Quarkus Native (Platform)**: http://localhost:8087/hello/platform
 - **Quarkus Native (Virtual)**: http://localhost:8087/hello/virtual
 - **Quarkus Native (Reactive)**: http://localhost:8087/hello/reactive
-- **Spark JVM (Platform)**: http://localhost:8088/hello/platform
-- **Spark JVM (Virtual)**: http://localhost:8089/hello/virtual
-- **Javalin JVM (Platform)**: http://localhost:8090/hello/platform
-- **Javalin JVM (Virtual)**: http://localhost:8091/hello/virtual
-- **Micronaut JVM (Platform)**: http://localhost:8092/hello/platform
-- **Micronaut JVM (Virtual)**: http://localhost:8092/hello/virtual
-- **Micronaut JVM (Reactive)**: http://localhost:8092/hello/reactive
-- **Micronaut Native (Platform)**: http://localhost:8093/hello/platform
-- **Micronaut Native (Virtual)**: http://localhost:8093/hello/virtual
-- **Micronaut Native (Reactive)**: http://localhost:8093/hello/reactive
-- **Helidon SE JVM (Virtual)**: http://localhost:8094/hello/virtual
-- **Helidon SE Native (Virtual)**: http://localhost:8095/hello/virtual
-- **Helidon MP JVM (Virtual)**: http://localhost:8096/hello/virtual
-- **Helidon MP Native (Virtual)**: http://localhost:8097/hello/virtual
+- **Micronaut JVM (Platform)**: http://localhost:8088/hello/platform
+- **Micronaut JVM (Virtual)**: http://localhost:8088/hello/virtual
+- **Micronaut JVM (Reactive)**: http://localhost:8088/hello/reactive
+- **Micronaut Native (Platform)**: http://localhost:8089/hello/platform
+- **Micronaut Native (Virtual)**: http://localhost:8089/hello/virtual
+- **Micronaut Native (Reactive)**: http://localhost:8089/hello/reactive
+- **Helidon SE JVM (Virtual)**: http://localhost:8090/hello/virtual
+- **Helidon SE Native (Virtual)**: http://localhost:8091/hello/virtual
+- **Helidon MP JVM (Virtual)**: http://localhost:8092/hello/virtual
+- **Helidon MP Native (Virtual)**: http://localhost:8093/hello/virtual
+- **Spark JVM (Platform)**: http://localhost:8094/hello/platform
+- **Spark JVM (Virtual)**: http://localhost:8095/hello/virtual
+- **Javalin JVM (Platform)**: http://localhost:8096/hello/platform
+- **Javalin JVM (Virtual)**: http://localhost:8097/hello/virtual
+- **Dropwizard JVM (Platform)**: http://localhost:8098/hello/platform
+- **Dropwizard JVM (Virtual)**: http://localhost:8099/hello/virtual
 - **Go**: http://localhost:9080/hello/virtual
 
-Health checks available at `/q/health` (Quarkus) or `/actuator/health` (Spring).
+Health checks available at `/q/health` (Quarkus), `/actuator/health` (Spring), or `/ready` (Spark, Javalin, Dropwizard).
 
 ## Running Your First Benchmark
 

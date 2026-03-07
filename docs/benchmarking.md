@@ -30,10 +30,6 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Quarkus    | Native  | Platform | 21k | 263           | 636             |
 | Quarkus    | Native  | Virtual  | 27k | 263           | 636             |
 | Quarkus    | Native  | Reactive | 20k | 263           | 636             |
-| Spark      | JVM     | Platform | 24k | 396           | 215             |
-| Spark      | JVM     | Virtual  | 22k | 395           | 215             |
-| Javalin    | JVM     | Platform | 27k | 687           | 219             |
-| Javalin    | JVM     | Virtual  | 24k | 550           | 219             |
 | Micronaut  | JVM     | Platform | 30k | 441           | 193             |
 | Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
 | Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
@@ -44,6 +40,12 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
+| Spark      | JVM     | Platform | 24k | 403           | 215             |
+| Spark      | JVM     | Virtual  | 22k | 395           | 215             |
+| Javalin    | JVM     | Platform | 28k | 721           | 219             |
+| Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
+| Dropwizard | JVM     | Platform | 17k | 613           | 246             |
+| Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 ### Fairness Notes
@@ -53,6 +55,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 - Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use for jvm, not supported in native).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
+- Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -122,6 +125,11 @@ memory: 2GB        # Maximum memory
 **Frameworks**:
 - Spring Boot: 4.0.3 (3.5.11 also supported)
 - Quarkus: 3.32.2
+- Micronaut: 4.10.16
+- Helidon: 4.3.4
+- Spark: 3.0.3
+- Javalin: 7.0.1
+- Dropwizard: 5.0.1
 - Go: 1.26.1 with Fiber v3.1.0
 
 ### Third-party license note (native-image)

@@ -139,92 +139,6 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Go with Fiber
-
-**Official Site**: [https://gofiber.io/](https://gofiber.io/)
-
-**Why We're Adding It**:
-- Excellent performance characteristics
-- Built-in concurrency (goroutines)
-- Fast HTTP routing
-- Cross-language comparison
-- Ultralightweight
-
-**Headline benchmark (17/02/2026)**: ~24,000 RPS (observability-aligned implementation)
-
-**Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
-
-### SparkJava 3.0.3 (Zoomba fork)
-
-**Official Site**: [https://sparkjava.com/](https://sparkjava.com/) | [Zoomba fork](https://github.com/nicholaszoomba/spark)
-
-**Why We Use It**:
-- Extremely minimal HTTP micro-framework — ideal as a lightweight baseline
-- Simple, expressive API for defining routes
-- The Zoomba fork adds virtual thread support to the original Spark codebase
-- Useful for isolating framework overhead in benchmarks
-
-**Implementation Details**:
-- **SparkJava 3.0.3** (Zoomba fork with virtual thread support)
-- Embedded Jetty server
-- JVM builds only (no native image support)
-
-**Thread Models Implemented**:
-1. **Platform Threads**
-   - Traditional Jetty thread pool
-   - Blocking I/O model
-
-2. **Virtual Threads** (via Zoomba fork)
-   - Lightweight threads from Java 21+
-   - Drop-in replacement for the platform thread executor
-
-**Pros**:
-- Near-zero learning curve
-- Very small dependency footprint
-- Fast startup
-- Great for micro-benchmarks and prototyping
-
-**Cons**:
-- No reactive/non-blocking mode
-- Limited ecosystem (no built-in DI, validation, etc.)
-- No native image support
-- Official project is largely unmaintained; the Zoomba fork keeps it viable
-
-### Javalin 7.0.1
-
-**Official Site**: [https://javalin.io/](https://javalin.io/)
-
-**Why We Use It**:
-- Lightweight yet feature-rich REST framework built on top of Jetty
-- First-class Kotlin support (useful for future polyglot benchmarks)
-- Simple, declarative API similar to Express.js / Koa
-- Good middle ground between Spark's minimalism and Spring's richness
-
-**Implementation Details**:
-- **Javalin 7.0.1** (latest major release)
-- Embedded Jetty server
-- JVM builds only (no native image support)
-
-**Thread Models Implemented**:
-1. **Platform Threads**
-   - Standard Jetty thread pool
-   - Blocking I/O model
-
-2. **Virtual Threads**
-   - Java 21+ virtual threads via Jetty's virtual thread executor
-   - Blocking code on virtual threads
-
-**Pros**:
-- Concise, readable API
-- Lightweight with fast startup
-- Active community and regular releases
-- Built-in OpenAPI / Swagger support
-
-**Cons**:
-- No reactive/non-blocking HTTP model
-- No native image support out of the box
-- Smaller ecosystem than Spring or Micronaut
-
 ### Micronaut 4.10.16
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
@@ -314,6 +228,129 @@ mvn package -Pnative
 - Virtual-thread–only model limits concurrency model comparisons
 - Smaller community and ecosystem than Spring or Quarkus
 - Helidon MP's CDI overhead is significant compared to SE
+
+### SparkJava 3.0.3 (Zoomba fork)
+
+**Official Site**: [https://sparkjava.com/](https://sparkjava.com/) | [Zoomba fork](https://github.com/nicholaszoomba/spark)
+
+**Why We Use It**:
+- Extremely minimal HTTP micro-framework — ideal as a lightweight baseline
+- Simple, expressive API for defining routes
+- The Zoomba fork adds virtual thread support to the original Spark codebase
+- Useful for isolating framework overhead in benchmarks
+
+**Implementation Details**:
+- **SparkJava 3.0.3** (Zoomba fork with virtual thread support)
+- Embedded Jetty server
+- JVM builds only (no native image support)
+
+**Thread Models Implemented**:
+1. **Platform Threads**
+   - Traditional Jetty thread pool
+   - Blocking I/O model
+
+2. **Virtual Threads** (via Zoomba fork)
+   - Lightweight threads from Java 21+
+   - Drop-in replacement for the platform thread executor
+
+**Pros**:
+- Near-zero learning curve
+- Very small dependency footprint
+- Fast startup
+- Great for micro-benchmarks and prototyping
+
+**Cons**:
+- No reactive/non-blocking mode
+- Limited ecosystem (no built-in DI, validation, etc.)
+- No native image support
+- Official project is largely unmaintained; the Zoomba fork keeps it viable
+
+### Javalin 7.0.1
+
+**Official Site**: [https://javalin.io/](https://javalin.io/)
+
+**Why We Use It**:
+- Lightweight yet feature-rich REST framework built on top of Jetty
+- First-class Kotlin support (useful for future polyglot benchmarks)
+- Simple, declarative API similar to Express.js / Koa
+- Good middle ground between Spark's minimalism and Spring's richness
+
+**Implementation Details**:
+- **Javalin 7.0.1** (latest major release)
+- Embedded Jetty server
+- JVM builds only (no native image support)
+
+**Thread Models Implemented**:
+1. **Platform Threads**
+   - Standard Jetty thread pool
+   - Blocking I/O model
+
+2. **Virtual Threads**
+   - Java 21+ virtual threads via Jetty's virtual thread executor
+   - Blocking code on virtual threads
+
+**Pros**:
+- Concise, readable API
+- Lightweight with fast startup
+- Active community and regular releases
+- Built-in OpenAPI / Swagger support
+
+**Cons**:
+- No reactive/non-blocking HTTP model
+- No native image support out of the box
+- Smaller ecosystem than Spring or Micronaut
+
+### Dropwizard 5.0.1
+
+**Official Site**: [https://www.dropwizard.io/](https://www.dropwizard.io/) | [GitHub](https://github.com/dropwizard/dropwizard)
+
+**Why We Use It**:
+- Battle-tested, production-ready Java framework that bundles Jetty, Jersey, Jackson, and Metrics into a single cohesive package
+- Opinionated "fat JAR" approach — simple deployment model with minimal ceremony
+- Useful for benchmarking a mature, ops-focused framework against newer alternatives
+- Jetty 12 in Dropwizard 5.x enables direct virtual-thread support via `VirtualThreadPool`
+
+**Implementation Details**:
+- **Dropwizard 5.0.1** (latest major release — Jetty 12 + Jersey 3 + Jackson 2)
+- Embedded Jetty server with configurable thread pool
+- JVM builds only (no native image support)
+- jlink-optimised runtime image with distroless base
+
+**Thread Models Implemented**:
+1. **Platform Threads**
+   - Jetty `QueuedThreadPool`
+   - Blocking I/O model
+
+2. **Virtual Threads**
+   - Jetty 12 `VirtualThreadPool` (Project Loom)
+   - Blocking code on virtual threads
+
+**Pros**:
+- Batteries-included: HTTP, JSON, metrics, health checks, logging out of the box
+- Mature ecosystem with extensive production track record
+- Simple deployment (single fat JAR + YAML config)
+- Built-in Dropwizard Metrics support; Micrometer integration provided via this project's dependencies/agent
+
+**Cons**:
+- No reactive/non-blocking HTTP model
+- No native image support
+- Heavier baseline than Spark or Javalin due to bundled subsystems
+- Smaller community momentum compared to Spring or Quarkus
+
+### Go with Fiber
+
+**Official Site**: [https://gofiber.io/](https://gofiber.io/)
+
+**Why We're Adding It**:
+- Excellent performance characteristics
+- Built-in concurrency (goroutines)
+- Fast HTTP routing
+- Cross-language comparison
+- Ultralightweight
+
+**Headline benchmark (17/02/2026)**: ~24,000 RPS (observability-aligned implementation)
+
+**Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
 ---
 
@@ -777,13 +814,14 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.16 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
@@ -813,10 +851,11 @@ Cache<String, String> cache = Caffeine.newBuilder()
 ### Official Documentation
 - [Spring Boot Reference](https://docs.spring.io/spring-boot/docs/current/reference/html/)
 - [Quarkus Guides](https://quarkus.io/guides/)
-- [SparkJava Documentation](https://sparkjava.com/documentation)
-- [Javalin Documentation](https://javalin.io/documentation)
 - [Micronaut Documentation](https://docs.micronaut.io/latest/guide/)
 - [Helidon Documentation](https://helidon.io/docs/latest/)
+- [SparkJava Documentation](https://sparkjava.com/documentation)
+- [Javalin Documentation](https://javalin.io/documentation)
+- [Dropwizard Documentation](https://www.dropwizard.io/en/latest/)
 - [Grafana Documentation](https://grafana.com/docs/)
 - [OpenTelemetry Docs](https://opentelemetry.io/docs/)
 - [Docker Documentation](https://docs.docker.com/)
