@@ -13,7 +13,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <caffeine.version>3.2.3</caffeine.version>
-        <junit-jupiter.version>5.12.2</junit-jupiter.version>
+        <junit-jupiter.version>5.14.3</junit-jupiter.version>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>

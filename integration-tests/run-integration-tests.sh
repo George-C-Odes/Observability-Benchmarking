@@ -66,12 +66,10 @@ run_test() {
 }
 
 # Configuration - Port mappings match docker-compose.yml order
-# JVM Services
+# Spring Services
 SPRING_JVM_TOMCAT_PLATFORM_URL="${SPRING_JVM_TOMCAT_PLATFORM_URL:-http://localhost:8080}"
 SPRING_JVM_TOMCAT_VIRTUAL_URL="${SPRING_JVM_TOMCAT_VIRTUAL_URL:-http://localhost:8081}"
 SPRING_JVM_NETTY_URL="${SPRING_JVM_NETTY_URL:-http://localhost:8082}"
-
-# Native Services
 SPRING_NATIVE_TOMCAT_PLATFORM_URL="${SPRING_NATIVE_TOMCAT_PLATFORM_URL:-http://localhost:8083}"
 SPRING_NATIVE_TOMCAT_VIRTUAL_URL="${SPRING_NATIVE_TOMCAT_VIRTUAL_URL:-http://localhost:8084}"
 SPRING_NATIVE_NETTY_URL="${SPRING_NATIVE_NETTY_URL:-http://localhost:8085}"
@@ -80,25 +78,29 @@ SPRING_NATIVE_NETTY_URL="${SPRING_NATIVE_NETTY_URL:-http://localhost:8085}"
 QUARKUS_JVM_URL="${QUARKUS_JVM_URL:-http://localhost:8086}"
 QUARKUS_NATIVE_URL="${QUARKUS_NATIVE_URL:-http://localhost:8087}"
 
-# Spark Services
-SPARK_JVM_PLATFORM_URL="${SPARK_JVM_PLATFORM_URL:-http://localhost:8088}"
-SPARK_JVM_VIRTUAL_URL="${SPARK_JVM_VIRTUAL_URL:-http://localhost:8089}"
-
-# Javalin Services
-JAVALIN_JVM_PLATFORM_URL="${JAVALIN_JVM_PLATFORM_URL:-http://localhost:8090}"
-JAVALIN_JVM_VIRTUAL_URL="${JAVALIN_JVM_VIRTUAL_URL:-http://localhost:8091}"
-
 # Micronaut Services
-MICRONAUT_JVM_URL="${MICRONAUT_JVM_URL:-http://localhost:8092}"
-MICRONAUT_NATIVE_URL="${MICRONAUT_NATIVE_URL:-http://localhost:8093}"
+MICRONAUT_JVM_URL="${MICRONAUT_JVM_URL:-http://localhost:8088}"
+MICRONAUT_NATIVE_URL="${MICRONAUT_NATIVE_URL:-http://localhost:8089}"
 
 # Helidon SE Services
-HELIDON_SE_JVM_URL="${HELIDON_SE_JVM_URL:-http://localhost:8094}"
-HELIDON_SE_NATIVE_URL="${HELIDON_SE_NATIVE_URL:-http://localhost:8095}"
+HELIDON_SE_JVM_URL="${HELIDON_SE_JVM_URL:-http://localhost:8090}"
+HELIDON_SE_NATIVE_URL="${HELIDON_SE_NATIVE_URL:-http://localhost:8091}"
 
 # Helidon MP Services
-HELIDON_MP_JVM_URL="${HELIDON_MP_JVM_URL:-http://localhost:8096}"
-HELIDON_MP_NATIVE_URL="${HELIDON_MP_NATIVE_URL:-http://localhost:8097}"
+HELIDON_MP_JVM_URL="${HELIDON_MP_JVM_URL:-http://localhost:8092}"
+HELIDON_MP_NATIVE_URL="${HELIDON_MP_NATIVE_URL:-http://localhost:8093}"
+
+# Spark Services
+SPARK_JVM_PLATFORM_URL="${SPARK_JVM_PLATFORM_URL:-http://localhost:8094}"
+SPARK_JVM_VIRTUAL_URL="${SPARK_JVM_VIRTUAL_URL:-http://localhost:8095}"
+
+# Javalin Services
+JAVALIN_JVM_PLATFORM_URL="${JAVALIN_JVM_PLATFORM_URL:-http://localhost:8096}"
+JAVALIN_JVM_VIRTUAL_URL="${JAVALIN_JVM_VIRTUAL_URL:-http://localhost:8097}"
+
+# Dropwizard Services
+DROPWIZARD_JVM_PLATFORM_URL="${DROPWIZARD_JVM_PLATFORM_URL:-http://localhost:8098}"
+DROPWIZARD_JVM_VIRTUAL_URL="${DROPWIZARD_JVM_VIRTUAL_URL:-http://localhost:8099}"
 
 # Go Service
 GO_URL="${GO_URL:-http://localhost:9080}"
@@ -116,10 +118,11 @@ ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 # Framework versions
 QUARKUS_VERSION="3.32.2"
 SPRING_BOOT_VERSION="4.0.3"
-SPARK_VERSION="3.0.3"
-JAVALIN_VERSION="7.0.1"
 MICRONAUT_VERSION="4.10.16"
 HELIDON_VERSION="4.3.4"
+SPARK_VERSION="3.0.3"
+JAVALIN_VERSION="7.0.1"
+DROPWIZARD_VERSION="5.0.1"
 GO_VERSION="1.26.1"
 
 # Helper function to test HTTP endpoint
@@ -260,10 +263,11 @@ echo ""
 echo "Testing Framework Versions:"
 echo "- Spring Boot: ${SPRING_BOOT_VERSION}"
 echo "- Quarkus: ${QUARKUS_VERSION}"
-echo "- Spark: ${SPARK_VERSION}"
-echo "- Javalin: ${JAVALIN_VERSION}"
 echo "- Micronaut: ${MICRONAUT_VERSION}"
 echo "- Helidon: ${HELIDON_VERSION}"
+echo "- Spark: ${SPARK_VERSION}"
+echo "- Javalin: ${JAVALIN_VERSION}"
+echo "- Dropwizard: ${DROPWIZARD_VERSION}"
 echo "- Go: ${GO_VERSION}"
 echo ""
 
@@ -290,41 +294,51 @@ run_test "Quarkus JVM - /hello/virtual" test_endpoint "Quarkus JVM - /hello/virt
 run_test "Quarkus JVM - /hello/reactive" test_endpoint "Quarkus JVM - /hello/reactive" "${QUARKUS_JVM_URL}/hello/reactive" 200 "Quarkus"
 echo ""
 
-echo -e "${BLUE}--- Spark JVM Platform (port 8088) ---${NC}"
-run_test "Spark JVM Platform - /hello/platform" test_endpoint "Spark JVM Platform - /hello/platform" "${SPARK_JVM_PLATFORM_URL}/hello/platform" 200 "Spark"
-run_test "Spark JVM Platform - /ready" test_ready_endpoint "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Spark JVM Virtual (port 8089) ---${NC}"
-run_test "Spark JVM Virtual - /hello/virtual" test_endpoint "Spark JVM Virtual - /hello/virtual" "${SPARK_JVM_VIRTUAL_URL}/hello/virtual" 200 "Spark"
-run_test "Spark JVM Virtual - /ready" test_ready_endpoint "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Javalin JVM Platform (port 8090) ---${NC}"
-run_test "Javalin JVM Platform - /hello/platform" test_endpoint "Javalin JVM Platform - /hello/platform" "${JAVALIN_JVM_PLATFORM_URL}/hello/platform" 200 "Javalin"
-run_test "Javalin JVM Platform - /ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Javalin JVM Virtual (port 8091) ---${NC}"
-run_test "Javalin JVM Virtual - /hello/virtual" test_endpoint "Javalin JVM Virtual - /hello/virtual" "${JAVALIN_JVM_VIRTUAL_URL}/hello/virtual" 200 "Javalin"
-run_test "Javalin JVM Virtual - /ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Micronaut JVM (port 8092) ---${NC}"
+echo -e "${BLUE}--- Micronaut JVM (port 8088) ---${NC}"
 run_test "Micronaut JVM - /hello/platform" test_endpoint "Micronaut JVM - /hello/platform" "${MICRONAUT_JVM_URL}/hello/platform" 200 "Micronaut"
 run_test "Micronaut JVM - /hello/virtual" test_endpoint "Micronaut JVM - /hello/virtual" "${MICRONAUT_JVM_URL}/hello/virtual" 200 "Micronaut"
 run_test "Micronaut JVM - /hello/reactive" test_endpoint "Micronaut JVM - /hello/reactive" "${MICRONAUT_JVM_URL}/hello/reactive" 200 "Micronaut"
 run_test "Micronaut JVM - /health" test_endpoint "Micronaut JVM - /health" "${MICRONAUT_JVM_URL}/health" 200 ""
 echo ""
 
-echo -e "${BLUE}--- Helidon SE JVM (port 8094) ---${NC}"
+echo -e "${BLUE}--- Helidon SE JVM (port 8090) ---${NC}"
 run_test "Helidon SE JVM - /hello/virtual" test_endpoint "Helidon SE JVM - /hello/virtual" "${HELIDON_SE_JVM_URL}/hello/virtual" 200 "Helidon"
 run_test "Helidon SE JVM - /observe/health" test_endpoint "Helidon SE JVM - /observe/health" "${HELIDON_SE_JVM_URL}/observe/health" "200,204" ""
 echo ""
 
-echo -e "${BLUE}--- Helidon MP JVM (port 8096) ---${NC}"
+echo -e "${BLUE}--- Helidon MP JVM (port 8092) ---${NC}"
 run_test "Helidon MP JVM - /hello/virtual" test_endpoint "Helidon MP JVM - /hello/virtual" "${HELIDON_MP_JVM_URL}/hello/virtual" 200 "Helidon MP"
 run_test "Helidon MP JVM - /health" test_endpoint "Helidon MP JVM - /health" "${HELIDON_MP_JVM_URL}/health" 200 ""
+echo ""
+
+echo -e "${BLUE}--- Spark JVM Platform (port 8094) ---${NC}"
+run_test "Spark JVM Platform - /hello/platform" test_endpoint "Spark JVM Platform - /hello/platform" "${SPARK_JVM_PLATFORM_URL}/hello/platform" 200 "Spark"
+run_test "Spark JVM Platform - /ready" test_ready_endpoint "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}" "/ready"
+echo ""
+
+echo -e "${BLUE}--- Spark JVM Virtual (port 8095) ---${NC}"
+run_test "Spark JVM Virtual - /hello/virtual" test_endpoint "Spark JVM Virtual - /hello/virtual" "${SPARK_JVM_VIRTUAL_URL}/hello/virtual" 200 "Spark"
+run_test "Spark JVM Virtual - /ready" test_ready_endpoint "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}" "/ready"
+echo ""
+
+echo -e "${BLUE}--- Javalin JVM Platform (port 8096) ---${NC}"
+run_test "Javalin JVM Platform - /hello/platform" test_endpoint "Javalin JVM Platform - /hello/platform" "${JAVALIN_JVM_PLATFORM_URL}/hello/platform" 200 "Javalin"
+run_test "Javalin JVM Platform - /ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
+echo ""
+
+echo -e "${BLUE}--- Javalin JVM Virtual (port 8097) ---${NC}"
+run_test "Javalin JVM Virtual - /hello/virtual" test_endpoint "Javalin JVM Virtual - /hello/virtual" "${JAVALIN_JVM_VIRTUAL_URL}/hello/virtual" 200 "Javalin"
+run_test "Javalin JVM Virtual - /ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
+echo ""
+
+echo -e "${BLUE}--- Dropwizard JVM Platform (port 8098) ---${NC}"
+run_test "Dropwizard JVM Platform - /hello/platform" test_endpoint "Dropwizard JVM Platform - /hello/platform" "${DROPWIZARD_JVM_PLATFORM_URL}/hello/platform" 200 "Dropwizard"
+run_test "Dropwizard JVM Platform - /ready" test_ready_endpoint "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}" "/ready"
+echo ""
+
+echo -e "${BLUE}--- Dropwizard JVM Virtual (port 8099) ---${NC}"
+run_test "Dropwizard JVM Virtual - /hello/virtual" test_endpoint "Dropwizard JVM Virtual - /hello/virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}/hello/virtual" 200 "Dropwizard"
+run_test "Dropwizard JVM Virtual - /ready" test_ready_endpoint "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}" "/ready"
 echo ""
 
 echo "=========================================="
@@ -350,19 +364,19 @@ run_test "Quarkus Native - /hello/virtual" test_endpoint "Quarkus Native - /hell
 run_test "Quarkus Native - /hello/reactive" test_endpoint "Quarkus Native - /hello/reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" 200 "Quarkus"
 echo ""
 
-echo -e "${BLUE}--- Micronaut Native (port 8093) ---${NC}"
+echo -e "${BLUE}--- Micronaut Native (port 8089) ---${NC}"
 run_test "Micronaut Native - /hello/platform" test_endpoint "Micronaut Native - /hello/platform" "${MICRONAUT_NATIVE_URL}/hello/platform" 200 "Micronaut"
 run_test "Micronaut Native - /hello/virtual" test_endpoint "Micronaut Native - /hello/virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" 200 "Micronaut"
 run_test "Micronaut Native - /hello/reactive" test_endpoint "Micronaut Native - /hello/reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" 200 "Micronaut"
 run_test "Micronaut Native - /health" test_endpoint "Micronaut Native - /health" "${MICRONAUT_NATIVE_URL}/health" 200 ""
 echo ""
 
-echo -e "${BLUE}--- Helidon SE Native (port 8095) ---${NC}"
+echo -e "${BLUE}--- Helidon SE Native (port 8091) ---${NC}"
 run_test "Helidon SE Native - /hello/virtual" test_endpoint "Helidon SE Native - /hello/virtual" "${HELIDON_SE_NATIVE_URL}/hello/virtual" 200 "Helidon"
 run_test "Helidon SE Native - /observe/health" test_endpoint "Helidon SE Native - /observe/health" "${HELIDON_SE_NATIVE_URL}/observe/health" "200,204" ""
 echo ""
 
-echo -e "${BLUE}--- Helidon MP Native (port 8097) ---${NC}"
+echo -e "${BLUE}--- Helidon MP Native (port 8093) ---${NC}"
 run_test "Helidon MP Native - /hello/virtual" test_endpoint "Helidon MP Native - /hello/virtual" "${HELIDON_MP_NATIVE_URL}/hello/virtual" 200 "Helidon MP"
 run_test "Helidon MP Native - /health" test_endpoint "Helidon MP Native - /health" "${HELIDON_MP_NATIVE_URL}/health" 200 ""
 echo ""
@@ -390,17 +404,18 @@ run_test "Spring Native Tomcat Virtual metrics" test_spring_metrics "Spring Nati
 run_test "Spring Native Netty metrics" test_spring_metrics "Spring Native Netty" "${SPRING_NATIVE_NETTY_URL}"
 run_test "Quarkus JVM metrics" test_quarkus_metrics "Quarkus JVM" "${QUARKUS_JVM_URL}"
 run_test "Quarkus Native metrics" test_quarkus_metrics "Quarkus Native" "${QUARKUS_NATIVE_URL}"
-run_test "Spark JVM Platform ready" test_ready_endpoint "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}" "/ready"
-run_test "Spark JVM Virtual ready" test_ready_endpoint "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}" "/ready"
-run_test "Javalin JVM Platform ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
-run_test "Javalin JVM Virtual ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
 run_test "Micronaut JVM metrics" test_micronaut_metrics "Micronaut JVM" "${MICRONAUT_JVM_URL}"
 run_test "Micronaut Native metrics" test_micronaut_metrics "Micronaut Native" "${MICRONAUT_NATIVE_URL}"
 run_test "Helidon SE JVM health" test_ready_endpoint "Helidon SE JVM" "${HELIDON_SE_JVM_URL}" "/observe/health"
 run_test "Helidon SE Native health" test_ready_endpoint "Helidon SE Native" "${HELIDON_SE_NATIVE_URL}" "/observe/health"
-
 run_test "Helidon MP JVM health" test_ready_endpoint "Helidon MP JVM" "${HELIDON_MP_JVM_URL}" "/health"
 run_test "Helidon MP Native health" test_ready_endpoint "Helidon MP Native" "${HELIDON_MP_NATIVE_URL}" "/health"
+run_test "Spark JVM Platform ready" test_ready_endpoint "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}" "/ready"
+run_test "Spark JVM Virtual ready" test_ready_endpoint "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}" "/ready"
+run_test "Javalin JVM Platform ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
+run_test "Javalin JVM Virtual ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
+run_test "Dropwizard JVM Platform ready" test_ready_endpoint "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}" "/ready"
+run_test "Dropwizard JVM Virtual ready" test_ready_endpoint "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}" "/ready"
 run_test "Go metrics" test_go_metrics "Go" "${GO_URL}"
 echo ""
 
@@ -526,12 +541,6 @@ run_test "Trace Quarkus Native Platform" run_trace_and_verify "Quarkus Native Pl
 run_test "Trace Quarkus Native Virtual" run_trace_and_verify "Quarkus Native Virtual" "${QUARKUS_NATIVE_URL}/hello/virtual" "quarkus-native" "vthread"
 run_test "Trace Quarkus Native Reactive" run_trace_and_verify "Quarkus Native Reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" "quarkus-native" "vert.x-eventloop-thread"
 
-run_test "Trace Spark JVM Platform" run_trace_and_verify "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}/hello/platform" "spark-jvm-platform" "isVirtual: 'false'"
-run_test "Trace Spark JVM Virtual" run_trace_and_verify "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}/hello/virtual" "spark-jvm-virtual" "isVirtual: 'true'"
-
-run_test "Trace Javalin JVM Platform" run_trace_and_verify "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}/hello/platform" "javalin-jvm-platform" "isVirtual: 'false'"
-run_test "Trace Javalin JVM Virtual" run_trace_and_verify "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}/hello/virtual" "javalin-jvm-virtual" "isVirtual: 'true'"
-
 run_test "Trace Micronaut JVM Platform" run_trace_and_verify "Micronaut JVM Platform" "${MICRONAUT_JVM_URL}/hello/platform" "micronaut-jvm" "isVirtual: 'false'"
 run_test "Trace Micronaut JVM Virtual" run_trace_and_verify "Micronaut JVM Virtual" "${MICRONAUT_JVM_URL}/hello/virtual" "micronaut-jvm" "isVirtual: 'true'"
 run_test "Trace Micronaut JVM Reactive" run_trace_and_verify "Micronaut JVM Reactive" "${MICRONAUT_JVM_URL}/hello/reactive" "micronaut-jvm" "EventLoopGroup"
@@ -545,6 +554,15 @@ run_test "Trace Helidon SE Native Virtual" run_trace_and_verify "Helidon SE Nati
 
 run_test "Trace Helidon MP JVM Virtual" run_trace_and_verify "Helidon MP JVM Virtual" "${HELIDON_MP_JVM_URL}/hello/virtual" "helidon-mp-jvm" "isVirtual: 'true'"
 run_test "Trace Helidon MP Native Virtual" run_trace_and_verify "Helidon MP Native Virtual" "${HELIDON_MP_NATIVE_URL}/hello/virtual" "helidon-mp-native" "isVirtual: 'true'"
+
+run_test "Trace Spark JVM Platform" run_trace_and_verify "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}/hello/platform" "spark-jvm-platform" "isVirtual: 'false'"
+run_test "Trace Spark JVM Virtual" run_trace_and_verify "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}/hello/virtual" "spark-jvm-virtual" "isVirtual: 'true'"
+
+run_test "Trace Javalin JVM Platform" run_trace_and_verify "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}/hello/platform" "javalin-jvm-platform" "isVirtual: 'false'"
+run_test "Trace Javalin JVM Virtual" run_trace_and_verify "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}/hello/virtual" "javalin-jvm-virtual" "isVirtual: 'true'"
+
+run_test "Trace Dropwizard JVM Platform" run_trace_and_verify "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}/hello/platform" "dropwizard-jvm-platform" "isVirtual: 'false'"
+run_test "Trace Dropwizard JVM Virtual" run_trace_and_verify "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}/hello/virtual" "dropwizard-jvm-virtual" "isVirtual: 'true'"
 
 run_test "Trace Go Virtual" run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
 

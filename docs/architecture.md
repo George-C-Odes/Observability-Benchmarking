@@ -48,12 +48,6 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Spark 3.0.3 (JVM)
-  - Platform threads
-  - Virtual threads
-- Javalin 7.0.1 (JVM)
-  - Platform threads
-  - Virtual threads
 - Micronaut 4.10.16 (JVM and Native)
   - Platform threads
   - Virtual threads
@@ -62,6 +56,15 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Virtual threads (Helidon 4 is virtual-thread–first)
 - Helidon MP 4.3.4 (JVM and Native)
   - Virtual threads (MicroProfile / CDI / JAX-RS)
+- Spark 3.0.3 (JVM)
+  - Platform threads
+  - Virtual threads
+- Javalin 7.0.1 (JVM)
+  - Platform threads
+  - Virtual threads
+- Dropwizard 5.0.1 (JVM)
+  - Platform threads
+  - Virtual threads
 - Go 1.26.1
   - Fiber framework (v3.1.0)
 

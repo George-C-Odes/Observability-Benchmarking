@@ -8,6 +8,14 @@ x-default-environment:
   timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
   host_repo: ${HOST_REPO:-C:/}
   cache_size: &default_cache_size ${CACHE_SIZE:-50000}
+  platform_jetty_max_threads: &default_platform_jetty_max_threads ${PLATFORM_JETTY_MAX_THREADS:-0}
+  platform_jetty_min_threads: &default_platform_jetty_min_threads ${PLATFORM_JETTY_MIN_THREADS:-0}
+  platform_jetty_accept_queue_size: &default_platform_jetty_accept_queue_size ${PLATFORM_JETTY_ACCEPT_QUEUE_SIZE:-10000}
+  platform_jetty_idle_timeout_ms: &default_platform_jetty_idle_timeout_ms ${PLATFORM_JETTY_IDLE_TIMEOUT_MS:-60000}
+  virtual_jetty_max_threads: &default_virtual_jetty_max_threads ${VIRTUAL_JETTY_MAX_THREADS:-0}
+  virtual_jetty_min_threads: &default_virtual_jetty_min_threads ${VIRTUAL_JETTY_MIN_THREADS:-0}
+  virtual_jetty_accept_queue_size: &default_virtual_jetty_accept_queue_size ${VIRTUAL_JETTY_ACCEPT_QUEUE_SIZE:-10000}
+  virtual_jetty_idle_timeout_ms: &default_virtual_jetty_idle_timeout_ms ${VIRTUAL_JETTY_IDLE_TIMEOUT_MS:-60000}
   cpu_limit: &default_cpu_limit ${CORES_LIMIT:-2}
   mem_limit: &default_mem_limit ${MEM_LIMIT:-512M}
   heap_min: ${HEAP_MIN:-64M}
@@ -660,283 +668,6 @@ services:
 #      - "-XX:FlightRecorderOptions=repository=/tmp/jfr"
     <<: *common_properties
 
-  spark-jvm-platform:
-    profiles: ["${DOCKER_PROF_SPARK_JVM_PLATFORM:-skip}"]
-    image: spark-jvm-platform:${SPARK_VERSION}_latest
-    build:
-      context: ../services/java
-      dockerfile: spark/jvm/Dockerfile
-      args:
-        BUILDKIT_BUILD_NAME: spark-jvm:${SPARK_VERSION}_latest
-        SPARK_VERSION: ${SPARK_VERSION}
-    container_name: spark-jvm-platform
-    ports:
-      - "8088:8080"
-    volumes:
-      - ${HOST_REPO}/data/services/spark/jvm/platform/error:/var/log/error
-    environment:
-      TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
-      LOGGING_LEVEL_ROOT: "INFO"
-      CACHE_SIZE: *default_cache_size
-      THREAD_MODE: platform
-      LOG_METERS: true
-
-      # Spark/Jetty tuning
-      JETTY_MAX_THREADS: ${SPARK_JETTY_MAX_THREADS:-0}
-      JETTY_MIN_THREADS: ${SPARK_JETTY_MIN_THREADS:-0}
-      JETTY_ACCEPT_QUEUE_SIZE: ${SPARK_JETTY_ACCEPT_QUEUE_SIZE:-10000}
-      JETTY_IDLE_TIMEOUT_MS: ${SPARK_JETTY_IDLE_TIMEOUT_MS:-60000}
-      SPARK_HANDLER_EXECUTION_MODE: ${SPARK_HANDLER_EXECUTION_MODE:-direct}
-      SPARK_PLATFORM_EXECUTOR_THREADS: ${SPARK_PLATFORM_EXECUTOR_THREADS:-0}
-
-      OTEL_SDK_DISABLED: false
-      OTEL_LOG_LEVEL: "info"
-      OTEL_JAVAAGENT_DEBUG: false
-      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
-      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
-      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
-      OTEL_SERVICE_NAME: "spark-jvm-platform"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=${SPARK_VERSION}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_TRACES_EXPORTER: "otlp"
-      OTEL_METRICS_EXPORTER: "otlp"
-      OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
-      OTEL_PROFILING_ENABLED: true
-      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
-      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
-      OTEL_PYROSCOPE_START_PROFILING: true
-      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
-      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
-      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
-      PYROSCOPE_APPLICATION_NAME: "agent/spark-jvm-platform"
-      PYROSCOPE_PROFILING_INTERVAL: "10ms"
-      PYROSCOPE_UPLOAD_INTERVAL: "20s"
-      PYROSCOPE_PROFILER_LOCK: "10ms"
-      PYROSCOPE_PROFILER_ALLOC: "512k"
-      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
-      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
-      PYROSCOPE_FORMAT: "jfr"
-      PYROSCOPE_PROFILER_EVENT: "itimer"
-      PYROSCOPE_ALLOC_LIVE: false
-      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
-      PYROSCOPE_LOG_LEVEL: "warn"
-      PYROSCOPE_GC_BEFORE_DUMP: false
-    <<: *common_properties
-
-  spark-jvm-virtual:
-    profiles: ["${DOCKER_PROF_SPARK_JVM_VIRTUAL:-skip}"]
-    image: spark-jvm-virtual:${SPARK_VERSION}_latest
-    build:
-      context: ../services/java
-      dockerfile: spark/jvm/Dockerfile
-      args:
-        BUILDKIT_BUILD_NAME: spark-jvm:${SPARK_VERSION}_latest
-        SPARK_VERSION: ${SPARK_VERSION}
-    container_name: spark-jvm-virtual
-    ports:
-      - "8089:8080"
-    volumes:
-      - ${HOST_REPO}/data/services/spark/jvm/virtual/error:/var/log/error
-    environment:
-      TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
-      LOGGING_LEVEL_ROOT: "INFO"
-      CACHE_SIZE: *default_cache_size
-      THREAD_MODE: virtual
-      LOG_METERS: true
-
-      # Spark/Jetty tuning
-      JETTY_MAX_THREADS: ${SPARK_JETTY_MAX_THREADS:-0}
-      JETTY_MIN_THREADS: ${SPARK_JETTY_MIN_THREADS:-0}
-      JETTY_ACCEPT_QUEUE_SIZE: ${SPARK_JETTY_ACCEPT_QUEUE_SIZE:-10000}
-      JETTY_IDLE_TIMEOUT_MS: ${SPARK_JETTY_IDLE_TIMEOUT_MS:-60000}
-      SPARK_HANDLER_EXECUTION_MODE: ${SPARK_HANDLER_EXECUTION_MODE:-direct}
-      SPARK_VIRTUAL_EXECUTION_MODE: ${SPARK_VIRTUAL_EXECUTION_MODE:-spark}
-      SPARK_PLATFORM_EXECUTOR_THREADS: ${SPARK_PLATFORM_EXECUTOR_THREADS:-0}
-
-      OTEL_SDK_DISABLED: false
-      OTEL_LOG_LEVEL: "info"
-      OTEL_JAVAAGENT_DEBUG: false
-      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
-      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
-      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
-      OTEL_SERVICE_NAME: "spark-jvm-virtual"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=${SPARK_VERSION}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_TRACES_EXPORTER: "otlp"
-      OTEL_METRICS_EXPORTER: "otlp"
-      OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
-      OTEL_PROFILING_ENABLED: true
-      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
-      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
-      OTEL_PYROSCOPE_START_PROFILING: true
-      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
-      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
-      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
-      PYROSCOPE_APPLICATION_NAME: "agent/spark-jvm-virtual"
-      PYROSCOPE_PROFILING_INTERVAL: "10ms"
-      PYROSCOPE_UPLOAD_INTERVAL: "20s"
-      PYROSCOPE_PROFILER_LOCK: "10ms"
-      PYROSCOPE_PROFILER_ALLOC: "512k"
-      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
-      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
-      PYROSCOPE_FORMAT: "jfr"
-      PYROSCOPE_PROFILER_EVENT: "itimer"
-      PYROSCOPE_ALLOC_LIVE: false
-      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
-      PYROSCOPE_LOG_LEVEL: "warn"
-      PYROSCOPE_GC_BEFORE_DUMP: false
-    <<: *common_properties
-
-  javalin-jvm-platform:
-    profiles: ["${DOCKER_PROF_JAVALIN_JVM_PLATFORM:-skip}"]
-    image: javalin-jvm-platform:${JAVALIN_VERSION}_latest
-    build:
-      context: ../services/java
-      dockerfile: javalin/jvm/Dockerfile
-      args:
-        BUILDKIT_BUILD_NAME: javalin-jvm:${JAVALIN_VERSION}_latest
-        JAVALIN_VERSION: ${JAVALIN_VERSION}
-    container_name: javalin-jvm-platform
-    ports:
-      - "8090:8080"
-    volumes:
-      - ${HOST_REPO}/data/services/javalin/jvm/platform/error:/var/log/error
-    environment:
-      TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
-      LOGGING_LEVEL_ROOT: "INFO"
-      CACHE_SIZE: *default_cache_size
-      THREAD_MODE: platform
-      LOG_METERS: true
-
-      # Javalin/Jetty tuning
-      JETTY_MAX_THREADS: ${JAVALIN_JETTY_MAX_THREADS:-0}
-      JETTY_MIN_THREADS: ${JAVALIN_JETTY_MIN_THREADS:-0}
-      JETTY_ACCEPT_QUEUE_SIZE: ${JAVALIN_JETTY_ACCEPT_QUEUE_SIZE:-10000}
-      JETTY_IDLE_TIMEOUT_MS: ${JAVALIN_JETTY_IDLE_TIMEOUT_MS:-60000}
-      JAVALIN_HANDLER_EXECUTION_MODE: ${JAVALIN_HANDLER_EXECUTION_MODE:-direct}
-      JAVALIN_PLATFORM_EXECUTOR_THREADS: ${JAVALIN_PLATFORM_EXECUTOR_THREADS:-0}
-
-      OTEL_SDK_DISABLED: false
-      OTEL_LOG_LEVEL: "info"
-      OTEL_JAVAAGENT_DEBUG: false
-      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
-      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
-      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
-      OTEL_SERVICE_NAME: "javalin-jvm-platform"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=${JAVALIN_VERSION}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_TRACES_EXPORTER: "otlp"
-      OTEL_METRICS_EXPORTER: "otlp"
-      OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
-      OTEL_PROFILING_ENABLED: true
-      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
-      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
-      OTEL_PYROSCOPE_START_PROFILING: true
-      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
-      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
-      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
-      PYROSCOPE_APPLICATION_NAME: "agent/javalin-jvm-platform"
-      PYROSCOPE_PROFILING_INTERVAL: "10ms"
-      PYROSCOPE_UPLOAD_INTERVAL: "20s"
-      PYROSCOPE_PROFILER_LOCK: "10ms"
-      PYROSCOPE_PROFILER_ALLOC: "512k"
-      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
-      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
-      PYROSCOPE_FORMAT: "jfr"
-      PYROSCOPE_PROFILER_EVENT: "itimer"
-      PYROSCOPE_ALLOC_LIVE: false
-      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
-      PYROSCOPE_LOG_LEVEL: "warn"
-      PYROSCOPE_GC_BEFORE_DUMP: false
-    <<: *common_properties
-
-  javalin-jvm-virtual:
-    profiles: ["${DOCKER_PROF_JAVALIN_JVM_VIRTUAL:-skip}"]
-    image: javalin-jvm-virtual:${JAVALIN_VERSION}_latest
-    build:
-      context: ../services/java
-      dockerfile: javalin/jvm/Dockerfile
-      args:
-        BUILDKIT_BUILD_NAME: javalin-jvm:${JAVALIN_VERSION}_latest
-        JAVALIN_VERSION: ${JAVALIN_VERSION}
-    container_name: javalin-jvm-virtual
-    ports:
-      - "8091:8080"
-    volumes:
-      - ${HOST_REPO}/data/services/javalin/jvm/virtual/error:/var/log/error
-    environment:
-      TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
-      LOGGING_LEVEL_ROOT: "INFO"
-      CACHE_SIZE: *default_cache_size
-      THREAD_MODE: virtual
-      LOG_METERS: true
-
-      # Javalin/Jetty tuning
-      JETTY_MAX_THREADS: ${JAVALIN_JETTY_MAX_THREADS:-0}
-      JETTY_MIN_THREADS: ${JAVALIN_JETTY_MIN_THREADS:-0}
-      JETTY_ACCEPT_QUEUE_SIZE: ${JAVALIN_JETTY_ACCEPT_QUEUE_SIZE:-10000}
-      JETTY_IDLE_TIMEOUT_MS: ${JAVALIN_JETTY_IDLE_TIMEOUT_MS:-60000}
-      JAVALIN_HANDLER_EXECUTION_MODE: ${JAVALIN_HANDLER_EXECUTION_MODE:-direct}
-      JAVALIN_PLATFORM_EXECUTOR_THREADS: ${JAVALIN_PLATFORM_EXECUTOR_THREADS:-0}
-
-      OTEL_SDK_DISABLED: false
-      OTEL_LOG_LEVEL: "info"
-      OTEL_JAVAAGENT_DEBUG: false
-      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
-      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
-      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
-      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
-      OTEL_SERVICE_NAME: "javalin-jvm-virtual"
-      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=${JAVALIN_VERSION}"
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
-      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
-      OTEL_TRACES_EXPORTER: "otlp"
-      OTEL_METRICS_EXPORTER: "otlp"
-      OTEL_LOGS_EXPORTER: "otlp"
-      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
-
-      OTEL_PROFILING_ENABLED: true
-      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
-      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
-      OTEL_PYROSCOPE_START_PROFILING: true
-      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
-      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
-      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
-      PYROSCOPE_APPLICATION_NAME: "agent/javalin-jvm-virtual"
-      PYROSCOPE_PROFILING_INTERVAL: "10ms"
-      PYROSCOPE_UPLOAD_INTERVAL: "20s"
-      PYROSCOPE_PROFILER_LOCK: "10ms"
-      PYROSCOPE_PROFILER_ALLOC: "512k"
-      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
-      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
-      PYROSCOPE_FORMAT: "jfr"
-      PYROSCOPE_PROFILER_EVENT: "itimer"
-      PYROSCOPE_ALLOC_LIVE: false
-      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
-      PYROSCOPE_LOG_LEVEL: "warn"
-      PYROSCOPE_GC_BEFORE_DUMP: false
-    <<: *common_properties
-
   micronaut-jvm:
     profiles: ["${DOCKER_PROF_MICRONAUT_JVM:-skip}"]
     image: micronaut-jvm:${MICRONAUT_VERSION}_latest
@@ -948,7 +679,7 @@ services:
         MICRONAUT_VERSION: ${MICRONAUT_VERSION}
     container_name: micronaut-jvm
     ports:
-      - "8092:8080"
+      - "8088:8080"
     volumes:
       - ${HOST_REPO}/data/services/micronaut/jvm/error:/var/log/error
     environment:
@@ -961,9 +692,9 @@ services:
       MICRONAUT_EXECUTORS_PLATFORM_NUMBER_OF_THREADS: *default_cpu_limit
       MICRONAUT_EXECUTORS_PLATFORM_PARALLELISM: *default_cpu_limit
       MICRONAUT_EXECUTORS_PLATFORM_NTHREADS: *default_cpu_limit
-        #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
+      #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
       MICRONAUT_EXECUTORS_PLATFORM_TYPE: "FIXED"
-        #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
+      #SCHEDULED, CACHED, FIXED, WORK_STEALING, THREAD_PER_TASK
       MICRONAUT_EXECUTORS_VIRTUAL_TYPE: "THREAD_PER_TASK"
       #Experimentally, seems to bump virtual threads performance by 10%
       MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER: ${MICRONAUT_LOOM_CARRIER:-true}
@@ -1007,7 +738,7 @@ services:
         MICRONAUT_VERSION: ${MICRONAUT_VERSION}
     container_name: micronaut-native
     ports:
-      - "8093:8080"
+      - "8089:8080"
     volumes:
       - ${HOST_REPO}/data/services/micronaut/native/error:/var/log/error
     environment:
@@ -1071,7 +802,7 @@ services:
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-se-jvm
     ports:
-      - "8094:8080"
+      - "8090:8080"
     volumes:
       - ${HOST_REPO}/data/services/helidon/se/jvm/error:/var/log/error
     environment:
@@ -1108,7 +839,7 @@ services:
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-se-native
     ports:
-      - "8095:8080"
+      - "8091:8080"
     volumes:
       - ${HOST_REPO}/data/services/helidon/se/native/error:/var/log/error
     environment:
@@ -1148,7 +879,7 @@ services:
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-mp-jvm
     ports:
-      - "8096:8080"
+      - "8092:8080"
     volumes:
       - ${HOST_REPO}/data/services/helidon/mp/jvm/error:/var/log/error
     environment:
@@ -1185,7 +916,7 @@ services:
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-mp-native
     ports:
-      - "8097:8080"
+      - "8093:8080"
     volumes:
       - ${HOST_REPO}/data/services/helidon/mp/native/error:/var/log/error
     environment:
@@ -1215,6 +946,417 @@ services:
       - "-Dorg.jboss.weld.bootstrap.api.helpers.SingletonProvider=org.jboss.weld.bootstrap.api.helpers.Singletons"
       - "-Dorg.jboss.weld.bootstrap.events.ContainerLifecycleEvents.PRELOAD_PROCESS_INJECTION_TARGET=false"
     command: *default_native_java_options
+    <<: *common_properties
+
+  spark-jvm-platform:
+    profiles: ["${DOCKER_PROF_SPARK_JVM_PLATFORM:-skip}"]
+    image: spark-jvm-platform:${SPARK_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: spark/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: spark-jvm:${SPARK_VERSION}_latest
+        SPARK_VERSION: ${SPARK_VERSION}
+    container_name: spark-jvm-platform
+    ports:
+      - "8094:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/spark/jvm/platform/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      THREAD_MODE: platform
+      LOG_METERS: true
+
+      # Spark/Jetty platform tuning
+      JETTY_MAX_THREADS: *default_platform_jetty_max_threads
+      JETTY_MIN_THREADS: *default_platform_jetty_min_threads
+      JETTY_ACCEPT_QUEUE_SIZE: *default_platform_jetty_accept_queue_size
+      JETTY_IDLE_TIMEOUT_MS: *default_platform_jetty_idle_timeout_ms
+      SPARK_HANDLER_EXECUTION_MODE: ${SPARK_HANDLER_EXECUTION_MODE:-direct}
+      SPARK_PLATFORM_EXECUTOR_THREADS: ${SPARK_PLATFORM_EXECUTOR_THREADS:-0}
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "spark-jvm-platform"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=${SPARK_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/spark-jvm-platform"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
+  spark-jvm-virtual:
+    profiles: ["${DOCKER_PROF_SPARK_JVM_VIRTUAL:-skip}"]
+    image: spark-jvm-virtual:${SPARK_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: spark/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: spark-jvm:${SPARK_VERSION}_latest
+        SPARK_VERSION: ${SPARK_VERSION}
+    container_name: spark-jvm-virtual
+    ports:
+      - "8095:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/spark/jvm/virtual/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      THREAD_MODE: virtual
+      LOG_METERS: true
+
+      # Spark/Jetty virtual tuning
+      JETTY_MAX_THREADS: *default_virtual_jetty_max_threads
+      JETTY_MIN_THREADS: *default_virtual_jetty_min_threads
+      JETTY_ACCEPT_QUEUE_SIZE: *default_virtual_jetty_accept_queue_size
+      JETTY_IDLE_TIMEOUT_MS: *default_virtual_jetty_idle_timeout_ms
+      SPARK_HANDLER_EXECUTION_MODE: ${SPARK_HANDLER_EXECUTION_MODE:-direct}
+      SPARK_VIRTUAL_EXECUTION_MODE: ${SPARK_VIRTUAL_EXECUTION_MODE:-spark}
+      SPARK_PLATFORM_EXECUTOR_THREADS: ${SPARK_PLATFORM_EXECUTOR_THREADS:-0}
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "spark-jvm-virtual"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=SparkJava,webengine.version=${SPARK_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/spark-jvm-virtual"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
+  javalin-jvm-platform:
+    profiles: ["${DOCKER_PROF_JAVALIN_JVM_PLATFORM:-skip}"]
+    image: javalin-jvm-platform:${JAVALIN_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: javalin/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: javalin-jvm:${JAVALIN_VERSION}_latest
+        JAVALIN_VERSION: ${JAVALIN_VERSION}
+    container_name: javalin-jvm-platform
+    ports:
+      - "8096:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/javalin/jvm/platform/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      THREAD_MODE: platform
+      LOG_METERS: true
+
+      # Javalin/Jetty platform tuning
+      JETTY_MAX_THREADS: *default_platform_jetty_max_threads
+      JETTY_MIN_THREADS: *default_platform_jetty_min_threads
+      JETTY_ACCEPT_QUEUE_SIZE: *default_platform_jetty_accept_queue_size
+      JETTY_IDLE_TIMEOUT_MS: *default_platform_jetty_idle_timeout_ms
+      JAVALIN_HANDLER_EXECUTION_MODE: ${JAVALIN_HANDLER_EXECUTION_MODE:-direct}
+      JAVALIN_PLATFORM_EXECUTOR_THREADS: ${JAVALIN_PLATFORM_EXECUTOR_THREADS:-0}
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "javalin-jvm-platform"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=${JAVALIN_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/javalin-jvm-platform"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
+  javalin-jvm-virtual:
+    profiles: ["${DOCKER_PROF_JAVALIN_JVM_VIRTUAL:-skip}"]
+    image: javalin-jvm-virtual:${JAVALIN_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: javalin/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: javalin-jvm:${JAVALIN_VERSION}_latest
+        JAVALIN_VERSION: ${JAVALIN_VERSION}
+    container_name: javalin-jvm-virtual
+    ports:
+      - "8097:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/javalin/jvm/virtual/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      THREAD_MODE: virtual
+      LOG_METERS: true
+
+      # Javalin/Jetty tuning
+      JETTY_MAX_THREADS: *default_virtual_jetty_max_threads
+      JETTY_MIN_THREADS: *default_virtual_jetty_min_threads
+      JETTY_ACCEPT_QUEUE_SIZE: *default_virtual_jetty_accept_queue_size
+      JETTY_IDLE_TIMEOUT_MS: *default_virtual_jetty_idle_timeout_ms
+      JAVALIN_HANDLER_EXECUTION_MODE: ${JAVALIN_HANDLER_EXECUTION_MODE:-direct}
+      JAVALIN_PLATFORM_EXECUTOR_THREADS: ${JAVALIN_PLATFORM_EXECUTOR_THREADS:-0}
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "javalin-jvm-virtual"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Javalin,webengine.version=${JAVALIN_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/javalin-jvm-virtual"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
+  dropwizard-jvm-platform:
+    profiles: ["${DOCKER_PROF_DROPWIZARD_JVM_PLATFORM:-skip}"]
+    image: dropwizard-jvm-platform:${DROPWIZARD_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: dropwizard/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: dropwizard-jvm:${DROPWIZARD_VERSION}_latest
+        DROPWIZARD_VERSION: ${DROPWIZARD_VERSION}
+    container_name: dropwizard-jvm-platform
+    ports:
+      - "8098:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/dropwizard/jvm/platform/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      THREAD_MODE: platform
+      LOG_METERS: true
+
+      # Dropwizard/Jetty platform tuning
+      JETTY_MAX_THREADS: *default_platform_jetty_max_threads
+      JETTY_MIN_THREADS: *default_platform_jetty_min_threads
+      JETTY_ACCEPT_QUEUE_SIZE: *default_platform_jetty_accept_queue_size
+      JETTY_IDLE_TIMEOUT_MS: *default_platform_jetty_idle_timeout_ms
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "dropwizard-jvm-platform"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Dropwizard,webengine.version=${DROPWIZARD_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/dropwizard-jvm-platform"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
+  dropwizard-jvm-virtual:
+    profiles: ["${DOCKER_PROF_DROPWIZARD_JVM_VIRTUAL:-skip}"]
+    image: dropwizard-jvm-virtual:${DROPWIZARD_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: dropwizard/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: dropwizard-jvm:${DROPWIZARD_VERSION}_latest
+        DROPWIZARD_VERSION: ${DROPWIZARD_VERSION}
+    container_name: dropwizard-jvm-virtual
+    ports:
+      - "8099:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/dropwizard/jvm/virtual/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      THREAD_MODE: virtual
+      LOG_METERS: true
+
+      # Dropwizard/Jetty virtual tuning
+      JETTY_MAX_THREADS: *default_virtual_jetty_max_threads
+      JETTY_MIN_THREADS: *default_virtual_jetty_min_threads
+      JETTY_ACCEPT_QUEUE_SIZE: *default_virtual_jetty_accept_queue_size
+      JETTY_IDLE_TIMEOUT_MS: *default_virtual_jetty_idle_timeout_ms
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "dropwizard-jvm-virtual"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Dropwizard,webengine.version=${DROPWIZARD_VERSION}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/dropwizard-jvm-virtual"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
     <<: *common_properties
 
   go:
