@@ -329,7 +329,7 @@ mvn package -Pnative
 - Batteries-included: HTTP, JSON, metrics, health checks, logging out of the box
 - Mature ecosystem with extensive production track record
 - Simple deployment (single fat JAR + YAML config)
-- Built-in Micrometer / Metrics support
+- Built-in Dropwizard Metrics support; Micrometer integration provided via this project's dependencies/agent
 
 **Cons**:
 - No reactive/non-blocking HTTP model
