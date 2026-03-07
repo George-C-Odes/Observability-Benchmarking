@@ -7,7 +7,7 @@
     <module name="dropwizard-jvm" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="io.github.georgecodes.benchmarking.javalin.*" />
+        <option name="PATTERN" value="io.github.georgecodes.benchmarking.dropwizard.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
