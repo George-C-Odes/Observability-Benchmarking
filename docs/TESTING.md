@@ -460,7 +460,7 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 ==========================================
 Run Environment
 ==========================================
-Host OS: Linux fellorus 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+Host OS: Linux <HOST> 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
 Terminal / session:
   stdin:   TTY
   stdout:  not a TTY
@@ -468,8 +468,8 @@ Terminal / session:
   TERM:    xterm-256color
   SHELL:   /bin/bash
   argv0:   run-integration-tests.sh
-  USER:    fell
-  LOGNAME: fell
+  USER:    <USER>
+  LOGNAME: <USER>
   WSL:     Ubuntu
 Timestamp (host): 2026-03-07T22:37:15+02:00
 ==========================================
