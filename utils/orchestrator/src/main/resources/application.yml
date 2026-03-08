@@ -74,6 +74,10 @@ orchestrator:
         base-url: '${ORCH_HEALTH_DROPWIZARD_JVM_VIRTUAL_BASE_URL:false}'
         health-path: /ready
 
+      vertx-jvm:
+        base-url: '${ORCH_HEALTH_VERTX_JVM_BASE_URL:false}'
+        health-path: /ready
+
       go:
         base-url: '${ORCH_HEALTH_GO_BASE_URL:false}'
         health-path: /readyz

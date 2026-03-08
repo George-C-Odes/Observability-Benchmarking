@@ -63,6 +63,7 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'javalin-jvm-virtual': false,
     'dropwizard-jvm-platform': false,
     'dropwizard-jvm-virtual': false,
+    'vertx-jvm': false,
     'go': false,
 
     // UTILS

@@ -10,6 +10,7 @@
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.0.1-purple.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-4B0082.svg)](https://www.dropwizard.io/)
+[![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
 [![Go](https://img.shields.io/badge/Go-1.26.1-00ADD8.svg)](https://golang.org/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
@@ -70,6 +71,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
+| **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
@@ -173,6 +175,9 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
+- **Vert.x**: 5.0.8
+  - JVM build
+    - Reactive (event-loop)
 
 #### Go (1.26.1)
 - Fiber framework integration
@@ -410,6 +415,7 @@ The numbers below are a curated summary of a representative run.
 | Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
+| Vert.x     | JVM     | Reactive | 26k | 336           | 220             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
@@ -426,6 +432,7 @@ The numbers below are a curated summary of a representative run.
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
+- Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -464,6 +471,7 @@ The numbers below are a curated summary of a representative run.
 - **Spark**: 3.0.3
 - **Javalin**: 7.0.1
 - **Dropwizard**: 5.0.1
+- **Vert.x**: 5.0.8
 - **Go**: 1.26.1 (Fiber v3.1.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -577,7 +585,7 @@ This project implements comprehensive code quality and security practices to ens
 #### Checkstyle Linting
 - **Configuration**: Enforces Google Java Style Guide with customizations
 - **Version**: maven-checkstyle-plugin 3.6.0 with Checkstyle 12.2.0
-- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard)
+- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x)
 - **Integration**: Runs automatically during Maven `validate` phase
 - **Results**: 0 violations across all projects
 
@@ -597,6 +605,7 @@ cd services/java/helidon/mp/jvm && mvn checkstyle:check
 cd services/java/spark/jvm && mvn checkstyle:check
 cd services/java/javalin/jvm && mvn checkstyle:check
 cd services/java/dropwizard/jvm && mvn checkstyle:check
+cd services/java/vertx/jvm && mvn checkstyle:check
 ```
 
 #### Code Standards Enforced
@@ -719,6 +728,8 @@ Observability-Benchmarking/
 │   │   │   └── jvm/             # JVM builds (platform, virtual)
 │   │   └── dropwizard/          # Dropwizard services
 │   │       └── jvm/             # JVM builds (platform, virtual)
+│   │   └── vertx/               # Vert.x services
+│   │       └── jvm/             # JVM build (reactive)
 │   └── go/                  # Go services
 ├── config/                  # Configuration files
 │   ├── grafana/             # Grafana dashboards and provisioning
@@ -812,6 +823,12 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 - Built on Jetty 12 + Jersey 3 + Jackson; thread mode controlled via `THREAD_MODE` env var
 - jlink-optimised JVM image with distroless runtime base
 
+#### Vert.x
+- **Single deployment** serving the reactive endpoint
+- One container, only JVM build supported
+- Fully reactive, event-loop–based framework built on Netty — no blocking, no thread-per-request
+- jlink-optimised JVM image with distroless runtime base
+
 ### Recommendations for Production
 
 ⚠️ **This setup is optimized for local development and benchmarking**. Do NOT use these configurations in production without modifications:
@@ -901,7 +918,6 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🎯 Short-term Goals (Next 3-6 months)
 
 #### Additional Framework Support
-- [ ] **Vert.x** jvm/reactive
 - [ ] **Play** jvm/reactive
 - [ ] **Helm charts** for easy Kubernetes deployment
 - [ ] **ArgoCD manifests** for GitOps workflows
@@ -1084,6 +1100,7 @@ This project builds upon amazing open-source tools and frameworks. Special thank
 - [Spark](https://sparkjava.com/) - Minimal HTTP server
 - [Javalin](https://javalin.io/) - Lightweight REST server
 - [Dropwizard](https://www.dropwizard.io/) - Production-ready RESTful web services framework
+- [Vert.x](https://vertx.io/) - Reactive, event-driven applications on the JVM
 - [wrk2](https://github.com/giltene/wrk2) - Constant throughput HTTP benchmarking tool
 - [Docker](https://www.docker.com/) - Containerization platform
 

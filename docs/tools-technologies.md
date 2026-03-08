@@ -337,6 +337,41 @@ mvn package -Pnative
 - Heavier baseline than Spark or Javalin due to bundled subsystems
 - Smaller community momentum compared to Spring or Quarkus
 
+### Vert.x 5.0.8
+
+**Official Site**: [https://vertx.io/](https://vertx.io/) | [GitHub](https://github.com/eclipse-vertx/vert.x)
+
+**Why We Use It**:
+- Industry-standard reactive toolkit for building high-performance, non-blocking applications on the JVM
+- Event-loop–based architecture (Netty under the hood) designed for maximum throughput per CPU core
+- Polyglot runtime supporting Java, Kotlin, Groovy, JavaScript, and more
+- Lightweight — no CDI, no annotation scanning, no classpath magic; explicit wiring
+
+**Implementation Details**:
+- **Vert.x 5.0.8** (latest stable release)
+- Fully reactive HTTP server on Netty event loops
+- JVM build only (no native image support at this time)
+- jlink-optimised runtime image with distroless base
+
+**Thread Models Implemented**:
+1. **Reactive (Event Loop)**
+   - All request handling runs on the Vert.x event loop
+   - Non-blocking sleep via `vertx.setTimer` (never blocks the event loop)
+   - Multiple HTTP server instances (one per event-loop thread) for optimal throughput
+
+**Pros**:
+- Extremely high throughput with minimal resource consumption
+- True non-blocking from the ground up — no thread-per-request overhead
+- Mature project with strong Eclipse Foundation governance
+- Micrometer metrics bridge (`vertx-micrometer-metrics`) for native Vert.x metric collection
+- Excellent documentation and well-defined API contracts
+
+**Cons**:
+- Requires reactive programming discipline (no blocking calls on the event loop)
+- Steeper learning curve for developers accustomed to thread-per-request models
+- No native image support in the community edition
+- Smaller enterprise adoption compared to Spring or Quarkus
+
 ### Go with Fiber
 
 **Official Site**: [https://gofiber.io/](https://gofiber.io/)
@@ -822,6 +857,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
+| **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
@@ -856,6 +892,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 - [SparkJava Documentation](https://sparkjava.com/documentation)
 - [Javalin Documentation](https://javalin.io/documentation)
 - [Dropwizard Documentation](https://www.dropwizard.io/en/latest/)
+- [Vert.x Documentation](https://vertx.io/docs/)
 - [Grafana Documentation](https://grafana.com/docs/)
 - [OpenTelemetry Docs](https://opentelemetry.io/docs/)
 - [Docker Documentation](https://docs.docker.com/)

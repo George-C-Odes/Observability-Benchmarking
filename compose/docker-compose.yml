@@ -1359,6 +1359,67 @@ services:
       PYROSCOPE_GC_BEFORE_DUMP: false
     <<: *common_properties
 
+  vertx-jvm:
+    profiles: ["${DOCKER_PROF_VERTX_JVM:-skip}"]
+    image: vertx-jvm:${VERTX_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: vertx/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: vertx-jvm:${VERTX_VERSION}_latest
+        VERTX_VERSION: ${VERTX_VERSION}
+    container_name: vertx-jvm
+    ports:
+      - "8100:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/vertx/jvm/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      VERTX_EVENT_LOOP_SIZE: ${VERTX_EVENT_LOOP_SIZE:-0}
+      LOG_METERS: true
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "vertx-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Vertx,webengine.version=${VERTX_VERSION},eventloop.pool.size=${VERTX_EVENT_LOOP_SIZE}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/vertx-jvm"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
   go:
     profiles: ["${DOCKER_PROF_GO:-skip}"]
     image: go:${GO_VERSION}_latest

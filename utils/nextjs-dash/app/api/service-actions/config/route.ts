@@ -33,6 +33,7 @@ const SERVICES = [
   'javalin-jvm-virtual',
   'dropwizard-jvm-platform',
   'dropwizard-jvm-virtual',
+  'vertx-jvm',
   'go',
 
   // UTILS
