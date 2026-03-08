@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -39,6 +39,8 @@ import { ScriptSection } from './scripts/ScriptSection';
 import { InwardPulse } from './ui/InwardPulse';
 import { useTimedPulse } from '@/app/hooks/useTimedPulse';
 
+const clientLogger = createClientLogger('ScriptRunner');
+
 function formatTimestampHuman(iso?: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -75,7 +77,6 @@ export default function ScriptRunner() {
   // Snapshot what the user *submitted* so the UI doesn't lag behind asynchronous SSE title updates.
   const [submittedRun, setSubmittedRun] = useState<{ label: string; command: string } | null>(null);
 
-  const clientLogger = createClientLogger('ScriptRunner');
 
   const [executingName, setExecutingName] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -138,7 +139,7 @@ export default function ScriptRunner() {
     return () => window.clearInterval(id);
   }, [isRunning]);
 
-  const copyToClipboard = async (text: string, scriptName: string) => {
+  const copyToClipboard = useCallback(async (text: string, scriptName: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess(scriptName);
@@ -146,9 +147,9 @@ export default function ScriptRunner() {
     } catch (err) {
       clientLogger.error('Failed to copy to clipboard', err);
     }
-  };
+  }, []);
 
-  const copyText = async (text: string) => {
+  const copyText = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess('job');
@@ -156,7 +157,7 @@ export default function ScriptRunner() {
     } catch (err) {
       clientLogger.error('Failed to copy to clipboard', err);
     }
-  };
+  }, []);
 
   const handleRefresh = async () => {
     setMessage(null);

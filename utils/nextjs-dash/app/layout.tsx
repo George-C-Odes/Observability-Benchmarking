@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import Providers from './Providers';
-import { ThemeHydrationScript } from './components/ThemeHydrationScript';
-import { ThemeColorSchemeScript } from './components/ThemeColorSchemeScript';
-import { RestoreUiStateScript } from './components/RestoreUiStateScript';
+import { PreHydrationScript } from './components/PreHydrationScript';
 import { RuntimeConfigScript } from './components/RuntimeConfigScript';
 import packageJson from '../package.json';
 
@@ -46,9 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeColorSchemeScript />
-        <ThemeHydrationScript />
-        <RestoreUiStateScript />
+        <PreHydrationScript />
         <RuntimeConfigScript systemInfo={systemInfo} />
         <Providers>{children}</Providers>
       </body>

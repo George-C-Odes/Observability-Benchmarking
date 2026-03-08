@@ -35,7 +35,7 @@ function getInitialTheme(): string {
   // SSR fallback
   if (typeof window === 'undefined') return 'dark';
 
-  // Prefer the pre-hydration value injected by ThemeHydrationScript.
+  // Prefer the pre-hydration value injected by PreHydrationScript.
   const attr = document.documentElement.dataset.dashboardTheme;
   if (attr) return sanitizeThemeId(attr);
 

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import {
   Box,
   Button,
@@ -34,7 +35,7 @@ type ScriptCardProps = {
   onExecuteAction: () => void;
 };
 
-export function ScriptCard({
+export const ScriptCard = React.memo(function ScriptCard({
   script,
   executing,
   executeDisabled,
@@ -91,4 +92,4 @@ export function ScriptCard({
       </CardActions>
     </Card>
   );
-}
+});

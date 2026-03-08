@@ -1,11 +1,34 @@
+# Dependencies & build output (rebuilt inside Docker)
 node_modules
 .next
+
+# VCS
 .git
 .gitignore
-README.md
+
+# Documentation (excluded by glob, README re-included below isn't needed at runtime)
 *.md
+
+# Local env overrides
 .env*.local
+
+# Debug / error logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Docker meta (prevent recursive context)
 Dockerfile
+.dockerignore
+
+# TypeScript incremental build info (not needed; tsc runs fresh in Docker)
+tsconfig.tsbuildinfo
+
+# Vitest report artifacts
+vitest-*-report.json
+
+# Temp / scratch
+.tmp
+
+# SSE smoke scripts (dev-only tooling, not part of the app)
+scripts

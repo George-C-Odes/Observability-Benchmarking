@@ -10,7 +10,6 @@ import {
   CardContent,
   Chip,
   Alert,
-  IconButton,
   Tooltip,
   Stack,
   Divider,
@@ -29,11 +28,13 @@ import AppsIcon from '@mui/icons-material/Apps';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SummarizeIcon from '@mui/icons-material/Summarize';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
 import { buildDockerControlCommand } from '@/lib/dockerComposeControl';
 import { useServiceActionsConfig } from '@/app/hooks/useServiceActionsConfig';
+import { ActionRow } from './service-health/ActionRow';
+import { DataRow } from './service-health/DataRow';
+import { ServiceGroup } from './service-health/ServiceGroup';
 
 interface ServiceHealth {
   name: string;
@@ -376,132 +377,6 @@ export default function ServiceHealth() {
       action: 'delete',
     });
 
-    const ActionRow = (props: {
-      label: string;
-      ariaLabel: string;
-      tooltipCommand: string;
-      onClick: () => void;
-      disabled?: boolean;
-      icon: React.ReactNode;
-      disabledReason?: string;
-      kind?: 'refresh' | 'normal';
-    }) => {
-      const isDelete = props.ariaLabel === 'Delete';
-      const isRefresh = props.kind === 'refresh';
-
-      const tooltip = (
-        <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
-          {props.tooltipCommand}
-          {props.disabledReason ? `\n\n⚠ ${props.disabledReason}` : ''}
-        </Box>
-      );
-
-      return (
-        <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{
-            // Keep action rows compact and consistent with the response-data line rhythm.
-            minHeight: 22,
-            ...(isRefresh
-              ? {
-                  borderRadius: 1,
-                  px: 0.5,
-                  py: 0.25,
-                  backgroundColor: 'rgba(25, 118, 210, 0.06)',
-                }
-              : undefined),
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              width: 64,
-              color: props.disabled ? 'text.disabled' : isRefresh ? 'primary.main' : 'text.secondary',
-              fontWeight: isRefresh ? 800 : 600,
-              lineHeight: 1.2,
-            }}
-          >
-            {props.label}
-          </Typography>
-          <Tooltip disableInteractive placement="left" title={tooltip}>
-            <span>
-              <IconButton
-                aria-label={props.ariaLabel}
-                type="button"
-                size="small"
-                sx={{
-                  // MUI IconButton has quite a bit of built-in padding; reduce it to fix the vertical spacing.
-                  width: 28,
-                  height: 28,
-                  p: 0.5,
-                  color: isDelete ? 'error.main' : undefined,
-                }}
-                onClick={props.onClick}
-                disabled={props.disabled}
-              >
-                {props.icon}
-              </IconButton>
-            </span>
-          </Tooltip>
-          {props.disabledReason && (
-            <Tooltip title={props.disabledReason}>
-              <WarningAmberIcon fontSize="small" sx={{ color: 'warning.main', opacity: 0.9 }} />
-            </Tooltip>
-          )}
-        </Box>
-      );
-    };
-
-    const DataRow = (props: {
-      label: string;
-      value: React.ReactNode;
-      color?: 'default' | 'secondary' | 'error';
-      endAdornment?: React.ReactNode;
-    }) => {
-      return (
-        <Box
-          display="flex"
-          alignItems="center"
-          gap={1}
-          sx={{
-            minHeight: 22,
-            // keep data rows visually aligned with action rows
-            py: 0.125,
-            minWidth: 0,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              width: 64,
-              color: 'text.secondary',
-              fontWeight: 600,
-              lineHeight: 1.2,
-              flex: '0 0 auto',
-            }}
-          >
-            {props.label}
-          </Typography>
-
-          <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
-            <Typography
-              variant="caption"
-              sx={{
-                color: props.color === 'error' ? 'error.main' : props.color === 'secondary' ? 'text.secondary' : 'text.primary',
-                lineHeight: 1.2,
-                wordBreak: 'break-word',
-              }}
-            >
-              {props.value}
-            </Typography>
-          </Box>
-
-          {props.endAdornment && <Box sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>{props.endAdornment}</Box>}
-        </Box>
-      );
-    };
 
     return (
       <Card
@@ -1033,182 +908,45 @@ export default function ServiceHealth() {
       )}
 
       {/* Observability Stack */}
-      <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-        Observability Stack
-      </Typography>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-          gap: 2,
-          mb: 3,
-        }}
-      >
+      <ServiceGroup title="Observability Stack">
         {groupedServices.observability.map((service) => renderServiceCard(service))}
-      </Box>
+      </ServiceGroup>
 
-      {/* Spring Services */}
-      {groupedServices.spring.length > 0 && (
-        <>
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Spring Services
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-              gap: 2,
-              mb: 3,
-            }}
-          >
-            {groupedServices.spring.map((service) => renderServiceCard(service))}
-          </Box>
-        </>
-      )}
+      <ServiceGroup title="Spring Services" visible={groupedServices.spring.length > 0}>
+        {groupedServices.spring.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Quarkus Services */}
-      {groupedServices.quarkus.length > 0 && (
-        <>
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Quarkus Services
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-              gap: 2,
-            }}
-          >
-            {groupedServices.quarkus.map((service) => renderServiceCard(service))}
-          </Box>
-        </>
-      )}
+      <ServiceGroup title="Quarkus Services" visible={groupedServices.quarkus.length > 0}>
+        {groupedServices.quarkus.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Micronaut Services */}
-      {groupedServices.micronaut.length > 0 && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Micronaut Services
-            </Typography>
-            <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 2,
-                }}
-            >
-              {groupedServices.micronaut.map((service) => renderServiceCard(service))}
-            </Box>
-          </>
-      )}
+      <ServiceGroup title="Micronaut Services" visible={groupedServices.micronaut.length > 0}>
+        {groupedServices.micronaut.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Helidon Services */}
-      {groupedServices.helidon.length > 0 && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Helidon Services
-            </Typography>
-            <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 2,
-                }}
-            >
-              {groupedServices.helidon.map((service) => renderServiceCard(service))}
-            </Box>
-          </>
-      )}
+      <ServiceGroup title="Helidon Services" visible={groupedServices.helidon.length > 0}>
+        {groupedServices.helidon.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Spark Services */}
-      {groupedServices.spark.length > 0 && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Spark Services
-            </Typography>
-            <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 2,
-                }}
-            >
-              {groupedServices.spark.map((service) => renderServiceCard(service))}
-            </Box>
-          </>
-      )}
+      <ServiceGroup title="Spark Services" visible={groupedServices.spark.length > 0}>
+        {groupedServices.spark.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Javalin Services */}
-      {groupedServices.javalin.length > 0 && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Javalin Services
-            </Typography>
-            <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 2,
-                }}
-            >
-              {groupedServices.javalin.map((service) => renderServiceCard(service))}
-            </Box>
-          </>
-      )}
+      <ServiceGroup title="Javalin Services" visible={groupedServices.javalin.length > 0}>
+        {groupedServices.javalin.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Dropwizard Services */}
-      {groupedServices.dropwizard.length > 0 && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Dropwizard Services
-            </Typography>
-            <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 2,
-                }}
-            >
-              {groupedServices.dropwizard.map((service) => renderServiceCard(service))}
-            </Box>
-          </>
-      )}
+      <ServiceGroup title="Dropwizard Services" visible={groupedServices.dropwizard.length > 0}>
+        {groupedServices.dropwizard.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Go Services */}
-      {groupedServices.go.length > 0 && (
-        <>
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Go Services
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-              gap: 2,
-            }}
-          >
-            {groupedServices.go.map((service) => renderServiceCard(service))}
-          </Box>
-        </>
-      )}
+      <ServiceGroup title="Go Services" visible={groupedServices.go.length > 0}>
+        {groupedServices.go.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
 
-      {/* Utils */}
-      {groupedServices.utils.length > 0 && (
-        <>
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Utils
-          </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-              gap: 2,
-            }}
-          >
-            {groupedServices.utils.map((service) => renderServiceCard(service))}
-          </Box>
-        </>
-      )}
+      <ServiceGroup title="Utils" visible={groupedServices.utils.length > 0}>
+        {groupedServices.utils.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
     </Box>
   );
 }

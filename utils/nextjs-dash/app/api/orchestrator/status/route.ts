@@ -32,20 +32,22 @@ export const GET = withApiRoute({ name: 'ORCH_STATUS_API' }, async function GET(
 
     serverLogger.debug('Fetching status for job', { jobId, runId: runId ?? null, activeRunId: activeRunId ?? null });
 
-    let status;
-    try {
-      status = await getJobStatusWithRunId(jobId, runId ?? null, request.headers.get('x-request-id'));
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e ?? '');
-      if (msg.includes('(409)')) {
-        serverLogger.debug('Orchestrator rejected status as stale (409)', { jobId, runId: runId ?? null });
-        return errorJson(409, { error: 'stale_run', message: 'This status request is for a stale run/job.' });
-      }
-      throw e;
+    const statusResult = await getJobStatusWithRunId(jobId, runId ?? null, request.headers.get('x-request-id'))
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e ?? '');
+        if (msg.includes('(409)')) {
+          serverLogger.debug('Orchestrator rejected status as stale (409)', { jobId, runId: runId ?? null });
+          return { __stale: true as const };
+        }
+        throw e;
+      });
+
+    if ('__stale' in statusResult) {
+      return errorJson(409, { error: 'stale_run', message: 'This status request is for a stale run/job.' });
     }
 
-    serverLogger.debug('Status received', { jobId, status: status.status, runId: runId ?? null });
-    return okJson(status);
+    serverLogger.debug('Status received', { jobId, status: statusResult.status, runId: runId ?? null });
+    return okJson(statusResult);
   } catch (error: unknown) {
     serverLogger.error('Error fetching job status', error);
     return errorFromUnknown(500, error, 'Failed to fetch job status');

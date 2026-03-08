@@ -55,7 +55,7 @@ type HubResource = {
 
 const SUPPLEMENTARY_DOCS_URL = 'https://george-c-odes.github.io/Observability-Benchmarking/';
 
-function ResourceCard({ resource }: { resource: HubResource }) {
+const ResourceCard = React.memo(function ResourceCard({ resource }: { resource: HubResource }) {
   return (
     <Card
       sx={{
@@ -97,9 +97,9 @@ function ResourceCard({ resource }: { resource: HubResource }) {
       </CardContent>
     </Card>
   );
-}
+});
 
-function Section({ title, resources }: { title: string; resources: HubResource[] }) {
+const Section = React.memo(function Section({ title, resources }: { title: string; resources: HubResource[] }) {
   return (
     <Box sx={{ mt: 2 }}>
       <Typography
@@ -124,7 +124,7 @@ function Section({ title, resources }: { title: string; resources: HubResource[]
       </Grid>
     </Box>
   );
-}
+});
 
 /**
  * Project Hub component displaying useful links grouped by domain.
