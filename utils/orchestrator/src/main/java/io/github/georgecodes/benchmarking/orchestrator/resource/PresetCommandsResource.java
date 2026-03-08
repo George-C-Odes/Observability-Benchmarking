@@ -2,11 +2,11 @@ package io.github.georgecodes.benchmarking.orchestrator.resource;
 
 import io.github.georgecodes.benchmarking.orchestrator.api.CommandPreset;
 import io.github.georgecodes.benchmarking.orchestrator.application.RunPresetService;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -19,14 +19,12 @@ import java.util.List;
  */
 @Path("/v1/commands")
 @Produces(MediaType.APPLICATION_JSON)
+@RequiredArgsConstructor
 @Tag(name = "Presets")
 public class PresetCommandsResource {
 
-  /**
-   * Service for discovering and listing preset commands.
-   */
-  @Inject
-  RunPresetService presets;
+  /** Service for discovering and listing preset commands. */
+  private final RunPresetService presets;
 
   /**
    * Lists all preconfigured Docker commands discovered from IntelliJ .run XML files.
