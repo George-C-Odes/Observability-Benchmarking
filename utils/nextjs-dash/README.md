@@ -280,7 +280,7 @@ Key design decisions:
 - **Quality gates the build**: `builder` depends on `quality` via a sentinel file (`COPY --from=quality /tmp/.quality-ok`). BuildKit won't start the build stage until lint/typecheck/tests pass.
 - **Test files excluded from builder**: a post-COPY `find … -delete` removes `*.test.ts` and `*.test.tsx` files so they don't bloat the standalone output.
 - **Config-before-source COPY split**: `package.json` + `next.config.ts` + `tsconfig.json` are copied before `app/` + `lib/` for better layer cache hit rate.
-- **Skip quality for fast iteration**: `docker buildx build --target builder .` to bypass the quality stage during development.
+- **Skip quality for fast iteration**: temporarily comment out the `COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok` line in the Dockerfile, then run `docker buildx build --target builder .` to build without lint/typecheck/tests during development.
 
 ### Option 1: Use Docker Compose (Recommended for local development)
 

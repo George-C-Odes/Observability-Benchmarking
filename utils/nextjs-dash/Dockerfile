@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 
 # ------------ QUALITY GATE STAGE ----------------
 # Runs lint + typecheck + tests.  Gated: build won't proceed if this fails.
-# Skippable via:  docker buildx build --target builder ...
+# Enforced quality gate: the builder stage depends on this and cannot skip it.
 FROM ${IMAGE_BUILDER} AS quality
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
