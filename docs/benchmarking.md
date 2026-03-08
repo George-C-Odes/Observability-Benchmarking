@@ -24,12 +24,12 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Spring     | Native  | Platform | 10k | 237           | 388             |
 | Spring     | Native  | Virtual  | 11k | 163           | 388             |
 | Spring     | Native  | Reactive | 7k  | 176           | 447             |
-| Quarkus    | JVM     | Platform | 36k | 540           | 235             |
+| Quarkus    | JVM     | Platform | 37k | 540           | 235             |
 | Quarkus    | JVM     | Virtual  | 45k | 540           | 235             |
-| Quarkus    | JVM     | Reactive | 46k | 540           | 235             |
-| Quarkus    | Native  | Platform | 21k | 263           | 636             |
-| Quarkus    | Native  | Virtual  | 27k | 263           | 636             |
-| Quarkus    | Native  | Reactive | 20k | 263           | 636             |
+| Quarkus    | JVM     | Reactive | 49k | 540           | 235             |
+| Quarkus    | Native  | Platform | 21k | 270           | 636             |
+| Quarkus    | Native  | Virtual  | 27k | 270           | 636             |
+| Quarkus    | Native  | Reactive | 22k | 270           | 636             |
 | Micronaut  | JVM     | Platform | 30k | 441           | 193             |
 | Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
 | Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
