@@ -393,9 +393,9 @@ The numbers below are a curated summary of a representative run.
 | Spring     | Native  | Platform | 10k | 237           | 388             |
 | Spring     | Native  | Virtual  | 11k | 163           | 388             |
 | Spring     | Native  | Reactive | 7k  | 176           | 447             |
-| Quarkus    | JVM     | Platform | 36k | 540           | 235             |
+| Quarkus    | JVM     | Platform | 37k | 540           | 235             |
 | Quarkus    | JVM     | Virtual  | 45k | 540           | 235             |
-| Quarkus    | JVM     | Reactive | 46k | 540           | 235             |
+| Quarkus    | JVM     | Reactive | 49k | 540           | 235             |
 | Quarkus    | Native  | Platform | 21k | 263           | 636             |
 | Quarkus    | Native  | Virtual  | 27k | 263           | 636             |
 | Quarkus    | Native  | Reactive | 20k | 263           | 636             |
