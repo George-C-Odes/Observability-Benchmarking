@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Box, Typography } from '@mui/material';
 
 import type { Script } from '@/app/hooks/useScripts';
@@ -22,7 +23,7 @@ type ScriptSectionProps = {
   onExecuteAction: (script: Script) => void;
 };
 
-export function ScriptSection({
+export const ScriptSection = React.memo(function ScriptSection({
   title,
   scripts,
   executingName,
@@ -66,4 +67,4 @@ export function ScriptSection({
       </Box>
     </>
   );
-}
+});

@@ -16,18 +16,3 @@ export const orchestratorConfig = {
 
 // Script runner config is runtime (see /api/script-runner/config). Keeping server-side config here
 // risks drifting defaults and confusing operators.
-
-/**
- * Application configuration
- */
-export const appConfig = {
-  name: 'Observability Benchmarking Dashboard',
-  version: '1.0.0',
-} as const;
-
-/**
- * Logging configuration
- */
-export const loggingConfig = {
-  enableDebug: process.env.NODE_ENV === 'development',
-} as const;

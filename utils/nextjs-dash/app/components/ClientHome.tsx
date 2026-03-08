@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { lazy, Suspense, useState, useCallback, useSyncExternalStore } from 'react';
 import {
   Box,
   Container,
@@ -14,48 +14,67 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  CircularProgress,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 
-import EnvEditor from './EnvEditor';
-import ScriptRunner from './ScriptRunner';
-import SystemInfo from './SystemInfo';
-import ServiceHealth from './ServiceHealth';
-import AppLogs from './AppLogs';
-import ProjectHub from './ProjectHub';
+// Lazy-load heavy tab content so only the active tab's JS bundle is downloaded on demand.
+const ServiceHealth = lazy(() => import('./ServiceHealth'));
+const ScriptRunner = lazy(() => import('./ScriptRunner'));
+const EnvEditor = lazy(() => import('./EnvEditor'));
+const AppLogs = lazy(() => import('./AppLogs'));
+const SystemInfo = lazy(() => import('./SystemInfo'));
+const ProjectHub = lazy(() => import('./ProjectHub'));
+
 import { useDashboardTheme } from '../Providers';
 import { themeOptions } from '../theme';
 
-interface TabPanelProps {
+/**
+ * Lazy-mount tab panel: children are mounted only once the tab has been visited
+ * at least once ("mount once, keep alive"). This prevents all 6 tabs from
+ * mounting simultaneously (the root cause of laggy initial tab transitions),
+ * while avoiding a re-mount/re-fetch when switching back to a previously visited tab.
+ */
+interface LazyTabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+  visited: boolean;
 }
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+function LazyTabPanel({ children, value, index, visited }: LazyTabPanelProps) {
   const isActive = value === index;
+
+  // Don't render the subtree at all until the tab has been visited.
+  if (!visited) return null;
 
   return (
     <Box
       role="tabpanel"
       id={`tabpanel-${index}`}
       aria-labelledby={`tab-${index}`}
-      {...other}
       sx={{
         display: isActive ? 'block' : 'none',
         p: 3,
-        // Keep layout stable; just fade/slide content in.
         opacity: isActive ? 1 : 0,
         transform: isActive ? 'translateY(0px)' : 'translateY(8px)',
         transition: 'opacity 180ms ease, transform 180ms ease',
       }}
     >
-      {children}
+      <Suspense
+        fallback={
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+            <CircularProgress />
+          </Box>
+        }
+      >
+        {children}
+      </Suspense>
     </Box>
   );
 }
+
 
 function getInitialTab(): number {
   if (typeof window === 'undefined') return 0;
@@ -93,14 +112,23 @@ export default function ClientHome() {
   const hasMounted = useHasMounted();
   const { currentTheme, setCurrentTheme } = useDashboardTheme();
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  // Track which tabs have been visited so we mount-once and keep-alive.
+  const [visitedTabs, setVisitedTabs] = useState<Set<number>>(() => new Set([getInitialTab()]));
+
+  const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    setVisitedTabs((prev) => {
+      if (prev.has(newValue)) return prev;
+      const next = new Set(prev);
+      next.add(newValue);
+      return next;
+    });
     try {
       localStorage.setItem('dashboardTab', newValue.toString());
     } catch {
       // ignore
     }
-  };
+  }, []);
 
   const handleThemeChange = (event: SelectChangeEvent) => {
     const newTheme = event.target.value;
@@ -175,29 +203,29 @@ export default function ClientHome() {
             </Tabs>
           </Box>
 
-          <TabPanel value={tabValue} index={0}>
+          <LazyTabPanel value={tabValue} index={0} visited={visitedTabs.has(0)}>
             <ServiceHealth />
-          </TabPanel>
+          </LazyTabPanel>
 
-          <TabPanel value={tabValue} index={1}>
+          <LazyTabPanel value={tabValue} index={1} visited={visitedTabs.has(1)}>
             <ScriptRunner />
-          </TabPanel>
+          </LazyTabPanel>
 
-          <TabPanel value={tabValue} index={2}>
+          <LazyTabPanel value={tabValue} index={2} visited={visitedTabs.has(2)}>
             <EnvEditor />
-          </TabPanel>
+          </LazyTabPanel>
 
-          <TabPanel value={tabValue} index={3}>
+          <LazyTabPanel value={tabValue} index={3} visited={visitedTabs.has(3)}>
             <AppLogs />
-          </TabPanel>
+          </LazyTabPanel>
 
-          <TabPanel value={tabValue} index={4}>
+          <LazyTabPanel value={tabValue} index={4} visited={visitedTabs.has(4)}>
             <SystemInfo />
-          </TabPanel>
+          </LazyTabPanel>
 
-          <TabPanel value={tabValue} index={5}>
+          <LazyTabPanel value={tabValue} index={5} visited={visitedTabs.has(5)}>
             <ProjectHub />
-          </TabPanel>
+          </LazyTabPanel>
         </Paper>
       </Container>
     </>

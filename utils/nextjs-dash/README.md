@@ -26,7 +26,8 @@ Just as important: this dashboard is intentionally a **presentation layer**.
 
 Browser UI (Next.js / MUI) → Next.js API proxy (`/api/*`) → Orchestrator service (Quarkus)
 
-- UI components live under `app/components/*`.
+- UI components live under `app/components/*`, with domain sub-directories (e.g. `service-health/`, `scripts/`, `ui/`).
+- Reusable hooks live under `app/hooks/*`.
 - Next.js should remain a *presentation layer*.
   - It exposes `/api/*` routes for accessing the orchestrator and avoids CORS complexity.
   - These routes should be **thin proxies** and avoid business rules.
@@ -108,6 +109,10 @@ Some environments terminate long-lived HTTP connections.
 **Browser UI (Next.js / MUI)** → **Thin Next.js API proxy** → **Orchestrator service (Quarkus)**
 
 - UI components live under `app/components/*`.
+  - Domain sub-directories group related pieces (e.g. `service-health/`, `scripts/`, `ui/`).
+  - Tab content components are lazy-loaded (`React.lazy`) and mounted on first visit to keep initial load fast.
+- Reusable hooks live under `app/hooks/*`.
+  - Runtime-config hooks are created via a generic factory (`useRuntimeConfig.ts`) to avoid boilerplate duplication.
 - Next.js should remain a *presentation layer*.
   - It exposes `/api/*` routes for accessing the orchestrator and avoids CORS complexity.
   - These routes should be **thin proxies** and avoid business rules.
@@ -131,6 +136,11 @@ Some environments terminate long-lived HTTP connections.
 - Refactored complex UI into hooks + components to improve testability.
 - Added unit tests for core hooks and Logs UI.
 - Reduced Next.js "business logic" (validation rules) in API routes in favor of orchestrator ownership.
+- **Lazy-mount tab panels**: tabs are code-split via `React.lazy` and mounted only on first visit ("mount once, keep alive"), eliminating background API calls, SSE connections, and timers from inactive tabs.
+- **Consolidated pre-hydration scripts**: three separate `beforeInteractive` scripts (theme, color-scheme, tab restore) merged into a single `PreHydrationScript` to reduce blocking script evaluations.
+- **Generic runtime-config hook factory** (`app/hooks/useRuntimeConfig.ts`): all four config-fetching hooks now use a shared `createRuntimeConfigHook<T>()` factory, removing ~120 lines of duplicated fetch/parse/error/loading boilerplate (DRY / Open-Closed Principle).
+- **Extracted `ServiceHealth` sub-components**: `ActionRow`, `DataRow`, and `ServiceGroup` moved into `app/components/service-health/` as standalone `React.memo`-wrapped components, reducing `ServiceHealth.tsx` by ~300 lines and eliminating per-render re-creation of inline component definitions.
+- **Memoized presentational components**: `ScriptCard`, `ScriptSection`, `ResourceCard`, and `Section` wrapped with `React.memo`; callback functions in `ScriptRunner` stabilized with `useCallback`.
 
 ## Features
 
@@ -207,7 +217,7 @@ Environment variables:
 - `APP_LOGS_CLIENT_MAX_ENTRIES` (default: `400`)
 - `APP_LOGS_SERVER_MAX_ENTRIES` (default: `500`)
 
-Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift between API routes and client hooks.
+Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift between API routes and client hooks. The client-side hooks themselves are all created via a generic factory in `app/hooks/useRuntimeConfig.ts`.
 
 ## Development
 
@@ -254,7 +264,23 @@ npm start
 
 The dashboard is designed to run in a Docker container alongside the observability stack.
 
-**Note**: Due to npm ci timeout issues in resource-constrained CI environments, it's recommended to build locally first or use the development mode.
+### Docker build pipeline
+
+The Dockerfile uses a four-stage multi-stage build optimized for 16-core build machines:
+
+| Stage       | Purpose                                     | Cache strategy                                                                 |
+|-------------|---------------------------------------------|--------------------------------------------------------------------------------|
+| **deps**    | `npm ci` (prod + dev)                       | npm tarball cache mount (`/root/.npm`)                                         |
+| **quality** | ESLint → tsc → vitest (node) → vitest (dom) | Runs on every build; `--maxWorkers=12`                                         |
+| **builder** | `next build` (standalone output)            | `.next/cache` mount; `typescript.ignoreBuildErrors` avoids redundant typecheck |
+| **runner**  | Minimal Alpine image with standalone output | Layer cache (static assets rarely change)                                      |
+
+Key design decisions:
+
+- **Quality gates the build**: `builder` depends on `quality` via a sentinel file (`COPY --from=quality /tmp/.quality-ok`). BuildKit won't start the build stage until lint/typecheck/tests pass.
+- **Test files excluded from builder**: a post-COPY `find … -delete` removes `*.test.ts` and `*.test.tsx` files so they don't bloat the standalone output.
+- **Config-before-source COPY split**: `package.json` + `next.config.ts` + `tsconfig.json` are copied before `app/` + `lib/` for better layer cache hit rate.
+- **Skip quality for fast iteration**: temporarily comment out the `COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok` line in the Dockerfile, then run `docker buildx build --target builder .` to build without lint/typecheck/tests during development.
 
 ### Option 1: Use Docker Compose (Recommended for local development)
 
