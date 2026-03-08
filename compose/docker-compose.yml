@@ -63,6 +63,37 @@ x-default-environment:
     -Xlog:gc+init=info \
     -Xlog:gc+exit=info \
 "
+  vertx_java_tool_options: &default_vertx_java_tool_options "\
+    -javaagent:/work/opentelemetry-javaagent.jar \
+    -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Djdk.tracePinnedThreads=full \
+    -Dio.netty.leakDetection.level=disabled \
+    -Dio.netty.recycler.maxCapacityPerThread=0 \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+AlwaysPreTouch \
+    -XX:+DebugNonSafepoints \
+    -XX:+ExitOnOutOfMemoryError \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:+PreserveFramePointer \
+    -XX:+PrintNMTStatistics \
+    -XX:+UseContainerSupport \
+    -XX:+UseG1GC \
+    -XX:+UseStringDeduplication \
+    -XX:ActiveProcessorCount=${CORES_LIMIT:-2} \
+    -XX:HeapDumpPath=/var/log/error \
+    -XX:MaxGCPauseMillis=200 \
+    -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
+    -XX:NativeMemoryTracking=summary \
+    -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
+    -Xms${HEAP_MIN:-64M} \
+    -Xmx${HEAP_MAX:-640M} \
+    --enable-native-access=ALL-UNNAMED \
+    --sun-misc-unsafe-memory-access=allow \
+    -Xlog:class+path=info \
+    -Xlog:gc+init=info \
+    -Xlog:gc+exit=info \
+"
   common_java_tool_options: &default_common_java_tool_options "\
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
@@ -1345,6 +1376,67 @@ services:
       PYROSCOPE_OTEL_ADD_PROFILE_ID: true
       PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
       PYROSCOPE_APPLICATION_NAME: "agent/dropwizard-jvm-virtual"
+      PYROSCOPE_PROFILING_INTERVAL: "10ms"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_PROFILER_LOCK: "10ms"
+      PYROSCOPE_PROFILER_ALLOC: "512k"
+      PYROSCOPE_EXPORT_COMPRESSION_LEVEL_JFR: "BEST_SPEED"
+      PYROSCOPE_JAVA_STACK_DEPTH_MAX: "2048"
+      PYROSCOPE_FORMAT: "jfr"
+      PYROSCOPE_PROFILER_EVENT: "itimer"
+      PYROSCOPE_ALLOC_LIVE: false
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_LOG_LEVEL: "warn"
+      PYROSCOPE_GC_BEFORE_DUMP: false
+    <<: *common_properties
+
+  vertx-jvm:
+    profiles: ["${DOCKER_PROF_VERTX_JVM:-skip}"]
+    image: vertx-jvm:${VERTX_VERSION}_latest
+    build:
+      context: ../services/java
+      dockerfile: vertx/jvm/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: vertx-jvm:${VERTX_VERSION}_latest
+        VERTX_VERSION: ${VERTX_VERSION}
+    container_name: vertx-jvm
+    ports:
+      - "8100:8080"
+    volumes:
+      - ${HOST_REPO}/data/services/vertx/jvm/error:/var/log/error
+    environment:
+      TZ: *default_timezone
+      JAVA_TOOL_OPTIONS: *default_vertx_java_tool_options
+      LOGGING_LEVEL_ROOT: "INFO"
+      CACHE_SIZE: *default_cache_size
+      VERTX_EVENT_LOOP_SIZE: ${VERTX_EVENT_LOOP_SIZE:-0}
+      LOG_METERS: true
+
+      OTEL_SDK_DISABLED: false
+      OTEL_LOG_LEVEL: "info"
+      OTEL_JAVAAGENT_DEBUG: false
+      OTEL_INSTRUMENTATION_COMMON_DEFAULT_ENABLED: true
+      OTEL_INSTRUMENTATION_EXECUTORS_ENABLED: true
+      OTEL_INSTRUMENTATION_MICROMETER_ENABLED: true
+      OTEL_INSTRUMENTATION_RUNTIME_TELEMETRY_ENABLED: *default_metric_otel_runtime
+      OTEL_SERVICE_NAME: "vertx-jvm"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=caffeine,env=dev,runtime=jvm,webengine.name=Vertx,webengine.version=${VERTX_VERSION},eventloop.pool.size=${VERTX_EVENT_LOOP_SIZE}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_PROFILING_ENABLED: true
+      OTEL_PYROSCOPE_ADD_PROFILE_URL: true
+      OTEL_PYROSCOPE_ADD_PROFILE_BASELINE_URL: true
+      OTEL_PYROSCOPE_START_PROFILING: true
+      OTEL_PYROSCOPE_ADD_SPAN_NAME: true
+      PYROSCOPE_OTEL_ADD_PROFILE_ID: true
+      PYROSCOPE_AGENT_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_APPLICATION_NAME: "agent/vertx-jvm"
       PYROSCOPE_PROFILING_INTERVAL: "10ms"
       PYROSCOPE_UPLOAD_INTERVAL: "20s"
       PYROSCOPE_PROFILER_LOCK: "10ms"

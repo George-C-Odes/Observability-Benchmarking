@@ -23,6 +23,7 @@
         <option value="$PROJECT_DIR$/services/java/spark/jvm/pom.xml" />
         <option value="$PROJECT_DIR$/services/java/javalin/jvm/pom.xml" />
         <option value="$PROJECT_DIR$/services/java/dropwizard/jvm/pom.xml" />
+        <option value="$PROJECT_DIR$/services/java/vertx/jvm/pom.xml" />
         <option value="$PROJECT_DIR$/utils/orchestrator/pom.xml" />
       </list>
     </option>

@@ -102,6 +102,9 @@ JAVALIN_JVM_VIRTUAL_URL="${JAVALIN_JVM_VIRTUAL_URL:-http://localhost:8097}"
 DROPWIZARD_JVM_PLATFORM_URL="${DROPWIZARD_JVM_PLATFORM_URL:-http://localhost:8098}"
 DROPWIZARD_JVM_VIRTUAL_URL="${DROPWIZARD_JVM_VIRTUAL_URL:-http://localhost:8099}"
 
+# Vert.x Services
+VERTX_JVM_URL="${VERTX_JVM_URL:-http://localhost:8100}"
+
 # Go Service
 GO_URL="${GO_URL:-http://localhost:9080}"
 
@@ -123,6 +126,7 @@ HELIDON_VERSION="4.3.4"
 SPARK_VERSION="3.0.3"
 JAVALIN_VERSION="7.0.1"
 DROPWIZARD_VERSION="5.0.1"
+VERTX_VERSION="5.0.8"
 GO_VERSION="1.26.1"
 
 # Helper function to test HTTP endpoint
@@ -268,6 +272,7 @@ echo "- Helidon: ${HELIDON_VERSION}"
 echo "- Spark: ${SPARK_VERSION}"
 echo "- Javalin: ${JAVALIN_VERSION}"
 echo "- Dropwizard: ${DROPWIZARD_VERSION}"
+echo "- Vert.x: ${VERTX_VERSION}"
 echo "- Go: ${GO_VERSION}"
 echo ""
 
@@ -339,6 +344,11 @@ echo ""
 echo -e "${BLUE}--- Dropwizard JVM Virtual (port 8099) ---${NC}"
 run_test "Dropwizard JVM Virtual - /hello/virtual" test_endpoint "Dropwizard JVM Virtual - /hello/virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}/hello/virtual" 200 "Dropwizard"
 run_test "Dropwizard JVM Virtual - /ready" test_ready_endpoint "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}" "/ready"
+echo ""
+
+echo -e "${BLUE}--- Vert.x JVM (port 8100) ---${NC}"
+run_test "Vertx JVM - /hello/reactive" test_endpoint "Vertx JVM - /hello/reactive" "${VERTX_JVM_URL}/hello/reactive" 200 "Vertx"
+run_test "Vertx JVM - /ready" test_ready_endpoint "Vertx JVM" "${VERTX_JVM_URL}" "/ready"
 echo ""
 
 echo "=========================================="
@@ -416,6 +426,7 @@ run_test "Javalin JVM Platform ready" test_ready_endpoint "Javalin JVM Platform"
 run_test "Javalin JVM Virtual ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
 run_test "Dropwizard JVM Platform ready" test_ready_endpoint "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}" "/ready"
 run_test "Dropwizard JVM Virtual ready" test_ready_endpoint "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}" "/ready"
+run_test "Vertx JVM ready" test_ready_endpoint "Vertx JVM" "${VERTX_JVM_URL}" "/ready"
 run_test "Go metrics" test_go_metrics "Go" "${GO_URL}"
 echo ""
 
@@ -563,6 +574,8 @@ run_test "Trace Javalin JVM Virtual" run_trace_and_verify "Javalin JVM Virtual" 
 
 run_test "Trace Dropwizard JVM Platform" run_trace_and_verify "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}/hello/platform" "dropwizard-jvm-platform" "isVirtual: 'false'"
 run_test "Trace Dropwizard JVM Virtual" run_trace_and_verify "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}/hello/virtual" "dropwizard-jvm-virtual" "isVirtual: 'true'"
+
+run_test "Trace Vertx JVM Reactive" run_trace_and_verify "Vertx JVM Reactive" "${VERTX_JVM_URL}/hello/reactive" "vertx-jvm" "vert.x-eventloop-thread"
 
 run_test "Trace Go Virtual" run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
 

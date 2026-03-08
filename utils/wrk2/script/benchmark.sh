@@ -203,7 +203,7 @@ fi
 benchmarks_per_iteration() {
   # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
   if [ "${HOST}" = "combo" ]; then
-    echo 29
+    echo 30
     return 0
   fi
   if [ "${HOST}" = "jetty" ]; then
@@ -224,7 +224,7 @@ benchmarks_per_iteration() {
       echo 4
       return 0
     fi
-    if [[ "${HOST}" == go* ]]; then
+    if [[ "${HOST}" == go* || "${HOST}" == vertx-jvm ]]; then
       echo 1
       return 0
     fi
@@ -306,6 +306,7 @@ while true; do
       "javalin-jvm-virtual"
       "dropwizard-jvm-platform"
       "dropwizard-jvm-virtual"
+      "vertx-jvm"
       "go"
     )
     endpoints=(
@@ -337,6 +338,7 @@ while true; do
       "virtual"
       "platform"
       "virtual"
+      "reactive"
       "virtual"
     )
     for i in "${!hosts[@]}"; do
@@ -416,6 +418,10 @@ while true; do
         echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
         sleep "${SLEEP_BETWEEN}"
       done
+    elif [[ "${HOST}" == vertx-jvm ]]; then
+      iter_bench_idx=$((iter_bench_idx + 1))
+      overall_count=$((overall_count + 1))
+      run_wrk_one "${HOST}" "reactive" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
     elif [[ "${HOST}" == go* ]]; then
       iter_bench_idx=$((iter_bench_idx + 1))
       overall_count=$((overall_count + 1))

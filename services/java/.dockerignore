@@ -112,3 +112,9 @@
 !helidon/mp/native/src/main/java/**
 !helidon/mp/native/src/main/resources/
 !helidon/mp/native/src/main/resources/**
+
+!vertx/
+!vertx/jvm/
+!vertx/jvm/src/
+!vertx/jvm/src/**
+!vertx/jvm/pom.xml

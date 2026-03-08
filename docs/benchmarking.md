@@ -46,6 +46,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
+| Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 ### Fairness Notes
@@ -56,6 +57,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
+- Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -130,6 +132,7 @@ memory: 2GB        # Maximum memory
 - Spark: 3.0.3
 - Javalin: 7.0.1
 - Dropwizard: 5.0.1
+- Vert.x: 5.0.8
 - Go: 1.26.1 with Fiber v3.1.0
 
 ### Third-party license note (native-image)

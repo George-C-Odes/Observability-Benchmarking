@@ -114,46 +114,6 @@ docker buildx build `
     --load `
     services/java
 ```
-**spark-jvm-platform**
-```powershell
-docker buildx build `
-  -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm-platform:3.0.3_latest `
-  --build-arg SPARK_VERSION=3.0.3 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
-  --load `
-  services/java
-```
-**spark-jvm-virtual**
-```powershell
-docker buildx build `
-  -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm-virtual:3.0.3_latest `
-  --build-arg SPARK_VERSION=3.0.3 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
-  --load `
-  services/java
-```
-**javalin-jvm-platform**
-```powershell
-docker buildx build `
-  -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-platform:7.0.1_latest `
-  --build-arg JAVALIN_VERSION=7.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.1_latest `
-  --load `
-  services/java
-```
-**javalin-jvm-virtual**
-```powershell
-docker buildx build `
-  -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-virtual:7.0.1_latest `
-  --build-arg JAVALIN_VERSION=7.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.1_latest `
-  --load `
-  services/java
-```
 **micronaut-jvm**
 ```powershell
 docker buildx build `
@@ -211,6 +171,76 @@ docker buildx build `
   -t helidon-mp-native:4.3.4_latest `
   --build-arg HELIDON_VERSION=4.3.4 `
   --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.3.4_latest `
+  --load `
+  services/java
+```
+**spark-jvm-platform**
+```powershell
+docker buildx build `
+  -f services/java/spark/jvm/Dockerfile `
+  -t spark-jvm-platform:3.0.3_latest `
+  --build-arg SPARK_VERSION=3.0.3 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
+  --load `
+  services/java
+```
+**spark-jvm-virtual**
+```powershell
+docker buildx build `
+  -f services/java/spark/jvm/Dockerfile `
+  -t spark-jvm-virtual:3.0.3_latest `
+  --build-arg SPARK_VERSION=3.0.3 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
+  --load `
+  services/java
+```
+**javalin-jvm-platform**
+```powershell
+docker buildx build `
+  -f services/java/javalin/jvm/Dockerfile `
+  -t javalin-jvm-platform:7.0.1_latest `
+  --build-arg JAVALIN_VERSION=7.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.1_latest `
+  --load `
+  services/java
+```
+**javalin-jvm-virtual**
+```powershell
+docker buildx build `
+  -f services/java/javalin/jvm/Dockerfile `
+  -t javalin-jvm-virtual:7.0.1_latest `
+  --build-arg JAVALIN_VERSION=7.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.1_latest `
+  --load `
+  services/java
+```
+**dropwizard-jvm-platform**
+```powershell
+docker buildx build `
+  -f services/java/dropwizard/jvm/Dockerfile `
+  -t dropwizard-jvm-platform:5.0.1_latest `
+  --build-arg DROPWIZARD_VERSION=5.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.1_latest `
+  --load `
+  services/java
+```
+**dropwizard-jvm-virtual**
+```powershell
+docker buildx build `
+  -f services/java/dropwizard/jvm/Dockerfile `
+  -t dropwizard-jvm-virtual:5.0.1_latest `
+  --build-arg DROPWIZARD_VERSION=5.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.1_latest `
+  --load `
+  services/java
+```
+**vertx-jvm**
+```powershell
+docker buildx build `
+  -f services/java/vertx/jvm/Dockerfile `
+  -t vertx-jvm:5.0.8_latest `
+  --build-arg VERTX_VERSION=5.0.8 `
+  --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:5.0.8_latest `
   --load `
   services/java
 ```

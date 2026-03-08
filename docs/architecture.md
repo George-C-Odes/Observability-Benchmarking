@@ -65,6 +65,8 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 - Dropwizard 5.0.1 (JVM)
   - Platform threads
   - Virtual threads
+- Vert.x 5.0.8 (JVM)
+  - Reactive (event-loop)
 - Go 1.26.1
   - Fiber framework (v3.1.0)
 

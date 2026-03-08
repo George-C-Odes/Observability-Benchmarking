@@ -197,16 +197,19 @@ discovery.relabel "apps" {
                 ".*spring-native-netty.*|" +
                 ".*quarkus-jvm.*|" +
                 ".*quarkus-native.*|" +
-                ".*spark-jvm-platform.*|" +
-                ".*spark-jvm-virtual.*|" +
-                ".*javalin-jvm-platform.*|" +
-                ".*javalin-jvm-virtual.*|" +
                 ".*micronaut-jvm.*|" +
                 ".*micronaut-native.*|" +
                 ".*helidon-se-jvm.*|" +
                 ".*helidon-se-native.*|" +
                 ".*helidon-mp-jvm.*|" +
-                ".*helidon-mp-native.*)$"
+                ".*helidon-mp-native.*|" +
+                ".*spark-jvm-platform.*|" +
+                ".*spark-jvm-virtual.*|" +
+                ".*javalin-jvm-platform.*|" +
+                ".*javalin-jvm-virtual.*|" +
+                ".*dropwizard-jvm-platform.*|" +
+                ".*dropwizard-jvm-virtual.*|" +
+                ".*vertx-jvm.*)$"
     }
     rule {
         action = "drop"

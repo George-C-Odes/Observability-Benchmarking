@@ -123,6 +123,9 @@ export JAVALIN_JVM_VIRTUAL_URL=http://localhost:8097
 export DROPWIZARD_JVM_PLATFORM_URL=http://localhost:8098
 export DROPWIZARD_JVM_VIRTUAL_URL=http://localhost:8099
 
+# Vert.x Services
+export VERTX_JVM_URL=http://localhost:8100
+
 # Go Service
 export GO_URL=http://localhost:9080
 
@@ -158,6 +161,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Spark           | 3.0.3   |
 | Javalin         | 7.0.1   |
 | Dropwizard      | 5.0.1   |
+| Vert.x          | 5.0.8   |
 | Go              | 1.26.1  |
 
 ## Service Port Mappings
@@ -186,6 +190,7 @@ Port mappings match the order in `compose/docker-compose.yml`.
 | Javalin JVM Virtual                | javalin-jvm-virtual           | 8097 | JVM                |
 | Dropwizard JVM Platform            | dropwizard-jvm-platform       | 8098 | JVM                |
 | Dropwizard JVM Virtual             | dropwizard-jvm-virtual        | 8099 | JVM                |
+| Vert.x JVM                         | vertx-jvm                     | 8100 | JVM                |
 | Go                                 | go                            | 9080 | Native (Go binary) |
 
 ## What’s Tested (by the runner)
@@ -224,6 +229,10 @@ The runner checks these endpoints and response substrings:
   - `/hello/platform` or `/hello/virtual` contains `Dropwizard`
   - readiness: `/ready` returns 200
 
+- **Vert.x**
+  - `/hello/reactive` contains `Vertx`
+  - readiness: `/ready` returns 200
+
 - **Go**
   - `/hello/virtual` contains `GO`
 
@@ -251,7 +260,7 @@ The runner is intentionally tolerant and will accept **any one** of these endpoi
 - **Helidon MP**
   - `/health`
 
-- **Spark / Javalin / Dropwizard**
+- **Spark / Javalin / Dropwizard / Vert.x**
   - readiness: `/ready`
 
 - **Go**
@@ -305,6 +314,7 @@ Example expectations (not exhaustive):
 - Spring Netty expects `reactor-http`
 - Quarkus expects `executor-thread` / `vthread` / `vert.x-eventloop-thread`
 - Micronaut/Spark/Javalin/Dropwizard virtual vs platform checks expect `isVirtual: 'true'` / `isVirtual: 'false'`
+- Vert.x reactive checks expect `vert.x-eventloop-thread`
 - Helidon SE/MP checks expect `isVirtual: 'true'`
 - Go expects `goroutine`
 
