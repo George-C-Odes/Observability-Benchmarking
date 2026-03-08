@@ -53,6 +53,15 @@
             <artifactId>vertx-web</artifactId>
         </dependency>
 
+        <!-- Netty native epoll transport (Linux) — enables SO_REUSEPORT and epoll for
+             distributing accept across event-loop threads. Without this, setPreferNativeTransport(true)
+             silently falls back to NIO and only one thread handles accept. -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-native-epoll</artifactId>
+            <classifier>linux-x86_64</classifier>
+        </dependency>
+
         <!-- Vert.x Micrometer bridge (metrics binder for event-bus, HTTP, pool) -->
         <dependency>
             <groupId>io.vertx</groupId>
@@ -117,6 +126,15 @@
     </dependencies>
 
     <build>
+        <!-- os-maven-plugin detects the running OS and sets ${os.detected.*} properties
+             required by Netty native transport classifier resolution. -->
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.7.1</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

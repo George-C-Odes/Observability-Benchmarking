@@ -46,7 +46,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
-| Vert.x     | JVM     | Reactive | 26k | 336           | 220             |
+| Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 ### Fairness Notes

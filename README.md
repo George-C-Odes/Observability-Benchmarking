@@ -415,7 +415,7 @@ The numbers below are a curated summary of a representative run.
 | Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
-| Vert.x     | JVM     | Reactive | 26k | 336           | 220             |
+| Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.

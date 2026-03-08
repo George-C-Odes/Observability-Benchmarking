@@ -6,18 +6,17 @@ import io.github.georgecodes.benchmarking.vertx.domain.HelloMode;
 import io.github.georgecodes.benchmarking.vertx.domain.HelloService;
 import io.github.georgecodes.benchmarking.vertx.infra.CacheProvider;
 import io.github.georgecodes.benchmarking.vertx.infra.MetricsProvider;
-import io.github.georgecodes.benchmarking.vertx.web.HelloRoutes;
+import io.github.georgecodes.benchmarking.vertx.web.HttpServerVerticle;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.ext.web.Router;
 import io.vertx.micrometer.MicrometerMetricsFactory;
 import io.vertx.micrometer.MicrometerMetricsOptions;
 import org.jspecify.annotations.NonNull;
@@ -31,6 +30,10 @@ import java.util.TreeSet;
  *
  * <p>Runs a fully reactive HTTP server on the Vert.x event loop — no blocking,
  * no virtual threads — tuned for maximum throughput on a 2-vCPU container.
+ *
+ * <p>Each event-loop thread owns its own {@link HttpServerVerticle} instance
+ * (and therefore its own Router and HttpServer), which is the idiomatic Vert.x
+ * way to distribute accept + request processing across all available cores.
  */
 public final class VertxApplication {
 
@@ -61,8 +64,9 @@ public final class VertxApplication {
         LOG.info("SERVICE_PORT={} EVENT_LOOP_SIZE={}", config.port(), config.resolvedEventLoopSize());
 
         // Configure Vert.x with Micrometer metrics and tuned event-loop pool
+        int eventLoopSize = config.resolvedEventLoopSize();
         VertxOptions vertxOptions = new VertxOptions()
-            .setEventLoopPoolSize(config.resolvedEventLoopSize())
+            .setEventLoopPoolSize(eventLoopSize)
             .setPreferNativeTransport(true)
             .setMetricsOptions(new MicrometerMetricsOptions()
                 .setEnabled(true));
@@ -72,10 +76,11 @@ public final class VertxApplication {
             .withMetrics(new MicrometerMetricsFactory(Metrics.globalRegistry))
             .build();
 
-        // Set up router and routes
-        Router router = Router.router(vertx);
-        HelloRoutes helloRoutes = new HelloRoutes(helloService, metricsProvider);
-        helloRoutes.register(router, vertx);
+        // Native epoll transport is available only on Linux (Docker runtime).
+        // SO_REUSEPORT requires native transport; enabling it on NIO silently does nothing,
+        // but we gate it to keep the intent explicit.
+        boolean linux = System.getProperty("os.name", "").toLowerCase().contains("linux");
+        LOG.info("Native epoll transport expected: {} (os.name={})", linux, System.getProperty("os.name"));
 
         // HTTP server options tuned for benchmarking on 2 vCPUs
         HttpServerOptions serverOptions = new HttpServerOptions()
@@ -84,23 +89,25 @@ public final class VertxApplication {
             .setTcpNoDelay(true)         // Disable Nagle: send short responses immediately
             .setTcpFastOpen(true)        // Reduce TCP handshake latency
             .setTcpQuickAck(true)        // ACK segments immediately
-            .setReusePort(true)          // Allow multiple accept threads per port (Linux SO_REUSEPORT)
+            .setReusePort(linux)         // SO_REUSEPORT only works with native epoll on Linux
             .setCompressionSupported(false)  // No compression: short JSON payloads + saves CPU
             .setAcceptBacklog(8192)      // Large accept backlog for burst handling
             .setIdleTimeout(60);         // Seconds
 
-        // Create one HTTP server per event-loop thread for optimal throughput
-        int instances = config.resolvedEventLoopSize();
-        for (int i = 0; i < instances; i++) {
-            HttpServer server = vertx.createHttpServer(serverOptions);
-            server.requestHandler(router)
-                .listen()
-                .onSuccess(s -> LOG.info("Vert.x HTTP server instance listening on port {}", s.actualPort()))
-                .onFailure(err -> {
-                    LOG.error("Failed to start Vert.x HTTP server", err);
-                    vertx.close();
-                });
-        }
+        // Deploy N verticle instances — each gets its own event-loop thread,
+        // its own Router, and its own HttpServer. This is the idiomatic Vert.x
+        // way to utilise all available CPU cores.
+        DeploymentOptions deploymentOptions = new DeploymentOptions()
+            .setInstances(eventLoopSize);
+
+        vertx.deployVerticle(
+                () -> new HttpServerVerticle(config.port(), helloService, metricsProvider, serverOptions),
+                deploymentOptions)
+            .onSuccess(id -> LOG.info("Deployed {} HttpServerVerticle instances (id={})", eventLoopSize, id))
+            .onFailure(err -> {
+                LOG.error("Failed to deploy HttpServerVerticle instances", err);
+                vertx.close();
+            });
 
         // Graceful shutdown
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
