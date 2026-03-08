@@ -726,8 +726,8 @@ Observability-Benchmarking/
 │   │   │   └── jvm/             # JVM builds (platform, virtual)
 │   │   ├── javalin/             # Javalin services
 │   │   │   └── jvm/             # JVM builds (platform, virtual)
-│   │   └── dropwizard/          # Dropwizard services
-│   │       └── jvm/             # JVM builds (platform, virtual)
+│   │   ├── dropwizard/          # Dropwizard services
+│   │   │   └── jvm/             # JVM builds (platform, virtual)
 │   │   └── vertx/               # Vert.x services
 │   │       └── jvm/             # JVM build (reactive)
 │   └── go/                  # Go services

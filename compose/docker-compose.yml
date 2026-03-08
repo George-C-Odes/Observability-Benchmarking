@@ -63,6 +63,37 @@ x-default-environment:
     -Xlog:gc+init=info \
     -Xlog:gc+exit=info \
 "
+  vertx_java_tool_options: &default_vertx_java_tool_options "\
+    -javaagent:/work/opentelemetry-javaagent.jar \
+    -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Djdk.tracePinnedThreads=full \
+    -Dio.netty.leakDetection.level=disabled \
+    -Dio.netty.recycler.maxCapacityPerThread=0 \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+AlwaysPreTouch \
+    -XX:+DebugNonSafepoints \
+    -XX:+ExitOnOutOfMemoryError \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:+PreserveFramePointer \
+    -XX:+PrintNMTStatistics \
+    -XX:+UseContainerSupport \
+    -XX:+UseG1GC \
+    -XX:+UseStringDeduplication \
+    -XX:ActiveProcessorCount=${CORES_LIMIT:-2} \
+    -XX:HeapDumpPath=/var/log/error \
+    -XX:MaxGCPauseMillis=200 \
+    -XX:MaxDirectMemorySize=${OFF_HEAP_MAX:-32M} \
+    -XX:NativeMemoryTracking=summary \
+    -XX:OnOutOfMemoryError=\"ts=$(date +%Y%m%d-%H%M%S) && echo OOM in PID %p at $$ts >> /var/log/error/oom.log && [ -f /var/log/error/java_pid%p.hprof ] && mv /var/log/error/java_pid%p.hprof /var/log/error/java_pid%p_$$ts.hprof\" \
+    -Xms${HEAP_MIN:-64M} \
+    -Xmx${HEAP_MAX:-640M} \
+    --enable-native-access=ALL-UNNAMED \
+    --sun-misc-unsafe-memory-access=allow \
+    -Xlog:class+path=info \
+    -Xlog:gc+init=info \
+    -Xlog:gc+exit=info \
+"
   common_java_tool_options: &default_common_java_tool_options "\
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
@@ -1375,7 +1406,7 @@ services:
       - ${HOST_REPO}/data/services/vertx/jvm/error:/var/log/error
     environment:
       TZ: *default_timezone
-      JAVA_TOOL_OPTIONS: *default_spring_java_tool_options
+      JAVA_TOOL_OPTIONS: *default_vertx_java_tool_options
       LOGGING_LEVEL_ROOT: "INFO"
       CACHE_SIZE: *default_cache_size
       VERTX_EVENT_LOOP_SIZE: ${VERTX_EVENT_LOOP_SIZE:-0}
