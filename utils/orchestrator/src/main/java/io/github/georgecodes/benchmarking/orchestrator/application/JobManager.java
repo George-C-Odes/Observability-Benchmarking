@@ -8,6 +8,7 @@ import io.github.georgecodes.benchmarking.orchestrator.application.job.JobAdmiss
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobEventPublisher;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobStore;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobTerminalStatus;
+import io.github.georgecodes.benchmarking.orchestrator.domain.JobStatus;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,70 +26,47 @@ import java.util.concurrent.Executors;
 @ApplicationScoped
 public class JobManager {
 
-  /**
-   * Job execution status.
-   */
-  public enum Status {
-    /** Job is queued for execution. */
-    QUEUED,
-    /** Job is currently running. */
-    RUNNING,
-    /** Job completed successfully. */
-    SUCCEEDED,
-    /** Job failed with an error. */
-    FAILED,
-    /** Job was canceled. */
-    CANCELED
-  }
+  /** Maximum number of lines to buffer per job. */
+  private final int maxBufferLines;
 
-  /**
-   * Maximum number of lines to buffer per job.
-   */
-  @ConfigProperty(name = "orchestrator.max-buffer-lines")
-  int maxBufferLines;
+  /** Heartbeat (SSE keepalive) interval. */
+  private final long heartbeatIntervalMs;
 
-  /**
-   * Heartbeat (SSE keepalive) interval.
-   */
-  @ConfigProperty(name = "orchestrator.heartbeat.interval-ms")
-  long heartbeatIntervalMs;
-
-  /**
-   * Executor service for running jobs.
-   */
+  /** Executor service for running jobs. */
   private final ExecutorService executor;
 
-  /**
-   * Heartbeat scheduler port.
-   */
-  @Inject
-  HeartbeatScheduler heartbeatScheduler;
+  /** Heartbeat scheduler port. */
+  private final HeartbeatScheduler heartbeatScheduler;
 
-  /**
-   * Admission policy port for controlling concurrent submissions.
-   */
-  @Inject
-  JobAdmissionPolicy admissionPolicy;
+  /** Admission policy port for controlling concurrent submissions. */
+  private final JobAdmissionPolicy admissionPolicy;
 
-  /**
-   * Command runner port used to execute validated commands.
-   */
-  @Inject
-  CommandRunner commandRunner;
+  /** Command runner port used to execute validated commands. */
+  private final CommandRunner commandRunner;
 
-  /**
-   * Job store port used to persist job state and provide SSE event streams.
-   */
-  @Inject
-  JobStore jobStore;
+  /** Job store port used to persist job state and provide SSE event streams. */
+  private final JobStore jobStore;
 
-  /**
-   * Event publisher port used to publish job events.
-   */
-  @Inject
-  JobEventPublisher eventPublisher;
+  /** Event publisher port used to publish job events. */
+  private final JobEventPublisher eventPublisher;
 
-  public JobManager() {
+  @Inject
+  public JobManager(
+    @ConfigProperty(name = "orchestrator.max-buffer-lines") int maxBufferLines,
+    @ConfigProperty(name = "orchestrator.heartbeat.interval-ms") long heartbeatIntervalMs,
+    HeartbeatScheduler heartbeatScheduler,
+    JobAdmissionPolicy admissionPolicy,
+    CommandRunner commandRunner,
+    JobStore jobStore,
+    JobEventPublisher eventPublisher
+  ) {
+    this.maxBufferLines = maxBufferLines;
+    this.heartbeatIntervalMs = heartbeatIntervalMs;
+    this.heartbeatScheduler = heartbeatScheduler;
+    this.admissionPolicy = admissionPolicy;
+    this.commandRunner = commandRunner;
+    this.jobStore = jobStore;
+    this.eventPublisher = eventPublisher;
     this.executor = Executors.newSingleThreadExecutor(r -> {
       Thread t = new Thread(r, "orchestrator-job-runner");
       t.setDaemon(true);
@@ -142,13 +120,13 @@ public class JobManager {
           event -> eventPublisher.publish(jobId, event)
         );
 
-        Status terminal = JobTerminalStatus.from(false, result.exitCode());
+        JobStatus terminal = JobTerminalStatus.from(false, result.exitCode());
         jobStore.markFinished(jobId, terminal.name(), result.finishedAt(), result.exitCode());
       } catch (Exception e) {
         eventPublisher.publish(jobId, JobEvent.status(
           "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()
         ));
-        jobStore.markFinished(jobId, Status.FAILED.name(), Instant.now(), null);
+        jobStore.markFinished(jobId, JobStatus.FAILED.name(), Instant.now(), null);
         log.errorf(e, "Job failed jobId=%s", jobId);
       } finally {
         if (heartbeat != null) {

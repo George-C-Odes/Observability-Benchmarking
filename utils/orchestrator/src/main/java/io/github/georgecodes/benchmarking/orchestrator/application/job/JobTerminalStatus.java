@@ -1,17 +1,17 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import io.github.georgecodes.benchmarking.orchestrator.application.JobManager;
+import io.github.georgecodes.benchmarking.orchestrator.domain.JobStatus;
 
 /**
- * Helper to map process exit/cancel state to a terminal {@link JobManager.Status}.
+ * Helper to map process exit/cancel state to a terminal {@link JobStatus}.
  */
 public final class JobTerminalStatus {
   private JobTerminalStatus() { }
 
-  public static JobManager.Status from(boolean canceled, int exitCode) {
+  public static JobStatus from(boolean canceled, int exitCode) {
     if (canceled) {
-      return JobManager.Status.CANCELED;
+      return JobStatus.CANCELED;
     }
-    return exitCode == 0 ? JobManager.Status.SUCCEEDED : JobManager.Status.FAILED;
+    return exitCode == 0 ? JobStatus.SUCCEEDED : JobStatus.FAILED;
   }
 }

@@ -3,16 +3,15 @@ package io.github.georgecodes.benchmarking.orchestrator.resource;
 import io.github.georgecodes.benchmarking.orchestrator.api.HealthAggregateResponse;
 import io.github.georgecodes.benchmarking.orchestrator.application.ServiceHealthService;
 import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-import io.smallrye.common.annotation.Blocking;
 
 import java.util.Optional;
 
@@ -24,15 +23,14 @@ import java.util.Optional;
  */
 @Path("/v1/health")
 @Produces(MediaType.APPLICATION_JSON)
+@RequiredArgsConstructor
 @Tag(name = "Health")
 public class HealthResource {
 
   /** Service that aggregates health from upstream services. */
-  @Inject
-  ServiceHealthService health;
+  private final ServiceHealthService health;
 
   @GET
-  @Blocking
   @Operation(summary = "Aggregate readiness/health of the whole stack")
   @APIResponse(responseCode = "200", description = "Aggregated health")
   public Uni<HealthAggregateResponse> get(@QueryParam("service") String service) {

@@ -1,5 +1,6 @@
 package io.github.georgecodes.benchmarking.orchestrator.application;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.Getter;
 import lombok.extern.jbosslog.JBossLog;
@@ -38,7 +39,7 @@ public class EnvFileService {
      * @return EnvFileContent containing the file content and path
      * @throws EnvFileException if file cannot be read
      */
-    public EnvFileContent readEnvFile() throws EnvFileException {
+    public EnvFileContent readEnvFile() {
         try {
             Path path = Paths.get(envFilePath);
             
@@ -66,7 +67,7 @@ public class EnvFileService {
      * @return EnvFileUpdate result containing success message and backup filename
      * @throws EnvFileException if file cannot be updated
      */
-    public EnvFileUpdate updateEnvFile(String newContent) throws EnvFileException {
+    public EnvFileUpdate updateEnvFile(String newContent) {
         validateContent(newContent);
         
         try {
@@ -98,7 +99,7 @@ public class EnvFileService {
      * @param content the content to validate
      * @throws EnvFileException if content is invalid
      */
-    private void validateContent(String content) throws EnvFileException {
+    private void validateContent(String content) {
         if (content == null || content.isEmpty()) {
             throw new EnvFileException("Content cannot be empty", EnvFileException.Type.VALIDATION_ERROR);
         }
@@ -125,7 +126,10 @@ public class EnvFileService {
      * @param content the file content
      * @param absolutePath the absolute path to the file
      */
-    public record EnvFileContent(String content, String absolutePath) { }
+    public record EnvFileContent(
+      String content,
+      @JsonProperty("path") String absolutePath
+    ) { }
 
     /**
      * Immutable record representing the result of an environment file update.
@@ -133,13 +137,16 @@ public class EnvFileService {
      * @param message success message
      * @param backupFilename the filename of the backup created
      */
-    public record EnvFileUpdate(String message, String backupFilename) { }
+    public record EnvFileUpdate(
+      String message,
+      @JsonProperty("backup") String backupFilename
+    ) { }
 
     /**
      * Exception thrown when environment file operations fail.
      */
     @Getter
-    public static class EnvFileException extends Exception {
+    public static class EnvFileException extends RuntimeException {
         /**
          * Type of environment file exception.
          */

@@ -12,12 +12,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
 import io.github.georgecodes.benchmarking.orchestrator.api.JobStatusResponse;
 import io.github.georgecodes.benchmarking.orchestrator.api.RunRequest;
 import io.github.georgecodes.benchmarking.orchestrator.api.RunResponse;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.openapi.annotations.enums.SecuritySchemeType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
@@ -37,6 +37,7 @@ import java.util.UUID;
 @Path("/v1")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@RequiredArgsConstructor
 @SecurityScheme(
   securitySchemeName = "orchestratorAuth",
   type = SecuritySchemeType.HTTP,
@@ -45,17 +46,11 @@ import java.util.UUID;
 )
 public class OrchestratorResource {
 
-  /**
-   * Service for command validation and policy enforcement.
-   */
-  @Inject
-  CommandPolicy policy;
+  /** Service for command validation and policy enforcement. */
+  private final CommandPolicy policy;
 
-  /**
-   * Service for managing job execution and lifecycle.
-   */
-  @Inject
-  JobManager jobs;
+  /** Service for managing job execution and lifecycle. */
+  private final JobManager jobs;
 
   /**
    * Submits a command for asynchronous execution.

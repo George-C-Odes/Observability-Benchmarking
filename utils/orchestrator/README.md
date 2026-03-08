@@ -1,8 +1,8 @@
-# Orchestrator (Quarkus) — local Docker Compose runner
+# Orchestrator (Quarkus) — local Docker control plane
 
-This service is a small **control plane** for the repo’s Docker Compose environment.
+This service is a small **control plane** for the repo's Docker Compose environment.
 
-It’s designed for **local benchmarking automation**: it runs inside Docker and exposes a small HTTP API to run **restricted** `docker compose ...` commands and stream their output via **Server-Sent Events (SSE)**.
+It's designed for **local benchmarking automation**: it runs inside Docker and exposes a small HTTP API to run **restricted** Docker commands (`docker compose`, `docker buildx`, `docker builder prune`, and read-only commands like `docker ps`) and stream their output via **Server-Sent Events (SSE)**.
 
 > Source code is the source of truth. This README documents the current implementation in `utils/orchestrator`.
 
@@ -34,9 +34,15 @@ The orchestrator then drives:
 ## What it does
 
 - Runs a validated, allowlisted Docker command (via `POST /v1/run`).
+  - **Compose**: `docker compose up/down/ps/logs/pull/build/restart/start/stop/top/config/version/rm`
+  - **Buildx**: `docker buildx build/bake/ls/inspect/create/use/rm/stop/version/prune`
+  - **Builder**: `docker builder prune -a --force`
+  - **Read-only**: `docker ps/version/info/images`
 - Creates an async job and streams output/events over SSE.
+- Enforces **single-flight execution** — only one job runs at a time (returns `503 Service Unavailable` if busy).
 - Aggregates health checks for the rest of the stack (via `GET /v1/health`).
 - Manages a workspace `.env` (via `/v1/env`).
+- Propagates `X-Request-Id` for request correlation across orchestrator logs and SSE events.
 
 ## Job lifecycle (how SSE works here)
 
@@ -47,10 +53,10 @@ A “run” request creates a job. You then watch it in two ways:
 
 The event stream includes:
 
-- command start
-- stdout/stderr lines
-- heartbeat events (so UIs can detect a dead stream)
-- command exit (success/failure)
+- `log` — stdout/stderr output lines
+- `status` — human-friendly status messages (including heartbeat keepalives)
+- `summary` — machine-readable snapshot (QUEUED / RUNNING / terminal state)
+- `terminalSummary` — final machine-readable snapshot (SUCCEEDED / FAILED / CANCELED)
 
 The Next.js dashboard consumes this API (often via a proxy route) to power the Script Runner UI.
 
@@ -59,6 +65,9 @@ The Next.js dashboard consumes this API (often via a proxy route) to power the S
 - `POST /v1/run` is protected with a bearer token requirement (`Authorization: Bearer <api-key>`).
 - `POST /v1/env` is also protected.
 - The API key is configured via `orchestrator.api-key` (defaults to `change-me`).
+- Missing token → `401 Unauthorized`; wrong token → `403 Forbidden`.
+- If the API key is blank/unset, authentication is **bypassed** (local dev convenience).
+- Auth is enforced via the `@RequireOrchestratorAuth` name-binding annotation (JAX-RS `ContainerRequestFilter`).
 
 Because this service can control Docker on the host (it typically mounts `/var/run/docker.sock`), **treat it as privileged**.
 Do not expose it to untrusted networks.
@@ -126,6 +135,7 @@ Common keys:
 - `orchestrator.api-key`
 - `orchestrator.max-buffer-lines`
 - `orchestrator.heartbeat.interval-ms`
+- `orchestrator.serial-execution` (single-flight mode, default `true`)
 - `orchestrator.project-paths.*` (workspace + compose + env)
 - `orchestrator.health.*` (service health aggregation)
 
@@ -161,8 +171,7 @@ curl -X POST http://localhost:3002/v1/run \
 Stream the job output:
 
 ```bash
-curl -N "http://localhost:3002/v1/jobs/<JOB_ID>/events?runId=run-1" \
-  -H "authorization: Bearer change-me"
+curl -N "http://localhost:3002/v1/jobs/<JOB_ID>/events?runId=run-1"
 ```
 
 Check stack health aggregation:

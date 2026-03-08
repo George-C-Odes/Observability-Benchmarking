@@ -1,13 +1,15 @@
 # syntax=docker/dockerfile:1.7
 ARG IMAGE_BUILDER=maven:3.9.12-eclipse-temurin-25-noble
 ARG IMAGE_DOCKER_CLI=docker:29.3.0-cli-alpine3.23
-ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
+ARG JAVA_RELEASE=25
 #ARG IMAGE_RUNTIME=amazoncorretto:25.0.2
 ## amazoncorretto includes curl for troubleshooting
 # ------------ BUILD STAGE -----------------------
 FROM ${IMAGE_BUILDER} AS builder
 ARG BUILD_UID=1000
 ARG BUILD_GID=1000
+ARG JAVA_RELEASE
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ENV LANGUAGE='en_US:en'
 ENV QUARKUS_NATIVE_ENABLED=false
@@ -39,6 +41,32 @@ RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUI
     -Dquarkus.package.jar.type=fast-jar \
     package \
     -DskipTests
+
+# ── jlink: create a stripped-down custom JRE ──
+# Quarkus fast-jar spreads classes across lib/, app/, and quarkus/ directories.
+# We collect all JARs into the classpath so jdeps can resolve cross-jar references.
+# java.net.http  – OTel OTLP exporter resolves HTTP sender via SPI (invisible to jdeps)
+# java.management – Micrometer JVM metrics + MBeans
+RUN set -eux; \
+    CLASSPATH=$(find /workspace/target/quarkus-app/lib -name '*.jar' -printf '%p:' 2>/dev/null) && \
+    APP_JARS="$(find /workspace/target/quarkus-app/app /workspace/target/quarkus-app/quarkus -maxdepth 1 -type f -name '*.jar' 2>/dev/null)" && \
+    DEPS=$(jdeps \
+      --ignore-missing-deps \
+      --print-module-deps \
+      --multi-release ${JAVA_RELEASE} \
+      --class-path "$CLASSPATH" \
+      /workspace/target/quarkus-app/quarkus-run.jar \
+      $APP_JARS 2>/dev/null || echo "java.base") && \
+    DEPS="${DEPS},java.net.http,java.management" && \
+    echo "jlink modules: $DEPS" && \
+    jlink \
+      --add-modules "$DEPS" \
+      --strip-debug \
+      --compress zip-6 \
+      --no-header-files \
+      --no-man-pages \
+      --output /workspace/out/jre
+
 # ------------ DOCKER CLI STAGE (prep perms here, not in distroless) -----------------------
 FROM ${IMAGE_DOCKER_CLI} AS docker_cli
 # Copy only what we need (docker + compose/buildx plugins) and ensure executable bits
@@ -81,6 +109,7 @@ ENV JAVA_TOOL_OPTIONS="\
     --enable-native-access=ALL-UNNAMED \
     --sun-misc-unsafe-memory-access=allow"
 
+COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/jre/ /opt/jre/
 COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} /workspace/target/quarkus-app/ /app/quarkus-app/
 COPY --from=docker_cli --chmod=0555 /out/docker /usr/local/bin/docker
 COPY --from=docker_cli --chmod=0555 /out/cli-plugins/ /usr/local/lib/docker/cli-plugins/
@@ -88,4 +117,4 @@ COPY --from=docker_cli --chmod=0555 /out/cli-plugins/ /usr/local/lib/docker/cli-
 EXPOSE 8080
 WORKDIR /app
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
-ENTRYPOINT ["java","-jar","/app/quarkus-app/quarkus-run.jar"]
+ENTRYPOINT ["/opt/jre/bin/java","-jar","/app/quarkus-app/quarkus-run.jar"]
