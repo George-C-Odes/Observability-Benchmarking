@@ -1,7 +1,7 @@
 # Micronaut JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 4.10.16 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
+A high-performance REST service implementation built with Micronaut 4.10.17 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
 
 ## Purpose
 - Benchmark Micronaut's compile-time DI/AOP performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Micronaut 4.10.16 runn
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 4.10.16
+- **Framework**: Micronaut 4.10.17
 - **Java Version**: Eclipse Temurin 25.0.2
 - **HTTP Server**: Netty (Micronaut HTTP Server Netty)
 - **JVM GC**: G1 Garbage Collector
@@ -249,7 +249,7 @@ Tracks request count per endpoint.
 
 ### Docker
 
-**Image**: `micronaut-jvm:4.10.16_latest`
+**Image**: `micronaut-jvm:4.10.17_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -264,9 +264,9 @@ Tracks request count per endpoint.
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:4.10.16_latest `
-  --build-arg MICRONAUT_VERSION=4.10.16 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.16_latest `
+  -t micronaut-jvm:4.10.17_latest `
+  --build-arg MICRONAUT_VERSION=4.10.17 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.17_latest `
   --load `
   services/java
 ```

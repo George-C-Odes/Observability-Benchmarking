@@ -20,7 +20,7 @@
         <lombok.version>1.18.42</lombok.version>
         <logback.version>1.5.32</logback.version>
 
-        <micronaut.version>4.10.16</micronaut.version>
+        <micronaut.version>4.10.17</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
         <micronaut.test.version>4.10.2</micronaut.test.version>
@@ -353,7 +353,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -428,6 +428,7 @@
                             <mainClass>${exec.mainClass}</mainClass>
                             <buildArgs>
                                 <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                                <buildArg>-H:+SharedArenaSupport</buildArg>
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>-J--sun-misc-unsafe-memory-access=allow</buildArg>
                                 <buildArg>-march=native</buildArg>
