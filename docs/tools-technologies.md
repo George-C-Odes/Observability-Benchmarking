@@ -404,11 +404,10 @@ mvn package -Pnative
 1. **Reactive (Pekko Dispatcher)**
    - All request handling runs on the Pekko default ForkJoin dispatcher
    - Non-blocking sleep via Pekko scheduler (never blocks the dispatcher)
-   - HTTP/1.1 pipelining-limit=16 for keep-alive benchmarks
+   - HTTP/1.1 pipelining-limit=32 for keep-alive benchmarks
 
 **Architecture**:
 - Clean architecture / hexagonal: domain layer is framework-agnostic, infrastructure adapters injected via constructor, web layer is a thin routing adapter
-- Pre-computed JSON response body at startup (zero per-request allocation)
 - Caffeine cache retrieval on every request in the hot path (consistent with other modules)
 
 **Pros**:

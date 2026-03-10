@@ -39,12 +39,11 @@ Follows clean architecture / hexagonal principles:
 ## Throughput Tuning
 - **Pekko HTTP server**: Direct Pekko HTTP server
 - **No DI container**: All wiring is manual for minimal overhead
-- **Pre-computed response**: JSON response body is pre-built at startup (zero per-request allocation)
 - **Non-blocking sleep**: Uses Pekko scheduler for timer-based sleep
-- **Pipelining**: HTTP/1.1 pipelining-limit=16 for keep-alive benchmarks
+- **Pipelining**: HTTP/1.1 pipelining-limit=32 for keep-alive benchmarks
 - **No compression**: Short JSON payloads don't benefit; saves CPU
 - **Netty leak detection disabled**: Zero overhead in production
-- **Dispatcher tuning**: ForkJoin throughput=64 reduces context switches
+- **Dispatcher tuning**: ForkJoin throughput=128 reduces context switches
 ## Metrics
 Defines a Micrometer counter:
 - `hello.request.count{endpoint="/hello/reactive"}`

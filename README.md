@@ -407,9 +407,9 @@ The numbers below are a curated summary of a representative run.
 | Micronaut  | JVM     | Platform | 30k | 441           | 193             |
 | Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
 | Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
-| Micronaut  | Native  | Platform | 16k | 165           | 348             |
-| Micronaut  | Native  | Virtual  | 15k | 165           | 348             |
-| Micronaut  | Native  | Reactive | 13k | 165           | 348             |
+| Micronaut  | Native  | Platform | 16k | 165           | 349             |
+| Micronaut  | Native  | Virtual  | 15k | 165           | 349             |
+| Micronaut  | Native  | Reactive | 13k | 165           | 349             |
 | Helidon SE | JVM     | Virtual  | 65k | 430           | 169             |
 | Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
