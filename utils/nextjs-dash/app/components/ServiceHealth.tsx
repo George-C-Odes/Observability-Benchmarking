@@ -293,6 +293,7 @@ export default function ServiceHealth() {
     const javalin = services.filter((s) => s.name.startsWith('javalin-')).sort(byName);
     const dropwizard = services.filter((s) => s.name.startsWith('dropwizard-')).sort(byName);
     const vertx = services.filter((s) => s.name.startsWith('vertx-')).sort(byName);
+    const pekko = services.filter((s) => s.name.startsWith('pekko-')).sort(byName);
     const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
     const utils = services.filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name)).sort(byName);
 
@@ -306,6 +307,7 @@ export default function ServiceHealth() {
       javalin,
       dropwizard,
       vertx,
+      pekko,
       go,
       utils,
     };
@@ -944,6 +946,10 @@ export default function ServiceHealth() {
 
       <ServiceGroup title="Vert.x Services" visible={groupedServices.vertx.length > 0}>
         {groupedServices.vertx.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
+
+      <ServiceGroup title="Pekko Services" visible={groupedServices.pekko.length > 0}>
+        {groupedServices.pekko.map((service) => renderServiceCard(service))}
       </ServiceGroup>
 
       <ServiceGroup title="Go Services" visible={groupedServices.go.length > 0}>

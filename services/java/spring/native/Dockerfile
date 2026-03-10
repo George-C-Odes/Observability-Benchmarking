@@ -20,6 +20,10 @@ ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
 
+# Memory allocated to the GraalVM native-image compiler (default ~8 GB shown; adjust as needed)
+ARG NATIVE_IMAGE_MAX_HEAP=10g
+ENV NATIVE_IMAGE_OPTS="-J-Xmx${NATIVE_IMAGE_MAX_HEAP}"
+
 ARG YQ_VERSION=4.50.1
 RUN microdnf install -y curl && microdnf clean all && \
     curl -L "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \

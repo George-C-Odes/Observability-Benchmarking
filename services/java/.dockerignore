@@ -118,3 +118,9 @@
 !vertx/jvm/src/
 !vertx/jvm/src/**
 !vertx/jvm/pom.xml
+
+!pekko/
+!pekko/jvm/
+!pekko/jvm/src/
+!pekko/jvm/src/**
+!pekko/jvm/pom.xml

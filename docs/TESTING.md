@@ -402,6 +402,9 @@ export DROPWIZARD_JVM_VIRTUAL_URL=http://localhost:8099
 # Vert.x Services
 export VERTX_JVM_URL=http://localhost:8100
 
+# Pekko Services
+export PEKKO_JVM_URL=http://localhost:8101
+
 # Go Service
 export GO_URL=http://localhost:9080
 
@@ -490,6 +493,7 @@ Testing Framework Versions:
 - Javalin: 7.0.1
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
+- Pekko: 1.3.0
 - Go: 1.26.1
 
 ==========================================
@@ -551,6 +555,10 @@ Testing Dropwizard JVM Virtual Ready... ✓ PASSED
 --- Vert.x JVM (port 8100) ---
 Testing Vert.x JVM - /hello/reactive... ✓ PASSED
 Testing Vert.x JVM Ready... ✓ PASSED
+
+--- Pekko JVM (port 8101) ---
+Testing Pekko JVM - /hello/reactive... ✓ PASSED
+Testing Pekko JVM Ready... ✓ PASSED
 
 ==========================================
 Native Services - Deployment Tests
@@ -617,6 +625,7 @@ Testing Javalin JVM Virtual Ready... ✓ PASSED
 Testing Dropwizard JVM Platform Ready... ✓ PASSED
 Testing Dropwizard JVM Virtual Ready... ✓ PASSED
 Testing Vert.x JVM Ready... ✓ PASSED
+Testing Pekko JVM Ready... ✓ PASSED
 Testing Go Metrics... ✓ PASSED
 
 --- Grafana Stack Readiness ---
@@ -678,12 +687,13 @@ Trace log check Javalin JVM Virtual (javalin-jvm-virtual)... ✓ PASSED (found '
 Trace log check Dropwizard JVM Platform (dropwizard-jvm-platform)... ✓ PASSED (found 'isVirtual: 'false'')
 Trace log check Dropwizard JVM Virtual (dropwizard-jvm-virtual)... ✓ PASSED (found 'isVirtual: 'true'')
 Trace log check Vert.x JVM Reactive (vertx-jvm)... ✓ PASSED (found 'vert.x-eventloop-thread')
+Trace log check Pekko JVM Reactive (pekko-jvm)... ✓ PASSED (found 'pekko.actor.default-dispatcher')
 Trace log check Go Virtual (go)... ✓ PASSED (found 'goroutine')
 
 ==========================================
 Test Summary
 ==========================================
-Tests Passed: 105
+Tests Passed: 109
 Tests Failed: 0
 ==========================================
 

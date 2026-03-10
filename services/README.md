@@ -244,6 +244,16 @@ docker buildx build `
   --load `
   services/java
 ```
+**pekko-jvm**
+```powershell
+docker buildx build `
+  -f services/java/pekko/jvm/Dockerfile `
+  -t pekko-jvm:1.3.0_latest `
+  --build-arg PEKKO_VERSION=1.3.0 `
+  --build-arg BUILDKIT_BUILD_NAME=pekko-jvm:1.3.0_latest `
+  --load `
+  services/java
+```
 **go**
 ```powershell
 docker buildx build `

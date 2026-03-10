@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG IMAGE_BUILDER=maven:3.9.12-eclipse-temurin-25-noble
+ARG IMAGE_BUILDER=maven:3.9.13-eclipse-temurin-25-noble
 ARG IMAGE_DOCKER_CLI=docker:29.3.0-cli-alpine3.23
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 ARG JAVA_RELEASE=25

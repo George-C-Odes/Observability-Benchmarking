@@ -64,6 +64,7 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'dropwizard-jvm-platform': false,
     'dropwizard-jvm-virtual': false,
     'vertx-jvm': false,
+    'pekko-jvm': false,
     'go': false,
 
     // UTILS

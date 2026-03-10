@@ -209,7 +209,8 @@ discovery.relabel "apps" {
                 ".*javalin-jvm-virtual.*|" +
                 ".*dropwizard-jvm-platform.*|" +
                 ".*dropwizard-jvm-virtual.*|" +
-                ".*vertx-jvm.*)$"
+                ".*vertx-jvm.*|" +
+                ".*pekko-jvm.*)$"
     }
     rule {
         action = "drop"

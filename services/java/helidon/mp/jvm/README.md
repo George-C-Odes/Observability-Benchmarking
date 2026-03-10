@@ -82,7 +82,7 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.9.12-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.9.13-eclipse-temurin-25-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Port mapping: `8096:8080`

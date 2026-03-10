@@ -5,6 +5,7 @@
   <groupId>io.github.georgecodes</groupId>
   <artifactId>orchestrator</artifactId>
   <version>1.0.0</version>
+  <name>Orchestrator</name>
 
   <properties>
     <argLine/>
