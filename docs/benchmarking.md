@@ -47,6 +47,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
 | Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
+| Pekko      | JVM     | Reactive | 30k | 693           | 266             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 ### Fairness Notes
@@ -58,6 +59,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
+- Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -133,6 +135,7 @@ memory: 2GB        # Maximum memory
 - Javalin: 7.0.1
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
+- Pekko: 1.3.0 (Pekko Core 1.4.0)
 - Go: 1.26.1 with Fiber v3.1.0
 
 ### Third-party license note (native-image)

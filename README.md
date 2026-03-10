@@ -11,6 +11,7 @@
 [![Javalin](https://img.shields.io/badge/Javalin-7.0.1-purple.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-4B0082.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
+[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-D22128.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-1.26.1-00ADD8.svg)](https://golang.org/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
@@ -47,7 +48,7 @@
 
 This repository provides a **production-ready Docker Compose environment** for comprehensive performance benchmarking of REST service implementations. It enables you to:
 
-- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard (JVM & Native where applicable), Go, and more
+- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko (JVM & Native where applicable), Go, and more
 - **Test concurrency models**: Platform threads, virtual threads (Project Loom), and reactive programming
 - **Collect full observability data**: Logs, metrics, traces, and continuous profiling in one unified stack
 - **Run deterministic benchmarks**: Use wrk2 for controlled, reproducible load testing
@@ -72,23 +73,24 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.0  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.59.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.25.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.13  | Java build and dependency management                                 |
 | **Build**         | Package Manager    | npm                        | 11.11.0 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
@@ -178,6 +180,9 @@ If you’re searching for projects like this, these are the topics it covers:
 - **Vert.x**: 5.0.8
   - JVM build
     - Reactive (event-loop)
+- **Pekko**: 1.3.0
+  - JVM build
+    - Reactive (Pekko dispatcher)
 
 #### Go (1.26.1)
 - Fiber framework integration
@@ -416,6 +421,7 @@ The numbers below are a curated summary of a representative run.
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
 | Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
+| Pekko      | JVM     | Reactive | 30k | 693           | 266             |
 | Go         | Native  | N/A      | 24k | 120           | 36              |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
@@ -433,6 +439,7 @@ The numbers below are a curated summary of a representative run.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
+- Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -472,6 +479,7 @@ The numbers below are a curated summary of a representative run.
 - **Javalin**: 7.0.1
 - **Dropwizard**: 5.0.1
 - **Vert.x**: 5.0.8
+- **Pekko**: 1.3.0 (Pekko Core 1.4.0)
 - **Go**: 1.26.1 (Fiber v3.1.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
@@ -585,7 +593,7 @@ This project implements comprehensive code quality and security practices to ens
 #### Checkstyle Linting
 - **Configuration**: Enforces Google Java Style Guide with customizations
 - **Version**: maven-checkstyle-plugin 3.6.0 with Checkstyle 12.2.0
-- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x)
+- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x, Pekko)
 - **Integration**: Runs automatically during Maven `validate` phase
 - **Results**: 0 violations across all projects
 
@@ -606,6 +614,7 @@ cd services/java/spark/jvm && mvn checkstyle:check
 cd services/java/javalin/jvm && mvn checkstyle:check
 cd services/java/dropwizard/jvm && mvn checkstyle:check
 cd services/java/vertx/jvm && mvn checkstyle:check
+cd services/java/pekko/jvm && mvn checkstyle:check
 ```
 
 #### Code Standards Enforced
@@ -728,7 +737,9 @@ Observability-Benchmarking/
 │   │   │   └── jvm/             # JVM builds (platform, virtual)
 │   │   ├── dropwizard/          # Dropwizard services
 │   │   │   └── jvm/             # JVM builds (platform, virtual)
-│   │   └── vertx/               # Vert.x services
+│   │   ├── vertx/               # Vert.x services
+│   │   │   └── jvm/             # JVM build (reactive)
+│   │   └── pekko/               # Pekko HTTP services
 │   │       └── jvm/             # JVM build (reactive)
 │   └── go/                  # Go services
 ├── config/                  # Configuration files
@@ -829,6 +840,13 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 - Fully reactive, event-loop–based framework built on Netty — no blocking, no thread-per-request
 - jlink-optimised JVM image with distroless runtime base
 
+#### Pekko
+- **Single deployment** serving the reactive endpoint
+- One container, only JVM build supported
+- Fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher — no blocking, no thread-per-request
+- Direct Pekko HTTP server for maximum throughput
+- jlink-optimised JVM image with distroless runtime base
+
 ### Recommendations for Production
 
 ⚠️ **This setup is optimized for local development and benchmarking**. Do NOT use these configurations in production without modifications:
@@ -918,7 +936,6 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🎯 Short-term Goals (Next 3-6 months)
 
 #### Additional Framework Support
-- [ ] **Play** jvm/reactive
 - [ ] **Helm charts** for easy Kubernetes deployment
 - [ ] **ArgoCD manifests** for GitOps workflows
 - [ ] **Ktor**: Kotlin-based asynchronous framework
@@ -1101,6 +1118,7 @@ This project builds upon amazing open-source tools and frameworks. Special thank
 - [Javalin](https://javalin.io/) - Lightweight REST server
 - [Dropwizard](https://www.dropwizard.io/) - Production-ready RESTful web services framework
 - [Vert.x](https://vertx.io/) - Reactive, event-driven applications on the JVM
+- [Pekko](https://pekko.apache.org/) - Reactive HTTP toolkit on the Pekko actor system (Apache)
 - [wrk2](https://github.com/giltene/wrk2) - Constant throughput HTTP benchmarking tool
 - [Docker](https://www.docker.com/) - Containerization platform
 

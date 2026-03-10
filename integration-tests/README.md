@@ -31,7 +31,7 @@ This directory contains an integration test runner script (`run-integration-test
 ```
 
 3. **Port Availability (defaults)**
-   - 8080-8099: Java Service ports
+   - 8080-8101: Java Service ports
    - 3000: Grafana
    - 3001: NextJS UI
    - 3002: Orchestrator
@@ -126,6 +126,9 @@ export DROPWIZARD_JVM_VIRTUAL_URL=http://localhost:8099
 # Vert.x Services
 export VERTX_JVM_URL=http://localhost:8100
 
+# Pekko Services
+export PEKKO_JVM_URL=http://localhost:8101
+
 # Go Service
 export GO_URL=http://localhost:9080
 
@@ -162,6 +165,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Javalin         | 7.0.1   |
 | Dropwizard      | 5.0.1   |
 | Vert.x          | 5.0.8   |
+| Pekko           | 1.3.0   |
 | Go              | 1.26.1  |
 
 ## Service Port Mappings
@@ -191,6 +195,7 @@ Port mappings match the order in `compose/docker-compose.yml`.
 | Dropwizard JVM Platform            | dropwizard-jvm-platform       | 8098 | JVM                |
 | Dropwizard JVM Virtual             | dropwizard-jvm-virtual        | 8099 | JVM                |
 | Vert.x JVM                         | vertx-jvm                     | 8100 | JVM                |
+| Pekko JVM                          | pekko-jvm                     | 8101 | JVM                |
 | Go                                 | go                            | 9080 | Native (Go binary) |
 
 ## What’s Tested (by the runner)
@@ -233,6 +238,10 @@ The runner checks these endpoints and response substrings:
   - `/hello/reactive` contains `Vertx`
   - readiness: `/ready` returns 200
 
+- **Pekko**
+  - `/hello/reactive` contains `Pekko`
+  - readiness: `/ready` returns 200
+
 - **Go**
   - `/hello/virtual` contains `GO`
 
@@ -260,7 +269,7 @@ The runner is intentionally tolerant and will accept **any one** of these endpoi
 - **Helidon MP**
   - `/health`
 
-- **Spark / Javalin / Dropwizard / Vert.x**
+- **Spark / Javalin / Dropwizard / Vert.x / Pekko**
   - readiness: `/ready`
 
 - **Go**
@@ -315,6 +324,7 @@ Example expectations (not exhaustive):
 - Quarkus expects `executor-thread` / `vthread` / `vert.x-eventloop-thread`
 - Micronaut/Spark/Javalin/Dropwizard virtual vs platform checks expect `isVirtual: 'true'` / `isVirtual: 'false'`
 - Vert.x reactive checks expect `vert.x-eventloop-thread`
+- Pekko reactive checks expect `pekko.actor.default-dispatcher`
 - Helidon SE/MP checks expect `isVirtual: 'true'`
 - Go expects `goroutine`
 
@@ -370,4 +380,4 @@ Example GitHub Actions step (illustrative):
 
 ---
 
-**Last Updated**: February 2026
+**Last Updated**: March 2026

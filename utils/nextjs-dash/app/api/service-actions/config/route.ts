@@ -34,6 +34,7 @@ const SERVICES = [
   'dropwizard-jvm-platform',
   'dropwizard-jvm-virtual',
   'vertx-jvm',
+  'pekko-jvm',
   'go',
 
   // UTILS

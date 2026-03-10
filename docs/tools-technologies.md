@@ -372,6 +372,58 @@ mvn package -Pnative
 - No native image support in the community edition
 - Smaller enterprise adoption compared to Spring or Quarkus
 
+### Pekko 1.3.0
+
+**Official Site**: [https://pekko.apache.org/](https://pekko.apache.org/) | [GitHub](https://github.com/apache/pekko-http)
+
+**Why We Use It**:
+- Apache Pekko HTTP is the community-driven successor to Akka HTTP, providing a fully reactive, non-blocking HTTP toolkit built on the Pekko actor system
+- Event-driven architecture with high throughput per CPU core — no thread-per-request overhead
+- Lightweight and composable — no DI container, no annotation scanning, no classpath magic; explicit manual wiring
+- Useful for benchmarking a reactive Scala/Java toolkit against other non-blocking alternatives (Vert.x, WebFlux)
+
+**Background — Play → Pekko pivot**:
+- We originally planned to benchmark the [Play Framework](https://www.playframework.com/), which itself is built on Pekko HTTP under the hood.
+- Initial implementation used Play's `RoutingDsl` with `routingAsync`, but throughput plateaued at **~1.8k RPS** on 2 vCPUs — roughly **15×** below comparable reactive frameworks.
+- Investigation showed that Play's layered abstractions introduced significant overhead:
+  - Typesafe Config loading (`application.conf`)
+  - Play application lifecycle bootstrap
+  - DI wiring
+  - `RoutingDsl` dispatch pipeline
+- Stripping away the Play layer and driving Pekko HTTP directly lifted throughput to **~30k RPS** — in line with other reactive implementations.
+- We therefore pivoted the module from "Play" to "Pekko HTTP" to keep the benchmark fair and representative of what the underlying engine can actually deliver.
+
+**Implementation Details**:
+- **Pekko HTTP 1.3.0** (latest stable)
+- **Pekko Core 1.4.0** (actor system + stream engine)
+- Direct Pekko HTTP server
+- JVM build only (no native image support at this time)
+- jlink-optimised runtime image with distroless base
+
+**Thread Models Implemented**:
+1. **Reactive (Pekko Dispatcher)**
+   - All request handling runs on the Pekko default ForkJoin dispatcher
+   - Non-blocking sleep via Pekko scheduler (never blocks the dispatcher)
+   - HTTP/1.1 pipelining-limit=16 for keep-alive benchmarks
+
+**Architecture**:
+- Clean architecture / hexagonal: domain layer is framework-agnostic, infrastructure adapters injected via constructor, web layer is a thin routing adapter
+- Pre-computed JSON response body at startup (zero per-request allocation)
+- Caffeine cache retrieval on every request in the hot path (consistent with other modules)
+
+**Pros**:
+- High throughput with minimal resource consumption (30k RPS on 2 vCPUs)
+- True non-blocking from the ground up — event-driven dispatcher model
+- Apache 2.0 licensed community project with active development
+- Micrometer metrics for native metric collection
+- No DI container overhead — all wiring is manual for minimal startup and runtime cost
+
+**Cons**:
+- Requires reactive programming discipline (no blocking calls on the dispatcher)
+- Scala dependency footprint (Scala 3 stdlib bundled in the uber JAR)
+- Smaller Java community compared to Vert.x or Spring WebFlux
+- No native image support
+
 ### Go with Fiber
 
 **Official Site**: [https://gofiber.io/](https://gofiber.io/)
@@ -682,7 +734,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9.12-eclipse-temurin-25-noble AS builder
+FROM maven:3.9.13-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
@@ -858,23 +910,24 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.0  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.59.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.25.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.12  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.13  | Java build and dependency management                                 |
 | **Build**         | Package Manager    | npm                        | 11.11.0 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
@@ -893,6 +946,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 - [Javalin Documentation](https://javalin.io/documentation)
 - [Dropwizard Documentation](https://www.dropwizard.io/en/latest/)
 - [Vert.x Documentation](https://vertx.io/docs/)
+- [Pekko Documentation](https://pekko.apache.org/docs/pekko-http/current/)
 - [Grafana Documentation](https://grafana.com/docs/)
 - [OpenTelemetry Docs](https://opentelemetry.io/docs/)
 - [Docker Documentation](https://docs.docker.com/)
@@ -902,6 +956,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 - [Quarkus Blog](https://quarkus.io/blog/)
 - [Micronaut Blog](https://micronaut.io/blog/)
 - [Helidon Blog](https://medium.com/helidon)
+- [Pekko Blog](https://pekko.apache.org/blog.html)
 - [Grafana Blog](https://grafana.com/blog/)
 - [CNCF Projects](https://www.cncf.io/projects/)
 

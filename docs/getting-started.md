@@ -231,6 +231,7 @@ Includes all service implementations:
 - Javalin (JVM: platform, virtual)
 - Dropwizard (JVM: platform, virtual)
 - Vert.x (JVM: reactive)
+- Pekko (JVM: reactive)
 - Go
 
 #### Profile: RAIN_FIRE (Load Generators)
@@ -314,6 +315,9 @@ docker compose --project-directory compose --profile=OBS --profile=SERVICES up -
 # Vert.x JVM (reactive)
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d vertx-jvm
 
+# Pekko JVM (reactive)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d pekko-jvm
+
 # Go
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d go
 ```
@@ -351,9 +355,10 @@ Once services are running:
 - **Dropwizard JVM (Platform)**: http://localhost:8098/hello/platform
 - **Dropwizard JVM (Virtual)**: http://localhost:8099/hello/virtual
 - **Vert.x JVM (Reactive)**: http://localhost:8100/hello/reactive
+- **Pekko JVM (Reactive)**: http://localhost:8101/hello/reactive
 - **Go**: http://localhost:9080/hello/virtual
 
-Health checks available at `/q/health` (Quarkus), `/actuator/health` (Spring), or `/ready` (Spark, Javalin, Dropwizard, Vert.x).
+Health checks available at `/q/health` (Quarkus), `/actuator/health` (Spring), or `/ready` (Spark, Javalin, Dropwizard, Vert.x, Pekko).
 
 ## Running Your First Benchmark
 

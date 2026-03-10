@@ -67,6 +67,8 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Virtual threads
 - Vert.x 5.0.8 (JVM)
   - Reactive (event-loop)
+- Pekko 1.3.0 (JVM)
+  - Reactive (Pekko dispatcher)
 - Go 1.26.1
   - Fiber framework (v3.1.0)
 
