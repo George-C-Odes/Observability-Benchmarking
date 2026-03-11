@@ -81,7 +81,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
