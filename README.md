@@ -4,7 +4,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.2-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.3-blue.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.17-1a1a2e.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
@@ -63,9 +63,9 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.0  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.32.3  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.17 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
@@ -81,7 +81,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.3   | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
@@ -91,7 +91,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.13  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.11.0 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.11.1 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
@@ -150,7 +150,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.32.2**
+- **Quarkus 3.32.3**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
 - **Micronaut**: 4.10.17
@@ -472,7 +472,7 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.3 (3.5.11 also supported)
-- **Quarkus**: 3.32.2
+- **Quarkus**: 3.32.3
 - **Micronaut**: 4.10.17
 - **Helidon**: 4.3.4
 - **Spark**: 3.0.3
