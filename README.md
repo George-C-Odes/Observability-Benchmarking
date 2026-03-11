@@ -4,7 +4,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.2-blue.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.3-blue.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.17-1a1a2e.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
@@ -65,7 +65,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.32.3  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.17 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
@@ -150,7 +150,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.32.2**
+- **Quarkus 3.32.3**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
 - **Micronaut**: 4.10.17
@@ -472,7 +472,7 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.3 (3.5.11 also supported)
-- **Quarkus**: 3.32.2
+- **Quarkus**: 3.32.3
 - **Micronaut**: 4.10.17
 - **Helidon**: 4.3.4
 - **Spark**: 3.0.3

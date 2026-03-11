@@ -81,7 +81,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.32.2
+### Quarkus 3.32.3
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -92,7 +92,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.32.2** (latest stable)
+- **Quarkus 3.32.3** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -901,7 +901,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.32.2  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.32.3  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.17 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
