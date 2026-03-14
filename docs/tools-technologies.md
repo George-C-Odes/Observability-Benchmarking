@@ -733,7 +733,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9.13-eclipse-temurin-25-noble AS builder
+FROM maven:3.9.14-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
@@ -916,9 +916,9 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.1  | Distributed tracing backend                                          |
+| **Observability** | Tracing            | Tempo                      | 2.10.2  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.18.1  | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 1.19.0  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.25.0  | Auto-instrumentation and exporters                                   |
@@ -926,11 +926,11 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.13  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
 | **Build**         | Package Manager    | npm                        | 11.11.1 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.0.18  | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0   | Frontend unit testing                                                |
 
 ---
 

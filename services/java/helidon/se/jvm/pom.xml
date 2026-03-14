@@ -14,7 +14,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <helidon.version>4.3.4</helidon.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <junit-jupiter.version>5.14.3</junit-jupiter.version>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <lombok.version>1.18.42</lombok.version>
         <logback.version>1.5.32</logback.version>
@@ -190,12 +189,6 @@
         </dependency>
 
         <!-- Tests -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit-jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>io.helidon.webclient</groupId>
             <artifactId>helidon-webclient</artifactId>
