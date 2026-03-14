@@ -102,7 +102,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:1.18.1
+    image: grafana/pyroscope:1.19.0
     container_name: pyroscope
     ports:
       - "4040:4040"
@@ -116,7 +116,7 @@ services:
 
   tempo:
     profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
-    image: grafana/tempo:2.10.1
+    image: grafana/tempo:2.10.2
     container_name: tempo
     command:
       - "-config.file=/etc/tempo-config/config.yaml"
