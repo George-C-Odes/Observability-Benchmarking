@@ -31,7 +31,7 @@
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <opentelemetry.version>1.60.1</opentelemetry.version>
-        <opentelemetry.instrumentation.version>2.25.0</opentelemetry.instrumentation.version>
+        <opentelemetry.instrumentation.version>2.26.0</opentelemetry.instrumentation.version>
     </properties>
 
     <dependencyManagement>
