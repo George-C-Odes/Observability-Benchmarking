@@ -9,14 +9,14 @@ FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MI
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG MICRONAUT_VERSION=4.10.17
+ARG MICRONAUT_VERSION=4.10.18
 ENV MICRONAUT_VERSION=${MICRONAUT_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
 
 # Memory allocated to the GraalVM native-image compiler (default ~8 GB shown; adjust as needed)
-ARG NATIVE_IMAGE_MAX_HEAP=10g
+ARG NATIVE_IMAGE_MAX_HEAP=8g
 ENV NATIVE_IMAGE_OPTS="-J-Xmx${NATIVE_IMAGE_MAX_HEAP}"
 
 # Ensure UID/GID are consistent across images for cache ownership

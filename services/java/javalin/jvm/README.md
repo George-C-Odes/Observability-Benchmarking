@@ -59,7 +59,7 @@ If the service is started in platform mode, `/hello/virtual` returns `500` and v
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
   -t javalin-jvm:latest `
-  --build-arg JAVALIN_VERSION=7.0.1 `
+  --build-arg JAVALIN_VERSION=7.1.0 `
   --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
   --load `
   services/java

@@ -163,7 +163,7 @@ Same metrics as JVM version:
 
 ### Native Compilation Trade-offs
 - **Build Time**: 3-5 minutes (vs seconds for JVM)
-- **Build Memory**: Requires 10GB+ for native image compilation
+- **Build Memory**: Requires 9GB+ for native image compilation
 - **Limited Reflection**: Requires explicit configuration
 - **Reduced Observability**: No Java agent support
 - **Debug Complexity**: Native debugging different from JVM
@@ -221,7 +221,7 @@ cd services/java/quarkus/native
 # Build native executable (requires native-image tool)
 ./mvnw verify -Dnative \
   -Dquarkus.profile=stage \
-  -Dquarkus.native.native-image-xmx=10g \
+  -Dquarkus.native.native-image-xmx=9g \
   -Dmaven.compiler.release=25
 ```
 
@@ -360,7 +360,7 @@ process_memory_rss_bytes{service_name="QuarkusNative"}
 ## Troubleshooting
 
 ### Build Failures
-- **Out of Memory**: Increase `-Dquarkus.native.native-image-xmx=10g`
+- **Out of Memory**: Increase `-Dquarkus.native.native-image-xmx=9g`
 - **Missing Reflection Config**: Add to `reflect-config.json`
 - **Class Initialization Errors**: Adjust `--initialize-at-build-time` or `--initialize-at-run-time`
 
