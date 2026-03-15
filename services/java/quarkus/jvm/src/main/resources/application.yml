@@ -56,7 +56,7 @@ quarkus:
     monitoring:
       - HEAPDUMP
       - JFR
-    native-image-xmx: 10g
+    native-image-xmx: 9g
   otel:
     sdk:
       disabled: true  #Run time

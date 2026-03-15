@@ -118,9 +118,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:4.10.17_latest `
-  --build-arg MICRONAUT_VERSION=4.10.17 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.17_latest `
+  -t micronaut-jvm:4.10.18_latest `
+  --build-arg MICRONAUT_VERSION=4.10.18 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.18_latest `
   --load `
   services/java
 ```
@@ -128,9 +128,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:4.10.17_latest `
-  --build-arg MICRONAUT_VERSION=4.10.17 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.17_latest `
+  -t micronaut-native:4.10.18_latest `
+  --build-arg MICRONAUT_VERSION=4.10.18 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.18_latest `
   --load `
   services/java
 ```
@@ -198,9 +198,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-platform:7.0.1_latest `
-  --build-arg JAVALIN_VERSION=7.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.1_latest `
+  -t javalin-jvm-platform:7.1.0_latest `
+  --build-arg JAVALIN_VERSION=7.1.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.1.0_latest `
   --load `
   services/java
 ```
@@ -208,9 +208,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-virtual:7.0.1_latest `
-  --build-arg JAVALIN_VERSION=7.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.0.1_latest `
+  -t javalin-jvm-virtual:7.1.0_latest `
+  --build-arg JAVALIN_VERSION=7.1.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.1.0_latest `
   --load `
   services/java
 ```

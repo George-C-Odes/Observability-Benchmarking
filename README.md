@@ -5,10 +5,10 @@
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-green.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.32.3-blue.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-4.10.17-1a1a2e.svg)](https://micronaut.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-4.10.18-1a1a2e.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-7.0.1-purple.svg)](https://javalin.io/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.1.0-purple.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-4B0082.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-D22128.svg)](https://pekko.apache.org/)
@@ -66,11 +66,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.3   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.32.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 4.10.17 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.0.1   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
@@ -85,7 +85,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Profiling          | Pyroscope                  | 1.19.0  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.25.0  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
@@ -153,7 +153,7 @@ If you’re searching for projects like this, these are the topics it covers:
 - **Quarkus 3.32.3**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 4.10.17
+- **Micronaut**: 4.10.18
   - JVM build (all three thread modes)
   - Native (all three thread modes)
 - **Helidon**: 4.3.4
@@ -169,7 +169,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Javalin**: 7.0.1
+- **Javalin**: 7.1.0
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -404,20 +404,20 @@ The numbers below are a curated summary of a representative run.
 | Quarkus    | Native  | Platform | 21k | 270           | 636             |
 | Quarkus    | Native  | Virtual  | 27k | 270           | 636             |
 | Quarkus    | Native  | Reactive | 22k | 270           | 636             |
-| Micronaut  | JVM     | Platform | 30k | 441           | 193             |
-| Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
-| Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
-| Micronaut  | Native  | Platform | 16k | 165           | 349             |
-| Micronaut  | Native  | Virtual  | 15k | 165           | 349             |
-| Micronaut  | Native  | Reactive | 13k | 165           | 349             |
+| Micronaut  | JVM     | Platform | 31k | 441           | 193             |
+| Micronaut  | JVM     | Virtual  | 38k | 441           | 193             |
+| Micronaut  | JVM     | Reactive | 33k | 441           | 193             |
+| Micronaut  | Native  | Platform | 17k | 165           | 349             |
+| Micronaut  | Native  | Virtual  | 17k | 165           | 349             |
+| Micronaut  | Native  | Reactive | 15k | 165           | 349             |
 | Helidon SE | JVM     | Virtual  | 65k | 430           | 169             |
 | Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
 | Spark      | JVM     | Platform | 24k | 403           | 215             |
 | Spark      | JVM     | Virtual  | 22k | 395           | 215             |
-| Javalin    | JVM     | Platform | 28k | 721           | 219             |
-| Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
+| Javalin    | JVM     | Platform | 29k | 754           | 219             |
+| Javalin    | JVM     | Virtual  | 26k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
 | Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
@@ -473,10 +473,10 @@ The numbers below are a curated summary of a representative run.
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
 - **Spring Boot**: 4.0.3 (3.5.11 also supported)
 - **Quarkus**: 3.32.3
-- **Micronaut**: 4.10.17
+- **Micronaut**: 4.10.18
 - **Helidon**: 4.3.4
 - **Spark**: 3.0.3
-- **Javalin**: 7.0.1
+- **Javalin**: 7.1.0
 - **Dropwizard**: 5.0.1
 - **Vert.x**: 5.0.8
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)

@@ -20,7 +20,7 @@
         <lombok.version>1.18.42</lombok.version>
         <logback.version>1.5.32</logback.version>
 
-        <micronaut.version>4.10.17</micronaut.version>
+        <micronaut.version>4.10.18</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
         <micronaut.test.version>4.10.3</micronaut.test.version>
@@ -31,7 +31,7 @@
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <opentelemetry.version>1.60.1</opentelemetry.version>
-        <opentelemetry.instrumentation.version>2.25.0</opentelemetry.instrumentation.version>
+        <opentelemetry.instrumentation.version>2.26.0</opentelemetry.instrumentation.version>
     </properties>
 
     <dependencyManagement>

@@ -30,20 +30,20 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Quarkus    | Native  | Platform | 21k | 270           | 636             |
 | Quarkus    | Native  | Virtual  | 27k | 270           | 636             |
 | Quarkus    | Native  | Reactive | 22k | 270           | 636             |
-| Micronaut  | JVM     | Platform | 30k | 441           | 193             |
-| Micronaut  | JVM     | Virtual  | 37k | 441           | 193             |
-| Micronaut  | JVM     | Reactive | 31k | 441           | 193             |
-| Micronaut  | Native  | Platform | 16k | 165           | 349             |
-| Micronaut  | Native  | Virtual  | 15k | 165           | 349             |
-| Micronaut  | Native  | Reactive | 13k | 165           | 349             |
+| Micronaut  | JVM     | Platform | 31k | 441           | 193             |
+| Micronaut  | JVM     | Virtual  | 38k | 441           | 193             |
+| Micronaut  | JVM     | Reactive | 33k | 441           | 193             |
+| Micronaut  | Native  | Platform | 17k | 165           | 349             |
+| Micronaut  | Native  | Virtual  | 17k | 165           | 349             |
+| Micronaut  | Native  | Reactive | 15k | 165           | 349             |
 | Helidon SE | JVM     | Virtual  | 65k | 430           | 169             |
 | Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
 | Spark      | JVM     | Platform | 24k | 403           | 215             |
 | Spark      | JVM     | Virtual  | 22k | 395           | 215             |
-| Javalin    | JVM     | Platform | 28k | 721           | 219             |
-| Javalin    | JVM     | Virtual  | 24k | 510           | 219             |
+| Javalin    | JVM     | Platform | 29k | 754           | 219             |
+| Javalin    | JVM     | Virtual  | 26k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
 | Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
 | Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
@@ -129,10 +129,10 @@ memory: 2GB        # Maximum memory
 **Frameworks**:
 - Spring Boot: 4.0.3 (3.5.11 also supported)
 - Quarkus: 3.32.3
-- Micronaut: 4.10.17
+- Micronaut: 4.10.18
 - Helidon: 4.3.4
 - Spark: 3.0.3
-- Javalin: 7.0.1
+- Javalin: 7.1.0
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
 - Pekko: 1.3.0 (Pekko Core 1.4.0)

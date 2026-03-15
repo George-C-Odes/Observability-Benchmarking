@@ -14,7 +14,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG JAVALIN_VERSION=7.0.1
+ARG JAVALIN_VERSION=7.1.0
 ENV JAVALIN_VERSION=${JAVALIN_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -79,7 +79,7 @@ RUN set -eux; \
 FROM alpine:3.23.3 AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=1.1.0
-ARG OTEL_JAVA_AGENT_VERSION=2.25.0
+ARG OTEL_JAVA_AGENT_VERSION=2.26.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 
