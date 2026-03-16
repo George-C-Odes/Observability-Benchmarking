@@ -75,7 +75,7 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
   -t spark-jvm:latest `
-  --build-arg SPARK_VERSION=3.0.3 `
+  --build-arg SPARK_VERSION=3.0.4 `
   --build-arg BUILDKIT_BUILD_NAME=spark-jvm:latest `
   --load `
   services/java

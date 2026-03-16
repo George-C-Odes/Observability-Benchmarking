@@ -40,8 +40,8 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
-| Spark      | JVM     | Platform | 24k | 403           | 215             |
-| Spark      | JVM     | Virtual  | 22k | 395           | 215             |
+| Spark      | JVM     | Platform | 35k | 559           | 216             |
+| Spark      | JVM     | Virtual  | 25k | 395           | 216             |
 | Javalin    | JVM     | Platform | 29k | 754           | 219             |
 | Javalin    | JVM     | Virtual  | 26k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
@@ -131,7 +131,7 @@ memory: 2GB        # Maximum memory
 - Quarkus: 3.32.3
 - Micronaut: 4.10.18
 - Helidon: 4.3.4
-- Spark: 3.0.3
+- Spark: 3.0.4
 - Javalin: 7.1.0
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
