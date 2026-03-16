@@ -35,6 +35,11 @@ if [ -n "${LOGNAME-}" ]; then echo "  LOGNAME: ${LOGNAME}"; fi
 if [ -n "${WSL_DISTRO_NAME-}" ]; then echo "  WSL:     ${WSL_DISTRO_NAME}"; fi
 if [ -n "${WT_SESSION-}" ]; then echo "  WT_SESSION:  ${WT_SESSION}"; fi
 
+echo "Docker:"
+echo "  CLI:     $(docker --version 2>/dev/null || echo '<not found>')"
+echo "  Socket:  $(ls -la /var/run/docker.sock 2>/dev/null || echo '<missing>')"
+echo "  DOCKER_HOST: ${DOCKER_HOST:-<not set>}"
+
 echo "Timestamp (host): $(date -Iseconds)"
 echo "=========================================="
 echo ""
@@ -126,7 +131,7 @@ QUARKUS_VERSION="3.32.3"
 SPRING_BOOT_VERSION="4.0.3"
 MICRONAUT_VERSION="4.10.18"
 HELIDON_VERSION="4.3.4"
-SPARK_VERSION="3.0.3"
+SPARK_VERSION="3.0.4"
 JAVALIN_VERSION="7.1.0"
 DROPWIZARD_VERSION="5.0.1"
 VERTX_VERSION="5.0.8"
@@ -263,6 +268,29 @@ test_micronaut_metrics() {
     test_endpoint "${name} Metrics" "${url}/metrics" 200 "" || \
     test_endpoint "${name} Metrics" "${url}/health" 200 ""
 }
+
+# --- Docker connectivity pre-flight check ---
+# The trace-log and wrk2-exec tests require the Docker CLI to reach the daemon.
+# Detect and warn early so silent "Last log line: <empty>" failures are obvious.
+DOCKER_AVAILABLE=false
+echo "Docker pre-flight check:"
+if ! command -v docker &>/dev/null; then
+    echo -e "  ${RED}✗ 'docker' CLI not found on PATH${NC}"
+elif docker_info_out="$(docker info --format '{{.ServerVersion}}' 2>&1)"; then
+    echo -e "  ${GREEN}✓ Docker daemon reachable (server ${docker_info_out})${NC}"
+    DOCKER_AVAILABLE=true
+else
+    echo -e "  ${RED}✗ Docker daemon unreachable${NC}"
+    echo "  Error: ${docker_info_out}"
+    echo ""
+    echo "  The 'docker exec' and 'docker logs' tests will be skipped/fail."
+    echo "  Common fixes (WSL2):"
+    echo "    1. Ensure Docker Desktop → Settings → Resources → WSL Integration"
+    echo "       has your distro ('$(echo "${WSL_DISTRO_NAME:-Ubuntu}")') enabled."
+    echo "    2. Restart Docker Desktop, then re-open your WSL terminal."
+    echo "    3. Verify: ls -la /var/run/docker.sock"
+fi
+echo ""
 
 echo "=========================================="
 echo "Integration Test Suite"
@@ -464,6 +492,11 @@ WRK2_READY_URL="${WRK2_READY_URL:-http://localhost:3003/ready}"
 WRK2_CONTAINER_NAME="${WRK2_CONTAINER_NAME:-wrk2}"
 
 if wait_for_endpoint "wrk2 (/ready)" "${WRK2_READY_URL}" 200 2; then
+    if [ "${DOCKER_AVAILABLE}" != "true" ]; then
+        echo -e "${RED}✗ SKIPPED${NC} - Docker daemon unreachable; cannot 'docker exec' into wrk2 container."
+        echo "  See Docker pre-flight check above for remediation steps."
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    else
     echo "wrk2 exec self-ready check (printing wrk output below):"
 
     # Run wrk2 against its own readiness endpoint from inside the container.
@@ -497,6 +530,7 @@ if wait_for_endpoint "wrk2 (/ready)" "${WRK2_READY_URL}" 200 2; then
         echo "  Could not run on-demand wrk2 self-ready check inside container '${WRK2_CONTAINER_NAME}'."
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
+    fi
 else
     echo -e "${RED}✗ FAILED${NC} - wrk2 readiness endpoint was not ready at ${WRK2_READY_URL}"
     TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -515,8 +549,16 @@ verify_last_log_contains() {
 
     echo -n "Trace log check ${label} (${container_name})... "
 
-    # Get last log line (don't fail the whole script if container/logs are unavailable)
-    local last_line
+    # Fast-fail if Docker is unreachable (avoids misleading "<empty>" messages)
+    if [ "${DOCKER_AVAILABLE}" != "true" ]; then
+        echo -e "${RED}✗ SKIPPED${NC} (Docker daemon unreachable — cannot fetch container logs)"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        return 1
+    fi
+
+    # Get last log line; capture stderr so connectivity issues are visible
+    local last_line docker_err
+    docker_err="$(docker logs --tail 1 "${container_name}" 2>&1 1>/dev/null || true)"
     last_line="$(docker logs --tail 1 "${container_name}" 2>/dev/null || true)"
 
     if echo "${last_line}" | grep -qi "${expected}"; then
@@ -525,6 +567,9 @@ verify_last_log_contains() {
         return 0
     else
         echo -e "${RED}✗ FAILED${NC} (missing '${expected}')"
+        if [ -n "${docker_err}" ]; then
+            echo "  Docker error: ${docker_err}"
+        fi
         echo "  Last log line: ${last_line:-<empty>}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
         return 1

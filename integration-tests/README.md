@@ -161,7 +161,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Quarkus         | 3.32.3  |
 | Micronaut       | 4.10.18 |
 | Helidon SE & MP | 4.3.4   |
-| Spark           | 3.0.3   |
+| Spark           | 3.0.4   |
 | Javalin         | 7.1.0   |
 | Dropwizard      | 5.0.1   |
 | Vert.x          | 5.0.8   |

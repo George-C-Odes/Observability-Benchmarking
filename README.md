@@ -7,7 +7,7 @@
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.32.3-blue.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.18-1a1a2e.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
-[![SparkJava](https://img.shields.io/badge/SparkJava-3.0.3-yellow.svg)](https://sparkjava.com/)
+[![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-yellow.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.1.0-purple.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-4B0082.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
@@ -69,7 +69,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
@@ -165,7 +165,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Virtual threads
   - MP Native build
     - Virtual threads
-- **Spark**: 3.0.3
+- **Spark**: 3.0.4
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -414,8 +414,8 @@ The numbers below are a curated summary of a representative run.
 | Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
 | Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
 | Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
-| Spark      | JVM     | Platform | 24k | 403           | 215             |
-| Spark      | JVM     | Virtual  | 22k | 395           | 215             |
+| Spark      | JVM     | Platform | 35k | 559           | 216             |
+| Spark      | JVM     | Virtual  | 25k | 395           | 216             |
 | Javalin    | JVM     | Platform | 29k | 754           | 219             |
 | Javalin    | JVM     | Virtual  | 26k | 510           | 219             |
 | Dropwizard | JVM     | Platform | 17k | 613           | 246             |
@@ -475,7 +475,7 @@ The numbers below are a curated summary of a representative run.
 - **Quarkus**: 3.32.3
 - **Micronaut**: 4.10.18
 - **Helidon**: 4.3.4
-- **Spark**: 3.0.3
+- **Spark**: 3.0.4
 - **Javalin**: 7.1.0
 - **Dropwizard**: 5.0.1
 - **Vert.x**: 5.0.8

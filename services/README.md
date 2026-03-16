@@ -178,9 +178,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm-platform:3.0.3_latest `
-  --build-arg SPARK_VERSION=3.0.3 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
+  -t spark-jvm-platform:3.0.4_latest `
+  --build-arg SPARK_VERSION=3.0.4 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.4_latest `
   --load `
   services/java
 ```
@@ -188,9 +188,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm-virtual:3.0.3_latest `
-  --build-arg SPARK_VERSION=3.0.3 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.3_latest `
+  -t spark-jvm-virtual:3.0.4_latest `
+  --build-arg SPARK_VERSION=3.0.4 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.4_latest `
   --load `
   services/java
 ```

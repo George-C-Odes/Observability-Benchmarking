@@ -229,7 +229,7 @@ mvn package -Pnative
 - Smaller community and ecosystem than Spring or Quarkus
 - Helidon MP's CDI overhead is significant compared to SE
 
-### SparkJava 3.0.3 (Zoomba fork)
+### SparkJava 3.0.4 (Zoomba fork)
 
 **Official Site**: [https://sparkjava.com/](https://sparkjava.com/) | [Zoomba fork](https://github.com/nicholaszoomba/spark)
 
@@ -240,7 +240,7 @@ mvn package -Pnative
 - Useful for isolating framework overhead in benchmarks
 
 **Implementation Details**:
-- **SparkJava 3.0.3** (Zoomba fork with virtual thread support)
+- **SparkJava 3.0.4** (Zoomba fork with virtual thread support)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -905,7 +905,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.3   | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
