@@ -493,7 +493,7 @@ WRK2_CONTAINER_NAME="${WRK2_CONTAINER_NAME:-wrk2}"
 
 if wait_for_endpoint "wrk2 (/ready)" "${WRK2_READY_URL}" 200 2; then
     if [ "${DOCKER_AVAILABLE}" != "true" ]; then
-        echo -e "${RED}✗ SKIPPED${NC} - Docker daemon unreachable; cannot 'docker exec' into wrk2 container."
+        echo -e "${RED}✗ ERROR${NC} - Docker daemon unreachable; cannot 'docker exec' into wrk2 container."
         echo "  See Docker pre-flight check above for remediation steps."
         TESTS_FAILED=$((TESTS_FAILED + 1))
     else
@@ -551,7 +551,7 @@ verify_last_log_contains() {
 
     # Fast-fail if Docker is unreachable (avoids misleading "<empty>" messages)
     if [ "${DOCKER_AVAILABLE}" != "true" ]; then
-        echo -e "${RED}✗ SKIPPED${NC} (Docker daemon unreachable — cannot fetch container logs)"
+        echo -e "${RED}✗ ERROR${NC} (Docker daemon unreachable — cannot fetch container logs)"
         TESTS_FAILED=$((TESTS_FAILED + 1))
         return 1
     fi
