@@ -910,7 +910,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Frontend**      | Framework          | Next.js                    | 16.1.6  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.1.7  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
