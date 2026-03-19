@@ -5,7 +5,13 @@ server:
   port: 8080
   host: 0.0.0.0
   backlog: 8192
-  max-concurrent-requests: 512
+  max-concurrent-requests: -1
   idle-connection-timeout: PT15S
   receive-buffer-size: 4096
   write-queue-length: 0
+
+  # ── Helidon 4.4.0 ─────────────────────────────────────────────────
+  # Socket transport marginally faster than NIO under load with agent.
+  use-nio: false
+  # Prevent auto-discovered ServerFeatures from wrapping every request.
+  features-discover-services: false

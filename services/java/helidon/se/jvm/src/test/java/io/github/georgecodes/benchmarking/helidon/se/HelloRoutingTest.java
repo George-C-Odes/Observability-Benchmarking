@@ -1,7 +1,7 @@
 package io.github.georgecodes.benchmarking.helidon.se;
 
 import io.github.georgecodes.benchmarking.helidon.se.application.HelloService;
-import io.github.georgecodes.benchmarking.helidon.se.infra.ObservabilityFeatureFactory;
+//import io.github.georgecodes.benchmarking.helidon.se.infra.ObservabilityFeatureFactory;
 import io.github.georgecodes.benchmarking.helidon.se.infra.cache.CaffeineCacheAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.MicrometerMetricsAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.infra.time.ThreadSleepAdapter;
@@ -10,7 +10,7 @@ import io.helidon.http.Status;
 import io.helidon.webclient.http1.Http1Client;
 import io.helidon.webclient.http1.Http1ClientResponse;
 import io.helidon.webserver.WebServer;
-import io.helidon.webserver.observe.ObserveFeature;
+//import io.helidon.webserver.observe.ObserveFeature;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,11 +30,11 @@ class HelloRoutingTest {
         var sleepPort = new ThreadSleepAdapter();
         var helloService = new HelloService(cachePort, metricsPort, sleepPort);
 
-        ObserveFeature observe = ObservabilityFeatureFactory.create("helidon-se-jvm-test");
+//        ObserveFeature observe = ObservabilityFeatureFactory.create("helidon-se-jvm-test");
 
         server = WebServer.builder()
                 .port(0)
-                .addFeature(observe)
+//                .addFeature(observe)
                 .routing(routing -> HelloRouting.register(routing, helloService))
                 .build()
                 .start();
@@ -72,13 +72,13 @@ class HelloRoutingTest {
         }
     }
 
-    @Test
-    void healthEndpoint() {
-        try (Http1ClientResponse response = client.get("/observe/health").request()) {
-            // Helidon returns 204 No Content when all checks are UP and no body is needed
-            assertTrue(
-                    response.status() == Status.OK_200 || response.status() == Status.NO_CONTENT_204,
-                    "Expected 200 or 204 but was: " + response.status());
-        }
-    }
+//    @Test
+//    void healthEndpoint() {
+//        try (Http1ClientResponse response = client.get("/observe/health").request()) {
+//            // Helidon returns 204 No Content when all checks are UP and no body is needed
+//            assertTrue(
+//                    response.status() == Status.OK_200 || response.status() == Status.NO_CONTENT_204,
+//                    "Expected 200 or 204 but was: " + response.status());
+//        }
+//    }
 }

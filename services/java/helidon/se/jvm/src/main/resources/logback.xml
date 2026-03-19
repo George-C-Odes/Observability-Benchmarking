@@ -12,16 +12,17 @@
         </encoder>
     </appender>
 
-    <!-- OTel appender — feeds logs into the SDK's BatchLogRecordProcessor.
-         Uses GlobalOpenTelemetry; buffers until the SDK is initialized. -->
-    <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
-        <captureExperimentalAttributes>true</captureExperimentalAttributes>
-        <captureMdcAttributes>*</captureMdcAttributes>
-    </appender>
+    <!-- OTel Java Agent already auto-instruments Logback for log capture.
+         An explicit OpenTelemetryAppender would double-process every log statement
+         through the OTel BatchLogRecordProcessor pipeline. Removed. -->
+
+    <!-- Suppress noisy Helidon / Netty / OTel framework logging on hot path -->
+    <logger name="io.helidon"          level="WARN" />
+    <logger name="io.netty"            level="WARN" />
+    <logger name="io.opentelemetry"    level="WARN" />
 
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
-        <appender-ref ref="OTEL" />
     </root>
 
 </configuration>

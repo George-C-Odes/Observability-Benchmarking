@@ -3,7 +3,8 @@ ARG MAVEN_RELEASE=3.9.14
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot
+#ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------
@@ -14,7 +15,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG HELIDON_VERSION=4.3.4
+ARG HELIDON_VERSION=4.4.0
 ENV HELIDON_VERSION=${HELIDON_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -57,20 +58,45 @@ RUN --mount=type=cache,id=maven-m2-helidon-se-jvm-${JAVA_RELEASE},target=/home/m
 
 # ── jlink: create a stripped-down custom JRE ──
 # Analyse the shaded uber-jar for required JDK modules and build a minimal runtime.
-RUN set -eux; \
-    DEPS=$(jdeps \
-      --ignore-missing-deps \
-      --print-module-deps \
-      --multi-release ${JAVA_RELEASE} \
-      /workspace/out/app.jar 2>/dev/null || echo "java.base") && \
-    echo "jlink modules: $DEPS" && \
-    jlink \
-      --add-modules "$DEPS" \
-      --strip-debug \
-      --compress zip-6 \
-      --no-header-files \
-      --no-man-pages \
-      --output /workspace/out/jre
+#RUN set -eux; \
+#    DEPS=$(jdeps \
+#      --ignore-missing-deps \
+#      --print-module-deps \
+#      --multi-release ${JAVA_RELEASE} \
+#      /workspace/out/app.jar 2>/dev/null || echo "java.base") && \
+#    echo "jlink modules: $DEPS" && \
+#    jlink \
+#      --add-modules "$DEPS" \
+#      --strip-debug \
+#      --compress zip-6 \
+#      --no-header-files \
+#      --no-man-pages \
+#      --output /workspace/out/jre
+
+# ------------ OTEL/PROFILING DEPS STAGE -----------------------
+FROM alpine:3.23.3 AS otel_deps
+
+ARG OTEL_PYROSCOPE_VERSION=1.1.0
+ARG OTEL_JAVA_AGENT_VERSION=2.26.0
+ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
+ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
+
+RUN apk add --no-cache ca-certificates curl
+WORKDIR /out
+
+RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
+    set -e; \
+    PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/pyroscope-otel.jar"; \
+    PYRO_CACHE="/cache/pyroscope-otel-${OTEL_PYROSCOPE_VERSION}.jar"; \
+    if [ ! -f "$PYRO_CACHE" ]; then \
+      curl -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
+    fi; \
+    cp "$PYRO_CACHE" ./pyroscope-otel-extension.jar; \
+    AGENT_CACHE="/cache/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar"; \
+    if [ ! -f "$AGENT_CACHE" ]; then \
+      curl -fsSL --retry 5 --retry-all-errors -o "$AGENT_CACHE" "${OTEL_JAVA_AGENT_URL}"; \
+    fi; \
+    cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
 
 #-----------------------  RUNTIME STAGE -----------------------
 # Use a minimal distroless base — the jlink JRE is self-contained
@@ -84,8 +110,10 @@ ENV JAVA_ARGS=${JAVA_ARGS}
 
 WORKDIR /work/
 
-COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/jre/ /opt/jre/
+#COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/jre/ /opt/jre/
 COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/out/app.jar /deployments/app.jar
+COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/pyroscope-otel-extension.jar /work/pyroscope-otel-extension.jar
+COPY --from=otel_deps --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0640 /out/opentelemetry-javaagent.jar    /work/opentelemetry-javaagent.jar
 
 EXPOSE 8080
 
@@ -107,4 +135,5 @@ ENV JAVA_TOOL_OPTIONS="\
     ${JAVA_ARGS}"
 
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
-ENTRYPOINT ["/opt/jre/bin/java", "-jar", "/deployments/app.jar"]
+#ENTRYPOINT ["/opt/jre/bin/java", "-jar", "/deployments/app.jar"]
+ENTRYPOINT ["java", "-jar", "/deployments/app.jar"]

@@ -1,21 +1,21 @@
 package io.github.georgecodes.benchmarking.helidon.se;
 
-import io.github.georgecodes.benchmarking.helidon.se.infra.ObservabilityFeatureFactory;
+//import io.github.georgecodes.benchmarking.helidon.se.infra.ObservabilityFeatureFactory;
 import io.github.georgecodes.benchmarking.helidon.se.infra.cache.CaffeineCacheAdapter;
-import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.JvmExtrasMetricsConfiguration;
+//import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.JvmExtrasMetricsConfiguration;
 import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.MicrometerMetricsAdapter;
-import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig;
+//import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig;
 import io.github.georgecodes.benchmarking.helidon.se.infra.time.ThreadSleepAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.application.HelloService;
 import io.github.georgecodes.benchmarking.helidon.se.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.se.web.HelloRouting;
-import io.github.georgecodes.benchmarking.helidon.se.web.HttpMetricsFilter;
+//import io.github.georgecodes.benchmarking.helidon.se.web.HttpMetricsFilter;
 import io.helidon.config.Config;
 import io.helidon.webserver.WebServer;
-import io.helidon.webserver.observe.ObserveFeature;
-import io.micrometer.core.instrument.Metrics;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
+//import io.helidon.webserver.observe.ObserveFeature;
+//import io.micrometer.core.instrument.Metrics;
+//import io.opentelemetry.api.OpenTelemetry;
+//import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
@@ -49,13 +49,13 @@ public final class HelidonApplication {
         var sleepPort = new ThreadSleepAdapter();
         var helloService = new HelloService(cachePort, metricsPort, sleepPort);
 
-        // ── Observability: OTel SDK autoconfigure ──
-        OpenTelemetry openTelemetry = OtelConfig.initialize();
-        OtelConfig.bridgeMicrometer(openTelemetry);
-        OpenTelemetryAppender.install(openTelemetry);
-
-        // ── Register JVM extras meter binders ──
-        new JvmExtrasMetricsConfiguration(Metrics.globalRegistry).register();
+//        // ── Observability: OTel SDK autoconfigure ──
+//        OpenTelemetry openTelemetry = OtelConfig.initialize();
+//        OtelConfig.bridgeMicrometer(openTelemetry);
+//        OpenTelemetryAppender.install(openTelemetry);
+//
+//        // ── Register JVM extras meter binders ──
+//        new JvmExtrasMetricsConfiguration(Metrics.globalRegistry).register();
 
         // ── Pre-warm Micrometer counters for known endpoints ──
         for (HelloMode mode : HelloMode.values()) {
@@ -63,7 +63,7 @@ public final class HelidonApplication {
         }
 
         // ── Health check & observability feature ──
-        ObserveFeature observe = ObservabilityFeatureFactory.create("helidon-se-jvm");
+//        ObserveFeature observe = ObservabilityFeatureFactory.create("helidon-se-jvm");
 
         // ── Micrometer HTTP metrics (http.server.requests Timer) ──
         // Enabled via HELIDON_MICROMETER_ENABLED env var (default: true).
@@ -76,11 +76,11 @@ public final class HelidonApplication {
         // ── Start WebServer ──
         WebServer server = WebServer.builder()
                 .config(config.get("server"))
-                .addFeature(observe)
+//                .addFeature(observe)
                 .routing(routing -> {
-                    if (micrometerEnabled) {
-                        routing.addFilter(new HttpMetricsFilter());
-                    }
+//                    if (micrometerEnabled) {
+//                        routing.addFilter(new HttpMetricsFilter());
+//                    }
                     HelloRouting.register(routing, helloService);
                 })
                 .build()
