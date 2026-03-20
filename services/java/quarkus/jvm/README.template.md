@@ -3,7 +3,7 @@
 # Quarkus JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.32.4 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Quarkus {{QUARKUS_VERSION}} running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Quarkus performance across platform threads, virtual threads, and reactive programming models
@@ -14,14 +14,14 @@ A high-performance REST service implementation built with Quarkus 3.32.4 running
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.32.4
+- **Framework**: Quarkus {{QUARKUS_VERSION}}
 - **Java Version**: Eclipse Temurin 25.0.2
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
 ### Docker
 
-**Image**: `quarkus-jvm:3.32.4_latest`
+**Image**: `quarkus-jvm:{{QUARKUS_VERSION}}_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -314,9 +314,9 @@ cd services/java/quarkus/jvm
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.32.4_latest `
-  --build-arg QUARKUS_VERSION=3.32.4 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.32.4_latest `
+  -t quarkus-jvm:{{QUARKUS_VERSION}}_latest `
+  --build-arg QUARKUS_VERSION={{QUARKUS_VERSION}} `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:{{QUARKUS_VERSION}}_latest `
   --load `
   services/java
 ```

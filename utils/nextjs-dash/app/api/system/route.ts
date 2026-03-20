@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
+import { resolveServerNpmVersion } from '@/lib/systemInfo';
 
 const execAsync = promisify(exec);
 
@@ -26,9 +27,14 @@ export const GET = withApiRoute({ name: 'SYSTEM_API' }, async function GET() {
     // Get package versions from package.json
     try {
       const packageJson = require('../../../package.json') as {
+        packageManager?: string;
         dependencies?: Record<string, string>;
         devDependencies?: Record<string, string>;
       };
+      systemInfo.npm = resolveServerNpmVersion({
+        packageManager: packageJson.packageManager,
+        fallback: systemInfo.npm,
+      });
       systemInfo.nextjs = packageJson.dependencies?.next || 'N/A';
       systemInfo.react = packageJson.dependencies?.react || 'N/A';
       systemInfo.mui = packageJson.dependencies?.['@mui/material'] || 'N/A';

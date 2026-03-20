@@ -152,7 +152,7 @@ Some environments terminate long-lived HTTP connections.
 
 ## Technology Stack
 
-- **Next.js**: v16.1.7
+- **Next.js**: v16.2.0
 - **React**: v19.2.4
 - **Material-UI (MUI)**: v7.3.9
 - **TypeScript**: v5.9.3
@@ -362,7 +362,7 @@ node ..\orchestrator\scripts\direct-sse-smoke.mjs
 ### When mobile comes into play
 
 - Orchestrator exposes all required endpoints directly (OpenAPI-first).
-- Build a dedicated TypeScript client (and later mobile-native clients) that talk to the orchestrator.
+- Build a dedicated TypeScript client (and later mobile-native clients) that talks to the orchestrator.
 - Harden real-time channels (SSE reconnect support, Last-Event-ID, heartbeats).
 
 ### When auth & roles come into play

@@ -1,15 +1,17 @@
 # syntax=docker/dockerfile:1.7
 ARG IMAGE_DEPS=node:25.8.1-alpine3.23
-ARG IMAGE_BUILDER=node:25.8.1-alpine3.23
 ARG IMAGE_RUNTIME=node:25.8.1-alpine3.23
+ARG NPM_VERSION=11.12.0
 #ARG IMAGE_DEPS=node:25.8.1-bookworm-slim
-#ARG IMAGE_BUILDER=node:25.8.1-bookworm-slim
 #ARG IMAGE_RUNTIME=node:25.8.1-bookworm-slim
 
 # ------------ DEPS STAGE -----------------------
 # Installs ALL dependencies (prod + dev) for build & test.
 FROM ${IMAGE_DEPS} AS deps
 WORKDIR /app
+
+# Pin npm before any install step so the container build matches packageManager.
+RUN npm install -g npm@${NPM_VERSION}
 
 # Copy only package manifests first for maximum layer-cache reuse.
 # This layer is invalidated ONLY when dependencies change.
@@ -23,50 +25,48 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 # ------------ QUALITY GATE STAGE ----------------
 # Runs lint + typecheck + tests.  Gated: build won't proceed if this fails.
 # Enforced quality gate: the builder stage depends on this and cannot skip it.
-FROM ${IMAGE_BUILDER} AS quality
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+FROM deps AS quality
+COPY --link . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PATH=/app/node_modules/.bin:$PATH
 
 # Lint, typecheck, and test in a single RUN to share a layer.
 # The build machine has 16 cores — use them.
 # A sentinel file is written on success so the builder stage can depend on it.
-RUN npx eslint . --max-warnings=0 && \
-    npx tsc --noEmit && \
-    npx vitest run -c vitest.config.node.ts --maxWorkers=12 && \
-    npx vitest run -c vitest.config.dom.ts  --maxWorkers=12 && \
+RUN eslint . --max-warnings=0 && \
+    tsc --noEmit && \
+    vitest run -c vitest.config.node.ts --maxWorkers=12 && \
+    vitest run -c vitest.config.dom.ts  --maxWorkers=12 && \
     touch /tmp/.quality-ok
 
 # ------------ BUILD STAGE -----------------------
 # Produces the Next.js standalone output.
 # The COPY from quality creates a build-graph dependency edge so BuildKit
 # will ALWAYS execute the quality stage before reaching the build.
-FROM ${IMAGE_BUILDER} AS builder
-WORKDIR /app
+FROM deps AS builder
 COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok
-COPY --from=deps /app/node_modules ./node_modules
 
 # Copy config files first (changes rarely → good cache hit rate)
-COPY package.json next.config.ts tsconfig.json ./
+COPY --link package.json next.config.ts tsconfig.json ./
 
 # Copy source (changes often → only this layer + build invalidated).
-COPY app ./app
-COPY lib ./lib
-COPY public ./public
+COPY --link app ./app
+COPY --link lib ./lib
+COPY --link public ./public
 
 # Remove test files from the builder so they don't bloat the standalone output
 # and test-only edits don't affect the next build's trace cache.
 RUN find app lib -type f \( -name '*.test.ts' -o -name '*.test.tsx' \) -delete
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PATH=/app/node_modules/.bin:$PATH
 # Give Next.js more heap headroom on 16-core builders
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Cache both the Next.js incremental build cache and the webpack cache
 RUN --mount=type=cache,target=/app/.next/cache \
-  npm run build
+  next build
 
 # ------------ RUNTIME STAGE ---------------------
 FROM ${IMAGE_RUNTIME} AS runner
@@ -85,9 +85,9 @@ RUN addgroup -g 1001 -S nodejs && adduser -S -D -H -u 1001 -G nodejs nodejs
 #RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nodejs
 
 # Copy as the runtime user to avoid permission surprises
-COPY --chown=nodejs:nodejs --from=builder /app/public ./public
-COPY --chown=nodejs:nodejs --from=builder /app/.next/standalone ./
-COPY --chown=nodejs:nodejs --from=builder /app/.next/static ./.next/static
+COPY --link --chown=1001:1001 --from=builder /app/public ./public
+COPY --link --chown=1001:1001 --from=builder /app/.next/standalone ./
+COPY --link --chown=1001:1001 --from=builder /app/.next/static ./.next/static
 
 # Make common writable paths exist (supports running with read-only rootfs + tmpfs mounts)
 RUN mkdir -p /app/.next/cache /tmp && chown -R nodejs:nodejs /app /tmp

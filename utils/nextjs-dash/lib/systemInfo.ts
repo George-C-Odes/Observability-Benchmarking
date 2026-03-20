@@ -17,6 +17,33 @@ export type ClientSystemInfo = {
   screen: string;
 };
 
+export function extractNpmVersionFromPackageManager(packageManager?: string): string | undefined {
+  const value = packageManager?.trim();
+  if (!value?.startsWith('npm@')) return undefined;
+
+  const version = value.slice('npm@'.length).trim();
+  return version || undefined;
+}
+
+export function extractNpmVersionFromUserAgent(npmUserAgent?: string): string | undefined {
+  const value = npmUserAgent?.trim();
+  if (!value) return undefined;
+
+  const match = /^npm\/([^\s]+)/.exec(value);
+  return match?.[1];
+}
+
+export function resolveServerNpmVersion(options: {
+  packageManager?: string;
+  npmUserAgent?: string;
+  fallback?: string;
+}): string {
+  return extractNpmVersionFromPackageManager(options.packageManager)
+    ?? extractNpmVersionFromUserAgent(options.npmUserAgent)
+    ?? options.fallback
+    ?? 'N/A';
+}
+
 export function collectClientSystemInfo(): ClientSystemInfo {
   const ua = navigator.userAgent;
   const lang = navigator.language;

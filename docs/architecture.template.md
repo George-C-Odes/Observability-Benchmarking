@@ -42,36 +42,36 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 ### Service Layer
 
 **REST Services** - Multiple implementations for comparison
-- Spring Boot 4.0.4 (JVM and Native)
+- Spring Boot {{SPRING_BOOT_VERSION}} (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (WebFlux - Reactor)
-- Quarkus 3.32.4 (JVM and Native)
+- Quarkus {{QUARKUS_VERSION}} (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 4.10.18 (JVM and Native)
+- Micronaut {{MICRONAUT_VERSION}} (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)
-- Helidon SE 4.3.4 (JVM and Native)
+- Helidon SE {{HELIDON_VERSION}} (JVM and Native)
   - Virtual threads (Helidon 4 is virtual-thread–first)
-- Helidon MP 4.3.4 (JVM and Native)
+- Helidon MP {{HELIDON_VERSION}} (JVM and Native)
   - Virtual threads (MicroProfile / CDI / JAX-RS)
-- Spark 3.0.4 (JVM)
+- Spark {{SPARK_VERSION}} (JVM)
   - Platform threads
   - Virtual threads
-- Javalin 7.1.0 (JVM)
+- Javalin {{JAVALIN_VERSION}} (JVM)
   - Platform threads
   - Virtual threads
-- Dropwizard 5.0.1 (JVM)
+- Dropwizard {{DROPWIZARD_VERSION}} (JVM)
   - Platform threads
   - Virtual threads
-- Vert.x 5.0.8 (JVM)
+- Vert.x {{VERTX_VERSION}} (JVM)
   - Reactive (event-loop)
-- Pekko 1.3.0 (JVM)
+- Pekko {{PEKKO_VERSION}} (JVM)
   - Reactive (Pekko dispatcher)
-- Go 1.26.1
+- Go {{GO_VERSION}}
   - Fiber framework (v3.1.0)
 
 **Service Characteristics**:

@@ -21,7 +21,7 @@
 		<url/>
 	</scm>
 	<properties>
-        <spring-boot.version>4.0.3</spring-boot.version>
+        <spring-boot.version>4.0.4</spring-boot.version>
         <java.version>25</java.version>
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
@@ -80,7 +80,7 @@
                   Netty 4.1.x epoll event loops don't function correctly in GraalVM native
                   images with runtime-initialized io.netty classes, causing requests to hang.
                   NIO works reliably and is the recommended transport for native images.
-                  Boot 4.0.3 (Netty 4.2.x) also works fine with NIO.
+                  (Netty 4.2.x) also works fine with NIO.
                 -->
                 <exclusion>
                     <groupId>io.netty</groupId>

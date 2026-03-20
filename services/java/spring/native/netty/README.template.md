@@ -3,7 +3,7 @@
 # Spring Boot Netty Native Service
 
 ## Overview
-A reactive REST service implementation built with Spring Boot 4.0.4 compiled to a native executable using GraalVM Native Image. This service uses Spring WebFlux with Netty for reactive, non-blocking request handling with fast startup and low memory footprint.
+A reactive REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} compiled to a native executable using GraalVM Native Image. This service uses Spring WebFlux with Netty for reactive, non-blocking request handling with fast startup and low memory footprint.
 
 ## Purpose
 - Demonstrate Spring Boot native compilation with reactive WebFlux
@@ -14,7 +14,7 @@ A reactive REST service implementation built with Spring Boot 4.0.4 compiled to 
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.0.4 + Spring WebFlux
+- **Framework**: Spring Boot {{SPRING_BOOT_VERSION}} + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.2

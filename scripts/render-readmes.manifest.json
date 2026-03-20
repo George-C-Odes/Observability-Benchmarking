@@ -1,0 +1,17 @@
+{
+  "defaultTemplatePaths": [
+    "README.template.md",
+    "docs/architecture.template.md",
+    "docs/benchmarking.template.md",
+    "docs/TESTING.template.md",
+    "docs/tools-technologies.template.md",
+    "integration-tests/README.template.md",
+    "services/README.template.md",
+    "services/java/quarkus/jvm/README.template.md",
+    "services/java/quarkus/native/README.template.md",
+    "services/java/spring/jvm/netty/README.template.md",
+    "services/java/spring/jvm/tomcat/README.template.md",
+    "services/java/spring/native/netty/README.template.md",
+    "services/java/spring/native/tomcat/README.template.md"
+  ]
+}
