@@ -92,7 +92,8 @@ export function renderTemplates({ envPath, templatePaths, check = false }) {
     throw new Error('Provide at least one README template path.');
   }
 
-  const envContent = readFileSync(envPath, 'utf8');
+  const absoluteEnvPath = resolveRepoPath(envPath);
+  const envContent = readFileSync(absoluteEnvPath, 'utf8');
   const variables = parseColonEnv(envContent);
   const results = [];
 

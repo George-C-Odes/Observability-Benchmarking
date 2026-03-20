@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, renderTemplate, resolveTemplatePaths } from './render-readmes.mjs';
+import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 
 function testParseColonEnv() {
   const env = parseColonEnv(`
@@ -124,6 +124,43 @@ function testGeneratedOutputRoundTrip() {
   }
 }
 
+function testRenderTemplatesResolvesRelativeEnvPath() {
+  const repoTempDir = path.join(process.cwd(), 'scripts', '__tmp_render_readmes_tests');
+  const templatePath = path.join(repoTempDir, 'relative-env.template.md');
+  const outputPath = path.join(repoTempDir, 'relative-env.md');
+
+  try {
+    mkdirSync(repoTempDir, { recursive: true });
+    writeFileSync(templatePath, 'Spring {{SPRING_BOOT_VERSION}} / Quarkus {{QUARKUS_VERSION}}', 'utf8');
+
+    const results = renderTemplates({
+      envPath: path.join('compose', '.env'),
+      templatePaths: [path.join('scripts', '__tmp_render_readmes_tests', 'relative-env.template.md')],
+    });
+
+    assert.equal(results.length, 1);
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.0.4 / Quarkus 3.32.4');
+  } finally {
+    try {
+      unlinkSync(templatePath);
+    } catch {
+      // Ignore cleanup errors if the file was never created.
+    }
+
+    try {
+      unlinkSync(outputPath);
+    } catch {
+      // Ignore cleanup errors if the file was never created.
+    }
+
+    try {
+      rmSync(repoTempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors if the directory was already removed.
+    }
+  }
+}
+
 function main() {
   testParseColonEnv();
   testRenderTemplate();
@@ -131,6 +168,7 @@ function main() {
   testLoadManifestTemplatePaths();
   testResolveTemplatePaths();
   testGeneratedOutputRoundTrip();
+  testRenderTemplatesResolvesRelativeEnvPath();
   console.log('render-readmes tests passed');
 }
 
