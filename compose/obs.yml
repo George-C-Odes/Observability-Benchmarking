@@ -8,7 +8,7 @@ services:
   alloy:
     profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.14.0
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.14.1
     container_name: alloy
     command:
       - run
@@ -116,7 +116,7 @@ services:
 
   tempo:
     profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
-    image: grafana/tempo:2.10.2
+    image: grafana/tempo:2.10.3
     container_name: tempo
     command:
       - "-config.file=/etc/tempo-config/config.yaml"

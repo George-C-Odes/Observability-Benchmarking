@@ -24,7 +24,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.0.4
+### Spring Boot {{SPRING_BOOT_VERSION}}
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -35,7 +35,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.0.4** (latest major release)
+- **Spring Boot {{SPRING_BOOT_VERSION}}** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -83,7 +83,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.32.4
+### Quarkus {{QUARKUS_VERSION}}
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -94,7 +94,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.32.4** (latest stable)
+- **Quarkus {{QUARKUS_VERSION}}** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -141,7 +141,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 4.10.18
+### Micronaut {{MICRONAUT_VERSION}}
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -152,7 +152,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 4.10.18** (latest stable)
+- **Micronaut {{MICRONAUT_VERSION}}** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -188,7 +188,7 @@ mvn package -Pnative
 - Compile-time DI can be harder to debug
 - Some libraries require Micronaut-specific adapters
 
-### Helidon 4.3.4
+### Helidon {{HELIDON_VERSION}}
 
 **Official Site**: [https://helidon.io/](https://helidon.io/)
 
@@ -199,7 +199,7 @@ mvn package -Pnative
 - `jlink`-optimised JVM builds produce notably small Docker images
 
 **Implementation Details**:
-- **Helidon 4.3.4** (latest stable, virtual-thread–first architecture)
+- **Helidon {{HELIDON_VERSION}}** (latest stable, virtual-thread–first architecture)
 - **Helidon SE**: Programmatic, functional-style routing with minimal overhead (Níma)
 - **Helidon MP**: MicroProfile-compliant layer on top of SE (CDI + JAX-RS)
 - Both flavours support JVM and GraalVM native builds
@@ -231,7 +231,7 @@ mvn package -Pnative
 - Smaller community and ecosystem than Spring or Quarkus
 - Helidon MP's CDI overhead is significant compared to SE
 
-### SparkJava 3.0.4 (Zoomba fork)
+### SparkJava {{SPARK_VERSION}} (Zoomba fork)
 
 **Official Site**: [https://sparkjava.com/](https://sparkjava.com/) | [Zoomba fork](https://github.com/nicholaszoomba/spark)
 
@@ -242,7 +242,7 @@ mvn package -Pnative
 - Useful for isolating framework overhead in benchmarks
 
 **Implementation Details**:
-- **SparkJava 3.0.4** (Zoomba fork with virtual thread support)
+- **SparkJava {{SPARK_VERSION}}** (Zoomba fork with virtual thread support)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -267,7 +267,7 @@ mvn package -Pnative
 - No native image support
 - Official project is largely unmaintained; the Zoomba fork keeps it viable
 
-### Javalin 7.1.0
+### Javalin {{JAVALIN_VERSION}}
 
 **Official Site**: [https://javalin.io/](https://javalin.io/)
 
@@ -278,7 +278,7 @@ mvn package -Pnative
 - Good middle ground between Spark's minimalism and Spring's richness
 
 **Implementation Details**:
-- **Javalin 7.1.0** (latest major release)
+- **Javalin {{JAVALIN_VERSION}}** (latest major release)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -302,7 +302,7 @@ mvn package -Pnative
 - No native image support out of the box
 - Smaller ecosystem than Spring or Micronaut
 
-### Dropwizard 5.0.1
+### Dropwizard {{DROPWIZARD_VERSION}}
 
 **Official Site**: [https://www.dropwizard.io/](https://www.dropwizard.io/) | [GitHub](https://github.com/dropwizard/dropwizard)
 
@@ -313,7 +313,7 @@ mvn package -Pnative
 - Jetty 12 in Dropwizard 5.x enables direct virtual-thread support via `VirtualThreadPool`
 
 **Implementation Details**:
-- **Dropwizard 5.0.1** (latest major release — Jetty 12 + Jersey 3 + Jackson 2)
+- **Dropwizard {{DROPWIZARD_VERSION}}** (latest major release — Jetty 12 + Jersey 3 + Jackson 2)
 - Embedded Jetty server with configurable thread pool
 - JVM builds only (no native image support)
 - jlink-optimised runtime image with distroless base
@@ -339,7 +339,7 @@ mvn package -Pnative
 - Heavier baseline than Spark or Javalin due to bundled subsystems
 - Smaller community momentum compared to Spring or Quarkus
 
-### Vert.x 5.0.8
+### Vert.x {{VERTX_VERSION}}
 
 **Official Site**: [https://vertx.io/](https://vertx.io/) | [GitHub](https://github.com/eclipse-vertx/vert.x)
 
@@ -350,7 +350,7 @@ mvn package -Pnative
 - Lightweight — no CDI, no annotation scanning, no classpath magic; explicit wiring
 
 **Implementation Details**:
-- **Vert.x 5.0.8** (latest stable release)
+- **Vert.x {{VERTX_VERSION}}** (latest stable release)
 - Fully reactive HTTP server on Netty event loops
 - JVM build only (no native image support at this time)
 - jlink-optimised runtime image with distroless base
@@ -374,7 +374,7 @@ mvn package -Pnative
 - No native image support in the community edition
 - Smaller enterprise adoption compared to Spring or Quarkus
 
-### Pekko 1.3.0
+### Pekko {{PEKKO_VERSION}}
 
 **Official Site**: [https://pekko.apache.org/](https://pekko.apache.org/) | [GitHub](https://github.com/apache/pekko-http)
 
@@ -396,7 +396,7 @@ mvn package -Pnative
 - We therefore pivoted the module from "Play" to "Pekko HTTP" to keep the benchmark fair and representative of what the underlying engine can actually deliver.
 
 **Implementation Details**:
-- **Pekko HTTP 1.3.0** (latest stable)
+- **Pekko HTTP {{PEKKO_VERSION}}** (latest stable)
 - **Pekko Core 1.4.0** (actor system + stream engine)
 - Direct Pekko HTTP server
 - JVM build only (no native image support at this time)
@@ -900,18 +900,18 @@ Cache<String, String> cache = Caffeine.newBuilder()
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | {{GO_VERSION}}  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.0.4   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.32.4  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
-| **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
-| **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
+| **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}}   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}} | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | {{HELIDON_VERSION}}   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | {{HELIDON_VERSION}}   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | {{SPARK_VERSION}}   | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | Javalin                    | {{JAVALIN_VERSION}}   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Dropwizard                 | {{DROPWIZARD_VERSION}}   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
+| **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}   | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Frontend**      | Framework          | Next.js                    | 16.2.0  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |

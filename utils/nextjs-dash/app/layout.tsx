@@ -4,6 +4,7 @@ import Providers from './Providers';
 import { PreHydrationScript } from './components/PreHydrationScript';
 import { RuntimeConfigScript } from './components/RuntimeConfigScript';
 import packageJson from '../package.json';
+import { resolveServerNpmVersion } from '@/lib/systemInfo';
 
 export const metadata: Metadata = {
   title: 'Observability Benchmarking Dashboard',
@@ -22,6 +23,10 @@ function getPackageVersions() {
   };
 }
 
+function getPackageManager() {
+  return (packageJson as { packageManager?: string }).packageManager;
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -32,7 +37,10 @@ export default function RootLayout({
   const pkgs = getPackageVersions();
   const systemInfo = {
     nodejs: process.version,
-    npm: process.env.npm_config_user_agent?.split('/')?.[1] ?? 'N/A',
+    npm: resolveServerNpmVersion({
+      packageManager: getPackageManager(),
+      npmUserAgent: process.env.npm_config_user_agent,
+    }),
     nextjs: pkgs.nextjs,
     react: pkgs.react,
     mui: pkgs.mui,

@@ -73,8 +73,8 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
 Maven: 3.9+
-Spring Boot: 4.0.4 (3.5.12 also supported)
-Quarkus: 3.32.4
+Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.12 also supported)
+Quarkus: {{QUARKUS_VERSION}}
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -150,7 +150,7 @@ public void testPlatformEndpoint() throws Exception {
 ```
 
 **Key Features Tested**:
-- Spring Boot 4.0.4 with OpenTelemetry Java Agent
+- Spring Boot {{SPRING_BOOT_VERSION}} with OpenTelemetry Java Agent
 - Micrometer metrics integration
 - Platform vs Virtual thread behavior
 - POM refactoring (no parent dependency)
@@ -203,7 +203,7 @@ Build with Docker to ensure correct Java version:
 ```bash
 # Quarkus JVM
 docker build \
-  --build-arg QUARKUS_VERSION=3.32.4 \
+  --build-arg QUARKUS_VERSION={{QUARKUS_VERSION}} \
   --target builder \
   -t quarkus-jvm-test \
   -f services/java/quarkus/jvm/Dockerfile \
@@ -211,7 +211,7 @@ docker build \
 
 # Spring Boot Tomcat
 docker build \
-  --build-arg SPRING_BOOT_VERSION=4.0.4 \
+  --build-arg SPRING_BOOT_VERSION={{SPRING_BOOT_VERSION}} \
   --build-arg PROFILE=tomcat \
   --target builder \
   -t spring-jvm-tomcat-test \
@@ -220,7 +220,7 @@ docker build \
 
 # Spring Boot Netty
 docker build \
-  --build-arg SPRING_BOOT_VERSION=4.0.4 \
+  --build-arg SPRING_BOOT_VERSION={{SPRING_BOOT_VERSION}} \
   --build-arg PROFILE=netty \
   --target builder \
   -t spring-jvm-netty-test \
@@ -235,7 +235,7 @@ docker build \
 #### Version Requirements
 
 ```
-Go: 1.26.1+
+Go: {{GO_VERSION}}+
 Fiber: v3.1.0
 OpenTelemetry: Latest stable
 ```
@@ -487,16 +487,16 @@ Integration Test Suite
 ==========================================
 
 Testing Framework Versions:
-- Spring Boot: 4.0.4
-- Quarkus: 3.32.4
-- Micronaut: 4.10.18
-- Helidon: 4.3.4
-- Spark: 3.0.4
-- Javalin: 7.1.0
-- Dropwizard: 5.0.1
-- Vert.x: 5.0.8
-- Pekko: 1.3.0
-- Go: 1.26.1
+- Spring Boot: {{SPRING_BOOT_VERSION}}
+- Quarkus: {{QUARKUS_VERSION}}
+- Micronaut: {{MICRONAUT_VERSION}}
+- Helidon: {{HELIDON_VERSION}}
+- Spark: {{SPARK_VERSION}}
+- Javalin: {{JAVALIN_VERSION}}
+- Dropwizard: {{DROPWIZARD_VERSION}}
+- Vert.x: {{VERTX_VERSION}}
+- Pekko: {{PEKKO_VERSION}}
+- Go: {{GO_VERSION}}
 
 ==========================================
 JVM Services - Deployment Tests
@@ -891,7 +891,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.26.1 | Build version: go1.26.1
+2025-12-16T10:30:00.123Z Runtime version: go{{GO_VERSION}} | Build version: go{{GO_VERSION}}
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -999,10 +999,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Go 1.26.1
+      - name: Set up Go {{GO_VERSION}}
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26.1'
+          go-version: '{{GO_VERSION}}'
       
       - name: Test Go Service
         run: |
@@ -1051,10 +1051,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.32.4" }
-          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.4" }
-          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.4" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.1" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "{{QUARKUS_VERSION}}" }
+          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "{{SPRING_BOOT_VERSION}}" }
+          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "{{SPRING_BOOT_VERSION}}" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "{{GO_VERSION}}" }
     
     steps:
       - uses: actions/checkout@v4
@@ -1126,7 +1126,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.26.1
+  image: golang:{{GO_VERSION}}
   script:
     - cd services/go/enhanced
     - go mod download
