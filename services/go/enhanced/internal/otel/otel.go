@@ -106,9 +106,9 @@ func Setup(ctx context.Context, cfg config.Config, baseLogger *slog.Logger) (*Te
 		sdktrace.WithResource(res),
 		sdktrace.WithSampler(traceSampler(cfg)),
 		sdktrace.WithBatcher(traceExp,
-			sdktrace.WithMaxQueueSize(8192),
-			sdktrace.WithMaxExportBatchSize(1024),
-			sdktrace.WithBatchTimeout(1*time.Second),
+			sdktrace.WithMaxQueueSize(2048),
+			sdktrace.WithMaxExportBatchSize(512),
+			sdktrace.WithBatchTimeout(5*time.Second),
 		),
 	)
 
@@ -120,10 +120,12 @@ func Setup(ctx context.Context, cfg config.Config, baseLogger *slog.Logger) (*Te
 		switch strings.ToLower(strings.TrimSpace(cfg.PyroscopeLogLevel)) {
 		case "off", "none", "false", "0":
 			pyLogger = nil // pyroscope-go treats nil as "no logging"
-		default:
-			// pyroscope-go doesn't provide a proper level filter; StandardLogger prints DEBUG too.
-			// Prefer nil in performance benchmarks, and enable logs only when debugging.
+		case "debug":
 			pyLogger = pyroscope.StandardLogger
+		default:
+			// pyroscope-go's StandardLogger always prints DEBUG lines.
+			// Wrap slog so we honour the configured level (e.g. "info").
+			pyLogger = &slogPyroscopeLogger{logger: baseLogger.With("component", "pyroscope")}
 		}
 
 		prof, err := pyroscope.Start(pyroscope.Config{
@@ -288,6 +290,24 @@ func clamp01(v float64) float64 {
 		return 1
 	}
 	return v
+}
+
+// slogPyroscopeLogger adapts slog.Logger to pyroscope.Logger so that the
+// application's log-level setting is respected.  DEBUG messages from
+// pyroscope-go are mapped to slog.LevelDebug, INFO messages to
+// slog.LevelInfo — slog will drop anything below the configured level.
+type slogPyroscopeLogger struct{ logger *slog.Logger }
+
+func (l *slogPyroscopeLogger) Infof(msg string, args ...interface{}) {
+	l.logger.Info(fmt.Sprintf(msg, args...))
+}
+
+func (l *slogPyroscopeLogger) Debugf(msg string, args ...interface{}) {
+	l.logger.Debug(fmt.Sprintf(msg, args...))
+}
+
+func (l *slogPyroscopeLogger) Errorf(msg string, args ...interface{}) {
+	l.logger.Error(fmt.Sprintf(msg, args...))
 }
 
 func profileTypes(names []string) []pyroscope.ProfileType {
