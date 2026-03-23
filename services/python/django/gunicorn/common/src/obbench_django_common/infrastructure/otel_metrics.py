@@ -14,6 +14,15 @@ from __future__ import annotations
 import logging
 
 logger = logging.getLogger("hello")
+_NON_FATAL_METRICS_EXCEPTIONS = (
+    AttributeError,
+    ImportError,
+    LookupError,
+    OSError,
+    RuntimeError,
+    TypeError,
+    ValueError,
+)
 
 
 class _State:
@@ -22,15 +31,16 @@ class _State:
     registered = False
 
 
+def reset_otel_metrics_state() -> None:
+    """Reset metrics registration state for isolated tests."""
+    _State.registered = False
+
+
 def register_metrics() -> None:
     """Register the ``hello.request.count`` observable counter once."""
     if _State.registered:
         return
-    _State.registered = True
 
-    # noinspection PyBroadException
-    # Metric registration is best-effort because it depends on optional OTel SDK
-    # state; if the provider is unavailable we keep request handling running.
     try:
         from collections.abc import Iterable
 
@@ -58,9 +68,12 @@ def register_metrics() -> None:
                 f"Total number of {cfg.endpoint_path} requests handled by this process"
             ),
         )
-        logger.info("registered hello.request.count observable counter")
-    except Exception:
+    except _NON_FATAL_METRICS_EXCEPTIONS:
         logger.debug(
             "failed to register hello.request.count (OTel SDK may not be active)",
             exc_info=True,
         )
+        return
+
+    _State.registered = True
+    logger.info("registered hello.request.count observable counter")

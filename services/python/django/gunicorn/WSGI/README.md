@@ -38,11 +38,16 @@ platform-threaded benchmark workload:
 
 ## Local quality gates
 
+This module executes the shared 39-test suite
+`obbench_django_common.tests` from `services/python/django/gunicorn/common`,
+covering both runtime modules' shared code paths.
+
 ```powershell
 python -m pip install ../common -r requirements.txt -r requirements-dev.txt
 python -m ruff check .
 python manage.py check
-python manage.py test obbench_django_common.tests
+$env:OTEL_SDK_DISABLED="true"
+python manage.py test obbench_django_common.tests --verbosity=2
 ```
 
 ## Running locally in IntelliJ IDEA

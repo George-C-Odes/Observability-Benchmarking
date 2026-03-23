@@ -80,11 +80,14 @@ pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.t
 
 ## Run tests locally
 
-Run the shared unit-test suite for both modules without Docker (from the repository root):
+Run the shared 39-test suite for both modules without Docker (from the repository root):
 
 ```powershell
 cd services/python/django/gunicorn/WSGI; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../..
 ```
+
+The same shared 39-test suite can also be executed from `services/python/django/gunicorn/ASGI`.
+See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
 ## Lint locally
 
