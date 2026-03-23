@@ -36,7 +36,7 @@ _PYROSCOPE_LOG_LEVELS = {
 }
 
 
-def _resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
+def resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
     """Return whether native logging is enabled and which Python level to use."""
     normalized = (raw_level or "warn").strip().lower()
     if normalized in ("off", "none", "false", "0"):
@@ -47,6 +47,16 @@ def _resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
 
     logger.warning("unknown PYROSCOPE_LOG_LEVEL=%r; defaulting to warn", raw_level)
     return True, logging.WARNING
+
+
+def _resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
+    """Backward-compatible private alias for ``resolve_pyroscope_logging()``."""
+    return resolve_pyroscope_logging(raw_level)
+
+
+def reset_pyroscope_state() -> None:
+    """Clear module-level Pyroscope state for isolated tests."""
+    _State.configured = False
 
 
 def configure_pyroscope() -> None:
@@ -77,10 +87,12 @@ def configure_pyroscope() -> None:
         return
 
     # noinspection PyBroadException
+    # Optional dependency boundary: any import/configuration failure should disable
+    # profiling rather than prevent the Django worker from starting.
     try:
         import pyroscope  # type: ignore[import-untyped]
 
-        pyroscope_logging_enabled, pyroscope_logger_level = _resolve_pyroscope_logging(
+        pyroscope_logging_enabled, pyroscope_logger_level = resolve_pyroscope_logging(
             os.environ.get("PYROSCOPE_LOG_LEVEL", "warn")
         )
         pyroscope.LOGGER.setLevel(pyroscope_logger_level)
@@ -109,6 +121,8 @@ def configure_pyroscope() -> None:
     #   https://github.com/grafana/otel-profiling-python
     #   https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
     # noinspection PyBroadException
+    # Trace→profile correlation is best-effort optional observability wiring;
+    # any failure here should only degrade that feature, not request handling.
     try:
         from opentelemetry import trace  # type: ignore[import-untyped]
         from pyroscope.otel import PyroscopeSpanProcessor  # type: ignore[import-untyped]

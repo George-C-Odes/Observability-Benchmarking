@@ -127,10 +127,9 @@ def post_fork_init() -> None:
     flags after fork caused duplicate observable-counter registrations.
     """
     # Reset the per-worker request counter.
-    from obbench_django_common.application import hello_service as svc_mod
+    from obbench_django_common.application.hello_service import reset_request_count
 
-    # noinspection PyProtectedMember
-    svc_mod._reset_counter()
+    reset_request_count()
 
     _init_observability()
 
@@ -161,38 +160,27 @@ def _instrument_app() -> None:
     """Apply OTel instrumentation patches (Django, logging).
 
     These patches survive ``fork()`` and use Proxy providers.
-    """
-    # noinspection PyBroadException
-    try:
-        from obbench_django_common.infrastructure.otel_setup import instrument_app
 
-        instrument_app()
-    except Exception:
-        logger.debug("App instrumentation skipped", exc_info=True)
+    ``otel_setup.instrument_app()`` already treats missing/optional vendor
+    instrumentation as non-fatal, so we delegate directly here and let any
+    unexpected local bug propagate instead of hiding it.
+    """
+    from obbench_django_common.infrastructure.otel_setup import instrument_app
+
+    instrument_app()
 
 
 def _init_observability() -> None:
-    """Initialize per-worker OTel SDK, custom metrics, and Pyroscope."""
-    # noinspection PyBroadException
-    try:
-        from obbench_django_common.infrastructure.otel_setup import configure_sdk
+    """Initialize per-worker OTel SDK, custom metrics, and Pyroscope.
 
-        configure_sdk()
-    except Exception:
-        logger.debug("OTel SDK setup skipped", exc_info=True)
+    Each delegated helper already implements best-effort handling for optional
+    observability dependencies.  Calling them directly keeps this bootstrap code
+    simple and ensures unexpected local regressions are not silently swallowed.
+    """
+    from obbench_django_common.infrastructure.otel_metrics import register_metrics
+    from obbench_django_common.infrastructure.otel_setup import configure_sdk
+    from obbench_django_common.infrastructure.pyroscope_setup import configure_pyroscope
 
-    # noinspection PyBroadException
-    try:
-        from obbench_django_common.infrastructure.otel_metrics import register_metrics
-
-        register_metrics()
-    except Exception:
-        logger.debug("OTel metrics registration skipped", exc_info=True)
-
-    # noinspection PyBroadException
-    try:
-        from obbench_django_common.infrastructure.pyroscope_setup import configure_pyroscope
-
-        configure_pyroscope()
-    except Exception:
-        logger.debug("Pyroscope setup skipped", exc_info=True)
+    configure_sdk()
+    register_metrics()
+    configure_pyroscope()

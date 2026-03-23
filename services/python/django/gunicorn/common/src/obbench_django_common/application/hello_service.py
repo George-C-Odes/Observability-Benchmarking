@@ -45,9 +45,14 @@ def get_request_count() -> int:
     return sum(_thread_counts.values())
 
 
-def _reset_counter() -> None:
-    """Reset the counter — called from ``post_fork_init`` after fork."""
+def reset_request_count() -> None:
+    """Reset the request counter after ``fork()`` or between isolated tests."""
     _thread_counts.clear()
+
+
+def _reset_counter() -> None:
+    """Backward-compatible private alias for ``reset_request_count()``."""
+    reset_request_count()
 
 
 # ---------------------------------------------------------------------------

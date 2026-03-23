@@ -29,6 +29,8 @@ def register_metrics() -> None:
     _State.registered = True
 
     # noinspection PyBroadException
+    # Metric registration is best-effort because it depends on optional OTel SDK
+    # state; if the provider is unavailable we keep request handling running.
     try:
         from collections.abc import Iterable
 

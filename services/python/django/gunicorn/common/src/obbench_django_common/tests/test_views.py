@@ -18,12 +18,11 @@ class _FakeHelloService:
         return self._result
 
 
-# noinspection PyProtectedMember
 class PlatformViewTests(SimpleTestCase):
     def setUp(self) -> None:
         self.factory = RequestFactory()
-        views._State.svc = None
-        self.addCleanup(setattr, views._State, "svc", None)
+        views.reset_cached_hello_service()
+        self.addCleanup(views.reset_cached_hello_service)
 
     def test_platform_returns_json_and_caches_service_reference(self) -> None:
         service = _FakeHelloService()
@@ -32,18 +31,22 @@ class PlatformViewTests(SimpleTestCase):
             "obbench_django_common.api.views.get_hello_service", return_value=service
         ) as get_service:
             response = views.platform(self.factory.get("/hello/platform"))
+            cached_response = views.platform(self.factory.get("/hello/platform"))
 
         self.assertEqual(200, response.status_code)
+        self.assertEqual(200, cached_response.status_code)
         self.assertEqual("application/json", response["Content-Type"])
         self.assertEqual(b'"Hello from Django platform REST value-1"', response.content)
         get_service.assert_called_once_with()
-        self.assertIs(views._State.svc, service)
+        self.assertEqual([0, 0], service.calls)
 
     def test_platform_forwards_sleep_parameter(self) -> None:
         service = _FakeHelloService()
-        views._State.svc = service
 
-        response = views.platform(self.factory.get("/hello/platform", {"sleep": "7"}))
+        with mock.patch(
+            "obbench_django_common.api.views.get_hello_service", return_value=service
+        ):
+            response = views.platform(self.factory.get("/hello/platform", {"sleep": "7"}))
 
         self.assertEqual(200, response.status_code)
         self.assertEqual([7], service.calls)
@@ -51,11 +54,13 @@ class PlatformViewTests(SimpleTestCase):
     @mock.patch("obbench_django_common.api.views.asyncio.sleep")
     def test_reactive_awaits_sleep_parameter(self, sleep_mock: mock.Mock) -> None:
         service = _FakeHelloService("Hello from Django reactive REST value-1")
-        views._State.svc = service
 
-        response = async_to_sync(views.reactive)(
-            self.factory.get("/hello/reactive", {"sleep": "5"})
-        )
+        with mock.patch(
+            "obbench_django_common.api.views.get_hello_service", return_value=service
+        ):
+            response = async_to_sync(views.reactive)(
+                self.factory.get("/hello/reactive", {"sleep": "5"})
+            )
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(b'"Hello from Django reactive REST value-1"', response.content)

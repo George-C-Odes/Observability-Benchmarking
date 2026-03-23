@@ -36,7 +36,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from opentelemetry.sdk.resources import Resource
@@ -86,6 +86,47 @@ def _sdk_disabled() -> bool:
         "1",
         "yes",
     )
+
+def reset_otel_setup_state() -> None:
+    """Reset module-level OTel setup flags for isolated tests."""
+    _State.sdk_configured = False
+    _State.app_instrumented = False
+
+def _run_optional_otel_step(
+    action: Callable[[], None],
+    failure_message: str,
+    *,
+    failure_level: int = logging.DEBUG,
+) -> bool:
+    """Run an optional OTel integration step without aborting app lifecycle.
+
+    OTel setup, instrumentation, and shutdown touch third-party packages whose
+    import/setup behavior varies across environments and versions.  Those vendor
+    failures should degrade telemetry only; unexpected local bootstrap bugs are
+    handled by keeping the broad catch scoped to this explicit helper.
+    """
+    # noinspection PyBroadException
+    # Centralized optional-observability boundary: vendor setup/shutdown can fail
+    # for many non-critical reasons, but request handling and worker teardown must
+    # continue even when telemetry is partially unavailable.
+    try:
+        action()
+    except Exception:
+        logger.log(failure_level, failure_message, exc_info=True)
+        return False
+    return True
+
+
+def _apply_django_instrumentor() -> None:
+    from opentelemetry.instrumentation.django import DjangoInstrumentor
+
+    DjangoInstrumentor().instrument(excluded_urls=_EXCLUDED_URLS)
+
+
+def _apply_logging_instrumentor() -> None:
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+
+    LoggingInstrumentor().instrument(set_logging_format=True)
 
 
 def should_suppress_context_detach_errors() -> bool:
@@ -148,23 +189,17 @@ def instrument_app() -> None:
         return
     _State.app_instrumented = True
 
-    # noinspection PyBroadException
-    try:
-        from opentelemetry.instrumentation.django import DjangoInstrumentor
-
-        DjangoInstrumentor().instrument(excluded_urls=_EXCLUDED_URLS)
+    if _run_optional_otel_step(
+        _apply_django_instrumentor,
+        "DjangoInstrumentor unavailable",
+    ):
         logger.info("DjangoInstrumentor applied")
-    except Exception:
-        logger.debug("DjangoInstrumentor unavailable", exc_info=True)
 
-    # noinspection PyBroadException
-    try:
-        from opentelemetry.instrumentation.logging import LoggingInstrumentor
-
-        LoggingInstrumentor().instrument(set_logging_format=True)
+    if _run_optional_otel_step(
+        _apply_logging_instrumentor,
+        "LoggingInstrumentor unavailable",
+    ):
         logger.info("LoggingInstrumentor applied (trace context in log records)")
-    except Exception:
-        logger.debug("LoggingInstrumentor unavailable", exc_info=True)
 
 
 def wrap_asgi_application(application: Any) -> Any:
@@ -225,15 +260,12 @@ def configure_sdk() -> None:
             )
         logger.debug("Installed _ContextDetachFilter (%s)", reason)
 
-    # noinspection PyBroadException
-    try:
-        _do_configure_sdk()
+    if _run_optional_otel_step(
+        _do_configure_sdk,
+        "OTel SDK setup failed — telemetry disabled for this worker",
+        failure_level=logging.WARNING,
+    ):
         logger.info("OTel SDK configured: pid=%d", os.getpid())
-    except Exception:
-        logger.warning(
-            "OTel SDK setup failed — telemetry disabled for this worker",
-            exc_info=True,
-        )
 
 
 def _do_configure_sdk() -> None:
@@ -270,14 +302,16 @@ def _do_configure_sdk() -> None:
     metrics.set_meter_provider(meter_provider)
 
     # --- Logs (optional — fail gracefully) ---
-    # noinspection PyBroadException
-    try:
-        _configure_log_export(resource)
-    except Exception:
-        logger.debug("OTel log export not configured", exc_info=True)
+    _run_optional_otel_step(
+        lambda: _configure_log_export(resource),
+        "OTel log export not configured",
+    )
 
 
 # noinspection PyProtectedMember
+# OTel's logging API still exposes the supported entry points from underscored
+# modules (``opentelemetry.sdk._logs`` / ``opentelemetry._logs``), so the IDE's
+# protected-member warning is a false positive for the current library surface.
 def _configure_log_export(resource: Resource) -> None:
     """Set up OTLP log export and attach ``LoggingHandler`` to app loggers.
 
@@ -315,37 +349,44 @@ def _configure_log_export(resource: Resource) -> None:
         logging.getLogger(name).addHandler(otel_handler)
 
 
+def _shutdown_traces_and_metrics() -> None:
+    from opentelemetry import metrics, trace
+
+    tp = trace.get_tracer_provider()
+    if hasattr(tp, "shutdown"):
+        tp.shutdown()
+    mp = metrics.get_meter_provider()
+    if hasattr(mp, "shutdown"):
+        mp.shutdown()
+
+
+# noinspection PyProtectedMember
+# ``opentelemetry._logs`` remains the documented way to retrieve/shutdown the
+# global logger provider, despite the underscore prefix in the package name.
+def _shutdown_logs() -> None:
+    from opentelemetry._logs import get_logger_provider
+
+    lp = get_logger_provider()
+    if hasattr(lp, "shutdown"):
+        lp.shutdown()
+
 # ---------------------------------------------------------------------------
 # Shutdown (worker exit)
 # ---------------------------------------------------------------------------
 
-# noinspection PyProtectedMember
 def shutdown_sdk() -> None:
     """Flush pending data and shut down export threads.
 
     Call from gunicorn's ``worker_exit`` hook to ensure all buffered
     traces, metrics, and logs are exported before the process dies.
     """
-    # noinspection PyBroadException
-    try:
-        from opentelemetry import metrics, trace
+    _run_optional_otel_step(
+        _shutdown_traces_and_metrics,
+        "OTel SDK shutdown error (traces/metrics)",
+    )
 
-        tp = trace.get_tracer_provider()
-        if hasattr(tp, "shutdown"):
-            tp.shutdown()
-        mp = metrics.get_meter_provider()
-        if hasattr(mp, "shutdown"):
-            mp.shutdown()
-    except Exception:
-        logger.debug("OTel SDK shutdown error (traces/metrics)", exc_info=True)
-
-    # noinspection PyBroadException
-    try:
-        from opentelemetry._logs import get_logger_provider
-
-        lp = get_logger_provider()
-        if hasattr(lp, "shutdown"):
-            lp.shutdown()
-    except Exception:
-        logger.debug("OTel SDK shutdown error (logs)", exc_info=True)
+    _run_optional_otel_step(
+        _shutdown_logs,
+        "OTel SDK shutdown error (logs)",
+    )
 
