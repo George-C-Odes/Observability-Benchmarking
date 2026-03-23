@@ -88,7 +88,7 @@ def _sdk_disabled() -> bool:
     )
 
 
-def _should_suppress_context_detach_errors() -> bool:
+def should_suppress_context_detach_errors() -> bool:
     """Decide whether to install ``_ContextDetachFilter``.
 
     The decision follows this precedence:
@@ -119,6 +119,11 @@ def _should_suppress_context_detach_errors() -> bool:
         os.environ.get("HELLO_VARIANT", "platform").strip().lower() == "reactive"
     )
     return is_asgi and sys.version_info >= (3, 13)
+
+
+def _should_suppress_context_detach_errors() -> bool:
+    """Backward-compatible private alias for ``should_suppress_context_detach_errors()``."""
+    return should_suppress_context_detach_errors()
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +214,7 @@ def configure_sdk() -> None:
     explicit_suppress = os.environ.get(
         "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", ""
     ).strip().lower()
-    if _should_suppress_context_detach_errors():
+    if should_suppress_context_detach_errors():
         logging.getLogger("opentelemetry.context").addFilter(_ContextDetachFilter())
         if explicit_suppress in ("true", "1", "yes"):
             reason = "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS=%s" % explicit_suppress
