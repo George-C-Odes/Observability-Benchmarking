@@ -37,6 +37,10 @@ opentelemetry-instrumentation-logging>=0.56b0
 
 # --- Pyroscope span profiles ---
 # https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
+# NOTE: pyroscope-io contains a Rust native extension that uses POSIX-only APIs
+# (pthread_t / pthread_self). It cannot be built on Windows.  The IDE will show
+# "Package … is not installed" warnings on Windows — this is expected.
+# The packages install correctly inside the Linux Docker image at build time.
 pyroscope-io>=1.0.0
 # Official OTel span-profile integration (Traces → Profiles correlation)
 # https://github.com/grafana/otel-profiling-python
