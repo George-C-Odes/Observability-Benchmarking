@@ -49,9 +49,9 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Dropwizard | JVM     | Virtual  | 16k  | 529           | 246             |
 | Vert.x     | JVM     | Reactive | 52k  | 541           | 220             |
 | Pekko      | JVM     | Reactive | 30k  | 693           | 266             |
-| Go         | Native  | N/A      | 24k  | 120           | 36              |
+| Go         | Native  | Virtual  | 24k  | 120           | 36              |
 | Django     | CPython | Platform | 1k   | 161           | 306             |
-| Django     | CPython | Reactive | 0.5k | 200           | 309             |
+| Django     | CPython | Reactive | 0.7k | 200           | 309             |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
