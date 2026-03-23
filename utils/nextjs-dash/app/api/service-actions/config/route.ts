@@ -36,6 +36,8 @@ const SERVICES = [
   'vertx-jvm',
   'pekko-jvm',
   'go',
+  'django-platform',
+  'django-reactive',
 
   // UTILS
   'nextjs-dash',

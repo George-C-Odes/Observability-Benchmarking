@@ -295,6 +295,7 @@ export default function ServiceHealth() {
     const vertx = services.filter((s) => s.name.startsWith('vertx-')).sort(byName);
     const pekko = services.filter((s) => s.name.startsWith('pekko-')).sort(byName);
     const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
+    const django = services.filter((s) => s.name.startsWith('django-')).sort(byName);
     const utils = services.filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name)).sort(byName);
 
     return {
@@ -309,6 +310,7 @@ export default function ServiceHealth() {
       vertx,
       pekko,
       go,
+      django,
       utils,
     };
   }, [services]);
@@ -954,6 +956,10 @@ export default function ServiceHealth() {
 
       <ServiceGroup title="Go Services" visible={groupedServices.go.length > 0}>
         {groupedServices.go.map((service) => renderServiceCard(service))}
+      </ServiceGroup>
+
+      <ServiceGroup title="Django Services" visible={groupedServices.django.length > 0}>
+        {groupedServices.django.map((service) => renderServiceCard(service))}
       </ServiceGroup>
 
       <ServiceGroup title="Utils" visible={groupedServices.utils.length > 0}>

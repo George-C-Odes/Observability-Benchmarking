@@ -22,6 +22,10 @@ All containers run as non-root users to minimize security risks:
 - Shell: `/sbin/nologin`
 - Configuration: `services/java/spring/jvm/Dockerfile`
 
+#### Django Services
+- User: `nonroot:nonroot` (distroless base image default)
+- Configuration: `services/python/django/gunicorn/WSGI/Dockerfile`, `services/python/django/gunicorn/ASGI/Dockerfile`
+
 **Note**: UID/GID 1001 is chosen for OpenShift compatibility, as it falls within the standard range for non-root users.
 
 ### File Permissions

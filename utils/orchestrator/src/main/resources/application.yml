@@ -86,6 +86,14 @@ orchestrator:
         base-url: '${ORCH_HEALTH_GO_BASE_URL:false}'
         health-path: /readyz
 
+      django-platform:
+        base-url: '${ORCH_HEALTH_DJANGO_PLATFORM_BASE_URL:false}'
+        health-path: /readyz
+
+      django-reactive:
+        base-url: '${ORCH_HEALTH_DJANGO_REACTIVE_BASE_URL:false}'
+        health-path: /readyz
+
       # Observability
       grafana:
         base-url: '${ORCH_HEALTH_GRAFANA_BASE_URL:http://localhost:3000}'

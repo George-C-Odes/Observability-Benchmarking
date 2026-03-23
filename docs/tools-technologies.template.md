@@ -1,10 +1,9 @@
-<!-- Generated from `docs/tools-technologies.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/tools-technologies.md` directly. -->
-
 ---
 layout: default
 title: Tools & Technologies
 permalink: /docs/tools-technologies
 ---
+<!-- Generated from `docs/tools-technologies.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/tools-technologies.md` directly. -->
 
 # Tools & Technologies
 
@@ -440,6 +439,54 @@ mvn package -Pnative
 
 **Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
+### Django {{DJANGO_VERSION}}
+
+**Official Site**: [https://www.djangoproject.com/](https://www.djangoproject.com/) | [GitHub](https://github.com/django/django)
+
+**Why We Use It**:
+- The most popular Python web framework, with a mature ecosystem and massive community
+- Provides a strong cross-language comparison point (interpreted CPython vs compiled JVM/Go)
+- Supports both WSGI (synchronous/threaded) and ASGI (async) deployment models
+- Demonstrates the impact of Python's GIL on throughput under high concurrency
+
+**Implementation Details**:
+- **Django {{DJANGO_VERSION}}** (latest major release)
+- **Gunicorn 25.1.0** as the production WSGI/ASGI server
+- **Python {{PYTHON_VERSION}}** (CPython)
+- Two modules sharing a common application package (`gunicorn/common`):
+  - **WSGI module** (`django-platform`): Gunicorn `gthread` workers (threaded platform model)
+  - **ASGI module** (`django-reactive`): Gunicorn with `UvicornWorker` (async event loop)
+
+**Thread/Concurrency Models Implemented**:
+1. **Platform Threads** (WSGI — `gthread`)
+   - Gunicorn pre-fork multi-process model with threaded workers
+   - Each worker process runs multiple OS threads
+   - GIL limits true CPU parallelism within a single worker
+
+2. **Reactive / Async** (ASGI — `UvicornWorker`)
+   - Gunicorn pre-fork with Uvicorn ASGI workers
+   - `asyncio` event loop per worker
+   - Non-blocking I/O for async views
+
+**Architecture**:
+- Clean architecture / hexagonal: `api/` → `application/` → `infrastructure/` layering
+- Ports-and-adapters cache abstraction (`CachePort` ABC → `CachetoolsAdapter` / `DictCacheAdapter`)
+- OpenTelemetry SDK instrumentation via `opentelemetry-instrumentation-django`
+- Pyroscope continuous profiling via `pyroscope-io` Python SDK
+- `cachetools.TTLCache` with optional plain `dict` adapter to eliminate per-request `time.monotonic()` syscall
+
+**Pros**:
+- Enormous ecosystem, extensive documentation, massive community
+- Both sync and async deployment models from the same framework
+- Useful cross-language baseline for understanding runtime overhead
+- Clean architecture demonstrates Python best practices (SOLID, ports-and-adapters)
+
+**Cons**:
+- CPython GIL severely limits per-process throughput (~1k RPS platform, ~0.5k reactive on 2 vCPUs)
+- Orders of magnitude slower than JVM and Go implementations for this workload
+- Multi-process model consumes more memory than JVM thread pools
+- No native image / AOT compilation equivalent
+
 ---
 
 ## Observability Stack
@@ -791,6 +838,7 @@ This repository treats code quality tooling as a first-class part of “producti
 
 - **ESLint**: Used in the Next.js dashboard (`utils/nextjs-dash`).
 - **Checkstyle**: Enforces consistent style across Java services.
+- **Ruff**: Fast Python linter and formatter enforcing PEP 8 across Django services.
 - **Qodana**: Automated static analysis via GitHub Actions (see `qodana.yaml`).
 
 ### Maven
@@ -870,6 +918,22 @@ Cache<String, String> cache = Caffeine.newBuilder()
    .build();
 ```
 
+### cachetools (Python)
+
+**Official Site**: [https://github.com/tkem/cachetools](https://github.com/tkem/cachetools)
+
+**Purpose**: In-memory caching library for Python
+
+**Why cachetools**:
+- Drop-in replacement for `functools.lru_cache` with TTL and size-based eviction
+- Used in Django benchmark services as the default cache backend
+- Pluggable via the `CachePort` abstraction (can be swapped for a plain `dict` to eliminate per-request `time.monotonic()` syscall overhead)
+
+**Configuration**:
+```powershell
+cache = TTLCache(maxsize=50_000, ttl=86_400)
+```
+
 ### Reactor (Spring)
 
 **Official Site**: [https://projectreactor.io/](https://projectreactor.io/)
@@ -896,43 +960,47 @@ Cache<String, String> cache = Caffeine.newBuilder()
 
 ## Technology Stack Summary
 
-| Layer             | Category           | Technology                 | Version | Purpose / Role                                                       |
-|-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | {{GO_VERSION}}  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}}   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}} | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | {{HELIDON_VERSION}}   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | {{HELIDON_VERSION}}   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | {{SPARK_VERSION}}   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | {{JAVALIN_VERSION}}   | Lightweight REST server                                              |
-| **Backend**       | Framework          | Dropwizard                 | {{DROPWIZARD_VERSION}}   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}   | Reactive, event-driven applications on the JVM (Netty)               |
-| **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Frontend**      | Framework          | Next.js                    | 16.2.0  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.3  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.19.0  | Continuous CPU and memory profiling                                  |
-| **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.0  | Auto-instrumentation and exporters                                   |
-| **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
-| **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
-| **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.12.0 | Frontend dependency management                                       |
-| **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
-| **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0   | Frontend unit testing                                                |
+| Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
+|-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.2                  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Runtime            | Node.js                    | 25.8.1                  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | {{HELIDON_VERSION}}     | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | {{HELIDON_VERSION}}     | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | {{SPARK_VERSION}}       | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | Javalin                    | {{JAVALIN_VERSION}}     | Lightweight REST server                                              |
+| **Backend**       | Framework          | Dropwizard                 | {{DROPWIZARD_VERSION}}  | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
+| **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
+| **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Frontend**      | Framework          | Next.js                    | 16.2.0                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.4                  | UI rendering layer                                                   |
+| **Frontend**      | Language           | TypeScript                 | 5.9.3                   | Type-safe frontend development                                       |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9                   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 12.4.1                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.6.7                   | Log aggregation                                                      |
+| **Observability** | Tracing            | Tempo                      | 2.10.3                  | Distributed tracing backend                                          |
+| **Observability** | Metrics            | Mimir                      | 3.0.4                   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 1.19.0                  | Continuous CPU and memory profiling                                  |
+| **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1                  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.0                  | Auto-instrumentation and exporters                                   |
+| **Performance**   | Cache              | Caffeine                   | 3.2.3                   | High-performance in-memory caching (Java)                            |
+| **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
+| **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
+| **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.0                  | Image build and lifecycle management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.14                  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
+| **Build**         | Package Manager    | npm                        | 11.12.0                 | Frontend dependency management                                       |
+| **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
+| **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0                   | Frontend unit testing                                                |
 
 ---
 
@@ -948,6 +1016,7 @@ Cache<String, String> cache = Caffeine.newBuilder()
 - [Dropwizard Documentation](https://www.dropwizard.io/en/latest/)
 - [Vert.x Documentation](https://vertx.io/docs/)
 - [Pekko Documentation](https://pekko.apache.org/docs/pekko-http/current/)
+- [Django Documentation](https://docs.djangoproject.com/)
 - [Grafana Documentation](https://grafana.com/docs/)
 - [OpenTelemetry Docs](https://opentelemetry.io/docs/)
 - [Docker Documentation](https://docs.docker.com/)

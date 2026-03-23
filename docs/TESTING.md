@@ -9,8 +9,9 @@
 - [Overview](#overview)
 - [Test Architecture](#test-architecture)
 - [Unit Tests](#unit-tests)
-  - [Java Services (Quarkus & Spring Boot)](#java-services-quarkus--spring-boot)
+  - [Java Services](#java-services)
   - [Go Service](#go-service)
+  - [Python Service (Django)](#python-service-django)
 - [Integration Tests](#integration-tests)
 - [Observability Testing](#observability-testing)
 - [Performance Testing](#performance-testing)
@@ -29,13 +30,22 @@ The project implements a comprehensive testing strategy covering:
 
 ### Test Coverage Summary
 
-| Component     | Unit Tests   | Integration Tests | Observability Tests |
-|---------------|--------------|-------------------|---------------------|
-| Quarkus JVM   | ✅ 9 tests    | ✅ Covered         | ✅ Metrics/Traces    |
-| Spring Tomcat | ✅ 6 tests    | ✅ Covered         | ✅ Metrics/Traces    |
-| Spring Netty  | ✅ 3 tests    | ✅ Covered         | ✅ Metrics/Traces    |
-| Go Fiber      | ✅ 5 tests    | ✅ Covered         | ✅ Planned           |
-| **Total**     | **23 tests** | **15+ scenarios** | **Full stack**      |
+| Component      | Unit Tests    | Integration Tests  | Observability Tests |
+|----------------|---------------|--------------------|---------------------|
+| Quarkus JVM    | ✅ 18 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Spring Tomcat  | ✅ 30 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Spring Netty   | ✅ 16 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Micronaut JVM  | ✅ 5 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Helidon SE JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Helidon MP JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Spark JVM      | ✅ 20 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Javalin JVM    | ✅ 19 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Dropwizard JVM | ✅ 17 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Vert.x JVM     | ✅ 14 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Pekko JVM      | ✅ 3 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Go Fiber       | ✅ 7 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Django (Py)    | ✅ 15 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| **Total**      | **176 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -53,10 +63,57 @@ The project implements a comprehensive testing strategy covering:
 - Test Context: `@SpringBootTest`
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
+**Java (Micronaut)**
+- Testing Framework: JUnit 5
+- HTTP Testing: Micronaut `@MicronautTest` + HTTP Client
+- Test Context: `@MicronautTest`
+- Metrics: Micrometer (OpenTelemetry)
+
+**Java (Helidon SE)**
+- Testing Framework: JUnit 5
+- HTTP Testing: Helidon WebClient / direct HTTP
+- Metrics: Micrometer (OpenTelemetry)
+
+**Java (Helidon MP)**
+- Testing Framework: JUnit 5
+- HTTP Testing: JAX-RS Client
+- Metrics: Micrometer (OpenTelemetry)
+
+**Java (Spark)**
+- Testing Framework: JUnit 5
+- HTTP Testing: Direct HTTP + unit tests
+- Metrics: Micrometer (OpenTelemetry Java Agent)
+
+**Java (Javalin)**
+- Testing Framework: JUnit 5
+- HTTP Testing: Direct HTTP + unit tests
+- Metrics: Micrometer (OpenTelemetry Java Agent)
+
+**Java (Dropwizard)**
+- Testing Framework: JUnit 5
+- HTTP Testing: JAX-RS resource testing
+- Metrics: Micrometer (OpenTelemetry Java Agent)
+
+**Java (Vert.x)**
+- Testing Framework: JUnit 5
+- HTTP Testing: Vert.x test utilities
+- Metrics: Micrometer (OpenTelemetry)
+
+**Java (Pekko)**
+- Testing Framework: JUnit 5
+- HTTP Testing: Pekko HTTP testkit
+- Metrics: Micrometer (OpenTelemetry Java Agent)
+
 **Go**
 - Testing Framework: Go testing package
 - HTTP Testing: httptest + Fiber Test
 - Observability: OpenTelemetry Go SDK
+
+**Python (Django)**
+- Testing Framework: Django test runner (unittest-based)
+- HTTP Testing: Django `RequestFactory` + `Client`
+- Observability: OpenTelemetry Python SDK
+- Tests located in: `services/python/django/gunicorn/common/src/obbench_django_common/tests/`
 
 **Integration**
 - Tool: Bash script (`run-integration-tests.sh`)
@@ -66,7 +123,7 @@ The project implements a comprehensive testing strategy covering:
 
 ## Unit Tests
 
-### Java Services (Quarkus & Spring Boot)
+### Java Services
 
 #### Version Requirements
 
@@ -84,10 +141,34 @@ Quarkus: 3.32.4
 All Java unit tests follow a consistent pattern:
 
 ```
-services/
-├── quarkus/jvm/src/test/java/com/benchmarking/rest/HelloResourceTest.java
-├── spring/jvm/tomcat/src/test/java/com/benchmarking/rest/HelloControllerTest.java
-└── spring/jvm/netty/src/test/java/com/benchmarking/rest/HelloControllerTest.java
+services/java/
+├── quarkus/jvm/src/test/java/
+│   └── HelloResourceTest.java, HelloResourceObservabilityTest.java
+├── spring/jvm/tomcat/src/test/java/
+│   └── HelloPlatformControllerTest.java, HelloPlatformControllerObservabilityTest.java,
+│       HelloVirtualControllerTest.java, HelloVirtualControllerObservabilityTest.java
+├── spring/jvm/netty/src/test/java/
+│   └── HelloReactiveControllerTest.java, HelloReactiveControllerObservabilityTest.java
+├── micronaut/jvm/src/test/java/
+│   └── HelloControllerTest.java, MetricsWiringTest.java
+├── helidon/se/jvm/src/test/java/
+│   └── HelloRoutingTest.java, HelloServiceTest.java
+├── helidon/mp/jvm/src/test/java/
+│   └── HelloResourceTest.java, HelloServiceTest.java
+├── spark/jvm/src/test/java/
+│   └── HelloRoutesTest.java, HelloServiceTest.java, CacheProviderTest.java,
+│       MetricsProviderTest.java, ServiceConfigTest.java
+├── javalin/jvm/src/test/java/
+│   └── HelloRoutesTest.java, HelloServiceTest.java, CacheProviderTest.java,
+│       MetricsProviderTest.java, ServiceConfigTest.java
+├── dropwizard/jvm/src/test/java/
+│   └── HelloResourceTest.java, HelloServiceTest.java, CacheProviderTest.java,
+│       MetricsProviderTest.java, ServiceConfigTest.java
+├── vertx/jvm/src/test/java/
+│   └── HelloModeTest.java, HelloServiceTest.java, CacheProviderTest.java,
+│       MetricsProviderTest.java, ServiceConfigTest.java
+└── pekko/jvm/src/test/java/
+    └── HelloServiceTest.java
 ```
 
 #### Running Quarkus Tests
@@ -194,41 +275,21 @@ public void testReactiveEndpoint() {
 cd services/java/quarkus/jvm && mvn test && cd -
 cd services/java/spring/jvm/tomcat && mvn test && cd -
 cd services/java/spring/jvm/netty && mvn test && cd -
+cd services/java/micronaut/jvm && mvn test && cd -
+cd services/java/helidon/se/jvm && mvn test && cd -
+cd services/java/helidon/mp/jvm && mvn test && cd -
+cd services/java/spark/jvm && mvn test && cd -
+cd services/java/javalin/jvm && mvn test && cd -
+cd services/java/dropwizard/jvm && mvn test && cd -
+cd services/java/vertx/jvm && mvn test && cd -
+cd services/java/pekko/jvm && mvn test && cd -
 ```
 
 #### Docker-Based Testing (Recommended)
 
-Build with Docker to ensure correct Java version:
+Build and test with Docker to ensure the correct Java version. Docker builds run tests automatically as part of the Maven build process.
 
-```bash
-# Quarkus JVM
-docker build \
-  --build-arg QUARKUS_VERSION=3.32.4 \
-  --target builder \
-  -t quarkus-jvm-test \
-  -f services/java/quarkus/jvm/Dockerfile \
-  services
-
-# Spring Boot Tomcat
-docker build \
-  --build-arg SPRING_BOOT_VERSION=4.0.4 \
-  --build-arg PROFILE=tomcat \
-  --target builder \
-  -t spring-jvm-tomcat-test \
-  -f services/java/spring/jvm/Dockerfile \
-  services
-
-# Spring Boot Netty
-docker build \
-  --build-arg SPRING_BOOT_VERSION=4.0.4 \
-  --build-arg PROFILE=netty \
-  --target builder \
-  -t spring-jvm-netty-test \
-  -f services/java/spring/jvm/Dockerfile \
-  services
-```
-
-**Note**: Docker builds run tests automatically as part of the Maven build process.
+> **See [services/README.md](../services/README.md)** for the full list of Docker build commands for all services (JVM and Native).
 
 ### Go Service
 
@@ -295,6 +356,53 @@ ok      hello/internal/handlers  1.0s
 
 **Note**: The Go module name is `hello` (see `services/go/enhanced/go.mod`), so `go test` output uses `hello/...` package paths.
 
+### Python Service (Django)
+
+#### Version Requirements
+
+```
+Python: 3.13+
+Django: 6.0+
+OpenTelemetry: Latest stable
+```
+
+#### Test Structure
+
+```
+services/python/django/gunicorn/common/src/obbench_django_common/tests/
+├── test_views.py           # 6 tests - endpoint behavior
+├── test_hello_service.py   # 2 tests - service logic
+├── test_cache_factory.py   # 3 tests - cache initialization
+├── test_pyroscope_setup.py # 3 tests - profiling setup
+└── test_log_formatter.py   # 1 test  - log format validation
+```
+
+#### Running Django Tests
+
+```bash
+cd services/python/django/gunicorn/common
+
+# Run all tests
+python -m pytest
+
+# Run with verbose output
+python -m pytest -v
+```
+
+**Test Coverage**:
+- ✅ HTTP endpoints (`/hello/platform`, `/hello/reactive`)
+- ✅ Service logic and response format
+- ✅ Cache factory initialization
+- ✅ Pyroscope profiling setup
+- ✅ Log formatting
+- ✅ OpenTelemetry wiring
+
+**Key Features Tested**:
+- Django request/response lifecycle
+- WSGI (platform) and ASGI (reactive) modes
+- OpenTelemetry Python SDK integration
+- Custom metric counter and cache behavior
+
 ## Integration Tests
 
 Integration tests validate the entire deployment stack including Docker containers, networking, and observability components.
@@ -325,8 +433,9 @@ Before running integration tests:
 
 3. **Port Availability**
    Ensure these ports are free:
-   - 8080-8099: Java Service ports
+   - 8080-8101: Java Service ports
    - 9080-9081: Go Service ports
+   - 9090-9091: Django (Python) Service ports
    - 3000: Grafana
    - 3001: NextJS Dash
    - 4317, 4318: OTLP endpoints
@@ -410,6 +519,10 @@ export PEKKO_JVM_URL=http://localhost:8101
 # Go Service
 export GO_URL=http://localhost:9080
 
+# Django Services
+export DJANGO_PLATFORM_URL=http://localhost:9090
+export DJANGO_REACTIVE_URL=http://localhost:9091
+
 # Observability
 export GRAFANA_URL=http://localhost:3000
 export ALLOY_URL=http://localhost:12345
@@ -438,7 +551,7 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 
 ### Test Scenarios
 
-#### Deployment Verification (7 scenarios)
+#### Deployment Verification
 
 | Test                   | Endpoint          | Validation                |
 |------------------------|-------------------|---------------------------|
@@ -448,7 +561,22 @@ SKIP_OBSERVABILITY=true ./run-integration-tests.sh
 | Spring Tomcat Platform | `/hello/platform` | Status 200, JSON, content |
 | Spring Tomcat Virtual  | `/hello/virtual`  | Status 200, JSON, content |
 | Spring Netty Reactive  | `/hello/reactive` | Status 200, JSON, content |
-| Go Platform            | `/hello/platform` | Status 200, content       |
+| Micronaut Platform     | `/hello/platform` | Status 200, JSON, content |
+| Micronaut Virtual      | `/hello/virtual`  | Status 200, JSON, content |
+| Micronaut Reactive     | `/hello/reactive` | Status 200, JSON, content |
+| Helidon SE Virtual     | `/hello/virtual`  | Status 200, JSON, content |
+| Helidon MP Virtual     | `/hello/virtual`  | Status 200, JSON, content |
+| Spark Platform         | `/hello/platform` | Status 200, JSON, content |
+| Spark Virtual          | `/hello/virtual`  | Status 200, JSON, content |
+| Javalin Platform       | `/hello/platform` | Status 200, JSON, content |
+| Javalin Virtual        | `/hello/virtual`  | Status 200, JSON, content |
+| Dropwizard Platform    | `/hello/platform` | Status 200, JSON, content |
+| Dropwizard Virtual     | `/hello/virtual`  | Status 200, JSON, content |
+| Vert.x Reactive        | `/hello/reactive` | Status 200, JSON, content |
+| Pekko Reactive         | `/hello/reactive` | Status 200, JSON, content |
+| Go Virtual             | `/hello/virtual`  | Status 200, content       |
+| Django Platform        | `/hello/platform` | Status 200, JSON, content |
+| Django Reactive        | `/hello/reactive` | Status 200, JSON, content |
 
 #### Observability Verification (8+ scenarios)
 
@@ -497,6 +625,7 @@ Testing Framework Versions:
 - Vert.x: 5.0.8
 - Pekko: 1.3.0
 - Go: 1.26.1
+- Django: 6.0.3
 
 ==========================================
 JVM Services - Deployment Tests
@@ -602,6 +731,16 @@ Go Service - Deployment Tests
 Testing Go - /hello/virtual... ✓ PASSED
 
 ==========================================
+Python Services - Deployment Tests
+==========================================
+
+--- Django Platform (port 9090) ---
+Testing Django - /hello/platform... ✓ PASSED
+
+--- Django Reactive (port 9091) ---
+Testing Django - /hello/reactive... ✓ PASSED
+
+==========================================
 Observability Mechanism Tests
 ==========================================
 
@@ -629,6 +768,8 @@ Testing Dropwizard JVM Virtual Ready... ✓ PASSED
 Testing Vert.x JVM Ready... ✓ PASSED
 Testing Pekko JVM Ready... ✓ PASSED
 Testing Go Metrics... ✓ PASSED
+Testing Django Platform health... ✓ PASSED
+Testing Django Reactive health... ✓ PASSED
 
 --- Grafana Stack Readiness ---
 Testing Grafana UI... ✓ PASSED
@@ -691,6 +832,8 @@ Trace log check Dropwizard JVM Virtual (dropwizard-jvm-virtual)... ✓ PASSED (f
 Trace log check Vert.x JVM Reactive (vertx-jvm)... ✓ PASSED (found 'vert.x-eventloop-thread')
 Trace log check Pekko JVM Reactive (pekko-jvm)... ✓ PASSED (found 'pekko.actor.default-dispatcher')
 Trace log check Go Virtual (go)... ✓ PASSED (found 'goroutine')
+Trace log check Django Platform (django-platform)... ✓ PASSED (found 'ThreadPoolExecutor')
+Trace log check Django Reactive (django-reactive)... ✓ PASSED (found 'MainThread')
 
 ==========================================
 Test Summary
@@ -1411,6 +1554,7 @@ go tool cover -html=coverage.out
 
 ### Documentation
 - [Project Structure](STRUCTURE.md)
+- [Services & Docker Builds](../services/README.md)
 - [Security Guidelines](SECURITY.md)
 - [Code Quality Standards](LINTING_AND_CODE_QUALITY.md)
 - [Integration Tests README](../integration-tests/README.md)
@@ -1418,9 +1562,18 @@ go tool cover -html=coverage.out
 ### Framework Docs
 - [Quarkus Testing](https://quarkus.io/guides/getting-started-testing)
 - [Spring Boot Testing](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)
+- [Micronaut Testing](https://docs.micronaut.io/latest/guide/#testing)
+- [Helidon Testing](https://helidon.io/docs/v4/testing)
+- [Spark Java](https://sparkjava.com/documentation)
+- [Javalin Testing](https://javalin.io/documentation)
+- [Dropwizard Testing](https://www.dropwizard.io/en/stable/manual/testing.html)
+- [Vert.x Testing](https://vertx.io/docs/vertx-junit5/java/)
+- [Pekko HTTP](https://pekko.apache.org/docs/pekko-http/current/)
 - [Go Testing](https://go.dev/doc/tutorial/add-a-test)
+- [Django Testing](https://docs.djangoproject.com/en/5.2/topics/testing/)
 - [OpenTelemetry Java](https://opentelemetry.io/docs/instrumentation/java/)
 - [OpenTelemetry Go](https://opentelemetry.io/docs/instrumentation/go/)
+- [OpenTelemetry Python](https://opentelemetry.io/docs/instrumentation/python/)
 
 ### Tools
 - [RestAssured Documentation](https://rest-assured.io/)
@@ -1431,6 +1584,6 @@ go tool cover -html=coverage.out
 
 ---
 
-**Last Updated**: December 2025  
-**Version**: 1.0.0  
+**Last Updated**: March 2026  
+**Version**: 2.0.0  
 **Maintained by**: Observability-Benchmarking Team

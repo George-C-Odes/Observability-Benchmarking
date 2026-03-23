@@ -43,7 +43,7 @@ The documentation site showcases:
 Commit **source** files under `docs/` (Markdown, HTML, CSS, layouts, images). Do **not** commit generated output.
 
 - ✅ Commit: `docs/*.md`, `docs/*.html`, `docs/style.css`, `docs/_layouts/`, `docs/images/`, `docs/_config.yml`
-- ❌ Do not commit: `docs/_site/`, `docs/.jekyll-cache/`, `docs/.sass-cache/`
+- ❌ Do not commit: `docs/_site/`, `docs/.jekyll-cache/`, `docs/.sass-cache/`, `docs/Gemfile.lock`
 
 ## Local Development
 
@@ -60,6 +60,91 @@ Then open:
 
 > Tip: if you change `_config.yml` or layouts, restart `jekyll serve`.
 
+### Windows setup (Scoop Ruby)
+
+Jekyll depends on gems with native C extensions (`eventmachine`, `http_parser.rb`, `json`, `wdm`).
+Scoop Ruby does **not** bundle a compiler toolchain, so you must install **MSYS2** to provide one.
+
+#### One-time setup
+
+```powershell
+# 1. Install MSYS2 via Scoop (provides make, gcc, pkg-config)
+scoop install msys2
+
+# 2. Install the UCRT64 toolchain and OpenSSL dev headers
+#    (UCRT64 matches Scoop Ruby's x64-mingw-ucrt platform)
+msys2 -defterm -no-start -ucrt64 -shell bash -c "pacman -S --noconfirm --needed base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-openssl"
+
+# 3. Add BOTH MSYS2 directories to your PATH for this session
+#    - ucrt64\bin  → gcc, g++, pkg-config, OpenSSL libraries
+#    - usr\bin     → POSIX-compatible make (required because Ruby's
+#                    mkmf generates Makefiles with POSIX-style paths;
+#                    mingw32-make from ucrt64\bin cannot process them)
+$msys2 = Join-Path $env:USERPROFILE "scoop\apps\msys2\current"
+$env:PATH = "$msys2\ucrt64\bin;$msys2\usr\bin;$env:PATH"
+
+# 4. Verify the toolchain is available
+gcc --version          # should show x86_64-w64-mingw32
+make --version         # should show "Built for x86_64-pc-msys"
+```
+
+> **Antivirus note:** Some antivirus software (e.g. Windows Defender, Bitdefender)
+> may block `cc1.exe` from reading temporary source files during native gem
+> compilation, producing `Permission denied` errors. If this happens, add an
+> exclusion for your Ruby gems directory
+> (e.g. `%USERPROFILE%\scoop\persist\ruby\gems`).
+
+#### Install gems and serve
+
+```powershell
+cd docs
+Remove-Item .\Gemfile.lock -ErrorAction SilentlyContinue
+bundle install
+bundle exec jekyll serve --port 4000 --baseurl /Observability-Benchmarking
+```
+
+> **Tip:** To make the PATH change permanent so you don't need step 3 every session,
+> add both paths to your **User** `PATH` environment variable:
+> - `%USERPROFILE%\scoop\apps\msys2\current\ucrt64\bin`
+> - `%USERPROFILE%\scoop\apps\msys2\current\usr\bin`
+
+### Windows troubleshooting
+
+**`Could not find gem 'google-protobuf' with platform 'x64-mingw-ucrt'`**
+— Delete the stale lockfile and re-resolve:
+
+```powershell
+Remove-Item .\Gemfile.lock -ErrorAction SilentlyContinue
+bundle install
+```
+
+**`The compiler failed to generate an executable file` / `No such file or directory - make`**
+— The MSYS2 UCRT64 toolchain is not on your PATH. Re-run step 3 from the setup above, or add it permanently.
+
+**`cc1.exe: fatal error: ... Permission denied`**
+— Your antivirus is blocking the compiler from reading temporary source files.
+Add an exclusion for your Ruby gems directory (e.g. `%USERPROFILE%\scoop\persist\ruby\gems`).
+
+**`No rule to make target '/C/Users/.../ruby.h'` (POSIX path error)**
+— You are using `mingw32-make` instead of MSYS2's POSIX `make`.
+Ruby's mkmf generates Makefiles with POSIX-style paths (`/C/Users/...`) that
+only the POSIX make from `usr\bin` can process. Make sure
+`%USERPROFILE%\scoop\apps\msys2\current\usr\bin` is on your PATH and that
+`make --version` shows **`Built for x86_64-pc-msys`** (not `x86_64-w64-mingw32`).
+
+**`checking for -lcrypto... not found` (OpenSSL)**
+— Install the OpenSSL development package:
+
+```powershell
+msys2 -defterm -no-start -ucrt64 -shell bash -c "pacman -S --noconfirm mingw-w64-ucrt-x86_64-openssl"
+```
+
+### Alternative Windows setups
+
+If you prefer not to use Scoop + MSYS2:
+
+1. **WSL2** — Install Ubuntu in WSL2, install Ruby, and run the docs commands from the Linux shell.
+2. **RubyInstaller** — Install **RubyInstaller x64-ucrt** with the **MSYS2/DevKit** component included.
 
 ## Design Principles
 

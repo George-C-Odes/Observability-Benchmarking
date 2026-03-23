@@ -72,6 +72,33 @@ The following items are suppressed from Checkstyle checks:
 - Test files (for certain Javadoc requirements)
 - Spring Boot Application main classes (utility class constructor check)
 
+## Ruff Configuration (Python)
+
+### Overview
+Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all-in-one linter and formatter, enforcing PEP 8 and import ordering.
+
+### Configuration
+Each Python module contains a `pyproject.toml` with Ruff settings:
+- **Target version**: Python 3.13
+- **Line length**: 100 characters
+- **Rules**: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort import ordering)
+
+### Running Ruff
+
+```bash
+# Check all Python services
+cd services/python/django/gunicorn/WSGI
+ruff check .
+
+cd services/python/django/gunicorn/ASGI
+ruff check .
+
+cd services/python/django/gunicorn/common
+ruff check .
+```
+
+Ruff is also available as an IDE plugin for real-time feedback.
+
 ## Code Quality Standards
 
 ### Documentation

@@ -19,7 +19,8 @@ export function needsServicesProfiles(serviceName: string): boolean {
     serviceName.startsWith('dropwizard-') ||
     serviceName.startsWith('vertx-') ||
     serviceName.startsWith('pekko-') ||
-    serviceName.startsWith('go');
+    serviceName.startsWith('go') ||
+    serviceName.startsWith('django-');
 }
 
 export function composePrefixForService(serviceName: string): string {

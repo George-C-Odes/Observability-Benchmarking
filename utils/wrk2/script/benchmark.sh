@@ -203,7 +203,7 @@ fi
 benchmarks_per_iteration() {
   # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
   if [ "${HOST}" = "combo" ]; then
-    echo 31
+    echo 33
     return 0
   fi
   if [ "${HOST}" = "jetty" ]; then
@@ -216,7 +216,7 @@ benchmarks_per_iteration() {
       echo 3
       return 0
     fi
-    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* || "${HOST}" == helidon-se* || "${HOST}" == helidon-mp* ]]; then
+    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* || "${HOST}" == helidon-se* || "${HOST}" == helidon-mp* || "${HOST}" == django-* ]]; then
       echo 2
       return 0
     fi
@@ -309,6 +309,8 @@ while true; do
       "vertx-jvm"
       "pekko-jvm"
       "go"
+      "django-platform"
+      "django-reactive"
     )
     endpoints=(
       "platform"
@@ -342,6 +344,8 @@ while true; do
       "reactive"
       "reactive"
       "virtual"
+      "platform"
+      "reactive"
     )
     for i in "${!hosts[@]}"; do
       iter_bench_idx=$((iter_bench_idx + 1))
@@ -351,7 +355,7 @@ while true; do
       sleep "${SLEEP_BETWEEN}"
     done
   elif [ "${ENDPOINT}" = "combo" ]; then
-    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* || "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* ]]; then
+    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* || "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* || "${HOST}" == django-* ]]; then
       if [[ "${HOST}" == spring-jvm* ]]; then
         hosts=(
           "spring-jvm-tomcat-platform"
@@ -384,6 +388,12 @@ while true; do
           "dropwizard-jvm-virtual"
         )
         endpoints=("platform" "virtual")
+      elif [[ "${HOST}" == django-* ]]; then
+        hosts=(
+          "django-platform"
+          "django-reactive"
+        )
+        endpoints=("platform" "reactive")
       else
         exit 0
       fi

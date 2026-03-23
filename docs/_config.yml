@@ -17,6 +17,7 @@ exclude:
   - Gemfile.lock
   - node_modules
   - vendor
+  - "*.template.md"
 
 # Collections
 collections:
