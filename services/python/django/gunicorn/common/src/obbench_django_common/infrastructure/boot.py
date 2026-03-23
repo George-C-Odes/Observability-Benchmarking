@@ -174,8 +174,10 @@ def _init_observability() -> None:
     """Initialize per-worker OTel SDK, custom metrics, and Pyroscope.
 
     Each delegated helper already implements best-effort handling for optional
-    observability dependencies.  Calling them directly keeps this bootstrap code
-    simple and ensures unexpected local regressions are not silently swallowed.
+    observability dependencies and may catch and log its own failures.  This
+    wrapper adds no additional try/except, so errors raised at this level
+    (for example, bad imports or incorrect call ordering) will still surface,
+    while leaving the helpers' internal error-handling behavior unchanged.
     """
     from obbench_django_common.infrastructure.otel_metrics import register_metrics
     from obbench_django_common.infrastructure.otel_setup import configure_sdk
