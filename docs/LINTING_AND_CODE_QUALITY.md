@@ -78,9 +78,10 @@ The following items are suppressed from Checkstyle checks:
 Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all-in-one linter and formatter, enforcing PEP 8 and import ordering.
 
 ### Configuration
-The shared Django package contains the Ruff configuration in
-`services/python/django/gunicorn/common/pyproject.toml`, which is used while
-linting `common`, `WSGI`, and `ASGI`:
+Each Django module has its own Ruff configuration in a local `pyproject.toml`
+(for example, under `services/python/django/gunicorn/common/`, `.../WSGI/`, and
+`.../ASGI/`). These configurations are kept aligned so that, in practice, the
+same settings are applied when linting `common`, `WSGI`, and `ASGI`:
 - **Target version**: Python 3.13
 - **Line length**: 100 characters
 - **Rules**: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort import ordering)
