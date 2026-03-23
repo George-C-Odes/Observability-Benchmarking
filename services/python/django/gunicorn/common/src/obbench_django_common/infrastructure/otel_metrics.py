@@ -13,16 +13,11 @@ from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger("hello")
-_NON_FATAL_METRICS_EXCEPTIONS = (
-    AttributeError,
-    ImportError,
-    LookupError,
-    OSError,
-    RuntimeError,
-    TypeError,
-    ValueError,
+from obbench_django_common.infrastructure.optional_exceptions import (
+    NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
 )
+
+logger = logging.getLogger("hello")
 
 
 class _State:
@@ -68,7 +63,7 @@ def register_metrics() -> None:
                 f"Total number of {cfg.endpoint_path} requests handled by this process"
             ),
         )
-    except _NON_FATAL_METRICS_EXCEPTIONS:
+    except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.debug(
             "failed to register hello.request.count (OTel SDK may not be active)",
             exc_info=True,
