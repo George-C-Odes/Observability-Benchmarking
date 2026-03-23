@@ -166,8 +166,15 @@ discovery.relabel "apps" {
         action = "replace"
         source_labels = ["__meta_process_exe"]
         target_label = "__meta_process_exe"
-        regex = "^(/usr/lib/jvm/java.*|/usr/lib/jvm/.*/bin/java|/opt/java/openjdk/bin/java)$"
+        regex = "^(/usr/lib/jvm/java.*|/usr/lib/jvm/.*/bin/java|/opt/java/openjdk/bin/java|/opt/jre/bin/java)$"
         replacement = "/jvm/"
+    }
+    rule {
+        action = "replace"
+        source_labels = ["__meta_process_exe"]
+        target_label = "__meta_process_exe"
+        regex = "^(/usr/local/bin/python.*|/usr/bin/python.*)$"
+        replacement = "/python/"
     }
     rule {
         action = "replace"
@@ -210,7 +217,9 @@ discovery.relabel "apps" {
                 ".*dropwizard-jvm-platform.*|" +
                 ".*dropwizard-jvm-virtual.*|" +
                 ".*vertx-jvm.*|" +
-                ".*pekko-jvm.*)$"
+                ".*pekko-jvm.*|" +
+                ".*django-platform.*|" +
+                ".*django-reactive.*)$"
     }
     rule {
         action = "drop"

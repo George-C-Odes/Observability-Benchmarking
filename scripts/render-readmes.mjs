@@ -46,6 +46,96 @@ export function renderTemplate(templateContent, variables) {
   });
 }
 
+// ── Markdown table re-alignment ──────────────────────────────────────────────
+//
+// After variable substitution, table columns can become ragged because
+// placeholders like `{{SPRING_BOOT_VERSION}}` (24 chars) are replaced with
+// short values like `4.0.4` (5 chars).  The functions below detect markdown
+// tables in the rendered output and re-pad every cell so columns align again.
+
+function looksLikeTableRow(line) {
+  return typeof line === 'string' && /^\s*\|/.test(line);
+}
+
+function looksLikeSeparatorRow(line) {
+  if (!looksLikeTableRow(line)) return false;
+  const cells = splitTableRow(line);
+  return cells.length > 0 && cells.every((c) => /^:?-+:?$/.test(c));
+}
+
+function splitTableRow(line) {
+  let inner = line.trim();
+  if (inner.startsWith('|')) inner = inner.slice(1);
+  if (inner.endsWith('|')) inner = inner.slice(0, -1);
+  return inner.split('|').map((cell) => cell.trim());
+}
+
+function alignTable(lines) {
+  const rows = lines.map(splitTableRow);
+  const colCount = Math.max(...rows.map((r) => r.length));
+
+  // Determine max content width per column (skip separator row at index 1).
+  const widths = new Array(colCount).fill(0);
+  for (let r = 0; r < rows.length; r++) {
+    if (r === 1) continue;
+    for (let c = 0; c < rows[r].length; c++) {
+      widths[c] = Math.max(widths[c], rows[r][c].length);
+    }
+  }
+
+  // Minimum content width of 1 (separator will be at least 3 chars: w + 2 = 3).
+  for (let c = 0; c < colCount; c++) {
+    widths[c] = Math.max(widths[c], 1);
+  }
+
+  return rows.map((cells, r) => {
+    const formatted = [];
+
+    for (let c = 0; c < colCount; c++) {
+      const cell = c < cells.length ? cells[c] : '';
+      const w = widths[c];
+
+      if (r === 1) {
+        // Separator: dashes span the full column slot (content width + 2 for
+        // the spaces that surround data cells), matching `|------|` convention.
+        const hasLeft = cell.startsWith(':');
+        const hasRight = cell.endsWith(':') && cell.length > 1;
+        const dashCount = w + 2 - (hasLeft ? 1 : 0) - (hasRight ? 1 : 0);
+        formatted.push((hasLeft ? ':' : '') + '-'.repeat(dashCount) + (hasRight ? ':' : ''));
+      } else {
+        formatted.push(' ' + cell.padEnd(w) + ' ');
+      }
+    }
+
+    return '|' + formatted.join('|') + '|';
+  });
+}
+
+export function realignMarkdownTables(content) {
+  const lines = content.split('\n');
+  const result = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    if (
+      looksLikeTableRow(lines[i])
+      && i + 1 < lines.length
+      && looksLikeSeparatorRow(lines[i + 1])
+    ) {
+      const tableStart = i;
+      while (i < lines.length && looksLikeTableRow(lines[i])) {
+        i++;
+      }
+      result.push(...alignTable(lines.slice(tableStart, i)));
+    } else {
+      result.push(lines[i]);
+      i++;
+    }
+  }
+
+  return result.join('\n');
+}
+
 export function deriveOutputPath(templatePath) {
   const parsedPath = path.parse(templatePath);
 
@@ -101,7 +191,7 @@ export function renderTemplates({ envPath, templatePaths, check = false }) {
     const absoluteTemplatePath = resolveRepoPath(templatePath);
     const absoluteOutputPath = deriveOutputPath(absoluteTemplatePath);
     const templateContent = readFileSync(absoluteTemplatePath, 'utf8');
-    const renderedContent = renderTemplate(templateContent, variables);
+    const renderedContent = realignMarkdownTables(renderTemplate(templateContent, variables));
 
     if (check) {
       const existingContent = readFileSync(absoluteOutputPath, 'utf8');

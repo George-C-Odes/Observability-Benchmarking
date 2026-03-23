@@ -1,0 +1,41 @@
+# ------------------------------------------------------------------
+# requirements.in  — top-level dependencies for pip-compile
+#
+# Usage:
+#   python -m pip install pip-tools
+#   pip-compile --upgrade requirements.in          # → requirements.txt
+#   pip-compile --upgrade --strip-extras requirements.in  # strip extras markers
+#
+# Only list *direct* dependencies here.  pip-compile resolves the
+# full dependency tree and pins every version in requirements.txt.
+# ------------------------------------------------------------------
+
+# Django 6.x — WSGI framework
+Django>=6.0.3,<7
+
+# WSGI server — gthread worker for max throughput on 2 vCPUs
+gunicorn>=25.1.0,<26
+
+# --- OpenTelemetry zero-code instrumentation ---
+opentelemetry-distro>=0.56b0
+opentelemetry-api>=1.35.0
+opentelemetry-sdk>=1.35.0
+
+# gRPC exporters (traces, metrics, logs)
+opentelemetry-exporter-otlp-proto-grpc>=1.35.0
+grpcio>=1.73.1
+
+# Auto-instrumentation for Django
+opentelemetry-instrumentation-django>=0.56b0
+# Auto-instrumentation for logging (log correlation)
+opentelemetry-instrumentation-logging>=0.56b0
+
+# --- Pyroscope span profiles ---
+# https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
+pyroscope-io>=1.0.0
+# Official OTel span-profile integration (Traces → Profiles correlation)
+# https://github.com/grafana/otel-profiling-python
+pyroscope-otel>=1.0.0
+
+# --- Cache (TTL/LRU, pure-Python, fork-safe) ---
+cachetools>=6.0.0

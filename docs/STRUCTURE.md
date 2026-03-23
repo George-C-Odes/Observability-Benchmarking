@@ -16,7 +16,7 @@ Observability-Benchmarking/
 ├── docs/                     # GitHub Pages site sources (what you’re reading)
 ├── integration-tests/        # Integration test harness
 ├── results/                  # Benchmark artifacts and summaries
-├── services/                 # Benchmark targets (Go + Java frameworks)
+├── services/                 # Benchmark targets (Go + Java + Python frameworks)
 ├── utils/                    # Supporting tooling (wrk2, dashboard, orchestrator)
 ├── LICENSE
 ├── qodana.yaml
@@ -43,7 +43,7 @@ Key notes:
 
 - Compose profiles control what starts:
   - **OBS**: Grafana + Loki + Tempo + Mimir + Pyroscope + Alloy
-  - **SERVICES**: Spring/Quarkus/Micronaut/Helidon/Spark/Javalin/Dropwizard/Vert.x/Pekko/Go service containers
+  - **SERVICES**: Spring/Quarkus/Micronaut/Helidon/Spark/Javalin/Dropwizard/Vert.x/Pekko/Go/Django service containers
   - **RAIN_FIRE**: wrk2 load generator containers
 - `compose/.env` contains environment configuration (including required `HOST_REPO`).
 
@@ -91,6 +91,7 @@ Benchmark targets / service implementations.
 
 - `services/java/` contains JVM frameworks (Spring, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko, … depending on what's implemented).
 - `services/go/` contains Go implementations.
+- `services/python/` contains Python implementations (Django platform + reactive).
 
 Each service folder typically includes a Docker build context and the application sources.
 

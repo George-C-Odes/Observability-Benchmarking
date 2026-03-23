@@ -66,6 +66,8 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'vertx-jvm': false,
     'pekko-jvm': false,
     'go': false,
+    'django-platform': false,
+    'django-reactive': false,
 
     // UTILS
     'nextjs-dash': false,

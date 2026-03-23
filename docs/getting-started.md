@@ -233,6 +233,7 @@ Includes all service implementations:
 - Vert.x (JVM: reactive)
 - Pekko (JVM: reactive)
 - Go
+- Django (CPython: platform, reactive)
 
 #### Profile: RAIN_FIRE (Load Generators)
 ```bash
@@ -320,6 +321,12 @@ docker compose --project-directory compose --profile=OBS --profile=SERVICES up -
 
 # Go
 docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d go
+
+# Django Platform (Python WSGI)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d django-platform
+
+# Django Reactive (Python ASGI)
+docker compose --project-directory compose --profile=OBS --profile=SERVICES up -d django-reactive
 ```
 
 ### Service Endpoints
@@ -357,8 +364,10 @@ Once services are running:
 - **Vert.x JVM (Reactive)**: http://localhost:8100/hello/reactive
 - **Pekko JVM (Reactive)**: http://localhost:8101/hello/reactive
 - **Go**: http://localhost:9080/hello/virtual
+- **Django WSGI (Platform)**: http://localhost:9090/hello/platform
+- **Django ASGI (Reactive)**: http://localhost:9091/hello/reactive
 
-Health checks available at `/q/health` (Quarkus), `/actuator/health` (Spring), or `/ready` (Spark, Javalin, Dropwizard, Vert.x, Pekko).
+Health checks available at `/q/health` (Quarkus), `/actuator/health` (Spring), `/ready` (Spark, Javalin, Dropwizard, Vert.x, Pekko), or `/hello/healthz` (Django).
 
 ## Running Your First Benchmark
 

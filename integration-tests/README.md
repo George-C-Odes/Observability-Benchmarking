@@ -2,13 +2,13 @@
 
 # Integration Tests
 
-> Comprehensive integration tests for verifying deployment setup and observability mechanisms for all JVM and Native services.
+> Comprehensive integration tests for verifying deployment setup and observability mechanisms for all JVM, Native, Go, and Python services.
 
 ## Overview
 
 This directory contains an integration test runner script (`run-integration-tests.sh`) that validates:
 
-- **Service deployment**: All JVM-based services and native services respond on expected endpoints
+- **Service deployment**: All JVM-based, native, Go, and Python services respond on expected endpoints
 - **Observability stack readiness**: Grafana, Alloy, Loki, Mimir, Tempo, Pyroscope are reachable
 - **Basic metrics/health endpoints**: Verifies each service exposes at least one expected metrics/health endpoint
 - **Trace generation smoke test**: Sends a request to each service and verifies a known substring appears in the container logs
@@ -134,6 +134,10 @@ export PEKKO_JVM_URL=http://localhost:8101
 # Go Service
 export GO_URL=http://localhost:9080
 
+# Django Services
+export DJANGO_PLATFORM_URL=http://localhost:9090
+export DJANGO_REACTIVE_URL=http://localhost:9091
+
 # Observability stack
 export GRAFANA_URL=http://localhost:3000
 export ALLOY_URL=http://localhost:12345
@@ -169,6 +173,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Vert.x          | 5.0.8   |
 | Pekko           | 1.3.0   |
 | Go              | 1.26.1  |
+| Django          | 6.0.3   |
 
 ## Service Port Mappings
 
@@ -199,6 +204,8 @@ Port mappings match the order in `compose/docker-compose.yml`.
 | Vert.x JVM                         | vertx-jvm                     | 8100 | JVM                |
 | Pekko JVM                          | pekko-jvm                     | 8101 | JVM                |
 | Go                                 | go                            | 9080 | Native (Go binary) |
+| Django Platform                    | django-platform               | 9090 | Python (CPython)   |
+| Django Reactive                    | django-reactive               | 9091 | Python (CPython)   |
 
 ## What’s Tested (by the runner)
 
@@ -247,6 +254,10 @@ The runner checks these endpoints and response substrings:
 - **Go**
   - `/hello/virtual` contains `GO`
 
+- **Django**
+  - `/hello/platform` contains `Django` (platform module)
+  - `/hello/reactive` contains `Django` (reactive module)
+
 ### Metrics / readiness / health checks
 
 The runner is intentionally tolerant and will accept **any one** of these endpoints per framework:
@@ -275,6 +286,11 @@ The runner is intentionally tolerant and will accept **any one** of these endpoi
   - readiness: `/ready`
 
 - **Go**
+  - `/healthz` OR
+  - `/readyz` OR
+  - `/livez`
+
+- **Django (Platform & Reactive)**
   - `/healthz` OR
   - `/readyz` OR
   - `/livez`
@@ -329,6 +345,8 @@ Example expectations (not exhaustive):
 - Pekko reactive checks expect `pekko.actor.default-dispatcher`
 - Helidon SE/MP checks expect `isVirtual: 'true'`
 - Go expects `goroutine`
+- Django platform expects `ThreadPoolExecutor` (Gunicorn gthread pool)
+- Django reactive expects `MainThread` (uvicorn async main thread)
 
 This is a **smoke test** for “a request caused a log line with the expected threading/runtime markers”. It does *not* query Tempo directly.
 

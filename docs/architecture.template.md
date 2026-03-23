@@ -1,10 +1,9 @@
-<!-- Generated from `docs/architecture.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/architecture.md` directly. -->
-
 ---
 layout: default
 title: System Architecture
 permalink: /docs/architecture
 ---
+<!-- Generated from `docs/architecture.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/architecture.md` directly. -->
 
 # System Architecture
 
@@ -73,9 +72,12 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Reactive (Pekko dispatcher)
 - Go {{GO_VERSION}}
   - Fiber framework (v3.1.0)
+- Django {{DJANGO_VERSION}} (CPython)
+  - Platform threads (Gunicorn gthread)
+  - Reactive (Gunicorn + UvicornWorker ASGI)
 
 **Service Characteristics**:
-- Simple cache retrieval workload (Caffeine)
+- Simple cache retrieval workload (Caffeine / cachetools)
 - Non-blocking I/O where applicable
 - OpenTelemetry instrumentation
 - Health check endpoints

@@ -266,3 +266,23 @@ docker buildx build `
     --load `
     services/go/enhanced
 ```
+**django-platform**
+```powershell
+docker buildx build `
+    -f services/python/django/gunicorn/WSGI/Dockerfile `
+    -t django-platform:{{DJANGO_VERSION}}_latest `
+    --build-arg PYTHON_VERSION={{PYTHON_VERSION}} `
+    --build-arg BUILDKIT_BUILD_NAME=django-platform:{{DJANGO_VERSION}}_latest `
+    --load `
+    services/python/django
+```
+**django-reactive**
+```powershell
+docker buildx build `
+    -f services/python/django/gunicorn/ASGI/Dockerfile `
+    -t django-reactive:{{DJANGO_VERSION}}_latest `
+    --build-arg PYTHON_VERSION={{PYTHON_VERSION}} `
+    --build-arg BUILDKIT_BUILD_NAME=django-reactive:{{DJANGO_VERSION}}_latest `
+    --load `
+    services/python/django
+```

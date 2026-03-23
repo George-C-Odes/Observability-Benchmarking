@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync
 import os from 'node:os';
 import path from 'node:path';
 
-import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
+import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 
 function testParseColonEnv() {
   const env = parseColonEnv(`
@@ -161,6 +161,50 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
   }
 }
 
+function testRealignMarkdownTables() {
+  // Simulates what happens when template placeholders of different lengths
+  // are replaced with shorter values, leaving ragged columns.
+  const ragged = [
+    '| Name   | Version                 | Notes        |',
+    '|--------|-------------------------|--------------|',
+    '| Spring | 4.0.4 | Main framework |',
+    '| Go     | 1.26.1          | Alt runtime    |',
+    '| Node   | 25.8.1                  | Frontend       |',
+  ].join('\n');
+
+  const aligned = realignMarkdownTables(ragged);
+
+  const expected = [
+    '| Name   | Version | Notes          |',
+    '|--------|---------|----------------|',
+    '| Spring | 4.0.4   | Main framework |',
+    '| Go     | 1.26.1  | Alt runtime    |',
+    '| Node   | 25.8.1  | Frontend       |',
+  ].join('\n');
+
+  assert.equal(aligned, expected);
+
+  // Non-table content must be left untouched.
+  const prose = 'Hello {{SPRING_BOOT_VERSION}} world';
+  assert.equal(realignMarkdownTables(prose), prose);
+
+  // Table with alignment markers (:---:) must be preserved.
+  const centered = [
+    '| A   | B     |',
+    '|:---:|------:|',
+    '| x   | longvalue |',
+  ].join('\n');
+
+  const centeredAligned = realignMarkdownTables(centered);
+  const centeredExpected = [
+    '| A | B         |',
+    '|:-:|----------:|',
+    '| x | longvalue |',
+  ].join('\n');
+
+  assert.equal(centeredAligned, centeredExpected);
+}
+
 function main() {
   testParseColonEnv();
   testRenderTemplate();
@@ -169,6 +213,7 @@ function main() {
   testResolveTemplatePaths();
   testGeneratedOutputRoundTrip();
   testRenderTemplatesResolvesRelativeEnvPath();
+  testRealignMarkdownTables();
   console.log('render-readmes tests passed');
 }
 

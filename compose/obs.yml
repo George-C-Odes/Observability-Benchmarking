@@ -32,6 +32,7 @@ services:
       EBPF_ENABLED: true
     ports:
       - "12345:12345"
+      - "4317:4317"
     cpuset: *default_performance_cores
     depends_on:
       - tempo
@@ -128,6 +129,4 @@ services:
       - ${HOST_REPO}/data/tempo:/var/tempo
     ports:
       - "3200:3200"   # Tempo HTTP / API / TraceQL
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
     cpuset: *default_performance_cores

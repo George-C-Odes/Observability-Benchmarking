@@ -1,0 +1,83 @@
+name: Django Python Quality
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "services/python/django/**"
+      - ".github/workflows/django_python_quality.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "services/python/django/**"
+      - ".github/workflows/django_python_quality.yml"
+
+jobs:
+  common:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            services/python/django/gunicorn/common/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "ruff>=0.11,<1"
+
+      - name: Syntax check
+        working-directory: services/python/django/gunicorn/common
+        run: python -m compileall src
+
+      - name: Lint
+        working-directory: services/python/django/gunicorn/common
+        run: python -m ruff check .
+
+  modules:
+    runs-on: ubuntu-latest
+    env:
+      OTEL_SDK_DISABLED: "true"
+      PYROSCOPE_ENABLED: "false"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module_name: django-platform
+            module_dir: services/python/django/gunicorn/WSGI
+          - module_name: django-reactive
+            module_dir: services/python/django/gunicorn/ASGI
+    defaults:
+      run:
+        working-directory: ${{ matrix.module_dir }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            services/python/django/gunicorn/common/pyproject.toml
+            ${{ matrix.module_dir }}/requirements.txt
+            ${{ matrix.module_dir }}/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+
+      - name: Syntax check
+        run: python -m compileall manage.py hello_project gunicorn.conf.py
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Django system checks
+        run: python manage.py check
+
+      - name: Unit tests
+        run: python manage.py test obbench_django_common.tests

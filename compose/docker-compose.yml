@@ -1581,3 +1581,109 @@ services:
       OTEL_SERVICE_NAME: "go-simple"
       OTEL_RESOURCE_ATTRIBUTES: "env=dev,runtime=native,webengine.name=Go,webengine.version=${GO_VERSION}"
     <<: *common_properties
+
+  django-platform:
+    profiles: ["${DOCKER_PROF_DJANGO_PLATFORM:-skip}"]
+    image: django-platform:${DJANGO_VERSION}_latest
+    build:
+      context: ../services/python/django
+      dockerfile: gunicorn/WSGI/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: django-platform:${DJANGO_VERSION}_latest
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    container_name: django-platform
+    ports:
+      - "9090:8080"
+    environment:
+      TZ: *default_timezone
+      PORT: 8080
+      LOG_LEVEL: "info"
+      HELLO_VARIANT: "platform"
+      DJANGO_SETTINGS_MODULE: "hello_project.settings"
+      CACHE_SIZE: *default_cache_size
+      CACHE_IMPL: "dict"
+      DJANGO_PLATFORM_WORKERS: ${DJANGO_PLATFORM_WORKERS:-3}
+      DJANGO_PLATFORM_THREADS: ${DJANGO_PLATFORM_THREADS:-8}
+      DJANGO_PLATFORM_BACKLOG: ${DJANGO_PLATFORM_BACKLOG:-8192}
+      DJANGO_PLATFORM_REUSE_PORT: ${DJANGO_PLATFORM_REUSE_PORT:-true}
+
+      OTEL_SERVICE_NAME: "django-platform"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=dict,env=dev,runtime=cpython,process.runtime.version=${PYTHON_VERSION},webengine.name=Django,webengine.version=${DJANGO_VERSION},server.type=Gunicorn,server.model=WSGI,server.workers=${DJANGO_PLATFORM_WORKERS},server.threads=${DJANGO_PLATFORM_THREADS}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      # Python SDK expects milliseconds (not duration strings like Java's "15s")
+      OTEL_METRIC_EXPORT_INTERVAL: 15000
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      # Django and logging instrumentation are applied programmatically
+      # by otel_setup.instrument_app() in the master process.
+      # OTel SDK is created per-worker in post_fork (see boot.py).
+
+      # Batch tuning (traces, logs) — longer intervals reduce background-thread
+      # GIL contention from gRPC serialisation/export, giving request-handling
+      # threads more CPU time.  15 s aligns with OTEL_METRIC_EXPORT_INTERVAL.
+      OTEL_BSP_MAX_QUEUE_SIZE: 2048
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: 512
+      OTEL_BSP_SCHEDULE_DELAY: 15000
+      OTEL_BLRP_MAX_QUEUE_SIZE: 2048
+      OTEL_BLRP_MAX_EXPORT_BATCH_SIZE: 512
+      OTEL_BLRP_SCHEDULE_DELAY: 15000
+
+      # Pyroscope span profiles (py-spy in-process agent + pyroscope-otel SpanProcessor)
+      PYROSCOPE_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_APPLICATION_NAME: "agent/django-platform"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_LOG_LEVEL: "warn"
+    <<: *common_properties
+
+  django-reactive:
+    profiles: ["${DOCKER_PROF_DJANGO_REACTIVE:-skip}"]
+    image: django-reactive:${DJANGO_VERSION}_latest
+    build:
+      context: ../services/python/django
+      dockerfile: gunicorn/ASGI/Dockerfile
+      args:
+        BUILDKIT_BUILD_NAME: django-reactive:${DJANGO_VERSION}_latest
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    container_name: django-reactive
+    ports:
+      - "9091:8080"
+    environment:
+      TZ: *default_timezone
+      PORT: 8080
+      LOG_LEVEL: "info"
+      HELLO_VARIANT: "reactive"
+      DJANGO_SETTINGS_MODULE: "hello_project.settings"
+      CACHE_SIZE: *default_cache_size
+      CACHE_IMPL: "dict"
+      DJANGO_REACTIVE_WORKERS: ${DJANGO_REACTIVE_WORKERS:-2}
+      DJANGO_REACTIVE_BACKLOG: ${DJANGO_REACTIVE_BACKLOG:-8192}
+      DJANGO_REACTIVE_REUSE_PORT: ${DJANGO_REACTIVE_REUSE_PORT:-true}
+
+      OTEL_SERVICE_NAME: "django-reactive"
+      OTEL_RESOURCE_ATTRIBUTES: "cache.impl=dict,env=dev,runtime=cpython,process.runtime.version=${PYTHON_VERSION},webengine.name=Django,webengine.version=${DJANGO_VERSION},server.type=Gunicorn,server.model=ASGI,server.worker_class=UvicornWorker,server.workers=${DJANGO_REACTIVE_WORKERS:-2}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_METRIC_EXPORT_INTERVAL: 15000
+      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+
+      OTEL_BSP_MAX_QUEUE_SIZE: 2048
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: 512
+      OTEL_BSP_SCHEDULE_DELAY: 15000
+      OTEL_BLRP_MAX_QUEUE_SIZE: 2048
+      OTEL_BLRP_MAX_EXPORT_BATCH_SIZE: 512
+      OTEL_BLRP_SCHEDULE_DELAY: 15000
+
+      PYROSCOPE_ENABLED: *default_pyroscope_agent_enabled
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      PYROSCOPE_APPLICATION_NAME: "agent/django-reactive"
+      PYROSCOPE_UPLOAD_INTERVAL: "20s"
+      PYROSCOPE_LOG_LEVEL: "warn"
+    <<: *common_properties

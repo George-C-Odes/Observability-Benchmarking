@@ -116,6 +116,10 @@ PEKKO_JVM_URL="${PEKKO_JVM_URL:-http://localhost:8101}"
 # Go Service
 GO_URL="${GO_URL:-http://localhost:9080}"
 
+# Django Services
+DJANGO_PLATFORM_URL="${DJANGO_PLATFORM_URL:-http://localhost:9090}"
+DJANGO_REACTIVE_URL="${DJANGO_REACTIVE_URL:-http://localhost:9091}"
+
 # Observability
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
 ALLOY_URL="${ALLOY_URL:-http://localhost:12345}"
@@ -137,6 +141,7 @@ DROPWIZARD_VERSION="5.0.1"
 VERTX_VERSION="5.0.8"
 PEKKO_VERSION="1.3.0"
 GO_VERSION="1.26.1"
+DJANGO_VERSION="6.0.3"
 
 # Helper function to test HTTP endpoint
 # expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")
@@ -307,6 +312,7 @@ echo "- Dropwizard: ${DROPWIZARD_VERSION}"
 echo "- Vert.x: ${VERTX_VERSION}"
 echo "- Pekko: ${PEKKO_VERSION}"
 echo "- Go: ${GO_VERSION}"
+echo "- Django: ${DJANGO_VERSION}"
 echo ""
 
 echo "=========================================="
@@ -439,6 +445,19 @@ run_test "Go - /hello/virtual" test_endpoint "Go - /hello/virtual" "${GO_URL}/he
 echo ""
 
 echo "=========================================="
+echo "Django Service - Deployment Tests"
+echo "=========================================="
+echo ""
+
+echo -e "${BLUE}--- Django Platform (port 9090) ---${NC}"
+run_test "Django - /hello/platform" test_endpoint "Django - /hello/platform" "${DJANGO_PLATFORM_URL}/hello/platform" 200 "Django"
+echo ""
+
+echo -e "${BLUE}--- Django Reactive (port 9091) ---${NC}"
+run_test "Django - /hello/reactive" test_endpoint "Django - /hello/reactive" "${DJANGO_REACTIVE_URL}/hello/reactive" 200 "Django"
+echo ""
+
+echo "=========================================="
 echo "Observability Mechanism Tests"
 echo "=========================================="
 echo ""
@@ -467,6 +486,8 @@ run_test "Dropwizard JVM Virtual ready" test_ready_endpoint "Dropwizard JVM Virt
 run_test "Vertx JVM ready" test_ready_endpoint "Vertx JVM" "${VERTX_JVM_URL}" "/ready"
 run_test "Pekko JVM ready" test_ready_endpoint "Pekko JVM" "${PEKKO_JVM_URL}" "/ready"
 run_test "Go metrics" test_go_metrics "Go" "${GO_URL}"
+run_test "Django Platform health" test_go_metrics "Django Platform" "${DJANGO_PLATFORM_URL}"
+run_test "Django Reactive health" test_go_metrics "Django Reactive" "${DJANGO_REACTIVE_URL}"
 echo ""
 
 echo -e "${BLUE}--- Grafana Stack Readiness ---${NC}"
@@ -556,10 +577,10 @@ verify_last_log_contains() {
         return 1
     fi
 
-    # Get last log line; capture stderr so connectivity issues are visible
+    # Get last log line (merge stdout+stderr — many services log to stderr)
     local last_line docker_err
     docker_err="$(docker logs --tail 1 "${container_name}" 2>&1 1>/dev/null || true)"
-    last_line="$(docker logs --tail 1 "${container_name}" 2>/dev/null || true)"
+    last_line="$(docker logs --tail 1 "${container_name}" 2>&1 || true)"
 
     if echo "${last_line}" | grep -qi "${expected}"; then
         echo -e "${GREEN}✓ PASSED${NC} (found '${expected}')"
@@ -636,6 +657,9 @@ run_test "Trace Vertx JVM Reactive" run_trace_and_verify "Vertx JVM Reactive" "$
 run_test "Trace Pekko JVM Reactive" run_trace_and_verify "Pekko JVM Reactive" "${PEKKO_JVM_URL}/hello/reactive" "pekko-jvm" "pekko.actor.default-dispatcher"
 
 run_test "Trace Go Virtual" run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
+
+run_test "Trace Django Platform" run_trace_and_verify "Django Platform" "${DJANGO_PLATFORM_URL}/hello/platform" "django-platform" "ThreadPoolExecutor"
+run_test "Trace Django Reactive" run_trace_and_verify "Django Reactive" "${DJANGO_REACTIVE_URL}/hello/reactive" "django-reactive" "MainThread"
 
 echo ""
 

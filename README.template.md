@@ -15,6 +15,8 @@
 [![Vert.x](https://img.shields.io/badge/Vert.x-{{VERTX_VERSION}}-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-{{PEKKO_VERSION}}-D22128.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-{{GO_VERSION}}-00ADD8.svg)](https://golang.org/)
+[![Python](https://img.shields.io/badge/Python-{{PYTHON_VERSION}}-3776AB.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-{{DJANGO_VERSION}}-092E20.svg)](https://www.djangoproject.com/)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
 
@@ -50,7 +52,7 @@
 
 This repository provides a **production-ready Docker Compose environment** for comprehensive performance benchmarking of REST service implementations. It enables you to:
 
-- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko (JVM & Native where applicable), Go, and more
+- **Compare frameworks and runtimes**: Evaluate Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko (JVM & Native where applicable), Go, Django (Python), and more
 - **Test concurrency models**: Platform threads, virtual threads (Project Loom), and reactive programming
 - **Collect full observability data**: Logs, metrics, traces, and continuous profiling in one unified stack
 - **Run deterministic benchmarks**: Use wrk2 for controlled, reproducible load testing
@@ -60,43 +62,47 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 
 ## 🧰 Technology Stack Summary
 
-| Layer             | Category           | Technology                 | Version | Purpose / Role                                                       |
-|-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | {{GO_VERSION}}  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}}   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}} | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | {{HELIDON_VERSION}}   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | {{HELIDON_VERSION}}   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | {{SPARK_VERSION}}   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | {{JAVALIN_VERSION}}   | Lightweight REST server                                              |
-| **Backend**       | Framework          | Dropwizard                 | {{DROPWIZARD_VERSION}}   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}   | Reactive, event-driven applications on the JVM (Netty)               |
-| **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Frontend**      | Framework          | Next.js                    | 16.2.0  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.3  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.19.0  | Continuous CPU and memory profiling                                  |
-| **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.0  | Auto-instrumentation and exporters                                   |
-| **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching                                   |
-| **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
-| **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
-| **Build**         | Package Manager    | npm                        | 11.12.0 | Frontend dependency management                                       |
-| **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
-| **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0   | Frontend unit testing                                                |
+| Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
+|-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.2                  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Runtime            | Node.js                    | 25.8.1                  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | {{HELIDON_VERSION}}     | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | {{HELIDON_VERSION}}     | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | {{SPARK_VERSION}}       | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | Javalin                    | {{JAVALIN_VERSION}}     | Lightweight REST server                                              |
+| **Backend**       | Framework          | Dropwizard                 | {{DROPWIZARD_VERSION}}  | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
+| **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
+| **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Frontend**      | Framework          | Next.js                    | 16.2.0                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.4                  | UI rendering layer                                                   |
+| **Frontend**      | Language           | TypeScript                 | 5.9.3                   | Type-safe frontend development                                       |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9                   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 12.4.1                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.6.7                   | Log aggregation                                                      |
+| **Observability** | Tracing            | Tempo                      | 2.10.3                  | Distributed tracing backend                                          |
+| **Observability** | Metrics            | Mimir                      | 3.0.4                   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 1.19.0                  | Continuous CPU and memory profiling                                  |
+| **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1                  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.0                  | Auto-instrumentation and exporters                                   |
+| **Performance**   | Cache              | Caffeine                   | 3.2.3                   | High-performance in-memory caching (Java)                            |
+| **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
+| **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
+| **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.0                  | Image build and lifecycle management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.14                  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
+| **Build**         | Package Manager    | npm                        | 11.12.0                 | Frontend dependency management                                       |
+| **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
+| **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0                   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -118,6 +124,8 @@ If you’re searching for projects like this, these are the topics it covers:
 - Java virtual threads (Project Loom) vs platform threads vs reactive (WebFlux/Mutiny)
 - Quarkus vs Spring Boot performance
 - GraalVM native image benchmarking
+- Django (Python) vs JVM framework performance
+- Python WSGI vs ASGI benchmarking
 
 ## ✨ Features
 
@@ -189,6 +197,11 @@ If you’re searching for projects like this, these are the topics it covers:
 #### Go ({{GO_VERSION}})
 - Fiber framework integration
 - Full observability setup
+
+#### Python ({{PYTHON_VERSION}})
+- **Django**: {{DJANGO_VERSION}}
+  - Platform (WSGI — Gunicorn gthread workers)
+  - Reactive (ASGI — Gunicorn + UvicornWorker)
 
 ### 🎯 Load Generation
 - **wrk2**: Deterministic, constant-throughput HTTP benchmarking
@@ -335,7 +348,7 @@ This project focuses primarily on performance benchmarking.
 - See [Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html) for detailed testing procedures
 
 **Service Validation**
-- Health check endpoints (`/actuator/health` for Spring, `/q/health` for Quarkus, `/ready` for Spark, Javalin, Dropwizard)
+- Health check endpoints (`/actuator/health` for Spring, `/q/health` for Quarkus, `/ready` for Spark, Javalin, Dropwizard, `/hello/healthz` for Django)
 - Startup validation via Docker Compose health checks
 - Manual smoke testing with curl or browser
 
@@ -392,39 +405,41 @@ The numbers below are a curated summary of a representative run.
 
 #### Requests Per Second (RPS) — 06/03/2026 (to closest thousand)
 
-| Framework  | Runtime | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
-|------------|---------|----------|-----|---------------|-----------------|
-| Spring     | JVM     | Platform | 21k | 552           | 246             |
-| Spring     | JVM     | Virtual  | 17k | 439           | 246             |
-| Spring     | JVM     | Reactive | 14k | 427           | 277             |
-| Spring     | Native  | Platform | 10k | 237           | 388             |
-| Spring     | Native  | Virtual  | 11k | 163           | 388             |
-| Spring     | Native  | Reactive | 7k  | 176           | 447             |
-| Quarkus    | JVM     | Platform | 37k | 540           | 235             |
-| Quarkus    | JVM     | Virtual  | 45k | 540           | 235             |
-| Quarkus    | JVM     | Reactive | 49k | 540           | 235             |
-| Quarkus    | Native  | Platform | 21k | 270           | 636             |
-| Quarkus    | Native  | Virtual  | 27k | 270           | 636             |
-| Quarkus    | Native  | Reactive | 22k | 270           | 636             |
-| Micronaut  | JVM     | Platform | 31k | 441           | 193             |
-| Micronaut  | JVM     | Virtual  | 38k | 441           | 193             |
-| Micronaut  | JVM     | Reactive | 33k | 441           | 193             |
-| Micronaut  | Native  | Platform | 17k | 165           | 349             |
-| Micronaut  | Native  | Virtual  | 17k | 165           | 349             |
-| Micronaut  | Native  | Reactive | 15k | 165           | 349             |
-| Helidon SE | JVM     | Virtual  | 65k | 430           | 169             |
-| Helidon SE | Native  | Virtual  | 37k | 195           | 253             |
-| Helidon MP | JVM     | Virtual  | 15k | 463           | 189             |
-| Helidon MP | Native  | Virtual  | 10k | 202           | 356             |
-| Spark      | JVM     | Platform | 35k | 559           | 216             |
-| Spark      | JVM     | Virtual  | 25k | 395           | 216             |
-| Javalin    | JVM     | Platform | 29k | 754           | 219             |
-| Javalin    | JVM     | Virtual  | 26k | 510           | 219             |
-| Dropwizard | JVM     | Platform | 17k | 613           | 246             |
-| Dropwizard | JVM     | Virtual  | 16k | 529           | 246             |
-| Vert.x     | JVM     | Reactive | 52k | 541           | 220             |
-| Pekko      | JVM     | Reactive | 30k | 693           | 266             |
-| Go         | Native  | N/A      | 24k | 120           | 36              |
+| Framework  | Runtime | Mode     | RPS  | Peak Mem (MB) | Image Size (MB) |
+|------------|---------|----------|------|---------------|-----------------|
+| Spring     | JVM     | Platform | 21k  | 552           | 246             |
+| Spring     | JVM     | Virtual  | 17k  | 439           | 246             |
+| Spring     | JVM     | Reactive | 14k  | 427           | 277             |
+| Spring     | Native  | Platform | 10k  | 237           | 388             |
+| Spring     | Native  | Virtual  | 11k  | 163           | 388             |
+| Spring     | Native  | Reactive | 7k   | 176           | 447             |
+| Quarkus    | JVM     | Platform | 37k  | 540           | 235             |
+| Quarkus    | JVM     | Virtual  | 45k  | 540           | 235             |
+| Quarkus    | JVM     | Reactive | 49k  | 540           | 235             |
+| Quarkus    | Native  | Platform | 21k  | 270           | 636             |
+| Quarkus    | Native  | Virtual  | 27k  | 270           | 636             |
+| Quarkus    | Native  | Reactive | 22k  | 270           | 636             |
+| Micronaut  | JVM     | Platform | 31k  | 441           | 193             |
+| Micronaut  | JVM     | Virtual  | 38k  | 441           | 193             |
+| Micronaut  | JVM     | Reactive | 33k  | 441           | 193             |
+| Micronaut  | Native  | Platform | 17k  | 165           | 349             |
+| Micronaut  | Native  | Virtual  | 17k  | 165           | 349             |
+| Micronaut  | Native  | Reactive | 15k  | 165           | 349             |
+| Helidon SE | JVM     | Virtual  | 65k  | 430           | 169             |
+| Helidon SE | Native  | Virtual  | 37k  | 195           | 253             |
+| Helidon MP | JVM     | Virtual  | 15k  | 463           | 189             |
+| Helidon MP | Native  | Virtual  | 10k  | 202           | 356             |
+| Spark      | JVM     | Platform | 35k  | 559           | 216             |
+| Spark      | JVM     | Virtual  | 25k  | 395           | 216             |
+| Javalin    | JVM     | Platform | 29k  | 754           | 219             |
+| Javalin    | JVM     | Virtual  | 26k  | 510           | 219             |
+| Dropwizard | JVM     | Platform | 17k  | 613           | 246             |
+| Dropwizard | JVM     | Virtual  | 16k  | 529           | 246             |
+| Vert.x     | JVM     | Reactive | 52k  | 541           | 220             |
+| Pekko      | JVM     | Reactive | 30k  | 693           | 266             |
+| Go         | Native  | N/A      | 24k  | 120           | 36              |
+| Django     | CPython | Platform | 1k   | 161           | 306             |
+| Django     | CPython | Reactive | 0.5k | 200           | 309             |
 
 > Note: The GitHub Pages landing page may show a “top RPS” number; the table above is the most up-to-date reference.
 
@@ -442,7 +457,8 @@ The numbers below are a curated summary of a representative run.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko {{PEKKO_VERSION}} is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
+- Django {{DJANGO_VERSION}} runs on CPython {{PYTHON_VERSION}} behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
   - same endpoint logic
@@ -483,6 +499,8 @@ The numbers below are a curated summary of a representative run.
 - **Vert.x**: {{VERTX_VERSION}}
 - **Pekko**: {{PEKKO_VERSION}} (Pekko Core 1.4.0)
 - **Go**: {{GO_VERSION}} (Fiber v3.1.0)
+- **Python**: {{PYTHON_VERSION}} (CPython)
+- **Django**: {{DJANGO_VERSION}} (Gunicorn 25.1.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
@@ -743,7 +761,13 @@ Observability-Benchmarking/
 │   │   │   └── jvm/             # JVM build (reactive)
 │   │   └── pekko/               # Pekko HTTP services
 │   │       └── jvm/             # JVM build (reactive)
-│   └── go/                  # Go services
+│   ├── go/                  # Go services
+│   └── python/              # Python services
+│       └── django/              # Django services
+│           └── gunicorn/        # Gunicorn-based builds
+│               ├── common/      # Shared application package and tests
+│               ├── WSGI/        # Platform-threaded (django-platform)
+│               └── ASGI/        # Reactive async (django-reactive)
 ├── config/                  # Configuration files
 │   ├── grafana/             # Grafana dashboards and provisioning
 │   ├── loki/                # Loki configuration
@@ -849,6 +873,16 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 - Direct Pekko HTTP server for maximum throughput
 - jlink-optimised JVM image with distroless runtime base
 
+#### Django (Python)
+- **Two modules** sharing a common application package (`gunicorn/common`):
+  - `django-platform` — WSGI served via Gunicorn `gthread` workers (platform threads)
+  - `django-reactive` — ASGI served via Gunicorn + `UvicornWorker` (async)
+- Clean architecture: `api/` → `application/` → `infrastructure/` layering with ports-and-adapters cache abstraction
+- OpenTelemetry SDK instrumentation (traces, metrics, logs) via `opentelemetry-instrumentation-django`
+- Pyroscope profiling via `pyroscope-io` Python SDK
+- `cachetools.TTLCache` (with optional plain `dict` adapter for hot-path syscall elimination)
+- Python 3.13+ on CPython
+
 ### Recommendations for Production
 
 ⚠️ **This setup is optimized for local development and benchmarking**. Do NOT use these configurations in production without modifications:
@@ -938,6 +972,7 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🎯 Short-term Goals (Next 3-6 months)
 
 #### Additional Framework Support
+- [ ] **Python**: Flask, FastAPI, AIOHTTP implementations
 - [ ] **Helm charts** for easy Kubernetes deployment
 - [ ] **ArgoCD manifests** for GitOps workflows
 - [ ] **Ktor**: Kotlin-based asynchronous framework
@@ -985,7 +1020,9 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 - [ ] **Chaos engineering** integration (latency injection, failures)
 
 #### Ecosystem Expansion
-- [ ] **Python frameworks** (FastAPI, Django, Flask)
+- [ ] **Django** Uvicorn server ASGI implementation
+- [ ] **Python frameworks** (FastAPI, Flask, AIOHTTP)
+- [ ] **Python runtimes** (CPython-FT, Nuitka)
 - [ ] **Node.js frameworks** (Express, Fastify, NestJS)
 - [ ] **.NET implementations** (ASP.NET Core minimal APIs)
 - [ ] **Polyglot microservices** benchmark scenarios
@@ -1036,6 +1073,7 @@ To add a new framework or language implementation, please include:
 ### Code Style Guidelines
 
 - **Java**: Follow Google Java Style Guide (enforced by Checkstyle)
+- **Python**: Follow PEP 8 (enforced by Ruff)
 - **Go**: Use `gofmt` and follow standard Go conventions
 - **Docker**: Multi-stage builds preferred, pin versions explicitly
 - **Documentation**: Use clear headers, code examples, and practical explanations
@@ -1121,6 +1159,7 @@ This project builds upon amazing open-source tools and frameworks. Special thank
 - [Dropwizard](https://www.dropwizard.io/) - Production-ready RESTful web services framework
 - [Vert.x](https://vertx.io/) - Reactive, event-driven applications on the JVM
 - [Pekko](https://pekko.apache.org/) - Reactive HTTP toolkit on the Pekko actor system (Apache)
+- [Django](https://www.djangoproject.com/) - The web framework for perfectionists with deadlines
 - [wrk2](https://github.com/giltene/wrk2) - Constant throughput HTTP benchmarking tool
 - [Docker](https://www.docker.com/) - Containerization platform
 
