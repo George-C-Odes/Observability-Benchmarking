@@ -38,23 +38,16 @@ import os
 import sys
 from typing import TYPE_CHECKING, Any, Callable
 
+from obbench_django_common.infrastructure.optional_exceptions import (
+    NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
+)
+
 if TYPE_CHECKING:
     from opentelemetry.sdk.resources import Resource
 
 logger = logging.getLogger("hello")
 
 _EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
-_NON_FATAL_OTEL_EXCEPTIONS = (
-    AttributeError,
-    ImportError,
-    LookupError,
-    OSError,
-    RuntimeError,
-    TypeError,
-    ValueError,
-)
-
-
 class _ContextDetachFilter(logging.Filter):
     """Suppress benign 'Failed to detach context' errors from OTel.
 
@@ -116,7 +109,7 @@ def _run_optional_otel_step(
     """
     try:
         action()
-    except _NON_FATAL_OTEL_EXCEPTIONS:
+    except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.log(failure_level, failure_message, exc_info=True)
         return False
     return True

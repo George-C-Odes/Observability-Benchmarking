@@ -37,12 +37,19 @@ benchmarking this workload:
 
 ## Local quality gates
 
-This module executes the shared `obbench_django_common.tests` suite from
-`services/python/django/gunicorn/common`, currently 39 tests covering both
-runtime modules' shared code paths.
+This module executes the shared 39-test suite
+`obbench_django_common.tests` from `services/python/django/gunicorn/common`,
+covering both runtime modules' shared code paths. To match CI locally, run the
+shared `common` checks once before the module-specific steps.
 
 ```powershell
+cd ../common
+python -m compileall src
+python -m ruff check .
+
+cd ../ASGI
 python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+python -m compileall manage.py hello_project gunicorn.conf.py
 python -m ruff check .
 python manage.py check
 $env:OTEL_SDK_DISABLED="true"

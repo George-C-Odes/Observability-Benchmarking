@@ -49,7 +49,18 @@ class PyroscopeSetupTests(TestCase):
                 "OTEL_SERVICE_NAME": "django-platform",
             },
             clear=False,
-        ), mock.patch.dict(sys.modules, {"pyroscope": pyroscope_module}, clear=False):
+        ), mock.patch.dict(
+            sys.modules,
+            {"pyroscope": pyroscope_module},
+            clear=False,
+        ), mock.patch.object(
+            pyroscope_setup,
+            "_register_span_processor",
+            return_value=True,
+        ), mock.patch.object(
+            pyroscope_setup.logger,
+            "info",
+        ) as info_log:
             pyroscope_setup.configure_pyroscope()
 
         pyroscope_module.LOGGER.setLevel.assert_called_once_with(logging.WARNING)
@@ -58,6 +69,14 @@ class PyroscopeSetupTests(TestCase):
             server_address="http://pyroscope:4040",
             enable_logging=True,
             tags={"service": "django-platform", "env": "dev"},
+        )
+        info_log.assert_any_call(
+            "pyroscope configured: app=%s, server=%s",
+            "agent/django-platform",
+            "http://pyroscope:4040",
+        )
+        info_log.assert_any_call(
+            "pyroscope span-processor registered (trace→profile correlation active)"
         )
 
     def test_configure_pyroscope_disables_native_logging_when_level_is_off(self) -> None:
@@ -75,11 +94,31 @@ class PyroscopeSetupTests(TestCase):
                 "OTEL_SERVICE_NAME": "django-reactive",
             },
             clear=False,
-        ), mock.patch.dict(sys.modules, {"pyroscope": pyroscope_module}, clear=False):
+        ), mock.patch.dict(
+            sys.modules,
+            {"pyroscope": pyroscope_module},
+            clear=False,
+        ), mock.patch.object(
+            pyroscope_setup,
+            "_register_span_processor",
+            return_value=False,
+        ), mock.patch.object(
+            pyroscope_setup.logger,
+            "info",
+        ) as info_log:
             pyroscope_setup.configure_pyroscope()
 
         pyroscope_module.LOGGER.setLevel.assert_called_once_with(logging.WARNING)
         self.assertFalse(pyroscope_module.configure.call_args.kwargs["enable_logging"])
+        info_log.assert_any_call(
+            "pyroscope configured: app=%s, server=%s",
+            "agent/django-reactive",
+            "http://pyroscope:4040",
+        )
+        self.assertNotIn(
+            mock.call("pyroscope span-processor registered (trace→profile correlation active)"),
+            info_log.mock_calls,
+        )
 
     def test_configure_pyroscope_logs_warning_when_profiler_configuration_fails(self) -> None:
         pyroscope_module = types.ModuleType("pyroscope")

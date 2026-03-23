@@ -17,16 +17,11 @@ import logging
 import os
 from typing import Any
 
-logger = logging.getLogger("hello")
-_NON_FATAL_PYROSCOPE_EXCEPTIONS = (
-    AttributeError,
-    ImportError,
-    LookupError,
-    OSError,
-    RuntimeError,
-    TypeError,
-    ValueError,
+from obbench_django_common.infrastructure.optional_exceptions import (
+    NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
 )
+
+logger = logging.getLogger("hello")
 
 
 class _State:
@@ -86,7 +81,7 @@ def _configure_profiler(pyroscope_module: Any, app_name: str, server_address: st
     )
 
 
-def _register_span_processor() -> None:
+def _register_span_processor() -> bool:
     from opentelemetry import trace  # type: ignore[import-untyped]
     from pyroscope.otel import PyroscopeSpanProcessor  # type: ignore[import-untyped]
 
@@ -102,9 +97,10 @@ def _register_span_processor() -> None:
             "could not register pyroscope span-processor: TracerProvider has no "
             "add_span_processor"
         )
-        return
+        return False
 
     span_processor_adder(PyroscopeSpanProcessor())
+    return True
 
 
 def configure_pyroscope() -> None:
@@ -136,14 +132,14 @@ def configure_pyroscope() -> None:
 
     try:
         import pyroscope  # type: ignore[import-untyped]
-    except ImportError:
+    except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.warning("pyroscope setup failed", exc_info=True)
         return
 
     try:
         _configure_profiler(pyroscope, app_name, server_address)
         logger.info("pyroscope configured: app=%s, server=%s", app_name, server_address)
-    except _NON_FATAL_PYROSCOPE_EXCEPTIONS:
+    except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.warning("pyroscope setup failed", exc_info=True)
         return  # no point wiring the span processor if the profiler is down
 
@@ -157,7 +153,7 @@ def configure_pyroscope() -> None:
     #   https://github.com/grafana/otel-profiling-python
     #   https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
     try:
-        _register_span_processor()
-        logger.info("pyroscope span-processor registered (trace→profile correlation active)")
-    except _NON_FATAL_PYROSCOPE_EXCEPTIONS:
+        if _register_span_processor():
+            logger.info("pyroscope span-processor registered (trace→profile correlation active)")
+    except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.warning("pyroscope span-processor registration failed", exc_info=True)
