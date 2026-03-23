@@ -17,41 +17,41 @@ Where details differ between documentation and code/config, the repository sourc
 
 The table below is a curated summary (RPS rounded to the closest thousand) for CPU-limited service containers (2 vCPUs).
 
-| Framework  | Runtime | Mode     | RPS  | Peak Mem (MB) | Image Size (MB) |
-|------------|---------|----------|------|---------------|-----------------|
-| Spring     | JVM     | Platform | 21k  | 552           | 246             |
-| Spring     | JVM     | Virtual  | 17k  | 439           | 246             |
-| Spring     | JVM     | Reactive | 14k  | 427           | 277             |
-| Spring     | Native  | Platform | 10k  | 237           | 388             |
-| Spring     | Native  | Virtual  | 11k  | 163           | 388             |
-| Spring     | Native  | Reactive | 7k   | 176           | 447             |
-| Quarkus    | JVM     | Platform | 37k  | 540           | 235             |
-| Quarkus    | JVM     | Virtual  | 45k  | 540           | 235             |
-| Quarkus    | JVM     | Reactive | 49k  | 540           | 235             |
-| Quarkus    | Native  | Platform | 21k  | 270           | 636             |
-| Quarkus    | Native  | Virtual  | 27k  | 270           | 636             |
-| Quarkus    | Native  | Reactive | 22k  | 270           | 636             |
-| Micronaut  | JVM     | Platform | 31k  | 441           | 193             |
-| Micronaut  | JVM     | Virtual  | 38k  | 441           | 193             |
-| Micronaut  | JVM     | Reactive | 33k  | 441           | 193             |
-| Micronaut  | Native  | Platform | 17k  | 165           | 349             |
-| Micronaut  | Native  | Virtual  | 17k  | 165           | 349             |
-| Micronaut  | Native  | Reactive | 15k  | 165           | 349             |
-| Helidon SE | JVM     | Virtual  | 65k  | 430           | 169             |
-| Helidon SE | Native  | Virtual  | 37k  | 195           | 253             |
-| Helidon MP | JVM     | Virtual  | 15k  | 463           | 189             |
-| Helidon MP | Native  | Virtual  | 10k  | 202           | 356             |
-| Spark      | JVM     | Platform | 35k  | 559           | 216             |
-| Spark      | JVM     | Virtual  | 25k  | 395           | 216             |
-| Javalin    | JVM     | Platform | 29k  | 754           | 219             |
-| Javalin    | JVM     | Virtual  | 26k  | 510           | 219             |
-| Dropwizard | JVM     | Platform | 17k  | 613           | 246             |
-| Dropwizard | JVM     | Virtual  | 16k  | 529           | 246             |
-| Vert.x     | JVM     | Reactive | 52k  | 541           | 220             |
-| Pekko      | JVM     | Reactive | 30k  | 693           | 266             |
-| Go         | Native  | Virtual  | 24k  | 120           | 36              |
-| Django     | CPython | Platform | 1k   | 161           | 306             |
-| Django     | CPython | Reactive | 0.7k | 200           | 309             |
+| Framework  | Runtime | Mode       | RPS  | Peak Mem (MB) | Image Size (MB) |
+|------------|---------|------------|------|---------------|-----------------|
+| Spring     | JVM     | Platform   | 21k  | 552           | 246             |
+| Spring     | JVM     | Virtual    | 17k  | 439           | 246             |
+| Spring     | JVM     | Reactive   | 14k  | 427           | 277             |
+| Spring     | Native  | Platform   | 10k  | 237           | 388             |
+| Spring     | Native  | Virtual    | 11k  | 163           | 388             |
+| Spring     | Native  | Reactive   | 7k   | 176           | 447             |
+| Quarkus    | JVM     | Platform   | 37k  | 540           | 235             |
+| Quarkus    | JVM     | Virtual    | 45k  | 540           | 235             |
+| Quarkus    | JVM     | Reactive   | 49k  | 540           | 235             |
+| Quarkus    | Native  | Platform   | 21k  | 270           | 636             |
+| Quarkus    | Native  | Virtual    | 27k  | 270           | 636             |
+| Quarkus    | Native  | Reactive   | 22k  | 270           | 636             |
+| Micronaut  | JVM     | Platform   | 31k  | 441           | 193             |
+| Micronaut  | JVM     | Virtual    | 38k  | 441           | 193             |
+| Micronaut  | JVM     | Reactive   | 33k  | 441           | 193             |
+| Micronaut  | Native  | Platform   | 17k  | 165           | 349             |
+| Micronaut  | Native  | Virtual    | 17k  | 165           | 349             |
+| Micronaut  | Native  | Reactive   | 15k  | 165           | 349             |
+| Helidon SE | JVM     | Virtual    | 65k  | 430           | 169             |
+| Helidon SE | Native  | Virtual    | 37k  | 195           | 253             |
+| Helidon MP | JVM     | Virtual    | 15k  | 463           | 189             |
+| Helidon MP | Native  | Virtual    | 10k  | 202           | 356             |
+| Spark      | JVM     | Platform   | 35k  | 559           | 216             |
+| Spark      | JVM     | Virtual    | 25k  | 395           | 216             |
+| Javalin    | JVM     | Platform   | 29k  | 754           | 219             |
+| Javalin    | JVM     | Virtual    | 26k  | 510           | 219             |
+| Dropwizard | JVM     | Platform   | 17k  | 613           | 246             |
+| Dropwizard | JVM     | Virtual    | 16k  | 529           | 246             |
+| Vert.x     | JVM     | Reactive   | 52k  | 541           | 220             |
+| Pekko      | JVM     | Reactive   | 30k  | 693           | 266             |
+| Go         | Native  | Goroutines | 24k  | 120           | 36              |
+| Django     | CPython | Platform   | 1k   | 161           | 306             |
+| Django     | CPython | Reactive   | 0.7k | 200           | 309             |
 
 ### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
