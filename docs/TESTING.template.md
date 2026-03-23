@@ -44,8 +44,8 @@ The project implements a comprehensive testing strategy covering:
 | Vert.x JVM     | ✅ 14 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Pekko JVM      | ✅ 3 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Go Fiber       | ✅ 7 tests     | ✅ Covered          | ✅ Metrics/Traces    |
-| Django (Py)    | ✅ 15 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **176 tests** | **100+ scenarios** | **Full stack**      |
+| Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| **Total**      | **200 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -370,11 +370,14 @@ OpenTelemetry: Latest stable
 
 ```
 services/python/django/gunicorn/common/src/obbench_django_common/tests/
-├── test_views.py           # 6 tests - endpoint behavior
-├── test_hello_service.py   # 2 tests - service logic
-├── test_cache_factory.py   # 3 tests - cache initialization
-├── test_pyroscope_setup.py # 3 tests - profiling setup
-└── test_log_formatter.py   # 1 test  - log format validation
+├── test_views.py           # 6 tests  - endpoint behavior
+├── test_hello_service.py   # 2 tests  - service logic
+├── test_cache_factory.py   # 3 tests  - cache initialization
+├── test_boot.py            # 3 tests  - bootstrap delegation and error flow
+├── test_otel_setup.py      # 18 tests - OTel lifecycle + suppression logic
+├── test_otel_metrics.py    # 2 tests  - metrics registration + retry behavior
+├── test_pyroscope_setup.py # 4 tests  - profiling setup + failure handling
+└── test_log_formatter.py   # 1 test   - log format validation
 ```
 
 #### Running Django Tests
@@ -403,15 +406,19 @@ cd -
 - ✅ HTTP endpoints (`/hello/platform`, `/hello/reactive`)
 - ✅ Service logic and response format
 - ✅ Cache factory initialization
-- ✅ Pyroscope profiling setup
+- ✅ Bootstrap wiring and observability delegation
+- ✅ OpenTelemetry SDK setup, shutdown, and suppression logic
+- ✅ OpenTelemetry metric registration and retry behavior
+- ✅ Pyroscope profiling setup and failure handling
 - ✅ Log formatting
-- ✅ OpenTelemetry wiring
+- ✅ OpenTelemetry wiring and test-safe disable path
 
 **Key Features Tested**:
 - Django request/response lifecycle
 - WSGI (platform) and ASGI (reactive) modes
-- OpenTelemetry Python SDK integration
-- Custom metric counter and cache behavior
+- Startup / post-fork observability initialization behavior
+- OpenTelemetry Python SDK integration and guarded optional setup
+- Custom metric counter registration, retry, and cache behavior
 
 ## Integration Tests
 
