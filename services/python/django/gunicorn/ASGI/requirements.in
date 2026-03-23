@@ -28,9 +28,9 @@ opentelemetry-sdk>=1.35.0
 opentelemetry-exporter-otlp-proto-grpc>=1.35.0
 grpcio>=1.73.1
 
-# Auto-instrumentation for Django
+# Auto-instrumentation for Django (handles both WSGI and ASGI natively)
 opentelemetry-instrumentation-django>=0.56b0
-# Explicit ASGI middleware instrumentation for the UvicornWorker runtime
+# ASGI instrumentation — used internally by DjangoInstrumentor for ASGI support
 opentelemetry-instrumentation-asgi>=0.56b0
 # Auto-instrumentation for logging (log correlation)
 opentelemetry-instrumentation-logging>=0.56b0
