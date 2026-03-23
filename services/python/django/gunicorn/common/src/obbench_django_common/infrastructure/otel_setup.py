@@ -42,7 +42,24 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("hello")
 
-_ASGI_EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
+_EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
+
+
+class _ContextDetachFilter(logging.Filter):
+    """Suppress benign 'Failed to detach context' errors from OTel.
+
+    Under ASGI (Uvicorn workers), Python 3.13's stricter ``contextvars``
+    causes ``ContextVar.reset(token)`` to raise ``ValueError`` when the
+    token was created in a different async ``Context``.  The OTel SDK
+    catches this and logs it at ERROR level, but the error is harmless —
+    spans are still created and exported correctly.  This filter silences
+    the noise.
+
+    Ref: https://github.com/open-telemetry/opentelemetry-python/issues/4236
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "Failed to detach context" not in record.getMessage()
 
 
 class _State:
@@ -86,7 +103,7 @@ def instrument_app() -> None:
     try:
         from opentelemetry.instrumentation.django import DjangoInstrumentor
 
-        DjangoInstrumentor().instrument()
+        DjangoInstrumentor().instrument(excluded_urls=_EXCLUDED_URLS)
         logger.info("DjangoInstrumentor applied")
     except Exception:
         logger.debug("DjangoInstrumentor unavailable", exc_info=True)
@@ -102,28 +119,25 @@ def instrument_app() -> None:
 
 
 def wrap_asgi_application(application: Any) -> Any:
-    """Wrap an ASGI application with OTel middleware for request tracing.
+    """Return the ASGI application unchanged (no additional wrapping needed).
 
-    ``DjangoInstrumentor`` inserts Django middleware, which is sufficient for the
-    WSGI runtime in this repository. Under ``gunicorn`` + ``UvicornWorker`` the
-    reactive ASGI entrypoint benefits from an explicit ASGI middleware wrapper so
-    inbound requests always create server spans.
+    ``DjangoInstrumentor`` (applied in ``instrument_app()``) already adds
+    ASGI-aware tracing middleware inside Django's middleware stack.  An
+    additional ``OpenTelemetryMiddleware`` wrapper here created **double
+    instrumentation**: two nested ``use_span()`` calls each attaching and
+    detaching ``contextvars`` tokens.
+
+    Under Python 3.13 the stricter ``ContextVar.reset()`` raised
+    ``ValueError("was created in a different Context")`` whenever the
+    async event loop resumed a coroutine in a different context copy —
+    producing the repeated "Failed to detach context" ERROR log (benign,
+    but noisy — up to 41 occurrences per benchmark run).
+
+    Removing the extra layer eliminates the primary trigger.  A logging
+    filter (``_ContextDetachFilter``) is also installed as a safety net
+    for any remaining edge-case occurrences.
     """
-    if _sdk_disabled():
-        return application
-
-    try:
-        from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
-    except ImportError:
-        logger.debug("ASGI OpenTelemetry middleware unavailable", exc_info=True)
-        return application
-
-    if isinstance(application, OpenTelemetryMiddleware):
-        return application
-
-    wrapped = OpenTelemetryMiddleware(application, excluded_urls=_ASGI_EXCLUDED_URLS)
-    logger.info("ASGI OpenTelemetry middleware applied")
-    return wrapped
+    return application
 
 
 # ---------------------------------------------------------------------------
@@ -145,6 +159,10 @@ def configure_sdk() -> None:
         _State.sdk_configured = True
         return
     _State.sdk_configured = True
+
+    # Suppress benign "Failed to detach context" noise that can still
+    # occur under ASGI + Python 3.13 (see _ContextDetachFilter docstring).
+    logging.getLogger("opentelemetry.context").addFilter(_ContextDetachFilter())
 
     # noinspection PyBroadException
     try:
