@@ -379,15 +379,25 @@ services/python/django/gunicorn/common/src/obbench_django_common/tests/
 
 #### Running Django Tests
 
+Tests use Django's built-in test runner (`unittest`-based). They require a
+Django `manage.py` entry-point, so run from either the **WSGI** or **ASGI**
+module directory (both share the same common test suite):
+
 ```bash
-cd services/python/django/gunicorn/common
+# From the repository root — run all common tests via the WSGI module
+cd services/python/django/gunicorn/WSGI
+OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbosity=2
+cd -
 
-# Run all tests
-python -m pytest
-
-# Run with verbose output
-python -m pytest -v
+# Or via the ASGI module
+cd services/python/django/gunicorn/ASGI
+OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbosity=2
+cd -
 ```
+
+> **Note:** `OTEL_SDK_DISABLED=true` prevents the OpenTelemetry SDK from
+> attempting to connect to a collector during tests.  This is the same
+> command the Dockerfiles execute at build time.
 
 **Test Coverage**:
 - ✅ HTTP endpoints (`/hello/platform`, `/hello/reactive`)
