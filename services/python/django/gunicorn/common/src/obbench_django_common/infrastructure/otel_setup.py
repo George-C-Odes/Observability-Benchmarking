@@ -206,12 +206,11 @@ def _configure_log_export(resource: Resource) -> None:
     underscore prefix because the OTel Python logging API was marked
     "experimental".  These are the documented public entry-points.
     """
-    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-
     from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
         OTLPLogExporter,
     )
+    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 
     logger_provider = LoggerProvider(resource=resource)
     logger_provider.add_log_record_processor(

@@ -86,6 +86,20 @@ Run the shared unit-test suite for both modules without Docker (from the reposit
 cd services/python/django/gunicorn/WSGI; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../..
 ```
 
+## Lint locally
+
+Run [Ruff](https://docs.astral.sh/ruff/) across **all** Django modules (from the repository root):
+
+```powershell
+python -m ruff check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
+```
+
+Auto-fix any fixable issues (e.g. import sorting):
+
+```powershell
+python -m ruff check --fix services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
+```
+
 ## Docker builds
 
 ```powershell
