@@ -78,15 +78,51 @@ Then re-install into the local virtualenv (filtering out `pyroscope-io` which on
 pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.txt
 ```
 
-## Run tests locally
+## Run quality gates locally
 
-Run the shared 39-test suite for both modules without Docker (from the repository root):
+The Django CI workflow validates the shared `common` package once, then runs
+module-specific syntax checks, Ruff, Django system checks, and the shared
+39-test suite from both runtime modules.
+
+### Shared package checks
 
 ```powershell
-cd services/python/django/gunicorn/WSGI; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../..
+cd services/python/django/gunicorn/common
+python -m compileall src
+python -m ruff check .
+cd ../../../..
 ```
 
-The same shared 39-test suite can also be executed from `services/python/django/gunicorn/ASGI`.
+### WSGI module checks
+
+```powershell
+cd services/python/django/gunicorn/WSGI
+python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff check .
+python manage.py check
+$env:OTEL_SDK_DISABLED="true"
+python manage.py test obbench_django_common.tests --verbosity=2
+cd ../../../../..
+```
+
+### ASGI module checks
+
+```powershell
+cd services/python/django/gunicorn/ASGI
+python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff check .
+python manage.py check
+$env:OTEL_SDK_DISABLED="true"
+python manage.py test obbench_django_common.tests --verbosity=2
+cd ../../../../..
+```
+
+If you only want the shared unit suite, the final `python manage.py test
+obbench_django_common.tests --verbosity=2` command can be executed from either
+module directory.
+
 See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
 ## Lint locally

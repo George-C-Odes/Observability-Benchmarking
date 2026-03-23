@@ -402,6 +402,43 @@ cd -
 > attempting to connect to a collector during tests.  This is the same
 > command the Dockerfiles execute at build time.
 
+#### Matching the Django CI workflow locally
+
+The Django quality workflow in `.github/workflows/django_python_quality.yml`
+does more than execute tests:
+
+1. Runs syntax and Ruff checks for the shared `common` package.
+2. Installs the shared package into each runtime module environment.
+3. Runs module syntax checks, Ruff, `python manage.py check`, and the shared test suite.
+
+Use the following sequence when you want to reproduce the CI gates locally:
+
+```bash
+# Shared package checks
+cd services/python/django/gunicorn/common
+python -m compileall src
+python -m ruff check .
+
+# WSGI module checks
+cd ../WSGI
+python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff check .
+python manage.py check
+OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbosity=2
+
+# ASGI module checks
+cd ../ASGI
+python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff check .
+python manage.py check
+OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbosity=2
+```
+
+`services/python/django/README.md` includes PowerShell-friendly equivalents for
+the same flow.
+
 **Test Coverage**:
 - ✅ HTTP endpoints (`/hello/platform`, `/hello/reactive`)
 - ✅ Service logic and response format

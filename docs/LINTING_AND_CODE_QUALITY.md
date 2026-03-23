@@ -78,7 +78,9 @@ The following items are suppressed from Checkstyle checks:
 Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all-in-one linter and formatter, enforcing PEP 8 and import ordering.
 
 ### Configuration
-Each Python module contains a `pyproject.toml` with Ruff settings:
+The shared Django package contains the Ruff configuration in
+`services/python/django/gunicorn/common/pyproject.toml`, which is used while
+linting `common`, `WSGI`, and `ASGI`:
 - **Target version**: Python 3.13
 - **Line length**: 100 characters
 - **Rules**: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort import ordering)
@@ -86,16 +88,38 @@ Each Python module contains a `pyproject.toml` with Ruff settings:
 ### Running Ruff
 
 ```bash
-# Check all Python services
+# Check all Django Python paths
 cd services/python/django/gunicorn/WSGI
-ruff check .
+python -m ruff check .
 
 cd services/python/django/gunicorn/ASGI
-ruff check .
+python -m ruff check .
 
 cd services/python/django/gunicorn/common
-ruff check .
+python -m ruff check .
 ```
+
+### Additional Django quality checks
+
+The Django CI workflow also performs syntax validation and Django system checks:
+
+```bash
+# Shared package syntax check
+cd services/python/django/gunicorn/common
+python -m compileall src
+
+# Runtime module syntax + Django checks
+cd ../WSGI
+python -m compileall manage.py hello_project gunicorn.conf.py
+python manage.py check
+
+cd ../ASGI
+python -m compileall manage.py hello_project gunicorn.conf.py
+python manage.py check
+```
+
+For full CI parity, run the shared test suite from each module as documented in
+`docs/TESTING.md`.
 
 Ruff is also available as an IDE plugin for real-time feedback.
 
