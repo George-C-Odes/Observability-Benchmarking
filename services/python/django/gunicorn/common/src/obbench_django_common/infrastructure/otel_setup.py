@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -54,6 +55,16 @@ class _ContextDetachFilter(logging.Filter):
     catches this and logs it at ERROR level, but the error is harmless —
     spans are still created and exported correctly.  This filter silences
     the noise.
+
+    The filter is only installed when:
+      - the ``OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS`` env var is explicitly
+        ``true`` / ``1`` / ``yes``, **or**
+      - the runtime is the ASGI variant (``HELLO_VARIANT=reactive``) **and**
+        Python ≥ 3.13.
+
+    This avoids hiding genuine context-propagation issues in WSGI
+    workers or older Python versions where the error would signal a real
+    bug.
 
     Ref: https://github.com/open-telemetry/opentelemetry-python/issues/4236
     """
@@ -75,6 +86,44 @@ def _sdk_disabled() -> bool:
         "1",
         "yes",
     )
+
+
+def should_suppress_context_detach_errors() -> bool:
+    """Decide whether to install ``_ContextDetachFilter``.
+
+    The decision follows this precedence:
+
+    1. If ``OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS`` is explicitly
+       ``true`` / ``1`` / ``yes``, suppression is **always enabled**.
+    2. If it is explicitly ``false`` / ``0`` / ``no``, suppression is
+       **always disabled**, even when running under ASGI on Python ≥ 3.13.
+    3. If it is unset or empty, suppression is enabled only when the
+       runtime is the ASGI variant (``HELLO_VARIANT=reactive``) **and**
+       Python ≥ 3.13 (where the stricter ``contextvars`` triggers the
+       benign error).
+
+    In all other cases the filter is **not** installed so that genuine
+    context-propagation failures remain visible, and the environment
+    variable (when set) always overrides the auto-detection.
+    """
+    explicit = os.environ.get(
+        "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", ""
+    ).strip().lower()
+    if explicit in ("true", "1", "yes"):
+        return True
+    if explicit in ("false", "0", "no"):
+        return False
+
+    # Auto-detect: ASGI variant + Python 3.13+
+    is_asgi = (
+        os.environ.get("HELLO_VARIANT", "platform").strip().lower() == "reactive"
+    )
+    return is_asgi and sys.version_info >= (3, 13)
+
+
+def _should_suppress_context_detach_errors() -> bool:
+    """Backward-compatible private alias for ``should_suppress_context_detach_errors()``."""
+    return should_suppress_context_detach_errors()
 
 
 # ---------------------------------------------------------------------------
@@ -162,7 +211,19 @@ def configure_sdk() -> None:
 
     # Suppress benign "Failed to detach context" noise that can still
     # occur under ASGI + Python 3.13 (see _ContextDetachFilter docstring).
-    logging.getLogger("opentelemetry.context").addFilter(_ContextDetachFilter())
+    explicit_suppress = os.environ.get(
+        "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", ""
+    ).strip().lower()
+    if should_suppress_context_detach_errors():
+        logging.getLogger("opentelemetry.context").addFilter(_ContextDetachFilter())
+        if explicit_suppress in ("true", "1", "yes"):
+            reason = "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS=%s" % explicit_suppress
+        else:
+            reason = "HELLO_VARIANT=%s, Python %s" % (
+                os.environ.get("HELLO_VARIANT", "platform"),
+                ".".join(map(str, sys.version_info[:3])),
+            )
+        logger.debug("Installed _ContextDetachFilter (%s)", reason)
 
     # noinspection PyBroadException
     try:
