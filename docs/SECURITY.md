@@ -23,10 +23,11 @@ All containers run as non-root users to minimize security risks:
 - Configuration: `services/java/spring/jvm/Dockerfile`
 
 #### Django Services
-- User: `nonroot:nonroot` (distroless base image default)
+- User: `nonroot` (UID 65532, GID 65532), explicitly created in the Dockerfile
+- Base image: `python:<version>-slim-bookworm`
 - Configuration: `services/python/django/gunicorn/WSGI/Dockerfile`, `services/python/django/gunicorn/ASGI/Dockerfile`
 
-**Note**: UID/GID 1001 is chosen for OpenShift compatibility, as it falls within the standard range for non-root users.
+**Note**: UID/GID 1001 is chosen for OpenShift compatibility, as it falls within the standard range for non-root users. Django services instead use UID/GID 65532.
 
 ### File Permissions
 
