@@ -4,6 +4,7 @@ import os
 import sys
 from unittest import TestCase, mock
 
+from obbench_django_common.infrastructure import otel_setup
 from obbench_django_common.infrastructure.otel_setup import (
     should_suppress_context_detach_errors,
 )
@@ -148,3 +149,72 @@ class ShouldSuppressContextDetachErrorsTests(TestCase):
         with mock.patch.dict(os.environ, env, clear=True), \
              mock.patch.object(sys, "version_info", (3, 13, 0)):
             self.assertTrue(should_suppress_context_detach_errors())
+
+class OTelSetupLifecycleTests(TestCase):
+    def setUp(self) -> None:
+        otel_setup.reset_otel_setup_state()
+        self.addCleanup(otel_setup.reset_otel_setup_state)
+        self._otel_sdk_disabled_env = mock.patch.dict(
+            os.environ,
+            {"OTEL_SDK_DISABLED": "false"},
+            clear=False,
+        )
+        self._otel_sdk_disabled_env.start()
+        self.addCleanup(self._otel_sdk_disabled_env.stop)
+
+    @staticmethod
+    def test_instrument_app_applies_available_instrumentors() -> None:
+        with mock.patch.object(otel_setup, "_apply_django_instrumentor") as django_inst, \
+             mock.patch.object(otel_setup, "_apply_logging_instrumentor") as logging_inst:
+            otel_setup.instrument_app()
+
+        django_inst.assert_called_once_with()
+        logging_inst.assert_called_once_with()
+
+    def test_instrument_app_continues_when_django_instrumentor_fails(self) -> None:
+        with mock.patch.object(
+            otel_setup,
+            "_apply_django_instrumentor",
+            side_effect=RuntimeError("boom"),
+        ), mock.patch.object(otel_setup, "_apply_logging_instrumentor") as logging_inst, \
+             self.assertLogs("hello", level="DEBUG") as logs:
+            otel_setup.instrument_app()
+
+        logging_inst.assert_called_once_with()
+        self.assertTrue(
+            any("DjangoInstrumentor unavailable" in message for message in logs.output)
+        )
+
+    def test_configure_sdk_logs_warning_when_sdk_wiring_fails(self) -> None:
+        with mock.patch.object(
+            otel_setup,
+            "should_suppress_context_detach_errors",
+            return_value=False,
+        ), mock.patch.object(
+            otel_setup,
+            "_do_configure_sdk",
+            side_effect=RuntimeError("boom"),
+        ), self.assertLogs("hello", level="WARNING") as logs:
+            otel_setup.configure_sdk()
+
+        self.assertTrue(
+            any(
+                "OTel SDK setup failed — telemetry disabled for this worker" in message
+                for message in logs.output
+            )
+        )
+
+    def test_shutdown_sdk_continues_after_trace_shutdown_failure(self) -> None:
+        with mock.patch.object(
+            otel_setup,
+            "_shutdown_traces_and_metrics",
+            side_effect=RuntimeError("boom"),
+        ), mock.patch.object(otel_setup, "_shutdown_logs") as shutdown_logs, \
+             self.assertLogs("hello", level="DEBUG") as logs:
+            otel_setup.shutdown_sdk()
+
+        shutdown_logs.assert_called_once_with()
+        self.assertTrue(
+            any("OTel SDK shutdown error (traces/metrics)" in message for message in logs.output)
+        )
+

@@ -63,6 +63,11 @@ async def reactive(request: HttpRequest) -> HttpResponse:
     return _json_string_response(result)
 
 
+def reset_cached_hello_service() -> None:
+    """Clear the cached service reference for isolated tests and reload scenarios."""
+    _State.svc = None
+
+
 def _json_string_response(result: str) -> HttpResponse:
     """Return a JSON string response with minimal serialization overhead."""
     # The result is always a plain-ASCII string (e.g. "Hello from Django

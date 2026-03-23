@@ -9,11 +9,10 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import pyroscope_setup
 
 
-# noinspection PyProtectedMember
 class PyroscopeSetupTests(TestCase):
     def setUp(self) -> None:
-        pyroscope_setup._State.configured = False
-        self.addCleanup(setattr, pyroscope_setup._State, "configured", False)
+        pyroscope_setup.reset_pyroscope_state()
+        self.addCleanup(pyroscope_setup.reset_pyroscope_state)
 
     def test_resolve_pyroscope_logging_maps_supported_levels(self) -> None:
         cases = {
@@ -28,8 +27,11 @@ class PyroscopeSetupTests(TestCase):
         }
 
         for raw_level, expected in cases.items():
-            with self.subTest(raw_level=raw_level):
-                self.assertEqual(expected, pyroscope_setup._resolve_pyroscope_logging(raw_level))
+            self.assertEqual(
+                expected,
+                pyroscope_setup.resolve_pyroscope_logging(raw_level),
+                msg=f"unexpected mapping for raw_level={raw_level!r}",
+            )
 
     @staticmethod
     def test_configure_pyroscope_honors_warn_level() -> None:
