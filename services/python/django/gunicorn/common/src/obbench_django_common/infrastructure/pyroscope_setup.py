@@ -15,8 +15,18 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
 logger = logging.getLogger("hello")
+_NON_FATAL_PYROSCOPE_EXCEPTIONS = (
+    AttributeError,
+    ImportError,
+    LookupError,
+    OSError,
+    RuntimeError,
+    TypeError,
+    ValueError,
+)
 
 
 class _State:
@@ -59,6 +69,44 @@ def reset_pyroscope_state() -> None:
     _State.configured = False
 
 
+def _configure_profiler(pyroscope_module: Any, app_name: str, server_address: str) -> None:
+    pyroscope_logging_enabled, pyroscope_logger_level = resolve_pyroscope_logging(
+        os.environ.get("PYROSCOPE_LOG_LEVEL", "warn")
+    )
+    pyroscope_module.LOGGER.setLevel(pyroscope_logger_level)
+
+    pyroscope_module.configure(
+        application_name=app_name,
+        server_address=server_address,
+        enable_logging=pyroscope_logging_enabled,
+        tags={
+            "service": os.environ.get("OTEL_SERVICE_NAME", "django"),
+            "env": "dev",
+        },
+    )
+
+
+def _register_span_processor() -> None:
+    from opentelemetry import trace  # type: ignore[import-untyped]
+    from pyroscope.otel import PyroscopeSpanProcessor  # type: ignore[import-untyped]
+
+    provider = trace.get_tracer_provider()
+    # The zero-code agent may wrap the SDK TracerProvider in a Proxy.
+    real_provider = getattr(provider, "_real_provider", provider)
+    span_processor_adder = getattr(real_provider, "add_span_processor", None)
+    if span_processor_adder is None:
+        span_processor_adder = getattr(provider, "add_span_processor", None)
+
+    if span_processor_adder is None:
+        logger.warning(
+            "could not register pyroscope span-processor: TracerProvider has no "
+            "add_span_processor"
+        )
+        return
+
+    span_processor_adder(PyroscopeSpanProcessor())
+
+
 def configure_pyroscope() -> None:
     """Start Pyroscope profiling with span-profile correlation if enabled."""
     if _State.configured:
@@ -86,28 +134,16 @@ def configure_pyroscope() -> None:
         )
         return
 
-    # noinspection PyBroadException
-    # Optional dependency boundary: any import/configuration failure should disable
-    # profiling rather than prevent the Django worker from starting.
     try:
         import pyroscope  # type: ignore[import-untyped]
+    except ImportError:
+        logger.warning("pyroscope setup failed", exc_info=True)
+        return
 
-        pyroscope_logging_enabled, pyroscope_logger_level = resolve_pyroscope_logging(
-            os.environ.get("PYROSCOPE_LOG_LEVEL", "warn")
-        )
-        pyroscope.LOGGER.setLevel(pyroscope_logger_level)
-
-        pyroscope.configure(
-            application_name=app_name,
-            server_address=server_address,
-            enable_logging=pyroscope_logging_enabled,
-            tags={
-                "service": os.environ.get("OTEL_SERVICE_NAME", "django"),
-                "env": "dev",
-            },
-        )
+    try:
+        _configure_profiler(pyroscope, app_name, server_address)
         logger.info("pyroscope configured: app=%s, server=%s", app_name, server_address)
-    except Exception:
+    except _NON_FATAL_PYROSCOPE_EXCEPTIONS:
         logger.warning("pyroscope setup failed", exc_info=True)
         return  # no point wiring the span processor if the profiler is down
 
@@ -120,26 +156,8 @@ def configure_pyroscope() -> None:
     # Reference:
     #   https://github.com/grafana/otel-profiling-python
     #   https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
-    # noinspection PyBroadException
-    # Trace→profile correlation is best-effort optional observability wiring;
-    # any failure here should only degrade that feature, not request handling.
     try:
-        from opentelemetry import trace  # type: ignore[import-untyped]
-        from pyroscope.otel import PyroscopeSpanProcessor  # type: ignore[import-untyped]
-
-        provider = trace.get_tracer_provider()
-        # The zero-code agent may wrap the SDK TracerProvider in a Proxy.
-        real_provider = getattr(provider, "_real_provider", provider)
-        if not hasattr(real_provider, "add_span_processor"):
-            real_provider = provider  # fallback: try the outer object
-
-        if hasattr(real_provider, "add_span_processor"):
-            real_provider.add_span_processor(PyroscopeSpanProcessor())
-            logger.info("pyroscope span-processor registered (trace→profile correlation active)")
-        else:
-            logger.warning(
-                "could not register pyroscope span-processor: TracerProvider has no "
-                "add_span_processor"
-            )
-    except Exception:
+        _register_span_processor()
+        logger.info("pyroscope span-processor registered (trace→profile correlation active)")
+    except _NON_FATAL_PYROSCOPE_EXCEPTIONS:
         logger.warning("pyroscope span-processor registration failed", exc_info=True)

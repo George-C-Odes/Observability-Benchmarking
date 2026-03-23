@@ -80,3 +80,22 @@ class PyroscopeSetupTests(TestCase):
 
         pyroscope_module.LOGGER.setLevel.assert_called_once_with(logging.WARNING)
         self.assertFalse(pyroscope_module.configure.call_args.kwargs["enable_logging"])
+
+    def test_configure_pyroscope_logs_warning_when_profiler_configuration_fails(self) -> None:
+        pyroscope_module = types.ModuleType("pyroscope")
+        pyroscope_module.LOGGER = mock.Mock()
+        pyroscope_module.configure = mock.Mock(side_effect=RuntimeError("boom"))
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "PYROSCOPE_ENABLED": "true",
+                "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
+                "PYROSCOPE_APPLICATION_NAME": "agent/django-platform",
+            },
+            clear=False,
+        ), mock.patch.dict(sys.modules, {"pyroscope": pyroscope_module}, clear=False), \
+             self.assertLogs("hello", level="WARNING") as logs:
+            pyroscope_setup.configure_pyroscope()
+
+        self.assertTrue(any("pyroscope setup failed" in message for message in logs.output))

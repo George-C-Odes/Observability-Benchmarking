@@ -44,6 +44,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger("hello")
 
 _EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
+_NON_FATAL_OTEL_EXCEPTIONS = (
+    AttributeError,
+    ImportError,
+    LookupError,
+    OSError,
+    RuntimeError,
+    TypeError,
+    ValueError,
+)
 
 
 class _ContextDetachFilter(logging.Filter):
@@ -101,17 +110,13 @@ def _run_optional_otel_step(
     """Run an optional OTel integration step without aborting app lifecycle.
 
     OTel setup, instrumentation, and shutdown touch third-party packages whose
-    import/setup behavior varies across environments and versions.  Those vendor
-    failures should degrade telemetry only; unexpected local bootstrap bugs are
-    handled by keeping the broad catch scoped to this explicit helper.
+    import/setup behavior varies across environments and versions.  Import,
+    capability, and runtime wiring problems should degrade telemetry only;
+    unexpected local bootstrap bugs still propagate instead of being swallowed.
     """
-    # noinspection PyBroadException
-    # Centralized optional-observability boundary: vendor setup/shutdown can fail
-    # for many non-critical reasons, but request handling and worker teardown must
-    # continue even when telemetry is partially unavailable.
     try:
         action()
-    except Exception:
+    except _NON_FATAL_OTEL_EXCEPTIONS:
         logger.log(failure_level, failure_message, exc_info=True)
         return False
     return True
