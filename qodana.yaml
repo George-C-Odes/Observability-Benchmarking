@@ -1,0 +1,52 @@
+#-------------------------------------------------------------------------------#
+#               Qodana analysis is configured by qodana.yaml file               #
+#             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
+#-------------------------------------------------------------------------------#
+
+#################################################################################
+#              WARNING: Do not store sensitive information in this file,        #
+#               as its contents will be included in the Qodana report.          #
+#################################################################################
+version: "1.0"
+
+#Specify inspection profile for code analysis
+profile:
+  name: qodana.starter
+
+#Enable inspections
+#include:
+#  - name: <SomeEnabledInspectionId>
+
+#Disable inspections
+#exclude:
+#  - name: <SomeDisabledInspectionId>
+#    paths:
+#      - <path/where/not/run/inspection>
+
+projectJDK: "25" #(Applied in CI/CD pipeline)
+
+#Execute shell command before Qodana execution (Applied in CI/CD pipeline)
+#bootstrap: sh ./prepare-qodana.sh
+
+#Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
+#plugins:
+#  - id: <plugin.id> #(plugin id can be found at https://plugins.jetbrains.com)
+
+# Quality gate. Will fail the CI/CD pipeline if any condition is not met
+# severityThresholds - configures maximum thresholds for different problem severities
+# testCoverageThresholds - configures minimum code coverage on a whole project and newly added code
+# Code Coverage is available in Ultimate and Ultimate Plus plans
+failureConditions:
+  severityThresholds:
+    # Conservative first pass: only fail on critical findings while the
+    # scoped Qodana workflow is being validated in CI.
+    critical: 0
+  
+#Qodana supports other languages, for example, Python, JavaScript, TypeScript, Go, C#, PHP
+#For all supported languages see https://www.jetbrains.com/help/qodana/linters.html
+# GitHub Actions keeps the repository root as the Qodana project so this
+# shared configuration is applied, then scopes analysis to `services/java`
+# and `utils/orchestrator` via `--only-directory` per job. Matching
+# reviewed SARIF baselines can be supplied by the workflow from
+# `.qodana/baseline/*.sarif.json` when they exist.
+linter: jetbrains/qodana-jvm-community:2025.3

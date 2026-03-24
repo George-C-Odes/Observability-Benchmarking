@@ -1,0 +1,79 @@
+#-------------------------------------------------------------------------------#
+#            Discover all capabilities of Qodana in our documentation           #
+#             https://www.jetbrains.com/help/qodana/about-qodana.html           #
+#-------------------------------------------------------------------------------#
+
+name: Qodana
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/java/**'
+      - 'utils/orchestrator/**'
+      - '.github/workflows/qodana_code_quality.yml'
+      - 'qodana.yaml'
+  push:
+    branches:
+      - main
+      - copilot/setup-github-pages-for-documentation
+    paths:
+      - 'services/java/**'
+      - 'utils/orchestrator/**'
+      - '.github/workflows/qodana_code_quality.yml'
+      - 'qodana.yaml'
+
+jobs:
+  qodana:
+    name: Qodana (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: services-java
+            source_dir: services/java
+            baseline_file: .qodana/baseline/services-java.sarif.json
+          - name: orchestrator
+            source_dir: utils/orchestrator
+            baseline_file: .qodana/baseline/orchestrator.sarif.json
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Prepare Qodana arguments
+        id: qodana_args
+        shell: bash
+        run: |
+          args="--project-dir=. --only-directory=${{ matrix.source_dir }}"
+          baseline_file="${{ matrix.baseline_file }}"
+
+          if [[ -f "$baseline_file" ]]; then
+            echo "Using Qodana baseline: $baseline_file"
+            args="$args --baseline=$baseline_file"
+          else
+            echo "No Qodana baseline found at $baseline_file; running without a baseline."
+          fi
+
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2025.3
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        with:
+          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
+          pr-mode: false
+          use-caches: true
+          post-pr-comment: false
+          use-annotations: true
+          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
+          upload-result: true
+          # quick-fixes available in Ultimate and Ultimate Plus plans
+          push-fixes: 'none'
+          # Keep the repository root as the Qodana project so the shared
+          # root qodana.yaml is applied, while limiting analysis to the
+          # intended scoped directory per matrix entry. When a reviewed
+          # baseline SARIF exists for that scope, it is applied automatically.
+          args: ${{ steps.qodana_args.outputs.args }}
