@@ -1,49 +1,42 @@
 name: Deploy GitHub Pages
 
 env:
-  # Exercise JavaScript-based GitHub Actions under the future hosted runner
-  # runtime now so Pages-related actions are validated before Node 24 becomes
-  # the default on GitHub runners.
+  # Exercise Pages-related JavaScript actions on Node 24 ahead of GitHub's default runtime migration.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: ["main"]
+    branches:
+      - main
 
-  # Republish the site after a successful Qodana run on main so the latest
-  # hosted Qodana HTML reports are available under GitHub Pages.
+  # Republish after successful main-branch Qodana runs so hosted reports stay current.
   workflow_run:
-    workflows: ["Qodana"]
-    types: [completed]
-    branches: ["main"]
+    workflows:
+      - Qodana
+    types:
+      - completed
+    branches:
+      - main
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   actions: read
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Keep only one Pages deployment active at a time without interrupting the run in progress.
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
-      # Keep the opt-in at job scope too so the Pages build clearly exercises
-      # actions/configure-pages and actions/download-artifact under Node 24.
-      # GitHub may still report that these actions target Node 20 but are being
-      # forced to run on Node 24 until their upstream metadata is updated.
+      # Keep the opt-in at job scope for clearer Node 24 migration logs.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     steps:
       - name: Select source revision
@@ -61,7 +54,7 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.ref }}
 
-      - name: Setup Pages
+      - name: Set up Pages
         uses: actions/configure-pages@v5
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -376,7 +369,7 @@ jobs:
           </html>
           EOF
 
-      - name: Upload artifact
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v4
 
   # Deployment job

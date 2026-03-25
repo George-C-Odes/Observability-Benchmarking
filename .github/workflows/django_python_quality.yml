@@ -1,41 +1,43 @@
 name: Django Python Quality
 
 env:
-  # Exercise JavaScript-based GitHub Actions under the future GitHub-hosted
-  # runtime now so setup-python is validated before Node 24 becomes the default
-  # on runners.
+  # Exercise setup-python on Node 24 ahead of GitHub's default runtime migration.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "services/python/django/**"
-      - ".github/workflows/django_python_quality.yml"
+      - 'services/python/django/**'
+      - '.github/workflows/django_python_quality.yml'
   push:
     branches:
       - main
     paths:
-      - "services/python/django/**"
-      - ".github/workflows/django_python_quality.yml"
+      - 'services/python/django/**'
+      - '.github/workflows/django_python_quality.yml'
+
+permissions:
+  contents: read
 
 jobs:
   common:
+    name: Django common checks
     runs-on: ubuntu-latest
     env:
-      # Keep the opt-in at job scope too so this Django quality job clearly
-      # exercises actions/setup-python under Node 24 ahead of GitHub's forced
-      # runtime migration. GitHub may still report that the action targets Node
-      # 20 but is being forced to run on Node 24 until upstream metadata is
-      # updated.
+      # Keep the opt-in at job scope for clearer Node 24 migration logs.
+      # GitHub may still report that setup-python targets Node 20 until the
+      # action metadata is updated upstream.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
-          python-version: "3.13"
+          python-version: '3.13'
           cache: pip
           cache-dependency-path: |
             services/python/django/gunicorn/common/pyproject.toml
@@ -54,13 +56,13 @@ jobs:
         run: python -m ruff check .
 
   modules:
+    name: Django module checks (${{ matrix.module_name }})
     runs-on: ubuntu-latest
     env:
-      # Keep the opt-in at job scope here as well so the matrixed Django module
-      # checks exercise actions/setup-python under Node 24 now.
+      # Keep the opt-in at job scope for clearer Node 24 migration logs.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-      OTEL_SDK_DISABLED: "true"
-      PYROSCOPE_ENABLED: "false"
+      OTEL_SDK_DISABLED: 'true'
+      PYROSCOPE_ENABLED: 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -73,12 +75,14 @@ jobs:
       run:
         working-directory: ${{ matrix.module_dir }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
-          python-version: "3.13"
+          python-version: '3.13'
           cache: pip
           cache-dependency-path: |
             services/python/django/gunicorn/common/pyproject.toml
