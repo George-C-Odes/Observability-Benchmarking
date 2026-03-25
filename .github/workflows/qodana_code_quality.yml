@@ -4,10 +4,10 @@
 #-------------------------------------------------------------------------------#
 
 name: Qodana
-#env:
-#  # Exercise JavaScript-based actions under the future GitHub-hosted runtime now
-#  # so Qodana is validated before Node 24 becomes the default on runners.
-#  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+env:
+  # Exercise JavaScript-based actions under the future GitHub-hosted runtime now
+  # so Qodana is validated before Node 24 becomes the default on runners.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 on:
   workflow_dispatch:
   pull_request:
