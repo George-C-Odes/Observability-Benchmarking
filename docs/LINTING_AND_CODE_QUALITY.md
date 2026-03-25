@@ -128,6 +128,7 @@ The Qodana job summary suggests a third option for viewing the detailed HTML rep
 
 How it works:
 - the existing GitHub Pages workflow still builds the documentation site from `docs/`
+- the Pages workflow now builds the Jekyll site explicitly with Bundler using `docs/Gemfile`, which avoids the earlier `github-pages` gem compatibility warning from `actions/jekyll-build-pages`
 - after a **successful** `Qodana` workflow run on `main`, the Pages workflow runs again via `workflow_run`
 - it checks out the exact analyzed commit (`head_sha`) from that Qodana run
 - it downloads the uploaded Qodana artifacts for both matrix entries:
@@ -137,6 +138,7 @@ How it works:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
 - it also creates a small landing page at `qodana/index.html`
+- each scope URL (`qodana/services-java/` and `qodana/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
 - during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
 
 Why this is a good first implementation:
@@ -151,7 +153,7 @@ Important behavior:
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
 - if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
 
-The Pages workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so GitHub-hosted JavaScript actions such as `actions/configure-pages@v5` and `actions/download-artifact@v5` are exercised on Node 24 ahead of GitHub's runtime migration. As with the Qodana workflow, GitHub may still print an informational warning saying those actions target Node 20 but are being forced to run on Node 24 until the upstream action metadata is updated.
+The Pages workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. The Qodana artifact download steps were upgraded to `actions/download-artifact@v8`, which is already published for Node 24. The remaining official Pages actions still in use (`actions/configure-pages@v5`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v4`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
 
 Expected URL shape:
 

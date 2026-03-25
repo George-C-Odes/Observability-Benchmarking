@@ -58,19 +58,22 @@ jobs:
         uses: actions/configure-pages@v5
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-        
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./docs
-          destination: ./_site
 
-      - name: Reset site directory ownership
+      - name: Build site with Bundler and Jekyll
         shell: bash
+        working-directory: ./docs
+        env:
+          JEKYLL_ENV: production
         run: |
-          # actions/jekyll-build-pages may leave ./_site owned by the container user.
-          # Reset it to the runner user before later shell steps add hosted Qodana reports.
-          sudo chown -R "$(id -u)":"$(id -g)" ./_site
+          ruby --version
+
+          if ! command -v bundle >/dev/null 2>&1; then
+            gem install bundler --no-document
+          fi
+
+          bundle config set path vendor/bundle
+          bundle install
+          bundle exec jekyll build --destination ../_site
 
       - name: Resolve Qodana artifact source run
         id: qodana_source
@@ -159,7 +162,7 @@ jobs:
         id: download_qodana_services_java
         if: steps.qodana_source.outputs.run_id != ''
         continue-on-error: true
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
@@ -172,7 +175,7 @@ jobs:
         id: download_qodana_orchestrator
         if: steps.qodana_source.outputs.run_id != ''
         continue-on-error: true
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
@@ -196,7 +199,17 @@ jobs:
             local download_outcome="$3"
 
             if [[ -d "$directory_path" ]]; then
-              echo 'available'
+                  if find "$directory_path" -type f -name 'index.html' -print -quit | grep -q .; then
+                    echo 'available'
+                  elif [[ "$artifact_present" == 'true' && "$download_outcome" == 'success' ]]; then
+                    echo 'unavailable'
+                  elif [[ "$artifact_present" == 'true' && "$download_outcome" == 'failure' ]]; then
+                    echo 'download failed'
+                  elif [[ -n '${{ steps.qodana_source.outputs.run_id }}' ]]; then
+                    echo 'undetermined'
+                  else
+                    echo 'not-applicable'
+                  fi
             elif [[ "$artifact_present" == 'true' && "$download_outcome" == 'failure' ]]; then
               echo 'download failed'
             elif [[ "$artifact_present" == 'false' ]]; then
@@ -337,50 +350,111 @@ jobs:
       - name: Publish Qodana reports into the Pages site
         shell: bash
         run: |
-          mkdir -p ./_site/qodana
+          mkdir -p ./_site/qodana/services-java ./_site/qodana/orchestrator
 
           services_link='${{ steps.qodana_messages.outputs.services_item_html }}'
           orchestrator_link='${{ steps.qodana_messages.outputs.orchestrator_item_html }}'
           report_metadata='${{ steps.qodana_messages.outputs.report_metadata_html }}'
           status_notice='${{ steps.qodana_messages.outputs.status_notice_html }}'
+          services_message='${{ steps.qodana_messages.outputs.services_item_text }}'
+          orchestrator_message='${{ steps.qodana_messages.outputs.orchestrator_item_text }}'
+
+          write_html_file() {
+            local target_path="$1"
+            shift
+            printf '%s\n' "$@" > "$target_path"
+          }
+
+          create_scope_page() {
+            local scope_name="$1"
+            local scope_dir="./_site/qodana/$scope_name"
+            local scope_message="$2"
+            local nested_index
+
+            nested_index="$({
+              find "$scope_dir" -type f -name 'index.html' -printf '%P\n' 2>/dev/null | grep -v '^index.html$' || true
+            } | python -c "import sys; paths=[line.strip() for line in sys.stdin if line.strip()]; report=[p for p in paths if p.endswith('report/index.html')]; choices=report or paths; choices=sorted(choices, key=lambda p: (p.count('/'), p)); print(choices[0] if choices else '')")"
+
+            if [[ -f "$scope_dir/index.html" ]]; then
+              return
+            fi
+
+            if [[ -n "$nested_index" ]]; then
+              write_html_file "$scope_dir/index.html" \
+                '<!doctype html>' \
+                '<html lang="en">' \
+                '<head>' \
+                '  <meta charset="utf-8">' \
+                "  <meta http-equiv=\"refresh\" content=\"0; url=./${nested_index}\">" \
+                '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
+                "  <title>${scope_name} Qodana report</title>" \
+                '</head>' \
+                '<body>' \
+                "  <p>Redirecting to the hosted Qodana report for <code>${scope_name}</code>...</p>" \
+                "  <p>If the redirect does not happen automatically, open <a href=\"./${nested_index}\">the report here</a>.</p>" \
+                '</body>' \
+                '</html>'
+            else
+              write_html_file "$scope_dir/index.html" \
+                '<!doctype html>' \
+                '<html lang="en">' \
+                '<head>' \
+                '  <meta charset="utf-8">' \
+                '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
+                "  <title>${scope_name} Qodana report</title>" \
+                '  <style>' \
+                '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
+                '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
+                '  </style>' \
+                '</head>' \
+                '<body>' \
+                "  <h1>${scope_name} Qodana report</h1>" \
+                "  <p>${scope_message}</p>" \
+                '  <p>Return to the <a href="../">main Qodana report index</a>.</p>' \
+                '</body>' \
+                '</html>'
+            fi
+          }
 
           if [[ -d ./.qodana-pages/services-java ]]; then
-            mkdir -p ./_site/qodana/services-java
             cp -a ./.qodana-pages/services-java/. ./_site/qodana/services-java/
           fi
 
           if [[ -d ./.qodana-pages/orchestrator ]]; then
-            mkdir -p ./_site/qodana/orchestrator
             cp -a ./.qodana-pages/orchestrator/. ./_site/qodana/orchestrator/
           fi
 
-          cat > ./_site/qodana/index.html <<EOF
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Qodana reports</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }
-              code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }
-            </style>
-          </head>
-          <body>
-            <h1>Qodana reports</h1>
-            <p>Latest published reports from the GitHub Actions <code>Qodana</code> workflow on <code>main</code>.</p>
-            <ul>
-              ${services_link}
-              ${orchestrator_link}
-            </ul>
-            ${report_metadata}
-            ${status_notice}
-          </body>
-          </html>
-          EOF
+          create_scope_page 'services-java' "$services_message"
+          create_scope_page 'orchestrator' "$orchestrator_message"
+
+          write_html_file ./_site/qodana/index.html \
+            '<!doctype html>' \
+            '<html lang="en">' \
+            '<head>' \
+            '  <meta charset="utf-8">' \
+            '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
+            '  <title>Qodana reports</title>' \
+            '  <style>' \
+            '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
+            '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
+            '  </style>' \
+            '</head>' \
+            '<body>' \
+            '  <h1>Qodana reports</h1>' \
+            '  <p>Latest published reports from the GitHub Actions <code>Qodana</code> workflow on <code>main</code>.</p>' \
+            '  <ul>' \
+            "    ${services_link}" \
+            "    ${orchestrator_link}" \
+            '  </ul>' \
+            "  ${report_metadata}" \
+            "  ${status_notice}" \
+            '</body>' \
+            '</html>'
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
   # Deployment job
   deploy:
@@ -389,8 +463,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    env:
+      # Keep the opt-in at job scope for clearer Node 24 migration logs.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
