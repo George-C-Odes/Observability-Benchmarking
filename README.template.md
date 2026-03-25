@@ -3,6 +3,7 @@
 # Observability Benchmarking
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.2-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-{{SPRING_BOOT_VERSION}}-green.svg)](https://spring.io/projects/spring-boot)
@@ -653,6 +654,8 @@ cd services/java/pekko/jvm && mvn checkstyle:check
 
 For detailed linting setup and IDE integration, see **[docs/LINTING_AND_CODE_QUALITY.md](docs/LINTING_AND_CODE_QUALITY.md)**.
 
+Browse the [hosted Qodana report](https://george-c-odes.github.io/Observability-Benchmarking/qodana/) for the latest published HTML analysis.
+
 ### Security
 
 #### Container Security
@@ -913,6 +916,7 @@ Documentation is available on GitHub Pages: **[Full Documentation Site](https://
 - **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
 - **[Control Plane](https://george-c-odes.github.io/Observability-Benchmarking/control-plane.html)** - Dashboard + orchestrator (the `CONTROL` Compose profile)
 - **[Adding a New Service](https://george-c-odes.github.io/Observability-Benchmarking/adding-a-service.html)** - How to integrate a new benchmark target (compose + orchestrator + wrk2 + docs)
+- **[Qodana Report](https://george-c-odes.github.io/Observability-Benchmarking/qodana/)** - Latest published static analysis report and inspection results
 
 The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
 

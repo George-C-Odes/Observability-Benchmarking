@@ -126,6 +126,7 @@ How it works:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
 - it also creates a small landing page at `qodana/index.html`
+- during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
 
 Why this is a good first implementation:
 - it does **not** change the committed documentation sources under `docs/`
@@ -137,6 +138,9 @@ Important behavior:
 - only Qodana runs on `main` are published to GitHub Pages
 - pull request Qodana runs are **not** published publicly
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
+- if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
+
+The Pages workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so GitHub-hosted JavaScript actions such as `actions/configure-pages@v5` and `actions/download-artifact@v5` are exercised on Node 24 ahead of GitHub's runtime migration. As with the Qodana workflow, GitHub may still print an informational warning saying those actions target Node 20 but are being forced to run on Node 24 until the upstream action metadata is updated.
 
 Expected URL shape:
 

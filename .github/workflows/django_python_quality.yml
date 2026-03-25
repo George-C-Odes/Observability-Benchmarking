@@ -1,5 +1,11 @@
 name: Django Python Quality
 
+env:
+  # Exercise JavaScript-based GitHub Actions under the future GitHub-hosted
+  # runtime now so setup-python is validated before Node 24 becomes the default
+  # on runners.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 on:
   workflow_dispatch:
   pull_request:
@@ -16,9 +22,18 @@ on:
 jobs:
   common:
     runs-on: ubuntu-latest
+    env:
+      # Keep the opt-in at job scope too so this Django quality job clearly
+      # exercises actions/setup-python under Node 24 ahead of GitHub's forced
+      # runtime migration. GitHub may still report that the action targets Node
+      # 20 but is being forced to run on Node 24 until upstream metadata is
+      # updated.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
           python-version: "3.13"
           cache: pip
@@ -41,6 +56,9 @@ jobs:
   modules:
     runs-on: ubuntu-latest
     env:
+      # Keep the opt-in at job scope here as well so the matrixed Django module
+      # checks exercise actions/setup-python under Node 24 now.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       OTEL_SDK_DISABLED: "true"
       PYROSCOPE_ENABLED: "false"
     strategy:
@@ -57,6 +75,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
           python-version: "3.13"
           cache: pip

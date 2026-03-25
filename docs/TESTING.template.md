@@ -411,6 +411,8 @@ does more than execute tests:
 2. Installs the shared package into each runtime module environment.
 3. Runs module syntax checks, Ruff, `python manage.py check`, and the shared test suite.
 
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v5` is exercised on Node 24 ahead of GitHub's runtime migration. GitHub may still print an informational warning saying the action targets Node 20 but is being forced to run on Node 24 until the upstream action metadata is updated.
+
 Use the following sequence when you want to reproduce the CI gates locally:
 
 ```bash
