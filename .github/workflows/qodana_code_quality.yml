@@ -35,10 +35,10 @@ jobs:
       # this job, including JavaScript-based actions, is explicitly exercised on
       # the Node 24 runtime ahead of GitHub's forced migration.
       #
-      # Note: GitHub may still emit a deprecation warning in the final
-      # "Complete job" phase while JetBrains/qodana-action is published with
-      # Node 20 metadata. That warning is upstream and does not mean this job is
-      # actually opting out of Node 24.
+      # GitHub will still log an informational warning in the "Complete job"
+      # phase saying the action targets Node 20 but "is being forced to run on
+      # Node.js 24". That confirms the opt-in is working. The warning disappears
+      # once JetBrains republishes the action with native Node 24 metadata.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     strategy:
       fail-fast: false

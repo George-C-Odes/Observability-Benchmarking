@@ -101,12 +101,52 @@ The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-c
 
 The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow, job, and Qodana action-step scope so the GitHub-hosted JavaScript action runtime is exercised under Node 24 ahead of GitHub's forced migration. This lets the team catch Qodana action compatibility issues before the Node 20 fallback disappears.
 
-At the moment, GitHub may still print a deprecation warning in the final **Complete job** phase mentioning `JetBrains/qodana-action@v2025.3.2` and Node 20. That warning is expected while JetBrains still publishes the action with Node 20 action metadata; it does **not** by itself mean this repository stopped opting into Node 24. The warning should disappear only after JetBrains republishes the action with Node 24 support in the action metadata.
+GitHub will print an informational warning in the **Complete job** phase similar to:
+
+> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2025.3.2.
+
+This warning **confirms the opt-in is working** — the action targets Node 20 in its published metadata, but our `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` setting successfully forces it to run on Node 24. The warning is purely informational and will disappear only after JetBrains republishes the action with native Node 24 support in its action metadata. No action is required on our side.
 
 It is triggered on:
 - manual dispatch
 - pull requests touching the scoped paths or Qodana config
 - pushes to configured branches touching the scoped paths or Qodana config
+
+### Hosted Qodana Report on GitHub Pages
+The Qodana job summary suggests a third option for viewing the detailed HTML report: **Host Qodana report at GitHub Pages**. This repository now implements that option in a safe first-pass way.
+
+How it works:
+- the existing GitHub Pages workflow still builds the documentation site from `docs/`
+- after a **successful** `Qodana` workflow run on `main`, the Pages workflow runs again via `workflow_run`
+- it checks out the exact analyzed commit (`head_sha`) from that Qodana run
+- it downloads the uploaded Qodana artifacts for both matrix entries:
+  - `qodana-report-services-java`
+  - `qodana-report-orchestrator`
+- it copies those artifacts into the built Pages site under:
+  - `qodana/services-java/`
+  - `qodana/orchestrator/`
+- it also creates a small landing page at `qodana/index.html`
+
+Why this is a good first implementation:
+- it does **not** change the committed documentation sources under `docs/`
+- it does **not** interfere with the normal Jekyll documentation site
+- it publishes the report for the exact commit Qodana analyzed
+- it keeps the Qodana hosting logic entirely inside GitHub Actions
+
+Important behavior:
+- only Qodana runs on `main` are published to GitHub Pages
+- pull request Qodana runs are **not** published publicly
+- if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
+
+Expected URL shape:
+
+```text
+https://<owner>.github.io/<repo>/qodana/
+https://<owner>.github.io/<repo>/qodana/services-java/
+https://<owner>.github.io/<repo>/qodana/orchestrator/
+```
+
+If your repository uses a custom GitHub Pages domain, replace the `github.io/<repo>` part with that domain's base URL.
 
 ### Minimal Quality Gate
 The current `qodana.yaml` uses a conservative first-pass gate:
@@ -258,6 +298,7 @@ For the currently scoped JVM code, Qodana can provide:
 - IntelliJ-based inspections that go beyond formatting/style rules
 - consistent static analysis across many Java frameworks in this repository
 - uploaded result artifacts for later review even when annotations are disabled or truncated
+- a public Pages-hosted HTML report for the latest successful `main` analysis of each scoped area
 
 ### Worthwhile Next Updates After This First Pass
 Once the workflow has run a few times and the issue signal is understood, the next worthwhile improvements would be:
