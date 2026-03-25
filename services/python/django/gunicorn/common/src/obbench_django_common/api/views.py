@@ -22,6 +22,7 @@ class _State:
 
     svc = None
 
+
 # Pre-allocated content-type string (interned constant).
 _JSON_CT = "application/json"
 
@@ -92,6 +93,7 @@ def _log_thread(mode: str) -> None:
 # Health probes
 # ---------------------------------------------------------------------------
 
+
 def healthz(_request: HttpRequest) -> HttpResponse:
     """Liveness probe."""
     return HttpResponse(status=200)
@@ -110,6 +112,7 @@ def livez(_request: HttpRequest) -> HttpResponse:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_int(raw: str, default: int) -> int:
     try:

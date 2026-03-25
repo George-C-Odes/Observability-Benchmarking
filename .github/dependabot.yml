@@ -19,7 +19,6 @@ updates:
       prefix: "docs"
 
   # Python / Django services
-
   - package-ecosystem: pip
     directory: /services/python/django/gunicorn/WSGI
     schedule:

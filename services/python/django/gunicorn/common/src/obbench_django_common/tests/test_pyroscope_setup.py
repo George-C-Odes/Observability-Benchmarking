@@ -39,28 +39,33 @@ class PyroscopeSetupTests(TestCase):
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock()
 
-        with mock.patch.dict(
-            os.environ,
-            {
-                "PYROSCOPE_ENABLED": "true",
-                "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
-                "PYROSCOPE_APPLICATION_NAME": "agent/django-platform",
-                "PYROSCOPE_LOG_LEVEL": "warn",
-                "OTEL_SERVICE_NAME": "django-platform",
-            },
-            clear=False,
-        ), mock.patch.dict(
-            sys.modules,
-            {"pyroscope": pyroscope_module},
-            clear=False,
-        ), mock.patch.object(
-            pyroscope_setup,
-            "_register_span_processor",
-            return_value=True,
-        ), mock.patch.object(
-            pyroscope_setup.logger,
-            "info",
-        ) as info_log:
+        with (
+            mock.patch.dict(
+                os.environ,
+                {
+                    "PYROSCOPE_ENABLED": "true",
+                    "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
+                    "PYROSCOPE_APPLICATION_NAME": "agent/django-platform",
+                    "PYROSCOPE_LOG_LEVEL": "warn",
+                    "OTEL_SERVICE_NAME": "django-platform",
+                },
+                clear=False,
+            ),
+            mock.patch.dict(
+                sys.modules,
+                {"pyroscope": pyroscope_module},
+                clear=False,
+            ),
+            mock.patch.object(
+                pyroscope_setup,
+                "_register_span_processor",
+                return_value=True,
+            ),
+            mock.patch.object(
+                pyroscope_setup.logger,
+                "info",
+            ) as info_log,
+        ):
             pyroscope_setup.configure_pyroscope()
 
         pyroscope_module.LOGGER.setLevel.assert_called_once_with(logging.WARNING)
@@ -84,28 +89,33 @@ class PyroscopeSetupTests(TestCase):
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock()
 
-        with mock.patch.dict(
-            os.environ,
-            {
-                "PYROSCOPE_ENABLED": "true",
-                "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
-                "PYROSCOPE_APPLICATION_NAME": "agent/django-reactive",
-                "PYROSCOPE_LOG_LEVEL": "off",
-                "OTEL_SERVICE_NAME": "django-reactive",
-            },
-            clear=False,
-        ), mock.patch.dict(
-            sys.modules,
-            {"pyroscope": pyroscope_module},
-            clear=False,
-        ), mock.patch.object(
-            pyroscope_setup,
-            "_register_span_processor",
-            return_value=False,
-        ), mock.patch.object(
-            pyroscope_setup.logger,
-            "info",
-        ) as info_log:
+        with (
+            mock.patch.dict(
+                os.environ,
+                {
+                    "PYROSCOPE_ENABLED": "true",
+                    "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
+                    "PYROSCOPE_APPLICATION_NAME": "agent/django-reactive",
+                    "PYROSCOPE_LOG_LEVEL": "off",
+                    "OTEL_SERVICE_NAME": "django-reactive",
+                },
+                clear=False,
+            ),
+            mock.patch.dict(
+                sys.modules,
+                {"pyroscope": pyroscope_module},
+                clear=False,
+            ),
+            mock.patch.object(
+                pyroscope_setup,
+                "_register_span_processor",
+                return_value=False,
+            ),
+            mock.patch.object(
+                pyroscope_setup.logger,
+                "info",
+            ) as info_log,
+        ):
             pyroscope_setup.configure_pyroscope()
 
         pyroscope_module.LOGGER.setLevel.assert_called_once_with(logging.WARNING)
@@ -125,16 +135,19 @@ class PyroscopeSetupTests(TestCase):
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock(side_effect=RuntimeError("boom"))
 
-        with mock.patch.dict(
-            os.environ,
-            {
-                "PYROSCOPE_ENABLED": "true",
-                "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
-                "PYROSCOPE_APPLICATION_NAME": "agent/django-platform",
-            },
-            clear=False,
-        ), mock.patch.dict(sys.modules, {"pyroscope": pyroscope_module}, clear=False), \
-             self.assertLogs("hello", level="WARNING") as logs:
+        with (
+            mock.patch.dict(
+                os.environ,
+                {
+                    "PYROSCOPE_ENABLED": "true",
+                    "PYROSCOPE_SERVER_ADDRESS": "http://pyroscope:4040",
+                    "PYROSCOPE_APPLICATION_NAME": "agent/django-platform",
+                },
+                clear=False,
+            ),
+            mock.patch.dict(sys.modules, {"pyroscope": pyroscope_module}, clear=False),
+            self.assertLogs("hello", level="WARNING") as logs,
+        ):
             pyroscope_setup.configure_pyroscope()
 
         self.assertTrue(any("pyroscope setup failed" in message for message in logs.output))

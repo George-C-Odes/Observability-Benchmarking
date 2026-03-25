@@ -43,9 +43,7 @@ class PlatformViewTests(SimpleTestCase):
     def test_platform_forwards_sleep_parameter(self) -> None:
         service = _FakeHelloService()
 
-        with mock.patch(
-            "obbench_django_common.api.views.get_hello_service", return_value=service
-        ):
+        with mock.patch("obbench_django_common.api.views.get_hello_service", return_value=service):
             response = views.platform(self.factory.get("/hello/platform", {"sleep": "7"}))
 
         self.assertEqual(200, response.status_code)
@@ -55,9 +53,7 @@ class PlatformViewTests(SimpleTestCase):
     def test_reactive_awaits_sleep_parameter(self, sleep_mock: mock.Mock) -> None:
         service = _FakeHelloService("Hello from Django reactive REST value-1")
 
-        with mock.patch(
-            "obbench_django_common.api.views.get_hello_service", return_value=service
-        ):
+        with mock.patch("obbench_django_common.api.views.get_hello_service", return_value=service):
             response = async_to_sync(views.reactive)(
                 self.factory.get("/hello/reactive", {"sleep": "5"})
             )
