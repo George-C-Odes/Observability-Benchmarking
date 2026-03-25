@@ -50,5 +50,7 @@ failureConditions:
 # reviewed SARIF baselines can be supplied by the workflow from
 # `.qodana/baseline/*.sarif.json` when they exist.
 #
-# The workflow pins the Qodana JVM image explicitly for each run so this
-# shared file stays focused on inspections, scopes, and quality gates.
+# Keep the JVM linter pinned here so both the action's `pull` step and
+# the later scoped `scan` step resolve the same image in this mixed-language
+# repository.
+linter: jetbrains/qodana-jvm-community:2025.3
