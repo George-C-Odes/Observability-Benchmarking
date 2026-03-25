@@ -19,12 +19,6 @@ updates:
       prefix: "docs"
 
   # Python / Django services
-  - package-ecosystem: pip
-    directory: /services/python/django/gunicorn/common
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "deps(python)"
 
   - package-ecosystem: pip
     directory: /services/python/django/gunicorn/WSGI
