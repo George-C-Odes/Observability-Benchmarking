@@ -90,13 +90,14 @@ def on_startup() -> None:
         os.getpid(),
     )
 
-    _State.cache = create_cache(cfg.cache_size, cfg.cache_impl)
-    _State.hello_service = HelloService(_State.cache, greeting_prefix=cfg.greeting_prefix)
+    cache = create_cache(cfg.cache_size, cfg.cache_impl)
+    _State.cache = cache
+    _State.hello_service = HelloService(cache, greeting_prefix=cfg.greeting_prefix)
 
     logger.info(
         "cache populated: impl=%s, size=%d",
         cfg.cache_impl,
-        _State.cache.size(),
+        cache.size(),
     )
 
     # Apply instrumentation patches (DjangoInstrumentor, LoggingInstrumentor).
