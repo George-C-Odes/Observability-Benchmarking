@@ -12,34 +12,37 @@ This project uses [Checkstyle](https://checkstyle.org/) to enforce consistent co
 - **checkstyle**: 12.2.0
 
 ### Configuration Files
-Each module contains its own copy of the Checkstyle configuration files to support Docker builds:
-- **checkstyle.xml**: Main Checkstyle configuration file located in each module directory
-- **checkstyle-suppressions.xml**: Suppression rules for specific checks
-- **Root copies**: Master copies are maintained at the project root for reference
+The Java codebases currently covered by the repository's quality tooling use shared Checkstyle files per scoped area:
+- **`services/java/checkstyle.xml`**: Main Checkstyle configuration for Java services under `services/java/**`
+- **`services/java/checkstyle-suppressions.xml`**: Suppressions for the Java services tree
+- **`utils/orchestrator/checkstyle.xml`**: Main Checkstyle configuration for the orchestrator
+- **`utils/orchestrator/checkstyle-suppressions.xml`**: Suppressions for the orchestrator
+
+Individual Maven modules reference these shared files via relative paths in their `pom.xml` files.
 
 ### Running Checkstyle
 
-To run Checkstyle on a specific module:
+To run Checkstyle on a specific module from the repository root:
 
 ```bash
 # For Quarkus JVM module
-cd services/java/quarkus/jvm
-mvn checkstyle:check
+mvn -f services/java/quarkus/jvm/pom.xml checkstyle:check
 
 # For Spring JVM Netty module
-cd services/java/spring/jvm/netty
-mvn checkstyle:check
+mvn -f services/java/spring/jvm/netty/pom.xml checkstyle:check
 
-# For Spring JVM Tomcat module
-cd services/java/spring/jvm/tomcat
-mvn checkstyle:check
+# For the orchestrator
+mvn -f utils/orchestrator/pom.xml checkstyle:check
 ```
 
 Checkstyle is also automatically executed during the Maven `validate` phase, so it runs as part of the build:
 
 ```bash
-mvn clean install
+mvn -f services/java/quarkus/jvm/pom.xml validate
+mvn -f utils/orchestrator/pom.xml validate
 ```
+
+At the moment, the Checkstyle plugin is configured in these Maven modules with `failsOnError=false` and `failOnViolation=false`, so it reports issues during `validate` without failing the build.
 
 ### Key Rules Enforced
 
@@ -71,6 +74,198 @@ The following items are suppressed from Checkstyle checks:
 - Generated code in `target/` directories
 - Test files (for certain Javadoc requirements)
 - Spring Boot Application main classes (utility class constructor check)
+
+## Qodana Configuration (JVM Static Analysis)
+
+### Overview
+This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setup for deeper JVM static analysis based on IntelliJ inspections. Qodana complements Checkstyle rather than replacing it:
+
+- **Checkstyle** focuses on formatting, conventions, and structural style rules.
+- **Qodana** adds semantic inspections such as probable bugs, API misuse, dead code, and framework-specific warnings.
+
+The current GitHub Actions workflow intentionally limits Qodana to these paths only:
+- `services/java/**`
+- `utils/orchestrator/**`
+
+That makes it a safe first step for adoption without expanding analysis to the rest of the repository.
+
+### Current GitHub Actions Scope
+The workflow in `.github/workflows/qodana_code_quality.yml` runs Qodana in a small matrix:
+
+- `services/java`
+- `utils/orchestrator`
+
+It keeps the repository root as the Qodana project so the shared root `qodana.yaml` is applied, then limits each job with `--only-directory`.
+
+The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow also uploads separate report artifacts per matrix entry (`qodana-report-services-java` and `qodana-report-orchestrator`) to avoid cross-job artifact name collisions.
+
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow, job, and Qodana action-step scope so the GitHub-hosted JavaScript action runtime is exercised under Node 24 ahead of GitHub's forced migration. This lets the team catch Qodana action compatibility issues before the Node 20 fallback disappears.
+
+At the moment, GitHub may still print a deprecation warning in the final **Complete job** phase mentioning `JetBrains/qodana-action@v2025.3.2` and Node 20. That warning is expected while JetBrains still publishes the action with Node 20 action metadata; it does **not** by itself mean this repository stopped opting into Node 24. The warning should disappear only after JetBrains republishes the action with Node 24 support in the action metadata.
+
+It is triggered on:
+- manual dispatch
+- pull requests touching the scoped paths or Qodana config
+- pushes to configured branches touching the scoped paths or Qodana config
+
+### Minimal Quality Gate
+The current `qodana.yaml` uses a conservative first-pass gate:
+
+```yaml
+failureConditions:
+  severityThresholds:
+    critical: 0
+```
+
+This means the Qodana job will fail only if it finds at least one **critical** issue in the scoped JVM code.
+
+Why this is a good first step:
+- it avoids blocking the repository on older low-severity noise before the workflow has been proven in CI
+- it still protects against the most serious findings
+- it gives the team time to observe the signal quality before tightening thresholds further
+
+### Baseline Strategy
+The workflow now supports a low-risk, per-scope baseline strategy for the same two JVM scopes:
+
+- `.qodana/baseline/services-java.sarif.json`
+- `.qodana/baseline/orchestrator.sarif.json`
+
+How it works:
+- each matrix job always analyzes only its scoped directory
+- if the matching baseline file exists, the workflow adds `--baseline=<file>` for that scope
+- if the baseline file does not exist, the scan still runs normally without a baseline
+
+Why this is a safe rollout strategy:
+- baseline files are plain SARIF and can be reviewed in pull requests
+- there is no dependency on cross-run artifact fetching or external services
+- you can adopt baselines one scope at a time instead of flipping the whole repository at once
+- the existing `critical: 0` gate stays in place, so the baseline strategy reduces historical noise without changing the overall safety posture
+
+The baseline directory is tracked intentionally, while local Qodana working output under `.qodana/` is ignored by Git.
+
+### Testing Qodana Locally
+
+#### Prerequisites
+- Docker installed locally
+- enough memory for a JVM analysis container
+- for Maven sanity checks outside the container, a local JDK matching the repository target (`Java 25`)
+
+Before running Qodana, it is useful to confirm the affected Maven projects still import and validate cleanly:
+
+```bash
+mvn -f services/java/quarkus/jvm/pom.xml -DskipTests validate
+mvn -f utils/orchestrator/pom.xml -DskipTests validate
+```
+
+Run the same Qodana linter image locally from the repository root.
+
+**Bash / zsh:**
+
+```bash
+mkdir -p .qodana/services-java .qodana/orchestrator
+
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/services-java":/data/results \
+  jetbrains/qodana-jvm-community:2025.3 \
+  --project-dir=/data/project \
+  --only-directory=services/java \
+  --results-dir=/data/results
+
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/orchestrator":/data/results \
+  jetbrains/qodana-jvm-community:2025.3 \
+  --project-dir=/data/project \
+  --only-directory=utils/orchestrator \
+  --results-dir=/data/results
+```
+
+**PowerShell:**
+
+```powershell
+New-Item -ItemType Directory -Force .qodana/services-java, .qodana/orchestrator | Out-Null
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/services-java:/data/results" `
+  jetbrains/qodana-jvm-community:2025.3 `
+  --project-dir=/data/project `
+  --only-directory=services/java `
+  --results-dir=/data/results
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/orchestrator:/data/results" `
+  jetbrains/qodana-jvm-community:2025.3 `
+  --project-dir=/data/project `
+  --only-directory=utils/orchestrator `
+  --results-dir=/data/results
+```
+
+Notes:
+- Local scans automatically use the repository's `qodana.yaml` because the project root is mounted as `/data/project`.
+- In CI, the workflow relies on the root `qodana.yaml` linter pin so the action's pull and scan phases stay aligned, while the workflow arguments only scope the directory and optional baseline.
+- A non-zero container exit code means the configured quality gate was violated.
+- A `QODANA_TOKEN` is not required for local scans unless you later decide to upload results to Qodana Cloud.
+- Results and logs are written under `.qodana/` in the example commands above.
+
+### Creating or Refreshing a Baseline
+The safest baseline workflow is to generate a candidate SARIF, review it, and only then promote it into `.qodana/baseline/`.
+
+Local candidate flow:
+
+```bash
+# services/java candidate
+mkdir -p .qodana/baseline-candidates/services-java
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/baseline-candidates/services-java":/data/results \
+  jetbrains/qodana-jvm-community:2025.3 \
+  --project-dir=/data/project \
+  --only-directory=services/java \
+  --results-dir=/data/results
+
+# orchestrator candidate
+mkdir -p .qodana/baseline-candidates/orchestrator
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/baseline-candidates/orchestrator":/data/results \
+  jetbrains/qodana-jvm-community:2025.3 \
+  --project-dir=/data/project \
+  --only-directory=utils/orchestrator \
+  --results-dir=/data/results
+```
+
+Then:
+1. inspect the generated SARIF in the chosen results directory
+2. decide whether the findings represent accepted historical debt for that scope
+3. copy the reviewed SARIF into `.qodana/baseline/services-java.sarif.json` or `.qodana/baseline/orchestrator.sarif.json`
+4. commit the baseline file in a pull request
+
+CI candidate flow:
+1. run the Qodana workflow manually or from a branch touching the scoped paths
+2. download the uploaded Qodana results artifact for the relevant matrix entry
+3. review the SARIF from that artifact
+4. promote the reviewed SARIF into the matching file under `.qodana/baseline/`
+
+Because the workflow only adds `--baseline` when the reviewed file exists, you can roll this out gradually and safely.
+
+### What Qodana Offers This Repository
+For the currently scoped JVM code, Qodana can provide:
+
+- PR annotations for actionable issues directly in changed code
+- IntelliJ-based inspections that go beyond formatting/style rules
+- consistent static analysis across many Java frameworks in this repository
+- uploaded result artifacts for later review even when annotations are disabled or truncated
+
+### Worthwhile Next Updates After This First Pass
+Once the workflow has run a few times and the issue signal is understood, the next worthwhile improvements would be:
+
+1. raise the gate from `critical` only to additional severities if the findings are manageable
+2. refresh or shrink the reviewed baseline files as historical findings are fixed
+3. add module-specific follow-up exclusions only where Qodana proves noisy, rather than disabling broad inspections up front
+4. consider separate documentation or workflow expansion for other languages only after the JVM path proves useful
 
 ## Ruff Configuration (Python)
 
@@ -152,7 +347,11 @@ All public classes and methods should include:
 
 ## Integration with CI/CD
 
-Checkstyle violations will be reported but will not fail the build by default. This allows for gradual adoption and prevents blocking legitimate changes.
+Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
+
+Qodana is stricter, but only in a very narrow way for now: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical** Qodana findings only.
+
+When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
 To make Checkstyle violations fail the build, update the plugin configuration in `pom.xml`:
 ```xml
@@ -164,11 +363,13 @@ To make Checkstyle violations fail the build, update the plugin configuration in
 
 ## Customizing Rules
 
-To customize Checkstyle rules for your needs:
+To customize Checkstyle or Qodana rules for your needs:
 
-1. Edit `checkstyle.xml` at the project root
-2. Add suppressions to `checkstyle-suppressions.xml` for specific exceptions
+1. Edit `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the scoped JVM codebase you want to tune
+2. Add suppressions to the matching `checkstyle-suppressions.xml` file for specific exceptions
 3. Update the plugin version in `pom.xml` if newer Checkstyle features are needed
+4. Adjust `qodana.yaml` if you want to change the inspection profile or quality gate thresholds
+5. Update `.github/workflows/qodana_code_quality.yml` if you want Qodana to cover more paths
 
 ## Tools and Plugins
 
@@ -177,18 +378,18 @@ To customize Checkstyle rules for your needs:
 #### IntelliJ IDEA
 1. Install the Checkstyle-IDEA plugin
 2. Go to Settings → Tools → Checkstyle
-3. Add the `checkstyle.xml` file from the project root
+3. Add `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
 4. Enable real-time scanning
 
 #### Eclipse
 1. Install the Checkstyle Plug-in
 2. Right-click project → Properties → Checkstyle
-3. Select the project's `checkstyle.xml` file
+3. Select `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
 4. Enable Checkstyle for the project
 
 #### VS Code
 1. Install the Checkstyle for Java extension
-2. Configure the extension to use the project's `checkstyle.xml`
+2. Configure the extension to use `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
 
 ## Metrics
 
@@ -204,9 +405,11 @@ Potential enhancements to the code quality setup:
 - Add SonarQube for comprehensive code quality metrics
 - Implement code coverage requirements with JaCoCo
 - Add automated code formatting with Spotless or Google Java Format
+- Tighten the Qodana gate after several clean runs (for example, add non-critical severity thresholds)
 
 ## References
 
 - [Checkstyle Documentation](https://checkstyle.org/)
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/)
+- [Qodana Documentation](https://www.jetbrains.com/help/qodana/qodana-yaml.html)

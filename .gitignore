@@ -130,11 +130,18 @@ db.sqlite3-journal
 *.orig
 *.ps1
 
-# Keep docs and .github (explicit, in case of broader ignore rules)
+# Qodana local output
+/.qodana/**
+!/.qodana/baseline/
+!/.qodana/baseline/**
+
+# Keep docs, GitHub automation, and Qodana config tracked (explicit, in case of broader ignore rules)
 !/docs/
 !/.github/
+!/.qodana/
+!/qodana.yaml
+!/.github/workflows/qodana_code_quality.yml
 /docs/Gemfile.lock
-/qodana.yaml
 
 # TypeScript incremental build cache
 *.tsbuildinfo
@@ -146,7 +153,6 @@ output-*.txt
 # Vitest / test report artifacts
 vitest-*.json
 /.profileconfig.json
-/.github/workflows/qodana_code_quality.yml
 /services/java/quarkus/jvm/target/
 
 # Jekyll / GitHub Pages (generated output + caches)

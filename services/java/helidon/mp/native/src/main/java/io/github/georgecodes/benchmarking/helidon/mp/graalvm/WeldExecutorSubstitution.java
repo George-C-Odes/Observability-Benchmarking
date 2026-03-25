@@ -30,9 +30,11 @@ import java.util.concurrent.Callable;
  * loss is negligible compared to the overall native-image build time.
  */
 @TargetClass(className = "org.jboss.weld.executor.AbstractExecutorServices")
-final class WeldExecutorSubstitution {
+@SuppressWarnings("unused")
+public final class WeldExecutorSubstitution {
 
     @Substitute
+    @SuppressWarnings("unused")
     public <T> List<T> invokeAllAndCheckForExceptions(Collection<? extends Callable<T>> tasks) {
         @SuppressWarnings("unchecked")
         T[] results = (T[]) new Object[tasks.size()];
