@@ -1,12 +1,6 @@
-#-------------------------------------------------------------------------------#
-#            Discover all capabilities of Qodana in our documentation           #
-#             https://www.jetbrains.com/help/qodana/about-qodana.html           #
-#-------------------------------------------------------------------------------#
-
 name: Qodana
 env:
-  # Exercise JavaScript-based actions under the future GitHub-hosted runtime now
-  # so Qodana is validated before Node 24 becomes the default on runners.
+  # Exercise the Qodana action on Node 24 ahead of GitHub's default runtime migration.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 on:
   workflow_dispatch:
@@ -31,14 +25,9 @@ jobs:
     name: Qodana (${{ matrix.name }})
     runs-on: ubuntu-latest
     env:
-      # Keep the opt-in at job scope as well as workflow scope so every step in
-      # this job, including JavaScript-based actions, is explicitly exercised on
-      # the Node 24 runtime ahead of GitHub's forced migration.
-      #
-      # GitHub will still log an informational warning in the "Complete job"
-      # phase saying the action targets Node 20 but "is being forced to run on
-      # Node.js 24". That confirms the opt-in is working. The warning disappears
-      # once JetBrains republishes the action with native Node 24 metadata.
+      # Keep the opt-in at job scope for clearer Node 24 migration logs.
+      # GitHub may still report that the action targets Node 20 until JetBrains
+      # republishes it with native Node 24 metadata.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     strategy:
       fail-fast: false
@@ -54,7 +43,8 @@ jobs:
       contents: read
       checks: write
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Prepare Qodana arguments
@@ -72,11 +62,10 @@ jobs:
           fi
 
           echo "args=$args" >> "$GITHUB_OUTPUT"
-      - name: 'Qodana Scan'
+      - name: Qodana Scan
         uses: JetBrains/qodana-action@v2025.3.2
         env:
-          # Repeat the opt-in on the action step itself for clarity when reading
-          # the workflow logs around GitHub's Node runtime migration.
+          # Repeat the opt-in on the action step for clearer migration logs.
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:

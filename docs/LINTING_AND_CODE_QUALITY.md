@@ -77,6 +77,17 @@ The following items are suppressed from Checkstyle checks:
 
 ## Qodana Configuration (JVM Static Analysis)
 
+### GitHub Actions Node Runtime Migration Convention
+This repository now follows a simple convention for GitHub Actions workflows that use JavaScript-based actions: set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` proactively so those actions are exercised on Node 24 ahead of GitHub's default runtime migration.
+
+At the moment, that convention is applied in these workflow files:
+
+- `.github/workflows/qodana_code_quality.yml`
+- `.github/workflows/pages.yml`
+- `.github/workflows/django_python_quality.yml`
+
+If GitHub still prints a warning saying an action targets Node 20 but is being forced to run on Node 24, that confirms the opt-in is active. The warning should disappear only after the action publisher updates the action metadata to native Node 24 support.
+
 ### Overview
 This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setup for deeper JVM static analysis based on IntelliJ inspections. Qodana complements Checkstyle rather than replacing it:
 
@@ -126,6 +137,7 @@ How it works:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
 - it also creates a small landing page at `qodana/index.html`
+- during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
 
 Why this is a good first implementation:
 - it does **not** change the committed documentation sources under `docs/`
@@ -137,6 +149,9 @@ Important behavior:
 - only Qodana runs on `main` are published to GitHub Pages
 - pull request Qodana runs are **not** published publicly
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
+- if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
+
+The Pages workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so GitHub-hosted JavaScript actions such as `actions/configure-pages@v5` and `actions/download-artifact@v5` are exercised on Node 24 ahead of GitHub's runtime migration. As with the Qodana workflow, GitHub may still print an informational warning saying those actions target Node 20 but are being forced to run on Node 24 until the upstream action metadata is updated.
 
 Expected URL shape:
 
