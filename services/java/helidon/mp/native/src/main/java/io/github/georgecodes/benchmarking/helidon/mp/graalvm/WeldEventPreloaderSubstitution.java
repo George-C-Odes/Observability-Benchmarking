@@ -20,21 +20,25 @@ import com.oracle.svm.core.annotate.TargetClass;
  * <p>Instead we disable the caller side for the problematic preload hook.
  */
 @TargetClass(className = "org.jboss.weld.bootstrap.events.ContainerLifecycleEvents")
-final class WeldContainerLifecycleEventsSubstitution {
+@SuppressWarnings("unused")
+public final class WeldEventPreloaderSubstitution {
 
     @Substitute
+    @SuppressWarnings("unused")
     public void preloadProcessInjectionTarget(Class<?> type) {
         // no-op: prevents Weld's event preloading from running in native images
         // (the service boots fine without this preloading, and it avoids the runtime NPE)
     }
 
     @Substitute
+    @SuppressWarnings("unused")
     public void preloadProcessBeanAttributes(java.lang.reflect.Type type) {
         // no-op: prevents Weld's event preloading from running in native images
         // (the service boots fine without this preloading, and it avoids the runtime NPE)
     }
 
     @Substitute
+    @SuppressWarnings("unused")
     public <T extends jakarta.enterprise.inject.spi.ProcessBean<?>> void preloadProcessBean(
             Class<T> eventRawType,
             java.lang.reflect.Type... typeParameters
@@ -43,6 +47,7 @@ final class WeldContainerLifecycleEventsSubstitution {
     }
 
     @Substitute
+    @SuppressWarnings("unused")
     public void preloadProcessProducer(java.lang.reflect.Type... typeParameters) {
         // no-op
     }

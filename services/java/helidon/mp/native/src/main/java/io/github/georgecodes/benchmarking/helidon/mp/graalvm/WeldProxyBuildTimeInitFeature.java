@@ -205,6 +205,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         return Thread.currentThread().isInterrupted();
     }
 
+
     // ---- Strategy 1: Walk Weld proxy pools via error-trace path ----
 
     private void registerProxiesFromWeldContainer(ClassLoader cl) {
@@ -262,7 +263,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                                         System.out.println("[WeldProxyBuildTimeInitFeature] Path A: WeldRuntime = "
                                                 + weldRuntime.getClass().getName());
                                         // WeldRuntime has deploymentManager
-                                        registerFromWeldRuntime(weldRuntime, "PathA");
+                                        registerFromWeldRuntime(weldRuntime);
                                     }
                                 }
                             }
@@ -276,7 +277,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         }
     }
 
-    private void registerFromWeldRuntime(Object weldRuntime, String source) {
+    private void registerFromWeldRuntime(Object weldRuntime) {
+        String source = "PathA";
         try {
             // Try deploymentManager (single BeanManagerImpl)
             Field dmField = findFieldInHierarchy(weldRuntime.getClass(), "deploymentManager");
@@ -503,7 +505,6 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             for (Object bean : beans) {
                 try {
                     // Only trigger for normal-scoped beans (which need proxies)
-                    String beanStr = bean.toString();
                     Object proxy = getClientProxyMethod.invoke(proxyProvider, bean);
                     if (proxy != null && isWeldProxy(proxy.getClass().getName())) {
                         tryRegisterClass(proxy.getClass(), source + "-prePopulate");
@@ -644,18 +645,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         int countBefore = registered.size();
         // All @ApplicationScoped (normal-scoped) beans get a WeldClientProxy.
         // Produced interface types also get proxies in beanTypeClosureProxy.
-        List<String> beanClassNames = new ArrayList<>();
-
-        // Application beans
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelConfig");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OpenTelemetry");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.JvmExtrasMetricsConfiguration");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.cache.CaffeineCacheAdapter");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.StartupListener");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.application.HelloService");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.web.HelloResource");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.web.HttpMetricsFilter");
+        List<String> beanClassNames = getKnownBeanClassNames();
 
         // Weld proxy suffixes
         String[] suffixes = {"$_$$_WeldClientProxy", "$_$$_WeldSubclass"};
@@ -675,15 +665,31 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 + (registered.size() - countBefore) + " proxy class(es) via Class.forName()");
     }
 
+    private List<String> getKnownBeanClassNames() {
+        List<String> beanClassNames = new ArrayList<>();
+
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelConfig");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OpenTelemetry");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.JvmExtrasMetricsConfiguration");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.cache.CaffeineCacheAdapter");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.StartupListener");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.application.HelloService");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.web.HelloResource");
+        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.web.HttpMetricsFilter");
+
+        return beanClassNames;
+    }
+
     // ---- Utility methods ----
 
-    private boolean tryRegisterClass(Class<?> clazz, String source) {
+    private void tryRegisterClass(Class<?> clazz, String source) {
         String name = clazz.getName();
         if (!isWeldProxy(name)) {
-            return false;
+            return;
         }
         if (registered.contains(name)) {
-            return false;
+            return;
         }
 
         try {
@@ -691,11 +697,9 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             registered.add(name);
             System.out.println("[WeldProxyBuildTimeInitFeature] - build-time init ("
                                + source + "): " + name);
-            return true;
         } catch (Exception e) {
             System.err.println("[WeldProxyBuildTimeInitFeature] FAILED ("
                                + source + "): " + name + " - " + e);
-            return false;
         }
     }
 
