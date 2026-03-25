@@ -30,6 +30,16 @@ jobs:
   qodana:
     name: Qodana (${{ matrix.name }})
     runs-on: ubuntu-latest
+    env:
+      # Keep the opt-in at job scope as well as workflow scope so every step in
+      # this job, including JavaScript-based actions, is explicitly exercised on
+      # the Node 24 runtime ahead of GitHub's forced migration.
+      #
+      # Note: GitHub may still emit a deprecation warning in the final
+      # "Complete job" phase while JetBrains/qodana-action is published with
+      # Node 20 metadata. That warning is upstream and does not mean this job is
+      # actually opting out of Node 24.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -65,6 +75,9 @@ jobs:
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2025.3.2
         env:
+          # Repeat the opt-in on the action step itself for clarity when reading
+          # the workflow logs around GitHub's Node runtime migration.
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           # When pr-mode is set to true, Qodana analyzes only the files that have been changed
