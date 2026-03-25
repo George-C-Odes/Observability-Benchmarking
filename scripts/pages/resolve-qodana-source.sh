@@ -25,6 +25,7 @@ if [[ "$EVENT_NAME" == "workflow_run" ]]; then
 fi
 
 response_file="$(mktemp)"
+trap 'rm -f "$response_file"' EXIT
 if ! curl -fsSL \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \

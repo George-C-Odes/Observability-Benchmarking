@@ -62,8 +62,7 @@ jobs:
 
           echo "args=$args" >> "$GITHUB_OUTPUT"
       - name: Qodana Scan
-        uses: JetBrains/qodana-action@v2025.3.2
-#       uses: JetBrains/qodana-action@119d0a737348511148d0e9e30092c9631be95d36 # v2025.3.2
+        uses: JetBrains/qodana-action@89eb4357efd2b52e639f3216e63edaf33b82622b # v2025.3.2
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
