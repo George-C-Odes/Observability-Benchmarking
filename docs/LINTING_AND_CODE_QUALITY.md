@@ -99,6 +99,8 @@ It keeps the repository root as the Qodana project so the shared root `qodana.ya
 
 The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow also uploads separate report artifacts per matrix entry (`qodana-report-services-java` and `qodana-report-orchestrator`) to avoid cross-job artifact name collisions.
 
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so the GitHub-hosted JavaScript action runtime is exercised under Node 24 ahead of GitHub's forced migration. This lets the team catch Qodana action compatibility issues before the Node 20 fallback disappears.
+
 It is triggered on:
 - manual dispatch
 - pull requests touching the scoped paths or Qodana config
