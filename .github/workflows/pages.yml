@@ -1,7 +1,7 @@
 name: Deploy GitHub Pages
 
 env:
-  # Exercise Pages-related JavaScript actions on Node 24 ahead of GitHub's default runtime migration.
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 on:
@@ -35,18 +35,20 @@ jobs:
   build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    env:
-      # Keep the opt-in at job scope for clearer Node 24 migration logs.
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    timeout-minutes: 15
     steps:
       - name: Select source revision
         id: source
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PUSH_SHA: ${{ github.sha }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            echo "ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            echo "ref=$WR_HEAD_SHA" >> "$GITHUB_OUTPUT"
           else
-            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "ref=$PUSH_SHA" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout
@@ -63,8 +65,6 @@ jobs:
 
       - name: Set up Pages
         uses: actions/configure-pages@v5
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
       - name: Build site with Bundler and Jekyll
         shell: bash
@@ -86,10 +86,13 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            echo "run_id=$WR_ID" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$WR_HEAD_SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -131,13 +134,14 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QODANA_RUN_ID: ${{ steps.qodana_source.outputs.run_id }}
         run: |
           response_file="$(mktemp)"
           if ! curl -fsSL \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${{ steps.qodana_source.outputs.run_id }}/artifacts?per_page=100" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${QODANA_RUN_ID}/artifacts?per_page=100" \
             -o "$response_file"; then
             echo "services_java_present=unknown" >> "$GITHUB_OUTPUT"
             echo "orchestrator_present=unknown" >> "$GITHUB_OUTPUT"
@@ -169,8 +173,6 @@ jobs:
         if: steps.qodana_source.outputs.run_id != ''
         continue-on-error: true
         uses: actions/download-artifact@v8
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
           name: qodana-report-services-java
           path: ./.qodana-pages/services-java
@@ -182,8 +184,6 @@ jobs:
         if: steps.qodana_source.outputs.run_id != ''
         continue-on-error: true
         uses: actions/download-artifact@v8
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
         with:
           name: qodana-report-orchestrator
           path: ./.qodana-pages/orchestrator
@@ -193,12 +193,13 @@ jobs:
       - name: Resolve normalized Qodana report statuses
         id: qodana_status
         shell: bash
+        env:
+          SERVICES_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.services_java_present }}
+          ORCHESTRATOR_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.orchestrator_present }}
+          SERVICES_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_services_java.outcome }}
+          ORCHESTRATOR_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_orchestrator.outcome }}
+          QODANA_RUN_ID: ${{ steps.qodana_source.outputs.run_id }}
         run: |
-          services_artifact_present='${{ steps.qodana_artifacts.outputs.services_java_present }}'
-          orchestrator_artifact_present='${{ steps.qodana_artifacts.outputs.orchestrator_present }}'
-          services_download_outcome='${{ steps.download_qodana_services_java.outcome }}'
-          orchestrator_download_outcome='${{ steps.download_qodana_orchestrator.outcome }}'
-
           resolve_status() {
             local directory_path="$1"
             local artifact_present="$2"
@@ -213,7 +214,7 @@ jobs:
                     echo 'download failed'
                   elif [[ "$artifact_present" == 'false' ]]; then
                     echo 'unavailable'
-                  elif [[ -n '${{ steps.qodana_source.outputs.run_id }}' ]]; then
+                  elif [[ -n "$QODANA_RUN_ID" ]]; then
                     echo 'undetermined'
                   else
                     echo 'not-applicable'
@@ -222,15 +223,15 @@ jobs:
               echo 'download failed'
             elif [[ "$artifact_present" == 'false' ]]; then
               echo 'unavailable'
-            elif [[ -n '${{ steps.qodana_source.outputs.run_id }}' ]]; then
+            elif [[ -n "$QODANA_RUN_ID" ]]; then
               echo 'undetermined'
             else
               echo 'not-applicable'
             fi
           }
 
-          services_status="$(resolve_status './.qodana-pages/services-java' "$services_artifact_present" "$services_download_outcome")"
-          orchestrator_status="$(resolve_status './.qodana-pages/orchestrator' "$orchestrator_artifact_present" "$orchestrator_download_outcome")"
+          services_status="$(resolve_status './.qodana-pages/services-java' "$SERVICES_ARTIFACT_PRESENT" "$SERVICES_DOWNLOAD_OUTCOME")"
+          orchestrator_status="$(resolve_status './.qodana-pages/orchestrator' "$ORCHESTRATOR_ARTIFACT_PRESENT" "$ORCHESTRATOR_DOWNLOAD_OUTCOME")"
 
           printf 'services_status=%s\n' "$services_status" >> "$GITHUB_OUTPUT"
           printf 'orchestrator_status=%s\n' "$orchestrator_status" >> "$GITHUB_OUTPUT"
@@ -238,16 +239,16 @@ jobs:
       - name: Resolve Qodana report messages
         id: qodana_messages
         shell: bash
+        env:
+          SERVICES_STATUS: ${{ steps.qodana_status.outputs.services_status }}
+          ORCHESTRATOR_STATUS: ${{ steps.qodana_status.outputs.orchestrator_status }}
+          SERVICES_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.services_java_present }}
+          ORCHESTRATOR_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.orchestrator_present }}
+          SERVICES_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_services_java.outcome }}
+          ORCHESTRATOR_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_orchestrator.outcome }}
+          RESOLVED_RUN_ID: ${{ steps.qodana_source.outputs.run_id }}
+          RESOLVED_HEAD_SHA: ${{ steps.qodana_source.outputs.head_sha }}
         run: |
-          services_status='${{ steps.qodana_status.outputs.services_status }}'
-          orchestrator_status='${{ steps.qodana_status.outputs.orchestrator_status }}'
-          services_artifact_present='${{ steps.qodana_artifacts.outputs.services_java_present }}'
-          orchestrator_artifact_present='${{ steps.qodana_artifacts.outputs.orchestrator_present }}'
-          services_download_outcome='${{ steps.download_qodana_services_java.outcome }}'
-          orchestrator_download_outcome='${{ steps.download_qodana_orchestrator.outcome }}'
-          resolved_run_id='${{ steps.qodana_source.outputs.run_id }}'
-          resolved_head_sha='${{ steps.qodana_source.outputs.head_sha }}'
-
           services_item_text='services-java report is not available yet.'
           services_item_html='<li>services-java report is not available yet.</li>'
           orchestrator_item_text='orchestrator report is not available yet.'
@@ -257,7 +258,7 @@ jobs:
           status_notice_text=''
           status_notice_html=''
 
-          case "$services_status" in
+          case "$SERVICES_STATUS" in
             available)
               services_item_text='services-java report is available.'
               services_item_html='<li><a href="./services-java/">services-java report</a></li>'
@@ -276,7 +277,7 @@ jobs:
               ;;
           esac
 
-          case "$orchestrator_status" in
+          case "$ORCHESTRATOR_STATUS" in
             available)
               orchestrator_item_text='orchestrator report is available.'
               orchestrator_item_html='<li><a href="./orchestrator/">orchestrator report</a></li>'
@@ -295,20 +296,20 @@ jobs:
               ;;
           esac
 
-          if [[ -n "$resolved_run_id" ]]; then
-            if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' ]]; then
-              report_metadata_text="This page currently hosts reports from workflow run $resolved_run_id for commit $resolved_head_sha."
-              report_metadata_html="<p>This page currently hosts reports from workflow run <code>$resolved_run_id</code> for commit <code>$resolved_head_sha</code>.</p>"
+          if [[ -n "$RESOLVED_RUN_ID" ]]; then
+            if [[ "$SERVICES_STATUS" == 'available' || "$ORCHESTRATOR_STATUS" == 'available' ]]; then
+              report_metadata_text="This page currently hosts reports from workflow run $RESOLVED_RUN_ID for commit $RESOLVED_HEAD_SHA."
+              report_metadata_html="<p>This page currently hosts reports from workflow run <code>$RESOLVED_RUN_ID</code> for commit <code>$RESOLVED_HEAD_SHA</code>.</p>"
             else
-              report_metadata_text="A successful Qodana run was found for workflow run $resolved_run_id at commit $resolved_head_sha, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run."
-              report_metadata_html="<p>A successful Qodana run was found for workflow run <code>$resolved_run_id</code> at commit <code>$resolved_head_sha</code>, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run.</p>"
+              report_metadata_text="A successful Qodana run was found for workflow run $RESOLVED_RUN_ID at commit $RESOLVED_HEAD_SHA, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run."
+              report_metadata_html="<p>A successful Qodana run was found for workflow run <code>$RESOLVED_RUN_ID</code> at commit <code>$RESOLVED_HEAD_SHA</code>, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run.</p>"
             fi
           fi
 
-          if [[ "$services_artifact_present" == 'unknown' || "$orchestrator_artifact_present" == 'unknown' ]]; then
+          if [[ "$SERVICES_ARTIFACT_PRESENT" == 'unknown' || "$ORCHESTRATOR_ARTIFACT_PRESENT" == 'unknown' ]]; then
             status_notice_text='GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.'
             status_notice_html='<p><strong>Note:</strong> GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.</p>'
-          elif [[ "$services_download_outcome" == 'failure' || "$orchestrator_download_outcome" == 'failure' ]]; then
+          elif [[ "$SERVICES_DOWNLOAD_OUTCOME" == 'failure' || "$ORCHESTRATOR_DOWNLOAD_OUTCOME" == 'failure' ]]; then
             status_notice_text='At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.'
             status_notice_html='<p><strong>Note:</strong> At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.</p>'
           fi
@@ -326,46 +327,52 @@ jobs:
 
       - name: Log Qodana report resolution
         shell: bash
+        env:
+          SERVICES_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.services_java_present }}
+          ORCHESTRATOR_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.orchestrator_present }}
+          SERVICES_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_services_java.outcome }}
+          ORCHESTRATOR_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_orchestrator.outcome }}
+          SERVICES_STATUS: ${{ steps.qodana_status.outputs.services_status }}
+          ORCHESTRATOR_STATUS: ${{ steps.qodana_status.outputs.orchestrator_status }}
+          QODANA_RUN_ID: ${{ steps.qodana_source.outputs.run_id }}
+          QODANA_HEAD_SHA: ${{ steps.qodana_source.outputs.head_sha }}
+          SERVICES_ITEM_TEXT: ${{ steps.qodana_messages.outputs.services_item_text }}
+          ORCHESTRATOR_ITEM_TEXT: ${{ steps.qodana_messages.outputs.orchestrator_item_text }}
+          REPORT_METADATA_TEXT: ${{ steps.qodana_messages.outputs.report_metadata_text }}
+          STATUS_NOTICE_TEXT: ${{ steps.qodana_messages.outputs.status_notice_text }}
         run: |
-          services_artifact_present='${{ steps.qodana_artifacts.outputs.services_java_present }}'
-          orchestrator_artifact_present='${{ steps.qodana_artifacts.outputs.orchestrator_present }}'
-          services_download_outcome='${{ steps.download_qodana_services_java.outcome }}'
-          orchestrator_download_outcome='${{ steps.download_qodana_orchestrator.outcome }}'
-          services_status='${{ steps.qodana_status.outputs.services_status }}'
-          orchestrator_status='${{ steps.qodana_status.outputs.orchestrator_status }}'
-
           echo 'Qodana Pages report resolution:'
-          if [[ -n '${{ steps.qodana_source.outputs.run_id }}' ]]; then
-            echo "  resolved run id: ${{ steps.qodana_source.outputs.run_id }}"
-            echo "  resolved head sha: ${{ steps.qodana_source.outputs.head_sha }}"
+          if [[ -n "$QODANA_RUN_ID" ]]; then
+            echo "  resolved run id: $QODANA_RUN_ID"
+            echo "  resolved head sha: $QODANA_HEAD_SHA"
           else
             echo '  resolved run id: none'
             echo '  resolved head sha: none'
           fi
-          echo "  services-java artifact listed: ${services_artifact_present:-not-checked}"
-          echo "  services-java download outcome: ${services_download_outcome:-not-run}"
-          echo "  services-java final status: $services_status"
-          echo "  services-java message: ${{ steps.qodana_messages.outputs.services_item_text }}"
-          echo "  orchestrator artifact listed: ${orchestrator_artifact_present:-not-checked}"
-          echo "  orchestrator download outcome: ${orchestrator_download_outcome:-not-run}"
-          echo "  orchestrator final status: $orchestrator_status"
-          echo "  orchestrator message: ${{ steps.qodana_messages.outputs.orchestrator_item_text }}"
-          echo "  page metadata: ${{ steps.qodana_messages.outputs.report_metadata_text }}"
-          if [[ -n '${{ steps.qodana_messages.outputs.status_notice_text }}' ]]; then
-            echo "  note: ${{ steps.qodana_messages.outputs.status_notice_text }}"
+          echo "  services-java artifact listed: ${SERVICES_ARTIFACT_PRESENT:-not-checked}"
+          echo "  services-java download outcome: ${SERVICES_DOWNLOAD_OUTCOME:-not-run}"
+          echo "  services-java final status: $SERVICES_STATUS"
+          echo "  services-java message: $SERVICES_ITEM_TEXT"
+          echo "  orchestrator artifact listed: ${ORCHESTRATOR_ARTIFACT_PRESENT:-not-checked}"
+          echo "  orchestrator download outcome: ${ORCHESTRATOR_DOWNLOAD_OUTCOME:-not-run}"
+          echo "  orchestrator final status: $ORCHESTRATOR_STATUS"
+          echo "  orchestrator message: $ORCHESTRATOR_ITEM_TEXT"
+          echo "  page metadata: $REPORT_METADATA_TEXT"
+          if [[ -n "$STATUS_NOTICE_TEXT" ]]; then
+            echo "  note: $STATUS_NOTICE_TEXT"
           fi
 
       - name: Publish Qodana reports into the Pages site
         shell: bash
+        env:
+          SERVICES_LINK: ${{ steps.qodana_messages.outputs.services_item_html }}
+          ORCHESTRATOR_LINK: ${{ steps.qodana_messages.outputs.orchestrator_item_html }}
+          REPORT_METADATA: ${{ steps.qodana_messages.outputs.report_metadata_html }}
+          STATUS_NOTICE: ${{ steps.qodana_messages.outputs.status_notice_html }}
+          SERVICES_MESSAGE: ${{ steps.qodana_messages.outputs.services_item_text }}
+          ORCHESTRATOR_MESSAGE: ${{ steps.qodana_messages.outputs.orchestrator_item_text }}
         run: |
           mkdir -p ./_site/qodana/services-java ./_site/qodana/orchestrator
-
-          services_link='${{ steps.qodana_messages.outputs.services_item_html }}'
-          orchestrator_link='${{ steps.qodana_messages.outputs.orchestrator_item_html }}'
-          report_metadata='${{ steps.qodana_messages.outputs.report_metadata_html }}'
-          status_notice='${{ steps.qodana_messages.outputs.status_notice_html }}'
-          services_message='${{ steps.qodana_messages.outputs.services_item_text }}'
-          orchestrator_message='${{ steps.qodana_messages.outputs.orchestrator_item_text }}'
 
           write_html_file() {
             local target_path="$1"
@@ -432,8 +439,8 @@ jobs:
             cp -a ./.qodana-pages/orchestrator/. ./_site/qodana/orchestrator/
           fi
 
-          create_scope_page 'services-java' "$services_message"
-          create_scope_page 'orchestrator' "$orchestrator_message"
+          create_scope_page 'services-java' "$SERVICES_MESSAGE"
+          create_scope_page 'orchestrator' "$ORCHESTRATOR_MESSAGE"
 
           write_html_file ./_site/qodana/index.html \
             '<!doctype html>' \
@@ -451,18 +458,16 @@ jobs:
             '  <h1>Qodana reports</h1>' \
             '  <p>Latest published reports from the GitHub Actions <code>Qodana</code> workflow on <code>main</code>.</p>' \
             '  <ul>' \
-            "    ${services_link}" \
-            "    ${orchestrator_link}" \
+            "    ${SERVICES_LINK}" \
+            "    ${ORCHESTRATOR_LINK}" \
             '  </ul>' \
-            "  ${report_metadata}" \
-            "  ${status_notice}" \
+            "  ${REPORT_METADATA}" \
+            "  ${STATUS_NOTICE}" \
             '</body>' \
             '</html>'
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
   # Deployment job
   deploy:
@@ -471,13 +476,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    env:
-      # Keep the opt-in at job scope for clearer Node 24 migration logs.
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    timeout-minutes: 10
     needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
