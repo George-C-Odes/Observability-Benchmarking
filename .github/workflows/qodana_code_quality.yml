@@ -1,6 +1,6 @@
 name: Qodana
 env:
-  # Exercise the Qodana action on Node 24 ahead of GitHub's default runtime migration.
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 on:
   workflow_dispatch:
@@ -10,25 +10,22 @@ on:
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
       - 'qodana.yaml'
+      - '.qodana/baseline/**'
   push:
     branches:
       - main
-      - copilot/setup-github-pages-for-documentation
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
       - 'qodana.yaml'
+      - '.qodana/baseline/**'
 
 jobs:
   qodana:
     name: Qodana (${{ matrix.name }})
     runs-on: ubuntu-latest
-    env:
-      # Keep the opt-in at job scope for clearer Node 24 migration logs.
-      # GitHub may still report that the action targets Node 20 until JetBrains
-      # republishes it with native Node 24 metadata.
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -65,8 +62,6 @@ jobs:
       - name: Qodana Scan
         uses: JetBrains/qodana-action@v2025.3.2
         env:
-          # Repeat the opt-in on the action step for clearer migration logs.
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           # When pr-mode is set to true, Qodana analyzes only the files that have been changed
