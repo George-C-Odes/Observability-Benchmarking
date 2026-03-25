@@ -71,8 +71,13 @@ jobs:
             gem install bundler --no-document
           fi
 
+          # Ensure a Gemfile.lock is present so docs builds are reproducible.
+          if [ ! -f Gemfile.lock ]; then
+            echo "Error: docs/Gemfile.lock is missing. Please generate and commit it for reproducible GitHub Pages builds." >&2
+            exit 1
+          fi
           bundle config set path vendor/bundle
-          bundle install
+          bundle install --deployment --jobs 4
           bundle exec jekyll build --destination ../_site
 
       - name: Resolve Qodana artifact source run
@@ -205,6 +210,8 @@ jobs:
                     echo 'unavailable'
                   elif [[ "$artifact_present" == 'true' && "$download_outcome" == 'failure' ]]; then
                     echo 'download failed'
+                  elif [[ "$artifact_present" == 'false' ]]; then
+                    echo 'unavailable'
                   elif [[ -n '${{ steps.qodana_source.outputs.run_id }}' ]]; then
                     echo 'undetermined'
                   else
