@@ -2,10 +2,8 @@
 
 # Observability Benchmarking
 
-[![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
-[![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
-[![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
-[![Django Python Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.2-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-{{SPRING_BOOT_VERSION}}-green.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-{{QUARKUS_VERSION}}-blue.svg)](https://quarkus.io/)
@@ -19,8 +17,10 @@
 [![Go](https://img.shields.io/badge/Go-{{GO_VERSION}}-00ADD8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-{{PYTHON_VERSION}}-3776AB.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-{{DJANGO_VERSION}}-092E20.svg)](https://www.djangoproject.com/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
+[![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
+[![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
+[![Django Python Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
 

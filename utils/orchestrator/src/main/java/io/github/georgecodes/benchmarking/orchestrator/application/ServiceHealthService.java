@@ -40,7 +40,7 @@ public class ServiceHealthService {
   /**
    * Health-check configuration loaded from application config under {@code orchestrator.health.*}.
    *
-   * <p>This drives which services are probed (service name -> base URL + health path).
+   * <p>This drives which services are probed (service name -> base URL and health path).
    */
   private final ServiceHealthConfig config;
 
