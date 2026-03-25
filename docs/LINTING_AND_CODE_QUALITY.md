@@ -77,6 +77,17 @@ The following items are suppressed from Checkstyle checks:
 
 ## Qodana Configuration (JVM Static Analysis)
 
+### GitHub Actions Node Runtime Migration Convention
+This repository now follows a simple convention for GitHub Actions workflows that use JavaScript-based actions: set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` proactively so those actions are exercised on Node 24 ahead of GitHub's default runtime migration.
+
+At the moment, that convention is applied in these workflow files:
+
+- `.github/workflows/qodana_code_quality.yml`
+- `.github/workflows/pages.yml`
+- `.github/workflows/django_python_quality.yml`
+
+If GitHub still prints a warning saying an action targets Node 20 but is being forced to run on Node 24, that confirms the opt-in is active. The warning should disappear only after the action publisher updates the action metadata to native Node 24 support.
+
 ### Overview
 This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setup for deeper JVM static analysis based on IntelliJ inspections. Qodana complements Checkstyle rather than replacing it:
 
