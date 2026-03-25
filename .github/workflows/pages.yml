@@ -65,6 +65,13 @@ jobs:
           source: ./docs
           destination: ./_site
 
+      - name: Reset site directory ownership
+        shell: bash
+        run: |
+          # actions/jekyll-build-pages may leave ./_site owned by the container user.
+          # Reset it to the runner user before later shell steps add hosted Qodana reports.
+          sudo chown -R "$(id -u)":"$(id -g)" ./_site
+
       - name: Resolve Qodana artifact source run
         id: qodana_source
         shell: bash
@@ -78,13 +85,13 @@ jobs:
           fi
 
           response_file="$(mktemp)"
-          if ! curl -sSL \
+          if ! curl -fsSL \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/qodana_code_quality.yml/runs?branch=main&status=completed&per_page=20" \
             -o "$response_file"; then
-            echo "Warning: Unable to retrieve Qodana workflow runs from GitHub API; GitHub Pages will publish without hosted Qodana reports."
+            echo "Warning: GitHub API request for Qodana workflow runs failed; GitHub Pages will publish without hosted Qodana reports."
             exit 0
           fi
 
@@ -117,7 +124,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           response_file="$(mktemp)"
-          if ! curl -sSL \
+          if ! curl -fsSL \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -201,8 +208,11 @@ jobs:
             fi
           }
 
-          echo "services_status=$(resolve_status './.qodana-pages/services-java' "$services_artifact_present" "$services_download_outcome")" >> "$GITHUB_OUTPUT"
-          echo "orchestrator_status=$(resolve_status './.qodana-pages/orchestrator' "$orchestrator_artifact_present" "$orchestrator_download_outcome")" >> "$GITHUB_OUTPUT"
+          services_status="$(resolve_status './.qodana-pages/services-java' "$services_artifact_present" "$services_download_outcome")"
+          orchestrator_status="$(resolve_status './.qodana-pages/orchestrator' "$orchestrator_artifact_present" "$orchestrator_download_outcome")"
+
+          printf 'services_status=%s\n' "$services_status" >> "$GITHUB_OUTPUT"
+          printf 'orchestrator_status=%s\n' "$orchestrator_status" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Qodana report messages
         id: qodana_messages
