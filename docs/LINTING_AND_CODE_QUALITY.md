@@ -97,6 +97,8 @@ The workflow in `.github/workflows/qodana_code_quality.yml` runs Qodana in a sma
 
 It keeps the repository root as the Qodana project so the shared root `qodana.yaml` is applied, then limits each job with `--only-directory`.
 
+The workflow also pins the Qodana JVM image explicitly (`jetbrains/qodana-jvm-community:2025.3`) and uploads separate report artifacts per matrix entry (`qodana-report-services-java` and `qodana-report-orchestrator`). That avoids cross-job artifact name collisions while keeping a single shared analysis configuration.
+
 It is triggered on:
 - manual dispatch
 - pull requests touching the scoped paths or Qodana config
@@ -199,6 +201,7 @@ docker run --rm `
 
 Notes:
 - Local scans automatically use the repository's `qodana.yaml` because the project root is mounted as `/data/project`.
+- In CI, the workflow passes the linter image explicitly and keeps `qodana.yaml` focused on the shared profile, quality gate, and baseline behavior.
 - A non-zero container exit code means the configured quality gate was violated.
 - A `QODANA_TOKEN` is not required for local scans unless you later decide to upload results to Qodana Cloud.
 - Results and logs are written under `.qodana/` in the example commands above.

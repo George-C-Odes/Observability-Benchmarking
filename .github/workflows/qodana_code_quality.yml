@@ -47,7 +47,7 @@ jobs:
         id: qodana_args
         shell: bash
         run: |
-          args="--project-dir=. --only-directory=${{ matrix.source_dir }}"
+          args="--image=jetbrains/qodana-jvm-community:2025.3 --project-dir=. --only-directory=${{ matrix.source_dir }}"
           baseline_file="${{ matrix.baseline_file }}"
 
           if [[ -f "$baseline_file" ]]; then
@@ -70,6 +70,7 @@ jobs:
           use-annotations: true
           # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
           upload-result: true
+          artifact-name: qodana-report-${{ matrix.name }}
           # quick-fixes available in Ultimate and Ultimate Plus plans
           push-fixes: 'none'
           # Keep the repository root as the Qodana project so the shared

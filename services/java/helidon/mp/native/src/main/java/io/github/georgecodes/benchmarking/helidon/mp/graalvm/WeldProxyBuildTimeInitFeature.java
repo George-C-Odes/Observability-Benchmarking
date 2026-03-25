@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * GraalVM native-image Feature that ensures <b>all</b> Weld-generated client proxy
@@ -46,6 +48,12 @@ import java.util.Set;
  * </ul>
  */
 public class WeldProxyBuildTimeInitFeature implements Feature {
+
+    /** Maximum time to wait for Helidon's CDI bootstrap to become observable. */
+    private static final long CDI_WAIT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(120);
+
+    /** Delay between CDI readiness checks while native-image bootstrap is still progressing. */
+    private static final long CDI_POLL_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(500);
 
     /** Track registered class names to avoid duplicates. */
     private final Set<String> registered = new HashSet<>();
@@ -126,8 +134,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             Field containerField = btiClass.getDeclaredField("container");
             containerField.setAccessible(true);
 
-            long deadline = System.currentTimeMillis() + 120_000;
-            while (System.currentTimeMillis() < deadline) {
+            long deadlineNanos = System.nanoTime() + CDI_WAIT_TIMEOUT_NANOS;
+            while (System.nanoTime() < deadlineNanos) {
                 Object ref = containerField.get(null);
                 if (ref != null) {
                     // ref is a CompletableFuture or similar — wait for its value
@@ -136,7 +144,11 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                             + ref.getClass().getSimpleName());
                     return;
                 }
-                Thread.sleep(500);
+                if (wasCdiPollInterrupted(deadlineNanos)) {
+                    System.out.println("[WeldProxyBuildTimeInitFeature] CDI bootstrap wait interrupted");
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
             System.out.println("[WeldProxyBuildTimeInitFeature] CDI bootstrap timeout after 120s");
         } catch (ClassNotFoundException e) {
@@ -158,8 +170,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             // CDI.current() blocks until CDI is ready
             Class<?> cdiClass = Class.forName("jakarta.enterprise.inject.spi.CDI", false, cl);
             java.lang.reflect.Method currentMethod = cdiClass.getMethod("current");
-            long deadline = System.currentTimeMillis() + 120_000;
-            while (System.currentTimeMillis() < deadline) {
+            long deadlineNanos = System.nanoTime() + CDI_WAIT_TIMEOUT_NANOS;
+            while (System.nanoTime() < deadlineNanos) {
                 try {
                     Object cdi = currentMethod.invoke(null);
                     if (cdi != null) {
@@ -170,13 +182,27 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 } catch (Exception e) {
                     // CDI not ready yet
                 }
-                Thread.sleep(500);
+                if (wasCdiPollInterrupted(deadlineNanos)) {
+                    System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() wait interrupted");
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
             System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() timeout after 120s");
         } catch (Exception e) {
             System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() path failed: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
+    }
+
+    private boolean wasCdiPollInterrupted(long deadlineNanos) {
+        long remainingNanos = deadlineNanos - System.nanoTime();
+        if (remainingNanos <= 0) {
+            return false;
+        }
+
+        LockSupport.parkNanos(Math.min(CDI_POLL_INTERVAL_NANOS, remainingNanos));
+        return Thread.currentThread().isInterrupted();
     }
 
     // ---- Strategy 1: Walk Weld proxy pools via error-trace path ----

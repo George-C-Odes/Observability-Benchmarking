@@ -49,4 +49,6 @@ failureConditions:
 # and `utils/orchestrator` via `--only-directory` per job. Matching
 # reviewed SARIF baselines can be supplied by the workflow from
 # `.qodana/baseline/*.sarif.json` when they exist.
-linter: jetbrains/qodana-jvm-community:2025.3
+#
+# The workflow pins the Qodana JVM image explicitly for each run so this
+# shared file stays focused on inspections, scopes, and quality gates.
