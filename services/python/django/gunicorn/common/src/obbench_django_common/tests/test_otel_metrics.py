@@ -16,12 +16,15 @@ class OTelMetricsTests(TestCase):
         meter = mock.Mock()
         cfg = SimpleNamespace(endpoint_path="/hello/platform")
 
-        with mock.patch(
-            "opentelemetry.metrics.get_meter",
-            return_value=meter,
-        ) as get_meter, mock.patch(
-            "obbench_django_common.infrastructure.boot.get_app_config",
-            return_value=cfg,
+        with (
+            mock.patch(
+                "opentelemetry.metrics.get_meter",
+                return_value=meter,
+            ) as get_meter,
+            mock.patch(
+                "obbench_django_common.infrastructure.boot.get_app_config",
+                return_value=cfg,
+            ),
         ):
             otel_metrics.register_metrics()
             otel_metrics.register_metrics()
@@ -34,22 +37,24 @@ class OTelMetricsTests(TestCase):
         meter.create_observable_counter.side_effect = [RuntimeError("boom"), None]
         cfg = SimpleNamespace(endpoint_path="/hello/platform")
 
-        with mock.patch(
-            "opentelemetry.metrics.get_meter",
-            return_value=meter,
-        ), mock.patch(
-            "obbench_django_common.infrastructure.boot.get_app_config",
-            return_value=cfg,
-        ), self.assertLogs("hello", level="DEBUG") as logs:
+        with (
+            mock.patch(
+                "opentelemetry.metrics.get_meter",
+                return_value=meter,
+            ),
+            mock.patch(
+                "obbench_django_common.infrastructure.boot.get_app_config",
+                return_value=cfg,
+            ),
+            self.assertLogs("hello", level="DEBUG") as logs,
+        ):
             otel_metrics.register_metrics()
             otel_metrics.register_metrics()
 
         self.assertEqual(2, meter.create_observable_counter.call_count)
         self.assertTrue(
             any(
-                "failed to register hello.request.count (OTel SDK may not be active)"
-                in message
+                "failed to register hello.request.count (OTel SDK may not be active)" in message
                 for message in logs.output
             )
         )
-

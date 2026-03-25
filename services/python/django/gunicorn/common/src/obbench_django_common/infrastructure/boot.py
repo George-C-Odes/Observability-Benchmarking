@@ -51,6 +51,7 @@ class _State:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def on_startup() -> None:
     """Eagerly initialize the cache and service objects.
 
@@ -155,6 +156,7 @@ def get_app_config() -> AppConfig:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _instrument_app() -> None:
     """Apply OTel instrumentation patches (Django, logging).
