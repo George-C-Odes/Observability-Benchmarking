@@ -42,10 +42,22 @@ The documentation site showcases:
 
 Commit **source** files under `docs/` (Markdown, HTML, CSS, layouts, images). Do **not** commit generated output.
 
-- ✅ Commit: `docs/*.md`, `docs/*.html`, `docs/style.css`, `docs/_layouts/`, `docs/images/`, `docs/_config.yml`
-- ❌ Do not commit: `docs/_site/`, `docs/.jekyll-cache/`, `docs/.sass-cache/`, `docs/Gemfile.lock`
+- ✅ Commit: `docs/*.md`, `docs/*.html`, `docs/style.css`, `docs/_layouts/`, `docs/images/`, `docs/_config.yml`, `docs/.ruby-version`, `docs/Gemfile`, `docs/Gemfile.lock`
+- ❌ Do not commit: `docs/_site/`, `docs/.jekyll-cache/`, `docs/.sass-cache/`, `docs/.bundle/`
+
+`docs/Gemfile.lock` is tracked intentionally because the GitHub Pages workflow now builds the site directly with Bundler/Jekyll from `docs/Gemfile`. Keeping the lockfile in git makes the Pages dependency set reproducible instead of silently drifting.
+
+`docs/.bundle/config` is **local Bundler state**, not source-of-truth project configuration. It may record machine-specific settings such as install paths or deployment mode, so it should stay local and must not be committed.
 
 ## Local Development
+
+### Current docs toolchain
+
+- Ruby version: `4.0` (pinned in `docs/.ruby-version`)
+- Bundler lockfile: `docs/Gemfile.lock`
+- Static site generator: Jekyll `4.4.1`
+
+The GitHub Pages workflow now uses `ruby/setup-ruby` plus Bundler/Jekyll directly, so local verification should follow the same pattern as closely as possible.
 
 To preview the site locally in a way that matches GitHub Pages (including the repository baseurl):
 
@@ -55,35 +67,53 @@ bundle install
 bundle exec jekyll serve --port 4000 --baseurl /Observability-Benchmarking
 ```
 
+On Windows, use the `ridk enable`-based flow in the Windows section below before running Bundler/Jekyll commands.
+
+If you change `docs/Gemfile`, refresh the lockfile in a cross-platform-safe way before committing:
+
+```bash
+cd docs
+bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
+bundle install
+```
+
 Then open:
 - http://127.0.0.1:4000/Observability-Benchmarking/
 
 > Tip: if you change `_config.yml` or layouts, restart `jekyll serve`.
 
-### Windows setup (Scoop Ruby)
+### Windows setup (verified with `ridk enable`)
 
 Jekyll depends on gems with native C extensions (`eventmachine`, `http_parser.rb`, `json`, `wdm`).
-Scoop Ruby does **not** bundle a compiler toolchain, so you must install **MSYS2** to provide one.
+On Windows, the simplest reliable setup is:
+
+1. Install a UCRT Ruby build (`RubyInstaller x64-ucrt` or Scoop Ruby)
+2. Install **MSYS2** with the UCRT64 toolchain
+3. Run `ridk enable` in each PowerShell session before `bundle install` / `bundle exec jekyll ...`
+
+In this repository, the docs build was re-tested successfully in PowerShell with `ridk enable`, `bundle check`, and `bundle exec jekyll build`.
+
+#### Choose a Ruby distribution
+
+- **Preferred:** RubyInstaller x64-ucrt with the MSYS2/DevKit component enabled
+- **Also works:** Scoop Ruby, as long as MSYS2 is installed and `ridk enable` is run in the current shell
 
 #### One-time setup
 
 ```powershell
-# 1. Install MSYS2 via Scoop (provides make, gcc, pkg-config)
-scoop install msys2
+# If you use Scoop, first install Ruby and MSYS2.
+# (RubyInstaller users can skip the Ruby step and use their installed Ruby directly.)
+scoop install ruby msys2
 
-# 2. Install the UCRT64 toolchain and OpenSSL dev headers
+# 1. Install the UCRT64 toolchain and OpenSSL dev headers
 #    (UCRT64 matches Scoop Ruby's x64-mingw-ucrt platform)
 msys2 -defterm -no-start -ucrt64 -shell bash -c "pacman -S --noconfirm --needed base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-openssl"
 
-# 3. Add BOTH MSYS2 directories to your PATH for this session
-#    - ucrt64\bin  → gcc, g++, pkg-config, OpenSSL libraries
-#    - usr\bin     → POSIX-compatible make (required because Ruby's
-#                    mkmf generates Makefiles with POSIX-style paths;
-#                    mingw32-make from ucrt64\bin cannot process them)
-$msys2 = Join-Path $env:USERPROFILE "scoop\apps\msys2\current"
-$env:PATH = "$msys2\ucrt64\bin;$msys2\usr\bin;$env:PATH"
+# 2. Enable the Ruby/MSYS2 toolchain in the current shell
+ridk enable
 
-# 4. Verify the toolchain is available
+# 3. Verify the toolchain is available in this shell
+where.exe make
 gcc --version          # should show x86_64-w64-mingw32
 make --version         # should show "Built for x86_64-pc-msys"
 ```
@@ -98,28 +128,46 @@ make --version         # should show "Built for x86_64-pc-msys"
 
 ```powershell
 cd docs
-Remove-Item .\Gemfile.lock -ErrorAction SilentlyContinue
-bundle install
+ridk enable
+bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
+bundle install --jobs 4
 bundle exec jekyll serve --port 4000 --baseurl /Observability-Benchmarking
 ```
 
-> **Tip:** To make the PATH change permanent so you don't need step 3 every session,
-> add both paths to your **User** `PATH` environment variable:
+#### Build once, the same way CI does
+
+```powershell
+cd docs
+ridk enable
+bundle check
+if ($LASTEXITCODE -ne 0) { bundle install --jobs 4 }
+bundle exec jekyll build --destination ../_site-test
+```
+
+> **Tip:** `ridk enable` is the preferred per-session setup command. If you still prefer a permanent PATH-based setup, make sure both MSYS2 directories are present in your **User** `PATH`:
 > - `%USERPROFILE%\scoop\apps\msys2\current\ucrt64\bin`
 > - `%USERPROFILE%\scoop\apps\msys2\current\usr\bin`
 
 ### Windows troubleshooting
 
 **`Could not find gem 'google-protobuf' with platform 'x64-mingw-ucrt'`**
-— Delete the stale lockfile and re-resolve:
+— Refresh the tracked lockfile for both Windows and Linux platforms, then reinstall:
 
 ```powershell
-Remove-Item .\Gemfile.lock -ErrorAction SilentlyContinue
+bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
 bundle install
 ```
 
 **`The compiler failed to generate an executable file` / `No such file or directory - make`**
-— The MSYS2 UCRT64 toolchain is not on your PATH. Re-run step 3 from the setup above, or add it permanently.
+— The MSYS2 toolchain is not enabled in the current shell. Run:
+
+```powershell
+ridk enable
+where.exe make
+make --version
+```
+
+If `make` is still missing, re-run the MSYS2 toolchain install command from the setup section.
 
 **`cc1.exe: fatal error: ... Permission denied`**
 — Your antivirus is blocking the compiler from reading temporary source files.
@@ -129,7 +177,7 @@ Add an exclusion for your Ruby gems directory (e.g. `%USERPROFILE%\scoop\persist
 — You are using `mingw32-make` instead of MSYS2's POSIX `make`.
 Ruby's mkmf generates Makefiles with POSIX-style paths (`/C/Users/...`) that
 only the POSIX make from `usr\bin` can process. Make sure
-`%USERPROFILE%\scoop\apps\msys2\current\usr\bin` is on your PATH and that
+`ridk enable` has run successfully, `%USERPROFILE%\scoop\apps\msys2\current\usr\bin` is on your PATH, and that
 `make --version` shows **`Built for x86_64-pc-msys`** (not `x86_64-w64-mingw32`).
 
 **`checking for -lcrypto... not found` (OpenSSL)**
@@ -172,13 +220,24 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 
 ### Deployment Trigger
 - Automatic on push to `main` branch
+- Automatic after a successful `Qodana` workflow run on `main` (to refresh the hosted Qodana HTML reports under `/qodana/`)
 - Manual via GitHub Actions workflow dispatch
 
 ### Build Process
 1. Checkout repository
-2. Configure GitHub Pages
-3. Build with Jekyll
-4. Deploy to GitHub Pages environment
+2. Set up Ruby from the workflow pin and restore/install Bundler dependencies
+3. Configure GitHub Pages
+4. Build the docs site with Bundler/Jekyll from `docs/Gemfile`
+5. Optionally merge the latest hosted Qodana reports into the built site
+6. Upload the Pages artifact and deploy to the GitHub Pages environment
+
+### Hosted Qodana Pages URLs
+
+- `/qodana/` - landing page for the latest hosted Qodana reports
+- `/qodana/services-java/` - service-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
+- `/qodana/orchestrator/` - orchestrator-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
+
+For the detailed configuration and rollout strategy behind the hosted Qodana Pages setup, see `docs/LINTING_AND_CODE_QUALITY.md`.
 
 ## Contributing
 

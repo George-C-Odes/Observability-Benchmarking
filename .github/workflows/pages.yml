@@ -54,6 +54,13 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.ref }}
 
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+          working-directory: docs
+
       - name: Set up Pages
         uses: actions/configure-pages@v5
         env:
@@ -67,17 +74,11 @@ jobs:
         run: |
           ruby --version
 
-          if ! command -v bundle >/dev/null 2>&1; then
-            gem install bundler --no-document
-          fi
-
           # Ensure a Gemfile.lock is present so docs builds are reproducible.
           if [ ! -f Gemfile.lock ]; then
             echo "Error: docs/Gemfile.lock is missing. Please generate and commit it for reproducible GitHub Pages builds." >&2
             exit 1
           fi
-          bundle config set path vendor/bundle
-          bundle install --deployment --jobs 4
           bundle exec jekyll build --destination ../_site
 
       - name: Resolve Qodana artifact source run

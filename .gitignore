@@ -141,7 +141,9 @@ db.sqlite3-journal
 !/.qodana/
 !/qodana.yaml
 !/.github/workflows/qodana_code_quality.yml
-/docs/Gemfile.lock
+
+# Local Bundler state for docs development
+/docs/.bundle/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
@@ -168,3 +170,4 @@ vitest-*.json
 # If you switch to "Pages -> Deploy from a branch" using the `/docs` folder directly with
 # Jekyll build on GitHub, you may re-add this ignore.
 # /docs/_site/
+/docs/vendor/
