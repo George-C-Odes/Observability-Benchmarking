@@ -451,7 +451,7 @@ mvn package -Pnative
 
 **Implementation Details**:
 - **Django {{DJANGO_VERSION}}** (latest major release)
-- **Gunicorn 25.1.0** as the production WSGI/ASGI server
+- **Gunicorn 25.2.0** as the production WSGI/ASGI server
 - **Python {{PYTHON_VERSION}}** (CPython)
 - Two modules sharing a common application package (`gunicorn/common`):
   - **WSGI module** (`django-platform`): Gunicorn `gthread` workers (threaded platform model)
@@ -966,6 +966,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Server             | Gunicorn                   | 25.2.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 25.8.2                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |

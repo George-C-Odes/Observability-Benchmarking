@@ -95,7 +95,7 @@ USER nonroot:nonroot
 
 EXPOSE 8080
 
-# Gunicorn WSGI server. OTel SDK is initialised programmatically
+# Gunicorn WSGI server. OTel SDK is initialized programmatically
 # per-worker in the post_fork hook (see gunicorn.conf.py / boot.py),
 # NOT via the opentelemetry-instrument CLI wrapper, because the CLI
 # creates the SDK in the master process and its background export

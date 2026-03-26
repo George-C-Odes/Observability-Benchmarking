@@ -142,7 +142,7 @@ memory: 2GB        # Maximum memory
 - Pekko: 1.3.0 (Pekko Core 1.4.0)
 - Go: 1.26.1 with Fiber v3.1.0
 - Python: 3.13.12 (CPython)
-- Django: 6.0.3 (Gunicorn 25.1.0)
+- Django: 6.0.3 (Gunicorn 25.2.0)
 
 ### Third-party license note (native-image)
 
