@@ -203,11 +203,11 @@ public class CommandPolicy {
       throw new IllegalArgumentException("Compose subcommand not allowed: " + sub);
     }
 
-    // Always force --project-directory to the container-visible projectDir.
-    // This is required because:
+    // Ensure --project-directory defaults to the container-visible compose dir when the caller omits it.
+    // This is needed because:
     // - compose include paths (include: ./obs.yml, ./utils.yml) are resolved relative to the project directory.
     // - when a Windows path is passed (C:/...), compose running in Linux treats it as relative and prefixes /workspace.
-    // Using projectDir ensures includes and other relative references are readable inside the container.
+    // Using composeDir ensures includes and other relative references are readable inside the container.
     List<String> argv = new ArrayList<>(tokens);
     String composeDir = paths.workspace().compose();
     Path composePath = Path.of(composeDir);
