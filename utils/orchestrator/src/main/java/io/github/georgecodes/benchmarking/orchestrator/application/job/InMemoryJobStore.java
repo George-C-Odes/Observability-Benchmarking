@@ -5,6 +5,10 @@ import io.github.georgecodes.benchmarking.orchestrator.api.JobStatusResponse;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import lombok.extern.jbosslog.JBossLog;
 
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -17,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * In-memory adapter for {@link JobStore}.
  */
+@JBossLog
 @ApplicationScoped
 public class InMemoryJobStore implements JobStore {
 
@@ -76,11 +81,7 @@ public class InMemoryJobStore implements JobStore {
     job.finishedAt = finishedAt;
     job.exitCode = exitCode;
 
-    if (status != null && status.startsWith("FAILED") && (job.exitCode == null)) {
-      emit(jobId, JobEvent.status(status));
-    } else {
-      emit(jobId, JobEvent.status(status));
-    }
+    emit(jobId, JobEvent.status(status));
 
     emitSnapshot(jobId);
     emitTerminalSnapshot(jobId);
@@ -96,18 +97,18 @@ public class InMemoryJobStore implements JobStore {
 
     String expected = jobRunIds.get(jobId);
     if (expected == null) {
-      throw new jakarta.ws.rs.ClientErrorException(
-        jakarta.ws.rs.core.Response.status(409)
+      throw new ClientErrorException(
+        Response.status(409)
           .entity("{\"error\":\"stale_run\",\"message\":\"Job is not bound to this run\"}")
-          .type(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
+          .type(MediaType.APPLICATION_JSON)
           .build()
       );
     }
     if (!expected.equals(runId)) {
-      throw new jakarta.ws.rs.ClientErrorException(
-        jakarta.ws.rs.core.Response.status(409)
+      throw new ClientErrorException(
+        Response.status(409)
           .entity("{\"error\":\"stale_run\",\"message\":\"runId does not match job\"}")
-          .type(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
+          .type(MediaType.APPLICATION_JSON)
           .build()
       );
     }
@@ -152,7 +153,7 @@ public class InMemoryJobStore implements JobStore {
     /** Job identifier. */
     final UUID id;
 
-    /** Current status (e.g. QUEUED/RUNNING/SUCCEEDED/FAILED). */
+    /** Current status (e.g., QUEUED/RUNNING/SUCCEEDED/FAILED). */
     volatile String status = "QUEUED";
 
     /** Job creation time. */
@@ -203,8 +204,9 @@ public class InMemoryJobStore implements JobStore {
       for (var em : emitters) {
         try {
           em.emit(e);
-        } catch (Exception ignored) {
-          // ignored
+        } catch (Exception ex) {
+          emitters.remove(em);
+          log.tracef("Removed dead emitter for job %s: %s", id, ex.getMessage());
         }
       }
     }
@@ -214,8 +216,9 @@ public class InMemoryJobStore implements JobStore {
       for (var em : emitters) {
         try {
           em.complete();
-        } catch (Exception ignored) {
-          // ignored
+        } catch (Exception ex) {
+          emitters.remove(em);
+          log.tracef("Removed dead emitter on complete for job %s: %s", id, ex.getMessage());
         }
       }
     }

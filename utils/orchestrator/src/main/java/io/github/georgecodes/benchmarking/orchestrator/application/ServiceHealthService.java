@@ -127,7 +127,7 @@ public class ServiceHealthService {
     URI base;
     try {
       base = URI.create(endpoint.baseUrl);
-    } catch (Exception ex) {
+    } catch (Exception ignored) {
       return Uni.createFrom().item(new ServiceHealthResponse(
         endpoint.name,
         STATUS_DOWN,

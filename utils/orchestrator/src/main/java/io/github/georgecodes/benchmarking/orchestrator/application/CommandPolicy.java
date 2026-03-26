@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -29,11 +30,11 @@ public class CommandPolicy {
   String projectDir;
 
   /**
-   * Host-side project directory (used when orchestrator runs docker compose against a host Docker Engine).
+   * Host-side project directory (used when the orchestrator runs docker compose against a host Docker Engine).
    * When set, we inject this as --project-directory and treat it as trusted (not under /workspace).
    */
   @ConfigProperty(name = "orchestrator.project-paths.host-compose")
-  java.util.Optional<String> hostProjectDir;
+  Optional<String> hostProjectDir;
 
   /**
    * "Read-only-ish" docker commands (includes your requested docker ps).
@@ -127,7 +128,7 @@ public class CommandPolicy {
 
   /**
    * Supports: docker compose [GLOBAL_OPTIONS...] <subcommand> [args...]
-   * where GLOBAL_OPTIONS can appear before the subcommand.
+   * Where GLOBAL_OPTIONS can appear before the subcommand.
    * Fix B: supports both "--opt value" and "--opt=value" for global options.
    */
   private ValidatedCommand validateCompose(List<String> tokens) {
@@ -226,36 +227,32 @@ public class CommandPolicy {
 
     // Always force --project-directory to the container-visible projectDir.
     // This is required because:
-    // - compose include paths (include: ./obs.yml, ./utils.yml) are resolved relative to project directory.
+    // - compose include paths (include: ./obs.yml, ./utils.yml) are resolved relative to the project directory.
     // - when a Windows path is passed (C:/...), compose running in Linux treats it as relative and prefixes /workspace.
     // Using projectDir ensures includes and other relative references are readable inside the container.
+    List<String> argv = new ArrayList<>(tokens);
+
     if (!hasProjectDir) {
-      var tmp = new ArrayList<>(tokens);
-      tmp.add(2, "--project-directory");
-      tmp.add(3, projectDir);
-      tokens = tmp;
+      argv.add(2, "--project-directory");
+      argv.add(3, projectDir);
     }
 
     // Ensure a compose file is provided (container-visible).
     if (!hasFile) {
       String file = Path.of(projectDir).resolve("docker-compose.yml").toString();
-      var tmp = new ArrayList<>(tokens);
-      tmp.add(2, "-f");
-      tmp.add(3, file);
-      tokens = tmp;
+      argv.add(2, "-f");
+      argv.add(3, file);
     }
 
-    // Ensure the compose env file is loaded so variables from compose/.env (e.g. SPRING_BOOT_VERSION) are set,
+    // Ensure the compose env file is loaded so variables from compose/.env (e.g., SPRING_BOOT_VERSION) are set,
     // regardless of the host process environment.
     if (!hasEnvFile) {
       String envFile = Path.of(projectDir).resolve(".env").toString();
-      var tmp = new ArrayList<>(tokens);
-      tmp.add(2, "--env-file");
-      tmp.add(3, envFile);
-      tokens = tmp;
+      argv.add(2, "--env-file");
+      argv.add(3, envFile);
     }
 
-    return new ValidatedCommand(tokens, workspace, projectDir);
+    return new ValidatedCommand(argv, workspace, projectDir);
   }
 
   /**

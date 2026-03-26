@@ -5,8 +5,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.jbosslog.JBossLog;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +38,7 @@ public class ProcessCommandRunner implements CommandRunner {
     Objects.requireNonNull(sink, "sink");
 
     ProcessBuilder pb = new ProcessBuilder(argv);
-    pb.directory(new java.io.File(workspace));
+    pb.directory(new File(workspace));
     pb.redirectErrorStream(false);
 
     Map<String, String> env = pb.environment();
@@ -49,13 +51,11 @@ public class ProcessCommandRunner implements CommandRunner {
 
     Process p = pb.start();
 
-    ExecutorService streams = Executors.newFixedThreadPool(2, r -> {
+    try (ExecutorService streams = Executors.newFixedThreadPool(2, r -> {
       Thread t = new Thread(r, "orchestrator-streams");
       t.setDaemon(true);
       return t;
-    });
-
-    try {
+    })) {
       Future<?> outF = streams.submit(() -> streamLines(p.getInputStream(), "stdout", sink));
       Future<?> errF = streams.submit(() -> streamLines(p.getErrorStream(), "stderr", sink));
 
@@ -64,21 +64,19 @@ public class ProcessCommandRunner implements CommandRunner {
       errF.get(10, TimeUnit.SECONDS);
 
       return new ExecutionResult(exit, Instant.now());
-    } finally {
-      streams.shutdownNow();
     }
   }
 
   private static void streamLines(InputStream in, String stream, EventSink sink) {
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
       String line;
       while ((line = br.readLine()) != null) {
         sink.emit(JobEvent.log(stream, line));
         // Also log to orchestrator stdout so Alloy can scrape
         log.infof("[%s] %s", stream, line);
       }
-    } catch (Exception ignored) {
-      // Intentionally ignored
+    } catch (Exception ex) {
+      log.tracef("Stream %s closed: %s", stream, ex.getMessage());
     }
   }
 }
