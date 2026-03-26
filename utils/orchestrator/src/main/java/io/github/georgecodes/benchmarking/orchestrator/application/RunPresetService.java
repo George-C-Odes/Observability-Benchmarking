@@ -2,8 +2,8 @@ package io.github.georgecodes.benchmarking.orchestrator.application;
 
 import io.github.georgecodes.benchmarking.orchestrator.api.CommandPreset;
 import io.github.georgecodes.benchmarking.orchestrator.domain.IntelliJRunXmlParser;
+import jakarta.inject.Inject;
 import lombok.extern.jbosslog.JBossLog;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import java.nio.file.Files;
@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Discovers preset commands from IntelliJ {@code .run} XML files.
+ */
 @JBossLog
 @ApplicationScoped
 public class RunPresetService {
@@ -26,17 +29,16 @@ public class RunPresetService {
     Pattern.CASE_INSENSITIVE
   );
 
-  /**
-   * Workspace directory path.
-   */
-  @ConfigProperty(name = "orchestrator.project-paths.workspace.root")
-  String workspace;
+  /** Strongly-typed project-path configuration. */
+  @Inject
+  ProjectPathsConfig paths;
 
   /**
    * Discovers presets from IntelliJ's .run directory located at:
-   *   ${orchestrator.project-paths.workspace.root}/.run.
+   * {@code ${orchestrator.project-paths.workspace.root}/.run}.
    */
   public List<CommandPreset> listPresets() {
+    String workspace = paths.workspace().root();
     Path runDir = Path.of(workspace).resolve(".run");
     if (!Files.isDirectory(runDir)) {
       log.debugf(".run directory not found at %s", runDir);

@@ -114,7 +114,11 @@ COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} /workspace/target/q
 COPY --from=docker_cli --chmod=0555 /out/docker /usr/local/bin/docker
 COPY --from=docker_cli --chmod=0555 /out/cli-plugins/ /usr/local/lib/docker/cli-plugins/
 
-EXPOSE 8080
+LABEL org.opencontainers.image.title="orchestrator" \
+      org.opencontainers.image.description="Quarkus control-plane for Docker Compose benchmarking" \
+      org.opencontainers.image.source="https://github.com/georgecodes/Observability-Benchmarking"
+
+EXPOSE 3002
 WORKDIR /app
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
 ENTRYPOINT ["/opt/jre/bin/java","-jar","/app/quarkus-app/quarkus-run.jar"]

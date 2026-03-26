@@ -13,7 +13,7 @@ import java.util.UUID;
 /**
  * Ensures every request handled by the orchestrator has a correlation id.
  *
- * <p>We prefer an incoming {@code X-Request-Id} from upstream (e.g. nextjs-dash), but
+ * <p>We prefer an incoming {@code X-Request-Id} from upstream (e.g., nextjs-dash), but
  * we generate a UUID when absent.
  *
  * <p>The value is stored in MDC under key {@code requestId} so it can:

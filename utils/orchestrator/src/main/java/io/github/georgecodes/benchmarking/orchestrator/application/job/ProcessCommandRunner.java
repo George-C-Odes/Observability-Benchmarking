@@ -5,8 +5,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.jbosslog.JBossLog;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class ProcessCommandRunner implements CommandRunner {
 
+  /** Seconds to wait for stream-reader threads to finish after {@code shutdownNow()}. */
+  private static final int STREAM_DRAIN_TIMEOUT_SECONDS = 5;
+
   @Override
   public ExecutionResult run(
     List<String> argv,
@@ -36,7 +41,7 @@ public class ProcessCommandRunner implements CommandRunner {
     Objects.requireNonNull(sink, "sink");
 
     ProcessBuilder pb = new ProcessBuilder(argv);
-    pb.directory(new java.io.File(workspace));
+    pb.directory(new File(workspace));
     pb.redirectErrorStream(false);
 
     Map<String, String> env = pb.environment();
@@ -49,13 +54,11 @@ public class ProcessCommandRunner implements CommandRunner {
 
     Process p = pb.start();
 
-    ExecutorService streams = Executors.newFixedThreadPool(2, r -> {
+    try (var streams = new InterruptingExecutor(Executors.newFixedThreadPool(2, r -> {
       Thread t = new Thread(r, "orchestrator-streams");
       t.setDaemon(true);
       return t;
-    });
-
-    try {
+    }))) {
       Future<?> outF = streams.submit(() -> streamLines(p.getInputStream(), "stdout", sink));
       Future<?> errF = streams.submit(() -> streamLines(p.getErrorStream(), "stderr", sink));
 
@@ -64,21 +67,52 @@ public class ProcessCommandRunner implements CommandRunner {
       errF.get(10, TimeUnit.SECONDS);
 
       return new ExecutionResult(exit, Instant.now());
-    } finally {
-      streams.shutdownNow();
+    } catch (Exception ex) {
+      p.destroyForcibly();
+      throw ex;
     }
   }
 
   private static void streamLines(InputStream in, String stream, EventSink sink) {
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
       String line;
       while ((line = br.readLine()) != null) {
         sink.emit(JobEvent.log(stream, line));
         // Also log to orchestrator stdout so Alloy can scrape
         log.infof("[%s] %s", stream, line);
       }
-    } catch (Exception ignored) {
-      // Intentionally ignored
+    } catch (Exception ex) {
+      log.tracef("Stream %s closed: %s", stream, ex.getMessage());
+    }
+  }
+
+  /**
+   * {@link AutoCloseable} wrapper around an {@link ExecutorService} that calls
+   * {@link ExecutorService#shutdownNow()} (immediate interruption) on close,
+   * rather than the graceful {@link ExecutorService#shutdown()} that
+   * {@link ExecutorService#close()} uses.
+   *
+   * <p>This ensures stream-reader tasks are interrupted on all exit paths
+   * (success, timeout, or exception) when used with try-with-resources.
+   *
+   * @param delegate the wrapped executor whose lifecycle is managed by this record
+   */
+  private record InterruptingExecutor(ExecutorService delegate) implements AutoCloseable {
+
+    Future<?> submit(Runnable task) {
+      return delegate.submit(task);
+    }
+
+    @Override
+    public void close() {
+      delegate.shutdownNow();
+      try {
+        if (!delegate.awaitTermination(STREAM_DRAIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+          log.warnf("Stream reader threads did not terminate within %d s", STREAM_DRAIN_TIMEOUT_SECONDS);
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 }
