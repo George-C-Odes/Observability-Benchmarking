@@ -8,25 +8,25 @@ import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMark
 function testParseColonEnv() {
   const env = parseColonEnv(`
 # Commented values must be ignored
-#SPRING_BOOT_VERSION: 3.5.12
+#SPRING_BOOT_VERSION: 3.5.13
 HOST_REPO: C:\\Users\\example\\repo
-SPRING_BOOT_VERSION: 4.0.4
+SPRING_BOOT_VERSION: 4.0.5
 IMAGE_TAG: ghcr.io/acme/app:1.2.3
 `);
 
   assert.equal(env.HOST_REPO, 'C:\\Users\\example\\repo');
-  assert.equal(env.SPRING_BOOT_VERSION, '4.0.4');
+  assert.equal(env.SPRING_BOOT_VERSION, '4.0.5');
   assert.equal(env.IMAGE_TAG, 'ghcr.io/acme/app:1.2.3');
   assert.equal(env['#SPRING_BOOT_VERSION'], undefined);
 }
 
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
-    SPRING_BOOT_VERSION: '4.0.4',
+    SPRING_BOOT_VERSION: '4.0.5',
     GO_VERSION: '1.26.1',
   });
 
-  assert.equal(rendered, 'Spring 4.0.4 / Go 1.26.1');
+  assert.equal(rendered, 'Spring 4.0.5 / Go 1.26.1');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
     GO_VERSION: '1.26.1',
@@ -41,7 +41,7 @@ function testRenderTemplate() {
   assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.26.1");
 
   assert.throws(
-    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.0.4' }),
+    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.0.5' }),
     /Missing value for placeholder \{\{QUARKUS_VERSION}}/,
   );
 }
@@ -112,10 +112,10 @@ function testGeneratedOutputRoundTrip() {
     const outputPath = path.join(tempDir, 'README.md');
 
     writeFileSync(templatePath, 'Version {{SPRING_BOOT_VERSION}}', 'utf8');
-    writeFileSync(outputPath, 'Version 4.0.4', 'utf8');
+    writeFileSync(outputPath, 'Version 4.0.5', 'utf8');
 
     const rendered = renderTemplate(readFileSync(templatePath, 'utf8'), {
-      SPRING_BOOT_VERSION: '4.0.4',
+      SPRING_BOOT_VERSION: '4.0.5',
     });
 
     assert.equal(rendered, readFileSync(outputPath, 'utf8'));
@@ -139,7 +139,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.0.4 / Quarkus 3.32.4');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.0.5 / Quarkus 3.34.1');
   } finally {
     try {
       unlinkSync(templatePath);
@@ -167,7 +167,7 @@ function testRealignMarkdownTables() {
   const ragged = [
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
-    '| Spring | 4.0.4 | Main framework |',
+    '| Spring | 4.0.5 | Main framework |',
     '| Go     | 1.26.1          | Alt runtime    |',
     '| Node   | 25.8.2                  | Frontend       |',
   ].join('\n');
@@ -177,7 +177,7 @@ function testRealignMarkdownTables() {
   const expected = [
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
-    '| Spring | 4.0.4   | Main framework |',
+    '| Spring | 4.0.5   | Main framework |',
     '| Go     | 1.26.1  | Alt runtime    |',
     '| Node   | 25.8.2  | Frontend       |',
   ].join('\n');

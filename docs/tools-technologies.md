@@ -23,7 +23,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.0.4
+### Spring Boot 4.0.5
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -34,7 +34,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.0.4** (latest major release)
+- **Spring Boot 4.0.5** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -82,7 +82,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.32.4
+### Quarkus 3.34.1
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -93,7 +93,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.32.4** (latest stable)
+- **Quarkus 3.34.1** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -968,8 +968,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 25.2.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.0.4   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.32.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Quarkus                    | 3.34.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
