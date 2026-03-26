@@ -9,6 +9,10 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+/**
+ * JAX-RS request filter that enforces bearer token authentication
+ * on endpoints annotated with {@link RequireOrchestratorAuth}.
+ */
 @Provider
 @RequireOrchestratorAuth
 @Priority(Priorities.AUTHENTICATION)

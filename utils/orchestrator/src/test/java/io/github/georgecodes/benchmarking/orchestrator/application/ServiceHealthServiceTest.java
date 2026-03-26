@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -97,7 +96,7 @@ class ServiceHealthServiceTest {
       ))
     );
 
-    HealthAggregateResponse resp = service.checkAll(Optional.empty()).await().indefinitely();
+    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
 
     ServiceHealthResponse grafanaResp = resp.services().stream().filter(s -> s.name().equals("grafana")).findFirst().orElseThrow();
     ServiceHealthResponse lokiResp = resp.services().stream().filter(s -> s.name().equals("loki")).findFirst().orElseThrow();
@@ -120,7 +119,7 @@ class ServiceHealthServiceTest {
       ))
     );
 
-    HealthAggregateResponse resp = service.checkAll(Optional.of("grafana")).await().indefinitely();
+    HealthAggregateResponse resp = service.checkAll("grafana").await().indefinitely();
     assertEquals(1, resp.services().size());
     assertEquals("grafana", resp.services().getFirst().name());
     assertEquals("down", resp.services().getFirst().status());
@@ -136,7 +135,7 @@ class ServiceHealthServiceTest {
       ))
     );
 
-    HealthAggregateResponse resp = service.checkAll(Optional.of("go")).await().indefinitely();
+    HealthAggregateResponse resp = service.checkAll("go").await().indefinitely();
     assertEquals(1, resp.services().size());
 
     ServiceHealthResponse g = resp.services().getFirst();
@@ -155,7 +154,7 @@ class ServiceHealthServiceTest {
       ))
     );
 
-    HealthAggregateResponse resp = service.checkAll(Optional.empty()).await().indefinitely();
+    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
 
     assertTrue(resp.services().stream().noneMatch(s -> s.name().equals("grafana")));
     assertTrue(resp.services().stream().anyMatch(s -> s.name().equals("loki")));

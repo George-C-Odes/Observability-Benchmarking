@@ -24,6 +24,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Manages asynchronous job execution, heartbeat scheduling, and event publishing.
+ */
 @JBossLog
 @ApplicationScoped
 public class JobManager {

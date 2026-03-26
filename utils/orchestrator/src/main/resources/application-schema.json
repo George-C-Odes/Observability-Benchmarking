@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "application-schema.json",
+  "title": "Orchestrator application.yml",
+  "description": "Permissive schema for the Quarkus orchestrator config. Exists only to override the auto-detected SchemaStore Quarkus schema so IntelliJ stops flagging custom orchestrator.* keys and ${…} placeholders.",
+  "type": "object",
+  "additionalProperties": true
+}

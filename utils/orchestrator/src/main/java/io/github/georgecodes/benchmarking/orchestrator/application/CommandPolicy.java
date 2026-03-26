@@ -2,13 +2,12 @@ package io.github.georgecodes.benchmarking.orchestrator.application;
 
 import io.github.georgecodes.benchmarking.orchestrator.domain.CommandTokenizer;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.inject.Inject;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -17,25 +16,9 @@ import java.util.Set;
 @ApplicationScoped
 public class CommandPolicy {
 
-  /**
-   * Workspace directory.
-   */
-  @ConfigProperty(name = "orchestrator.project-paths.workspace.root")
-  String workspace;
-
-  /**
-   * Project directory.
-   */
-  @ConfigProperty(name = "orchestrator.project-paths.workspace.compose")
-  String projectDir;
-
-  /**
-   * Host-side project directory (used when the orchestrator runs docker compose against a host Docker Engine).
-   * When set, this path is treated as trusted (and does not need to be under the workspace root) to validate compose-related paths.
-   * It is not automatically injected as --project-directory.
-   */
-  @ConfigProperty(name = "orchestrator.project-paths.host-compose")
-  Optional<String> hostProjectDir;
+  /** Strongly typed project-path configuration. */
+  @Inject
+  ProjectPathsConfig paths;
 
   /**
    * "Read-only-ish" docker commands (includes your requested docker ps).
@@ -79,9 +62,7 @@ public class CommandPolicy {
     Map.entry("--ansi", true),
     Map.entry("--parallel", true),
     Map.entry("--compatibility", false),
-    Map.entry("--progress", true),
-
-    Map.entry("--dummy", false) // will never be used; avoids empty Map.ofEntries issues if you edit later
+    Map.entry("--progress", true)
   );
 
   public record ValidatedCommand(List<String> argv, String workspace, String projectDir) { }
@@ -124,13 +105,13 @@ public class CommandPolicy {
       throw new IllegalArgumentException("Docker command not allowed: " + cmd);
     }
 
-    return new ValidatedCommand(t, workspace, projectDir);
+    return new ValidatedCommand(t, paths.workspace().root(), paths.workspace().compose());
   }
 
   /**
-   * Supports: docker compose [GLOBAL_OPTIONS...] <subcommand> [args...]
+   * Supports: {@code docker compose [GLOBAL_OPTIONS...] <subcommand> [args...]}.
    * Where GLOBAL_OPTIONS can appear before the subcommand.
-   * Fix B: supports both "--opt value" and "--opt=value" for global options.
+   * Fix B: supports both {@code --opt value} and {@code --opt=value} for global options.
    */
   private ValidatedCommand validateCompose(List<String> tokens) {
     if (tokens.size() < 3) {
@@ -164,10 +145,6 @@ public class CommandPolicy {
         }
       }
 
-      if (opt.equals("--dummy")) {
-        i += 1;
-        continue;
-      }
 
       Boolean takesValue = COMPOSE_GLOBAL_OPTS.get(opt);
       if (takesValue == null) {
@@ -200,7 +177,7 @@ public class CommandPolicy {
 
         // validate path-like opts
         if (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f") || opt.equals("--env-file")) {
-          boolean isHostMode = hostProjectDir.isPresent();
+          boolean isHostMode = paths.hostCompose().isPresent();
           boolean isWindowsAbs = isWindowsAbsolutePath(val);
           if (!(isHostMode && (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f")))) {
             if (!isWindowsAbs) {
@@ -232,15 +209,17 @@ public class CommandPolicy {
     // - when a Windows path is passed (C:/...), compose running in Linux treats it as relative and prefixes /workspace.
     // Using projectDir ensures includes and other relative references are readable inside the container.
     List<String> argv = new ArrayList<>(tokens);
+    String composeDir = paths.workspace().compose();
+    Path composePath = Path.of(composeDir);
 
     if (!hasProjectDir) {
       argv.add(2, "--project-directory");
-      argv.add(3, projectDir);
+      argv.add(3, composeDir);
     }
 
     // Ensure a compose file is provided (container-visible).
     if (!hasFile) {
-      String file = Path.of(projectDir).resolve("docker-compose.yml").toString();
+      String file = composePath.resolve("docker-compose.yml").toString();
       argv.add(2, "-f");
       argv.add(3, file);
     }
@@ -248,18 +227,18 @@ public class CommandPolicy {
     // Ensure the compose env file is loaded so variables from compose/.env (e.g., SPRING_BOOT_VERSION) are set,
     // regardless of the host process environment.
     if (!hasEnvFile) {
-      String envFile = Path.of(projectDir).resolve(".env").toString();
+      String envFile = composePath.resolve(".env").toString();
       argv.add(2, "--env-file");
       argv.add(3, envFile);
     }
 
-    return new ValidatedCommand(argv, workspace, projectDir);
+    return new ValidatedCommand(argv, paths.workspace().root(), composeDir);
   }
 
   /**
-   * Supports: docker buildx [options...] <subcommand> [args...]
+   * Supports: {@code docker buildx [options...] <subcommand> [args...]}.
    * We locate the first allowed subcommand token after "buildx".
-   * Optional: validate -f/--file paths for buildx build.
+   * Optional: validate {@code -f/--file} paths for buildx build.
    */
   private ValidatedCommand validateBuildx(List<String> tokens) {
     if (tokens.size() < 3) {
@@ -290,7 +269,7 @@ public class CommandPolicy {
       }
     }
 
-    return new ValidatedCommand(tokens, workspace, projectDir);
+    return new ValidatedCommand(tokens, paths.workspace().root(), paths.workspace().compose());
   }
 
   /**
@@ -332,7 +311,7 @@ public class CommandPolicy {
       throw new IllegalArgumentException("Builder prune requires --force");
     }
 
-    return new ValidatedCommand(tokens, workspace, projectDir);
+    return new ValidatedCommand(tokens, paths.workspace().root(), paths.workspace().compose());
   }
 
   /**
@@ -341,7 +320,7 @@ public class CommandPolicy {
    * - relative is resolved against workspace.
    */
   private void ensureUnderWorkspace(String pathStr) {
-    Path ws = Path.of(workspace).normalize().toAbsolutePath();
+    Path ws = Path.of(paths.workspace().root()).normalize().toAbsolutePath();
     Path p = Path.of(pathStr);
     Path abs = p.isAbsolute() ? p.normalize().toAbsolutePath() : ws.resolve(p).normalize().toAbsolutePath();
 

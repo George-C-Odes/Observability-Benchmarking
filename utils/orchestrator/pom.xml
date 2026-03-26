@@ -17,7 +17,7 @@
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.34.1</quarkus.platform.version>
     <surefire-plugin.version>3.5.5</surefire-plugin.version>
-    <lombok.version>1.18.42</lombok.version>
+    <lombok.version>1.18.44</lombok.version>
     <checkstyle.config.location>checkstyle.xml</checkstyle.config.location>
     <checkstyle.suppressions.location>checkstyle-suppressions.xml</checkstyle.suppressions.location>
   </properties>
@@ -161,8 +161,8 @@
           <suppressionsLocation>${checkstyle.suppressions.location}</suppressionsLocation>
           <includeTestSourceDirectory>false</includeTestSourceDirectory>
           <consoleOutput>true</consoleOutput>
-          <failsOnError>false</failsOnError>
-          <failOnViolation>false</failOnViolation>
+          <failsOnError>true</failsOnError>
+          <failOnViolation>true</failOnViolation>
         </configuration>
         <executions>
           <execution>

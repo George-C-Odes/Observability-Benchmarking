@@ -25,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class ProcessCommandRunner implements CommandRunner {
 
+  /** Seconds to wait for stream-reader threads to finish after {@code shutdownNow()}. */
+  private static final int STREAM_DRAIN_TIMEOUT_SECONDS = 5;
+
   @Override
   public ExecutionResult run(
     List<String> argv,
@@ -51,11 +54,11 @@ public class ProcessCommandRunner implements CommandRunner {
 
     Process p = pb.start();
 
-    try (ExecutorService streams = Executors.newFixedThreadPool(2, r -> {
+    try (var streams = new InterruptingExecutor(Executors.newFixedThreadPool(2, r -> {
       Thread t = new Thread(r, "orchestrator-streams");
       t.setDaemon(true);
       return t;
-    })) {
+    }))) {
       Future<?> outF = streams.submit(() -> streamLines(p.getInputStream(), "stdout", sink));
       Future<?> errF = streams.submit(() -> streamLines(p.getErrorStream(), "stderr", sink));
 
@@ -64,6 +67,9 @@ public class ProcessCommandRunner implements CommandRunner {
       errF.get(10, TimeUnit.SECONDS);
 
       return new ExecutionResult(exit, Instant.now());
+    } catch (Exception ex) {
+      p.destroyForcibly();
+      throw ex;
     }
   }
 
@@ -77,6 +83,36 @@ public class ProcessCommandRunner implements CommandRunner {
       }
     } catch (Exception ex) {
       log.tracef("Stream %s closed: %s", stream, ex.getMessage());
+    }
+  }
+
+  /**
+   * {@link AutoCloseable} wrapper around an {@link ExecutorService} that calls
+   * {@link ExecutorService#shutdownNow()} (immediate interruption) on close,
+   * rather than the graceful {@link ExecutorService#shutdown()} that
+   * {@link ExecutorService#close()} uses.
+   *
+   * <p>This ensures stream-reader tasks are interrupted on all exit paths
+   * (success, timeout, or exception) when used with try-with-resources.
+   *
+   * @param delegate the wrapped executor whose lifecycle is managed by this record
+   */
+  private record InterruptingExecutor(ExecutorService delegate) implements AutoCloseable {
+
+    Future<?> submit(Runnable task) {
+      return delegate.submit(task);
+    }
+
+    @Override
+    public void close() {
+      delegate.shutdownNow();
+      try {
+        if (!delegate.awaitTermination(STREAM_DRAIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+          log.warnf("Stream reader threads did not terminate within %d s", STREAM_DRAIN_TIMEOUT_SECONDS);
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 }

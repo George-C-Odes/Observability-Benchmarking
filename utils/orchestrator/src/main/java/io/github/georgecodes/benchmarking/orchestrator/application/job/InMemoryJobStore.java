@@ -1,5 +1,6 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
+import io.github.georgecodes.benchmarking.orchestrator.api.ErrorResponse;
 import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
 import io.github.georgecodes.benchmarking.orchestrator.api.JobStatusResponse;
 import io.smallrye.mutiny.Multi;
@@ -99,7 +100,7 @@ public class InMemoryJobStore implements JobStore {
     if (expected == null) {
       throw new ClientErrorException(
         Response.status(409)
-          .entity("{\"error\":\"stale_run\",\"message\":\"Job is not bound to this run\"}")
+          .entity(new ErrorResponse("stale_run", "Job is not bound to this run"))
           .type(MediaType.APPLICATION_JSON)
           .build()
       );
@@ -107,7 +108,7 @@ public class InMemoryJobStore implements JobStore {
     if (!expected.equals(runId)) {
       throw new ClientErrorException(
         Response.status(409)
-          .entity("{\"error\":\"stale_run\",\"message\":\"runId does not match job\"}")
+          .entity(new ErrorResponse("stale_run", "runId does not match job"))
           .type(MediaType.APPLICATION_JSON)
           .build()
       );
@@ -190,8 +191,8 @@ public class InMemoryJobStore implements JobStore {
     }
 
     synchronized void addToBuffer(JobEvent e) {
-      if ("log".equals(e.getType()) && e.getMessage() != null) {
-        lastLine = e.getMessage();
+      if ("log".equals(e.type()) && e.message() != null) {
+        lastLine = e.message();
       }
       if (buffer.size() >= maxLines) {
         buffer.removeFirst();

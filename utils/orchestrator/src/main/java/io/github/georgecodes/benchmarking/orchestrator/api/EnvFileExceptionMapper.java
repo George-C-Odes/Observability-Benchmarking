@@ -5,8 +5,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
-import java.util.Map;
-
 /**
  * Maps {@link EnvFileException} to appropriate HTTP responses.
  */
@@ -22,7 +20,7 @@ public class EnvFileExceptionMapper implements ExceptionMapper<EnvFileException>
     };
 
     return Response.status(httpStatus)
-      .entity(Map.of("error", e.getMessage()))
+      .entity(new ErrorResponse(e.getType().name().toLowerCase(), e.getMessage()))
       .build();
   }
 }
