@@ -31,7 +31,8 @@ public class CommandPolicy {
 
   /**
    * Host-side project directory (used when the orchestrator runs docker compose against a host Docker Engine).
-   * When set, we inject this as --project-directory and treat it as trusted (not under /workspace).
+   * When set, this path is treated as trusted (and does not need to be under the workspace root) to validate compose-related paths.
+   * It is not automatically injected as --project-directory.
    */
   @ConfigProperty(name = "orchestrator.project-paths.host-compose")
   Optional<String> hostProjectDir;
