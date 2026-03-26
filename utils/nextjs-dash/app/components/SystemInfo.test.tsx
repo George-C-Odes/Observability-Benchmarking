@@ -12,7 +12,7 @@ describe('SystemInfo', () => {
   it('renders the injected server npm version in the npm card', () => {
     window.__OBS_DASH_CONFIG__ = {
       systemInfo: {
-        nodejs: 'v25.8.1',
+        nodejs: 'v25.8.2',
         npm: '11.12.0',
         nextjs: '16.2.1',
         react: '19.2.4',

@@ -169,7 +169,7 @@ function testRealignMarkdownTables() {
     '|--------|-------------------------|--------------|',
     '| Spring | 4.0.4 | Main framework |',
     '| Go     | 1.26.1          | Alt runtime    |',
-    '| Node   | 25.8.1                  | Frontend       |',
+    '| Node   | 25.8.2                  | Frontend       |',
   ].join('\n');
 
   const aligned = realignMarkdownTables(ragged);
@@ -179,7 +179,7 @@ function testRealignMarkdownTables() {
     '|--------|---------|----------------|',
     '| Spring | 4.0.4   | Main framework |',
     '| Go     | 1.26.1  | Alt runtime    |',
-    '| Node   | 25.8.1  | Frontend       |',
+    '| Node   | 25.8.2  | Frontend       |',
   ].join('\n');
 
   assert.equal(aligned, expected);

@@ -72,7 +72,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.4   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.32.4  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
