@@ -5,8 +5,8 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.2-ED8B00.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.4-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.32.4-4695EB.svg)](https://quarkus.io/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.34.1-4695EB.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.18-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-E8581C.svg)](https://sparkjava.com/)
@@ -72,9 +72,10 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.0.4   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.32.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Execution**     | Server             | Gunicorn                   | 25.2.0  | Production WSGI/ASGI process manager for Django benchmark services   |
+| **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Quarkus                    | 3.34.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
@@ -100,13 +101,13 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.12.0 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.12.1 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -155,7 +156,7 @@ If you’re searching for projects like this, these are the topics it covers:
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Eclipse Temurin)
-- **Spring Boot 4.0.4 (3.5.12 also supported)**
+- **Spring Boot 4.0.5 (3.5.13 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -164,7 +165,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.32.4**
+- **Quarkus 3.34.1**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
 - **Micronaut**: 4.10.18
@@ -493,8 +494,8 @@ The numbers below are a curated summary of a representative run.
 #### Software Versions
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
-- **Spring Boot**: 4.0.4 (3.5.12 also supported)
-- **Quarkus**: 3.32.4
+- **Spring Boot**: 4.0.5 (3.5.13 also supported)
+- **Quarkus**: 3.34.1
 - **Micronaut**: 4.10.18
 - **Helidon**: 4.3.4
 - **Spark**: 3.0.4
@@ -504,7 +505,7 @@ The numbers below are a curated summary of a representative run.
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
 - **Go**: 1.26.1 (Fiber v3.1.0)
 - **Python**: 3.13.12 (CPython)
-- **Django**: 6.0.3 (Gunicorn 25.1.0)
+- **Django**: 6.0.3 (Gunicorn 25.2.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

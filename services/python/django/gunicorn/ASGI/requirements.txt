@@ -24,7 +24,7 @@ grpcio==1.78.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
-gunicorn==25.1.0
+gunicorn==25.2.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 h11==0.16.0
     # via uvicorn

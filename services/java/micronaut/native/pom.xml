@@ -17,7 +17,7 @@
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
-        <lombok.version>1.18.42</lombok.version>
+        <lombok.version>1.18.44</lombok.version>
         <logback.version>1.5.32</logback.version>
 
         <micronaut.version>4.10.18</micronaut.version>

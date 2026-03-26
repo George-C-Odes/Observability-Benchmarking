@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
-ARG IMAGE_DEPS=node:25.8.1-alpine3.23
-ARG IMAGE_RUNTIME=node:25.8.1-alpine3.23
-ARG NPM_VERSION=11.12.0
-#ARG IMAGE_DEPS=node:25.8.1-bookworm-slim
-#ARG IMAGE_RUNTIME=node:25.8.1-bookworm-slim
+ARG IMAGE_DEPS=node:25.8.2-alpine3.23
+ARG IMAGE_RUNTIME=node:25.8.2-alpine3.23
+ARG NPM_VERSION=11.12.1
+#ARG IMAGE_DEPS=node:25.8.2-bookworm-slim
+#ARG IMAGE_RUNTIME=node:25.8.2-bookworm-slim
 
 # ------------ DEPS STAGE -----------------------
 # Installs ALL dependencies (prod + dev) for build & test.

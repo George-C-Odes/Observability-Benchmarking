@@ -130,8 +130,8 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
 Maven: 3.9+
-Spring Boot: 4.0.4 (3.5.12 also supported)
-Quarkus: 3.32.4
+Spring Boot: 4.0.5 (3.5.13 also supported)
+Quarkus: 3.34.1
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -231,7 +231,7 @@ public void testPlatformEndpoint() throws Exception {
 ```
 
 **Key Features Tested**:
-- Spring Boot 4.0.4 with OpenTelemetry Java Agent
+- Spring Boot 4.0.5 with OpenTelemetry Java Agent
 - Micrometer metrics integration
 - Platform vs Virtual thread behavior
 - POM refactoring (no parent dependency)
@@ -671,8 +671,8 @@ Integration Test Suite
 ==========================================
 
 Testing Framework Versions:
-- Spring Boot: 4.0.4
-- Quarkus: 3.32.4
+- Spring Boot: 4.0.5
+- Quarkus: 3.34.1
 - Micronaut: 4.10.18
 - Helidon: 4.3.4
 - Spark: 3.0.4
@@ -1250,9 +1250,9 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.32.4" }
-          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.4" }
-          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.4" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.34.1" }
+          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.5" }
+          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.5" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.1" }
     
     steps:
