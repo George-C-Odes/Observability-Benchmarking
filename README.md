@@ -101,7 +101,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.3.0  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.12.1 | Frontend dependency management                                       |
@@ -156,7 +156,7 @@ If you’re searching for projects like this, these are the topics it covers:
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Eclipse Temurin)
-- **Spring Boot 4.0.4 (3.5.12 also supported)**
+- **Spring Boot 4.0.4 (3.5.13 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -494,7 +494,7 @@ The numbers below are a curated summary of a representative run.
 #### Software Versions
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
-- **Spring Boot**: 4.0.4 (3.5.12 also supported)
+- **Spring Boot**: 4.0.4 (3.5.13 also supported)
 - **Quarkus**: 3.32.4
 - **Micronaut**: 4.10.18
 - **Helidon**: 4.3.4
