@@ -38,9 +38,10 @@ projectJDK: "25" #(Applied in CI/CD pipeline)
 # Code Coverage is available in Ultimate and Ultimate Plus plans
 failureConditions:
   severityThresholds:
-    # Conservative first pass: only fail on critical findings while the
-    # scoped Qodana workflow is being validated in CI.
+    # Fail the CI on critical, high and moderate findings to harden quality gate
     critical: 0
+    high: 0
+    moderate: 0
   
 #Qodana supports other languages, for example, Python, JavaScript, TypeScript, Go, C#, PHP
 #For all supported languages see https://www.jetbrains.com/help/qodana/linters.html
