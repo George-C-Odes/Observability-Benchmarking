@@ -24,8 +24,11 @@ class JsonFormatterTests(TestCase):
         span_context = mock.Mock(trace_id=int("1" * 32, 16), span_id=int("2" * 16, 16))
         span = mock.Mock(get_span_context=mock.Mock(return_value=span_context))
 
-        with mock.patch.object(log_formatter, "_OTEL_AVAILABLE", True), mock.patch.object(
-            log_formatter, "_trace", mock.Mock(get_current_span=mock.Mock(return_value=span))
+        with (
+            mock.patch.object(log_formatter, "_OTEL_AVAILABLE", True),
+            mock.patch.object(
+                log_formatter, "_trace", mock.Mock(get_current_span=mock.Mock(return_value=span))
+            ),
         ):
             payload = json.loads(formatter.format(record))
 

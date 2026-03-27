@@ -94,8 +94,7 @@ def _register_span_processor() -> bool:
 
     if span_processor_adder is None:
         logger.warning(
-            "could not register pyroscope span-processor: TracerProvider has no "
-            "add_span_processor"
+            "could not register pyroscope span-processor: TracerProvider has no add_span_processor"
         )
         return False
 
@@ -125,8 +124,7 @@ def configure_pyroscope() -> None:
     app_name = os.environ.get("PYROSCOPE_APPLICATION_NAME", "").strip()
     if not server_address or not app_name:
         logger.warning(
-            "pyroscope enabled but missing PYROSCOPE_SERVER_ADDRESS or "
-            "PYROSCOPE_APPLICATION_NAME"
+            "pyroscope enabled but missing PYROSCOPE_SERVER_ADDRESS or PYROSCOPE_APPLICATION_NAME"
         )
         return
 

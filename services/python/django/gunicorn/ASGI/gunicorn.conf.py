@@ -26,6 +26,7 @@ def _env_bool(name: str, default: bool) -> bool:
         return False
     return default
 
+
 # ---------------------------------------------------------------------------
 # Binding
 # ---------------------------------------------------------------------------
@@ -81,12 +82,12 @@ proxy_protocol = False
 # Hooks
 # ---------------------------------------------------------------------------
 
+
 def post_fork(_server, _worker):
     """Per-worker initialization after fork (preload_app = True)."""
     from obbench_django_common.infrastructure.boot import post_fork_init
 
     post_fork_init()
-
 
 
 def worker_exit(_server, _worker):

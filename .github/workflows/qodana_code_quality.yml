@@ -41,42 +41,54 @@ jobs:
       checks: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
       - name: Prepare Qodana arguments
         id: qodana_args
         shell: bash
+        env:
+          SOURCE_DIR: ${{ matrix.source_dir }}
+          BASELINE_FILE: ${{ matrix.baseline_file }}
         run: |
-          args="--project-dir=. --only-directory=${{ matrix.source_dir }}"
-          baseline_file="${{ matrix.baseline_file }}"
+          args="--project-dir=. --only-directory=$SOURCE_DIR"
 
-          if [[ -f "$baseline_file" ]]; then
-            echo "Using Qodana baseline: $baseline_file"
-            args="$args --baseline=$baseline_file"
+          if [[ -f "$BASELINE_FILE" ]]; then
+            echo "Using Qodana baseline: $BASELINE_FILE"
+            args="$args --baseline=$BASELINE_FILE"
           else
-            echo "No Qodana baseline found at $baseline_file; running without a baseline."
+            echo "No Qodana baseline found at $BASELINE_FILE; running without a baseline."
           fi
 
           echo "args=$args" >> "$GITHUB_OUTPUT"
       - name: Qodana Scan
-        uses: JetBrains/qodana-action@v2025.3.2
+        uses: JetBrains/qodana-action@89eb4357efd2b52e639f3216e63edaf33b82622b # v2025.3.2
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
           pr-mode: false
           use-caches: true
           post-pr-comment: false
           use-annotations: true
-          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
+          # The Qodana action pre-zips results before uploading, which makes
+          # the artifact incompatible with download-artifact@v4+ (the Pages
+          # workflow gets a nested ZIP instead of extracted files).  We keep
+          # upload-result for full SARIF/log access under a distinct name and
+          # add an explicit upload-artifact step below for the HTML report.
           upload-result: true
-          artifact-name: qodana-report-${{ matrix.name }}
-          # quick-fixes available in Ultimate and Ultimate Plus plans
+          artifact-name: qodana-results-${{ matrix.name }}
+          results-dir: ${{ runner.temp }}/qodana/results
           push-fixes: 'none'
-          # Keep the repository root as the Qodana project so the shared
-          # root qodana.yaml selects the JVM linter for the action's pull
-          # and scan phases, while the CLI args limit analysis to the
-          # intended scoped directory per matrix entry. When a reviewed
-          # baseline SARIF exists for that scope, it is applied automatically.
           args: ${{ steps.qodana_args.outputs.args }}
+
+      # Explicit upload of the HTML report directory using upload-artifact@v4
+      # so that the Pages workflow's download-artifact@v8 receives extracted
+      # files (not the nested ZIP that the Qodana action produces).
+      - name: Upload Qodana HTML report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: qodana-report-${{ matrix.name }}
+          path: ${{ runner.temp }}/qodana/results/report/
+          retention-days: 30
+          if-no-files-found: warn

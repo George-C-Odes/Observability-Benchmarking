@@ -3,6 +3,7 @@ package io.github.georgecodes.benchmarking.helidon.mp.graalvm;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -30,22 +31,20 @@ import java.util.concurrent.Callable;
  * loss is negligible compared to the overall native-image build time.
  */
 @TargetClass(className = "org.jboss.weld.executor.AbstractExecutorServices")
-@SuppressWarnings("unused")
+@SuppressWarnings("unused") // @TargetClass substitution — invoked by GraalVM native-image, not by application code
 public final class WeldExecutorSubstitution {
 
     @Substitute
-    @SuppressWarnings("unused")
+    @SuppressWarnings("unused") // @Substitute method — replaces the target at build time, never called directly
     public <T> List<T> invokeAllAndCheckForExceptions(Collection<? extends Callable<T>> tasks) {
-        @SuppressWarnings("unchecked")
-        T[] results = (T[]) new Object[tasks.size()];
-        int i = 0;
+        List<T> results = new ArrayList<>(tasks.size());
         for (Callable<T> task : tasks) {
             try {
-                results[i++] = task.call();
+                results.add(task.call());
             } catch (Exception e) {
                 throw new RuntimeException("Weld executor task failed", e);
             }
         }
-        return List.of(results);
+        return results;
     }
 }

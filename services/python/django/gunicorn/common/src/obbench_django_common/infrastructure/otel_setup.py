@@ -48,6 +48,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger("hello")
 
 _EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
+
+
 class _ContextDetachFilter(logging.Filter):
     """Suppress benign 'Failed to detach context' errors from OTel.
 
@@ -89,10 +91,12 @@ def _sdk_disabled() -> bool:
         "yes",
     )
 
+
 def reset_otel_setup_state() -> None:
     """Reset module-level OTel setup flags for isolated tests."""
     _State.sdk_configured = False
     _State.app_instrumented = False
+
 
 def _run_optional_otel_step(
     action: Callable[[], None],
@@ -145,18 +149,14 @@ def should_suppress_context_detach_errors() -> bool:
     context-propagation failures remain visible, and the environment
     variable (when set) always overrides the auto-detection.
     """
-    explicit = os.environ.get(
-        "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", ""
-    ).strip().lower()
+    explicit = os.environ.get("OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", "").strip().lower()
     if explicit in ("true", "1", "yes"):
         return True
     if explicit in ("false", "0", "no"):
         return False
 
     # Auto-detect: ASGI variant + Python 3.13+
-    is_asgi = (
-        os.environ.get("HELLO_VARIANT", "platform").strip().lower() == "reactive"
-    )
+    is_asgi = os.environ.get("HELLO_VARIANT", "platform").strip().lower() == "reactive"
     return is_asgi and sys.version_info >= (3, 13)
 
 
@@ -168,6 +168,7 @@ def _should_suppress_context_detach_errors() -> bool:
 # ---------------------------------------------------------------------------
 # Instrumentation (master — survives fork)
 # ---------------------------------------------------------------------------
+
 
 def instrument_app() -> None:
     """Patch Django and stdlib logging for OTel tracing.
@@ -226,6 +227,7 @@ def wrap_asgi_application(application: Any) -> Any:
 # SDK setup (per-worker — must run AFTER fork)
 # ---------------------------------------------------------------------------
 
+
 def configure_sdk() -> None:
     """Create per-worker OTel SDK providers with live export threads.
 
@@ -244,9 +246,7 @@ def configure_sdk() -> None:
 
     # Suppress benign "Failed to detach context" noise that can still
     # occur under ASGI + Python 3.13 (see _ContextDetachFilter docstring).
-    explicit_suppress = os.environ.get(
-        "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", ""
-    ).strip().lower()
+    explicit_suppress = os.environ.get("OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", "").strip().lower()
     if should_suppress_context_detach_errors():
         logging.getLogger("opentelemetry.context").addFilter(_ContextDetachFilter())
         if explicit_suppress in ("true", "1", "yes"):
@@ -368,9 +368,11 @@ def _shutdown_logs() -> None:
     if hasattr(lp, "shutdown"):
         lp.shutdown()
 
+
 # ---------------------------------------------------------------------------
 # Shutdown (worker exit)
 # ---------------------------------------------------------------------------
+
 
 def shutdown_sdk() -> None:
     """Flush pending data and shut down export threads.
@@ -387,4 +389,3 @@ def shutdown_sdk() -> None:
         _shutdown_logs,
         "OTel SDK shutdown error (logs)",
     )
-

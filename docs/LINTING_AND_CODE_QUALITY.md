@@ -78,13 +78,15 @@ The following items are suppressed from Checkstyle checks:
 ## Qodana Configuration (JVM Static Analysis)
 
 ### GitHub Actions Node Runtime Migration Convention
-This repository now follows a simple convention for GitHub Actions workflows that use JavaScript-based actions: set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` proactively so those actions are exercised on Node 24 ahead of GitHub's default runtime migration.
+This repository sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at **workflow-level `env:`** in each workflow file so JavaScript-based actions are exercised on Node 24 ahead of GitHub's default runtime migration. The env var is not repeated at job or step level.
 
-At the moment, that convention is applied in these workflow files:
+The convention is applied in:
 
 - `.github/workflows/qodana_code_quality.yml`
 - `.github/workflows/pages.yml`
 - `.github/workflows/django_python_quality.yml`
+
+Each occurrence is annotated with `# TODO(node24-migration)` so they can be found and removed once GitHub's default runtime moves to Node 24.
 
 If GitHub still prints a warning saying an action targets Node 20 but is being forced to run on Node 24, that confirms the opt-in is active. The warning should disappear only after the action publisher updates the action metadata to native Node 24 support.
 
@@ -108,9 +110,12 @@ The workflow in `.github/workflows/qodana_code_quality.yml` runs Qodana in a sma
 
 It keeps the repository root as the Qodana project so the shared root `qodana.yaml` is applied, then limits each job with `--only-directory`.
 
-The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow also uploads separate report artifacts per matrix entry (`qodana-report-services-java` and `qodana-report-orchestrator`) to avoid cross-job artifact name collisions.
+The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
 
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow, job, and Qodana action-step scope so the GitHub-hosted JavaScript action runtime is exercised under Node 24 ahead of GitHub's forced migration. This lets the team catch Qodana action compatibility issues before the Node 20 fallback disappears.
+- **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
+- **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v4` step. This is what the Pages workflow downloads to host the report.
+
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration.
 
 GitHub will print an informational warning in the **Complete job** phase similar to:
 
@@ -128,15 +133,17 @@ The Qodana job summary suggests a third option for viewing the detailed HTML rep
 
 How it works:
 - the existing GitHub Pages workflow still builds the documentation site from `docs/`
-- the Pages workflow now builds the Jekyll site explicitly with Bundler using `docs/Gemfile`, which avoids the earlier `github-pages` gem compatibility warning from `actions/jekyll-build-pages`
+- the Pages workflow builds the Jekyll site explicitly with Bundler using `docs/Gemfile`, which avoids the earlier `github-pages` gem compatibility warning from `actions/jekyll-build-pages`
 - after a **successful** `Qodana` workflow run on `main`, the Pages workflow runs again via `workflow_run`
 - it checks out the exact analyzed commit (`head_sha`) from that Qodana run
-- it downloads the uploaded Qodana artifacts for both matrix entries:
+- it downloads the uploaded Qodana HTML report artifacts for both matrix entries:
   - `qodana-report-services-java`
   - `qodana-report-orchestrator`
+- the HTML report is uploaded as a separate `actions/upload-artifact@v4` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
+- report resolution, message generation, logging, and HTML assembly are handled by versioned scripts under `scripts/pages/` for easier testing and review
 - it also creates a small landing page at `qodana/index.html`
 - each scope URL (`qodana/services-java/` and `qodana/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
 - during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
@@ -153,7 +160,7 @@ Important behavior:
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
 - if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
 
-The Pages workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. The Qodana artifact download steps were upgraded to `actions/download-artifact@v8`, which is already published for Node 24. The remaining official Pages actions still in use (`actions/configure-pages@v5`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v4`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
+The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v5`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v4`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
 
 Expected URL shape:
 
@@ -330,6 +337,8 @@ Once the workflow has run a few times and the issue signal is understood, the ne
 ### Overview
 Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all-in-one linter and formatter, enforcing PEP 8 and import ordering.
 
+The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatting verification) on all Django paths.
+
 ### Configuration
 Each Django module has its own Ruff configuration in a local `pyproject.toml`
 (for example, under `services/python/django/gunicorn/common/`, `.../WSGI/`, and
@@ -345,12 +354,15 @@ same settings are applied when linting `common`, `WSGI`, and `ASGI`:
 # Check all Django Python paths
 cd services/python/django/gunicorn/WSGI
 python -m ruff check .
+python -m ruff format --check .
 
 cd services/python/django/gunicorn/ASGI
 python -m ruff check .
+python -m ruff format --check .
 
 cd services/python/django/gunicorn/common
 python -m ruff check .
+python -m ruff format --check .
 ```
 
 ### Additional Django quality checks
