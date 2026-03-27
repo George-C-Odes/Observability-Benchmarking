@@ -14,7 +14,7 @@
 Django>=6.0.3,<7
 
 # WSGI server — gthread worker for max throughput on 2 vCPUs
-gunicorn>=25.2.0,<26
+gunicorn>=25.3.0,<26
 
 # --- OpenTelemetry zero-code instrumentation ---
 opentelemetry-distro>=0.56b0
