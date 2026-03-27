@@ -32,9 +32,9 @@ class JobManagerCommandRunnerTest {
 
     var subscription = jobManager.events(jobId)
       .subscribe().with(e -> {
-        if ("terminalSummary".equals(e.getType())) {
-          terminalStatus.set(e.getJobStatus());
-          terminalExitCode.set(e.getExitCode());
+        if ("terminalSummary".equals(e.type())) {
+          terminalStatus.set(e.jobStatus());
+          terminalExitCode.set(e.exitCode());
           terminal.countDown();
         }
       });

@@ -43,7 +43,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:12.4.1
+    image: grafana/grafana:12.4.2
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -76,7 +76,7 @@ services:
 
   loki:
     profiles: ["${DOCKER_PROF_LOKI:-skip}"]
-    image: grafana/loki:3.6.7
+    image: grafana/loki:3.7.0
     container_name: loki
     volumes:
       - ${HOST_REPO}/data/loki:/loki
@@ -103,7 +103,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:1.19.0
+    image: grafana/pyroscope:1.19.1
     container_name: pyroscope
     ports:
       - "4040:4040"

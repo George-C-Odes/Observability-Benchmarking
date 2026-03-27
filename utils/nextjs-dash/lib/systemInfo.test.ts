@@ -8,7 +8,7 @@ import {
 
 describe('systemInfo npm version helpers', () => {
   it('extracts npm version from packageManager when pinned', () => {
-    expect(extractNpmVersionFromPackageManager('npm@11.12.0')).toBe('11.12.0');
+    expect(extractNpmVersionFromPackageManager('npm@11.12.1')).toBe('11.12.1');
   });
 
   it('ignores non-npm packageManager values', () => {
@@ -16,14 +16,14 @@ describe('systemInfo npm version helpers', () => {
   });
 
   it('extracts npm version from npm user agent', () => {
-    expect(extractNpmVersionFromUserAgent('npm/11.12.0 node/v25.8.1 linux x64')).toBe('11.12.0');
+    expect(extractNpmVersionFromUserAgent('npm/11.12.1 node/v25.8.2 linux x64')).toBe('11.12.1');
   });
 
   it('prefers packageManager over npm user agent for the displayed version', () => {
     expect(resolveServerNpmVersion({
-      packageManager: 'npm@11.12.0',
-      npmUserAgent: 'npm/10.9.3 node/v25.8.1 linux x64',
-    })).toBe('11.12.0');
+      packageManager: 'npm@11.12.1',
+      npmUserAgent: 'npm/10.9.3 node/v25.8.2 linux x64',
+    })).toBe('11.12.1');
   });
 
   it('falls back to N/A when neither source is available', () => {
