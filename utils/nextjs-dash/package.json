@@ -2,7 +2,7 @@
   "name": "nextjs-dash",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "npm@11.12.0",
+  "packageManager": "npm@11.12.1",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
@@ -36,11 +36,11 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/xml2js": "0.4.14",
-    "@vitest/coverage-v8": "^4.1.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "eslint-config-next": "^16.2.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "^29.0.1",
     "typescript": "5.9.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.2"
   }
 }
