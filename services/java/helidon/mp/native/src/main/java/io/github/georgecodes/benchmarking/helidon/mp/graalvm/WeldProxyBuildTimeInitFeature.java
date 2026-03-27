@@ -26,7 +26,7 @@ import java.util.concurrent.locks.LockSupport;
  * uses {@code RuntimeClassInitialization.initializeAtBuildTime(Class&lt;?&gt;)} with
  * the actual {@code Class<?>} object to register each proxy.
  * <p>
- * Strategy: after CDI bootstrap (in {@code beforeAnalysis}), enumerate all classes
+ * Strategy: after CDI bootstrap (in {@code beforeAnalysis}), list all classes
  * loaded in the application classloader hierarchy and register any whose name
  * matches the Weld proxy naming convention ({@code *$_$$_Weld*}).
  *
@@ -69,15 +69,19 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
      * {@code BuildTimeInitializer.container}.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public List<Class<? extends Feature>> getRequiredFeatures() {
         try {
-            Class<?> helidonFeature = Class.forName(
-                    "io.helidon.integrations.graal.mp.nativeimage.extension.HelidonMpFeature");
-            return List.of((Class<? extends Feature>) helidonFeature);
+            Class<? extends Feature> helidonFeature = Class.forName(
+                    "io.helidon.integrations.graal.mp.nativeimage.extension.HelidonMpFeature")
+                    .asSubclass(Feature.class);
+            return List.of(helidonFeature);
         } catch (ClassNotFoundException e) {
             System.out.println("[WeldProxyBuildTimeInitFeature] HelidonMpFeature not found – "
                     + "Feature ordering not guaranteed");
+            return Collections.emptyList();
+        } catch (ClassCastException e) {
+            System.out.println("[WeldProxyBuildTimeInitFeature] HelidonMpFeature does not "
+                    + "implement Feature: " + e.getMessage());
             return Collections.emptyList();
         }
     }

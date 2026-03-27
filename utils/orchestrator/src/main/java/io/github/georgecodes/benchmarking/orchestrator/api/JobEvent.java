@@ -4,9 +4,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import lombok.Builder;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
 
 /**
  * Event emitted during job execution for real-time updates.
@@ -18,51 +15,35 @@ import lombok.extern.jackson.Jacksonized;
  *   <li>{@code summary} – machine-readable snapshot (queued / running / terminal)</li>
  *   <li>{@code terminalSummary} – machine-readable terminal snapshot</li>
  * </ul>
+ *
+ * @param type       event type (log | status | summary | terminalSummary)
+ * @param stream     stream identifier: stdout | stderr | system
+ * @param ts         timestamp when the event was created
+ * @param message    event message content
+ * @param jobId      job identifier
+ * @param jobStatus  job lifecycle status (QUEUED / RUNNING / SUCCEEDED / FAILED / CANCELED)
+ * @param createdAt  timestamp when the job was created
+ * @param startedAt  timestamp when the job started executing
+ * @param finishedAt timestamp when the job finished executing
+ * @param exitCode   process exit code
+ * @param lastLine   last output line from the job
+ * @param requestId  correlation / request identifier (propagated from HTTP request MDC)
  */
-@Value
-@Builder
-@Jacksonized
 @RegisterForReflection
-public class JobEvent {
-
-  /** Event type (log | status | summary | terminalSummary). */
-  String type;
-
-  /** Stream identifier: stdout | stderr | system. */
-  String stream;
-
-  /** Timestamp when the event was created. */
-  Instant ts;
-
-  /** Event message content. */
-  String message;
-
-  /** Job identifier. */
-  UUID jobId;
-
-  /** Job lifecycle status (QUEUED / RUNNING / SUCCEEDED / FAILED / CANCELED). */
-  String jobStatus;
-
-  /** Timestamp when job was created. */
-  Instant createdAt;
-
-  /** Timestamp when job started executing. */
-  Instant startedAt;
-
-  /** Timestamp when job finished executing. */
-  Instant finishedAt;
-
-  /** Process exit code. */
-  Integer exitCode;
-
-  /** Last output line from the job. */
-  String lastLine;
-
-  /**
-   * Correlation / request identifier (propagated from HTTP request MDC when available).
-   * Useful for tying SSE events back to orchestrator logs.
-   */
-  String requestId;
+public record JobEvent(
+  String type,
+  String stream,
+  Instant ts,
+  String message,
+  UUID jobId,
+  String jobStatus,
+  Instant createdAt,
+  Instant startedAt,
+  Instant finishedAt,
+  Integer exitCode,
+  String lastLine,
+  String requestId
+) {
 
   // ── Factory methods ────────────────────────────────────────────
 
@@ -83,13 +64,8 @@ public class JobEvent {
    * @return a new log JobEvent
    */
   public static JobEvent log(String stream, String message) {
-    return JobEvent.builder()
-      .requestId(currentRequestId())
-      .type("log")
-      .stream(stream)
-      .ts(Instant.now())
-      .message(message)
-      .build();
+    return new JobEvent("log", stream, Instant.now(), message,
+      null, null, null, null, null, null, null, currentRequestId());
   }
 
   /**
@@ -99,64 +75,38 @@ public class JobEvent {
    * @return a new status JobEvent
    */
   public static JobEvent status(String message) {
-    return JobEvent.builder()
-      .requestId(currentRequestId())
-      .type("status")
-      .stream("system")
-      .ts(Instant.now())
-      .message(message)
-      .build();
+    return new JobEvent("status", "system", Instant.now(), message,
+      null, null, null, null, null, null, null, currentRequestId());
   }
 
   /**
    * Creates a summary snapshot event (QUEUED / RUNNING / terminal).
    */
-  public static JobEvent summary(UUID jobId,
-                                 String jobStatus,
-                                 Instant createdAt,
-                                 Instant startedAt,
-                                 Instant finishedAt,
-                                 Integer exitCode,
+  public static JobEvent summary(UUID jobId, String jobStatus,
+                                 Instant createdAt, Instant startedAt,
+                                 Instant finishedAt, Integer exitCode,
                                  String lastLine) {
-    return JobEvent.builder()
-      .requestId(currentRequestId())
-      .type("summary")
-      .stream("system")
-      .ts(Instant.now())
-      .message(jobStatus)
-      .jobId(jobId)
-      .jobStatus(jobStatus)
-      .createdAt(createdAt)
-      .startedAt(startedAt)
-      .finishedAt(finishedAt)
-      .exitCode(exitCode)
-      .lastLine(lastLine)
-      .build();
+    return buildSnapshot("summary", jobId, jobStatus, createdAt, startedAt,
+      finishedAt, exitCode, lastLine);
   }
 
   /**
    * Creates a terminal summary event (SUCCEEDED / FAILED / CANCELED).
    */
-  public static JobEvent terminalSummary(UUID jobId,
-                                         String jobStatus,
-                                         Instant createdAt,
-                                         Instant startedAt,
-                                         Instant finishedAt,
-                                         Integer exitCode,
+  public static JobEvent terminalSummary(UUID jobId, String jobStatus,
+                                         Instant createdAt, Instant startedAt,
+                                         Instant finishedAt, Integer exitCode,
                                          String lastLine) {
-    return JobEvent.builder()
-      .requestId(currentRequestId())
-      .type("terminalSummary")
-      .stream("system")
-      .ts(Instant.now())
-      .message(jobStatus)
-      .jobId(jobId)
-      .jobStatus(jobStatus)
-      .createdAt(createdAt)
-      .startedAt(startedAt)
-      .finishedAt(finishedAt)
-      .exitCode(exitCode)
-      .lastLine(lastLine)
-      .build();
+    return buildSnapshot("terminalSummary", jobId, jobStatus, createdAt, startedAt,
+      finishedAt, exitCode, lastLine);
+  }
+
+  private static JobEvent buildSnapshot(String type, UUID jobId, String jobStatus,
+                                        Instant createdAt, Instant startedAt,
+                                        Instant finishedAt, Integer exitCode,
+                                        String lastLine) {
+    return new JobEvent(type, "system", Instant.now(), jobStatus,
+      jobId, jobStatus, createdAt, startedAt, finishedAt, exitCode, lastLine,
+      currentRequestId());
   }
 }

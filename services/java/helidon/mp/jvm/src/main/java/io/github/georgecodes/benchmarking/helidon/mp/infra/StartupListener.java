@@ -127,6 +127,9 @@ public class StartupListener {
             logbackAppender.setName("OTEL");
             logbackAppender.start();
 
+            // Unavoidable unchecked cast: Java type erasure prevents verifying the
+            // generic parameter of a reflectively created Appender<?>; the
+            // OpenTelemetryAppender always produces ILoggingEvent instances.
             @SuppressWarnings("unchecked")
             var typedAppender =
                     (ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent>) logbackAppender;

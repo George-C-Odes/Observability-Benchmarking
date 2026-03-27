@@ -171,3 +171,4 @@ vitest-*.json
 # Jekyll build on GitHub, you may re-add this ignore.
 # /docs/_site/
 /docs/vendor/
+/services/python/django/gunicorn/common/build/

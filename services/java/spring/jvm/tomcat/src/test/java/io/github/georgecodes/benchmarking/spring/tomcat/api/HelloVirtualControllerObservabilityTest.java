@@ -195,7 +195,7 @@ public class HelloVirtualControllerObservabilityTest {
 
     @Test
     @Order(12)
-    @DisplayName("Spring Boot version is 4.0.4")
+    @DisplayName("Spring Boot version is 4.0.5")
     public void testSpringBootVersion() throws Exception {
         // This test verifies we're running Spring Boot
         // We can check this through actuator info or by checking class versions

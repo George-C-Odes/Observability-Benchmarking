@@ -2,18 +2,18 @@
 
 # Observability Benchmarking
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
-[![Java](https://img.shields.io/badge/Java-25.0.2-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-{{SPRING_BOOT_VERSION}}-green.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-{{QUARKUS_VERSION}}-blue.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-{{MICRONAUT_VERSION}}-1a1a2e.svg)](https://micronaut.io/)
+[![Java](https://img.shields.io/badge/Java-25.0.2-ED8B00.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-{{SPRING_BOOT_VERSION}}-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/Quarkus-{{QUARKUS_VERSION}}-4695EB.svg)](https://quarkus.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-{{MICRONAUT_VERSION}}-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-{{HELIDON_VERSION}}-1B9AAA.svg)](https://helidon.io/)
-[![SparkJava](https://img.shields.io/badge/SparkJava-{{SPARK_VERSION}}-yellow.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-{{JAVALIN_VERSION}}-purple.svg)](https://javalin.io/)
-[![Dropwizard](https://img.shields.io/badge/Dropwizard-{{DROPWIZARD_VERSION}}-4B0082.svg)](https://www.dropwizard.io/)
+[![SparkJava](https://img.shields.io/badge/SparkJava-{{SPARK_VERSION}}-E8581C.svg)](https://sparkjava.com/)
+[![Javalin](https://img.shields.io/badge/Javalin-{{JAVALIN_VERSION}}-059BBF.svg)](https://javalin.io/)
+[![Dropwizard](https://img.shields.io/badge/Dropwizard-{{DROPWIZARD_VERSION}}-F9A825.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-{{VERTX_VERSION}}-782A90.svg)](https://vertx.io/)
-[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-{{PEKKO_VERSION}}-D22128.svg)](https://pekko.apache.org/)
+[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-{{PEKKO_VERSION}}-C7461A.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-{{GO_VERSION}}-00ADD8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-{{PYTHON_VERSION}}-3776AB.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-{{DJANGO_VERSION}}-092E20.svg)](https://www.djangoproject.com/)
@@ -72,7 +72,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.1                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Server             | Gunicorn                   | 25.3.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
+| **Execution**     | Runtime            | Node.js                    | 25.8.2                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -100,13 +101,13 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.3.0                  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.1                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.14                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.12.0                 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.12.1                 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2                   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -155,7 +156,7 @@ If you’re searching for projects like this, these are the topics it covers:
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 - Eclipse Temurin)
-- **Spring Boot {{SPRING_BOOT_VERSION}} (3.5.12 also supported)**
+- **Spring Boot {{SPRING_BOOT_VERSION}} (3.5.13 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -493,7 +494,7 @@ The numbers below are a curated summary of a representative run.
 #### Software Versions
 - **Java JDK**: Eclipse Temurin 25.0.2
 - **Java Native**: GraalVM Enterprise 25.0.2-ol9
-- **Spring Boot**: {{SPRING_BOOT_VERSION}} (3.5.12 also supported)
+- **Spring Boot**: {{SPRING_BOOT_VERSION}} (3.5.13 also supported)
 - **Quarkus**: {{QUARKUS_VERSION}}
 - **Micronaut**: {{MICRONAUT_VERSION}}
 - **Helidon**: {{HELIDON_VERSION}}
@@ -504,7 +505,7 @@ The numbers below are a curated summary of a representative run.
 - **Pekko**: {{PEKKO_VERSION}} (Pekko Core 1.4.0)
 - **Go**: {{GO_VERSION}} (Fiber v3.1.0)
 - **Python**: {{PYTHON_VERSION}} (CPython)
-- **Django**: {{DJANGO_VERSION}} (Gunicorn 25.1.0)
+- **Django**: {{DJANGO_VERSION}} (Gunicorn 25.3.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

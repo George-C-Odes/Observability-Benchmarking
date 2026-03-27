@@ -192,18 +192,30 @@ print(choices[0] if choices else '')
   fi
 
   if [[ -n "$nested_index" ]]; then
+    # URL-encode path segments and HTML-escape for safe injection into HTML.
+    local nested_index_url nested_index_html
+    nested_index_url="$(python3 -c "
+import sys, urllib.parse
+raw = sys.stdin.read().strip()
+print('/'.join(urllib.parse.quote(seg, safe='') for seg in raw.split('/')))
+" <<< "$nested_index")"
+    nested_index_html="$(python3 -c "
+import sys, html
+print(html.escape(sys.stdin.read().strip()))
+" <<< "$nested_index_url")"
+
     write_html_file "$scope_dir/index.html" \
       '<!doctype html>' \
       '<html lang="en">' \
       '<head>' \
       '  <meta charset="utf-8">' \
-      "  <meta http-equiv=\"refresh\" content=\"0; url=./${nested_index}\">" \
+      "  <meta http-equiv=\"refresh\" content=\"0; url=./${nested_index_html}\">" \
       '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
       "  <title>${scope_name} Qodana report</title>" \
       '</head>' \
       '<body>' \
       "  <p>Redirecting to the hosted Qodana report for <code>${scope_name}</code>...</p>" \
-      "  <p>If the redirect does not happen automatically, open <a href=\"./${nested_index}\">the report here</a>.</p>" \
+      "  <p>If the redirect does not happen automatically, open <a href=\"./${nested_index_html}\">the report here</a>.</p>" \
       '</body>' \
       '</html>'
   else
