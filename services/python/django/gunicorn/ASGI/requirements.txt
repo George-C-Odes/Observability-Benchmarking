@@ -18,13 +18,13 @@ colorama==0.4.6
     # via click
 django==6.0.3
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-googleapis-common-protos==1.73.0
+googleapis-common-protos==1.73.1
     # via opentelemetry-exporter-otlp-proto-grpc
 grpcio==1.78.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
-gunicorn==25.2.0
+gunicorn==25.3.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 h11==0.16.0
     # via uvicorn

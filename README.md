@@ -72,7 +72,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Server             | Gunicorn                   | 25.2.0  | Production WSGI/ASGI process manager for Django benchmark services   |
+| **Execution**     | Server             | Gunicorn                   | 25.3.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.34.1  | Cloud-native Java framework (JVM + native image focus)               |
@@ -505,7 +505,7 @@ The numbers below are a curated summary of a representative run.
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
 - **Go**: 1.26.1 (Fiber v3.1.0)
 - **Python**: 3.13.12 (CPython)
-- **Django**: 6.0.3 (Gunicorn 25.2.0)
+- **Django**: 6.0.3 (Gunicorn 25.3.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
