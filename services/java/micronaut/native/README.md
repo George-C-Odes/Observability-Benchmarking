@@ -84,7 +84,7 @@ Hello from Micronaut {mode} REST value-1
 # Resources
 -H:IncludeResources=logback.xml|application.yml
 
-# Initialisation
+# Initialization
 --initialize-at-run-time=io.netty
 --initialize-at-run-time=io.opentelemetry.instrumentation.logback
 --initialize-at-run-time=reactor.netty
@@ -320,7 +320,7 @@ When modifying this service:
 1. **Do not add sources here** — all code lives in `../jvm/src/` and is shared via `build-helper-maven-plugin`
 2. Test native compilation locally (requires significant resources)
 3. If new dependencies use reflection, update `reflect-config.json` in the JVM module's `META-INF/native-image/` directory
-4. Update native build args in `pom.xml` if initialisation behaviour changes
+4. Update native build args in `pom.xml` if initialization behavior changes
 5. Keep this README synchronised with the JVM README where applicable
 
 ## References

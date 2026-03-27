@@ -39,9 +39,9 @@ public class PresetCommandsResourceTest {
             .contentType(ContentType.JSON)
             // If there are any commands, they should have these fields
             .body(
-                "[0].name", anyOf(nullValue(), isA(String.class)),
+                "[0].category", anyOf(nullValue(), isA(String.class)),
                 "[0].command", anyOf(nullValue(), isA(String.class)),
-                "[0].description", anyOf(nullValue(), isA(String.class))
+                "[0].title", anyOf(nullValue(), isA(String.class))
             );
     }
 }

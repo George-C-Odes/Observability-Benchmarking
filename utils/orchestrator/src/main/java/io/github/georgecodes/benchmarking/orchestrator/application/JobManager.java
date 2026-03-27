@@ -10,6 +10,7 @@ import io.github.georgecodes.benchmarking.orchestrator.application.job.JobStore;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobTerminalStatus;
 import io.github.georgecodes.benchmarking.orchestrator.domain.JobStatus;
 import io.smallrye.mutiny.Multi;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.jbosslog.JBossLog;
@@ -21,7 +22,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Manages asynchronous job execution, heartbeat scheduling, and event publishing.
+ */
 @JBossLog
 @ApplicationScoped
 public class JobManager {
@@ -83,9 +88,14 @@ public class JobManager {
    */
   public UUID submit(CommandPolicy.ValidatedCommand cmd, String runId) {
     JobAdmissionPolicy.Admission admission = admissionPolicy.acquire();
-    UUID id = jobStore.create(maxBufferLines, runId);
-    executor.submit(() -> runJob(id, cmd, admission));
-    return id;
+    try {
+      UUID id = jobStore.create(maxBufferLines, runId);
+      executor.submit(() -> runJob(id, cmd, admission));
+      return id;
+    } catch (RuntimeException | Error ex) {
+      admission.close();
+      throw ex;
+    }
   }
 
   public void validateRunId(UUID jobId, String runId) {
@@ -139,19 +149,24 @@ public class JobManager {
 
   private HeartbeatScheduler.Cancellable scheduleHeartbeat(UUID jobId) {
     final long jobStartNanos = System.nanoTime();
-    final long[] heartbeatCounter = new long[] {0L};
+    final AtomicLong heartbeatCounter = new AtomicLong();
 
     return heartbeatScheduler.scheduleFixedRate(heartbeatIntervalMs, () -> {
       try {
-        heartbeatCounter[0] += 1;
+        long count = heartbeatCounter.incrementAndGet();
         long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
 
         eventPublisher.publish(jobId, JobEvent.status(
-          ": heartbeat #" + heartbeatCounter[0] + " uptimeMs=" + uptimeMs
+          ": heartbeat #" + count + " uptimeMs=" + uptimeMs
         ));
-      } catch (Exception ignored) {
-        // ignored
+      } catch (Exception ex) {
+        log.tracef("Heartbeat publish failed for jobId=%s: %s", jobId, ex.getMessage());
       }
     });
+  }
+
+  @PreDestroy
+  void shutdown() {
+    executor.shutdownNow();
   }
 }

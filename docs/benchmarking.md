@@ -131,8 +131,8 @@ memory: 2GB        # Maximum memory
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: 4.0.4 (3.5.12 also supported)
-- Quarkus: 3.32.4
+- Spring Boot: 4.0.5 (3.5.13 also supported)
+- Quarkus: 3.34.1
 - Micronaut: 4.10.18
 - Helidon: 4.3.4
 - Spark: 3.0.4
@@ -142,7 +142,7 @@ memory: 2GB        # Maximum memory
 - Pekko: 1.3.0 (Pekko Core 1.4.0)
 - Go: 1.26.1 with Fiber v3.1.0
 - Python: 3.13.12 (CPython)
-- Django: 6.0.3 (Gunicorn 25.1.0)
+- Django: 6.0.3 (Gunicorn 25.3.0)
 
 ### Third-party license note (native-image)
 

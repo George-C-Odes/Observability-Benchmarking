@@ -24,7 +24,7 @@ Health probes:
 - Django 6 on ASGI
 - Gunicorn with `uvicorn.workers.UvicornWorker`
 - Async view hot path with shared preloaded cache via copy-on-write
-- OpenTelemetry SDK initialised per worker after fork
+- OpenTelemetry SDK initialized per worker after fork
 
 ## Tuning knobs
 
