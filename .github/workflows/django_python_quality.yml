@@ -27,9 +27,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.13'
           cache: pip
@@ -50,8 +50,13 @@ jobs:
         working-directory: services/python/django/gunicorn/common
         run: python -m ruff check .
 
+      - name: Format check
+        working-directory: services/python/django/gunicorn/common
+        run: python -m ruff format --check .
+
   modules:
     name: Django module checks (${{ matrix.module_name }})
+    needs: common
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -70,9 +75,9 @@ jobs:
         working-directory: ${{ matrix.module_dir }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.13'
           cache: pip
@@ -91,6 +96,9 @@ jobs:
 
       - name: Lint
         run: python -m ruff check .
+
+      - name: Format check
+        run: python -m ruff format --check .
 
       - name: Django system checks
         run: python manage.py check

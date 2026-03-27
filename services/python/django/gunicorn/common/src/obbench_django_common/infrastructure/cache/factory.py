@@ -25,9 +25,7 @@ def create_cache(size: int, impl: str) -> CachePort:
     elif impl in ("dict", "map"):
         adapter = DictCacheAdapter(size)
     else:
-        raise ValueError(
-            f"Unknown CACHE_IMPL {impl!r} (supported: cachetools, dict)"
-        )
+        raise ValueError(f"Unknown CACHE_IMPL {impl!r} (supported: cachetools, dict)")
 
     adapter.populate()
     return adapter

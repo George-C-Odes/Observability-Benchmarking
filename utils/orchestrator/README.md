@@ -135,8 +135,7 @@ Common keys:
 - `orchestrator.api-key`
 - `orchestrator.max-buffer-lines`
 - `orchestrator.heartbeat.interval-ms`
-- `orchestrator.serial-execution` (single-flight mode, default `true`)
-- `orchestrator.project-paths.*` (workspace + compose + env)
+- `orchestrator.project-paths.*` (workspace root, compose dir, env file, host-compose)
 - `orchestrator.health.*` (service health aggregation)
 
 ## Quick start (Docker)

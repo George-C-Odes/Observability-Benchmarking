@@ -11,10 +11,10 @@ Key decisions
   ready worker when one blocks on socket I/O, without excessive context-switch
   overhead.  8 threads per worker overlaps I/O (GIL-released) with computation
   (GIL-held), similar to Jetty's thread-pool model.
-- ``preload_app = True``: Django + cache are initialised once in the master
+- ``preload_app = True``: Django + cache are initialized once in the master
   process; forked workers share the read-only 50 000-entry cache via
   copy-on-write, saving ~100 ms warmup per worker and reducing RSS.
-- ``post_fork`` hook re-initialises per-worker state (request counter,
+- ``post_fork`` hook re-initializes per-worker state (request counter,
   OTel SDK, OTel metrics, Pyroscope profiler) that must not be shared.
   The OTel SDK (TracerProvider, MeterProvider, LoggerProvider with export
   threads) is created **per-worker** here because daemon threads do NOT
@@ -42,6 +42,7 @@ def _env_bool(name: str, default: bool) -> bool:
     if raw in ("false", "0", "no"):
         return False
     return default
+
 
 # ---------------------------------------------------------------------------
 # Binding
@@ -85,7 +86,7 @@ reuse_port = _env_bool("DJANGO_PLATFORM_REUSE_PORT", True)
 # CRITICAL: preload the app in the master process so that the 50 000-entry
 # cache is populated once and shared across workers via COW.  This slashes
 # warmup time and RSS.  Per-worker state (counter, OTel, Pyroscope) is
-# re-initialised in the ``post_fork`` hook below.
+# re-initialized in the ``post_fork`` hook below.
 preload_app = True
 
 # Limit max requests per worker to prevent memory leaks (0 = unlimited).
@@ -119,12 +120,13 @@ proxy_protocol = False
 # Hooks
 # ---------------------------------------------------------------------------
 
+
 def post_fork(_server, _worker):
-    """Per-worker initialisation after fork (preload_app = True).
+    """Per-worker initialization after fork (preload_app = True).
 
     The master process populates the cache and creates the ``HelloService``
     singleton.  Workers inherit this read-only state via COW.  This hook
-    re-initialises *per-worker* state that must not be shared:
+    re-initializes *per-worker* state that must not be shared:
       - request counter  (reset to 0)
       - OTel SDK         (fresh providers with live export threads)
       - OTel metrics     (per-process observable counter)

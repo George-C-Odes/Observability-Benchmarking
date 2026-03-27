@@ -59,9 +59,7 @@ def register_metrics() -> None:
         meter.create_observable_counter(
             name="hello.request.count",
             callbacks=[_observe_request_count],
-            description=(
-                f"Total number of {cfg.endpoint_path} requests handled by this process"
-            ),
+            description=(f"Total number of {cfg.endpoint_path} requests handled by this process"),
         )
     except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.debug(

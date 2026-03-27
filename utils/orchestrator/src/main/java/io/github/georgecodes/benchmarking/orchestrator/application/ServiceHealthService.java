@@ -15,7 +15,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,7 +56,6 @@ public class ServiceHealthService {
 
     HttpClientOptions httpClientOptions = new HttpClientOptions()
       .setKeepAlive(false)
-      .setTcpKeepAlive(true)
       .setConnectTimeout(3000)
       .setMaxPoolSize(32)
       .setIdleTimeout(2)
@@ -101,10 +99,10 @@ public class ServiceHealthService {
     return result;
   }
 
-  public Uni<HealthAggregateResponse> checkAll(Optional<String> onlyService) {
-    final List<Endpoint> selected = onlyService
-      .map(name -> endpoints().stream().filter(e -> e.name.equals(name)).toList())
-      .orElseGet(this::endpoints);
+  public Uni<HealthAggregateResponse> checkAll(String onlyService) {
+    final List<Endpoint> selected = (onlyService != null && !onlyService.isBlank())
+      ? endpoints().stream().filter(e -> e.name.equals(onlyService)).toList()
+      : endpoints();
 
     int batchSize = Math.max(1, config.concurrency());
 
@@ -127,7 +125,7 @@ public class ServiceHealthService {
     URI base;
     try {
       base = URI.create(endpoint.baseUrl);
-    } catch (Exception ex) {
+    } catch (Exception ignored) {
       return Uni.createFrom().item(new ServiceHealthResponse(
         endpoint.name,
         STATUS_DOWN,

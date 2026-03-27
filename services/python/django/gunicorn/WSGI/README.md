@@ -24,7 +24,7 @@ Health probes:
 - Django 6 on WSGI
 - Gunicorn `gthread`
 - Preloaded 50,000-entry shared cache via copy-on-write
-- OpenTelemetry SDK initialised per worker after fork
+- OpenTelemetry SDK initialized per worker after fork
 
 ## Tuning knobs
 

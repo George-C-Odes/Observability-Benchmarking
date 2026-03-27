@@ -13,8 +13,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.util.Optional;
-
 /**
  * Aggregated service health endpoint.
  * <p>
@@ -34,6 +32,6 @@ public class HealthResource {
   @Operation(summary = "Aggregate readiness/health of the whole stack")
   @APIResponse(responseCode = "200", description = "Aggregated health")
   public Uni<HealthAggregateResponse> get(@QueryParam("service") String service) {
-    return health.checkAll(Optional.ofNullable(service).filter(s -> !s.isBlank()));
+    return health.checkAll(service);
   }
 }

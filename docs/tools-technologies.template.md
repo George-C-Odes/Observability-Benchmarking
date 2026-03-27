@@ -451,7 +451,7 @@ mvn package -Pnative
 
 **Implementation Details**:
 - **Django {{DJANGO_VERSION}}** (latest major release)
-- **Gunicorn 25.1.0** as the production WSGI/ASGI server
+- **Gunicorn 25.3.0** as the production WSGI/ASGI server
 - **Python {{PYTHON_VERSION}}** (CPython)
 - Two modules sharing a common application package (`gunicorn/common`):
   - **WSGI module** (`django-platform`): Gunicorn `gthread` workers (threaded platform model)
@@ -966,7 +966,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Runtime            | Node.js                    | 25.8.1                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Server             | Gunicorn                   | 25.3.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
+| **Execution**     | Runtime            | Node.js                    | 25.8.2                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -994,13 +995,13 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.3.0                  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.3.1                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.14                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.12.0                 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.12.1                 | Frontend dependency management                                       |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.0                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2                   | Frontend unit testing                                                |
 
 ---
 
