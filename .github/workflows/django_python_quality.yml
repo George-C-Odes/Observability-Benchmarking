@@ -46,6 +46,10 @@ jobs:
         working-directory: services/python/django/gunicorn/common
         run: python -m compileall src
 
+      - name: Print Ruff version
+        working-directory: services/python/django/gunicorn/common
+        run: python -m ruff --version
+
       - name: Lint
         working-directory: services/python/django/gunicorn/common
         run: python -m ruff check .
@@ -93,6 +97,9 @@ jobs:
 
       - name: Syntax check
         run: python -m compileall manage.py hello_project gunicorn.conf.py
+
+      - name: Print Ruff version
+        run: python -m ruff --version
 
       - name: Lint
         run: python -m ruff check .
