@@ -87,36 +87,19 @@ module-specific syntax checks, Ruff, Django system checks, and the shared
 ### Shared package checks
 
 ```powershell
-cd services/python/django/gunicorn/common
-python -m compileall src
-python -m ruff check .
-cd ../../../..
+cd services/python/django/gunicorn/common; python -m compileall src; python -m ruff check .; cd ../../../../../
 ```
 
 ### WSGI module checks
 
 ```powershell
-cd services/python/django/gunicorn/WSGI
-python -m pip install ../common -r requirements.txt -r requirements-dev.txt
-python -m compileall manage.py hello_project gunicorn.conf.py
-python -m ruff check .
-python manage.py check
-$env:OTEL_SDK_DISABLED="true"
-python manage.py test obbench_django_common.tests --verbosity=2
-cd ../../../../..
+cd services/python/django/gunicorn/WSGI; python -m pip install ../common -r requirements.txt -r requirements-dev.txt; python -m compileall manage.py hello_project gunicorn.conf.py; python -m ruff check .; python manage.py check; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../../
 ```
 
 ### ASGI module checks
 
 ```powershell
-cd services/python/django/gunicorn/ASGI
-python -m pip install ../common -r requirements.txt -r requirements-dev.txt
-python -m compileall manage.py hello_project gunicorn.conf.py
-python -m ruff check .
-python manage.py check
-$env:OTEL_SDK_DISABLED="true"
-python manage.py test obbench_django_common.tests --verbosity=2
-cd ../../../../..
+cd services/python/django/gunicorn/ASGI; python -m pip install ../common -r requirements.txt -r requirements-dev.txt; python -m compileall manage.py hello_project gunicorn.conf.py; python -m ruff check .; python manage.py check; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../../
 ```
 
 If you only want the shared unit suite, the final `python manage.py test
