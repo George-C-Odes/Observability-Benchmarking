@@ -89,11 +89,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.6.7   | Log aggregation                                                      |
+| **Observability** | Visualization      | Grafana                    | 12.4.2  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.7.1   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.3  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.19.0  | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 1.19.1  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.1  | Auto-instrumentation and exporters                                   |
@@ -105,6 +105,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.12.1 | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.8  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.2   | Frontend unit testing                                                |
