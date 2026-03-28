@@ -86,6 +86,7 @@ module-specific syntax checks, Ruff, Django system checks, and the shared
 
 ### Shared package checks
 
+Run the following from the **repository root**; the final `cd ../../../../../` returns you to the repository root.
 ```powershell
 cd services/python/django/gunicorn/common; python -m compileall src; python -m ruff check .; cd ../../../../../
 ```
