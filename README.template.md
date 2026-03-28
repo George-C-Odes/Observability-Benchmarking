@@ -2,6 +2,8 @@
 
 # Observability Benchmarking
 
+[![📊 Benchmark Results](https://img.shields.io/badge/%F0%9F%93%8A_View_Benchmark_Results-Online-blue?style=for-the-badge&logo=github-pages&logoColor=white&labelColor=0D1117&color=58A6FF)](https://george-c-odes.github.io/Observability-Benchmarking/#results)
+
 [![License](https://img.shields.io/badge/license-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.2-ED8B00.svg)](https://www.oracle.com/java/)
