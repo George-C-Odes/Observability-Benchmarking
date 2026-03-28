@@ -113,7 +113,7 @@ It keeps the repository root as the Qodana project so the shared root `qodana.ya
 The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
 
 - **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
-- **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v4` step. This is what the Pages workflow downloads to host the report.
+- **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7` step. This is what the Pages workflow downloads to host the report.
 
 The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration.
 
@@ -139,7 +139,7 @@ How it works:
 - it downloads the uploaded Qodana HTML report artifacts for both matrix entries:
   - `qodana-report-services-java`
   - `qodana-report-orchestrator`
-- the HTML report is uploaded as a separate `actions/upload-artifact@v4` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
+- the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
@@ -160,7 +160,7 @@ Important behavior:
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
 - if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
 
-The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v5`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v4`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
+The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v6`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v5`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
 
 Expected URL shape:
 
@@ -172,21 +172,23 @@ https://<owner>.github.io/<repo>/qodana/orchestrator/
 
 If your repository uses a custom GitHub Pages domain, replace the `github.io/<repo>` part with that domain's base URL.
 
-### Minimal Quality Gate
-The current `qodana.yaml` uses a conservative first-pass gate:
+### Quality Gate
+The current `qodana.yaml` uses a hardened gate covering the three most actionable severities:
 
 ```yaml
 failureConditions:
   severityThresholds:
     critical: 0
+    high: 0
+    moderate: 0
 ```
 
-This means the Qodana job will fail only if it finds at least one **critical** issue in the scoped JVM code.
+This means the Qodana job will fail if it finds at least one **critical**, **high**, or **moderate** issue in the scoped JVM code.
 
-Why this is a good first step:
-- it avoids blocking the repository on older low-severity noise before the workflow has been proven in CI
+Why this works well:
+- it catches the most impactful findings without drowning the team in low-severity noise
 - it still protects against the most serious findings
-- it gives the team time to observe the signal quality before tightening thresholds further
+- it gives the team room to tighten further (e.g. adding `info` or `low`) once the current thresholds are reliably green
 
 ### Baseline Strategy
 The workflow now supports a low-risk, per-scope baseline strategy for the same two JVM scopes:
@@ -327,7 +329,7 @@ For the currently scoped JVM code, Qodana can provide:
 ### Worthwhile Next Updates After This First Pass
 Once the workflow has run a few times and the issue signal is understood, the next worthwhile improvements would be:
 
-1. raise the gate from `critical` only to additional severities if the findings are manageable
+1. tighten the gate further (e.g. add `info` or `low` thresholds) if the findings at those severities are manageable
 2. refresh or shrink the reviewed baseline files as historical findings are fixed
 3. add module-specific follow-up exclusions only where Qodana proves noisy, rather than disabling broad inspections up front
 4. consider separate documentation or workflow expansion for other languages only after the JVM path proves useful
@@ -353,34 +355,41 @@ same settings are applied when linting `common`, `WSGI`, and `ASGI`:
 ```bash
 # Check all Django Python paths
 cd services/python/django/gunicorn/WSGI
+python -m ruff --version
 python -m ruff check .
 python -m ruff format --check .
 
 cd services/python/django/gunicorn/ASGI
+python -m ruff --version
 python -m ruff check .
 python -m ruff format --check .
 
 cd services/python/django/gunicorn/common
+python -m ruff --version
 python -m ruff check .
 python -m ruff format --check .
 ```
 
 ### Additional Django quality checks
 
-The Django CI workflow also performs syntax validation and Django system checks:
+The Django CI workflow also performs syntax validation and Django system checks.
+The workflow prints the Ruff version before each lint/format step for visibility:
 
 ```bash
 # Shared package syntax check
 cd services/python/django/gunicorn/common
 python -m compileall src
+python -m ruff --version
 
 # Runtime module syntax + Django checks
 cd ../WSGI
 python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff --version
 python manage.py check
 
 cd ../ASGI
 python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff --version
 python manage.py check
 ```
 
@@ -419,7 +428,7 @@ All public classes and methods should include:
 
 Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
 
-Qodana is stricter, but only in a very narrow way for now: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical** Qodana findings only.
+Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
 
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
@@ -475,7 +484,7 @@ Potential enhancements to the code quality setup:
 - Add SonarQube for comprehensive code quality metrics
 - Implement code coverage requirements with JaCoCo
 - Add automated code formatting with Spotless or Google Java Format
-- Tighten the Qodana gate after several clean runs (for example, add non-critical severity thresholds)
+- Tighten the Qodana gate further once the current thresholds are reliably green (for example, add `info` or `low` severity thresholds)
 
 ## References
 
