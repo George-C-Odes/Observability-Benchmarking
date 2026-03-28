@@ -82,7 +82,7 @@ pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.t
 
 The Django CI workflow validates the shared `common` package once, then runs
 module-specific syntax checks, Ruff lint and format checks, Django system checks, and the shared
-39-test suite from both runtime modules.
+test suite (39 tests) that runs from both runtime modules.
 
 ### Shared package checks
 
