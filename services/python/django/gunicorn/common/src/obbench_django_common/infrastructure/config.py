@@ -47,8 +47,9 @@ class AppConfig:
 
     # Service mode
     hello_variant: str = field(
-        default_factory=lambda: os.environ.get("HELLO_VARIANT", "platform").strip().lower()
-        or "platform"
+        default_factory=lambda: (
+            os.environ.get("HELLO_VARIANT", "platform").strip().lower() or "platform"
+        )
     )
 
     # OTel

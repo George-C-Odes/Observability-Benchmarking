@@ -81,26 +81,26 @@ pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.t
 ## Run quality gates locally
 
 The Django CI workflow validates the shared `common` package once, then runs
-module-specific syntax checks, Ruff, Django system checks, and the shared
-39-test suite from both runtime modules.
+module-specific syntax checks, Ruff lint and format checks, Django system checks, and the shared
+test suite (39 tests) that runs from both runtime modules.
 
 ### Shared package checks
 
 Run the following from the **repository root**; the final `cd ../../../../../` returns you to the repository root.
 ```powershell
-cd services/python/django/gunicorn/common; python -m compileall src; python -m ruff check .; cd ../../../../../
+cd services/python/django/gunicorn/common; python -m compileall src; python -m ruff --version; python -m ruff check .; python -m ruff format --check .; cd ../../../../../
 ```
 
 ### WSGI module checks
 
 ```powershell
-cd services/python/django/gunicorn/WSGI; python -m pip install ../common -r requirements.txt -r requirements-dev.txt; python -m compileall manage.py hello_project gunicorn.conf.py; python -m ruff check .; python manage.py check; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../../
+cd services/python/django/gunicorn/WSGI; python -m pip install ../common -r requirements.txt -r requirements-dev.txt; python -m compileall manage.py hello_project gunicorn.conf.py; python -m ruff --version; python -m ruff check .; python -m ruff format --check .; python manage.py check; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../../
 ```
 
 ### ASGI module checks
 
 ```powershell
-cd services/python/django/gunicorn/ASGI; python -m pip install ../common -r requirements.txt -r requirements-dev.txt; python -m compileall manage.py hello_project gunicorn.conf.py; python -m ruff check .; python manage.py check; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../../
+cd services/python/django/gunicorn/ASGI; python -m pip install ../common -r requirements.txt -r requirements-dev.txt; python -m compileall manage.py hello_project gunicorn.conf.py; python -m ruff --version; python -m ruff check .; python -m ruff format --check .; python manage.py check; $env:OTEL_SDK_DISABLED="true"; python manage.py test obbench_django_common.tests --verbosity=2; cd ../../../../../
 ```
 
 If you only want the shared unit suite, the final `python manage.py test
@@ -109,18 +109,21 @@ module directory.
 
 See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
-## Lint locally
+## Lint and format check locally
 
 Run [Ruff](https://docs.astral.sh/ruff/) across **all** Django modules (from the repository root):
 
 ```powershell
+python -m ruff --version
 python -m ruff check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
+python -m ruff format --check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 ```
 
 Auto-fix any fixable issues (e.g. import sorting):
 
 ```powershell
 python -m ruff check --fix services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
+python -m ruff format services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 ```
 
 ## Docker builds
