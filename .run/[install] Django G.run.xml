@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="[upgrade] Django G" type="ShConfigurationType" activateToolWindowBeforeRun="false">
-    <option name="SCRIPT_TEXT" value="pip-compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt; pip-compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt" />
+  <configuration default="false" name="[install] Django G" type="ShConfigurationType" activateToolWindowBeforeRun="false">
+    <option name="SCRIPT_TEXT" value="(Get-Content services\python\django\gunicorn\WSGI\requirements.txt, services\python\django\gunicorn\ASGI\requirements.txt) -notmatch 'pyroscope' | Set-Content $env:TEMP\django-reqs.txt; pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.txt" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

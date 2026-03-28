@@ -82,6 +82,34 @@ Then open:
 
 > Tip: if you change `_config.yml` or layouts, restart `jekyll serve`.
 
+### Checking for gem updates
+
+To check whether newer versions of the direct dependencies exist:
+
+```bash
+cd docs
+# List outdated gems (shows current, latest, and whether the Gemfile constraint allows it)
+bundle outdated
+```
+
+To apply updates:
+
+```bash
+cd docs
+# Update all gems within current Gemfile constraints
+bundle update
+
+# — or update a specific gem —
+bundle update <gem-name>
+
+# Ensure all platforms are present in the lockfile
+bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
+```
+
+If a gem's latest version is outside the current `~>` constraint (e.g. `~> 1.6.0` blocking a `1.7.0` release), edit the constraint in `docs/Gemfile` first, then run `bundle update <gem-name>`.
+
+On Windows, remember to run `ridk enable` before any Bundler commands.
+
 ### Windows setup (verified with `ridk enable`)
 
 Jekyll depends on gems with native C extensions (`eventmachine`, `http_parser.rb`, `json`, `wdm`).

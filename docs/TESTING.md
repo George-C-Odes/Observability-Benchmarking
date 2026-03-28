@@ -407,11 +407,11 @@ cd -
 The Django quality workflow in `.github/workflows/django_python_quality.yml`
 does more than execute tests:
 
-1. Runs syntax and Ruff checks for the shared `common` package.
+1. Runs syntax checks, prints the Ruff version for visibility, then runs Ruff lint and format checks for the shared `common` package.
 2. Installs the shared package into each runtime module environment.
-3. Runs module syntax checks, Ruff, `python manage.py check`, and the shared test suite.
+3. Prints the Ruff version, runs module syntax checks, Ruff lint and format checks, `python manage.py check`, and the shared test suite.
 
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v5` is exercised on Node 24 ahead of GitHub's runtime migration. GitHub may still print an informational warning saying the action targets Node 20 but is being forced to run on Node 24 until the upstream action metadata is updated.
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v6.2.0` is exercised on Node 24 ahead of GitHub's runtime migration.
 
 Use the following sequence when you want to reproduce the CI gates locally:
 
@@ -419,13 +419,17 @@ Use the following sequence when you want to reproduce the CI gates locally:
 # Shared package checks
 cd services/python/django/gunicorn/common
 python -m compileall src
+python -m ruff --version
 python -m ruff check .
+python -m ruff format --check .
 
 # WSGI module checks
 cd ../WSGI
 python -m pip install ../common -r requirements.txt -r requirements-dev.txt
 python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff --version
 python -m ruff check .
+python -m ruff format --check .
 python manage.py check
 OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbosity=2
 
@@ -433,7 +437,9 @@ OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbo
 cd ../ASGI
 python -m pip install ../common -r requirements.txt -r requirements-dev.txt
 python -m compileall manage.py hello_project gunicorn.conf.py
+python -m ruff --version
 python -m ruff check .
+python -m ruff format --check .
 python manage.py check
 OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbosity=2
 ```
