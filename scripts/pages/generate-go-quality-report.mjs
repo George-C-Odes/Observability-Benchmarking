@@ -57,13 +57,14 @@ const issues = lintReport.Issues || [];
 // 2. Compute summaries
 // ---------------------------------------------------------------------------
 
+const hasValidLintData = !inputMissing && !parseFailed;
 const totalIssues = issues.length;
 const errorCount = issues.filter((i) => (i.Severity || '').toLowerCase() === 'error').length;
 const warningCount = issues.filter((i) => (i.Severity || '').toLowerCase() === 'warning').length;
 const otherCount = totalIssues - errorCount - warningCount;
 
 // A clean pass requires valid input AND zero issues.
-const overallPass = !inputMissing && !parseFailed && totalIssues === 0;
+const overallPass = hasValidLintData && totalIssues === 0;
 
 // Human-readable status label for the Overall card.
 let overallLabel = 'Pass';
