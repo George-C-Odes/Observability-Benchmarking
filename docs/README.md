@@ -9,12 +9,14 @@ Visit the documentation at: [https://george-c-odes.github.io/Observability-Bench
 ## Contents
 
 - **[index.html](index.html)** - Main landing page with portfolio-style presentation
+- **[getting-started.md](getting-started.md)** - Step-by-step setup instructions and prerequisites
 - **[architecture.md](architecture.md)** - Detailed system architecture and design decisions
 - **[benchmarking.md](benchmarking.md)** - Comprehensive benchmarking methodology and process
-- **[style.css](style.css)** - CSS styling for the documentation site
-- **[_config.yml](_config.yml)** - Jekyll configuration for GitHub Pages
+- **[tools-technologies.md](tools-technologies.md)** - In-depth documentation of all frameworks, tools, and technologies used
 - **[adding-a-service.md](adding-a-service.md)** - How to add a new benchmark target and wire it into the environment
 - **[control-plane.md](control-plane.md)** - Control plane overview (dashboard + orchestrator reasoning and usage)
+- **[style.css](style.css)** - CSS styling for the documentation site
+- **[_config.yml](_config.yml)** - Jekyll configuration for GitHub Pages
 
 ## Features
 

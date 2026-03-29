@@ -12,9 +12,11 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import io.github.georgecodes.benchmarking.orchestrator.application.ServiceException.Type;
+
 /**
  * Service for managing environment configuration files.
- * Handles file I/O, validation, and backup operations following Single Responsibility Principle.
+ * Handles file I/O, validation, and backup operations following the Single Responsibility Principle.
  */
 @JBossLog
 @ApplicationScoped
@@ -42,7 +44,7 @@ public class EnvFileService {
 
             if (!Files.exists(path)) {
                 log.warnf("Environment file not found at: %s", path.toAbsolutePath());
-                throw new EnvFileException("Environment file not found", EnvFileException.Type.NOT_FOUND);
+                throw new EnvFileException("Environment file not found", Type.NOT_FOUND);
             }
 
             String content = Files.readString(path);
@@ -52,7 +54,7 @@ public class EnvFileService {
         } catch (IOException e) {
             log.errorf(e, "Failed to read environment file: %s", envFilePath);
             throw new EnvFileException("Failed to read environment file: " + e.getMessage(),
-                    EnvFileException.Type.IO_ERROR, e);
+                    Type.IO_ERROR, e);
         }
     }
 
@@ -73,7 +75,7 @@ public class EnvFileService {
 
             if (!Files.exists(path)) {
                 log.warnf("Environment file not found at: %s", path.toAbsolutePath());
-                throw new EnvFileException("Environment file not found", EnvFileException.Type.NOT_FOUND);
+                throw new EnvFileException("Environment file not found", Type.NOT_FOUND);
             }
 
             // Create backup
@@ -87,7 +89,7 @@ public class EnvFileService {
         } catch (IOException e) {
             log.errorf(e, "Failed to update environment file: %s", envFilePath);
             throw new EnvFileException("Failed to update environment file: " + e.getMessage(),
-                    EnvFileException.Type.IO_ERROR, e);
+                    Type.IO_ERROR, e);
         }
     }
 
@@ -99,7 +101,7 @@ public class EnvFileService {
      */
     private void validateContent(String content) {
         if (content == null || content.isEmpty()) {
-            throw new EnvFileException("Content cannot be empty", EnvFileException.Type.VALIDATION_ERROR);
+            throw new EnvFileException("Content cannot be empty", Type.VALIDATION_ERROR);
         }
     }
 
@@ -143,54 +145,14 @@ public class EnvFileService {
     /**
      * Exception thrown when environment file operations fail.
      */
-    @SuppressWarnings("LombokGetterMayBeUsed")
-    public static class EnvFileException extends RuntimeException {
-        /**
-         * Type of environment file exception.
-         */
-        public enum Type {
-            /** File not found. */
-            NOT_FOUND,
-            /** I/O error during file operations. */
-            IO_ERROR,
-            /** Content validation error. */
-            VALIDATION_ERROR
-        }
+    public static class EnvFileException extends ServiceException {
 
-        /** The type of exception that occurred. */
-        private final Type type;
-
-        /**
-         * Creates an environment file exception.
-         *
-         * @param message the error message
-         * @param type the exception type
-         */
         public EnvFileException(String message, Type type) {
-            super(message);
-            this.type = type;
+            super(message, type);
         }
 
-        /**
-         * Creates an environment file exception with a cause.
-         *
-         * @param message the error message
-         * @param type the exception type
-         * @param cause the underlying cause
-         */
         public EnvFileException(String message, Type type, Throwable cause) {
-            super(message, cause);
-            this.type = type;
-        }
-
-        /**
-         * Gets the exception type.
-         *
-         * @return the exception type
-         */
-        public Type getType() {
-            return type;
+            super(message, type, cause);
         }
     }
 }
-

@@ -1,12 +1,24 @@
 # wrk2 Load Generation
 
-This folder builds the repo’s `wrk2` utility image and provides the scripts used by the `wrk2` service in `compose/utils.yml`.
+This folder builds the repo's `wrk2` utility image and provides the scripts used by the `wrk2` service in `compose/utils.yml`.
 
 ## What this container does
 
 - Always starts a **readiness endpoint** on `http://0.0.0.0:3003/ready` (served by `busybox httpd`).
 - Optionally runs load tests automatically on startup.
 - Stays running indefinitely so you can `exec` into it and run additional benchmarks.
+
+## Benchmark targets
+
+The benchmark URLs are defined in a single config file:
+
+- **`config/benchmark-targets.txt`** — one full URL per line (e.g. `http://quarkus-jvm:8080/hello/platform`).
+- Blank lines and lines starting with `#` are ignored.
+- Managed via the Dashboard **Benchmark Targets** tab, or by editing the file directly.
+
+The file is mounted into the container at `WRK_TARGETS_FILE` (default `/workspace/config/benchmark-targets.txt`).
+
+At the start of each run, `benchmark.sh` reads every non-comment URL from the file and benchmarks each one in order.
 
 ## Readiness endpoint
 
@@ -41,8 +53,8 @@ If you want the container to **exit automatically when the auto-run finishes**, 
 Behavior:
 
 - Only applies when `WRK_AUTORUN=true`.
-- After `benchmark.sh` completes, the container stops (exit code is the same as the benchmark script’s exit code).
-- This is useful for “run benchmarks and stop” CI-like workflows.
+- After `benchmark.sh` completes, the container stops (exit code is the same as the benchmark script's exit code).
+- This is useful for "run benchmarks and stop" CI-like workflows.
 
 ### On-demand (exec into container)
 
@@ -73,13 +85,15 @@ The benchmark script can write logs to:
 
 ### Filename format
 
-Each benchmark log uses an iteration-aware name (same filename for both internal + exported copy):
+Each benchmark log uses an iteration-aware name (the same filename for both internal + exported copy):
 
-- `HHMMSS__iterN__<host>_<endpoint>_<threads>_<connections>_<duration>_<rate>.log`
+- `HHMMSS__iterN__<url_label>_<threads>_<connections>_<duration>_<rate>.log`
+
+The URL label is derived from the target URL (host and path, with special characters replaced).
 
 Example:
 
-- `005426__iter3__quarkus-jvm_reactive_5_200_3m_120000.log`
+- `005426__iter3__quarkus-jvm_8080_hello_reactive_5_200_3m_120000.log`
 
 The iteration counter is the loop counter in `benchmark.sh`.
 
@@ -113,9 +127,7 @@ This affects benchmark filenames because timestamps use `date`.
 The `wrk2` service in `compose/utils.yml` wires these (you can override via `.env` or your shell):
 
 - Target selection:
-  - `WRK_HOST` (e.g. `quarkus-jvm`, `spring-jvm-tomcat-platform`, `go`, or `combo`)
-  - `WRK_PORT` (default `8080`)
-  - `WRK_ENDPOINT` (`platform|virtual|reactive|combo`)
+  - `WRK_TARGETS_FILE` (path to the benchmark targets file, default `/workspace/config/benchmark-targets.txt`)
 
 - Load shape:
   - `WRK_THREADS`

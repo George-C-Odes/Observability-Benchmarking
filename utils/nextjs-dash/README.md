@@ -41,13 +41,18 @@ Common workflows:
    - Update values in `compose/.env` (for example: load generator targets, rates, enabled services).
    - Save changes; the orchestrator persists the file (with a backup).
 
-2. **Run command presets**
+2. **Configure benchmark targets**
+   - Select which service endpoints to include in the benchmark run via a chip-based multiselect UI.
+   - Quick-filter buttons for grouped selection (Java, JVM, Native, Spring, Helidon, Python, Go, Platform, Virtual, Reactive, All, None).
+   - Changes are saved to `config/benchmark-targets.txt` and take effect on the next wrk2 run.
+
+3. **Run command presets**
    - Start only the observability stack (OBS)
    - Start stack + services
    - Rerun load generators (RAIN_FIRE)
    - Any other allowlisted preset commands (discovered from `.run/` configs)
 
-3. **Watch operational logs**
+4. **Watch operational logs**
    - Browser/client logs (captured from `console.*`)
    - Next.js server logs (buffered and streamable)
 
@@ -141,10 +146,12 @@ Some environments terminate long-lived HTTP connections.
 - **Generic runtime-config hook factory** (`app/hooks/useRuntimeConfig.ts`): all four config-fetching hooks now use a shared `createRuntimeConfigHook<T>()` factory, removing ~120 lines of duplicated fetch/parse/error/loading boilerplate (DRY / Open-Closed Principle).
 - **Extracted `ServiceHealth` sub-components**: `ActionRow`, `DataRow`, and `ServiceGroup` moved into `app/components/service-health/` as standalone `React.memo`-wrapped components, reducing `ServiceHealth.tsx` by ~300 lines and eliminating per-render re-creation of inline component definitions.
 - **Memoized presentational components**: `ScriptCard`, `ScriptSection`, `ResourceCard`, and `Section` wrapped with `React.memo`; callback functions in `ScriptRunner` stabilized with `useCallback`.
+- **Benchmark targets management**: chip-based multiselect UI (`BenchmarkTargets.tsx`) with quick-filter buttons organized into four labeled rows — **Language** (All, None, Java, Go, Python), **Framework** (Spring, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko, Django), **Runtime** (JVM, Native, CPython), **Endpoint** (Platform, Virtual, Reactive) — for selecting which service endpoints to include in benchmark runs. Java framework groups display JVM / Native subgroup headings when applicable. Filter and chip colors use exact badge hex values from the main README. Changes persist to `config/benchmark-targets.txt` via the orchestrator API.
 
 ## Features
 
 - **Environment Configuration Editor**: Edit the `compose/.env` file through an intuitive UI
+- **Benchmark Targets Manager**: Chip-based multiselect UI for choosing which service endpoints to include in benchmark runs, with quick-filter rows (Language, Framework, Runtime, Endpoint) and JVM/Native subgroup layouts
 - **Script Runner**: Execute run presets via the orchestrator
 - **Application Logs**: Client console + buffered Next.js server logs for local/dev troubleshooting
 - **Professional UI**: Built with Material-UI for a polished interface
@@ -174,6 +181,7 @@ Next.js local endpoints used by the browser:
 - Next.js logs (live SSE): `GET /api/logs/stream`
 - Aggregated service health proxy: `GET /api/health`
 - Env proxy: `GET/POST /api/env`
+- Benchmark targets proxy: `GET/POST /api/benchmark-targets`
 - Orchestrator proxy: `POST /api/orchestrator/submit`, `GET /api/orchestrator/status`, `GET /api/orchestrator/events`
 
 Orchestrator (Quarkus) endpoints used by the router:
@@ -183,6 +191,7 @@ Orchestrator (Quarkus) endpoints used by the router:
 - Job status: `GET /v1/jobs/{id}`
 - Job events (SSE): `GET /v1/jobs/{id}/events`
 - Env file: `GET/POST /v1/env` (POST requires Authorization)
+- Benchmark targets: `GET/POST /v1/benchmark-targets` (POST requires Authorization)
 - Aggregated service health: `GET /v1/health`
 
 ## Runtime configuration (env-driven)

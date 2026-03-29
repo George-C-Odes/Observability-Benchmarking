@@ -188,7 +188,7 @@ services:
       - type: bind
         source: ${HOST_REPO}/config
         target: ${WORKSPACE}/config
-        read_only: true
+        read_only: false
       - type: bind
         source: ${HOST_REPO}/services
         target: ${WORKSPACE}/services
@@ -220,12 +220,10 @@ services:
       - "3003:3003"
     volumes:
       - ${HOST_REPO}/results/benchmarks:/exports
+      - ${HOST_REPO}/config/benchmark-targets.txt:/workspace/config/benchmark-targets.txt:ro
     environment:
       TZ: *default_timezone
-      WRK_HOST: ${WRK_HOST}
-      WRK_PORT: 8080
-      WRK_RESOURCE: ${WRK_RESOURCE:-hello}
-      WRK_ENDPOINT: ${WRK_ENDPOINT}
+      WRK_TARGETS_FILE: ${WRK_TARGETS_FILE:-/workspace/config/benchmark-targets.txt}
 
       WRK_AUTORUN: ${WRK_AUTORUN}
       WRK_EXIT_AFTER_AUTORUN: ${WRK_EXIT_AFTER_AUTORUN}

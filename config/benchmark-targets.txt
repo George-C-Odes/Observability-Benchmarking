@@ -1,0 +1,39 @@
+# Benchmark target URLs — one full URL per line.
+# Blank lines and lines starting with '#' are ignored.
+# Managed via the dashboard UI (Benchmark Targets tab) or by editing this file directly.
+#
+# Format: http://<container-hostname>:<port>/<resource>/<endpoint>
+#
+http://spring-jvm-tomcat-platform:8080/hello/platform
+http://spring-jvm-tomcat-virtual:8080/hello/virtual
+http://spring-jvm-netty:8080/hello/reactive
+http://spring-native-tomcat-platform:8080/hello/platform
+http://spring-native-tomcat-virtual:8080/hello/virtual
+http://spring-native-netty:8080/hello/reactive
+http://quarkus-jvm:8080/hello/platform
+http://quarkus-jvm:8080/hello/virtual
+http://quarkus-jvm:8080/hello/reactive
+http://quarkus-native:8080/hello/platform
+http://quarkus-native:8080/hello/virtual
+http://quarkus-native:8080/hello/reactive
+http://micronaut-jvm:8080/hello/platform
+http://micronaut-jvm:8080/hello/virtual
+http://micronaut-jvm:8080/hello/reactive
+http://micronaut-native:8080/hello/platform
+http://micronaut-native:8080/hello/virtual
+http://micronaut-native:8080/hello/reactive
+http://helidon-se-jvm:8080/hello/virtual
+http://helidon-se-native:8080/hello/virtual
+http://helidon-mp-jvm:8080/hello/virtual
+http://helidon-mp-native:8080/hello/virtual
+http://spark-jvm-platform:8080/hello/platform
+http://spark-jvm-virtual:8080/hello/virtual
+http://javalin-jvm-platform:8080/hello/platform
+http://javalin-jvm-virtual:8080/hello/virtual
+http://dropwizard-jvm-platform:8080/hello/platform
+http://dropwizard-jvm-virtual:8080/hello/virtual
+http://vertx-jvm:8080/hello/reactive
+http://pekko-jvm:8080/hello/reactive
+http://go:8080/hello/virtual
+http://django-platform:8080/hello/platform
+http://django-reactive:8080/hello/reactive

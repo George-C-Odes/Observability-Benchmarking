@@ -49,10 +49,7 @@ print_common_vars() {
   local mode="${1:-summary}"
 
   # Keep these defaults in sync with benchmark.sh
-  local DEFAULT_HOST="quarkus-jvm"
-  local DEFAULT_PORT="8080"
-  local DEFAULT_RESOURCE="hello"
-  local DEFAULT_ENDPOINT="platform"
+  local DEFAULT_TARGETS_FILE="/workspace/config/benchmark-targets.txt"
 
   local DEFAULT_AUTORUN="true"
   local DEFAULT_WRK_EXIT_AFTER_AUTORUN="false"
@@ -70,10 +67,7 @@ print_common_vars() {
   local DEFAULT_EXPORT_DIR=""
 
   local tz_val="${TZ:-}"
-  local host_val="${WRK_HOST:-$DEFAULT_HOST}"
-  local port_val="${WRK_PORT:-$DEFAULT_PORT}"
-  local resource_val="${WRK_RESOURCE:-$DEFAULT_RESOURCE}"
-  local ep_val="${WRK_ENDPOINT:-$DEFAULT_ENDPOINT}"
+  local targets_file_val="${WRK_TARGETS_FILE:-$DEFAULT_TARGETS_FILE}"
 
   local auto_val="${WRK_AUTORUN:-$DEFAULT_AUTORUN}"
   local auto_exit_val="${WRK_EXIT_AFTER_AUTORUN:-$DEFAULT_WRK_EXIT_AFTER_AUTORUN}"
@@ -92,14 +86,10 @@ print_common_vars() {
 
   if [ "${mode}" = "help" ]; then
     # Use literal text (single-quoted heredoc) to avoid unwanted interpolation.
-    # Some terminals/renderers may strip '|' characters; we use commas for enums here.
     cat <<'EOF'
 Common variables:
   TZ                        Timezone name (e.g. Europe/Nicosia)
-  WRK_HOST                  Target service hostname
-  WRK_PORT                  Target port
-  WRK_RESOURCE              Base resource path (defaults to 'hello')
-  WRK_ENDPOINT              'hello' endpoint suffix (platform, virtual, reactive, combo)
+  WRK_TARGETS_FILE          Path to benchmark targets file (one URL per line)
 
   WRK_AUTORUN               Auto-run benchmarks on container start (true, false)
   WRK_EXIT_AFTER_AUTORUN    Stop container after auto-run (true, false)
@@ -122,10 +112,7 @@ EOF
 
 Defaults and current values:
   TZ                        current:${tz_val:-<unset>}
-  WRK_HOST                  current:${host_val}, default:${DEFAULT_HOST}
-  WRK_PORT                  current:${port_val}, default:${DEFAULT_PORT}
-  WRK_RESOURCE              current:${resource_val}, default:${DEFAULT_RESOURCE}
-  WRK_ENDPOINT              current:${ep_val}, default:${DEFAULT_ENDPOINT}
+  WRK_TARGETS_FILE          current:${targets_file_val}, default:${DEFAULT_TARGETS_FILE}
 
   WRK_AUTORUN               current:${auto_val}, default:${DEFAULT_AUTORUN}
   WRK_EXIT_AFTER_AUTORUN    current:${auto_exit_val}, default:${DEFAULT_WRK_EXIT_AFTER_AUTORUN}
@@ -149,10 +136,7 @@ EOF
   # summary (for startup)
   echo "[wrk2] config:" >&2
   echo "  TZ:${tz_val:-<unset>}" >&2
-  echo "  WRK_HOST:                 ${host_val} (default: ${DEFAULT_HOST})" >&2
-  echo "  WRK_PORT:                 ${port_val} (default: ${DEFAULT_PORT})" >&2
-  echo "  WRK_RESOURCE:             ${resource_val} (default: ${DEFAULT_RESOURCE})" >&2
-  echo "  WRK_ENDPOINT:             ${ep_val} (default: ${DEFAULT_ENDPOINT})" >&2
+  echo "  WRK_TARGETS_FILE:         ${targets_file_val} (default: ${DEFAULT_TARGETS_FILE})" >&2
   echo "  WRK_AUTORUN:              ${auto_val} (default: ${DEFAULT_AUTORUN})" >&2
   echo "  WRK_EXIT_AFTER_AUTORUN:   ${auto_exit_val} (default: ${DEFAULT_WRK_EXIT_AFTER_AUTORUN})" >&2
   echo "  WRK_ITERATIONS:           ${iter_val} (default: ${DEFAULT_ITERATIONS})" >&2
