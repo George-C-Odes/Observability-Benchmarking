@@ -28,9 +28,10 @@ linter: jetbrains/qodana-python-community:2025.3
 # and the local obbench_django_common package is unresolved, producing false
 # positives that do not appear in the IDE (where the venv is configured).
 #
-# pyroscope-io contains a Rust/C native extension that requires a build
-# toolchain not present in the Qodana container — filter it out (the app
-# handles its absence gracefully at runtime).
+# pyroscope-io and related pyroscope-* packages may contain Rust/C native
+# extensions that require a build toolchain not present in the Qodana
+# container — filter out any pyroscope-related requirements (the app
+# handles their absence gracefully at runtime).
 #
 # --ignore-requires-python is required because the Qodana Python Community
 # 2025.3 container ships Python 3.12, while the project declares
