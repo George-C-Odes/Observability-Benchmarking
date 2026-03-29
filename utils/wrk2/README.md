@@ -18,7 +18,7 @@ The benchmark URLs are defined in a single config file:
 
 The file is mounted into the container at `WRK_TARGETS_FILE` (default `/workspace/config/benchmark-targets.txt`).
 
-On each iteration, `benchmark.sh` reads every non-comment URL from the file and benchmarks each one in order.
+At the start of each run, `benchmark.sh` reads every non-comment URL from the file and benchmarks each one in order.
 
 ## Readiness endpoint
 
