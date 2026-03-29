@@ -66,7 +66,13 @@ jobs:
         run: go vet ./...
 
       - name: Lint (golangci-lint)
-        run: golangci-lint run
+        id: lint
+        run: |
+          # Produce both human-readable output (colored-line to stdout for the
+          # CI log) and a JSON report file for the HTML quality report — in a
+          # single lint pass to avoid duplicating work.
+          golangci-lint run \
+            --output.formats="colored-line-number,json:golangci-lint-report.json"
 
       - name: Unit tests
         run: go test ./... -race -count=1
@@ -75,26 +81,13 @@ jobs:
         run: go build ./cmd/server
 
       # ------------------------------------------------------------------
-      # Quality report: generate an HTML report from golangci-lint JSON
-      # output so the Pages workflow can host it alongside the Qodana and
-      # Next.js reports.  Steps run with `if: always()` so that a failing
-      # lint still produces a downloadable report artifact.
+      # Quality report: generate an HTML report from the JSON output
+      # captured during the lint step so the Pages workflow can host it
+      # alongside the Qodana and Next.js reports.  Steps run with
+      # `if: always()` so that a failing lint still produces a
+      # downloadable report artifact.
       # ------------------------------------------------------------------
 
-      - name: Generate golangci-lint JSON report
-        if: always() && !cancelled()
-        run: |
-          # Run golangci-lint and write only JSON output to the report file.
-          # Exit code semantics:
-          #   0: no issues
-          #   1: issues found (non-fatal for this reporting step)
-          #  >1: tool/configuration error (should fail the job)
-          exit_code=0
-          golangci-lint run --out-format=json > golangci-lint-report.json || exit_code=$?
-          if [ "$exit_code" -gt 1 ]; then
-            echo "golangci-lint failed with exit code $exit_code" >&2
-            exit "$exit_code"
-          fi
 
       - name: Set up Node.js (for report generation)
         if: always() && !cancelled()
