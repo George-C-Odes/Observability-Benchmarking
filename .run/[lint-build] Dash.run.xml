@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="[lint-build] Dash" type="ShConfigurationType" activateToolWindowBeforeRun="false">
-    <option name="SCRIPT_TEXT" value="cd $PROJECT_DIR$/utils/nextjs-dash &amp;&amp; npm -s run lint &amp;&amp; npm -s run typecheck &amp;&amp; npm -s test &amp;&amp; npm -s run build" />
+    <option name="SCRIPT_TEXT" value="cd &quot;$PROJECT_DIR$/utils/nextjs-dash&quot; &amp;&amp; npm -s run lint &amp;&amp; npm -s run typecheck &amp;&amp; npm -s test &amp;&amp; npm -s run build" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
