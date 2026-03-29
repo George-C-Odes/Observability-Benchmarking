@@ -1,0 +1,30 @@
+#-------------------------------------------------------------------------------#
+#               Qodana analysis is configured by qodana.yaml file               #
+#             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
+#-------------------------------------------------------------------------------#
+
+#################################################################################
+#              WARNING: Do not store sensitive information in this file,        #
+#               as its contents will be included in the Qodana report.          #
+#################################################################################
+version: "1.0"
+
+# Module-local config for the Next.js dashboard (TypeScript / React).
+# The root qodana.yaml pins the JVM linter for services/java and
+# utils/orchestrator.  This file pins the JS linter so the Qodana
+# GitHub Actions matrix can analyze this module with the correct image.
+
+linter: jetbrains/qodana-js:2025.3
+
+profile:
+  name: qodana.starter
+
+# Bootstrap: install npm dependencies so Qodana can resolve imports.
+bootstrap: cd utils/nextjs-dash && npm ci
+
+failureConditions:
+  severityThresholds:
+    # Match the root config: fail on critical, high, and moderate findings.
+    critical: 0
+    high: 0
+    moderate: 0

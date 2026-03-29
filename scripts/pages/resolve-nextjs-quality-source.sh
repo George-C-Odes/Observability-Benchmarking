@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# scripts/pages/resolve-qodana-source.sh
+# scripts/pages/resolve-nextjs-quality-source.sh
 #
-# Resolves the Qodana workflow run whose report artifacts should be
-# published to GitHub Pages.
+# Resolves the Next.js Dashboard Quality workflow run whose report
+# artifact should be published to GitHub Pages.
 #
 # Required env:
 #   GITHUB_TOKEN        – token with actions:read scope
@@ -19,24 +19,25 @@
 
 set -euo pipefail
 
-# Only use the triggering workflow_run when it is actually the Qodana workflow.
-# Other triggering workflows (e.g. Next.js Dashboard Quality) fall through to
-# the API query below so the latest successful Qodana run is resolved instead.
-if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "Qodana" ]]; then
-  echo "run_id=$WR_ID" >> "$GITHUB_OUTPUT"
+WORKFLOW_NAME="Next.js Dashboard Quality"
+
+# If the Pages build was triggered directly by this workflow, use that run.
+if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "$WORKFLOW_NAME" ]]; then
+  echo "run_id=$WR_ID"   >> "$GITHUB_OUTPUT"
   echo "head_sha=$WR_HEAD_SHA" >> "$GITHUB_OUTPUT"
   exit 0
 fi
 
+# Otherwise, query the API for the latest successful run on main.
 response_file="$(mktemp)"
 trap 'rm -f "$response_file"' EXIT
 if ! curl -fsSL \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/qodana_code_quality.yml/runs?branch=main&status=completed&per_page=20" \
+  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/nextjs_dash_quality.yml/runs?branch=main&status=completed&per_page=20" \
   -o "$response_file"; then
-  echo "Warning: GitHub API request for Qodana workflow runs failed; GitHub Pages will publish without hosted Qodana reports."
+  echo "Warning: GitHub API request for Next.js quality workflow runs failed; Pages will publish without a hosted Next.js quality report."
   exit 0
 fi
 
@@ -57,5 +58,6 @@ PY
 if [[ -n "$resolved" ]]; then
   printf '%s\n' "$resolved" >> "$GITHUB_OUTPUT"
 else
-  echo "No successful Qodana workflow run on main was found; GitHub Pages will publish without hosted Qodana reports."
+  echo "No successful Next.js quality workflow run on main was found; Pages will publish without a hosted Next.js quality report."
 fi
+

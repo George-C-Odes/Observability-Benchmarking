@@ -85,6 +85,7 @@ The convention is applied in:
 - `.github/workflows/qodana_code_quality.yml`
 - `.github/workflows/pages.yml`
 - `.github/workflows/django_python_quality.yml`
+- `.github/workflows/nextjs_dash_quality.yml`
 
 Each occurrence is annotated with `# TODO(node24-migration)` so they can be found and removed once GitHub's default runtime moves to Node 24.
 
@@ -400,6 +401,114 @@ Ruff is also available as an IDE plugin for real-time feedback.
 
 ## Code Quality Standards
 
+### Next.js Dashboard (ESLint + TypeScript)
+
+#### Overview
+
+The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
+
+1. **ESLint** — flat-config format (`eslint.config.mjs`), `--max-warnings=0` so any warning is treated as a CI failure.
+2. **TypeScript strict mode** — `tsc --noEmit` with `"strict": true` in `tsconfig.json`.
+3. **Vitest** — dual-environment test suite (Node for API/lib code, jsdom for React components/hooks).
+4. **Production build** — `next build` as a smoke test to catch import/config regressions.
+
+The CI workflow is triggered on pushes to `main` and pull requests touching `utils/nextjs-dash/**`.
+
+#### ESLint Configuration
+
+The module uses ESLint v9 flat config in `utils/nextjs-dash/eslint.config.mjs`:
+
+- **Base**: `@eslint/js` recommended rules + `typescript-eslint` recommended
+- **Next.js**: `@next/eslint-plugin-next` (recommended + core-web-vitals)
+- **React**: `eslint-plugin-react-hooks` recommended rules
+- **Server files** (`app/api/**`, `lib/**`, config files): Node globals enabled, `@typescript-eslint/no-require-imports` relaxed
+- **Ignores**: `.next/`, `node_modules/`, `dist/`, `out/`, `coverage/`, `build/`
+
+The `--max-warnings=0` flag ensures no warnings are tolerated in CI.
+
+#### TypeScript Configuration
+
+`utils/nextjs-dash/tsconfig.json` enables strict mode with these key settings:
+
+- `"strict": true`
+- `"noEmit": true`
+- `"target": "ES2020"`
+- `"moduleResolution": "bundler"`
+- `"jsx": "react-jsx"`
+
+The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files.
+
+#### Running Quality Checks Locally
+
+```bash
+cd utils/nextjs-dash
+npm install
+
+# Individual checks
+npm run lint
+npm run typecheck
+npm run test:node
+npm run test:dom
+
+# Quick one-liner matching CI
+npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
+```
+
+#### Qodana JS — Not Currently Active (Licensing)
+
+A module-local Qodana configuration exists at `utils/nextjs-dash/qodana.yaml` pinning `jetbrains/qodana-js:2025.3`. However, unlike the JVM scopes which use the free `jetbrains/qodana-jvm-community` image, JetBrains does **not** publish a community edition of the JavaScript/TypeScript linter. The `jetbrains/qodana-js` image requires a paid [Qodana Cloud](https://www.jetbrains.com/qodana/) subscription and a valid `QODANA_TOKEN`.
+
+Because this repository currently uses the free community JVM linter, the JS scope is **not** included in the Qodana CI workflow. The configuration file is kept in the repository so it can be activated by adding a `nextjs-dash` matrix entry to `.github/workflows/qodana_code_quality.yml` once a Qodana Cloud license covering JavaScript analysis is available. When re-enabling, the Qodana action does not support a `linter` input — you must add a `docker pull jetbrains/qodana-js:2025.3` step before the scan to ensure the image is available (the action's internal pull phase only reads the root `qodana.yaml`).
+
+#### Free Alternative — Hosted ESLint + TypeScript Quality Report
+
+Since there is no free Qodana community linter for JavaScript/TypeScript, this repository generates a **self-contained HTML quality report** from ESLint and TypeScript strict-mode analysis as the free, open-source equivalent. This covers the same inspections your JetBrains IDE performs for JS/TS:
+
+- **ESLint** — the same rules configured in `eslint.config.mjs` (recommended + typescript-eslint + Next.js + React Hooks)
+- **TypeScript strict mode** — `tsc --noEmit` with `"strict": true`, identical to the IDE's type checking
+
+How it works:
+
+1. The `Next.js Dashboard Quality` workflow (`.github/workflows/nextjs_dash_quality.yml`) runs the normal quality gates (lint, typecheck, tests, build)
+2. After the quality gates, it generates ESLint JSON output and TypeScript diagnostics
+3. A Node.js script (`scripts/pages/generate-nextjs-quality-report.mjs`) produces a polished, self-contained HTML report from those results
+4. The report is uploaded as a `quality-report-nextjs-dash` artifact
+5. The Pages workflow downloads the artifact and publishes it alongside the Qodana JVM reports
+
+The report includes:
+- Summary cards (overall pass/fail, ESLint errors/warnings, TypeScript diagnostics)
+- Per-file ESLint findings table with severity, rule ID, message, and line/column
+- TypeScript diagnostics block
+- Metadata (commit SHA, workflow run, tool versions, timestamp)
+- Dark mode support via `prefers-color-scheme`
+
+Expected URL:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/qodana/nextjs-dash/
+```
+
+The landing page at `qodana/` now links to all three scopes:
+- `qodana/services-java/` — Qodana JVM (IntelliJ inspections)
+- `qodana/orchestrator/` — Qodana JVM (IntelliJ inspections)
+- `qodana/nextjs-dash/` — ESLint + TypeScript (free alternative)
+
+The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
+
+#### Pages Integration for the Next.js Quality Report
+
+The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
+
+- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana run is resolved via API
+- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js quality run is resolved via API
+- When triggered by push or manual dispatch, the latest successful run for **both** workflows is resolved via API
+
+This ensures every Pages deployment gets the freshest available version of all reports.
+
+Scripts involved:
+- `scripts/pages/resolve-nextjs-quality-source.sh` — resolves the Next.js quality workflow run to fetch the report artifact from
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash` scope alongside the existing Qodana JVM scopes
+
 ### Documentation
 All public classes and methods should include:
 1. **Class-level Javadoc**: Describing the purpose and responsibility of the class
@@ -429,6 +538,8 @@ All public classes and methods should include:
 Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
 
 Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
+
+The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
@@ -492,3 +603,7 @@ Potential enhancements to the code quality setup:
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/)
 - [Qodana Documentation](https://www.jetbrains.com/help/qodana/qodana-yaml.html)
+- [ESLint Documentation](https://eslint.org/docs/latest/)
+- [typescript-eslint](https://typescript-eslint.io/)
+- [Vitest Documentation](https://vitest.dev/)
+- [Next.js ESLint Plugin](https://nextjs.org/docs/app/api-reference/config/eslint)

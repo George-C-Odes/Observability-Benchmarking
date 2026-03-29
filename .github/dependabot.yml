@@ -33,3 +33,10 @@ updates:
     commit-message:
       prefix: "deps(python)"
 
+  # Node.js / Next.js dashboard
+  - package-ecosystem: npm
+    directory: /utils/nextjs-dash
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(nextjs-dash)"
