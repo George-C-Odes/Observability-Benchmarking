@@ -120,7 +120,7 @@ jobs:
     timeout-minutes: 30
     # The Qodana job is allowed to fail without blocking the overall workflow
     # so the HTML report artifact is still uploaded and the Pages deployment
-    # can download it.  The job itself shows as failed (yellow) in the Actions
+    # can download it. The job itself shows as failed (yellow) in the Actions
     # UI when the quality gate is violated, keeping the signal visible.
     # Remove this once the codebase is clean or a reviewed baseline is in place.
     continue-on-error: true
