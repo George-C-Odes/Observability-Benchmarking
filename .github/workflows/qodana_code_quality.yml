@@ -36,14 +36,17 @@ jobs:
             source_dir: services/java
             baseline_file: .qodana/baseline/services-java.sarif.json
             config_file: ''
+            linter: ''
           - name: orchestrator
             source_dir: utils/orchestrator
             baseline_file: .qodana/baseline/orchestrator.sarif.json
             config_file: ''
+            linter: ''
           - name: nextjs-dash
             source_dir: utils/nextjs-dash
             baseline_file: .qodana/baseline/nextjs-dash.sarif.json
             config_file: utils/nextjs-dash/qodana.yaml
+            linter: jetbrains/qodana-js:2025.3
     permissions:
       contents: read
       checks: write
@@ -84,6 +87,10 @@ jobs:
           use-caches: true
           post-pr-comment: false
           use-annotations: true
+          # When linter is set in the matrix (e.g. nextjs-dash → qodana-js),
+          # the action pulls that image instead of the root qodana.yaml linter.
+          # Empty string falls back to the root config (JVM entries).
+          linter: ${{ matrix.linter }}
           # The Qodana action pre-zips results before uploading, which makes
           # the artifact incompatible with download-artifact@v4+ (the Pages
           # workflow gets a nested ZIP instead of extracted files).  We keep
