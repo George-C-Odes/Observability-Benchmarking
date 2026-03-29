@@ -41,10 +41,24 @@ bootstrap: |
   set -e
   pip install --quiet --disable-pip-version-check --ignore-requires-python \
     /data/project/services/python/django/gunicorn/common
-  grep -v -i pyroscope /data/project/services/python/django/gunicorn/WSGI/requirements.txt \
-    > /tmp/wsgi-reqs.txt || true
-  grep -v -i pyroscope /data/project/services/python/django/gunicorn/ASGI/requirements.txt \
-    > /tmp/asgi-reqs.txt || true
+  if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/WSGI/requirements.txt \
+    > /tmp/wsgi-reqs.txt; then
+    status=$?
+    if [ "$status" -eq 1 ]; then
+      : > /tmp/wsgi-reqs.txt
+    else
+      exit "$status"
+    fi
+  fi
+  if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/ASGI/requirements.txt \
+    > /tmp/asgi-reqs.txt; then
+    status=$?
+    if [ "$status" -eq 1 ]; then
+      : > /tmp/asgi-reqs.txt
+    else
+      exit "$status"
+    fi
+  fi
   pip install --quiet --disable-pip-version-check --ignore-requires-python \
     -r /tmp/wsgi-reqs.txt -r /tmp/asgi-reqs.txt
 
