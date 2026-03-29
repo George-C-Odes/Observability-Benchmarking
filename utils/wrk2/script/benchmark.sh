@@ -19,12 +19,8 @@ apply_tz
 # ========================
 # Default Configuration
 # ========================
-# (defaults are inlined directly below)
 
-HOST="${WRK_HOST:-quarkus-jvm}"
-PORT="${WRK_PORT:-8080}"
-RESOURCE="${WRK_RESOURCE:-hello}"
-ENDPOINT="${WRK_ENDPOINT:-platform}"
+TARGETS_FILE="${WRK_TARGETS_FILE:-/workspace/config/benchmark-targets.txt}"
 THREADS="${WRK_THREADS:-4}"
 CONNECTIONS="${WRK_CONNECTIONS:-200}"
 DURATION="${WRK_DURATION:-30s}"
@@ -75,17 +71,6 @@ if [ -n "${EXPORT_DIR}" ]; then
   fi
 fi
 
-url_for() {
-  local target_host=$1
-  local target_ep=$2
-
-  if [ -z "${target_ep}" ]; then
-    echo "http://${target_host}:${PORT}/${RESOURCE}"
-  else
-    echo "http://${target_host}:${PORT}/${RESOURCE}/${target_ep}"
-  fi
-}
-
 export_log() {
   local src_file=$1
   if [ "${EXPORT_ENABLED}" != "true" ]; then
@@ -109,23 +94,60 @@ export_log() {
   echo "[wrk2] exported: ${dest_file}"
 }
 
+# ========================
+# Load benchmark target URLs from the targets file
+# ========================
+
+load_targets() {
+  if [ ! -f "${TARGETS_FILE}" ]; then
+    echo "[wrk2] ERROR: benchmark targets file not found: ${TARGETS_FILE}"
+    exit 1
+  fi
+
+  local urls=()
+  while IFS= read -r line || [ -n "${line}" ]; do
+    # Strip leading/trailing whitespace
+    line="$(echo "${line}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    # Skip blank lines and comments
+    [ -z "${line}" ] && continue
+    [[ "${line}" == \#* ]] && continue
+    urls+=("${line}")
+  done < "${TARGETS_FILE}"
+
+  if [ ${#urls[@]} -eq 0 ]; then
+    echo "[wrk2] WARN: no URLs found in ${TARGETS_FILE}"
+  fi
+
+  # Return via global array
+  BENCHMARK_URLS=("${urls[@]+"${urls[@]}"}")
+}
+
+# ========================
+# Derive a safe label from a URL for filenames
+# ========================
+
+url_label() {
+  local url=$1
+  # Extract host and path, replace slashes and colons with underscores
+  echo "${url}" | sed 's|http://||;s|[/:.]|_|g'
+}
+
 # Enhanced run printout:
 # - iteration progress: iter X/Y (or X/∞)
 # - benchmark within iteration: b X/Y
 # - overall benchmark: X/Y (or X/∞)
 run_wrk_one() {
-  local target_host=$1
-  local target_ep=$2
-  local iter=$3
-  local iter_idx=$4
-  local iter_total=$5
-  local iter_bench_idx=$6
-  local iter_bench_total=$7
-  local overall_bench_idx=$8
-  local overall_total=$9
+  local url=$1
+  local iter=$2
+  local iter_idx=$3
+  local iter_total=$4
+  local iter_bench_idx=$5
+  local iter_bench_total=$6
+  local overall_bench_idx=$7
+  local overall_total=$8
 
-  if [ -z "${target_host}" ]; then
-    echo "[wrk2] ERROR: target_host is empty"
+  if [ -z "${url}" ]; then
+    echo "[wrk2] ERROR: url is empty"
     return 2
   fi
 
@@ -134,17 +156,14 @@ run_wrk_one() {
     return 2
   fi
 
-  local url
-  url="$(url_for "${target_host}" "${target_ep}")"
-
   local ts
   ts=$(now_time_stamp)
 
-  local safe_ep
-  safe_ep="${target_ep:-root}"
+  local label
+  label="$(url_label "${url}")"
 
   local filename
-  filename="${ts}__iter${iter}__${target_host}_${safe_ep}_${THREADS}_${CONNECTIONS}_${DURATION}_${RATE}.log"
+  filename="${ts}__iter${iter}__${label}_${THREADS}_${CONNECTIONS}_${DURATION}_${RATE}.log"
 
   local outfile
   outfile="${BENCH_DIR}/${filename}"
@@ -199,47 +218,19 @@ if [ "${SLEEP_INIT}" != "0" ] && [ -n "${SLEEP_INIT}" ]; then
   sleep "${SLEEP_INIT}"
 fi
 
-# Determine how many benchmarks in each iteration.
-benchmarks_per_iteration() {
-  # Count how many run_wrk_one() calls happen in one iteration given the current HOST/ENDPOINT mode.
-  if [ "${HOST}" = "combo" ]; then
-    echo 33
-    return 0
-  fi
-  if [ "${HOST}" = "jetty" ]; then
-    #spark, javalin, dropwizard : jvm platform + virtual
-    echo 6
-    return 0
-  fi
-  if [ "${ENDPOINT}" = "combo" ]; then
-    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* ]]; then
-      echo 3
-      return 0
-    fi
-    if [[ "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* || "${HOST}" == helidon-se* || "${HOST}" == helidon-mp* || "${HOST}" == django-* ]]; then
-      echo 2
-      return 0
-    fi
-    if [[ "${HOST}" == helidon* ]]; then
-      echo 4
-      return 0
-    fi
-    if [[ "${HOST}" == go* || "${HOST}" == vertx-jvm || "${HOST}" == pekko-jvm ]]; then
-      echo 1
-      return 0
-    fi
-    echo 3
-    return 0
-  fi
+# Load the target URL list from file
+load_targets
 
-  echo 1
-}
+ITER_BENCH_TOTAL="${#BENCHMARK_URLS[@]}"
 
-ITER_BENCH_TOTAL="$(benchmarks_per_iteration)"
+if [ "${ITER_BENCH_TOTAL}" -eq 0 ]; then
+  echo "[wrk2] no benchmark targets configured; exiting"
+  exit 0
+fi
+
+echo "[wrk2] loaded ${ITER_BENCH_TOTAL} benchmark target(s) from ${TARGETS_FILE}"
 
 # Totals for progress printout:
-# - If WRK_ITERATIONS != 0, we know the total iterations and therefore the overall benchmark count.
-# - If WRK_ITERATIONS == 0, totals are infinite (script loops forever).
 TOTAL_ITER="${ITERATIONS}"
 TOTAL_OVERALL=0
 if [ "${ITERATIONS}" != "0" ]; then
@@ -252,206 +243,15 @@ while true; do
   count=$((count + 1))
   iter_bench_idx=0
 
-  if [ "${HOST}" = "jetty" ]; then
-    hosts=(
-      "spark-jvm-platform"
-      "spark-jvm-virtual"
-      "javalin-jvm-platform"
-      "javalin-jvm-virtual"
-      "dropwizard-jvm-platform"
-      "dropwizard-jvm-virtual"
-    )
-    endpoints=(
-      "platform"
-      "virtual"
-      "platform"
-      "virtual"
-      "platform"
-      "virtual"
-    )
-    for i in "${!hosts[@]}"; do
-      iter_bench_idx=$((iter_bench_idx + 1))
-      overall_count=$((overall_count + 1))
-      run_wrk_one "${hosts[$i]}" "${endpoints[$i]}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-      echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
-      sleep "${SLEEP_BETWEEN}"
-    done
-  elif [ "${HOST}" = "combo" ]; then
-    hosts=(
-      "spring-jvm-tomcat-platform"
-      "spring-jvm-tomcat-virtual"
-      "spring-jvm-netty"
-      "spring-native-tomcat-platform"
-      "spring-native-tomcat-virtual"
-      "spring-native-netty"
-      "quarkus-jvm"
-      "quarkus-jvm"
-      "quarkus-jvm"
-      "quarkus-native"
-      "quarkus-native"
-      "quarkus-native"
-      "micronaut-jvm"
-      "micronaut-jvm"
-      "micronaut-jvm"
-      "micronaut-native"
-      "micronaut-native"
-      "micronaut-native"
-      "helidon-se-jvm"
-      "helidon-se-native"
-      "helidon-mp-jvm"
-      "helidon-mp-native"
-      "spark-jvm-platform"
-      "spark-jvm-virtual"
-      "javalin-jvm-platform"
-      "javalin-jvm-virtual"
-      "dropwizard-jvm-platform"
-      "dropwizard-jvm-virtual"
-      "vertx-jvm"
-      "pekko-jvm"
-      "go"
-      "django-platform"
-      "django-reactive"
-    )
-    endpoints=(
-      "platform"
-      "virtual"
-      "reactive"
-      "platform"
-      "virtual"
-      "reactive"
-      "platform"
-      "virtual"
-      "reactive"
-      "platform"
-      "virtual"
-      "reactive"
-      "platform"
-      "virtual"
-      "reactive"
-      "platform"
-      "virtual"
-      "reactive"
-      "virtual"
-      "virtual"
-      "virtual"
-      "virtual"
-      "platform"
-      "virtual"
-      "platform"
-      "virtual"
-      "platform"
-      "virtual"
-      "reactive"
-      "reactive"
-      "virtual"
-      "platform"
-      "reactive"
-    )
-    for i in "${!hosts[@]}"; do
-      iter_bench_idx=$((iter_bench_idx + 1))
-      overall_count=$((overall_count + 1))
-      run_wrk_one "${hosts[$i]}" "${endpoints[$i]}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-      echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
-      sleep "${SLEEP_BETWEEN}"
-    done
-  elif [ "${ENDPOINT}" = "combo" ]; then
-    if [[ "${HOST}" == spring-jvm* || "${HOST}" == spring-native* || "${HOST}" == spark-jvm* || "${HOST}" == javalin-jvm* || "${HOST}" == dropwizard-jvm* || "${HOST}" == django-* ]]; then
-      if [[ "${HOST}" == spring-jvm* ]]; then
-        hosts=(
-          "spring-jvm-tomcat-platform"
-          "spring-jvm-tomcat-virtual"
-          "spring-jvm-netty"
-        )
-        endpoints=("platform" "virtual" "reactive")
-      elif [[ "${HOST}" == spring-native* ]]; then
-        hosts=(
-          "spring-native-tomcat-platform"
-          "spring-native-tomcat-virtual"
-          "spring-native-netty"
-        )
-        endpoints=("platform" "virtual" "reactive")
-      elif [[ "${HOST}" == spark-jvm* ]]; then
-        hosts=(
-          "spark-jvm-platform"
-          "spark-jvm-virtual"
-        )
-        endpoints=("platform" "virtual")
-      elif [[ "${HOST}" == javalin-jvm* ]]; then
-        hosts=(
-          "javalin-jvm-platform"
-          "javalin-jvm-virtual"
-        )
-        endpoints=("platform" "virtual")
-      elif [[ "${HOST}" == dropwizard-jvm* ]]; then
-        hosts=(
-          "dropwizard-jvm-platform"
-          "dropwizard-jvm-virtual"
-        )
-        endpoints=("platform" "virtual")
-      elif [[ "${HOST}" == django-* ]]; then
-        hosts=(
-          "django-platform"
-          "django-reactive"
-        )
-        endpoints=("platform" "reactive")
-      else
-        exit 0
-      fi
-      for i in "${!hosts[@]}"; do
-        iter_bench_idx=$((iter_bench_idx + 1))
-        overall_count=$((overall_count + 1))
-        run_wrk_one "${hosts[$i]}" "${endpoints[$i]}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-        echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
-        sleep "${SLEEP_BETWEEN}"
-      done
-    elif [[ "${HOST}" == helidon* ]]; then
-      if [[ "${HOST}" == helidon-se* ]]; then
-        hosts=(
-          "helidon-se-jvm"
-          "helidon-se-native"
-        )
-      elif [[ "${HOST}" == helidon-mp* ]]; then
-        hosts=(
-          "helidon-mp-jvm"
-          "helidon-mp-native"
-        )
-      else
-        hosts=(
-          "helidon-se-jvm"
-          "helidon-se-native"
-          "helidon-mp-jvm"
-          "helidon-mp-native"
-        )
-      fi
-      for i in "${!hosts[@]}"; do
-        iter_bench_idx=$((iter_bench_idx + 1))
-        overall_count=$((overall_count + 1))
-        run_wrk_one "${hosts[$i]}" "virtual" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-        echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
-        sleep "${SLEEP_BETWEEN}"
-      done
-    elif [[ "${HOST}" == vertx-jvm || "${HOST}" == pekko-jvm ]]; then
-      iter_bench_idx=$((iter_bench_idx + 1))
-      overall_count=$((overall_count + 1))
-      run_wrk_one "${HOST}" "reactive" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-    elif [[ "${HOST}" == go* ]]; then
-      iter_bench_idx=$((iter_bench_idx + 1))
-      overall_count=$((overall_count + 1))
-      run_wrk_one "${HOST}" "virtual" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-    else
-      for combo_ep in platform virtual reactive; do
-        iter_bench_idx=$((iter_bench_idx + 1))
-        overall_count=$((overall_count + 1))
-        run_wrk_one "${HOST}" "${combo_ep}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-        echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
-        sleep "${SLEEP_BETWEEN}"
-      done
-    fi
-  else
+  for url in "${BENCHMARK_URLS[@]}"; do
     iter_bench_idx=$((iter_bench_idx + 1))
     overall_count=$((overall_count + 1))
-    run_wrk_one "${HOST}" "${ENDPOINT}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-  fi
+    run_wrk_one "${url}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
+    if [ "${iter_bench_idx}" -lt "${ITER_BENCH_TOTAL}" ]; then
+      echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
+      sleep "${SLEEP_BETWEEN}"
+    fi
+  done
 
   # Stop condition:
   # - WRK_ITERATIONS=0 => loop forever

@@ -23,6 +23,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 const ServiceHealth = lazy(() => import('./ServiceHealth'));
 const ScriptRunner = lazy(() => import('./ScriptRunner'));
 const EnvEditor = lazy(() => import('./EnvEditor'));
+const BenchmarkTargets = lazy(() => import('./BenchmarkTargets'));
 const AppLogs = lazy(() => import('./AppLogs'));
 const SystemInfo = lazy(() => import('./SystemInfo'));
 const ProjectHub = lazy(() => import('./ProjectHub'));
@@ -32,7 +33,7 @@ import { themeOptions } from '../theme';
 
 /**
  * Lazy-mount tab panel: children are mounted only once the tab has been visited
- * at least once ("mount once, keep alive"). This prevents all 6 tabs from
+ * at least once ("mount once, keep alive"). This prevents all 7 tabs from
  * mounting simultaneously (the root cause of laggy initial tab transitions),
  * while avoiding a re-mount/re-fetch when switching back to a previously visited tab.
  */
@@ -197,6 +198,7 @@ export default function ClientHome() {
               <Tab label="Service Health" />
               <Tab label="Script Runner" />
               <Tab label="Environment Config" />
+              <Tab label="Benchmark Targets" />
               <Tab label="Logs" />
               <Tab label="System Info" />
               <Tab label="Project Hub" />
@@ -216,14 +218,18 @@ export default function ClientHome() {
           </LazyTabPanel>
 
           <LazyTabPanel value={tabValue} index={3} visited={visitedTabs.has(3)}>
-            <AppLogs />
+            <BenchmarkTargets />
           </LazyTabPanel>
 
           <LazyTabPanel value={tabValue} index={4} visited={visitedTabs.has(4)}>
-            <SystemInfo />
+            <AppLogs />
           </LazyTabPanel>
 
           <LazyTabPanel value={tabValue} index={5} visited={visitedTabs.has(5)}>
+            <SystemInfo />
+          </LazyTabPanel>
+
+          <LazyTabPanel value={tabValue} index={6} visited={visitedTabs.has(6)}>
             <ProjectHub />
           </LazyTabPanel>
         </Paper>

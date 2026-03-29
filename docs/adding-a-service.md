@@ -85,8 +85,9 @@ A good baseline is:
 
 If you add a new service, ensure:
 
-- there is an explicit target URL for it in the wrk2 tooling
-- the request path matches your service’s endpoint
+- there is an explicit target URL for it in `config/benchmark-targets.txt` (one full URL per line, e.g. `http://your-service:8080/hello/platform`)
+- the file can be managed via the Dashboard **Benchmark Targets** tab or edited directly
+- the request path matches your service's endpoint
 
 ### 5) Add dashboards (optional but recommended)
 

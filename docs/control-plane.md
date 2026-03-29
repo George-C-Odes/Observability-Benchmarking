@@ -13,7 +13,7 @@ It consists of:
 - **Dashboard**: Next.js UI (`utils/nextjs-dash`) on port **3001**
 - **Orchestrator**: Quarkus service (`utils/orchestrator`) on port **3002**
 
-Last updated: **2026-01-19**
+Last updated: **2026-03-28**
 
 ## Why a control plane exists
 
@@ -64,7 +64,16 @@ The dashboard exposes a UI to view/edit the environment file used by Compose (`c
 - The orchestrator persists the file
 - A backup is created on update
 
-### 2) Run curated command presets
+### 2) Configure benchmark targets
+
+The dashboard exposes a **Benchmark Targets** tab to select which service endpoints to include in benchmark runs.
+
+- Chip-based multiselect UI shows all available endpoints
+- Quick-filter group buttons for fast grouped selection (Java, JVM, Native, Spring, Helidon, Go, Python, Platform, Virtual, Reactive, All, None)
+- Changes are saved to `config/benchmark-targets.txt` via the orchestrator (`POST /v1/benchmark-targets`)
+- The wrk2 load generator reads this file on each run
+
+### 3) Run curated command presets
 
 The orchestrator exposes an allowlisted “run” API.
 
@@ -76,13 +85,13 @@ The dashboard can submit:
 
 Depending on repo configuration, it may also expose IntelliJ `.run` presets.
 
-### 3) Stream progress (SSE)
+### 4) Stream progress (SSE)
 
 Long-running tasks (builds, start/stop, reruns) report progress via Server-Sent Events.
 
 This gives a low-friction, browser-native “tail -f” experience.
 
-### 4) Health aggregation
+### 5) Health aggregation
 
 The orchestrator can aggregate health/readiness across the stack so you can quickly verify:
 
@@ -102,6 +111,7 @@ The orchestrator can aggregate health/readiness across the stack so you can quic
 From there:
 
 - edit env values
+- configure benchmark targets
 - run presets
 - follow job output via SSE
 

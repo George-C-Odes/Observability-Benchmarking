@@ -34,5 +34,8 @@ public interface ProjectPathsConfig {
 
     /** Path to the compose {@code .env} file. */
     String env();
+
+    /** Path to the benchmark targets file ({@code config/benchmark-targets.txt}). */
+    String benchmarkTargets();
   }
 }

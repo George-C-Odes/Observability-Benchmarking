@@ -42,6 +42,7 @@ The orchestrator then drives:
 - Enforces **single-flight execution** — only one job runs at a time (returns `503 Service Unavailable` if busy).
 - Aggregates health checks for the rest of the stack (via `GET /v1/health`).
 - Manages a workspace `.env` (via `/v1/env`).
+- Manages the benchmark targets URL list (via `/v1/benchmark-targets`).
 - Propagates `X-Request-Id` for request correlation across orchestrator logs and SSE events.
 
 ## Job lifecycle (how SSE works here)
@@ -63,7 +64,7 @@ The Next.js dashboard consumes this API (often via a proxy route) to power the S
 ## Security model (important)
 
 - `POST /v1/run` is protected with a bearer token requirement (`Authorization: Bearer <api-key>`).
-- `POST /v1/env` is also protected.
+- `POST /v1/env` and `POST /v1/benchmark-targets` are also protected.
 - The API key is configured via `orchestrator.api-key` (defaults to `change-me`).
 - Missing token → `401 Unauthorized`; wrong token → `403 Forbidden`.
 - If the API key is blank/unset, authentication is **bypassed** (local dev convenience).
@@ -96,6 +97,11 @@ Optional query param:
 
 - `GET /v1/env` — return `{ content, path }` for the configured env file
 - `POST /v1/env` — update env file content (creates a backup)
+
+### Benchmark targets management
+
+- `GET /v1/benchmark-targets` — return `{ urls, path }` for the configured benchmark targets file
+- `POST /v1/benchmark-targets` — update the URL list (creates a backup); body: `{ "urls": ["http://...","http://..."] }`
 
 ### Quarkus built-ins
 
@@ -186,6 +192,7 @@ If you start the dashboard, you normally don’t need to call orchestrator endpo
 - Dashboard URL: http://localhost:3001
 - It will:
   - read/edit the env file through the orchestrator
+  - manage benchmark target URLs (select which endpoints to include)
   - submit commands and stream events to show progress
 
 ## Troubleshooting

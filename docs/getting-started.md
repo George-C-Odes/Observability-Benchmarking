@@ -162,10 +162,10 @@ nano .env
 Example `.env` settings:
 
 ```env
-# Typically container name or 'combo' for all
-WRK_HOST: quarkus-jvm
-# 'platform', 'virtual', 'reactive' or 'combo' for all
-WRK_ENDPOINT: platform
+# Benchmark target URLs file — managed via Dashboard 'Benchmark Targets' tab or by editing config/benchmark-targets.txt directly.
+# Contains one full URL per line (e.g. http://quarkus-jvm:8080/hello/platform). Comments/blanks are ignored.
+WRK_TARGETS_FILE: /workspace/config/benchmark-targets.txt
+
 # If false, wrk2 container still boots and available to docker exec benchmarks on demand
 WRK_AUTORUN: true
 # If true, wrk2 container stops after autorun completion
@@ -190,9 +190,9 @@ WRK_SAVE_LOGS: true
 
 # Specific max number of CPU core and Memory TOTAL allocations to be used in every container of benchmarked services
 CORES_LIMIT: 2
-MEM_LIMIT: 768M
+MEM_LIMIT: 832M
 HEAP_MIN: 64M
-HEAP_MAX: 640M
+HEAP_MAX: 704M
 OFF_HEAP_MAX: 32M
 ```
 
@@ -212,6 +212,17 @@ Includes:
 - Mimir (metrics)
 - Pyroscope (profiles)
 - Alloy (collector)
+
+#### Profile: CONTROL (Dashboard + Orchestrator)
+```bash
+docker compose --project-directory compose --profile=OBS --profile=CONTROL up --no-recreate --build -d
+```
+
+Includes the control-plane services:
+- Next.js Dashboard (port 3001) — environment editor, benchmark targets selector, script runner
+- Quarkus Orchestrator (port 3002) — Docker control plane with SSE streaming
+
+See [control-plane.html](control-plane.html) for details.
 
 #### Profile: SERVICES (REST Services)
 ```bash

@@ -29,6 +29,11 @@ export interface EnvFileContent {
   content: string;
 }
 
+export interface BenchmarkTargetsContent {
+  urls: string[];
+  path?: string;
+}
+
 /**
  * Base headers for orchestrator requests
  */
@@ -144,6 +149,20 @@ export async function getEnvFile(): Promise<EnvFileContent> {
  */
 export async function updateEnvFile(content: string): Promise<void> {
   await orchestratorPost('/v1/env', { content });
+}
+
+/**
+ * Get benchmark target URLs
+ */
+export async function getBenchmarkTargets(): Promise<BenchmarkTargetsContent> {
+  return orchestratorGet<BenchmarkTargetsContent>('/v1/benchmark-targets', false);
+}
+
+/**
+ * Update benchmark target URLs
+ */
+export async function updateBenchmarkTargets(urls: string[]): Promise<void> {
+  await orchestratorPost('/v1/benchmark-targets', { urls });
 }
 
 /**

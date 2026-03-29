@@ -133,7 +133,7 @@ orchestrator:
     interval-ms: ${ORCH_HEARTBEAT_INTERVAL_MS:15000}
   project-paths:
     # When set, docker compose will be executed with this host-side project directory.
-    # Needed because orchestrator talks to the host Docker Engine via /var/run/docker.sock,
+    # Needed because the orchestrator talks to the host Docker Engine via /var/run/docker.sock,
     # so bind mount source paths must be valid on the host (e.g., C:/... on Windows).
     host-compose: '${ORCH_HOST_PROJECT_DIR:}'
     workspace:
@@ -141,6 +141,7 @@ orchestrator:
       root: '${ORCH_WORKSPACE:${user.dir}/../..}'
       compose: '${orchestrator.project-paths.workspace.root}/compose'
       env: '${orchestrator.project-paths.workspace.root}/compose/.env'
+      benchmark-targets: '${orchestrator.project-paths.workspace.root}/config/benchmark-targets.txt'
 
 quarkus:
   analytics:

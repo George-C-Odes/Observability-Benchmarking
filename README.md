@@ -5,20 +5,20 @@
 [![📊 Benchmark Results](https://img.shields.io/badge/%F0%9F%93%8A_Benchmark_Results-Online-blue?style=for-the-badge&logo=githubpages&logoColor=white&labelColor=0D1117&color=58A6FF)](https://george-c-odes.github.io/Observability-Benchmarking/#results)
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-6E7781.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.2-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.34.1-4695EB.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.34.1-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.18-1A1A2E.svg)](https://micronaut.io/)
-[![Helidon](https://img.shields.io/badge/Helidon-4.3.4-1B9AAA.svg)](https://helidon.io/)
-[![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-E8581C.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-7.1.0-059BBF.svg)](https://javalin.io/)
-[![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-F9A825.svg)](https://www.dropwizard.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.3.4-008F6B.svg)](https://helidon.io/)
+[![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.1.0-00AFCF.svg)](https://javalin.io/)
+[![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
-[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-C7461A.svg)](https://pekko.apache.org/)
-[![Go](https://img.shields.io/badge/Go-1.26.1-00ADD8.svg)](https://golang.org/)
-[![Python](https://img.shields.io/badge/Python-3.13.12-3776AB.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-6.0.3-092E20.svg)](https://www.djangoproject.com/)
+[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.1-38BDF8.svg)](https://golang.org/)
+[![Python](https://img.shields.io/badge/Python-3.13.12-2F5D8C.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-6.0.3-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
 [![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
@@ -87,7 +87,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.3   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.0  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.1  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
@@ -152,9 +152,10 @@ If you’re searching for projects like this, these are the topics it covers:
 ### 🎛️ Orchestration Dashboard
 - **Next.js Dashboard**: Modern web UI for managing the benchmarking environment
   - Edit environment configuration (`compose/.env`) through intuitive UI
+  - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.0 and Material-UI 7.3.9
+  - Built with Next.js 16.2.1 and Material-UI 7.3.9
 
 ### 🚀 REST Service Implementations
 
