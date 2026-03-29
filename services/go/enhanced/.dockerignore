@@ -21,5 +21,9 @@ coverage/
 # Node / misc
 node_modules/
 
+# CI quality report artifacts
+quality-report/
+golangci-lint-report.json
+
 # Docker / compose artifacts
 **/*-debug.log

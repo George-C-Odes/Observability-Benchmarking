@@ -31,6 +31,12 @@
 #   DJANGO_PYTHON_QUALITY_HEAD_SHA  – resolved commit SHA (may be empty)
 #   DJANGO_PYTHON_DOWNLOAD_OUTCOME  – success | failure | skipped | (empty)
 #   DJANGO_PYTHON_QUALITY_PAGES_DIR – staging path, e.g. ./.django-python-quality-pages
+#
+# Go Enhanced quality report (optional):
+#   GO_ENHANCED_QUALITY_RUN_ID      – resolved Go Enhanced quality workflow run ID (may be empty)
+#   GO_ENHANCED_QUALITY_HEAD_SHA    – resolved commit SHA (may be empty)
+#   GO_ENHANCED_DOWNLOAD_OUTCOME    – success | failure | skipped | (empty)
+#   GO_ENHANCED_QUALITY_PAGES_DIR   – staging path, e.g. ./.go-enhanced-quality-pages
 
 set -euo pipefail
 
@@ -38,6 +44,7 @@ QODANA_PAGES_DIR="${QODANA_PAGES_DIR:-./.qodana-pages}"
 SITE_DIR="${SITE_DIR:-./_site}"
 NEXTJS_QUALITY_PAGES_DIR="${NEXTJS_QUALITY_PAGES_DIR:-./.nextjs-quality-pages}"
 DJANGO_PYTHON_QUALITY_PAGES_DIR="${DJANGO_PYTHON_QUALITY_PAGES_DIR:-./.django-python-quality-pages}"
+GO_ENHANCED_QUALITY_PAGES_DIR="${GO_ENHANCED_QUALITY_PAGES_DIR:-./.go-enhanced-quality-pages}"
 
 # ---------------------------------------------------------------------------
 # 1. Resolve per-scope statuses
@@ -118,6 +125,27 @@ resolve_django_python_status() {
   fi
 }
 django_python_status="$(resolve_django_python_status "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python")"
+
+# Go Enhanced quality report: same simple resolution as Next.js and Django —
+# single artifact from the Go Enhanced Quality workflow.
+resolve_go_enhanced_status() {
+  local dir="$1"
+  local download_outcome="${GO_ENHANCED_DOWNLOAD_OUTCOME:-}"
+  local run_id="${GO_ENHANCED_QUALITY_RUN_ID:-}"
+
+  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
+    echo 'available'
+  elif [[ "$download_outcome" == 'failure' ]]; then
+    echo 'download failed'
+  elif [[ "$download_outcome" == 'success' ]]; then
+    echo 'unavailable'
+  elif [[ -n "$run_id" ]]; then
+    echo 'undetermined'
+  else
+    echo 'not-applicable'
+  fi
+}
+go_enhanced_status="$(resolve_go_enhanced_status "$GO_ENHANCED_QUALITY_PAGES_DIR/go-enhanced")"
 
 # ---------------------------------------------------------------------------
 # 2. Resolve human-readable messages
@@ -234,6 +262,38 @@ if [[ -n "${DJANGO_PYTHON_QUALITY_RUN_ID:-}" ]]; then
   fi
 fi
 
+# Go Enhanced quality report messages
+go_enhanced_item_text='go-enhanced quality report is not available yet.'
+go_enhanced_item_html='<li>go-enhanced quality report is not available yet.</li>'
+go_enhanced_metadata_text=''
+go_enhanced_metadata_html=''
+
+case "$go_enhanced_status" in
+  available)
+    go_enhanced_item_text='go-enhanced quality report is available (golangci-lint).'
+    go_enhanced_item_html='<li><a href="./go-enhanced/">go-enhanced quality report</a> (golangci-lint)</li>'
+    ;;
+  'download failed')
+    go_enhanced_item_text='go-enhanced quality report could not be downloaded for the resolved run.'
+    go_enhanced_item_html='<li>go-enhanced quality report could not be downloaded for the resolved run.</li>'
+    ;;
+  unavailable)
+    go_enhanced_item_text='go-enhanced quality report is not available for the resolved run.'
+    go_enhanced_item_html='<li>go-enhanced quality report is not available for the resolved run.</li>'
+    ;;
+  undetermined)
+    go_enhanced_item_text='go-enhanced quality report availability could not be determined for the resolved run.'
+    go_enhanced_item_html='<li>go-enhanced quality report availability could not be determined for the resolved run.</li>'
+    ;;
+esac
+
+if [[ -n "${GO_ENHANCED_QUALITY_RUN_ID:-}" ]]; then
+  if [[ "$go_enhanced_status" == 'available' ]]; then
+    go_enhanced_metadata_text="Go Enhanced quality report from workflow run ${GO_ENHANCED_QUALITY_RUN_ID} for commit ${GO_ENHANCED_QUALITY_HEAD_SHA:-unknown}."
+    go_enhanced_metadata_html="<p>Go Enhanced quality report from workflow run <code>${GO_ENHANCED_QUALITY_RUN_ID}</code> for commit <code>${GO_ENHANCED_QUALITY_HEAD_SHA:-unknown}</code>.</p>"
+  fi
+fi
+
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
@@ -304,12 +364,26 @@ echo "  django-python message: $django_python_item_text"
 if [[ -n "$django_python_metadata_text" ]]; then
   echo "  django-python metadata: $django_python_metadata_text"
 fi
+echo ''
+echo 'Go Enhanced quality report resolution:'
+if [[ -n "${GO_ENHANCED_QUALITY_RUN_ID:-}" ]]; then
+  echo "  resolved run id: $GO_ENHANCED_QUALITY_RUN_ID"
+  echo "  resolved head sha: ${GO_ENHANCED_QUALITY_HEAD_SHA:-none}"
+else
+  echo '  resolved run id: none'
+fi
+echo "  go-enhanced download outcome: ${GO_ENHANCED_DOWNLOAD_OUTCOME:-not-run}"
+echo "  go-enhanced final status: $go_enhanced_status"
+echo "  go-enhanced message: $go_enhanced_item_text"
+if [[ -n "$go_enhanced_metadata_text" ]]; then
+  echo "  go-enhanced metadata: $go_enhanced_metadata_text"
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash" "$SITE_DIR/qodana/django-python"
+mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash" "$SITE_DIR/qodana/django-python" "$SITE_DIR/qodana/go-enhanced"
 
 write_html_file() {
   local target_path="$1"
@@ -408,10 +482,16 @@ if [[ -d "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" ]]; then
   cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/qodana/django-python/"
 fi
 
+# Copy the Go Enhanced golangci-lint quality report into the site tree.
+if [[ -d "$GO_ENHANCED_QUALITY_PAGES_DIR/go-enhanced" ]]; then
+  cp -a "$GO_ENHANCED_QUALITY_PAGES_DIR/go-enhanced/." "$SITE_DIR/qodana/go-enhanced/"
+fi
+
 create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
 create_scope_page 'nextjs-dash' "$nextjs_item_text"
 create_scope_page 'django-python' "$django_python_item_text"
+create_scope_page 'go-enhanced' "$go_enhanced_item_text"
 
 # Landing page
 write_html_file "$SITE_DIR/qodana/index.html" \
@@ -450,5 +530,11 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   "    ${django_python_item_html}" \
   '  </ul>' \
   "  ${django_python_metadata_html}" \
+  '  <h2>Go Enhanced (golangci-lint)</h2>' \
+  '  <p>Aggregated Go static analysis via <code>golangci-lint</code> — govet, staticcheck, errcheck, gosec, revive, and more.</p>' \
+  '  <ul>' \
+  "    ${go_enhanced_item_html}" \
+  '  </ul>' \
+  "  ${go_enhanced_metadata_html}" \
   '</body>' \
   '</html>'
