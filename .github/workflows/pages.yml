@@ -14,6 +14,7 @@ on:
     workflows:
       - Qodana
       - Next.js Dashboard Quality
+      - Django Python Quality
     types:
       - completed
     branches:
@@ -150,6 +151,32 @@ jobs:
           run-id: ${{ steps.nextjs_quality_source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ----------------------------------------------------------------
+      # Django Python quality report (Qodana Python Community)
+      # ----------------------------------------------------------------
+
+      - name: Resolve Django Python quality artifact source run
+        id: django_python_quality_source
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/pages/resolve-django-python-quality-source.sh
+
+      - name: Download Django Python quality report
+        id: download_django_python_quality
+        if: steps.django_python_quality_source.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: qodana-report-django-python
+          path: ./.django-python-quality-pages/django-python
+          run-id: ${{ steps.django_python_quality_source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Assemble Qodana pages
         shell: bash
         env:
@@ -164,6 +191,10 @@ jobs:
           NEXTJS_QUALITY_HEAD_SHA: ${{ steps.nextjs_quality_source.outputs.head_sha }}
           NEXTJS_DOWNLOAD_OUTCOME: ${{ steps.download_nextjs_quality.outcome }}
           NEXTJS_QUALITY_PAGES_DIR: ./.nextjs-quality-pages
+          DJANGO_PYTHON_QUALITY_RUN_ID: ${{ steps.django_python_quality_source.outputs.run_id }}
+          DJANGO_PYTHON_QUALITY_HEAD_SHA: ${{ steps.django_python_quality_source.outputs.head_sha }}
+          DJANGO_PYTHON_DOWNLOAD_OUTCOME: ${{ steps.download_django_python_quality.outcome }}
+          DJANGO_PYTHON_QUALITY_PAGES_DIR: ./.django-python-quality-pages
           SITE_DIR: ./_site
         run: bash scripts/pages/assemble-qodana-pages.sh
 

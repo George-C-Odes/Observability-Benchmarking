@@ -109,6 +109,33 @@ module directory.
 
 See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
+## Qodana static analysis
+
+The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan (`jetbrains/qodana-python-community:2025.3`) that runs PyCharm Community-based inspections on all code under `services/python/django/`. The scan is configured by `services/python/django/qodana.yaml` and enforces the same quality gate as the JVM Qodana scopes (`critical: 0`, `high: 0`, `moderate: 0`).
+
+### Run Qodana locally
+
+```powershell
+New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/django-python:/data/results" `
+  jetbrains/qodana-python-community:2025.3 `
+  --project-dir=/data/project `
+  --config=/data/project/services/python/django/qodana.yaml `
+  --only-directory=services/python/django `
+  --results-dir=/data/results
+```
+
+The HTML report is published to GitHub Pages after successful runs on `main`:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/qodana/django-python/
+```
+
+See `docs/LINTING_AND_CODE_QUALITY.md` for full details including bash equivalents.
+
 ## Lint and format check locally
 
 Run [Ruff](https://docs.astral.sh/ruff/) across **all** Django modules (from the repository root):
@@ -119,7 +146,7 @@ python -m ruff check services/python/django/gunicorn/common services/python/djan
 python -m ruff format --check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 ```
 
-Auto-fix any fixable issues (e.g. import sorting):
+Auto-fix any fixable issues (e.g., import sorting):
 
 ```powershell
 python -m ruff check --fix services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI

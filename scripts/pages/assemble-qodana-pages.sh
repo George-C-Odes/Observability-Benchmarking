@@ -25,12 +25,19 @@
 #   NEXTJS_QUALITY_HEAD_SHA      – resolved commit SHA (may be empty)
 #   NEXTJS_DOWNLOAD_OUTCOME      – success | failure | skipped | (empty)
 #   NEXTJS_QUALITY_PAGES_DIR     – staging path, e.g. ./.nextjs-quality-pages
+#
+# Django Python quality report (optional):
+#   DJANGO_PYTHON_QUALITY_RUN_ID    – resolved Django Python quality workflow run ID (may be empty)
+#   DJANGO_PYTHON_QUALITY_HEAD_SHA  – resolved commit SHA (may be empty)
+#   DJANGO_PYTHON_DOWNLOAD_OUTCOME  – success | failure | skipped | (empty)
+#   DJANGO_PYTHON_QUALITY_PAGES_DIR – staging path, e.g. ./.django-python-quality-pages
 
 set -euo pipefail
 
 QODANA_PAGES_DIR="${QODANA_PAGES_DIR:-./.qodana-pages}"
 SITE_DIR="${SITE_DIR:-./_site}"
 NEXTJS_QUALITY_PAGES_DIR="${NEXTJS_QUALITY_PAGES_DIR:-./.nextjs-quality-pages}"
+DJANGO_PYTHON_QUALITY_PAGES_DIR="${DJANGO_PYTHON_QUALITY_PAGES_DIR:-./.django-python-quality-pages}"
 
 # ---------------------------------------------------------------------------
 # 1. Resolve per-scope statuses
@@ -90,6 +97,27 @@ resolve_nextjs_status() {
   fi
 }
 nextjs_status="$(resolve_nextjs_status "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash")"
+
+# Django Python quality report: same simple resolution as Next.js — single
+# artifact from the Django Python Quality workflow.
+resolve_django_python_status() {
+  local dir="$1"
+  local download_outcome="${DJANGO_PYTHON_DOWNLOAD_OUTCOME:-}"
+  local run_id="${DJANGO_PYTHON_QUALITY_RUN_ID:-}"
+
+  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
+    echo 'available'
+  elif [[ "$download_outcome" == 'failure' ]]; then
+    echo 'download failed'
+  elif [[ "$download_outcome" == 'success' ]]; then
+    echo 'unavailable'
+  elif [[ -n "$run_id" ]]; then
+    echo 'undetermined'
+  else
+    echo 'not-applicable'
+  fi
+}
+django_python_status="$(resolve_django_python_status "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python")"
 
 # ---------------------------------------------------------------------------
 # 2. Resolve human-readable messages
@@ -174,6 +202,38 @@ if [[ -n "${NEXTJS_QUALITY_RUN_ID:-}" ]]; then
   fi
 fi
 
+# Django Python quality report messages
+django_python_item_text='django-python quality report is not available yet.'
+django_python_item_html='<li>django-python quality report is not available yet.</li>'
+django_python_metadata_text=''
+django_python_metadata_html=''
+
+case "$django_python_status" in
+  available)
+    django_python_item_text='django-python quality report is available (Qodana Python Community).'
+    django_python_item_html='<li><a href="./django-python/">django-python quality report</a> (Qodana Python Community)</li>'
+    ;;
+  'download failed')
+    django_python_item_text='django-python quality report could not be downloaded for the resolved run.'
+    django_python_item_html='<li>django-python quality report could not be downloaded for the resolved run.</li>'
+    ;;
+  unavailable)
+    django_python_item_text='django-python quality report is not available for the resolved run.'
+    django_python_item_html='<li>django-python quality report is not available for the resolved run.</li>'
+    ;;
+  undetermined)
+    django_python_item_text='django-python quality report availability could not be determined for the resolved run.'
+    django_python_item_html='<li>django-python quality report availability could not be determined for the resolved run.</li>'
+    ;;
+esac
+
+if [[ -n "${DJANGO_PYTHON_QUALITY_RUN_ID:-}" ]]; then
+  if [[ "$django_python_status" == 'available' ]]; then
+    django_python_metadata_text="Django Python quality report from workflow run ${DJANGO_PYTHON_QUALITY_RUN_ID} for commit ${DJANGO_PYTHON_QUALITY_HEAD_SHA:-unknown}."
+    django_python_metadata_html="<p>Django Python quality report from workflow run <code>${DJANGO_PYTHON_QUALITY_RUN_ID}</code> for commit <code>${DJANGO_PYTHON_QUALITY_HEAD_SHA:-unknown}</code>.</p>"
+  fi
+fi
+
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
@@ -230,12 +290,26 @@ echo "  nextjs-dash message: $nextjs_item_text"
 if [[ -n "$nextjs_metadata_text" ]]; then
   echo "  nextjs-dash metadata: $nextjs_metadata_text"
 fi
+echo ''
+echo 'Django Python quality report resolution:'
+if [[ -n "${DJANGO_PYTHON_QUALITY_RUN_ID:-}" ]]; then
+  echo "  resolved run id: $DJANGO_PYTHON_QUALITY_RUN_ID"
+  echo "  resolved head sha: ${DJANGO_PYTHON_QUALITY_HEAD_SHA:-none}"
+else
+  echo '  resolved run id: none'
+fi
+echo "  django-python download outcome: ${DJANGO_PYTHON_DOWNLOAD_OUTCOME:-not-run}"
+echo "  django-python final status: $django_python_status"
+echo "  django-python message: $django_python_item_text"
+if [[ -n "$django_python_metadata_text" ]]; then
+  echo "  django-python metadata: $django_python_metadata_text"
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash"
+mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash" "$SITE_DIR/qodana/django-python"
 
 write_html_file() {
   local target_path="$1"
@@ -329,9 +403,15 @@ if [[ -d "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" ]]; then
   cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/qodana/nextjs-dash/"
 fi
 
+# Copy the Qodana Python Community report into the site tree.
+if [[ -d "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" ]]; then
+  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/qodana/django-python/"
+fi
+
 create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
 create_scope_page 'nextjs-dash' "$nextjs_item_text"
+create_scope_page 'django-python' "$django_python_item_text"
 
 # Landing page
 write_html_file "$SITE_DIR/qodana/index.html" \
@@ -364,6 +444,11 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   "    ${nextjs_item_html}" \
   '  </ul>' \
   "  ${nextjs_metadata_html}" \
+  '  <h2>Qodana (Python)</h2>' \
+  '  <p>PyCharm Community-based static analysis via <code>jetbrains/qodana-python-community</code>.</p>' \
+  '  <ul>' \
+  "    ${django_python_item_html}" \
+  '  </ul>' \
+  "  ${django_python_metadata_html}" \
   '</body>' \
   '</html>'
-
