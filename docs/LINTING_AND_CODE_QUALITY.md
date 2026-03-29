@@ -54,7 +54,7 @@ At the moment, the Checkstyle plugin is configured in these Maven modules with `
 
 #### Code Style
 - Maximum line length: 120 characters
-- Indentation: 4 spaces (no tabs)
+- Indentation: four spaces (no tabs)
 - Braces required for all control structures
 - Proper whitespace around operators and keywords
 
@@ -144,7 +144,7 @@ How it works:
 - it copies those artifacts into the built Pages site under:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
-- report resolution, message generation, logging, and HTML assembly are handled by versioned scripts under `scripts/pages/` for easier testing and review
+- versioned scripts handle report resolution, message generation, logging, and HTML assembly under `scripts/pages/` for easier testing and review
 - it also creates a small landing page at `qodana/index.html`
 - each scope URL (`qodana/services-java/` and `qodana/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
 - during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
@@ -189,7 +189,7 @@ This means the Qodana job will fail if it finds at least one **critical**, **hig
 Why this works well:
 - it catches the most impactful findings without drowning the team in low-severity noise
 - it still protects against the most serious findings
-- it gives the team room to tighten further (e.g. adding `info` or `low`) once the current thresholds are reliably green
+- it gives the team room to tighten further (e.g., adding `info` or `low`) once the current thresholds are reliably green
 
 ### Baseline Strategy
 The workflow now supports a low-risk, per-scope baseline strategy for the same two JVM scopes:
@@ -330,7 +330,7 @@ For the currently scoped JVM code, Qodana can provide:
 ### Worthwhile Next Updates After This First Pass
 Once the workflow has run a few times and the issue signal is understood, the next worthwhile improvements would be:
 
-1. tighten the gate further (e.g. add `info` or `low` thresholds) if the findings at those severities are manageable
+1. tighten the gate further (e.g., add `info` or `low` thresholds) if the findings at those severities are manageable
 2. refresh or shrink the reviewed baseline files as historical findings are fixed
 3. add module-specific follow-up exclusions only where Qodana proves noisy, rather than disabling broad inspections up front
 4. consider separate documentation or workflow expansion for other languages only after the JVM path proves useful
@@ -341,6 +341,87 @@ Once the workflow has run a few times and the issue signal is understood, the ne
 Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all-in-one linter and formatter, enforcing PEP 8 and import ordering.
 
 The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatting verification) on all Django paths.
+
+### Qodana Python Community (Django Static Analysis)
+
+In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2025.3`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
+
+- **Ruff** focuses on PEP 8, import ordering, and formatting.
+- **Qodana Python Community** adds semantic inspections such as type mismatches, unreachable code, unused variables, and general Python best-practice warnings.
+
+The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2025.3`). The Python config is self-contained with its own linter pin and quality gate.
+
+#### How the Qodana Python Scan Works
+
+The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the `common` checks pass:
+
+1. Checks out the repository.
+2. Runs `docker run jetbrains/qodana-python-community:2025.3` with:
+   - `--project-dir=/data/project` — repository root
+   - `--config=/data/project/services/python/django/qodana.yaml` — Python-specific config
+   - `--only-directory=services/python/django` — scopes analysis to Django code only
+3. Uploads the HTML report directory as `qodana-report-django-python`.
+
+The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
+
+#### Quality Gate
+
+The Python `qodana.yaml` uses the same hardened gate as the JVM config:
+
+```yaml
+failureConditions:
+  severityThresholds:
+    critical: 0
+    high: 0
+    moderate: 0
+```
+
+#### Hosted Qodana Python Report on GitHub Pages
+
+The Qodana Python HTML report is published to GitHub Pages alongside the JVM and Next.js reports:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/qodana/django-python/
+```
+
+The Pages workflow triggers on successful `Django Python Quality` runs on `main`, downloads the `qodana-report-django-python` artifact, and copies it into the site under `qodana/django-python/`.
+
+#### Testing Qodana Python Locally
+
+**Bash / zsh:**
+
+```bash
+mkdir -p .qodana/django-python
+
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/django-python":/data/results \
+  jetbrains/qodana-python-community:2025.3 \
+  --project-dir=/data/project \
+  --config=/data/project/services/python/django/qodana.yaml \
+  --only-directory=services/python/django \
+  --results-dir=/data/results
+```
+
+**PowerShell:**
+
+```powershell
+New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/django-python:/data/results" `
+  jetbrains/qodana-python-community:2025.3 `
+  --project-dir=/data/project `
+  --config=/data/project/services/python/django/qodana.yaml `
+  --only-directory=services/python/django `
+  --results-dir=/data/results
+```
+
+Notes:
+- A non-zero container exit code means the configured quality gate was violated.
+- A `QODANA_TOKEN` is not required for local scans with the community linter.
+- Results and logs are written under `.qodana/django-python/` in the example commands above.
 
 ### Configuration
 Each Django module has its own Ruff configuration in a local `pyproject.toml`
@@ -419,7 +500,7 @@ The CI workflow is triggered on pushes to `main` and pull requests touching `uti
 The module uses ESLint v9 flat config in `utils/nextjs-dash/eslint.config.mjs`:
 
 - **Base**: `@eslint/js` recommended rules + `typescript-eslint` recommended
-- **Next.js**: `@next/eslint-plugin-next` (recommended + core-web-vitals)
+- **Next.js**: `@next/eslint-plugin-next` (recommended and core-web-vitals)
 - **React**: `eslint-plugin-react-hooks` recommended rules
 - **Server files** (`app/api/**`, `lib/**`, config files): Node globals enabled, `@typescript-eslint/no-require-imports` relaxed
 - **Ignores**: `.next/`, `node_modules/`, `dist/`, `out/`, `coverage/`, `build/`
@@ -488,10 +569,11 @@ Expected URL:
 https://george-c-odes.github.io/Observability-Benchmarking/qodana/nextjs-dash/
 ```
 
-The landing page at `qodana/` now links to all three scopes:
+The landing page at `qodana/` now links to all four scopes:
 - `qodana/services-java/` — Qodana JVM (IntelliJ inspections)
 - `qodana/orchestrator/` — Qodana JVM (IntelliJ inspections)
 - `qodana/nextjs-dash/` — ESLint + TypeScript (free alternative)
+- `qodana/django-python/` — Qodana Python Community (PyCharm inspections)
 
 The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
 
@@ -499,15 +581,17 @@ The report is always generated (even when earlier quality steps fail) so that th
 
 The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
 
-- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana run is resolved via API
-- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js quality run is resolved via API
-- When triggered by push or manual dispatch, the latest successful run for **both** workflows is resolved via API
+- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana and Django Python Quality runs are resolved via API
+- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js and Django Python Quality runs are resolved via API
+- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana and Next.js runs are resolved via API
+- When triggered by push or manual dispatch, the latest successful run for **all** workflows is resolved via API
 
 This ensures every Pages deployment gets the freshest available version of all reports.
 
 Scripts involved:
 - `scripts/pages/resolve-nextjs-quality-source.sh` — resolves the Next.js quality workflow run to fetch the report artifact from
-- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash` scope alongside the existing Qodana JVM scopes
+- `scripts/pages/resolve-django-python-quality-source.sh` — resolves the Django Python quality workflow run to fetch the Qodana Python report artifact from
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash` and `django-python` scopes alongside the existing Qodana JVM scopes
 
 ### Documentation
 All public classes and methods should include:
@@ -538,6 +622,8 @@ All public classes and methods should include:
 Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
 
 Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
+
+The Django Python quality workflow (`.github/workflows/django_python_quality.yml`) enforces Ruff lint and format checks, Django system checks, and unit tests — plus a Qodana Python Community scan that applies the same severity gate (`critical: 0`, `high: 0`, `moderate: 0`).
 
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
@@ -603,6 +689,8 @@ Potential enhancements to the code quality setup:
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/)
 - [Qodana Documentation](https://www.jetbrains.com/help/qodana/qodana-yaml.html)
+- [Qodana Python Community Linter](https://www.jetbrains.com/help/qodana/qodana-python-community.html)
+- [Ruff Documentation](https://docs.astral.sh/ruff/)
 - [ESLint Documentation](https://eslint.org/docs/latest/)
 - [typescript-eslint](https://typescript-eslint.io/)
 - [Vitest Documentation](https://vitest.dev/)
