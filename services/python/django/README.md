@@ -113,7 +113,7 @@ See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
 The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan (`jetbrains/qodana-python-community:2025.3`) that runs PyCharm Community-based inspections on all code under `services/python/django/`. The scan is configured by `services/python/django/qodana.yaml` and enforces the same quality gate as the JVM Qodana scopes (`critical: 0`, `high: 0`, `moderate: 0`).
 
-The `qodana` job currently uses `continue-on-error: true` so the workflow succeeds and the HTML report is published to GitHub Pages even when findings are present. The job itself still shows as failed (yellow) in the Actions UI. Once findings are resolved or baselined, `continue-on-error` can be removed.
+The `qodana` job currently uses `continue-on-error: true`, so even when findings are present the overall workflow still succeeds and the HTML report is published to GitHub Pages. In the Actions UI, the job is marked as an allowed failure/neutral (while the failing step retains a red ❌). Once findings are resolved or baselined, `continue-on-error` can be removed.
 
 ### Run Qodana locally
 
