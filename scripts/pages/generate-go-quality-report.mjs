@@ -38,10 +38,17 @@ const lintRaw = readOptionalFile('golangci-lint-report.json');
 
 /** @type {{Issues?: Array<{FromLinter:string, Text:string, Pos:{Filename:string,Line:number,Column:number},Severity:string}>}} */
 let lintReport = {};
+
+// Track input health so a missing or corrupt report file cannot produce a
+// false "Pass" on the hosted HTML page.
+let inputMissing = lintRaw === null;
+let parseFailed = false;
+
 try {
   if (lintRaw) lintReport = JSON.parse(lintRaw);
-} catch {
-  console.warn('Warning: could not parse golangci-lint-report.json; report will be empty.');
+} catch (err) {
+  parseFailed = true;
+  console.warn(`Warning: could not parse golangci-lint-report.json: ${err.message}; report will show as failed.`);
 }
 
 const issues = lintReport.Issues || [];
@@ -54,7 +61,22 @@ const totalIssues = issues.length;
 const errorCount = issues.filter((i) => (i.Severity || '').toLowerCase() === 'error').length;
 const warningCount = issues.filter((i) => (i.Severity || '').toLowerCase() === 'warning').length;
 const otherCount = totalIssues - errorCount - warningCount;
-const overallPass = totalIssues === 0;
+
+// A clean pass requires valid input AND zero issues.
+const overallPass = !inputMissing && !parseFailed && totalIssues === 0;
+
+// Human-readable status label for the Overall card.
+let overallLabel = 'Pass';
+let overallDetail = '';
+if (inputMissing) {
+  overallLabel = 'No Input';
+  overallDetail = 'golangci-lint-report.json was not found \u2014 results are unknown.';
+} else if (parseFailed) {
+  overallLabel = 'Parse Error';
+  overallDetail = 'golangci-lint-report.json could not be parsed \u2014 results are unknown.';
+} else if (totalIssues > 0) {
+  overallLabel = 'Fail';
+}
 
 // Group by linter
 const byLinter = {};
@@ -131,7 +153,7 @@ for (const issue of issues) {
 // 6. Linter breakdown
 // ---------------------------------------------------------------------------
 
-let linterBreakdown = '';
+let linterBreakdown;
 if (Object.keys(byLinter).length > 0) {
   const sorted = Object.entries(byLinter).sort((a, b) => b[1] - a[1]);
   linterBreakdown = '<table><thead><tr><th>Linter</th><th>Issues</th></tr></thead><tbody>';
@@ -139,6 +161,10 @@ if (Object.keys(byLinter).length > 0) {
     linterBreakdown += `<tr><td><code>${esc(linter)}</code></td><td>${count}</td></tr>`;
   }
   linterBreakdown += '</tbody></table>';
+} else if (inputMissing) {
+  linterBreakdown = '<p class="muted">No linter output \u2014 golangci-lint-report.json was not found.</p>';
+} else if (parseFailed) {
+  linterBreakdown = '<p class="muted">No linter output \u2014 golangci-lint-report.json could not be parsed.</p>';
 } else {
   linterBreakdown = '<p class="muted">No issues found \u2014 all linters passed.</p>';
 }
@@ -251,7 +277,8 @@ const html = `<!doctype html>
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Overall</div>
-      <div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div>
+      <div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallLabel}</div>
+      <div class="card-detail">${overallDetail}</div>
     </div>
     <div class="card">
       <div class="card-title">golangci-lint</div>
@@ -272,7 +299,11 @@ const html = `<!doctype html>
       <tbody>${issueTableRows}</tbody>
     </table>
   </div>`
-      : '<p class="empty-state">No findings \u2014 all golangci-lint checks passed.</p>'
+      : inputMissing
+        ? '<p class="empty-state">No findings available \u2014 golangci-lint-report.json was not found.</p>'
+        : parseFailed
+          ? '<p class="empty-state">No findings available \u2014 golangci-lint-report.json could not be parsed.</p>'
+          : '<p class="empty-state">No findings \u2014 all golangci-lint checks passed.</p>'
   }
 
   <div class="meta">
