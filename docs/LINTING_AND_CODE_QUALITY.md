@@ -360,9 +360,14 @@ The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the
    - `--project-dir=/data/project` — repository root
    - `--config=/data/project/services/python/django/qodana.yaml` — Python-specific config
    - `--only-directory=services/python/django` — scopes analysis to Django code only
-3. Uploads the HTML report directory as `qodana-report-django-python`.
+3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
+4. Uploads the HTML report directory as `qodana-report-django-python`.
 
 The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
+
+**Why the bootstrap is critical:** Qodana runs in an isolated Docker container with no pre-installed project dependencies. The IDE resolves imports via the configured Python interpreter and virtualenv. Without matching dependencies in the Qodana container, the linter cannot resolve `from django.http import ...`, `from opentelemetry.trace import ...`, etc., and reports them as errors — these are false positives. The `bootstrap` section in `services/python/django/qodana.yaml` installs the same packages the IDE sees, bringing CI findings in line with local IDE inspections. Any requirement line containing `pyroscope` is filtered out (so both `pyroscope-io` and `pyroscope-otel` are skipped) because these agents require a Rust build toolchain not available in the Qodana container; the application handles their absence gracefully at runtime.
+
+**Python version mismatch:** The Qodana Python Community 2025.3 container ships Python 3.12, while the project declares `requires-python >= 3.13`. The bootstrap uses `--ignore-requires-python` so pip installs the packages despite the version mismatch. The packages are only needed for Qodana's import resolution and type inference, not for execution.
 
 #### Quality Gate
 
@@ -429,6 +434,7 @@ docker run --rm `
 ```
 
 Notes:
+- The `bootstrap` command in `services/python/django/qodana.yaml` runs automatically inside the container before analysis, installing Django and other dependencies so imports resolve correctly.
 - A non-zero container exit code means the configured quality gate was violated.
 - A `QODANA_TOKEN` is not required for local scans with the community linter.
 - Results and logs are written under `.qodana/django-python/` in the example commands above.
