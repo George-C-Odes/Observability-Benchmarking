@@ -83,7 +83,18 @@ jobs:
 
       - name: Generate golangci-lint JSON report
         if: always() && !cancelled()
-        run: golangci-lint run --out-format=json > golangci-lint-report.json 2>&1 || true
+        run: |
+          # Run golangci-lint and write only JSON output to the report file.
+          # Exit code semantics:
+          #   0: no issues
+          #   1: issues found (non-fatal for this reporting step)
+          #  >1: tool/configuration error (should fail the job)
+          exit_code=0
+          golangci-lint run --out-format=json > golangci-lint-report.json || exit_code=$?
+          if [ "$exit_code" -gt 1 ]; then
+            echo "golangci-lint failed with exit code $exit_code" >&2
+            exit "$exit_code"
+          fi
 
       - name: Set up Node.js (for report generation)
         if: always() && !cancelled()
