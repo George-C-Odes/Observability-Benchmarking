@@ -1,17 +1,18 @@
 # Qodana baseline files
 
-This directory stores reviewed Qodana SARIF baselines for the scoped JVM analysis workflow.
+This directory stores reviewed Qodana SARIF baselines for the scoped analysis workflows.
 
 Current expected file names:
 
-- `services-java.sarif.json`
-- `orchestrator.sarif.json`
+- `services-java.sarif.json` — JVM services (`jetbrains/qodana-jvm-community`)
+- `orchestrator.sarif.json` — Orchestrator (`jetbrains/qodana-jvm-community`)
+- `django-python.sarif.json` — Django Python services (`jetbrains/qodana-python-community`)
 
-How the workflow uses them:
+How the workflows use them:
 
-- The GitHub Actions Qodana matrix checks for the matching file for each scope.
-- If the file exists, the workflow adds `--baseline=<file>` for that scope.
-- If the file does not exist, the scan runs normally without a baseline.
+- The JVM Qodana matrix checks for the matching file for each scope. If it exists, `--baseline=<file>` is added.
+- The Django Python Qodana job can be extended to pass `--baseline` when `django-python.sarif.json` exists.
+- If a baseline file does not exist, the scan runs normally without a baseline.
 
 Recommended refresh flow:
 

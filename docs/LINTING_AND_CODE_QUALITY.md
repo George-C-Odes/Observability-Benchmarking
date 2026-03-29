@@ -376,6 +376,16 @@ failureConditions:
     moderate: 0
 ```
 
+#### Soft Gate Strategy (Initial Rollout)
+
+The `qodana` job uses `continue-on-error: true` at the job level. This means:
+
+- When the quality gate is violated, the **job** shows as failed (yellow) in the Actions UI — findings remain visible.
+- The **workflow** still succeeds, so the HTML report artifact is uploaded and the Pages deployment can download and host it.
+- The `modules` job (Ruff lint, format, Django checks, unit tests) is unaffected — it still gates the workflow independently.
+
+This is a safe initial rollout pattern: the Qodana report is published for visibility while the existing Ruff and test gates remain strict. Once the Qodana findings are fixed or acknowledged via a reviewed SARIF baseline, `continue-on-error` can be removed to promote the Qodana gate to a hard gate.
+
 #### Hosted Qodana Python Report on GitHub Pages
 
 The Qodana Python HTML report is published to GitHub Pages alongside the JVM and Next.js reports:
