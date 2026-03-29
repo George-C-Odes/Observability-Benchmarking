@@ -27,6 +27,11 @@ tsconfig.tsbuildinfo
 # Vitest report artifacts
 vitest-*-report.json
 
+# CI quality report (generated in GitHub Actions, not part of the app)
+quality-report
+eslint-report.json
+tsc-output.txt
+
 # Temp / scratch
 .tmp
 

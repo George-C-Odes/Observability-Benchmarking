@@ -19,11 +19,18 @@
 #   QODANA_HEAD_SHA              – resolved commit SHA (may be empty)
 #   QODANA_PAGES_DIR             – staging path, e.g. ./.qodana-pages
 #   SITE_DIR                     – built site root, e.g. ./_site
+#
+# Next.js Dashboard quality report (optional):
+#   NEXTJS_QUALITY_RUN_ID        – resolved Next.js quality workflow run ID (may be empty)
+#   NEXTJS_QUALITY_HEAD_SHA      – resolved commit SHA (may be empty)
+#   NEXTJS_DOWNLOAD_OUTCOME      – success | failure | skipped | (empty)
+#   NEXTJS_QUALITY_PAGES_DIR     – staging path, e.g. ./.nextjs-quality-pages
 
 set -euo pipefail
 
 QODANA_PAGES_DIR="${QODANA_PAGES_DIR:-./.qodana-pages}"
 SITE_DIR="${SITE_DIR:-./_site}"
+NEXTJS_QUALITY_PAGES_DIR="${NEXTJS_QUALITY_PAGES_DIR:-./.nextjs-quality-pages}"
 
 # ---------------------------------------------------------------------------
 # 1. Resolve per-scope statuses
@@ -61,6 +68,28 @@ resolve_status() {
 
 services_status="$(resolve_status "$QODANA_PAGES_DIR/services-java" "$SERVICES_ARTIFACT_PRESENT" "$SERVICES_DOWNLOAD_OUTCOME")"
 orchestrator_status="$(resolve_status "$QODANA_PAGES_DIR/orchestrator" "$ORCHESTRATOR_ARTIFACT_PRESENT" "$ORCHESTRATOR_DOWNLOAD_OUTCOME")"
+
+# Next.js Dashboard quality report: simpler resolution — there is no
+# artifact-inspection step (only one artifact, not a matrix).  If the
+# download step ran and succeeded the directory will contain index.html.
+resolve_nextjs_status() {
+  local dir="$1"
+  local download_outcome="${NEXTJS_DOWNLOAD_OUTCOME:-}"
+  local run_id="${NEXTJS_QUALITY_RUN_ID:-}"
+
+  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
+    echo 'available'
+  elif [[ "$download_outcome" == 'failure' ]]; then
+    echo 'download failed'
+  elif [[ "$download_outcome" == 'success' ]]; then
+    echo 'unavailable'
+  elif [[ -n "$run_id" ]]; then
+    echo 'undetermined'
+  else
+    echo 'not-applicable'
+  fi
+}
+nextjs_status="$(resolve_nextjs_status "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash")"
 
 # ---------------------------------------------------------------------------
 # 2. Resolve human-readable messages
@@ -113,6 +142,38 @@ case "$orchestrator_status" in
     ;;
 esac
 
+# Next.js Dashboard quality report messages
+nextjs_item_text='nextjs-dash quality report is not available yet.'
+nextjs_item_html='<li>nextjs-dash quality report is not available yet.</li>'
+nextjs_metadata_text=''
+nextjs_metadata_html=''
+
+case "$nextjs_status" in
+  available)
+    nextjs_item_text='nextjs-dash quality report is available (ESLint + TypeScript).'
+    nextjs_item_html='<li><a href="./nextjs-dash/">nextjs-dash quality report</a> (ESLint + TypeScript)</li>'
+    ;;
+  'download failed')
+    nextjs_item_text='nextjs-dash quality report could not be downloaded for the resolved run.'
+    nextjs_item_html='<li>nextjs-dash quality report could not be downloaded for the resolved run.</li>'
+    ;;
+  unavailable)
+    nextjs_item_text='nextjs-dash quality report is not available for the resolved run.'
+    nextjs_item_html='<li>nextjs-dash quality report is not available for the resolved run.</li>'
+    ;;
+  undetermined)
+    nextjs_item_text='nextjs-dash quality report availability could not be determined for the resolved run.'
+    nextjs_item_html='<li>nextjs-dash quality report availability could not be determined for the resolved run.</li>'
+    ;;
+esac
+
+if [[ -n "${NEXTJS_QUALITY_RUN_ID:-}" ]]; then
+  if [[ "$nextjs_status" == 'available' ]]; then
+    nextjs_metadata_text="Next.js quality report from workflow run ${NEXTJS_QUALITY_RUN_ID} for commit ${NEXTJS_QUALITY_HEAD_SHA:-unknown}."
+    nextjs_metadata_html="<p>Next.js quality report from workflow run <code>${NEXTJS_QUALITY_RUN_ID}</code> for commit <code>${NEXTJS_QUALITY_HEAD_SHA:-unknown}</code>.</p>"
+  fi
+fi
+
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
@@ -155,12 +216,26 @@ echo "  page metadata: $report_metadata_text"
 if [[ -n "$status_notice_text" ]]; then
   echo "  note: $status_notice_text"
 fi
+echo ''
+echo 'Next.js Dashboard quality report resolution:'
+if [[ -n "${NEXTJS_QUALITY_RUN_ID:-}" ]]; then
+  echo "  resolved run id: $NEXTJS_QUALITY_RUN_ID"
+  echo "  resolved head sha: ${NEXTJS_QUALITY_HEAD_SHA:-none}"
+else
+  echo '  resolved run id: none'
+fi
+echo "  nextjs-dash download outcome: ${NEXTJS_DOWNLOAD_OUTCOME:-not-run}"
+echo "  nextjs-dash final status: $nextjs_status"
+echo "  nextjs-dash message: $nextjs_item_text"
+if [[ -n "$nextjs_metadata_text" ]]; then
+  echo "  nextjs-dash metadata: $nextjs_metadata_text"
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator"
+mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash"
 
 write_html_file() {
   local target_path="$1"
@@ -249,8 +324,14 @@ if [[ -d "$QODANA_PAGES_DIR/orchestrator" ]]; then
   cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/qodana/orchestrator/"
 fi
 
+# Copy the pre-generated Next.js quality report (index.html) into the site tree.
+if [[ -d "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" ]]; then
+  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/qodana/nextjs-dash/"
+fi
+
 create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
+create_scope_page 'nextjs-dash' "$nextjs_item_text"
 
 # Landing page
 write_html_file "$SITE_DIR/qodana/index.html" \
@@ -259,21 +340,30 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   '<head>' \
   '  <meta charset="utf-8">' \
   '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
-  '  <title>Qodana reports</title>' \
+  '  <title>Quality reports</title>' \
   '  <style>' \
   '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
   '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
+  '    h2 { margin-top: 1.5rem; }' \
   '  </style>' \
   '</head>' \
   '<body>' \
-  '  <h1>Qodana reports</h1>' \
-  '  <p>Latest published reports from the GitHub Actions <code>Qodana</code> workflow on <code>main</code>.</p>' \
+  '  <h1>Quality reports</h1>' \
+  '  <p>Latest published code-quality reports from GitHub Actions on <code>main</code>.</p>' \
+  '  <h2>Qodana (JVM)</h2>' \
+  '  <p>IntelliJ-based static analysis via <code>jetbrains/qodana-jvm-community</code>.</p>' \
   '  <ul>' \
   "    ${services_item_html}" \
   "    ${orchestrator_item_html}" \
   '  </ul>' \
   "  ${report_metadata_html}" \
   "  ${status_notice_html}" \
+  '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
+  '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
+  '  <ul>' \
+  "    ${nextjs_item_html}" \
+  '  </ul>' \
+  "  ${nextjs_metadata_html}" \
   '</body>' \
   '</html>'
 

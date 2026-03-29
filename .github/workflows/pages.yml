@@ -9,10 +9,11 @@ on:
     branches:
       - main
 
-  # Republish after successful main-branch Qodana runs so hosted reports stay current.
+  # Republish after successful main-branch quality runs so hosted reports stay current.
   workflow_run:
     workflows:
       - Qodana
+      - Next.js Dashboard Quality
     types:
       - completed
     branches:
@@ -88,6 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
           WR_ID: ${{ github.event.workflow_run.id }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: bash scripts/pages/resolve-qodana-source.sh
 
@@ -122,6 +124,32 @@ jobs:
           run-id: ${{ steps.qodana_source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ----------------------------------------------------------------
+      # Next.js Dashboard quality report (ESLint + TypeScript)
+      # ----------------------------------------------------------------
+
+      - name: Resolve Next.js quality artifact source run
+        id: nextjs_quality_source
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/pages/resolve-nextjs-quality-source.sh
+
+      - name: Download Next.js quality report
+        id: download_nextjs_quality
+        if: steps.nextjs_quality_source.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: quality-report-nextjs-dash
+          path: ./.nextjs-quality-pages/nextjs-dash
+          run-id: ${{ steps.nextjs_quality_source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Assemble Qodana pages
         shell: bash
         env:
@@ -132,6 +160,10 @@ jobs:
           QODANA_RUN_ID: ${{ steps.qodana_source.outputs.run_id }}
           QODANA_HEAD_SHA: ${{ steps.qodana_source.outputs.head_sha }}
           QODANA_PAGES_DIR: ./.qodana-pages
+          NEXTJS_QUALITY_RUN_ID: ${{ steps.nextjs_quality_source.outputs.run_id }}
+          NEXTJS_QUALITY_HEAD_SHA: ${{ steps.nextjs_quality_source.outputs.head_sha }}
+          NEXTJS_DOWNLOAD_OUTCOME: ${{ steps.download_nextjs_quality.outcome }}
+          NEXTJS_QUALITY_PAGES_DIR: ./.nextjs-quality-pages
           SITE_DIR: ./_site
         run: bash scripts/pages/assemble-qodana-pages.sh
 

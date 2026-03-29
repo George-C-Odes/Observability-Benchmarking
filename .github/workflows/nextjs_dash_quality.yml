@@ -9,12 +9,14 @@ on:
   pull_request:
     paths:
       - 'utils/nextjs-dash/**'
+      - 'scripts/pages/generate-nextjs-quality-report.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
   push:
     branches:
       - main
     paths:
       - 'utils/nextjs-dash/**'
+      - 'scripts/pages/generate-nextjs-quality-report.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
 
 permissions:
@@ -43,11 +45,19 @@ jobs:
         run: npm ci
 
       - name: Print tool versions
+        id: versions
         run: |
-          echo "Node $(node --version)"
-          echo "npm  $(npm --version)"
-          npx eslint --version
-          npx tsc --version
+          node_ver="$(node --version)"
+          npm_ver="$(npm --version)"
+          eslint_ver="$(npx eslint --version)"
+          tsc_ver="$(npx tsc --version)"
+          echo "Node $node_ver"
+          echo "npm  $npm_ver"
+          echo "$eslint_ver"
+          echo "$tsc_ver"
+          echo "node=$node_ver"       >> "$GITHUB_OUTPUT"
+          echo "eslint=$eslint_ver"   >> "$GITHUB_OUTPUT"
+          echo "tsc=$tsc_ver"         >> "$GITHUB_OUTPUT"
 
       - name: Lint (ESLint)
         run: npm run lint
@@ -63,3 +73,36 @@ jobs:
 
       - name: Production build smoke test
         run: npm run build
+
+      # ------------------------------------------------------------------
+      # Quality report: generate an HTML report from ESLint + TypeScript
+      # diagnostics so the Pages workflow can host it alongside the Qodana
+      # JVM reports.  Steps run with `if: always()` so that a failing lint
+      # or typecheck still produces a downloadable report artifact.
+      # ------------------------------------------------------------------
+
+      - name: Generate ESLint JSON report
+        if: always() && !cancelled()
+        run: npx eslint . --format json --output-file eslint-report.json || true
+
+      - name: Capture TypeScript diagnostics
+        if: always() && !cancelled()
+        run: npx tsc --noEmit > tsc-output.txt 2>&1 || true
+
+      - name: Generate quality report
+        if: always() && !cancelled()
+        env:
+          ESLINT_VERSION: ${{ steps.versions.outputs.eslint }}
+          TSC_VERSION: ${{ steps.versions.outputs.tsc }}
+          NODE_VERSION: ${{ steps.versions.outputs.node }}
+        run: node ../../scripts/pages/generate-nextjs-quality-report.mjs
+
+      - name: Upload quality report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: quality-report-nextjs-dash
+          path: utils/nextjs-dash/quality-report/
+          retention-days: 30
+          if-no-files-found: warn
+

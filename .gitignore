@@ -49,6 +49,9 @@ yarn-error.log*
 /utils/nextjs-dash/out/
 /utils/nextjs-dash/.env*.local
 /utils/nextjs-dash/next-env.d.ts
+/utils/nextjs-dash/quality-report/
+/utils/nextjs-dash/eslint-report.json
+/utils/nextjs-dash/tsc-output.txt
 
 # Docker / containers / local compose overrides
 .env.local

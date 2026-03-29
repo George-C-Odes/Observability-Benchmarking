@@ -460,6 +460,55 @@ A module-local Qodana configuration exists at `utils/nextjs-dash/qodana.yaml` pi
 
 Because this repository currently uses the free community JVM linter, the JS scope is **not** included in the Qodana CI workflow. The configuration file is kept in the repository so it can be activated by adding a `nextjs-dash` matrix entry to `.github/workflows/qodana_code_quality.yml` once a Qodana Cloud license covering JavaScript analysis is available. When re-enabling, the Qodana action does not support a `linter` input — you must add a `docker pull jetbrains/qodana-js:2025.3` step before the scan to ensure the image is available (the action's internal pull phase only reads the root `qodana.yaml`).
 
+#### Free Alternative — Hosted ESLint + TypeScript Quality Report
+
+Since there is no free Qodana community linter for JavaScript/TypeScript, this repository generates a **self-contained HTML quality report** from ESLint and TypeScript strict-mode analysis as the free, open-source equivalent. This covers the same inspections your JetBrains IDE performs for JS/TS:
+
+- **ESLint** — the same rules configured in `eslint.config.mjs` (recommended + typescript-eslint + Next.js + React Hooks)
+- **TypeScript strict mode** — `tsc --noEmit` with `"strict": true`, identical to the IDE's type checking
+
+How it works:
+
+1. The `Next.js Dashboard Quality` workflow (`.github/workflows/nextjs_dash_quality.yml`) runs the normal quality gates (lint, typecheck, tests, build)
+2. After the quality gates, it generates ESLint JSON output and TypeScript diagnostics
+3. A Node.js script (`scripts/pages/generate-nextjs-quality-report.mjs`) produces a polished, self-contained HTML report from those results
+4. The report is uploaded as a `quality-report-nextjs-dash` artifact
+5. The Pages workflow downloads the artifact and publishes it alongside the Qodana JVM reports
+
+The report includes:
+- Summary cards (overall pass/fail, ESLint errors/warnings, TypeScript diagnostics)
+- Per-file ESLint findings table with severity, rule ID, message, and line/column
+- TypeScript diagnostics block
+- Metadata (commit SHA, workflow run, tool versions, timestamp)
+- Dark mode support via `prefers-color-scheme`
+
+Expected URL:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/qodana/nextjs-dash/
+```
+
+The landing page at `qodana/` now links to all three scopes:
+- `qodana/services-java/` — Qodana JVM (IntelliJ inspections)
+- `qodana/orchestrator/` — Qodana JVM (IntelliJ inspections)
+- `qodana/nextjs-dash/` — ESLint + TypeScript (free alternative)
+
+The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
+
+#### Pages Integration for the Next.js Quality Report
+
+The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
+
+- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana run is resolved via API
+- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js quality run is resolved via API
+- When triggered by push or manual dispatch, the latest successful run for **both** workflows is resolved via API
+
+This ensures every Pages deployment gets the freshest available version of all reports.
+
+Scripts involved:
+- `scripts/pages/resolve-nextjs-quality-source.sh` — resolves the Next.js quality workflow run to fetch the report artifact from
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash` scope alongside the existing Qodana JVM scopes
+
 ### Documentation
 All public classes and methods should include:
 1. **Class-level Javadoc**: Describing the purpose and responsibility of the class

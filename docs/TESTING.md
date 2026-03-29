@@ -512,7 +512,7 @@ npm run test:coverage
 
 #### Full Quality Gate (matching CI)
 
-The CI workflow (`.github/workflows/nextjs_dash_quality.yml`) runs all four quality gates in sequence; the "tests" gate is implemented as two separate commands (node and DOM environments):
+The CI workflow (`.github/workflows/nextjs_dash_quality.yml`) runs the full quality gate sequence:
 
 ```bash
 npm run lint          # ESLint --max-warnings=0
