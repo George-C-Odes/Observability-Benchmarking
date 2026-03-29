@@ -8,8 +8,9 @@ run:
 # quality report) in a single lint pass.
 output:
   formats:
-    - format: colored-line-number
-    - format: json
+    text:
+      path: stdout
+    json:
       path: golangci-lint-report.json
 
 linters:
@@ -19,10 +20,7 @@ linters:
     - staticcheck
     - ineffassign
     - revive
-    - gosimple
     - gocritic
-    - gofmt
-    - goimports
     - unused
     - gosec
     - unconvert
@@ -32,3 +30,9 @@ linters:
         linters:
           - errcheck
           - gosec
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
