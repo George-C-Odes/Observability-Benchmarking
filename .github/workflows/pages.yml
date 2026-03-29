@@ -122,13 +122,26 @@ jobs:
           run-id: ${{ steps.qodana_source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Download Qodana report (nextjs-dash)
+        id: download_qodana_nextjs_dash
+        if: steps.qodana_source.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: qodana-report-nextjs-dash
+          path: ./.qodana-pages/nextjs-dash
+          run-id: ${{ steps.qodana_source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Assemble Qodana pages
         shell: bash
         env:
           SERVICES_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.services_java_present }}
           ORCHESTRATOR_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.orchestrator_present }}
+          NEXTJS_DASH_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.nextjs_dash_present }}
           SERVICES_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_services_java.outcome }}
           ORCHESTRATOR_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_orchestrator.outcome }}
+          NEXTJS_DASH_DOWNLOAD_OUTCOME: ${{ steps.download_qodana_nextjs_dash.outcome }}
           QODANA_RUN_ID: ${{ steps.qodana_source.outputs.run_id }}
           QODANA_HEAD_SHA: ${{ steps.qodana_source.outputs.head_sha }}
           QODANA_PAGES_DIR: ./.qodana-pages

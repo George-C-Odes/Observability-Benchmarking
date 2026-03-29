@@ -85,6 +85,7 @@ The convention is applied in:
 - `.github/workflows/qodana_code_quality.yml`
 - `.github/workflows/pages.yml`
 - `.github/workflows/django_python_quality.yml`
+- `.github/workflows/nextjs_dash_quality.yml`
 
 Each occurrence is annotated with `# TODO(node24-migration)` so they can be found and removed once GitHub's default runtime moves to Node 24.
 
@@ -97,20 +98,22 @@ This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setu
 - **Qodana** adds semantic inspections such as probable bugs, API misuse, dead code, and framework-specific warnings.
 
 The current GitHub Actions workflow intentionally limits Qodana to these paths only:
-- `services/java/**`
-- `utils/orchestrator/**`
+- `services/java/**` (JVM linter)
+- `utils/orchestrator/**` (JVM linter)
+- `utils/nextjs-dash/**` (JS linter — module-local config)
 
 That makes it a safe first step for adoption without expanding analysis to the rest of the repository.
 
 ### Current GitHub Actions Scope
 The workflow in `.github/workflows/qodana_code_quality.yml` runs Qodana in a small matrix:
 
-- `services/java`
-- `utils/orchestrator`
+- `services/java` (JVM linter — root `qodana.yaml`)
+- `utils/orchestrator` (JVM linter — root `qodana.yaml`)
+- `utils/nextjs-dash` (JS linter — module-local `utils/nextjs-dash/qodana.yaml`)
 
-It keeps the repository root as the Qodana project so the shared root `qodana.yaml` is applied, then limits each job with `--only-directory`.
+It keeps the repository root as the Qodana project so the shared root `qodana.yaml` is applied for JVM scopes, then limits each job with `--only-directory`. The `nextjs-dash` entry uses `--config=utils/nextjs-dash/qodana.yaml` to pin the JS linter image instead of the JVM one.
 
-The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
+The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2025.3`) so both the action's initial pull step and the later scoped scan step resolve the same linter for JVM scopes. The `nextjs-dash` entry overrides this via its own `utils/nextjs-dash/qodana.yaml` which pins `jetbrains/qodana-js:2025.3`. The workflow uploads two artifacts per matrix entry:
 
 - **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
 - **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7` step. This is what the Pages workflow downloads to host the report.
@@ -136,16 +139,18 @@ How it works:
 - the Pages workflow builds the Jekyll site explicitly with Bundler using `docs/Gemfile`, which avoids the earlier `github-pages` gem compatibility warning from `actions/jekyll-build-pages`
 - after a **successful** `Qodana` workflow run on `main`, the Pages workflow runs again via `workflow_run`
 - it checks out the exact analyzed commit (`head_sha`) from that Qodana run
-- it downloads the uploaded Qodana HTML report artifacts for both matrix entries:
+- it downloads the uploaded Qodana HTML report artifacts for all matrix entries:
   - `qodana-report-services-java`
   - `qodana-report-orchestrator`
+  - `qodana-report-nextjs-dash`
 - the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
   - `qodana/services-java/`
   - `qodana/orchestrator/`
+  - `qodana/nextjs-dash/`
 - report resolution, message generation, logging, and HTML assembly are handled by versioned scripts under `scripts/pages/` for easier testing and review
 - it also creates a small landing page at `qodana/index.html`
-- each scope URL (`qodana/services-java/` and `qodana/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
+- each scope URL (`qodana/services-java/`, `qodana/orchestrator/`, and `qodana/nextjs-dash/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
 - during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
 
 Why this is a good first implementation:
@@ -168,6 +173,7 @@ Expected URL shape:
 https://<owner>.github.io/<repo>/qodana/
 https://<owner>.github.io/<repo>/qodana/services-java/
 https://<owner>.github.io/<repo>/qodana/orchestrator/
+https://<owner>.github.io/<repo>/qodana/nextjs-dash/
 ```
 
 If your repository uses a custom GitHub Pages domain, replace the `github.io/<repo>` part with that domain's base URL.
@@ -191,10 +197,11 @@ Why this works well:
 - it gives the team room to tighten further (e.g. adding `info` or `low`) once the current thresholds are reliably green
 
 ### Baseline Strategy
-The workflow now supports a low-risk, per-scope baseline strategy for the same two JVM scopes:
+The workflow now supports a low-risk, per-scope baseline strategy for all scoped areas:
 
 - `.qodana/baseline/services-java.sarif.json`
 - `.qodana/baseline/orchestrator.sarif.json`
+- `.qodana/baseline/nextjs-dash.sarif.json`
 
 How it works:
 - each matrix job always analyzes only its scoped directory
@@ -228,7 +235,7 @@ Run the same Qodana linter image locally from the repository root.
 **Bash / zsh:**
 
 ```bash
-mkdir -p .qodana/services-java .qodana/orchestrator
+mkdir -p .qodana/services-java .qodana/orchestrator .qodana/nextjs-dash
 
 docker run --rm \
   -v "$PWD":/data/project \
@@ -245,12 +252,21 @@ docker run --rm \
   --project-dir=/data/project \
   --only-directory=utils/orchestrator \
   --results-dir=/data/results
+
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/nextjs-dash":/data/results \
+  jetbrains/qodana-js:2025.3 \
+  --project-dir=/data/project \
+  --config=utils/nextjs-dash/qodana.yaml \
+  --only-directory=utils/nextjs-dash \
+  --results-dir=/data/results
 ```
 
 **PowerShell:**
 
 ```powershell
-New-Item -ItemType Directory -Force .qodana/services-java, .qodana/orchestrator | Out-Null
+New-Item -ItemType Directory -Force .qodana/services-java, .qodana/orchestrator, .qodana/nextjs-dash | Out-Null
 
 docker run --rm `
   -v "${PWD}:/data/project" `
@@ -266,6 +282,15 @@ docker run --rm `
   jetbrains/qodana-jvm-community:2025.3 `
   --project-dir=/data/project `
   --only-directory=utils/orchestrator `
+  --results-dir=/data/results
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/nextjs-dash:/data/results" `
+  jetbrains/qodana-js:2025.3 `
+  --project-dir=/data/project `
+  --config=utils/nextjs-dash/qodana.yaml `
+  --only-directory=utils/nextjs-dash `
   --results-dir=/data/results
 ```
 
@@ -301,12 +326,23 @@ docker run --rm \
   --project-dir=/data/project \
   --only-directory=utils/orchestrator \
   --results-dir=/data/results
+
+# nextjs-dash candidate
+mkdir -p .qodana/baseline-candidates/nextjs-dash
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/baseline-candidates/nextjs-dash":/data/results \
+  jetbrains/qodana-js:2025.3 \
+  --project-dir=/data/project \
+  --config=utils/nextjs-dash/qodana.yaml \
+  --only-directory=utils/nextjs-dash \
+  --results-dir=/data/results
 ```
 
 Then:
 1. inspect the generated SARIF in the chosen results directory
 2. decide whether the findings represent accepted historical debt for that scope
-3. copy the reviewed SARIF into `.qodana/baseline/services-java.sarif.json` or `.qodana/baseline/orchestrator.sarif.json`
+3. copy the reviewed SARIF into `.qodana/baseline/services-java.sarif.json`, `.qodana/baseline/orchestrator.sarif.json`, or `.qodana/baseline/nextjs-dash.sarif.json`
 4. commit the baseline file in a pull request
 
 CI candidate flow:
@@ -318,7 +354,7 @@ CI candidate flow:
 Because the workflow only adds `--baseline` when the reviewed file exists, you can roll this out gradually and safely.
 
 ### What Qodana Offers This Repository
-For the currently scoped JVM code, Qodana can provide:
+For the currently scoped JVM and JS code, Qodana can provide:
 
 - PR annotations for actionable issues directly in changed code
 - IntelliJ-based inspections that go beyond formatting/style rules
@@ -332,7 +368,7 @@ Once the workflow has run a few times and the issue signal is understood, the ne
 1. tighten the gate further (e.g. add `info` or `low` thresholds) if the findings at those severities are manageable
 2. refresh or shrink the reviewed baseline files as historical findings are fixed
 3. add module-specific follow-up exclusions only where Qodana proves noisy, rather than disabling broad inspections up front
-4. consider separate documentation or workflow expansion for other languages only after the JVM path proves useful
+4. consider separate documentation or workflow expansion for other languages only after the JVM and JS paths prove useful
 
 ## Ruff Configuration (Python)
 
@@ -400,6 +436,117 @@ Ruff is also available as an IDE plugin for real-time feedback.
 
 ## Code Quality Standards
 
+### Next.js Dashboard (ESLint + TypeScript + Qodana JS)
+
+#### Overview
+
+The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
+
+1. **ESLint** — flat-config format (`eslint.config.mjs`), `--max-warnings=0` so any warning is treated as a CI failure.
+2. **TypeScript strict mode** — `tsc --noEmit` with `"strict": true` in `tsconfig.json`.
+3. **Vitest** — dual-environment test suite (Node for API/lib code, jsdom for React components/hooks).
+4. **Production build** — `next build` as a smoke test to catch import/config regressions.
+
+The CI workflow is triggered on pushes to `main` and pull requests touching `utils/nextjs-dash/**`.
+
+#### ESLint Configuration
+
+The module uses ESLint v9 flat config in `utils/nextjs-dash/eslint.config.mjs`:
+
+- **Base**: `@eslint/js` recommended rules + `typescript-eslint` recommended
+- **Next.js**: `@next/eslint-plugin-next` (recommended + core-web-vitals)
+- **React**: `eslint-plugin-react-hooks` recommended rules
+- **Server files** (`app/api/**`, `lib/**`, config files): Node globals enabled, `@typescript-eslint/no-require-imports` relaxed
+- **Ignores**: `.next/`, `node_modules/`, `dist/`, `out/`, `coverage/`, `build/`
+
+The `--max-warnings=0` flag ensures no warnings are tolerated in CI.
+
+#### TypeScript Configuration
+
+`utils/nextjs-dash/tsconfig.json` enables strict mode with these key settings:
+
+- `"strict": true`
+- `"noEmit": true`
+- `"target": "ES2020"`
+- `"moduleResolution": "bundler"`
+- `"jsx": "react-jsx"`
+
+The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files.
+
+#### Running Quality Checks Locally
+
+```bash
+cd utils/nextjs-dash
+npm install
+
+# Individual checks
+npm run lint
+npm run typecheck
+npm run test:node
+npm run test:dom
+
+# Quick one-liner matching CI
+npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
+```
+
+#### Qodana JS Static Analysis
+
+In addition to ESLint, the `utils/nextjs-dash` module is analyzed by [Qodana JS](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-js:2025.3`) as part of the shared Qodana workflow (`.github/workflows/qodana_code_quality.yml`).
+
+The module has its own Qodana configuration at `utils/nextjs-dash/qodana.yaml` that:
+
+- Pins the JS linter image (`jetbrains/qodana-js:2025.3`)
+- Runs `npm ci` as a bootstrap step so Qodana can resolve imports
+- Enforces the same severity gate as the JVM scopes (`critical: 0`, `high: 0`, `moderate: 0`)
+
+The Qodana workflow matrix entry for `nextjs-dash` passes `--config=utils/nextjs-dash/qodana.yaml` so the JS linter is used instead of the JVM linter pinned in the root `qodana.yaml`.
+
+Qodana complements ESLint by adding deeper semantic inspections (dead code, type-related bugs, framework-specific warnings) that go beyond formatting and style rules.
+
+##### Hosted Qodana JS Report
+
+The Qodana JS report is published to GitHub Pages alongside the JVM reports:
+
+```text
+https://<owner>.github.io/<repo>/qodana/nextjs-dash/
+```
+
+The report is updated after each successful Qodana workflow run on `main`.
+
+##### Testing Qodana JS Locally
+
+```bash
+mkdir -p .qodana/nextjs-dash
+
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/nextjs-dash":/data/results \
+  jetbrains/qodana-js:2025.3 \
+  --project-dir=/data/project \
+  --config=utils/nextjs-dash/qodana.yaml \
+  --only-directory=utils/nextjs-dash \
+  --results-dir=/data/results
+```
+
+PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force .qodana/nextjs-dash | Out-Null
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/nextjs-dash:/data/results" `
+  jetbrains/qodana-js:2025.3 `
+  --project-dir=/data/project `
+  --config=utils/nextjs-dash/qodana.yaml `
+  --only-directory=utils/nextjs-dash `
+  --results-dir=/data/results
+```
+
+##### Baseline for Qodana JS
+
+A reviewed SARIF baseline can be placed at `.qodana/baseline/nextjs-dash.sarif.json`. The workflow automatically adds `--baseline=<file>` when the file exists, following the same strategy documented in the baseline README.
+
 ### Documentation
 All public classes and methods should include:
 1. **Class-level Javadoc**: Describing the purpose and responsibility of the class
@@ -428,7 +575,9 @@ All public classes and methods should include:
 
 Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
 
-Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
+Qodana is stricter: the GitHub Actions workflow for `services/java/**`, `utils/orchestrator/**`, and `utils/nextjs-dash/**` fails on **critical**, **high**, or **moderate** Qodana findings.
+
+The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
@@ -492,3 +641,7 @@ Potential enhancements to the code quality setup:
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/)
 - [Qodana Documentation](https://www.jetbrains.com/help/qodana/qodana-yaml.html)
+- [ESLint Documentation](https://eslint.org/docs/latest/)
+- [typescript-eslint](https://typescript-eslint.io/)
+- [Vitest Documentation](https://vitest.dev/)
+- [Next.js ESLint Plugin](https://nextjs.org/docs/app/api-reference/config/eslint)

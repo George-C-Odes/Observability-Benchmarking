@@ -22,6 +22,7 @@ if ! curl -fsSL \
   -o "$response_file"; then
   echo "services_java_present=unknown" >> "$GITHUB_OUTPUT"
   echo "orchestrator_present=unknown" >> "$GITHUB_OUTPUT"
+  echo "nextjs_dash_present=unknown" >> "$GITHUB_OUTPUT"
   exit 0
 fi
 
@@ -38,6 +39,7 @@ names = {
 
 print("services_java_present=" + ("true" if "qodana-report-services-java" in names else "false"))
 print("orchestrator_present=" + ("true" if "qodana-report-orchestrator" in names else "false"))
+print("nextjs_dash_present=" + ("true" if "qodana-report-nextjs-dash" in names else "false"))
 PY
 )"
 

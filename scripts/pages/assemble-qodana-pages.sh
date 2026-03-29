@@ -61,6 +61,7 @@ resolve_status() {
 
 services_status="$(resolve_status "$QODANA_PAGES_DIR/services-java" "$SERVICES_ARTIFACT_PRESENT" "$SERVICES_DOWNLOAD_OUTCOME")"
 orchestrator_status="$(resolve_status "$QODANA_PAGES_DIR/orchestrator" "$ORCHESTRATOR_ARTIFACT_PRESENT" "$ORCHESTRATOR_DOWNLOAD_OUTCOME")"
+nextjs_dash_status="$(resolve_status "$QODANA_PAGES_DIR/nextjs-dash" "$NEXTJS_DASH_ARTIFACT_PRESENT" "$NEXTJS_DASH_DOWNLOAD_OUTCOME")"
 
 # ---------------------------------------------------------------------------
 # 2. Resolve human-readable messages
@@ -70,6 +71,8 @@ services_item_text='services-java report is not available yet.'
 services_item_html='<li>services-java report is not available yet.</li>'
 orchestrator_item_text='orchestrator report is not available yet.'
 orchestrator_item_html='<li>orchestrator report is not available yet.</li>'
+nextjs_dash_item_text='nextjs-dash report is not available yet.'
+nextjs_dash_item_html='<li>nextjs-dash report is not available yet.</li>'
 report_metadata_text='No successful Qodana report has been published to GitHub Pages yet.'
 report_metadata_html='<p>No successful Qodana report has been published to GitHub Pages yet.</p>'
 status_notice_text=''
@@ -113,8 +116,27 @@ case "$orchestrator_status" in
     ;;
 esac
 
+case "$nextjs_dash_status" in
+  available)
+    nextjs_dash_item_text='nextjs-dash report is available.'
+    nextjs_dash_item_html='<li><a href="./nextjs-dash/">nextjs-dash report</a></li>'
+    ;;
+  'download failed')
+    nextjs_dash_item_text='nextjs-dash report could not be downloaded for the resolved run.'
+    nextjs_dash_item_html='<li>nextjs-dash report could not be downloaded for the resolved run.</li>'
+    ;;
+  unavailable)
+    nextjs_dash_item_text='nextjs-dash report is not available for the resolved run.'
+    nextjs_dash_item_html='<li>nextjs-dash report is not available for the resolved run.</li>'
+    ;;
+  undetermined)
+    nextjs_dash_item_text='nextjs-dash report availability could not be determined for the resolved run.'
+    nextjs_dash_item_html='<li>nextjs-dash report availability could not be determined for the resolved run.</li>'
+    ;;
+esac
+
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
-  if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' ]]; then
+  if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' || "$nextjs_dash_status" == 'available' ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
     report_metadata_html="<p>This page currently hosts reports from workflow run <code>$QODANA_RUN_ID</code> for commit <code>$QODANA_HEAD_SHA</code>.</p>"
   else
@@ -123,10 +145,10 @@ if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   fi
 fi
 
-if [[ "$SERVICES_ARTIFACT_PRESENT" == 'unknown' || "$ORCHESTRATOR_ARTIFACT_PRESENT" == 'unknown' ]]; then
+if [[ "$SERVICES_ARTIFACT_PRESENT" == 'unknown' || "$ORCHESTRATOR_ARTIFACT_PRESENT" == 'unknown' || "$NEXTJS_DASH_ARTIFACT_PRESENT" == 'unknown' ]]; then
   status_notice_text='GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.'
   status_notice_html='<p><strong>Note:</strong> GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.</p>'
-elif [[ "$SERVICES_DOWNLOAD_OUTCOME" == 'failure' || "$ORCHESTRATOR_DOWNLOAD_OUTCOME" == 'failure' ]]; then
+elif [[ "$SERVICES_DOWNLOAD_OUTCOME" == 'failure' || "$ORCHESTRATOR_DOWNLOAD_OUTCOME" == 'failure' || "$NEXTJS_DASH_DOWNLOAD_OUTCOME" == 'failure' ]]; then
   status_notice_text='At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.'
   status_notice_html='<p><strong>Note:</strong> At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.</p>'
 fi
@@ -151,6 +173,10 @@ echo "  orchestrator artifact listed: ${ORCHESTRATOR_ARTIFACT_PRESENT:-not-check
 echo "  orchestrator download outcome: ${ORCHESTRATOR_DOWNLOAD_OUTCOME:-not-run}"
 echo "  orchestrator final status: $orchestrator_status"
 echo "  orchestrator message: $orchestrator_item_text"
+echo "  nextjs-dash artifact listed: ${NEXTJS_DASH_ARTIFACT_PRESENT:-not-checked}"
+echo "  nextjs-dash download outcome: ${NEXTJS_DASH_DOWNLOAD_OUTCOME:-not-run}"
+echo "  nextjs-dash final status: $nextjs_dash_status"
+echo "  nextjs-dash message: $nextjs_dash_item_text"
 echo "  page metadata: $report_metadata_text"
 if [[ -n "$status_notice_text" ]]; then
   echo "  note: $status_notice_text"
@@ -160,7 +186,7 @@ fi
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator"
+mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash"
 
 write_html_file() {
   local target_path="$1"
@@ -249,8 +275,13 @@ if [[ -d "$QODANA_PAGES_DIR/orchestrator" ]]; then
   cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/qodana/orchestrator/"
 fi
 
+if [[ -d "$QODANA_PAGES_DIR/nextjs-dash" ]]; then
+  cp -a "$QODANA_PAGES_DIR/nextjs-dash/." "$SITE_DIR/qodana/nextjs-dash/"
+fi
+
 create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
+create_scope_page 'nextjs-dash' "$nextjs_dash_item_text"
 
 # Landing page
 write_html_file "$SITE_DIR/qodana/index.html" \
@@ -271,6 +302,7 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   '  <ul>' \
   "    ${services_item_html}" \
   "    ${orchestrator_item_html}" \
+  "    ${nextjs_dash_item_html}" \
   '  </ul>' \
   "  ${report_metadata_html}" \
   "  ${status_notice_html}" \

@@ -1,0 +1,65 @@
+name: Next.js Dashboard Quality
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'utils/nextjs-dash/**'
+      - '.github/workflows/nextjs_dash_quality.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'utils/nextjs-dash/**'
+      - '.github/workflows/nextjs_dash_quality.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, typecheck & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: utils/nextjs-dash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: utils/nextjs-dash/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Print tool versions
+        run: |
+          echo "Node $(node --version)"
+          echo "npm  $(npm --version)"
+          npx eslint --version
+          npx tsc --version
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Typecheck (tsc --noEmit)
+        run: npm run typecheck
+
+      - name: Unit tests – Node environment
+        run: npm run test:node
+
+      - name: Unit tests – DOM environment (jsdom)
+        run: npm run test:dom
+
+      - name: Production build smoke test
+        run: npm run build

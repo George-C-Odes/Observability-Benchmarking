@@ -465,6 +465,82 @@ the same flow.
 - OpenTelemetry Python SDK integration and guarded optional setup
 - Custom metric counter registration, retry, and cache behavior
 
+### Next.js Dashboard
+
+#### Version Requirements
+
+```
+Node.js: 22+
+Next.js: 16.2.1
+React: 19.2.4
+TypeScript: 5.9.3
+Vitest: 4.x
+```
+
+#### Test Structure
+
+The dashboard uses a dual-environment Vitest configuration:
+
+| Config File              | Environment | Tests Covered                                  |
+|--------------------------|-------------|------------------------------------------------|
+| `vitest.config.node.ts`  | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*` |
+| `vitest.config.dom.ts`   | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*` |
+
+The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom + React Testing Library.
+
+#### Running Dashboard Tests
+
+```bash
+cd utils/nextjs-dash
+npm install
+
+# Run all tests (node + dom)
+npm test
+
+# Run only node-environment tests (API routes, lib utilities)
+npm run test:node
+
+# Run only DOM-environment tests (React components, hooks)
+npm run test:dom
+
+# Watch mode (DOM tests)
+npm run test:watch
+
+# With coverage
+npm run test:coverage
+```
+
+#### Full Quality Gate (matching CI)
+
+The CI workflow (`.github/workflows/nextjs_dash_quality.yml`) runs all four quality gates in sequence:
+
+```bash
+npm run lint          # ESLint --max-warnings=0
+npm run typecheck     # tsc --noEmit (strict mode)
+npm run test:node     # Vitest node environment
+npm run test:dom      # Vitest jsdom environment
+npm run build         # Next.js production build smoke test
+```
+
+Quick one-liner:
+
+```bash
+npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
+```
+
+**Test Coverage**:
+- ✅ API route handlers (proxy logic, health endpoints)
+- ✅ Library utilities and runtime config types
+- ✅ React hooks (runtime config, job runner, SSE orchestrator restart simulation)
+- ✅ React components (service health, script runner, logs UI, benchmark targets)
+
+**Key Features Tested**:
+- Next.js API route proxy behavior
+- React Testing Library + jsdom for component tests
+- Hook lifecycle (useRuntimeConfig factory, useJobRunner)
+- SSE stream error handling and orchestrator restart simulation
+- Material-UI component integration
+
 ## Integration Tests
 
 Integration tests validate the entire deployment stack including Docker containers, networking, and observability components.

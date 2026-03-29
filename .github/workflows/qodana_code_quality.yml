@@ -8,6 +8,7 @@ on:
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
+      - 'utils/nextjs-dash/**'
       - '.github/workflows/qodana_code_quality.yml'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
+      - 'utils/nextjs-dash/**'
       - '.github/workflows/qodana_code_quality.yml'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -33,9 +35,15 @@ jobs:
           - name: services-java
             source_dir: services/java
             baseline_file: .qodana/baseline/services-java.sarif.json
+            config_file: ''
           - name: orchestrator
             source_dir: utils/orchestrator
             baseline_file: .qodana/baseline/orchestrator.sarif.json
+            config_file: ''
+          - name: nextjs-dash
+            source_dir: utils/nextjs-dash
+            baseline_file: .qodana/baseline/nextjs-dash.sarif.json
+            config_file: utils/nextjs-dash/qodana.yaml
     permissions:
       contents: read
       checks: write
@@ -50,8 +58,14 @@ jobs:
         env:
           SOURCE_DIR: ${{ matrix.source_dir }}
           BASELINE_FILE: ${{ matrix.baseline_file }}
+          CONFIG_FILE: ${{ matrix.config_file }}
         run: |
           args="--project-dir=. --only-directory=$SOURCE_DIR"
+
+          if [[ -n "$CONFIG_FILE" ]]; then
+            echo "Using module-local Qodana config: $CONFIG_FILE"
+            args="$args --config=$CONFIG_FILE"
+          fi
 
           if [[ -f "$BASELINE_FILE" ]]; then
             echo "Using Qodana baseline: $BASELINE_FILE"
