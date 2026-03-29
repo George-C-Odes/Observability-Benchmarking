@@ -367,6 +367,8 @@ The workflow uses `docker run` directly instead of the `JetBrains/qodana-action`
 
 **Why the bootstrap is critical:** Qodana runs in an isolated Docker container with no pre-installed project dependencies. The IDE resolves imports via the configured Python interpreter and virtualenv. Without matching dependencies in the Qodana container, the linter cannot resolve `from django.http import ...`, `from opentelemetry.trace import ...`, etc., and reports them as errors — these are false positives. The `bootstrap` section in `services/python/django/qodana.yaml` installs the same packages the IDE sees, bringing CI findings in line with local IDE inspections. `pyroscope-io` is filtered out because it requires a Rust build toolchain not available in the Qodana container (the application handles its absence gracefully at runtime).
 
+**Python version mismatch:** The Qodana Python Community 2025.3 container ships Python 3.12, while the project declares `requires-python >= 3.13`. The bootstrap uses `--ignore-requires-python` so pip installs the packages despite the version mismatch. The packages are only needed for Qodana's import resolution and type inference, not for execution.
+
 #### Quality Gate
 
 The Python `qodana.yaml` uses the same hardened gate as the JVM config:

@@ -31,16 +31,21 @@ linter: jetbrains/qodana-python-community:2025.3
 # pyroscope-io contains a Rust/C native extension that requires a build
 # toolchain not present in the Qodana container — filter it out (the app
 # handles its absence gracefully at runtime).
+#
+# --ignore-requires-python is required because the Qodana Python Community
+# 2025.3 container ships Python 3.12, while the project declares
+# requires-python >= 3.13.  The packages are only needed for import
+# resolution and type stubs, not for execution.
 # ---------------------------------------------------------------------------
 bootstrap: |
   set -e
-  pip install --quiet --disable-pip-version-check \
+  pip install --quiet --disable-pip-version-check --ignore-requires-python \
     /data/project/services/python/django/gunicorn/common
   grep -v -i pyroscope /data/project/services/python/django/gunicorn/WSGI/requirements.txt \
     > /tmp/wsgi-reqs.txt || true
   grep -v -i pyroscope /data/project/services/python/django/gunicorn/ASGI/requirements.txt \
     > /tmp/asgi-reqs.txt || true
-  pip install --quiet --disable-pip-version-check \
+  pip install --quiet --disable-pip-version-check --ignore-requires-python \
     -r /tmp/wsgi-reqs.txt -r /tmp/asgi-reqs.txt
 
 # ---------------------------------------------------------------------------
