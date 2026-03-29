@@ -380,7 +380,7 @@ failureConditions:
 
 The `qodana` job uses `continue-on-error: true` at the job level. This means:
 
-- When the quality gate is violated, the **job** shows as failed (yellow) in the Actions UI — findings remain visible.
+- When the quality gate is violated, the **job** is marked as neutral (yellow, allowed failure) in the Actions UI — findings remain visible.
 - The **workflow** still succeeds, so the HTML report artifact is uploaded and the Pages deployment can download and host it.
 - The `modules` job (Ruff lint, format, Django checks, unit tests) is unaffected — it still gates the workflow independently.
 
