@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="[upgrade] Dash" type="ShConfigurationType" activateToolWindowBeforeRun="false">
-    <option name="SCRIPT_TEXT" value="cd $PROJECT_DIR$/utils/nextjs-dash &amp;&amp; npx npm-check-updates -u" />
+    <option name="SCRIPT_TEXT" value="cd &quot;$PROJECT_DIR$/utils/nextjs-dash&quot; &amp;&amp; npx npm-check-updates -u" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
