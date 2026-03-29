@@ -25,8 +25,9 @@ linter: jetbrains/qodana-python-community:2025.3
 # Bootstrap: install dependencies so Qodana can resolve imports.
 #
 # Without this, every import from django, opentelemetry, gunicorn, cachetools,
-# and the local obbench_django_common package is unresolved, producing false
-# positives that do not appear in the IDE (where the venv is configured).
+# and the local obbench-django-common package (imported as obbench_django_common)
+# is unresolved, producing false positives that do not appear in the IDE
+# (where the venv is configured).
 #
 # pyroscope-io and related pyroscope-* packages may contain Rust/C native
 # extensions that require a build toolchain not present in the Qodana
