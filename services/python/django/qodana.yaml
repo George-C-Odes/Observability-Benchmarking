@@ -66,9 +66,9 @@ bootstrap: |
 # Exclude paths that are not application source code.
 #
 # Paths are relative to the project root (--project-dir), not the
-# --only-directory scope.  Non-Python files (Dockerfile, .txt, .in) are
-# excluded from general inspections (spelling, encoding) that could
-# produce noise outside the IDE's configured scope.
+# --only-directory scope.  Specific non-Python config/build files
+# (Dockerfiles, .dockerignore) are excluded from general inspections
+# (spelling, encoding) that could produce noise outside the IDE's scope.
 # ---------------------------------------------------------------------------
 exclude:
   - name: All
