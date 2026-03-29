@@ -1,12 +1,11 @@
 # Qodana baseline files
 
-This directory store reviewed Qodana SARIF baselines for the scoped analysis workflows.
+This directory stores reviewed Qodana SARIF baselines for the scoped JVM analysis workflow.
 
 Current expected file names:
 
-- `services-java.sarif.json` (JVM linter — `jetbrains/qodana-jvm-community`)
-- `orchestrator.sarif.json` (JVM linter — `jetbrains/qodana-jvm-community`)
-- `nextjs-dash.sarif.json` (JS linter — `jetbrains/qodana-js`)
+- `services-java.sarif.json`
+- `orchestrator.sarif.json`
 
 How the workflow uses them:
 
