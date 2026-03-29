@@ -68,11 +68,9 @@ jobs:
       - name: Lint (golangci-lint)
         id: lint
         run: |
-          # Produce both human-readable output (colored-line to stdout for the
-          # CI log) and a JSON report file for the HTML quality report — in a
-          # single lint pass to avoid duplicating work.
-          golangci-lint run \
-            --output.formats="colored-line-number,json:golangci-lint-report.json"
+          # The config file (.golangci.yml) writes both colored-line-number
+          # to stdout and JSON to golangci-lint-report.json in a single pass.
+          golangci-lint run
 
       - name: Unit tests
         run: go test ./... -race -count=1

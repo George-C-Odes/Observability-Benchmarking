@@ -1,7 +1,16 @@
+# yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.v2.jsonschema.json
 version: "2"
 
 run:
   timeout: 3m
+
+# Write both human-readable output (CI log) and a JSON report file (HTML
+# quality report) in a single lint pass.
+output:
+  formats:
+    - format: colored-line-number
+    - format: json
+      path: golangci-lint-report.json
 
 linters:
   enable:
