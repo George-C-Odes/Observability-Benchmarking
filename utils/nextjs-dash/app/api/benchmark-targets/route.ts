@@ -30,7 +30,12 @@ export const POST = withApiRoute({ name: 'BENCHMARK_TARGETS_API' }, async functi
       return errorJson(400, { error: 'urls must be an array of strings' });
     }
 
-    await updateBenchmarkTargets(body.urls as string[]);
+    const urls = body.urls;
+    if (!urls.every((url) => typeof url === 'string' && url.length > 0)) {
+      return errorJson(400, { error: 'urls must be an array of non-empty strings' });
+    }
+
+    await updateBenchmarkTargets(urls as string[]);
     serverLogger.debug('Successfully updated benchmark targets');
     return okJson({ success: true });
   } catch (error) {
