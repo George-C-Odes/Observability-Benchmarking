@@ -45,7 +45,7 @@ public class BenchmarkTargetsResourceTest {
     }
 
     /**
-     * Test that /v1/benchmark-targets POST validates request body.
+     * Test that /v1/benchmark-targets POST validates the request body.
      */
     @Test
     public void testUpdateBenchmarkTargetsValidatesBody() {
@@ -69,6 +69,6 @@ public class BenchmarkTargetsResourceTest {
             .body("{\"urls\":[\"ftp://bad-scheme:8080/hello/platform\"]}")
             .when().post("/v1/benchmark-targets")
             .then()
-            .statusCode(anyOf(is(400), is(404))); // 400 for validation, 404 if file not found
+            .statusCode(400); // 400 for URL validation error
     }
 }

@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.github.georgecodes.benchmarking.orchestrator.application.ServiceException.Type.*;
+import io.github.georgecodes.benchmarking.orchestrator.application.ServiceException.Type;
 
 /**
  * Service for managing the benchmark targets configuration file.
@@ -26,9 +26,11 @@ import static io.github.georgecodes.benchmarking.orchestrator.application.Servic
 @ApplicationScoped
 public class BenchmarkTargetsService {
 
+    /** Date-time formatter for backup file timestamps. */
     private static final DateTimeFormatter BACKUP_TIMESTAMP_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
+    /** Strongly-typed project-path configuration. */
     @Inject
     ProjectPathsConfig paths;
 
@@ -46,7 +48,7 @@ public class BenchmarkTargetsService {
             if (!Files.exists(path)) {
                 log.warnf("Benchmark targets file not found at: %s", path.toAbsolutePath());
                 throw new BenchmarkTargetsException("Benchmark targets file not found",
-                        NOT_FOUND);
+                        Type.NOT_FOUND);
             }
 
             List<String> allLines = Files.readAllLines(path);
@@ -60,7 +62,7 @@ public class BenchmarkTargetsService {
         } catch (IOException e) {
             log.errorf(e, "Failed to read benchmark targets file: %s", filePath);
             throw new BenchmarkTargetsException("Failed to read benchmark targets file: " + e.getMessage(),
-                    IO_ERROR, e);
+                    Type.IO_ERROR, e);
         }
     }
 
@@ -82,7 +84,7 @@ public class BenchmarkTargetsService {
             if (!Files.exists(path)) {
                 log.warnf("Benchmark targets file not found at: %s", path.toAbsolutePath());
                 throw new BenchmarkTargetsException("Benchmark targets file not found",
-                        NOT_FOUND);
+                        Type.NOT_FOUND);
             }
 
             // Preserve the header comments from the original file
@@ -112,31 +114,32 @@ public class BenchmarkTargetsService {
         } catch (IOException e) {
             log.errorf(e, "Failed to update benchmark targets file: %s", filePath);
             throw new BenchmarkTargetsException("Failed to update benchmark targets file: " + e.getMessage(),
-                    IO_ERROR, e);
+                    Type.IO_ERROR, e);
         }
     }
 
+    /** URL schemes accepted by the validator. */
     private static final List<String> ALLOWED_SCHEMES = List.of("http", "https");
 
     private void validateUrls(List<String> urls) {
         if (urls == null) {
             throw new BenchmarkTargetsException("URLs list cannot be null",
-                    VALIDATION_ERROR);
+                    Type.VALIDATION_ERROR);
         }
         for (String url : urls) {
             if (url == null || url.isBlank()) {
                 throw new BenchmarkTargetsException("URL entries must not be blank",
-                        VALIDATION_ERROR);
+                        Type.VALIDATION_ERROR);
             }
             try {
                 String scheme = URI.create(url).getScheme();
                 if (scheme == null || !ALLOWED_SCHEMES.contains(scheme)) {
                     throw new BenchmarkTargetsException("Invalid URL scheme (must be http or https): " + url,
-                            VALIDATION_ERROR);
+                            Type.VALIDATION_ERROR);
                 }
             } catch (IllegalArgumentException e) {
                 throw new BenchmarkTargetsException("Invalid URL syntax: " + url,
-                        VALIDATION_ERROR, e);
+                        Type.VALIDATION_ERROR, e);
             }
         }
     }
@@ -158,7 +161,7 @@ public class BenchmarkTargetsService {
     public record BenchmarkTargetsContent(
             List<String> urls,
             @JsonProperty("path") String absolutePath
-    ) {}
+    ) { }
 
     /**
      * Response record for benchmark targets update.
@@ -169,7 +172,7 @@ public class BenchmarkTargetsService {
     public record BenchmarkTargetsUpdate(
             String message,
             @JsonProperty("backup") String backupFilename
-    ) {}
+    ) { }
 
     /**
      * Exception thrown when benchmark targets file operations fail.

@@ -33,6 +33,7 @@ import java.util.List;
 @Tag(name = "Benchmark Targets")
 public class BenchmarkTargetsResource {
 
+    /** Service that handles benchmark-targets file I/O. */
     private final BenchmarkTargetsService benchmarkTargetsService;
 
     /**
@@ -51,7 +52,7 @@ public class BenchmarkTargetsResource {
      *
      * @param urls the new list of benchmark target URLs
      */
-    public record BenchmarkTargetsUpdateRequest(List<String> urls) {}
+    public record BenchmarkTargetsUpdateRequest(List<String> urls) { }
 
     /**
      * Update the benchmark targets file with a new URL list.

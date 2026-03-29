@@ -12,11 +12,11 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static io.github.georgecodes.benchmarking.orchestrator.application.ServiceException.Type.*;
+import io.github.georgecodes.benchmarking.orchestrator.application.ServiceException.Type;
 
 /**
  * Service for managing environment configuration files.
- * Handles file I/O, validation, and backup operations following Single Responsibility Principle.
+ * Handles file I/O, validation, and backup operations following the Single Responsibility Principle.
  */
 @JBossLog
 @ApplicationScoped
@@ -44,7 +44,7 @@ public class EnvFileService {
 
             if (!Files.exists(path)) {
                 log.warnf("Environment file not found at: %s", path.toAbsolutePath());
-                throw new EnvFileException("Environment file not found", NOT_FOUND);
+                throw new EnvFileException("Environment file not found", Type.NOT_FOUND);
             }
 
             String content = Files.readString(path);
@@ -54,7 +54,7 @@ public class EnvFileService {
         } catch (IOException e) {
             log.errorf(e, "Failed to read environment file: %s", envFilePath);
             throw new EnvFileException("Failed to read environment file: " + e.getMessage(),
-                    IO_ERROR, e);
+                    Type.IO_ERROR, e);
         }
     }
 
@@ -75,7 +75,7 @@ public class EnvFileService {
 
             if (!Files.exists(path)) {
                 log.warnf("Environment file not found at: %s", path.toAbsolutePath());
-                throw new EnvFileException("Environment file not found", NOT_FOUND);
+                throw new EnvFileException("Environment file not found", Type.NOT_FOUND);
             }
 
             // Create backup
@@ -89,7 +89,7 @@ public class EnvFileService {
         } catch (IOException e) {
             log.errorf(e, "Failed to update environment file: %s", envFilePath);
             throw new EnvFileException("Failed to update environment file: " + e.getMessage(),
-                    IO_ERROR, e);
+                    Type.IO_ERROR, e);
         }
     }
 
@@ -101,7 +101,7 @@ public class EnvFileService {
      */
     private void validateContent(String content) {
         if (content == null || content.isEmpty()) {
-            throw new EnvFileException("Content cannot be empty", VALIDATION_ERROR);
+            throw new EnvFileException("Content cannot be empty", Type.VALIDATION_ERROR);
         }
     }
 

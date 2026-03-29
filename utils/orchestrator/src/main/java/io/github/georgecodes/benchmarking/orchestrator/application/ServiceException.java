@@ -22,6 +22,7 @@ public abstract class ServiceException extends RuntimeException {
         VALIDATION_ERROR
     }
 
+    /** The coarse error category for this exception. */
     private final Type type;
 
     protected ServiceException(String message, Type type) {
