@@ -10,8 +10,9 @@ on:
       - main
 
   # Republish after main-branch quality runs so hosted reports stay current.
-  # Go Quality always uploads its report artifact (even on lint failure),
-  # so we trigger on any completion; all other workflows require success.
+  # Go Quality always uploads its report artifact (even on lint failure).
+  # We listen for any completed run, but jobs only proceed on successful
+  # workflows, except that Go Quality failures are also accepted.
   workflow_run:
     workflows:
       - Qodana
