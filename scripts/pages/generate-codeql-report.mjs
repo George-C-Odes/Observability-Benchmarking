@@ -74,6 +74,37 @@ if (!existsSync(sarifInputDir)) {
 }
 
 // ---------------------------------------------------------------------------
+// 1b. Discover and read build warnings (checkstyle violations, etc.)
+// ---------------------------------------------------------------------------
+
+const buildWarningsDir = resolve(rootDir, '.codeql-build-warnings');
+
+/** @type {{modulesChecked: number, modulesFailed: number, warnings: string[]}} */
+let buildWarnings = { modulesChecked: 0, modulesFailed: 0, warnings: [] };
+
+const buildWarningsFile = join(buildWarningsDir, 'codeql-build-warnings.json');
+if (existsSync(buildWarningsFile)) {
+  try {
+    const raw = readFileSync(buildWarningsFile, 'utf-8');
+    const parsed = JSON.parse(raw);
+    buildWarnings = {
+      modulesChecked: parsed.modulesChecked ?? 0,
+      modulesFailed: parsed.modulesFailed ?? 0,
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+    };
+    if (buildWarnings.warnings.length > 0) {
+      console.log(`Build warnings loaded: ${buildWarnings.warnings.length} warning(s) from ${buildWarningsFile}`);
+    }
+  } catch (err) {
+    console.warn(`Warning: could not parse ${buildWarningsFile}: ${err.message}`);
+  }
+} else {
+  console.log('No build-warnings artifact found (expected when java-kotlin leg was skipped).');
+}
+
+const hasBuildWarnings = buildWarnings.warnings.length > 0;
+
+// ---------------------------------------------------------------------------
 // 2. Extract findings from all SARIF runs
 // ---------------------------------------------------------------------------
 
@@ -145,9 +176,9 @@ const warningCount = allFindings.filter((f) => f.level === 'warning').length;
 const noteCount = allFindings.filter((f) => f.level === 'note').length;
 const otherCount = totalFindings - errorCount - warningCount - noteCount;
 
-// A clean pass requires valid input, zero findings, AND no parse errors
-// (a partial parse failure means we cannot guarantee the full picture).
-const overallPass = hasValidData && !parseFailed && totalFindings === 0;
+// A clean pass requires valid input, zero findings, no parse errors,
+// AND no build warnings (e.g. checkstyle violations).
+const overallPass = hasValidData && !parseFailed && totalFindings === 0 && !hasBuildWarnings;
 
 let overallLabel = 'Pass';
 let overallDetail = '';
@@ -163,8 +194,18 @@ if (inputMissing) {
   overallDetail =
     `${parseFailCount} SARIF file${parseFailCount !== 1 ? 's' : ''} could not be parsed` +
     ` \u2014 results may be incomplete.`;
+} else if (totalFindings > 0 && hasBuildWarnings) {
+  overallLabel = 'Findings + Build Warnings';
+  overallDetail =
+    `${buildWarnings.modulesFailed} of ${buildWarnings.modulesChecked} Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} ` +
+    `failed checkstyle; CodeQL also reported findings.`;
 } else if (totalFindings > 0) {
   overallLabel = 'Findings';
+} else if (hasBuildWarnings) {
+  overallLabel = 'Build Warnings';
+  overallDetail =
+    `${buildWarnings.modulesFailed} of ${buildWarnings.modulesChecked} Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} ` +
+    `failed checkstyle validation.`;
 }
 
 // Group by language
@@ -296,6 +337,23 @@ if (analyzedLanguages.length > 0) {
 }
 
 // ---------------------------------------------------------------------------
+// 8b. Build warnings section (checkstyle violations, etc.)
+// ---------------------------------------------------------------------------
+
+let buildWarningsHtml = '';
+if (hasBuildWarnings) {
+  const items = buildWarnings.warnings.map((w) => `<li>${esc(w)}</li>`).join('\n        ');
+  buildWarningsHtml = `
+  <div class="warnings-box">
+    <h2>\u26A0\uFE0F Build Warnings</h2>
+    <p><strong>${buildWarnings.modulesFailed}</strong> of <strong>${buildWarnings.modulesChecked}</strong> Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} failed checkstyle validation.</p>
+    <ul>
+        ${items}
+    </ul>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
 // 9. Metadata section
 // ---------------------------------------------------------------------------
 
@@ -400,6 +458,15 @@ const html = `<!doctype html>
     .meta span + span::before { content: ' \\00b7  '; }
     .back-link { margin-bottom: 1.5rem; font-size: 0.9rem; }
     .empty-state { color: var(--muted); font-style: italic; padding: 1.5rem 0; }
+
+    .warnings-box {
+      background: color-mix(in srgb, var(--warn) 10%, var(--bg));
+      border: 1px solid var(--warn); border-radius: 0.5rem;
+      padding: 0.75rem 1.25rem; margin-bottom: 1.5rem;
+    }
+    .warnings-box h2 { border-bottom: none; margin-top: 0.5rem; }
+    .warnings-box ul { margin: 0.5rem 0 0.25rem; padding-left: 1.5rem; }
+    .warnings-box li { font-family: monospace; font-size: 0.9rem; margin-bottom: 0.25rem; }
   </style>
 </head>
 <body>
@@ -433,6 +500,8 @@ const html = `<!doctype html>
       <div class="card-detail">unique CodeQL rules with findings</div>
     </div>
   </div>
+
+  ${buildWarningsHtml}
 
   <h2>Language Breakdown</h2>
   ${languageBreakdown}
