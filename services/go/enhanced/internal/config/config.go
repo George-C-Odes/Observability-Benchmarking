@@ -69,7 +69,7 @@ func LoadFromEnv() (Config, error) {
 
 		LogLevel: getenv("LOG_LEVEL", "info"),
 
-		CacheImpl: getenv("CACHE_IMPL", "map"),
+		CacheImpl: getenv("CACHE_IMPL", "theine"),
 		CacheSize: getenvInt("CACHE_SIZE", 50000),
 
 		OtelEndpoint: getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
