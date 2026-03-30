@@ -135,7 +135,7 @@ docker run --rm `
 The HTML report is published to GitHub Pages after successful runs on `main`:
 
 ```text
-https://george-c-odes.github.io/Observability-Benchmarking/qodana/django-python/
+https://george-c-odes.github.io/Observability-Benchmarking/quality/django-python/
 ```
 
 See `docs/LINTING_AND_CODE_QUALITY.md` for full details including bash equivalents.

@@ -250,7 +250,7 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 
 ### Deployment Trigger
 - Automatic on push to `main` branch
-- Automatic after a successful `Qodana` workflow run on `main` (to refresh the hosted Qodana HTML reports under `/qodana/`)
+- Automatic after a successful `Qodana` workflow run on `main` (to refresh the hosted quality reports under `/quality/`)
 - Manual via GitHub Actions workflow dispatch
 
 ### Build Process
@@ -261,13 +261,13 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 5. Optionally merge the latest hosted Qodana reports into the built site
 6. Upload the Pages artifact and deploy to the GitHub Pages environment
 
-### Hosted Qodana Pages URLs
+### Hosted Quality Report Pages URLs
 
-- `/qodana/` - landing page for the latest hosted Qodana reports
-- `/qodana/services-java/` - service-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
-- `/qodana/orchestrator/` - orchestrator-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
+- `/quality/` - landing page for the latest hosted quality reports
+- `/quality/services-java/` - service-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
+- `/quality/orchestrator/` - orchestrator-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
 
-For the detailed configuration and rollout strategy behind the hosted Qodana Pages setup, see `docs/LINTING_AND_CODE_QUALITY.md`.
+For the detailed configuration and rollout strategy behind the hosted quality Pages setup, see `docs/LINTING_AND_CODE_QUALITY.md`.
 
 ## Contributing
 

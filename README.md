@@ -664,7 +664,7 @@ cd services/java/pekko/jvm && mvn checkstyle:check
 
 For detailed linting setup and IDE integration, see **[docs/LINTING_AND_CODE_QUALITY.md](docs/LINTING_AND_CODE_QUALITY.md)**.
 
-Browse the [hosted Qodana report](https://george-c-odes.github.io/Observability-Benchmarking/qodana/) for the latest published HTML analysis.
+Browse the [hosted quality reports](https://george-c-odes.github.io/Observability-Benchmarking/quality/) for the latest published HTML analysis.
 
 ### Security
 
@@ -926,7 +926,7 @@ Documentation is available on GitHub Pages: **[Full Documentation Site](https://
 - **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
 - **[Control Plane](https://george-c-odes.github.io/Observability-Benchmarking/control-plane.html)** - Dashboard + orchestrator (the `CONTROL` Compose profile)
 - **[Adding a New Service](https://george-c-odes.github.io/Observability-Benchmarking/adding-a-service.html)** - How to integrate a new benchmark target (compose + orchestrator + wrk2 + docs)
-- **[Qodana Report](https://george-c-odes.github.io/Observability-Benchmarking/qodana/)** - Latest published static analysis report and inspection results
+- **[Quality Reports](https://george-c-odes.github.io/Observability-Benchmarking/quality/)** - Latest published static analysis and inspection results
 
 The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
 

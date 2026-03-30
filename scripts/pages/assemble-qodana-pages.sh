@@ -2,7 +2,7 @@
 # scripts/pages/assemble-qodana-pages.sh
 #
 # Resolves Qodana report statuses, generates human-readable messages,
-# logs the resolution, and assembles the HTML pages under _site/qodana/.
+# logs the resolution, and assembles the HTML pages under _site/quality/.
 #
 # This single script replaces the previous inline steps:
 #   "Resolve normalized Qodana report statuses"
@@ -383,7 +383,7 @@ fi
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash" "$SITE_DIR/qodana/django-python" "$SITE_DIR/qodana/go"
+mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go"
 
 write_html_file() {
   local target_path="$1"
@@ -393,7 +393,7 @@ write_html_file() {
 
 create_scope_page() {
   local scope_name="$1"
-  local scope_dir="$SITE_DIR/qodana/$scope_name"
+  local scope_dir="$SITE_DIR/quality/$scope_name"
   local scope_message="$2"
 
   local nested_index
@@ -465,26 +465,26 @@ print(html.escape(sys.stdin.read().strip()))
 
 # Copy downloaded report directories into the site tree.
 if [[ -d "$QODANA_PAGES_DIR/services-java" ]]; then
-  cp -a "$QODANA_PAGES_DIR/services-java/." "$SITE_DIR/qodana/services-java/"
+  cp -a "$QODANA_PAGES_DIR/services-java/." "$SITE_DIR/quality/services-java/"
 fi
 
 if [[ -d "$QODANA_PAGES_DIR/orchestrator" ]]; then
-  cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/qodana/orchestrator/"
+  cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/quality/orchestrator/"
 fi
 
 # Copy the pre-generated Next.js quality report (index.html) into the site tree.
 if [[ -d "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" ]]; then
-  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/qodana/nextjs-dash/"
+  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/quality/nextjs-dash/"
 fi
 
 # Copy the Qodana Python Community report into the site tree.
 if [[ -d "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" ]]; then
-  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/qodana/django-python/"
+  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/quality/django-python/"
 fi
 
 # Copy the Go golangci-lint quality report into the site tree.
 if [[ -d "$GO_QUALITY_PAGES_DIR/go" ]]; then
-  cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/qodana/go/"
+  cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/quality/go/"
 fi
 
 create_scope_page 'services-java' "$services_item_text"
@@ -493,7 +493,7 @@ create_scope_page 'nextjs-dash' "$nextjs_item_text"
 create_scope_page 'django-python' "$django_python_item_text"
 
 # Landing page
-write_html_file "$SITE_DIR/qodana/index.html" \
+write_html_file "$SITE_DIR/quality/index.html" \
   '<!doctype html>' \
   '<html lang="en">' \
   '<head>' \
@@ -504,12 +504,15 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
   '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
   '    h2 { margin-top: 1.5rem; }' \
+  '    h3 { margin-top: 1.25rem; }' \
   '  </style>' \
   '</head>' \
   '<body>' \
   '  <h1>Quality reports</h1>' \
   '  <p>Latest published code-quality reports from GitHub Actions on <code>main</code>.</p>' \
-  '  <h2>Qodana (JVM)</h2>' \
+  '  <h2>Qodana</h2>' \
+  '  <p>Static analysis powered by JetBrains Qodana.</p>' \
+  '  <h3>JVM</h3>' \
   '  <p>IntelliJ-based static analysis via <code>jetbrains/qodana-jvm-community</code>.</p>' \
   '  <ul>' \
   "    ${services_item_html}" \
@@ -517,13 +520,7 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   '  </ul>' \
   "  ${report_metadata_html}" \
   "  ${status_notice_html}" \
-  '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
-  '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
-  '  <ul>' \
-  "    ${nextjs_item_html}" \
-  '  </ul>' \
-  "  ${nextjs_metadata_html}" \
-  '  <h2>Qodana (Python)</h2>' \
+  '  <h3>Python</h3>' \
   '  <p>PyCharm Community-based static analysis via <code>jetbrains/qodana-python-community</code>.</p>' \
   '  <ul>' \
   "    ${django_python_item_html}" \
@@ -535,5 +532,11 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   "    ${go_item_html}" \
   '  </ul>' \
   "  ${go_metadata_html}" \
+  '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
+  '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
+  '  <ul>' \
+  "    ${nextjs_item_html}" \
+  '  </ul>' \
+  "  ${nextjs_metadata_html}" \
   '</body>' \
   '</html>'
