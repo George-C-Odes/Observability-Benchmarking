@@ -552,11 +552,11 @@ The report includes:
 ```bash
 cd services/go/enhanced
 
-# Run lint
+# Run lint (uses .golangci.yml, same behavior as CI: text to stdout + JSON report)
 golangci-lint run
 
-# Run lint with JSON output (same as CI) and write the report file
-golangci-lint run --out-format=json > golangci-lint-report.json
+# Or, explicitly regenerate a JSON report without mixing formats
+golangci-lint run --out-format=json --output=golangci-lint-report.json
 
 # Run all quality checks matching CI
 go vet ./...
