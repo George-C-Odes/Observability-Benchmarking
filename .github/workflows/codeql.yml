@@ -225,8 +225,8 @@ jobs:
           fi
 
           if [[ ${#build_modules[@]} -eq 0 ]]; then
-            echo "No JVM modules affected by this change — skipping Java build"
-            exit 0
+            echo "No specific JVM modules mapped from changes — building all JVM modules as fallback"
+            build_modules=("${ALL_MODULES[@]}")
           fi
 
           echo "Building ${#build_modules[@]} JVM module(s):"
