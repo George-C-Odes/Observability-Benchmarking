@@ -508,14 +508,14 @@ The Go Enhanced service (`services/go/enhanced`) uses [golangci-lint](https://go
 - **staticcheck** — advanced static analysis (SA, S, ST checks)
 - **ineffassign** — detects assignments to existing variables that are never read
 - **revive** — extensible linter replacing golint
-- **gosimple** — simplifications suggested by staticcheck
 - **gocritic** — opinionated collection of checks not covered elsewhere
-- **gofmt** — enforces standard Go formatting
-- **goimports** — enforces import grouping and ordering
 - **unused** — detects unused constants, variables, functions, and types
 - **gosec** — security-oriented checks (SQL injection, hardcoded credentials, etc.)
 - **unconvert** — removes unnecessary type conversions
 
+### Formatters
+- **gofmt** — enforces standard Go formatting
+- **goimports** — enforces import grouping and ordering
 Test files (`_test.go`) have relaxed rules: `errcheck` and `gosec` are excluded.
 
 ### GitHub Actions Workflow
