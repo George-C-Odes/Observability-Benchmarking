@@ -596,7 +596,7 @@ This project uses [GitHub CodeQL](https://codeql.github.com/) for automated secu
 |--------------------------|------------|----------------------------------------------|
 | `java-kotlin`            | autobuild  | `services/java/**`, `utils/orchestrator/**`  |
 | `python`                 | none       | `services/python/**`                         |
-| `go`                     | autobuild  | `services/go/**`                             |
+| `go`                     | manual     | `services/go/**`                             |
 | `javascript-typescript`  | none       | `utils/nextjs-dash/**`                       |
 
 ### Workflow
