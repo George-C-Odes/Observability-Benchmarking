@@ -16,7 +16,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 ### 1. Cloud-Native Design
 - **Containerization First**: Every component runs in a container for consistency and portability
 - **Declarative Configuration**: Infrastructure defined as code using Docker Compose
-- **12-Factor App Compliance**: Configuration via environment variables, stateless services, port binding
+- **Twelve-Factor App Compliance**: Configuration via environment variables, stateless services, port binding
 
 ### 2. Observability-First Approach
 - **Telemetry from Day One**: All services instrumented with OpenTelemetry from the start
