@@ -113,7 +113,22 @@ if (existsSync(buildWarningsFile)) {
   console.log('No build-warnings artifact found; checkstyle results will not be shown.');
 }
 
-const hasBuildWarnings = buildWarnings.warnings.length > 0;
+// Treat build warnings as present when either the warnings array has entries
+// OR modulesFailed > 0 (guards against a producer that sets the count but
+// omits/truncates the warnings list).
+const hasBuildWarnings = buildWarnings.warnings.length > 0 || buildWarnings.modulesFailed > 0;
+
+if (buildWarnings.modulesFailed > 0 && buildWarnings.warnings.length === 0) {
+  console.warn(
+    `Warning: modulesFailed=${buildWarnings.modulesFailed} but warnings array is empty — ` +
+    'the JSON producer may have omitted failure details.',
+  );
+} else if (buildWarnings.modulesFailed === 0 && buildWarnings.warnings.length > 0) {
+  console.warn(
+    `Warning: warnings array has ${buildWarnings.warnings.length} entries but modulesFailed=0 — ` +
+    'inconsistent build-warnings JSON.',
+  );
+}
 
 // ---------------------------------------------------------------------------
 // 2. Extract findings from all SARIF runs
@@ -373,13 +388,13 @@ if (buildWarningsParseFailed) {
   </div>`;
 } else if (hasBuildWarnings) {
   const items = buildWarnings.warnings.map((w) => `<li>${esc(w)}</li>`).join('\n        ');
+  const listHtml = items
+    ? `\n    <ul>\n        ${items}\n    </ul>`
+    : '\n    <p class="muted">No per-module details were provided by the build step.</p>';
   buildWarningsHtml = `
   <div class="warnings-box">
     <h2>\u26A0\uFE0F Build Warnings</h2>
-    <p><strong>${buildWarnings.modulesFailed}</strong> of <strong>${buildWarnings.modulesChecked}</strong> Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} failed checkstyle validation.</p>
-    <ul>
-        ${items}
-    </ul>
+    <p><strong>${buildWarnings.modulesFailed}</strong> of <strong>${buildWarnings.modulesChecked}</strong> Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} failed checkstyle validation.</p>${listHtml}
   </div>`;
 }
 
