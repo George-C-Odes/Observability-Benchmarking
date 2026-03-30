@@ -88,12 +88,19 @@ if (existsSync(buildWarningsFile)) {
   try {
     const raw = readFileSync(buildWarningsFile, 'utf-8');
     const parsed = JSON.parse(raw);
+    const warningsArr = Array.isArray(parsed.warnings) ? parsed.warnings : [];
     const rawChecked = Number(parsed.modulesChecked);
     const rawFailed = Number(parsed.modulesFailed);
+    const modulesFailed = Number.isFinite(rawFailed) ? rawFailed : 0;
+    const modulesChecked = Number.isFinite(rawChecked)
+      ? rawChecked
+      : Number.isFinite(rawFailed)
+        ? rawFailed
+        : (warningsArr.length > 0 ? warningsArr.length : 0);
     buildWarnings = {
-      modulesChecked: Number.isFinite(rawChecked) ? rawChecked : 0,
-      modulesFailed: Number.isFinite(rawFailed) ? rawFailed : 0,
-      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+      modulesChecked,
+      modulesFailed,
+      warnings: warningsArr,
     };
     if (buildWarnings.warnings.length > 0) {
       console.log(`Build warnings loaded: ${buildWarnings.warnings.length} warning(s) from ${buildWarningsFile}`);
