@@ -67,7 +67,7 @@ if (!existsSync(sarifInputDir)) {
       } catch (err) {
         parseFailed = true;
         parseFailCount++;
-        console.warn(`Warning: could not parse ${filePath}: ${err.message}`);
+        console.warn(`Warning: could not parse ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
@@ -88,9 +88,11 @@ if (existsSync(buildWarningsFile)) {
   try {
     const raw = readFileSync(buildWarningsFile, 'utf-8');
     const parsed = JSON.parse(raw);
+    const rawChecked = Number(parsed.modulesChecked);
+    const rawFailed = Number(parsed.modulesFailed);
     buildWarnings = {
-      modulesChecked: parsed.modulesChecked ?? 0,
-      modulesFailed: parsed.modulesFailed ?? 0,
+      modulesChecked: Number.isFinite(rawChecked) ? rawChecked : 0,
+      modulesFailed: Number.isFinite(rawFailed) ? rawFailed : 0,
       warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
     };
     if (buildWarnings.warnings.length > 0) {
@@ -98,7 +100,7 @@ if (existsSync(buildWarningsFile)) {
     }
   } catch (err) {
     buildWarningsParseFailed = true;
-    console.warn(`Warning: could not parse ${buildWarningsFile}: ${err.message}`);
+    console.warn(`Warning: could not parse ${buildWarningsFile}: ${err instanceof Error ? err.message : String(err)}`);
   }
 } else {
   console.log('No build-warnings artifact found; checkstyle results will not be shown.');
