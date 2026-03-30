@@ -250,7 +250,7 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 
 ### Deployment Trigger
 - Automatic on push to `main` branch
-- Automatic after a successful `Qodana` workflow run on `main` (to refresh the hosted quality reports under `/quality/`)
+- Automatic after a completed quality workflow run on `main` — `Qodana`, `Go Quality`, `Next.js Dashboard Quality`, or `Django Python Quality` (to refresh the hosted quality reports under `/quality/`)
 - Manual via GitHub Actions workflow dispatch
 
 ### Build Process
@@ -258,7 +258,7 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 2. Set up Ruby from the workflow pin and restore/install Bundler dependencies
 3. Configure GitHub Pages
 4. Build the docs site with Bundler/Jekyll from `docs/Gemfile`
-5. Optionally merge the latest hosted Qodana reports into the built site
+5. Optionally merge the latest hosted quality reports into the built site
 6. Upload the Pages artifact and deploy to the GitHub Pages environment
 
 ### Hosted Quality Report Pages URLs
