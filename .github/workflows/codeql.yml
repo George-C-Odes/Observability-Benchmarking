@@ -166,17 +166,17 @@ jobs:
 
           # ── Module registry (native modules deliberately excluded) ──
           SERVICE_MODULES=(
-            services/java/dropwizard/jvm
-            services/java/helidon/mp/jvm
-            services/java/helidon/se/jvm
-            services/java/javalin/jvm
-            services/java/micronaut/jvm
-            services/java/pekko/jvm
-            services/java/quarkus/jvm
-            services/java/spark/jvm
-            services/java/spring/jvm/netty
             services/java/spring/jvm/tomcat
+            services/java/spring/jvm/netty
+            services/java/quarkus/jvm
+            services/java/micronaut/jvm
+            services/java/helidon/se/jvm
+            services/java/helidon/mp/jvm
+            services/java/spark/jvm
+            services/java/javalin/jvm
+            services/java/dropwizard/jvm
             services/java/vertx/jvm
+            services/java/pekko/jvm
           )
           ALL_MODULES=( "${SERVICE_MODULES[@]}" utils/orchestrator )
 
