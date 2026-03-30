@@ -40,7 +40,7 @@ concurrency:
 jobs:
   build:
     # Run for push / dispatch unconditionally.
-    # For workflow_run: accept any Go Quality completion (report is always
+    # For workflow_run: accept Go Quality success or failure (report is always
     # uploaded), but require success for every other triggering workflow.
     if: >-
       github.event_name != 'workflow_run'
