@@ -584,6 +584,71 @@ Scripts involved:
 - `scripts/pages/generate-go-quality-report.mjs` — generates the HTML report from golangci-lint JSON output
 - `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `go` scope alongside existing scopes
 
+## CodeQL Configuration (Security & Quality Analysis)
+
+### Overview
+
+This project uses [GitHub CodeQL](https://codeql.github.com/) for automated security vulnerability detection and code quality analysis across all major languages in the repository. CodeQL is a free semantic code analysis engine that identifies CWE patterns, injection flaws, data-flow vulnerabilities, and more.
+
+### Languages Scanned
+
+| Language                 | Build Mode | Coverage                                     |
+|--------------------------|------------|----------------------------------------------|
+| `java-kotlin`            | autobuild  | `services/java/**`, `utils/orchestrator/**`  |
+| `python`                 | none       | `services/python/**`                         |
+| `go`                     | autobuild  | `services/go/**`                             |
+| `javascript-typescript`  | none       | `utils/nextjs-dash/**`                       |
+
+### Workflow
+
+The CodeQL workflow (`.github/workflows/codeql.yml`) runs:
+
+- **On push** to `main` (path-scoped to source directories)
+- **On pull request** (path-scoped to source directories)
+- **On schedule** — weekly full scan (Monday at 05:30 UTC) to catch newly published CWE patterns and updated query packs
+- **On manual dispatch** via `workflow_dispatch`
+
+Each language is analyzed in a separate matrix job. Results are:
+
+1. **Uploaded as SARIF** to GitHub's Security tab (Code Scanning alerts)
+2. **Combined into an HTML report** and published to GitHub Pages at [`quality/codeql/`](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/)
+
+The report is always published, even when CodeQL finds security issues, so the hosted page remains current.
+
+### Hosted Report
+
+The latest CodeQL report is published at:
+
+> **[https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/)**
+
+The report includes:
+- Overall pass/fail status
+- Findings by language breakdown
+- Findings by CodeQL rule breakdown
+- Detailed findings table with file, location, severity, language, rule, and message
+
+### Running CodeQL Locally
+
+You can run CodeQL locally using the [CodeQL CLI](https://codeql.github.com/docs/codeql-cli/):
+
+```bash
+# Install the CodeQL CLI (see https://codeql.github.com/docs/codeql-cli/getting-started-with-the-codeql-cli/)
+
+# Create a CodeQL database for a specific language
+codeql database create codeql-db --language=java-kotlin --source-root=.
+
+# Run the analysis
+codeql database analyze codeql-db --format=sarif-latest --output=results.sarif
+
+# View results
+cat results.sarif | python3 -m json.tool
+```
+
+### Action Versions
+
+- **CodeQL Action**: `github/codeql-action@v4.35.1` (SHA-pinned)
+- **Query packs**: default (automatically updated by GitHub)
+
 ## Code Quality Standards
 
 ### Next.js Dashboard (ESLint + TypeScript)
@@ -736,6 +801,8 @@ The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_da
 
 The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR.
 
+GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab and a combined HTML report is published to GitHub Pages.
+
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
 To make Checkstyle violations fail the build, update the plugin configuration in `pom.xml`:
@@ -806,3 +873,7 @@ Potential enhancements to the code quality setup:
 - [Next.js ESLint Plugin](https://nextjs.org/docs/app/api-reference/config/eslint)
 - [golangci-lint Documentation](https://golangci-lint.run/)
 - [golangci-lint GitHub Action](https://github.com/golangci/golangci-lint-action)
+- [CodeQL Documentation](https://codeql.github.com/docs/)
+- [CodeQL CLI Getting Started](https://codeql.github.com/docs/codeql-cli/getting-started-with-the-codeql-cli/)
+- [CodeQL GitHub Action](https://github.com/github/codeql-action)
+- [SARIF Specification](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)

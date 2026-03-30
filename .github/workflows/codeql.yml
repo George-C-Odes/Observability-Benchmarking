@@ -1,0 +1,126 @@
+name: CodeQL
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/java/**'
+      - 'services/python/**'
+      - 'services/go/**'
+      - 'utils/nextjs-dash/**'
+      - 'utils/orchestrator/**'
+      - 'scripts/pages/generate-codeql-report.mjs'
+      - '.github/workflows/codeql.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/java/**'
+      - 'services/python/**'
+      - 'services/go/**'
+      - 'utils/nextjs-dash/**'
+      - 'utils/orchestrator/**'
+      - 'scripts/pages/generate-codeql-report.mjs'
+      - '.github/workflows/codeql.yml'
+  schedule:
+    # Weekly full scan — Monday at 05:30 UTC.
+    # Scheduled runs ensure new CWE patterns and updated CodeQL query packs
+    # are evaluated even when source code has not changed.
+    - cron: '30 5 * * 1'
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: autobuild
+          - language: python
+            build-mode: none
+          - language: go
+            build-mode: autobuild
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Autobuild
+        if: matrix.build-mode == 'autobuild'
+        uses: github/codeql-action/autobuild@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          category: "/language:${{ matrix.language }}"
+          output: codeql-results
+
+      # Upload SARIF as a reusable artifact so the report job and the
+      # Pages workflow can build a hosted HTML summary.
+      - name: Upload SARIF artifact
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: codeql-results/*.sarif
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ------------------------------------------------------------------
+  # Combine per-language SARIF files into a single HTML quality report
+  # that the Pages workflow publishes under /quality/codeql/.
+  # ------------------------------------------------------------------
+  report:
+    name: Generate report
+    needs: analyze
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Download all SARIF artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: codeql-sarif-*
+          path: .codeql-sarif
+          merge-multiple: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '22'
+
+      - name: Generate HTML report
+        run: node scripts/pages/generate-codeql-report.mjs
+
+      - name: Upload quality report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: quality-report-codeql
+          path: codeql-quality-report/
+          retention-days: 30
+          if-no-files-found: warn
+
