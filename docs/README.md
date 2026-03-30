@@ -250,7 +250,7 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 
 ### Deployment Trigger
 - Automatic on push to `main` branch
-- Automatic after a completed quality workflow run on `main` — `Qodana`, `Go Quality`, `Next.js Dashboard Quality`, or `Django Python Quality` (to refresh the hosted quality reports under `/quality/`)
+- Automatic after a successful quality workflow run on `main` for `Qodana`, `Next.js Dashboard Quality`, and `Django Python Quality`, and after either success or failure of `Go Quality` (to refresh the hosted quality reports under `/quality/`)
 - Manual via GitHub Actions workflow dispatch
 
 ### Build Process
