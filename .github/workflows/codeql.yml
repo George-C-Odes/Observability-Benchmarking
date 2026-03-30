@@ -141,17 +141,20 @@ jobs:
       # • 6 native-image modules are deliberately skipped — they are
       #   very slow, resource-heavy, and duplicate the source of their
       #   JVM counterparts (CodeQL already sees that code).
-      # • Checkstyle is explicitly skipped (-Dcheckstyle.skip=true).
-      #   This workflow exists for *security* scanning; style enforcement
-      #   is handled by dedicated quality workflows / Qodana.  A
-      #   checkstyle violation must never prevent CodeQL from producing
-      #   a SARIF report.
+      # • Two-phase build:
+      #   1. Compile with -Dcheckstyle.skip=true so CodeQL extraction
+      #      always succeeds regardless of style violations.
+      #   2. Run checkstyle:check separately; violations are logged as
+      #      workflow warnings and the result is captured in a step
+      #      output.  A later step (after SARIF upload) fails the job
+      #      when violations exist.
       # • On schedule / dispatch: all 12 modules are built (full scan).
       # • On push / PR: only modules whose source tree actually changed
       #   are built; shared config changes (checkstyle, workflow) trigger
       #   a full rebuild.
       # ----------------------------------------------------------------
       - name: Build Java modules
+        id: build-java
         if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
         shell: bash
         env:
@@ -237,15 +240,27 @@ jobs:
           echo "Building ${#build_modules[@]} JVM module(s):"
           printf '  • %s\n' "${build_modules[@]}"
 
-          # ── Compile each affected module ──
-          # Checkstyle is skipped: security scanning must not be blocked by
-          # style violations (dedicated quality workflows enforce style).
+          # ── Phase 1: Compile (checkstyle skipped for reliable CodeQL extraction) ──
           for mod_dir in "${build_modules[@]}"; do
-            echo "::group::Building $mod_dir"
+            echo "::group::Compiling $mod_dir"
             mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q \
               -Dcheckstyle.skip=true
             echo "::endgroup::"
           done
+
+          # ── Phase 2: Checkstyle validation (non-blocking) ──
+          # Violations are logged as workflow warnings.  The aggregate result
+          # is captured so a later step can fail the job *after* SARIF upload.
+          checkstyle_failed=0
+          for mod_dir in "${build_modules[@]}"; do
+            echo "::group::Checkstyle $mod_dir"
+            if ! mvn -f "$mod_dir/pom.xml" checkstyle:check -B; then
+              echo "::warning::Checkstyle violations found in $mod_dir"
+              checkstyle_failed=1
+            fi
+            echo "::endgroup::"
+          done
+          echo "checkstyle_failed=$checkstyle_failed" >> "$GITHUB_OUTPUT"
 
       # Go has multiple independent modules under services/go/ with no
       # root-level go.mod, so autobuild cannot discover them.  Build each
@@ -279,6 +294,15 @@ jobs:
           path: codeql-results/*.sarif
           retention-days: 30
           if-no-files-found: warn
+
+      # ── Deferred checkstyle gate ──
+      # Placed after SARIF upload so checkstyle violations fail the job
+      # without preventing CodeQL report generation.
+      - name: Fail on checkstyle violations
+        if: always() && !cancelled() && steps.build-java.outputs.checkstyle_failed == '1'
+        run: |
+          echo "::error::Checkstyle violations were found in one or more Java modules (see the 'Build Java modules' step for details)."
+          exit 1
 
   # ------------------------------------------------------------------
   # Combine per-language SARIF files into a single HTML quality report
