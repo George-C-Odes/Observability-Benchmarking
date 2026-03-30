@@ -42,7 +42,7 @@ mvn -f services/java/quarkus/jvm/pom.xml validate
 mvn -f utils/orchestrator/pom.xml validate
 ```
 
-At the moment, the Checkstyle plugin is configured in these Maven modules with `failsOnError=false` and `failOnViolation=false`, so it reports issues during `validate` without failing the build.
+The Checkstyle plugin is configured with `failsOnError=true`, `failOnViolation=true`, and `violationSeverity=warning` across all JVM modules and the orchestrator, so any checkstyle violation will fail the build.
 
 ### Key Rules Enforced
 
@@ -812,7 +812,7 @@ All public classes and methods should include:
 
 ## Integration with CI/CD
 
-Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
+Checkstyle is enforced as fatal across all JVM modules and the orchestrator (`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`). Any checkstyle violation at warning severity or above will fail the Maven build.
 
 Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
 
@@ -825,14 +825,6 @@ The Go Enhanced service has its own quality workflow (`.github/workflows/go_qual
 GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab, and a combined HTML report is published to GitHub Pages.
 
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
-
-To make Checkstyle violations fail the build, update the plugin configuration in `pom.xml`:
-```xml
-<configuration>
-    <failsOnError>true</failsOnError>
-    <failOnViolation>true</failOnViolation>
-</configuration>
-```
 
 ## Customizing Rules
 

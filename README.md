@@ -4,7 +4,7 @@
 
 [![📊 Benchmark Results](https://img.shields.io/badge/%F0%9F%93%8A_Benchmark_Results-Online-blue?style=for-the-badge&logo=githubpages&logoColor=white&labelColor=0D1117&color=58A6FF)](https://george-c-odes.github.io/Observability-Benchmarking/#results)
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-6E7781.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.2-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F.svg)](https://spring.io/projects/spring-boot)
@@ -625,8 +625,8 @@ This project implements comprehensive code quality and security practices to ens
 #### Checkstyle Linting
 - **Configuration**: Enforces Google Java Style Guide with customizations
 - **Version**: maven-checkstyle-plugin 3.6.0 with Checkstyle 12.2.0
-- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x, Pekko)
-- **Integration**: Runs automatically during Maven `validate` phase
+- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x, Pekko) and the orchestrator
+- **Integration**: Runs automatically during Maven `validate` phase; enforced as fatal (`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`)
 - **Results**: zero violations across all projects
 
 **Running Checkstyle**:

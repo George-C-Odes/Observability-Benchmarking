@@ -1245,10 +1245,10 @@ jobs:
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Set up Java 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: '25'
           distribution: 'corretto'
@@ -1270,7 +1270,7 @@ jobs:
       
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: java-test-reports
           path: '**/target/surefire-reports/**'
@@ -1278,10 +1278,10 @@ jobs:
   unit-tests-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Set up Go 1.26.1
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: '1.26.1'
       
@@ -1301,7 +1301,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Start Services
         run: |
@@ -1322,7 +1322,7 @@ jobs:
       
       - name: Upload Logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: integration-test-logs
           path: logs/
@@ -1338,7 +1338,7 @@ jobs:
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.1" }
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Build ${{ matrix.service.name }}
         run: |
