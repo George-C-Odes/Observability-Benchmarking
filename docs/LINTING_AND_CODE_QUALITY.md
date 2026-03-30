@@ -681,7 +681,7 @@ The landing page at `qodana/` now links to all five scopes:
 - `qodana/django-python/` — Qodana Python Community (PyCharm inspections)
 - `qodana/go/` — golangci-lint (aggregated Go static analysis)
 
-The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
+The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
 
 #### Pages Integration for the Next.js Quality Report
 

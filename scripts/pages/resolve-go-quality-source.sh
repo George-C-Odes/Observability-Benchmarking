@@ -28,7 +28,9 @@ if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "$WORKFLOW_NAME" ]]; 
   exit 0
 fi
 
-# Otherwise, query the API for the latest successful run on main.
+# Otherwise, query the API for the latest completed run on main.
+# The Go Quality workflow uploads its report artifact even when lint fails
+# (via `if: always() && !cancelled()`), so we accept both success and failure.
 response_file="$(mktemp)"
 trap 'rm -f "$response_file"' EXIT
 if ! curl -fsSL \
@@ -48,7 +50,7 @@ with open(sys.argv[1], encoding="utf-8") as fh:
     data = json.load(fh)
 
 for run in data.get("workflow_runs", []):
-    if run.get("conclusion") == "success":
+    if run.get("conclusion") in ("success", "failure"):
         print(f"run_id={run['id']}")
         print(f"head_sha={run['head_sha']}")
         break
@@ -58,5 +60,5 @@ PY
 if [[ -n "$resolved" ]]; then
   printf '%s\n' "$resolved" >> "$GITHUB_OUTPUT"
 else
-  echo "No successful Go Quality workflow run on main was found; Pages will publish without a hosted Go quality report."
+  echo "No completed Go Quality workflow run on main was found; Pages will publish without a hosted Go quality report."
 fi
