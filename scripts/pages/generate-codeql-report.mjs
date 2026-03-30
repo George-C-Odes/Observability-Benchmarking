@@ -357,7 +357,7 @@ if (analyzedLanguages.length > 0) {
 let buildWarningsHtml = '';
 if (buildWarningsParseFailed) {
   buildWarningsHtml = `
-  <div class="warnings-box" style="border-color:var(--error)">
+  <div class="warnings-box warnings-box-error">
     <h2>\u274C Build Warning Parse Error</h2>
     <p>The build-warnings file (<code>codeql-build-warnings.json</code>) was found but could not be
     parsed. Checkstyle results are unknown &mdash; treat this as a failure until the file is fixed.</p>
@@ -488,6 +488,7 @@ const html = `<!doctype html>
     .warnings-box h2 { border-bottom: none; margin-top: 0.5rem; }
     .warnings-box ul { margin: 0.5rem 0 0.25rem; padding-left: 1.5rem; }
     .warnings-box li { font-family: monospace; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .warnings-box-error { border-color: var(--error); }
   </style>
 </head>
 <body>

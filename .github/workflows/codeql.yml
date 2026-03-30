@@ -269,28 +269,13 @@ jobs:
           echo "checkstyle_failed=$checkstyle_failed" >> "$GITHUB_OUTPUT"
 
           # Write build-warnings JSON for the quality report generator.
-          python - <<'PY' "${#build_modules[@]}" "$modules_failed" "${build_warnings[@]}" > codeql-build-warnings.json
-import json
-import sys
-
-if len(sys.argv) < 3:
-    # Should not happen, but guard against malformed invocation.
-    modules_checked = 0
-    modules_failed = 0
-    warnings = []
-else:
-    modules_checked = int(sys.argv[1])
-    modules_failed = int(sys.argv[2])
-    warnings = sys.argv[3:]
-
-data = {
-    "modulesChecked": modules_checked,
-    "modulesFailed": modules_failed,
-    "warnings": warnings,
-}
-
-json.dump(data, sys.stdout, indent=2)
-PY
+          # jq is pre-installed on GitHub-hosted runners and handles all
+          # JSON escaping automatically.
+          jq -n \
+            --argjson checked "${#build_modules[@]}" \
+            --argjson failed "$modules_failed" \
+            --args '{modulesChecked: $checked, modulesFailed: $failed, warnings: $ARGS.positional}' \
+            -- "${build_warnings[@]+"${build_warnings[@]}"}" > codeql-build-warnings.json
       # Go has multiple independent modules under services/go/ with no
       # root-level go.mod, so autobuild cannot discover them.  Build each
       # module explicitly so CodeQL extracts all Go source correctly.
