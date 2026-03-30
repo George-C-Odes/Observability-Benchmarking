@@ -53,6 +53,10 @@ yarn-error.log*
 /utils/nextjs-dash/eslint-report.json
 /utils/nextjs-dash/tsc-output.txt
 
+# Go Enhanced CI quality report artifacts
+/services/go/enhanced/quality-report/
+/services/go/enhanced/golangci-lint-report.json
+
 # Docker / containers / local compose overrides
 .env.local
 .env.*.local

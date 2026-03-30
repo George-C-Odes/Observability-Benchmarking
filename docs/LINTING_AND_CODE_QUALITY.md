@@ -86,6 +86,7 @@ The convention is applied in:
 - `.github/workflows/pages.yml`
 - `.github/workflows/django_python_quality.yml`
 - `.github/workflows/nextjs_dash_quality.yml`
+- `.github/workflows/go_quality.yml`
 
 Each occurrence is annotated with `# TODO(node24-migration)` so they can be found and removed once GitHub's default runtime moves to Node 24.
 
@@ -496,6 +497,94 @@ For full CI parity, run the shared test suite from each module as documented in
 
 Ruff is also available as an IDE plugin for real-time feedback.
 
+## golangci-lint Configuration (Go Enhanced Service)
+
+### Overview
+The Go Enhanced service (`services/go/enhanced`) uses [golangci-lint](https://golangci-lint.run/) as an aggregated Go linter running dozens of analyzers in parallel. The configuration lives in `services/go/enhanced/.golangci.yml`.
+
+### Enabled Linters
+- **govet** — reports suspicious constructs (e.g., Printf calls with mismatched format strings)
+- **errcheck** — checks that error return values are used
+- **staticcheck** — advanced static analysis (SA, S, ST checks)
+- **ineffassign** — detects assignments to existing variables that are never read
+- **revive** — extensible linter replacing golint
+- **gocritic** — opinionated collection of checks not covered elsewhere
+- **unused** — detects unused constants, variables, functions, and types
+- **gosec** — security-oriented checks (SQL injection, hardcoded credentials, etc.)
+- **unconvert** — removes unnecessary type conversions
+
+### Formatters
+- **gofmt** — enforces standard Go formatting
+- **goimports** — enforces import grouping and ordering
+Test files (`_test.go`) have relaxed rules: `errcheck` and `gosec` are excluded.
+
+### GitHub Actions Workflow
+The workflow in `.github/workflows/go_quality.yml` performs:
+
+1. **go vet** — built-in Go analysis
+2. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
+3. **go test** — unit tests with race detector (`-race`)
+4. **go build** — compilation smoke test
+
+The workflow is triggered on:
+- manual dispatch
+- pull requests touching `services/go/enhanced/**`
+- pushes to `main` touching `services/go/enhanced/**`
+
+### Hosted Quality Report on GitHub Pages
+After each run, the workflow uses the `golangci-lint run` step, configured via `.golangci.yml` `output.formats`, to write a `golangci-lint-report.json` file, which is then consumed by `scripts/pages/generate-go-quality-report.mjs` to generate a self-contained HTML quality report. The report is uploaded as a `quality-report-go` artifact and published to GitHub Pages by the Pages workflow.
+
+Expected URL:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/qodana/go/
+```
+
+The report includes:
+- Summary cards (overall pass/fail, error/warning counts)
+- Per-linter issue breakdown table
+- Per-file findings table with severity, linter name, message, and line/column
+- Metadata (commit SHA, workflow run, tool versions, timestamp)
+- Dark mode support via `prefers-color-scheme`
+
+### Running golangci-lint Locally
+
+```bash
+cd services/go/enhanced
+
+# Run lint (uses .golangci.yml, same behavior as CI: text to stdout + JSON report)
+golangci-lint run
+
+# Or, explicitly regenerate a JSON report without mixing formats
+golangci-lint run --out-format=json --output=golangci-lint-report.json
+
+# Run all quality checks matching CI
+go vet ./...
+golangci-lint run
+go test ./... -race
+go build ./cmd/server
+```
+
+Or use the provided Makefile targets:
+
+```bash
+cd services/go/enhanced
+make lint
+make test
+```
+
+### Pages Integration for the Go Quality Report
+
+The Pages workflow resolves the Go quality report source independently from other report sources:
+
+- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report and the latest successful runs for Qodana, Next.js, and Django Python are resolved via API
+- When triggered by any other workflow or by push/manual dispatch, the latest successful `Go Quality` run on `main` is resolved via API
+
+Scripts involved:
+- `scripts/pages/resolve-go-quality-source.sh` — resolves the Go Quality workflow run to fetch the report artifact from
+- `scripts/pages/generate-go-quality-report.mjs` — generates the HTML report from golangci-lint JSON output
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `go` scope alongside existing scopes
+
 ## Code Quality Standards
 
 ### Next.js Dashboard (ESLint + TypeScript)
@@ -585,11 +674,12 @@ Expected URL:
 https://george-c-odes.github.io/Observability-Benchmarking/qodana/nextjs-dash/
 ```
 
-The landing page at `qodana/` now links to all four scopes:
+The landing page at `qodana/` now links to all five scopes:
 - `qodana/services-java/` — Qodana JVM (IntelliJ inspections)
 - `qodana/orchestrator/` — Qodana JVM (IntelliJ inspections)
 - `qodana/nextjs-dash/` — ESLint + TypeScript (free alternative)
 - `qodana/django-python/` — Qodana Python Community (PyCharm inspections)
+- `qodana/go/` — golangci-lint (aggregated Go static analysis)
 
 The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
 
@@ -597,9 +687,10 @@ The report is always generated (even when earlier quality steps fail) so that th
 
 The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
 
-- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana and Django Python Quality runs are resolved via API
-- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js and Django Python Quality runs are resolved via API
-- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana and Next.js runs are resolved via API
+- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana, Django Python Quality, and Go Quality runs are resolved via API
+- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js, Django Python Quality, and Go Quality runs are resolved via API
+- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana, Next.js, and Go Quality runs are resolved via API
+- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report and the latest successful Qodana, Next.js, and Django Python Quality runs are resolved via API
 - When triggered by push or manual dispatch, the latest successful run for **all** workflows is resolved via API
 
 This ensures every Pages deployment gets the freshest available version of all reports.
@@ -607,7 +698,8 @@ This ensures every Pages deployment gets the freshest available version of all r
 Scripts involved:
 - `scripts/pages/resolve-nextjs-quality-source.sh` — resolves the Next.js quality workflow run to fetch the report artifact from
 - `scripts/pages/resolve-django-python-quality-source.sh` — resolves the Django Python quality workflow run to fetch the Qodana Python report artifact from
-- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash` and `django-python` scopes alongside the existing Qodana JVM scopes
+- `scripts/pages/resolve-go-quality-source.sh` — resolves the Go Quality workflow run to fetch the golangci-lint report artifact from
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash`, `django-python`, and `go` scopes alongside the existing Qodana JVM scopes
 
 ### Documentation
 All public classes and methods should include:
@@ -642,6 +734,8 @@ Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `util
 The Django Python quality workflow (`.github/workflows/django_python_quality.yml`) enforces Ruff lint and format checks, Django system checks, and unit tests — plus a Qodana Python Community scan that applies the same severity gate (`critical: 0`, `high: 0`, `moderate: 0`).
 
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
+
+The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR.
 
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
@@ -711,3 +805,5 @@ Potential enhancements to the code quality setup:
 - [typescript-eslint](https://typescript-eslint.io/)
 - [Vitest Documentation](https://vitest.dev/)
 - [Next.js ESLint Plugin](https://nextjs.org/docs/app/api-reference/config/eslint)
+- [golangci-lint Documentation](https://golangci-lint.run/)
+- [golangci-lint GitHub Action](https://github.com/golangci/golangci-lint-action)
