@@ -81,6 +81,7 @@ const buildWarningsDir = resolve(rootDir, '.codeql-build-warnings');
 
 /** @type {{modulesChecked: number, modulesFailed: number, warnings: string[]}} */
 let buildWarnings = { modulesChecked: 0, modulesFailed: 0, warnings: [] };
+let buildWarningsParseFailed = false;
 
 const buildWarningsFile = join(buildWarningsDir, 'codeql-build-warnings.json');
 if (existsSync(buildWarningsFile)) {
@@ -96,6 +97,7 @@ if (existsSync(buildWarningsFile)) {
       console.log(`Build warnings loaded: ${buildWarnings.warnings.length} warning(s) from ${buildWarningsFile}`);
     }
   } catch (err) {
+    buildWarningsParseFailed = true;
     console.warn(`Warning: could not parse ${buildWarningsFile}: ${err.message}`);
   }
 } else {
@@ -177,8 +179,9 @@ const noteCount = allFindings.filter((f) => f.level === 'note').length;
 const otherCount = totalFindings - errorCount - warningCount - noteCount;
 
 // A clean pass requires valid input, zero findings, no parse errors,
-// AND no build warnings (e.g. checkstyle violations).
-const overallPass = hasValidData && !parseFailed && totalFindings === 0 && !hasBuildWarnings;
+// no build warnings (e.g. checkstyle violations), AND no build-warnings
+// parse failures (a malformed JSON means we cannot trust the result).
+const overallPass = hasValidData && !parseFailed && !buildWarningsParseFailed && totalFindings === 0 && !hasBuildWarnings;
 
 let overallLabel = 'Pass';
 let overallDetail = '';
@@ -194,6 +197,11 @@ if (inputMissing) {
   overallDetail =
     `${parseFailCount} SARIF file${parseFailCount !== 1 ? 's' : ''} could not be parsed` +
     ` \u2014 results may be incomplete.`;
+} else if (buildWarningsParseFailed) {
+  overallLabel = totalFindings > 0 ? 'Findings + Build Warning Parse Error' : 'Build Warning Parse Error';
+  overallDetail =
+    'The build-warnings file (codeql-build-warnings.json) could not be parsed \u2014 ' +
+    'checkstyle results are unknown.';
 } else if (totalFindings > 0 && hasBuildWarnings) {
   overallLabel = 'Findings + Build Warnings';
   overallDetail =
@@ -341,7 +349,14 @@ if (analyzedLanguages.length > 0) {
 // ---------------------------------------------------------------------------
 
 let buildWarningsHtml = '';
-if (hasBuildWarnings) {
+if (buildWarningsParseFailed) {
+  buildWarningsHtml = `
+  <div class="warnings-box" style="border-color:var(--error)">
+    <h2>\u274C Build Warning Parse Error</h2>
+    <p>The build-warnings file (<code>codeql-build-warnings.json</code>) was found but could not be
+    parsed. Checkstyle results are unknown &mdash; treat this as a failure until the file is fixed.</p>
+  </div>`;
+} else if (hasBuildWarnings) {
   const items = buildWarnings.warnings.map((w) => `<li>${esc(w)}</li>`).join('\n        ');
   buildWarningsHtml = `
   <div class="warnings-box">
