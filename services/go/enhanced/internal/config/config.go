@@ -1,3 +1,4 @@
+// Package config provides environment-based configuration loading for the service.
 package config
 
 import (
@@ -58,6 +59,8 @@ type Config struct {
 	PyroscopeLogLevel        string        // PYROSCOPE_LOG_LEVEL (debug|info|warn|error|off)
 }
 
+// LoadFromEnv reads all configuration values from environment variables and returns
+// a populated Config, or an error if validation fails.
 func LoadFromEnv() (Config, error) {
 	cfg := Config{
 		Host:          getenv("HOST", "0.0.0.0"),

@@ -552,11 +552,8 @@ The report includes:
 ```bash
 cd services/go/enhanced
 
-# Run lint (uses .golangci.yml, same behavior as CI: text to stdout + JSON report)
+# Run lint (uses .golangci.yml, same behavior as CI: text to stdout + JSON report file)
 golangci-lint run
-
-# Or, explicitly regenerate a JSON report without mixing formats
-golangci-lint run --out-format=json --output=golangci-lint-report.json
 
 # Run all quality checks matching CI
 go vet ./...
@@ -564,6 +561,8 @@ golangci-lint run
 go test ./... -race
 go build ./cmd/server
 ```
+
+> **Note:** The `.golangci.yml` `output.formats` section already writes both human-readable text to stdout and a JSON report to `golangci-lint-report.json` in a single pass. No extra CLI flags are needed.
 
 Or use the provided Makefile targets:
 

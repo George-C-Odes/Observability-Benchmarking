@@ -1,3 +1,4 @@
+// Package handlers implement the HTTP request handlers for the service.
 package handlers
 
 import (
@@ -45,6 +46,8 @@ type HelloHandlerOpts struct {
 	SpansEnabled *bool
 }
 
+// NewHelloHandler creates a new HelloHandler with the given options, registering
+// an observable counter for request metrics.
 func NewHelloHandler(opts HelloHandlerOpts) (*HelloHandler, error) {
 	if opts.Cache == nil {
 		return nil, errors.New("cache is required")
@@ -84,7 +87,11 @@ func NewHelloHandler(opts HelloHandlerOpts) (*HelloHandler, error) {
 	)
 	if err == nil {
 		reg, err := opts.Meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(reqObs, int64(h.reqCount.Load()), metric.WithAttributeSet(h.reqCountAttrs))
+			count := h.reqCount.Load()
+			if count > math.MaxInt64 {
+				count = math.MaxInt64
+			}
+			o.ObserveInt64(reqObs, int64(count), metric.WithAttributeSet(h.reqCountAttrs)) //nolint:gosec // capped above
 			return nil
 		}, reqObs)
 		if err == nil {

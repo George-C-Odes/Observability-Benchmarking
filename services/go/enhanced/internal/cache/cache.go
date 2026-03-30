@@ -1,3 +1,4 @@
+// Package cache provides pluggable in-memory key/value cache implementations.
 package cache
 
 import (
