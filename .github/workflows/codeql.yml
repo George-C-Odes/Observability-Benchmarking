@@ -141,6 +141,11 @@ jobs:
       # • 6 native-image modules are deliberately skipped — they are
       #   very slow, resource-heavy, and duplicate the source of their
       #   JVM counterparts (CodeQL already sees that code).
+      # • Checkstyle is explicitly skipped (-Dcheckstyle.skip=true).
+      #   This workflow exists for *security* scanning; style enforcement
+      #   is handled by dedicated quality workflows / Qodana.  A
+      #   checkstyle violation must never prevent CodeQL from producing
+      #   a SARIF report.
       # • On schedule / dispatch: all 12 modules are built (full scan).
       # • On push / PR: only modules whose source tree actually changed
       #   are built; shared config changes (checkstyle, workflow) trigger
@@ -233,10 +238,12 @@ jobs:
           printf '  • %s\n' "${build_modules[@]}"
 
           # ── Compile each affected module ──
-          # Checkstyle enforcement is configured in the module/orchestrator pom.xml.
+          # Checkstyle is skipped: security scanning must not be blocked by
+          # style violations (dedicated quality workflows enforce style).
           for mod_dir in "${build_modules[@]}"; do
             echo "::group::Building $mod_dir"
-            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q
+            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q \
+              -Dcheckstyle.skip=true
             echo "::endgroup::"
           done
 
@@ -256,7 +263,7 @@ jobs:
           done
 
       - name: Perform CodeQL Analysis
-        if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
+        if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
         uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           category: "/language:${{ matrix.language }}"
