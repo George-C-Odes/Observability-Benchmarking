@@ -228,8 +228,14 @@ for (const f of allFindings) {
   byRule[f.ruleId] = (byRule[f.ruleId] || 0) + 1;
 }
 
-// Languages analyzed (from SARIF entries, even if 0 findings)
-const analyzedLanguages = [...new Set(sarifEntries.map((e) => e.language))].sort();
+// Languages analyzed (from SARIF entries, even if 0 findings).
+// Display order: java-kotlin → go → python → javascript-typescript.
+const languageDisplayOrder = ['java-kotlin', 'go', 'python', 'javascript-typescript'];
+const analyzedLanguages = [...new Set(sarifEntries.map((e) => e.language))].sort((a, b) => {
+  const ia = languageDisplayOrder.indexOf(a);
+  const ib = languageDisplayOrder.indexOf(b);
+  return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib) || a.localeCompare(b);
+});
 
 // Unique files with findings
 const filesWithFindings = new Set(allFindings.map((f) => f.file).filter(Boolean)).size;
