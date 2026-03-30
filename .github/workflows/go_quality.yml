@@ -1,4 +1,4 @@
-name: Go Enhanced Quality
+name: Go Quality
 
 env:
   # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
@@ -10,14 +10,14 @@ on:
     paths:
       - 'services/go/enhanced/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
-      - '.github/workflows/go_enhanced_quality.yml'
+      - '.github/workflows/go_quality.yml'
   push:
     branches:
       - main
     paths:
       - 'services/go/enhanced/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
-      - '.github/workflows/go_enhanced_quality.yml'
+      - '.github/workflows/go_quality.yml'
 
 permissions:
   contents: read
@@ -104,8 +104,9 @@ jobs:
         if: always() && !cancelled()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: quality-report-go-enhanced
+          name: quality-report-go
           path: services/go/enhanced/quality-report/
           retention-days: 30
           if-no-files-found: warn
+
 

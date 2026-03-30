@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# scripts/pages/resolve-go-enhanced-quality-source.sh
+# scripts/pages/resolve-go-quality-source.sh
 #
-# Resolves the Go Enhanced Quality workflow run whose quality report
+# Resolves the Go Quality workflow run whose quality report
 # artifact should be published to GitHub Pages.
 #
 # Required env:
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-WORKFLOW_NAME="Go Enhanced Quality"
+WORKFLOW_NAME="Go Quality"
 
 # If the Pages build was triggered directly by this workflow, use that run.
 if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "$WORKFLOW_NAME" ]]; then
@@ -35,9 +35,9 @@ if ! curl -fsSL \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/go_enhanced_quality.yml/runs?branch=main&status=completed&per_page=20" \
+  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/go_quality.yml/runs?branch=main&status=completed&per_page=20" \
   -o "$response_file"; then
-  echo "Warning: GitHub API request for Go Enhanced Quality workflow runs failed; Pages will publish without a hosted Go quality report."
+  echo "Warning: GitHub API request for Go Quality workflow runs failed; Pages will publish without a hosted Go quality report."
   exit 0
 fi
 
@@ -58,6 +58,5 @@ PY
 if [[ -n "$resolved" ]]; then
   printf '%s\n' "$resolved" >> "$GITHUB_OUTPUT"
 else
-  echo "No successful Go Enhanced Quality workflow run on main was found; Pages will publish without a hosted Go quality report."
+  echo "No successful Go Quality workflow run on main was found; Pages will publish without a hosted Go quality report."
 fi
-

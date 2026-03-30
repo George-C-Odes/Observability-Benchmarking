@@ -15,7 +15,7 @@ on:
       - Qodana
       - Next.js Dashboard Quality
       - Django Python Quality
-      - Go Enhanced Quality
+      - Go Quality
     types:
       - completed
     branches:
@@ -179,11 +179,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # ----------------------------------------------------------------
-      # Go Enhanced quality report (golangci-lint)
+      # Go quality report (golangci-lint)
       # ----------------------------------------------------------------
 
-      - name: Resolve Go Enhanced quality artifact source run
-        id: go_enhanced_quality_source
+      - name: Resolve Go quality artifact source run
+        id: go_quality_source
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -191,17 +191,17 @@ jobs:
           WR_ID: ${{ github.event.workflow_run.id }}
           WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: bash scripts/pages/resolve-go-enhanced-quality-source.sh
+        run: bash scripts/pages/resolve-go-quality-source.sh
 
-      - name: Download Go Enhanced quality report
-        id: download_go_enhanced_quality
-        if: steps.go_enhanced_quality_source.outputs.run_id != ''
+      - name: Download Go quality report
+        id: download_go_quality
+        if: steps.go_quality_source.outputs.run_id != ''
         continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: quality-report-go-enhanced
-          path: ./.go-enhanced-quality-pages/go-enhanced
-          run-id: ${{ steps.go_enhanced_quality_source.outputs.run_id }}
+          name: quality-report-go
+          path: ./.go-quality-pages/go
+          run-id: ${{ steps.go_quality_source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Assemble Qodana pages
@@ -222,10 +222,10 @@ jobs:
           DJANGO_PYTHON_QUALITY_HEAD_SHA: ${{ steps.django_python_quality_source.outputs.head_sha }}
           DJANGO_PYTHON_DOWNLOAD_OUTCOME: ${{ steps.download_django_python_quality.outcome }}
           DJANGO_PYTHON_QUALITY_PAGES_DIR: ./.django-python-quality-pages
-          GO_ENHANCED_QUALITY_RUN_ID: ${{ steps.go_enhanced_quality_source.outputs.run_id }}
-          GO_ENHANCED_QUALITY_HEAD_SHA: ${{ steps.go_enhanced_quality_source.outputs.head_sha }}
-          GO_ENHANCED_DOWNLOAD_OUTCOME: ${{ steps.download_go_enhanced_quality.outcome }}
-          GO_ENHANCED_QUALITY_PAGES_DIR: ./.go-enhanced-quality-pages
+          GO_QUALITY_RUN_ID: ${{ steps.go_quality_source.outputs.run_id }}
+          GO_QUALITY_HEAD_SHA: ${{ steps.go_quality_source.outputs.head_sha }}
+          GO_DOWNLOAD_OUTCOME: ${{ steps.download_go_quality.outcome }}
+          GO_QUALITY_PAGES_DIR: ./.go-quality-pages
           SITE_DIR: ./_site
         run: bash scripts/pages/assemble-qodana-pages.sh
 
