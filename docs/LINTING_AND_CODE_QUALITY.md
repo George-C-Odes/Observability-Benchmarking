@@ -681,17 +681,17 @@ The landing page at `qodana/` now links to all five scopes:
 - `qodana/django-python/` — Qodana Python Community (PyCharm inspections)
 - `qodana/go/` — golangci-lint (aggregated Go static analysis)
 
-The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
+The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
 
 #### Pages Integration for the Next.js Quality Report
 
 The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
 
-- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana, Django Python Quality, and Go Quality runs are resolved via API
-- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js, Django Python Quality, and Go Quality runs are resolved via API
-- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana, Next.js, and Go Quality runs are resolved via API
-- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report and the latest successful Qodana, Next.js, and Django Python Quality runs are resolved via API
-- When triggered by push or manual dispatch, the latest successful run for **all** workflows is resolved via API
+- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
+- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
+- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana and Next.js runs and the latest successful or failed Go Quality run are resolved via API
+- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report (regardless of whether it succeeded or failed) and the latest successful Qodana, Next.js, and Django Python Quality runs are resolved via API
+- When triggered by push or manual dispatch, the latest successful run for Qodana, Next.js Dashboard Quality, and Django Python Quality workflows and the latest successful or failed Go Quality run are resolved via API
 
 This ensures every Pages deployment gets the freshest available version of all reports.
 

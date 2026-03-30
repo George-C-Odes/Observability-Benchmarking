@@ -9,7 +9,10 @@ on:
     branches:
       - main
 
-  # Republish after successful main-branch quality runs so hosted reports stay current.
+  # Republish after main-branch quality runs so hosted reports stay current.
+  # Go Quality always uploads its report artifact (even on lint failure).
+  # We listen for any completed run, but jobs only proceed on successful
+  # workflows, except that Go Quality failures are also accepted.
   workflow_run:
     workflows:
       - Qodana
@@ -36,7 +39,14 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # Run for push / dispatch unconditionally.
+    # For workflow_run: accept Go Quality success or failure (report is always
+    # uploaded), but require success for every other triggering workflow.
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+      || (github.event.workflow_run.name == 'Go Quality'
+          && github.event.workflow_run.conclusion == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -234,7 +244,11 @@ jobs:
 
   # Deployment job
   deploy:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+      || (github.event.workflow_run.name == 'Go Quality'
+          && github.event.workflow_run.conclusion == 'failure')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
