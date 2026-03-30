@@ -311,7 +311,12 @@ if (runId && repo) {
   );
 }
 metaParts.push(`Generated ${esc(timestamp)}`);
-metaParts.push(`CodeQL v4.35.1`);
+const codeqlVersion = process.env.CODEQL_VERSION;
+if (codeqlVersion) {
+  metaParts.push(`CodeQL ${esc(codeqlVersion)}`);
+} else {
+  metaParts.push('CodeQL');
+}
 if (analyzedLanguages.length > 0) {
   metaParts.push(`Languages: ${analyzedLanguages.join(', ')}`);
 }
