@@ -60,5 +60,5 @@ PY
 if [[ -n "$resolved" ]]; then
   printf '%s\n' "$resolved" >> "$GITHUB_OUTPUT"
 else
-  echo "No completed successful or failed Go Quality workflow run on main was found; Pages will publish without a hosted Go quality report."
+  echo "No completed Go Quality workflow run with conclusion success or failure on main was found; Pages will publish without a hosted Go quality report."
 fi
