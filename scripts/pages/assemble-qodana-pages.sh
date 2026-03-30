@@ -2,7 +2,7 @@
 # scripts/pages/assemble-qodana-pages.sh
 #
 # Resolves quality-report statuses for every scope (Qodana JVM, Qodana
-# Python, Go, Next.js), generates human-readable messages, logs the
+# Python, Go, Next.js, CodeQL), generates human-readable messages, logs the
 # resolution, and assembles the HTML pages under _site/quality/.
 #
 # This single script replaces the previous inline steps:
@@ -38,6 +38,12 @@
 #   GO_QUALITY_HEAD_SHA    – resolved commit SHA (may be empty)
 #   GO_DOWNLOAD_OUTCOME    – success | failure | skipped | (empty)
 #   GO_QUALITY_PAGES_DIR   – staging path, e.g. ./.go-quality-pages
+#
+# CodeQL security & quality report (optional):
+#   CODEQL_QUALITY_RUN_ID      – resolved CodeQL workflow run ID (may be empty)
+#   CODEQL_QUALITY_HEAD_SHA    – resolved commit SHA (may be empty)
+#   CODEQL_DOWNLOAD_OUTCOME    – success | failure | skipped | (empty)
+#   CODEQL_QUALITY_PAGES_DIR   – staging path, e.g. ./.codeql-quality-pages
 
 set -euo pipefail
 
@@ -46,6 +52,7 @@ SITE_DIR="${SITE_DIR:-./_site}"
 NEXTJS_QUALITY_PAGES_DIR="${NEXTJS_QUALITY_PAGES_DIR:-./.nextjs-quality-pages}"
 DJANGO_PYTHON_QUALITY_PAGES_DIR="${DJANGO_PYTHON_QUALITY_PAGES_DIR:-./.django-python-quality-pages}"
 GO_QUALITY_PAGES_DIR="${GO_QUALITY_PAGES_DIR:-./.go-quality-pages}"
+CODEQL_QUALITY_PAGES_DIR="${CODEQL_QUALITY_PAGES_DIR:-./.codeql-quality-pages}"
 
 # ---------------------------------------------------------------------------
 # 1. Resolve per-scope statuses
@@ -147,6 +154,27 @@ resolve_go_status() {
   fi
 }
 go_status="$(resolve_go_status "$GO_QUALITY_PAGES_DIR/go")"
+
+# CodeQL security & quality report: same simple resolution as Go —
+# single artifact from the CodeQL workflow.
+resolve_codeql_status() {
+  local dir="$1"
+  local download_outcome="${CODEQL_DOWNLOAD_OUTCOME:-}"
+  local run_id="${CODEQL_QUALITY_RUN_ID:-}"
+
+  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
+    echo 'available'
+  elif [[ "$download_outcome" == 'failure' ]]; then
+    echo 'download failed'
+  elif [[ "$download_outcome" == 'success' ]]; then
+    echo 'unavailable'
+  elif [[ -n "$run_id" ]]; then
+    echo 'undetermined'
+  else
+    echo 'not-applicable'
+  fi
+}
+codeql_status="$(resolve_codeql_status "$CODEQL_QUALITY_PAGES_DIR/codeql")"
 
 # ---------------------------------------------------------------------------
 # 2. Resolve human-readable messages
@@ -295,6 +323,38 @@ if [[ -n "${GO_QUALITY_RUN_ID:-}" ]]; then
   fi
 fi
 
+# CodeQL security and quality report messages
+codeql_item_text='codeql security and quality report is not available yet.'
+codeql_item_html='<li>codeql security &amp; quality report is not available yet.</li>'
+codeql_metadata_text=''
+codeql_metadata_html=''
+
+case "$codeql_status" in
+  available)
+    codeql_item_text='codeql security and quality report is available (CodeQL SARIF).'
+    codeql_item_html='<li><a href="./codeql/">codeql security &amp; quality report</a> (CodeQL SARIF)</li>'
+    ;;
+  'download failed')
+    codeql_item_text='codeql security and quality report could not be downloaded for the resolved run.'
+    codeql_item_html='<li>codeql security &amp; quality report could not be downloaded for the resolved run.</li>'
+    ;;
+  unavailable)
+    codeql_item_text='codeql security and quality report is not available for the resolved run.'
+    codeql_item_html='<li>codeql security &amp; quality report is not available for the resolved run.</li>'
+    ;;
+  undetermined)
+    codeql_item_text='codeql security and quality report availability could not be determined for the resolved run.'
+    codeql_item_html='<li>codeql security &amp; quality report availability could not be determined for the resolved run.</li>'
+    ;;
+esac
+
+if [[ -n "${CODEQL_QUALITY_RUN_ID:-}" ]]; then
+  if [[ "$codeql_status" == 'available' ]]; then
+    codeql_metadata_text="CodeQL report from workflow run ${CODEQL_QUALITY_RUN_ID} for commit ${CODEQL_QUALITY_HEAD_SHA:-unknown}."
+    codeql_metadata_html="<p>CodeQL report from workflow run <code>${CODEQL_QUALITY_RUN_ID}</code> for commit <code>${CODEQL_QUALITY_HEAD_SHA:-unknown}</code>.</p>"
+  fi
+fi
+
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   if [[ "$services_status" == 'available' || "$orchestrator_status" == 'available' ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
@@ -379,12 +439,26 @@ echo "  go message: $go_item_text"
 if [[ -n "$go_metadata_text" ]]; then
   echo "  go metadata: $go_metadata_text"
 fi
+echo ''
+echo 'CodeQL security & quality report resolution:'
+if [[ -n "${CODEQL_QUALITY_RUN_ID:-}" ]]; then
+  echo "  resolved run id: $CODEQL_QUALITY_RUN_ID"
+  echo "  resolved head sha: ${CODEQL_QUALITY_HEAD_SHA:-none}"
+else
+  echo '  resolved run id: none'
+fi
+echo "  codeql download outcome: ${CODEQL_DOWNLOAD_OUTCOME:-not-run}"
+echo "  codeql final status: $codeql_status"
+echo "  codeql message: $codeql_item_text"
+if [[ -n "$codeql_metadata_text" ]]; then
+  echo "  codeql metadata: $codeql_metadata_text"
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go"
+mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go" "$SITE_DIR/quality/codeql"
 
 write_html_file() {
   local target_path="$1"
@@ -490,11 +564,17 @@ if [[ -d "$GO_QUALITY_PAGES_DIR/go" ]]; then
   cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/quality/go/"
 fi
 
+# Copy the CodeQL security & quality report into the site tree.
+if [[ -d "$CODEQL_QUALITY_PAGES_DIR/codeql" ]]; then
+  cp -a "$CODEQL_QUALITY_PAGES_DIR/codeql/." "$SITE_DIR/quality/codeql/"
+fi
+
 create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
 create_scope_page 'nextjs-dash' "$nextjs_item_text"
 create_scope_page 'django-python' "$django_python_item_text"
 create_scope_page 'go' "$go_item_text"
+create_scope_page 'codeql' "$codeql_item_text"
 
 # Landing page
 write_html_file "$SITE_DIR/quality/index.html" \
@@ -543,5 +623,11 @@ write_html_file "$SITE_DIR/quality/index.html" \
   "    ${nextjs_item_html}" \
   '  </ul>' \
   "  ${nextjs_metadata_html}" \
+  '  <h2>CodeQL (Security &amp; Quality)</h2>' \
+  '  <p>Automated security vulnerability detection and code quality analysis powered by <a href="https://codeql.github.com/">GitHub CodeQL</a> — semantic code analysis covering CWE patterns, injection flaws, data-flow vulnerabilities, and more across Java, Python, Go, and JavaScript/TypeScript.</p>' \
+  '  <ul>' \
+  "    ${codeql_item_html}" \
+  '  </ul>' \
+  "  ${codeql_metadata_html}" \
   '</body>' \
   '</html>'

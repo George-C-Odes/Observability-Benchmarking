@@ -25,6 +25,7 @@
 [![Go Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_quality.yml)
 [![Django Python Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml)
 [![Next.js Dashboard Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/nextjs_dash_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/nextjs_dash_quality.yml)
+[![CodeQL](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/codeql.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/codeql.yml)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
 
@@ -117,7 +118,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 ### Why This Project?
 
 - **All-in-one solution**: No need to configure multiple observability tools separately
-- **Framework-agnostic**: Easily add new language implementations
+- **Framework-agnostic**: Add new language implementations
 - **Real-world scenarios**: Tests actual REST endpoints with caching, not synthetic benchmarks
 - **Educational**: Learn how different threading models and frameworks perform under load
 - **Portfolio ready**: Demonstrates expertise in performance engineering and observability
@@ -131,11 +132,11 @@ If you’re searching for projects like this, these are the topics it covers:
 - Grafana LGTM stack (Loki + Tempo + Mimir + Grafana) 
 - continuous profiling (Grafana Pyroscope)
 - wrk2 constant-throughput load testing
-- Java virtual threads (Project Loom) vs platform threads vs reactive (WebFlux/Mutiny)
-- Quarkus vs Spring Boot performance
+- Java virtual threads (Project Loom) vs. platform threads vs. reactive (WebFlux/Mutiny)
+- Quarkus vs. Spring Boot performance
 - GraalVM native image benchmarking
-- Django (Python) vs JVM framework performance
-- Python WSGI vs ASGI benchmarking
+- Django (Python) vs. JVM framework performance
+- Python WSGI vs. ASGI benchmarking
 
 ## ✨ Features
 
@@ -161,7 +162,7 @@ If you’re searching for projects like this, these are the topics it covers:
 
 ### 🚀 REST Service Implementations
 
-#### Java (JDK 25 - Eclipse Temurin)
+#### Java (JDK 25 – Eclipse Temurin)
 - **Spring Boot 4.0.5 (3.5.13 also supported)**
   - JVM builds
     - Platform threads
@@ -414,7 +415,7 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 The numbers below are a curated summary of a representative run.
 
-#### Requests Per Second (RPS) — 06/03/2026 (to closest thousand)
+#### Requests Per Second (RPS) — 06/03/2026 (to the closest thousand)
 
 | Framework  | Runtime | Mode       | RPS  | Peak Mem (MB) | Image Size (MB) |
 |------------|---------|------------|------|---------------|-----------------|
@@ -460,7 +461,7 @@ The numbers below are a curated summary of a representative run.
 
 #### Fairness Notes
 - Helidon 4 is virtual-thread–first; reactive HTTP server mode was removed in v4 → other modes are N/A by design.
-- Helidon JVM builds have been optimized with jlink which reduces image size significantly.
+- Helidon JVM builds have been optimized with jlink, which reduces image size significantly.
 - Helidon MP adds MicroProfile CDI/JAX-RS overhead on top of the SE engine.
 - Micronaut somewhat combines reactive and virtual threads with its experimental loom carrier property (in-use for jvm, not supported in native).
 - Javalin supports virtual threads (blocking on VT) but does not provide a reactive HTTP model.
@@ -469,7 +470,7 @@ The numbers below are a curated summary of a representative run.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
 - Django 6.0.3 runs on CPython 3.13.12 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
-- Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not "blocking code wrapped in reactive types."
+- Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
   - same endpoint logic
@@ -478,7 +479,7 @@ The numbers below are a curated summary of a representative run.
   - no TLS
   - identical load profiles
   - inside the same docker network
-- go vs go-simple
+- go vs. go-simple
   - You may notice a higher-RPS Go variant in the repo (`go-simple`) with results around ~60k RPS.
   - That implementation is intentionally kept out of the “like-for-like” headline comparison because it does **not** run with an observability setup equivalent to the Java services.
   - The newer Go implementation targets a more apples-to-apples comparison (OpenTelemetry + the same pipeline), so it’s the one summarized here.
@@ -562,7 +563,7 @@ This project provides comprehensive observability through the Grafana LGTM stack
 - High-performance querying
 - Cardinality management
 
-### Pyroscope - Continuous Profiling
+### Pyroscope – Continuous Profiling
 
 Pyroscope collects CPU profiles through multiple methods:
 
@@ -611,7 +612,7 @@ sum by (service_name) (jvm_memory_committed_bytes - jvm_memory_used_bytes) / 102
 ### Correlation Features
 
 - **Log-to-Trace**: Click on log entries to view associated traces
-- **Trace-to-Profile**: Jump from trace spans to CPU profiles (when Java agent enabled)
+- **Trace-to-Profile**: Jump from trace spans to CPU profiles (when the Java agent is enabled)
 - **Metric-to-Trace**: Navigate from metric spikes to specific requests
 - **Dashboard Links**: Quick navigation between related views
 
@@ -626,7 +627,7 @@ This project implements comprehensive code quality and security practices to ens
 - **Version**: maven-checkstyle-plugin 3.6.0 with Checkstyle 12.2.0
 - **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x, Pekko)
 - **Integration**: Runs automatically during Maven `validate` phase
-- **Results**: 0 violations across all projects
+- **Results**: zero violations across all projects
 
 **Running Checkstyle**:
 ```bash
@@ -652,7 +653,7 @@ cd services/java/pekko/jvm && mvn checkstyle:check
 - **Line length**: Maximum 120 characters
 - **Naming conventions**: PascalCase for classes, camelCase for methods/variables, UPPER_SNAKE_CASE for constants
 - **Javadoc**: Required for all public classes and methods (20+ classes documented)
-- **Formatting**: Consistent indentation (4 spaces), proper whitespace, brace placement
+- **Formatting**: Consistent indentation (four spaces), proper whitespace, brace placement
 - **Imports**: No wildcards, no unused imports
 - **Code organization**: Proper access modifiers, logical method ordering
 
@@ -697,7 +698,7 @@ USER 1001
 - **Verified clean**: Full repository scan performed, zero hardcoded credentials found
 
 #### Code Security
-- **CodeQL scanning**: Automated security vulnerability detection (0 alerts)
+- **CodeQL scanning**: Automated security vulnerability detection via [GitHub CodeQL](https://codeql.github.com/) across Java, Python, Go, and JavaScript/TypeScript — runs on every push, PR, and weekly schedule ([workflow](.github/workflows/codeql.yml), [hosted report](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/))
 - **Dependency management**: All dependencies explicitly versioned and managed
 - **Interrupt handling**: Proper `InterruptedException` handling with interrupt status restoration
 - **Input validation**: Appropriate for the workload (cache retrieval with controlled input)
@@ -718,14 +719,14 @@ For comprehensive security guidelines, configuration recommendations, and incide
 
 ### Security Summary
 
-| Aspect              | Status        | Details                                  |
-|---------------------|---------------|------------------------------------------|
-| Non-root containers | ✅ Implemented | All JVM services run as UID 1001         |
-| File permissions    | ✅ Configured  | Restrictive permissions on all artifacts |
-| Hardcoded secrets   | ✅ Clean       | Zero secrets found in code/config        |
-| CodeQL scan         | ✅ Passed      | 0 security alerts                        |
-| Multi-stage builds  | ✅ Implemented | All Dockerfiles use multi-stage          |
-| Documentation       | ✅ Complete    | Comprehensive security guide available   |
+| Aspect              | Status        | Details                                                                                                             |
+|---------------------|---------------|---------------------------------------------------------------------------------------------------------------------|
+| Non-root containers | ✅ Implemented | All JVM services run as UID 1001                                                                                    |
+| File permissions    | ✅ Configured  | Restrictive permissions on all artifacts                                                                            |
+| Hardcoded secrets   | ✅ Clean       | Zero secrets found in code/config                                                                                   |
+| CodeQL scan         | ✅ Active      | Automated via GitHub Actions ([report](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/)) |
+| Multi-stage builds  | ✅ Implemented | All Dockerfiles use multi-stage                                                                                     |
+| Documentation       | ✅ Complete    | Comprehensive security guide available                                                                              |
 
 ### Development Standards
 
@@ -841,7 +842,7 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 #### Spring Boot
 - **Separate deployments** for each mode
 - Three containers per implementation (JVM/Native)
-- More complex but mode-specific optimizations possible
+- More complex but mode-specific optimizations are possible
 
 #### Quarkus
 - **Single deployment** serves all three thread modes (platform, virtual, reactive)
@@ -854,7 +855,7 @@ PYROSCOPE_AGENT_ENABLED=false  # Enable/disable Java profiling agent
 - Simpler configuration, fewer containers
 
 #### Helidon
-- **Two flavours**: SE (programmatic routing, minimal overhead) and MP (CDI + JAX-RS, MicroProfile compliant)
+- **Two flavors**: SE (programmatic routing, minimal overhead) and MP (CDI + JAX-RS, MicroProfile compliant)
 - **Virtual-thread–first**: Helidon 4 removed the reactive HTTP server; every request runs on a virtual thread by default — platform and reactive modes are N/A by design
 - **Shared sources**: Native modules reuse the JVM sources via `build-helper-maven-plugin`; only the build toolchain differs
 - **jlink-optimised JVM builds**: Runtime image is a custom JRE with unused JDK modules stripped, yielding significantly smaller Docker images
@@ -921,12 +922,12 @@ Documentation is available on GitHub Pages: **[Full Documentation Site](https://
 
 **Quick Links:**
 - **[Getting Started Guide](https://george-c-odes.github.io/Observability-Benchmarking/getting-started.html)** - Step-by-step setup instructions, prerequisites, and troubleshooting
-- **[System Architecture](https://george-c-odes.github.io/Observability-Benchmarking/architecture.html)** - Detailed architecture, component descriptions, and design decisions
-- **[Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html)** - Complete testing procedures, reproducibility guidelines, and result interpretation
+- **[System Architecture](https://george-c-odes.github.io/Observability-Benchmarking/architecture.html)** – Detailed architecture, component descriptions, and design decisions
+- **[Benchmarking Methodology](https://george-c-odes.github.io/Observability-Benchmarking/benchmarking.html)** – Complete testing procedures, reproducibility guidelines, and result interpretation
 - **[Tools & Technologies](https://george-c-odes.github.io/Observability-Benchmarking/tools-technologies.html)** - In-depth documentation of all frameworks, tools, and technologies used
-- **[Control Plane](https://george-c-odes.github.io/Observability-Benchmarking/control-plane.html)** - Dashboard + orchestrator (the `CONTROL` Compose profile)
-- **[Adding a New Service](https://george-c-odes.github.io/Observability-Benchmarking/adding-a-service.html)** - How to integrate a new benchmark target (compose + orchestrator + wrk2 + docs)
-- **[Quality Reports](https://george-c-odes.github.io/Observability-Benchmarking/quality/)** - Latest published static analysis and inspection results
+- **[Control Plane](https://george-c-odes.github.io/Observability-Benchmarking/control-plane.html)** – Dashboard and orchestrator (the `CONTROL` Compose profile)
+- **[Adding a New Service](https://george-c-odes.github.io/Observability-Benchmarking/adding-a-service.html)** – How to integrate a new benchmark target (compose + orchestrator + wrk2 + docs)
+- **[Quality Reports](https://george-c-odes.github.io/Observability-Benchmarking/quality/)** – Latest published static analysis and inspection results
 
 The documentation includes portfolio-oriented content highlighting the skills demonstrated, modern software practices, and technical capabilities of this project.
 
@@ -958,8 +959,8 @@ The documentation includes portfolio-oriented content highlighting the skills de
 **Cause**: JVM JIT compilation, container initialization, cache warming.
 
 **Workaround**: 
-- Run a 30-60 second warm-up before collecting benchmark data
-- For JVM workloads, allow 2-3 minutes for optimal JIT compilation
+- Run a 30-60-second warm-up before collecting benchmark data
+- For JVM workloads, allow 2–3 minutes for optimal JIT compilation
 - Always cross-reference `/results` data with Grafana metrics
 
 ### Connectivity Errors on Startup
@@ -977,13 +978,13 @@ For troubleshooting help, please see existing issues or open a new issue with:
 - System information (OS, Docker version, hardware)
 - Complete error messages and logs
 - Steps to reproduce
-- Expected vs actual behavior
+- Expected vs. actual behavior
 
 ## 🚧 Future Plans
 
 This project is actively evolving with ambitious goals for enhanced functionality and broader coverage.
 
-### 🎯 Short-term Goals (Next 3-6 months)
+### 🎯 Short-term Goals (Next 3–6 months)
 
 #### Additional Framework Support
 - [ ] **Python**: Flask, FastAPI, AIOHTTP implementations
@@ -1003,7 +1004,7 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 - [ ] **Lock contention analysis** for concurrent workloads
 - [ ] **Better profile-to-span correlation** (as Grafana matures)
 
-### 🌐 Medium-term Goals (6-12 months)
+### 🌐 Medium-term Goals (6–12 months)
 
 #### Kubernetes & Cloud Native
 - [ ] **Cluster-scale benchmarking** with distributed load generation
@@ -1029,7 +1030,7 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 #### Advanced Features
 - [ ] **Machine learning-based** performance anomaly detection
 - [ ] **Cost analysis** comparing cloud deployment scenarios
-- [ ] **Energy efficiency metrics** (especially for native vs JVM)
+- [ ] **Energy efficiency metrics** (especially for native vs. JVM)
 - [ ] **Multi-datacenter** latency simulation
 - [ ] **Chaos engineering** integration (latency injection, failures)
 
@@ -1051,7 +1052,7 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🤝 How You Can Help
 
 Interested in contributing to these goals? See the [Contributing](#-contributing) section below or open an issue to discuss:
-- Which frameworks/languages you'd like to see
+- Which frameworks/languages you would like to see
 - Feature requests and improvements
 - Documentation enhancements
 - Bug reports and fixes
@@ -1078,7 +1079,7 @@ Contributions are welcome and appreciated! Whether you're fixing bugs, adding fe
 To add a new framework or language implementation, please include:
 
 - **Source code** in the appropriate `services/<framework>/` directory
-- **Dockerfile** with clear base image and build instructions
+- **Dockerfile** with a clear base image and build instructions
 - **README.md** describing the implementation specifics
 - **Docker Compose entry** in the main compose file
 - **Benchmark script** or wrk2 configuration
@@ -1129,7 +1130,7 @@ We love new ideas! When proposing features:
 
 ## 📄 License
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Apache License 2.0** – see the [LICENSE](LICENSE) file for details.
 
 ### License Summary
 
@@ -1152,29 +1153,29 @@ This project is licensed under the **Apache License 2.0** - see the [LICENSE](LI
 This project builds upon amazing open-source tools and frameworks. Special thanks to:
 
 ### Observability Stack
-- [Grafana](https://github.com/grafana/grafana) - The open observability platform
+- [Grafana](https://github.com/grafana/grafana) – The open observability platform
 - [Loki](https://github.com/grafana/loki) - Log aggregation system
 - [Tempo](https://github.com/grafana/tempo) - High-scale distributed tracing
 - [Mimir](https://github.com/grafana/mimir) - Scalable long-term Prometheus storage
-- [Pyroscope](https://github.com/grafana/pyroscope) - Continuous profiling platform
-- [Alloy](https://github.com/grafana/alloy) - OpenTelemetry distribution
+- [Pyroscope](https://github.com/grafana/pyroscope) – Continuous profiling platform
+- [Alloy](https://github.com/grafana/alloy) – OpenTelemetry distribution
 
 ### Instrumentation
 - [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-java-instrumentation) - Observability framework
-- [Grafana OTel Profiling Java](https://github.com/grafana/otel-profiling-java) - Java profiling integration
+- [Grafana OTel Profiling Java](https://github.com/grafana/otel-profiling-java) – Java profiling integration
 
 ### Frameworks & Tools
-- [Spring Boot](https://spring.io/projects/spring-boot) - Java application framework
-- [Quarkus](https://quarkus.io/) - Supersonic Subatomic Java
+- [Spring Boot](https://spring.io/projects/spring-boot) – Java application framework
+- [Quarkus](https://quarkus.io/) – Supersonic Subatomic Java
 - [Micronaut](https://micronaut.io/) - Compile-time optimized JVM microservices framework
-- [Helidon](https://helidon.io/) - Lightweight Java microservices and APIs for cloud apps
-- [Spark](https://sparkjava.com/) - Minimal HTTP server
-- [Javalin](https://javalin.io/) - Lightweight REST server
+- [Helidon](https://helidon.io/) – Lightweight Java microservices and APIs for cloud apps
+- [Spark](https://sparkjava.com/) – Minimal HTTP server
+- [Javalin](https://javalin.io/) – Lightweight REST server
 - [Dropwizard](https://www.dropwizard.io/) - Production-ready RESTful web services framework
-- [Vert.x](https://vertx.io/) - Reactive, event-driven applications on the JVM
+- [Vert.x](https://vertx.io/) – Reactive, event-driven applications on the JVM
 - [Pekko](https://pekko.apache.org/) - Reactive HTTP toolkit on the Pekko actor system (Apache)
-- [Django](https://www.djangoproject.com/) - The web framework for perfectionists with deadlines
-- [wrk2](https://github.com/giltene/wrk2) - Constant throughput HTTP benchmarking tool
+- [Django](https://www.djangoproject.com/) – The web framework for perfectionists with deadlines
+- [wrk2](https://github.com/giltene/wrk2) – Constant throughput HTTP benchmarking tool
 - [Docker](https://www.docker.com/) - Containerization platform
 
 ### Community
