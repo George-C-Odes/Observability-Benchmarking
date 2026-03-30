@@ -81,12 +81,12 @@ The project implements a comprehensive testing strategy covering:
 
 **Java (Spark)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Direct HTTP + unit tests
+- HTTP Testing: Direct HTTP and unit tests
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Javalin)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Direct HTTP + unit tests
+- HTTP Testing: Direct HTTP and unit tests
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Dropwizard)**
@@ -233,7 +233,7 @@ public void testPlatformEndpoint() throws Exception {
 **Key Features Tested**:
 - Spring Boot {{SPRING_BOOT_VERSION}} with OpenTelemetry Java Agent
 - Micrometer metrics integration
-- Platform vs Virtual thread behavior
+- Platform vs. Virtual thread behavior
 - POM refactoring (no parent dependency)
 
 #### Running Spring Boot Netty Tests
@@ -349,7 +349,7 @@ ok      hello/internal/handlers  1.0s
 ```
 
 **Key Features Tested**:
-- Fiber web framework routing + request testing via `httptest`
+- Fiber web framework routing and request testing via `httptest`
 - OpenTelemetry SDK usage (but unit tests use noop providers)
 - Custom metric counter (`hello.request.count`) (exported via observable counter)
 - Cache behavior across different implementations
@@ -481,12 +481,12 @@ Vitest: 4.x
 
 The dashboard uses a dual-environment Vitest configuration:
 
-| Config File              | Environment | Tests Covered                                  |
-|--------------------------|-------------|------------------------------------------------|
-| `vitest.config.node.ts`  | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*` |
-| `vitest.config.dom.ts`   | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*` |
+| Config File             | Environment | Tests Covered                                         |
+|-------------------------|-------------|-------------------------------------------------------|
+| `vitest.config.node.ts` | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`       |
+| `vitest.config.dom.ts`  | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*` |
 
-The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom + React Testing Library.
+The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom and React Testing Library.
 
 #### Running Dashboard Tests
 
@@ -543,7 +543,7 @@ npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 
 ## Integration Tests
 
-Integration tests validate the entire deployment stack including Docker containers, networking, and observability components.
+Integration tests validate the entire deployment stack, including Docker containers, networking, and observability components.
 
 ### Location
 
@@ -595,7 +595,7 @@ docker compose --project-directory compose ps
 docker compose --project-directory compose logs -f quarkus-jvm
 ```
 
-**Wait Time**: Allow 30-60 seconds for all services to initialize.
+**Wait Time**: Allow 30–60 seconds for all services to initialize.
 
 ### Running Integration Tests
 
@@ -1158,7 +1158,7 @@ sleep 10
 
 1. Open Grafana: http://localhost:3000
 2. Go to Explore
-3. Select data source: Loki
+3. Select a data source: Loki
 4. Query: `{service_name="quarkus-jvm"}`
 5. Filter by log level: `|= "INFO"` or `|= "ERROR"`
 
@@ -1245,10 +1245,10 @@ jobs:
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Set up Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: '25'
           distribution: 'corretto'
@@ -1270,7 +1270,7 @@ jobs:
       
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: java-test-reports
           path: '**/target/surefire-reports/**'
@@ -1278,10 +1278,10 @@ jobs:
   unit-tests-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Set up Go {{GO_VERSION}}
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: '{{GO_VERSION}}'
       
@@ -1301,7 +1301,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Start Services
         run: |
@@ -1322,7 +1322,7 @@ jobs:
       
       - name: Upload Logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: integration-test-logs
           path: logs/
@@ -1338,7 +1338,7 @@ jobs:
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "{{GO_VERSION}}" }
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
       - name: Build ${{ matrix.service.name }}
         run: |

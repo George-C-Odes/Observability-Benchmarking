@@ -1,0 +1,88 @@
+#-------------------------------------------------------------------------------#
+#               Qodana analysis is configured by qodana.yaml file               #
+#             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
+#-------------------------------------------------------------------------------#
+
+#################################################################################
+#              WARNING: Do not store sensitive information in this file,        #
+#               as its contents will be included in the Qodana report.          #
+#################################################################################
+version: "1.0"
+
+# Python-specific Qodana configuration for Django services.
+#
+# This file lives under services/python/django/ because the root qodana.yaml
+# pins the JVM linter (jetbrains/qodana-jvm-community:2025.3).  The Django CI
+# workflow passes --config pointing here so the Python community linter and its
+# quality gate are self-contained.
+
+profile:
+  name: qodana.starter
+
+linter: jetbrains/qodana-python-community:2025.3
+
+# ---------------------------------------------------------------------------
+# Bootstrap: install dependencies so Qodana can resolve imports.
+#
+# Without this, every import from django, opentelemetry, gunicorn, cachetools,
+# and the local obbench-django-common package (imported as obbench_django_common)
+# is unresolved, producing false positives that do not appear in the IDE
+# (where the venv is configured).
+#
+# pyroscope-io and related pyroscope-* packages may contain Rust/C native
+# extensions that require a build toolchain not present in the Qodana
+# container — filter out any pyroscope-related requirements (the app
+# handles their absence gracefully at runtime).
+#
+# --ignore-requires-python is required because the Qodana Python Community
+# 2025.3 container ships Python 3.12, while the project declares
+# requires-python >= 3.13.  The packages are only needed for import
+# resolution and type stubs, not for execution.
+# ---------------------------------------------------------------------------
+bootstrap: |
+  set -e
+  pip install --quiet --disable-pip-version-check --ignore-requires-python \
+    /data/project/services/python/django/gunicorn/common
+  if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/WSGI/requirements.txt \
+    > /tmp/wsgi-reqs.txt; then
+    status=$?
+    if [ "$status" -eq 1 ]; then
+      : > /tmp/wsgi-reqs.txt
+    else
+      exit "$status"
+    fi
+  fi
+  if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/ASGI/requirements.txt \
+    > /tmp/asgi-reqs.txt; then
+    status=$?
+    if [ "$status" -eq 1 ]; then
+      : > /tmp/asgi-reqs.txt
+    else
+      exit "$status"
+    fi
+  fi
+  pip install --quiet --disable-pip-version-check --ignore-requires-python \
+    -r /tmp/wsgi-reqs.txt -r /tmp/asgi-reqs.txt
+
+# ---------------------------------------------------------------------------
+# Exclude paths that are not application source code.
+#
+# Paths are relative to the project root (--project-dir), not the
+# --only-directory scope.  Specific non-Python config/build files
+# (Dockerfiles, .dockerignore) are excluded from general inspections
+# (spelling, encoding) that could produce noise outside the IDE's scope.
+# ---------------------------------------------------------------------------
+exclude:
+  - name: All
+    paths:
+      - services/python/django/gunicorn/WSGI/Dockerfile
+      - services/python/django/gunicorn/ASGI/Dockerfile
+      - services/python/django/.dockerignore
+
+# Quality gate — matches the JVM config in the root qodana.yaml so the
+# Python codebase is held to the same standard.
+failureConditions:
+  severityThresholds:
+    critical: 0
+    high: 0
+    moderate: 0

@@ -1,24 +1,23 @@
 #!/usr/bin/env node
-// scripts/pages/generate-nextjs-quality-report.mjs
+// scripts/pages/generate-go-quality-report.mjs
 //
-// Generates a self-contained HTML quality report for the Next.js dashboard
-// from ESLint JSON output and TypeScript compiler diagnostics.
+// Generates a self-contained HTML quality report for the Go Enhanced service
+// from golangci-lint JSON output.
 //
-// Designed as the free alternative to Qodana-JS for CI quality reporting.
+// Designed as the free alternative to Qodana-Go for CI quality reporting.
 //
-// Usage (from utils/nextjs-dash working directory):
-//   node ../../scripts/pages/generate-nextjs-quality-report.mjs
+// Usage (from services/go/enhanced working directory):
+//   node ../../../scripts/pages/generate-go-quality-report.mjs
 //
 // Expected input files (in cwd):
-//   eslint-report.json   – ESLint output (--format json)
-//   tsc-output.txt       – TypeScript compiler output (tsc --noEmit 2>&1)
+//   golangci-lint-report.json  – golangci-lint output (--out-format=json)
 //
 // Output:
 //   quality-report/index.html
 //
 // Environment variables (optional, auto-detected in GitHub Actions):
 //   GITHUB_SHA, GITHUB_RUN_ID, GITHUB_REPOSITORY,
-//   ESLINT_VERSION, TSC_VERSION, NODE_VERSION
+//   GOLANGCI_LINT_VERSION, GO_VERSION
 
 import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, relative } from 'node:path';
@@ -35,40 +34,60 @@ function readOptionalFile(name) {
   return readFileSync(p, 'utf-8');
 }
 
-const eslintRaw = readOptionalFile('eslint-report.json');
-const tscRaw = readOptionalFile('tsc-output.txt');
+const lintRaw = readOptionalFile('golangci-lint-report.json');
 
-/** @type {Array<{filePath:string, messages:Array<{ruleId:string|null, severity:number, message:string, line:number, column:number}>, errorCount:number, warningCount:number}>} */
-let eslintResults = [];
+/** @type {{Issues?: Array<{FromLinter:string, Text:string, Pos:{Filename:string,Line:number,Column:number},Severity:string}>}} */
+let lintReport = {};
+
+// Track input health so a missing or corrupt report file cannot produce a
+// false "Pass" on the hosted HTML page.
+let inputMissing = lintRaw === null;
+let parseFailed = false;
+
 try {
-  if (eslintRaw) eslintResults = JSON.parse(eslintRaw);
-} catch {
-  console.warn('Warning: could not parse eslint-report.json; ESLint section will be empty.');
+  if (lintRaw) lintReport = JSON.parse(lintRaw);
+} catch (err) {
+  parseFailed = true;
+  console.warn(`Warning: could not parse golangci-lint-report.json: ${err.message}; report will show as failed.`);
 }
 
-const tscLines = tscRaw
-  ? tscRaw.split('\n').filter((l) => l.trim().length > 0)
-  : [];
+const issues = lintReport.Issues || [];
 
 // ---------------------------------------------------------------------------
 // 2. Compute summaries
 // ---------------------------------------------------------------------------
 
-const eslintTotalErrors = eslintResults.reduce((s, f) => s + f.errorCount, 0);
-const eslintTotalWarnings = eslintResults.reduce((s, f) => s + f.warningCount, 0);
-const eslintFilesWithIssues = eslintResults.filter(
-  (f) => f.errorCount > 0 || f.warningCount > 0,
-).length;
-const eslintTotalFiles = eslintResults.length;
-const eslintPass = eslintTotalErrors === 0 && eslintTotalWarnings === 0;
+const hasValidLintData = !inputMissing && !parseFailed;
+const totalIssues = issues.length;
+const errorCount = issues.filter((i) => (i.Severity || '').toLowerCase() === 'error').length;
+const warningCount = issues.filter((i) => (i.Severity || '').toLowerCase() === 'warning').length;
+const otherCount = totalIssues - errorCount - warningCount;
 
-// TypeScript diagnostics: lines that match the pattern "file(line,col): error TSxxxx: ..."
-const tscDiagnostics = tscLines.filter((l) => /:\s*(error|warning)\s+TS\d+/.test(l));
-const tscErrorCount = tscLines.filter((l) => /:\s*error\s+TS\d+/.test(l)).length;
-const tscWarningCount = tscLines.filter((l) => /:\s*warning\s+TS\d+/.test(l)).length;
-const tscPass = tscErrorCount === 0;
+// A clean pass requires valid input AND zero issues.
+const overallPass = hasValidLintData && totalIssues === 0;
 
-const overallPass = eslintPass && tscPass;
+// Human-readable status label for the Overall card.
+let overallLabel = 'Pass';
+let overallDetail = '';
+if (inputMissing) {
+  overallLabel = 'No Input';
+  overallDetail = 'golangci-lint-report.json was not found \u2014 results are unknown.';
+} else if (parseFailed) {
+  overallLabel = 'Parse Error';
+  overallDetail = 'golangci-lint-report.json could not be parsed \u2014 results are unknown.';
+} else if (totalIssues > 0) {
+  overallLabel = 'Fail';
+}
+
+// Group by linter
+const byLinter = {};
+for (const issue of issues) {
+  const linter = issue.FromLinter || 'unknown';
+  byLinter[linter] = (byLinter[linter] || 0) + 1;
+}
+
+// Unique files with issues
+const filesWithIssues = new Set(issues.map((i) => i.Pos?.Filename).filter(Boolean)).size;
 
 // ---------------------------------------------------------------------------
 // 3. Metadata
@@ -77,16 +96,14 @@ const overallPass = eslintPass && tscPass;
 const commitSha = process.env.GITHUB_SHA || 'local';
 const runId = process.env.GITHUB_RUN_ID || '';
 const repo = process.env.GITHUB_REPOSITORY || '';
-const nodeVersion = process.env.NODE_VERSION || process.version;
-const eslintVersion = process.env.ESLINT_VERSION || '';
-const tscVersion = process.env.TSC_VERSION || '';
+const goVersion = process.env.GO_VERSION || '';
+const golangciLintVersion = process.env.GOLANGCI_LINT_VERSION || '';
 const timestamp = new Date().toISOString();
 
 // ---------------------------------------------------------------------------
 // 4. HTML helpers
 // ---------------------------------------------------------------------------
 
-/** Escape HTML special characters. */
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -95,7 +112,6 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
-/** Shorten absolute file paths to project-relative. */
 function shortPath(p) {
   try {
     const r = relative(cwd, p);
@@ -106,45 +122,52 @@ function shortPath(p) {
 }
 
 function severityBadge(sev) {
-  if (sev === 2) return '<span class="badge badge-error">error</span>';
-  if (sev === 1) return '<span class="badge badge-warn">warning</span>';
+  const s = (sev || '').toLowerCase();
+  if (s === 'error') return '<span class="badge badge-error">error</span>';
+  if (s === 'warning') return '<span class="badge badge-warn">warning</span>';
   return '<span class="badge">info</span>';
 }
 
 function statusIcon(pass) {
-  return pass ? '✅' : '❌';
+  return pass ? '\u2705' : '\u274C';
 }
 
 // ---------------------------------------------------------------------------
-// 5. Build ESLint findings table
+// 5. Build findings table
 // ---------------------------------------------------------------------------
 
-let eslintTableRows = '';
-for (const file of eslintResults) {
-  if (file.messages.length === 0) continue;
-  const fp = esc(shortPath(file.filePath));
-  for (const msg of file.messages) {
-    eslintTableRows += `<tr>
-      <td class="cell-file" title="${esc(file.filePath)}">${fp}</td>
-      <td class="cell-loc">${msg.line}:${msg.column}</td>
-      <td>${severityBadge(msg.severity)}</td>
-      <td class="cell-rule">${esc(msg.ruleId || '—')}</td>
-      <td>${esc(msg.message)}</td>
-    </tr>\n`;
+let issueTableRows = '';
+for (const issue of issues) {
+  const fp = esc(shortPath(issue.Pos?.Filename || ''));
+  const line = issue.Pos?.Line || 0;
+  const col = issue.Pos?.Column || 0;
+  issueTableRows += `<tr>
+    <td class="cell-file" title="${esc(issue.Pos?.Filename || '')}">${fp}</td>
+    <td class="cell-loc">${line}:${col}</td>
+    <td>${severityBadge(issue.Severity)}</td>
+    <td class="cell-rule">${esc(issue.FromLinter || '\u2014')}</td>
+    <td>${esc(issue.Text || '')}</td>
+  </tr>\n`;
+}
+
+// ---------------------------------------------------------------------------
+// 6. Linter breakdown
+// ---------------------------------------------------------------------------
+
+let linterBreakdown;
+if (Object.keys(byLinter).length > 0) {
+  const sorted = Object.entries(byLinter).sort((a, b) => b[1] - a[1]);
+  linterBreakdown = '<table><thead><tr><th>Linter</th><th>Issues</th></tr></thead><tbody>';
+  for (const [linter, count] of sorted) {
+    linterBreakdown += `<tr><td><code>${esc(linter)}</code></td><td>${count}</td></tr>`;
   }
-}
-
-// ---------------------------------------------------------------------------
-// 6. Build TypeScript diagnostics block
-// ---------------------------------------------------------------------------
-
-let tscBlock;
-if (tscDiagnostics.length > 0) {
-  tscBlock = `<pre class="tsc-output">${tscDiagnostics.map((l) => esc(l)).join('\n')}</pre>`;
-} else if (tscRaw === null) {
-  tscBlock = '<p class="muted">TypeScript diagnostics file was not found.</p>';
+  linterBreakdown += '</tbody></table>';
+} else if (inputMissing) {
+  linterBreakdown = '<p class="muted">No linter output \u2014 golangci-lint-report.json was not found.</p>';
+} else if (parseFailed) {
+  linterBreakdown = '<p class="muted">No linter output \u2014 golangci-lint-report.json could not be parsed.</p>';
 } else {
-  tscBlock = '<p class="muted">No TypeScript diagnostics — all checks passed.</p>';
+  linterBreakdown = '<p class="muted">No issues found \u2014 all linters passed.</p>';
 }
 
 // ---------------------------------------------------------------------------
@@ -163,9 +186,8 @@ if (runId && repo) {
   );
 }
 metaParts.push(`Generated ${esc(timestamp)}`);
-if (nodeVersion) metaParts.push(`Node ${esc(nodeVersion)}`);
-if (eslintVersion) metaParts.push(`ESLint ${esc(eslintVersion)}`);
-if (tscVersion) metaParts.push(`tsc ${esc(tscVersion)}`);
+if (goVersion) metaParts.push(`${esc(goVersion)}`);
+if (golangciLintVersion) metaParts.push(`golangci-lint ${esc(golangciLintVersion)}`);
 
 // ---------------------------------------------------------------------------
 // 8. Assemble HTML
@@ -177,7 +199,7 @@ const html = `<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
-  <title>Next.js Dashboard — Quality Report</title>
+  <title>Go Services \u2014 Quality Report</title>
   <style>
     :root {
       --bg: #ffffff; --fg: #1a1a2e; --muted: #6e7781;
@@ -238,60 +260,53 @@ const html = `<!doctype html>
     .badge-error { background: var(--badge-error-bg); }
     .badge-warn { background: var(--badge-warn-bg); }
 
-    pre.tsc-output {
-      background: var(--pre-bg); border: 1px solid var(--card-border);
-      border-radius: 0.5rem; padding: 1rem; overflow-x: auto;
-      font-size: 0.82rem; line-height: 1.6;
-    }
     .muted { color: var(--muted); }
     .meta { color: var(--muted); font-size: 0.82rem; margin-top: 2rem; border-top: 1px solid var(--card-border); padding-top: 1rem; }
-    .meta span + span::before { content: ' · '; }
+    .meta span + span::before { content: ' \\00b7  '; }
     .back-link { margin-bottom: 1.5rem; font-size: 0.9rem; }
     .empty-state { color: var(--muted); font-style: italic; padding: 1.5rem 0; }
-    .collapse-toggle { cursor: pointer; user-select: none; }
-    .collapse-toggle::before { content: '▸ '; font-size: 0.85em; }
-    .collapse-toggle[open]::before { content: '▾ '; }
   </style>
 </head>
 <body>
-  <p class="back-link"><a href="../">← Back to quality reports index</a></p>
-  <h1>Next.js Dashboard — Quality Report</h1>
+  <p class="back-link"><a href="../">\u2190 Back to quality reports index</a></p>
+  <h1>Go Enhanced Service \u2014 Quality Report</h1>
   <p class="subtitle">
-    Static analysis results from ESLint and TypeScript — the free, open-source
-    equivalent of JetBrains IDE inspections for JavaScript and TypeScript.
+    Static analysis results from <code>golangci-lint</code> \u2014 a fast, parallel Go linter
+    aggregating dozens of analyzers including <code>govet</code>, <code>staticcheck</code>,
+    <code>errcheck</code>, <code>gosec</code>, <code>revive</code>, and more.
   </p>
 
   <div class="summary-grid">
     <div class="card">
       <div class="card-title">Overall</div>
-      <div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div>
+      <div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallLabel}</div>
+      <div class="card-detail">${overallDetail}</div>
     </div>
     <div class="card">
-      <div class="card-title">ESLint</div>
-      <div class="card-value ${eslintPass ? 'status-pass' : 'status-fail'}">${statusIcon(eslintPass)} ${eslintTotalErrors} errors, ${eslintTotalWarnings} warnings</div>
-      <div class="card-detail">${eslintTotalFiles} files analyzed${eslintFilesWithIssues > 0 ? `, ${eslintFilesWithIssues} with issues` : ''}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">TypeScript</div>
-      <div class="card-value ${tscPass ? 'status-pass' : 'status-fail'}">${statusIcon(tscPass)} ${tscErrorCount} errors${tscWarningCount > 0 ? `, ${tscWarningCount} warnings` : ''}</div>
-      <div class="card-detail">Strict mode (tsc --noEmit)</div>
+      <div class="card-title">golangci-lint</div>
+      <div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${errorCount} errors, ${warningCount} warnings${otherCount > 0 ? `, ${otherCount} other` : ''}</div>
+      <div class="card-detail">${totalIssues} total issues across ${filesWithIssues} file${filesWithIssues !== 1 ? 's' : ''}</div>
     </div>
   </div>
 
-  <h2>ESLint Findings</h2>
+  <h2>Linter Breakdown</h2>
+  ${linterBreakdown}
+
+  <h2>All Findings</h2>
   ${
-    eslintTableRows
+    issueTableRows
       ? `<div style="overflow-x:auto">
     <table>
-      <thead><tr><th>File</th><th>Location</th><th>Severity</th><th>Rule</th><th>Message</th></tr></thead>
-      <tbody>${eslintTableRows}</tbody>
+      <thead><tr><th>File</th><th>Location</th><th>Severity</th><th>Linter</th><th>Message</th></tr></thead>
+      <tbody>${issueTableRows}</tbody>
     </table>
   </div>`
-      : '<p class="empty-state">No ESLint findings — all checks passed.</p>'
+      : inputMissing
+        ? '<p class="empty-state">No findings available \u2014 golangci-lint-report.json was not found.</p>'
+        : parseFailed
+          ? '<p class="empty-state">No findings available \u2014 golangci-lint-report.json could not be parsed.</p>'
+          : '<p class="empty-state">No findings \u2014 all golangci-lint checks passed.</p>'
   }
-
-  <h2>TypeScript Diagnostics</h2>
-  ${tscBlock}
 
   <div class="meta">
     ${metaParts.map((p) => `<span>${p}</span>`).join('\n    ')}
@@ -308,8 +323,6 @@ mkdirSync(outDir, { recursive: true });
 const outFile = resolve(outDir, 'index.html');
 writeFileSync(outFile, html, 'utf-8');
 
-const issueCount = eslintTotalErrors + eslintTotalWarnings + tscErrorCount + tscWarningCount;
 console.log(
-  `Quality report generated: ${outFile}  (${issueCount} total finding${issueCount !== 1 ? 's' : ''})`,
+  `Quality report generated: ${outFile}  (${totalIssues} total finding${totalIssues !== 1 ? 's' : ''})`,
 );
-

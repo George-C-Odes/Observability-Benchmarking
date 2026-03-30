@@ -42,7 +42,7 @@ mvn -f services/java/quarkus/jvm/pom.xml validate
 mvn -f utils/orchestrator/pom.xml validate
 ```
 
-At the moment, the Checkstyle plugin is configured in these Maven modules with `failsOnError=false` and `failOnViolation=false`, so it reports issues during `validate` without failing the build.
+The Checkstyle plugin is configured with `failsOnError=true`, `failOnViolation=true`, and `violationSeverity=warning` across all JVM modules and the orchestrator, so any checkstyle violation will fail the build.
 
 ### Key Rules Enforced
 
@@ -54,8 +54,8 @@ At the moment, the Checkstyle plugin is configured in these Maven modules with `
 
 #### Code Style
 - Maximum line length: 120 characters
-- Indentation: 4 spaces (no tabs)
-- Braces required for all control structures
+- Indentation: four spaces (no tabs)
+- Braces are required for all control structures
 - Proper whitespace around operators and keywords
 
 #### Javadoc Requirements
@@ -86,6 +86,7 @@ The convention is applied in:
 - `.github/workflows/pages.yml`
 - `.github/workflows/django_python_quality.yml`
 - `.github/workflows/nextjs_dash_quality.yml`
+- `.github/workflows/go_quality.yml`
 
 Each occurrence is annotated with `# TODO(node24-migration)` so they can be found and removed once GitHub's default runtime moves to Node 24.
 
@@ -142,11 +143,11 @@ How it works:
   - `qodana-report-orchestrator`
 - the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
-  - `qodana/services-java/`
-  - `qodana/orchestrator/`
-- report resolution, message generation, logging, and HTML assembly are handled by versioned scripts under `scripts/pages/` for easier testing and review
-- it also creates a small landing page at `qodana/index.html`
-- each scope URL (`qodana/services-java/` and `qodana/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
+  - `quality/services-java/`
+  - `quality/orchestrator/`
+- versioned scripts handle report resolution, message generation, logging, and HTML assembly under `scripts/pages/` for easier testing and review
+- it also creates a small landing page at `quality/index.html`
+- each scope URL (`quality/services-java/` and `quality/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
 - during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
 
 Why this is a good first implementation:
@@ -166,9 +167,9 @@ The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow sc
 Expected URL shape:
 
 ```text
-https://<owner>.github.io/<repo>/qodana/
-https://<owner>.github.io/<repo>/qodana/services-java/
-https://<owner>.github.io/<repo>/qodana/orchestrator/
+https://<owner>.github.io/<repo>/quality/
+https://<owner>.github.io/<repo>/quality/services-java/
+https://<owner>.github.io/<repo>/quality/orchestrator/
 ```
 
 If your repository uses a custom GitHub Pages domain, replace the `github.io/<repo>` part with that domain's base URL.
@@ -189,7 +190,7 @@ This means the Qodana job will fail if it finds at least one **critical**, **hig
 Why this works well:
 - it catches the most impactful findings without drowning the team in low-severity noise
 - it still protects against the most serious findings
-- it gives the team room to tighten further (e.g. adding `info` or `low`) once the current thresholds are reliably green
+- it gives the team room to tighten further (e.g., adding `info` or `low`) once the current thresholds are reliably green
 
 ### Baseline Strategy
 The workflow now supports a low-risk, per-scope baseline strategy for the same two JVM scopes:
@@ -330,7 +331,7 @@ For the currently scoped JVM code, Qodana can provide:
 ### Worthwhile Next Updates After This First Pass
 Once the workflow has run a few times and the issue signal is understood, the next worthwhile improvements would be:
 
-1. tighten the gate further (e.g. add `info` or `low` thresholds) if the findings at those severities are manageable
+1. tighten the gate further (e.g., add `info` or `low` thresholds) if the findings at those severities are manageable
 2. refresh or shrink the reviewed baseline files as historical findings are fixed
 3. add module-specific follow-up exclusions only where Qodana proves noisy, rather than disabling broad inspections up front
 4. consider separate documentation or workflow expansion for other languages only after the JVM path proves useful
@@ -341,6 +342,103 @@ Once the workflow has run a few times and the issue signal is understood, the ne
 Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all-in-one linter and formatter, enforcing PEP 8 and import ordering.
 
 The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatting verification) on all Django paths.
+
+### Qodana Python Community (Django Static Analysis)
+
+In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2025.3`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
+
+- **Ruff** focuses on PEP 8, import ordering, and formatting.
+- **Qodana Python Community** adds semantic inspections such as type mismatches, unreachable code, unused variables, and general Python best-practice warnings.
+
+The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2025.3`). The Python config is self-contained with its own linter pin and quality gate.
+
+#### How the Qodana Python Scan Works
+
+The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the `common` checks pass:
+
+1. Checks out the repository.
+2. Runs `docker run jetbrains/qodana-python-community:2025.3` with:
+   - `--project-dir=/data/project` — repository root
+   - `--config=/data/project/services/python/django/qodana.yaml` — Python-specific config
+   - `--only-directory=services/python/django` — scopes analysis to Django code only
+3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without a bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
+4. Uploads the HTML report directory as `qodana-report-django-python`.
+
+The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
+
+**Why the bootstrap is critical:** Qodana runs in an isolated Docker container with no pre-installed project dependencies. The IDE resolves imports via the configured Python interpreter and virtualenv. Without matching dependencies in the Qodana container, the linter cannot resolve `from django.http import ...`, `from opentelemetry.trace import ...`, etc., and reports them as errors — these are false positives. The `bootstrap` section in `services/python/django/qodana.yaml` installs the same packages the IDE sees, bringing CI findings in line with local IDE inspections. Any requirement line containing `pyroscope` is filtered out (so both `pyroscope-io` and `pyroscope-otel` are skipped) because these agents require a Rust build toolchain not available in the Qodana container; the application handles their absence gracefully at runtime.
+
+**Python version mismatch:** The Qodana Python Community 2025.3 container ships Python 3.12, while the project declares `requires-python >= 3.13`. The bootstrap uses `--ignore-requires-python` so pip installs the packages despite the version mismatch. The packages are only needed for Qodana's import resolution and type inference, not for execution.
+
+#### Quality Gate
+
+The Python `qodana.yaml` uses the same hardened gate as the JVM config:
+
+```yaml
+failureConditions:
+  severityThresholds:
+    critical: 0
+    high: 0
+    moderate: 0
+```
+
+#### Soft Gate Strategy (Initial Rollout)
+
+The `qodana` job uses `continue-on-error: true` at the job level. This means:
+
+- When the quality gate is violated, the **job** is marked as neutral (yellow, allowed failure) in the Actions UI — findings remain visible.
+- The **workflow** still succeeds, so the HTML report artifact is uploaded, and the Pages deployment can download and host it.
+- The `modules` job (Ruff lint, format, Django checks, unit tests) is unaffected — it still gates the workflow independently.
+
+This is a safe initial rollout pattern: the Qodana report is published for visibility while the existing Ruff and test gates remain strict. Once the Qodana findings are fixed or acknowledged via a reviewed SARIF baseline, `continue-on-error` can be removed to promote the Qodana gate to a hard gate.
+
+#### Hosted Qodana Python Report on GitHub Pages
+
+The Qodana Python HTML report is published to GitHub Pages alongside the JVM and Next.js reports:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/quality/django-python/
+```
+
+The Pages workflow triggers on successful `Django Python Quality` runs on `main`, downloads the `qodana-report-django-python` artifact, and copies it into the site under `quality/django-python/`.
+
+#### Testing Qodana Python Locally
+
+**Bash / zsh:**
+
+```bash
+mkdir -p .qodana/django-python
+
+docker run --rm \
+  -v "$PWD":/data/project \
+  -v "$PWD/.qodana/django-python":/data/results \
+  jetbrains/qodana-python-community:2025.3 \
+  --project-dir=/data/project \
+  --config=/data/project/services/python/django/qodana.yaml \
+  --only-directory=services/python/django \
+  --results-dir=/data/results
+```
+
+**PowerShell:**
+
+```powershell
+New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
+
+docker run --rm `
+  -v "${PWD}:/data/project" `
+  -v "${PWD}/.qodana/django-python:/data/results" `
+  jetbrains/qodana-python-community:2025.3 `
+  --project-dir=/data/project `
+  --config=/data/project/services/python/django/qodana.yaml `
+  --only-directory=services/python/django `
+  --results-dir=/data/results
+```
+
+Notes:
+- The `bootstrap` command in `services/python/django/qodana.yaml` runs automatically inside the container before analysis, installing Django and other dependencies so imports resolve correctly.
+- A non-zero container exit code means the configured quality gate was violated.
+- A `QODANA_TOKEN` is not required for local scans with the community linter.
+- Results and logs are written under `.qodana/django-python/` in the example commands above.
 
 ### Configuration
 Each Django module has its own Ruff configuration in a local `pyproject.toml`
@@ -399,6 +497,179 @@ For full CI parity, run the shared test suite from each module as documented in
 
 Ruff is also available as an IDE plugin for real-time feedback.
 
+## golangci-lint Configuration (Go Enhanced Service)
+
+### Overview
+The Go Enhanced service (`services/go/enhanced`) uses [golangci-lint](https://golangci-lint.run/) as an aggregated Go linter running dozens of analyzers in parallel. The configuration lives in `services/go/enhanced/.golangci.yml`.
+
+### Enabled Linters
+- **govet** — reports suspicious constructs (e.g., Printf calls with mismatched format strings)
+- **errcheck** — checks that error return values are used
+- **staticcheck** — advanced static analysis (SA, S, ST checks)
+- **ineffassign** — detects assignments to existing variables that are never read
+- **revive** — extensible linter replacing golint
+- **gocritic** — opinionated collection of checks not covered elsewhere
+- **unused** — detects unused constants, variables, functions, and types
+- **gosec** — security-oriented checks (SQL injection, hardcoded credentials, etc.)
+- **unconvert** — removes unnecessary type conversions
+
+### Formatters
+- **gofmt** — enforces standard Go formatting
+- **goimports** — enforces import grouping and ordering
+Test files (`_test.go`) have relaxed rules: `errcheck` and `gosec` are excluded.
+
+### GitHub Actions Workflow
+The workflow in `.github/workflows/go_quality.yml` performs:
+
+1. **go vet** — built-in Go analysis
+2. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
+3. **go test** — unit tests with race detector (`-race`)
+4. **go build** — compilation smoke test
+
+The workflow is triggered on:
+- manual dispatch
+- pull requests touching `services/go/enhanced/**`
+- pushes to `main` touching `services/go/enhanced/**`
+
+### Hosted Quality Report on GitHub Pages
+After each run, the workflow uses the `golangci-lint run` step, configured via `.golangci.yml` `output.formats`, to write a `golangci-lint-report.json` file, which is then consumed by `scripts/pages/generate-go-quality-report.mjs` to generate a self-contained HTML quality report. The report is uploaded as a `quality-report-go` artifact and published to GitHub Pages by the Pages workflow.
+
+Expected URL:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/quality/go/
+```
+
+The report includes:
+- Summary cards (overall pass/fail, error/warning counts)
+- Per-linter issue breakdown table
+- Per-file findings table with severity, linter name, message, and line/column
+- Metadata (commit SHA, workflow run, tool versions, timestamp)
+- Dark mode support via `prefers-color-scheme`
+
+### Running golangci-lint Locally
+
+```bash
+cd services/go/enhanced
+
+# Run lint (uses .golangci.yml, same behavior as CI: text to stdout + JSON report file)
+golangci-lint run
+
+# Run all quality checks matching CI
+go vet ./...
+golangci-lint run
+go test ./... -race
+go build ./cmd/server
+```
+
+> **Note:** The `.golangci.yml` `output.formats` section already writes both human-readable text to stdout and a JSON report to `golangci-lint-report.json` in a single pass. No extra CLI flags are needed.
+
+Or use the provided Makefile targets:
+
+```bash
+cd services/go/enhanced
+make lint
+make test
+```
+
+### Pages Integration for the Go Quality Report
+
+The Pages workflow resolves the Go quality report source independently of other report sources:
+
+- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report and the latest successful runs for Qodana, Next.js, and Django Python are resolved via API
+- When triggered by any other workflow or by push/manual dispatch, the latest successful `Go Quality` run on `main` is resolved via API
+
+Scripts involved:
+- `scripts/pages/resolve-go-quality-source.sh` — resolves the Go Quality workflow run to fetch the report artifact from
+- `scripts/pages/generate-go-quality-report.mjs` — generates the HTML report from golangci-lint JSON output
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `go` scope alongside existing scopes
+
+## CodeQL Configuration (Security & Quality Analysis)
+
+### Overview
+
+This project uses [GitHub CodeQL](https://codeql.github.com/) for automated security vulnerability detection and code quality analysis across all major languages in the repository. CodeQL is a free semantic code analysis engine that identifies CWE patterns, injection flaws, data-flow vulnerabilities, and more.
+
+### Languages Scanned
+
+| Language                | Build Mode | Coverage                                           |
+|-------------------------|------------|----------------------------------------------------|
+| `java-kotlin`           | manual     | `services/java/**/jvm/**`, `utils/orchestrator/**` |
+| `python`                | none       | `services/python/**`                               |
+| `go`                    | manual     | `services/go/**`                                   |
+| `javascript-typescript` | none       | `utils/nextjs-dash/**`                             |
+
+### Java Build Details
+
+The `java-kotlin` analysis compiles **12 JVM modules** (11 services and orchestrator) using `manual` build mode.
+Six native-image modules (`quarkus/native`, `spring/native/*`, `helidon/*/native`, `micronaut/native`) are
+**deliberately excluded** — they are very slow, resource-heavy, and duplicate the source of their JVM counterparts
+(CodeQL already sees that code via the JVM builds).
+
+**Checkstyle enforcement**: Every module is compiled with checkstyle enforced as fatal
+(`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`), matching the
+orchestrator module's configuration.
+
+**Incremental builds**: On `push` and `pull_request` events, only modules whose source tree
+actually changed are compiled. A `git diff` against the previous commit (push) or PR base (pull request)
+maps changed files to the owning module directory. Shared configuration changes
+(`services/java/checkstyle*.xml`, `.github/workflows/codeql.yml`) trigger a full rebuild of all
+affected modules. On `schedule` and `workflow_dispatch`, all 12 modules are always built.
+
+**Maven caching**: The `setup-java` action caches `~/.m2/repository` keyed on the JVM module
+`pom.xml` files, mirroring the dependency-warming strategy used in the Dockerfiles
+(`mvn dependency:go-offline` with `--mount=type=cache`).
+
+### Workflow
+
+The CodeQL workflow (`.github/workflows/codeql.yml`) runs:
+
+- **On push** to `main` (path-scoped to source directories)
+- **On pull request** (path-scoped to source directories)
+- **On schedule** — weekly full scan (Monday at 05:30 UTC) to catch newly published CWE patterns and updated query packs
+- **On manual dispatch** via `workflow_dispatch`
+
+Each language is analyzed in a separate matrix job. Results are:
+
+1. **Uploaded as SARIF** to GitHub's Security tab (Code Scanning alerts)
+2. **Combined into an HTML report** and published to GitHub Pages at [`quality/codeql/`](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/)
+
+The report is always published, even when CodeQL finds security issues, so the hosted page remains current.
+
+### Hosted Report
+
+The latest CodeQL report is published at:
+
+> **[https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/)**
+
+The report includes:
+- Overall pass/fail status
+- Findings by language breakdown
+- Findings by CodeQL rule breakdown
+- Detailed findings table with a file, location, severity, language, rule, and message
+
+### Running CodeQL Locally
+
+You can run CodeQL locally using the [CodeQL CLI](https://codeql.github.com/docs/codeql-cli/):
+
+```bash
+# Install the CodeQL CLI (see https://codeql.github.com/docs/codeql-cli/getting-started-with-the-codeql-cli/)
+
+# Create a CodeQL database for a specific language
+codeql database create codeql-db --language=java-kotlin --source-root=.
+
+# Run the analysis
+codeql database analyze codeql-db --format=sarif-latest --output=results.sarif
+
+# View results
+cat results.sarif | python3 -m json.tool
+```
+
+### Action Versions
+
+- **CodeQL Action**: `github/codeql-action@v4.35.1` (SHA-pinned)
+- **Query packs**: default (automatically updated by GitHub)
+
 ## Code Quality Standards
 
 ### Next.js Dashboard (ESLint + TypeScript)
@@ -419,7 +690,7 @@ The CI workflow is triggered on pushes to `main` and pull requests touching `uti
 The module uses ESLint v9 flat config in `utils/nextjs-dash/eslint.config.mjs`:
 
 - **Base**: `@eslint/js` recommended rules + `typescript-eslint` recommended
-- **Next.js**: `@next/eslint-plugin-next` (recommended + core-web-vitals)
+- **Next.js**: `@next/eslint-plugin-next` (recommended and core-web-vitals)
 - **React**: `eslint-plugin-react-hooks` recommended rules
 - **Server files** (`app/api/**`, `lib/**`, config files): Node globals enabled, `@typescript-eslint/no-require-imports` relaxed
 - **Ignores**: `.next/`, `node_modules/`, `dist/`, `out/`, `coverage/`, `build/`
@@ -485,29 +756,35 @@ The report includes:
 Expected URL:
 
 ```text
-https://george-c-odes.github.io/Observability-Benchmarking/qodana/nextjs-dash/
+https://george-c-odes.github.io/Observability-Benchmarking/quality/nextjs-dash/
 ```
 
-The landing page at `qodana/` now links to all three scopes:
-- `qodana/services-java/` — Qodana JVM (IntelliJ inspections)
-- `qodana/orchestrator/` — Qodana JVM (IntelliJ inspections)
-- `qodana/nextjs-dash/` — ESLint + TypeScript (free alternative)
+The landing page at `quality/` now links to all five scopes:
+- `quality/services-java/` — Qodana JVM (IntelliJ inspections)
+- `quality/orchestrator/` — Qodana JVM (IntelliJ inspections)
+- `quality/django-python/` — Qodana Python Community (PyCharm inspections)
+- `quality/go/` — golangci-lint (aggregated Go static analysis)
+- `quality/nextjs-dash/` — ESLint + TypeScript (free alternative)
 
-The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. However, only reports from **successful** workflow runs on `main` are published to GitHub Pages, matching the Qodana publishing behavior.
+The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
 
 #### Pages Integration for the Next.js Quality Report
 
-The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
+The Pages workflow resolves the Next.js quality report source independently of the Qodana source:
 
-- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana run is resolved via API
-- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js quality run is resolved via API
-- When triggered by push or manual dispatch, the latest successful run for **both** workflows is resolved via API
+- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
+- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
+- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana and Next.js runs and the latest successful or failed Go Quality run are resolved via API
+- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report (regardless of whether it succeeded or failed) and the latest successful Qodana, Next.js, and Django Python Quality runs are resolved via API
+- When triggered by push or manual dispatch, the latest successful run for Qodana, Next.js Dashboard Quality, and Django Python Quality workflows and the latest successful or failed Go Quality run are resolved via API
 
 This ensures every Pages deployment gets the freshest available version of all reports.
 
 Scripts involved:
 - `scripts/pages/resolve-nextjs-quality-source.sh` — resolves the Next.js quality workflow run to fetch the report artifact from
-- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash` scope alongside the existing Qodana JVM scopes
+- `scripts/pages/resolve-django-python-quality-source.sh` — resolves the Django Python quality workflow run to fetch the Qodana Python report artifact from
+- `scripts/pages/resolve-go-quality-source.sh` — resolves the Go Quality workflow run to fetch the golangci-lint report artifact from
+- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash`, `django-python`, and `go` scopes alongside the existing Qodana JVM scopes
 
 ### Documentation
 All public classes and methods should include:
@@ -535,21 +812,19 @@ All public classes and methods should include:
 
 ## Integration with CI/CD
 
-Checkstyle violations are currently reported but do not fail Maven builds by default. This allows for gradual adoption and prevents blocking legitimate changes.
+Checkstyle is enforced as fatal across all JVM modules and the orchestrator (`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`). Any checkstyle violation at warning severity or above will fail the Maven build.
 
 Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
 
+The Django Python quality workflow (`.github/workflows/django_python_quality.yml`) enforces Ruff lint and format checks, Django system checks, and unit tests — plus a Qodana Python Community scan that applies the same severity gate (`critical: 0`, `high: 0`, `moderate: 0`).
+
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
-When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
+The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR.
 
-To make Checkstyle violations fail the build, update the plugin configuration in `pom.xml`:
-```xml
-<configuration>
-    <failsOnError>true</failsOnError>
-    <failOnViolation>true</failOnViolation>
-</configuration>
-```
+GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab, and a combined HTML report is published to GitHub Pages.
+
+When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
 ## Customizing Rules
 
@@ -573,7 +848,7 @@ To customize Checkstyle or Qodana rules for your needs:
 
 #### Eclipse
 1. Install the Checkstyle Plug-in
-2. Right-click project → Properties → Checkstyle
+2. Right-click the project → Properties → Checkstyle
 3. Select `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
 4. Enable Checkstyle for the project
 
@@ -603,7 +878,15 @@ Potential enhancements to the code quality setup:
 - [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 - [Maven Checkstyle Plugin](https://maven.apache.org/plugins/maven-checkstyle-plugin/)
 - [Qodana Documentation](https://www.jetbrains.com/help/qodana/qodana-yaml.html)
+- [Qodana Python Community Linter](https://www.jetbrains.com/help/qodana/qodana-python-community.html)
+- [Ruff Documentation](https://docs.astral.sh/ruff/)
 - [ESLint Documentation](https://eslint.org/docs/latest/)
 - [typescript-eslint](https://typescript-eslint.io/)
 - [Vitest Documentation](https://vitest.dev/)
 - [Next.js ESLint Plugin](https://nextjs.org/docs/app/api-reference/config/eslint)
+- [golangci-lint Documentation](https://golangci-lint.run/)
+- [golangci-lint GitHub Action](https://github.com/golangci/golangci-lint-action)
+- [CodeQL Documentation](https://codeql.github.com/docs/)
+- [CodeQL CLI Getting Started](https://codeql.github.com/docs/codeql-cli/getting-started-with-the-codeql-cli/)
+- [CodeQL GitHub Action](https://github.com/github/codeql-action)
+- [SARIF Specification](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)

@@ -1,3 +1,4 @@
+// Package cache provides pluggable in-memory key/value cache implementations.
 package cache
 
 import (
@@ -34,13 +35,13 @@ func New(size int, impl string) (Cache, error) {
 		return nil, fmt.Errorf("cache size must be > 0 (got %d)", size)
 	}
 	switch strings.ToLower(strings.TrimSpace(impl)) {
-	case "", "slice":
+	case "slice":
 		return newSliceCache(size), nil
 	case "map":
 		return newMapCache(size), nil
 	case "ristretto":
 		return newRistrettoCache(size)
-	case "theine":
+	case "", "theine":
 		return newTheineCache(size)
 	case "otter":
 		return newOtterCache(size)

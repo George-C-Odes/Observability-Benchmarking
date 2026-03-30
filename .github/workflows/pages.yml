@@ -9,11 +9,18 @@ on:
     branches:
       - main
 
-  # Republish after successful main-branch quality runs so hosted reports stay current.
+  # Republish after main-branch quality runs so hosted reports stay current.
+  # Go Quality and CodeQL always upload their report artifacts (even on
+  # failure).  We listen for any completed run, but jobs only proceed on
+  # successful workflows, except that Go Quality and CodeQL failures are
+  # also accepted so their reports remain current.
   workflow_run:
     workflows:
       - Qodana
       - Next.js Dashboard Quality
+      - Django Python Quality
+      - Go Quality
+      - CodeQL
     types:
       - completed
     branches:
@@ -34,7 +41,17 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # Run for push / dispatch unconditionally.
+    # For workflow_run: accept Go Quality and CodeQL success or failure
+    # (reports are always uploaded), but require success for every other
+    # triggering workflow.
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+      || (github.event.workflow_run.name == 'Go Quality'
+          && github.event.workflow_run.conclusion == 'failure')
+      || (github.event.workflow_run.name == 'CodeQL'
+          && github.event.workflow_run.conclusion == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -150,6 +167,84 @@ jobs:
           run-id: ${{ steps.nextjs_quality_source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ----------------------------------------------------------------
+      # Django Python quality report (Qodana Python Community)
+      # ----------------------------------------------------------------
+
+      - name: Resolve Django Python quality artifact source run
+        id: django_python_quality_source
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/pages/resolve-django-python-quality-source.sh
+
+      - name: Download Django Python quality report
+        id: download_django_python_quality
+        if: steps.django_python_quality_source.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: qodana-report-django-python
+          path: ./.django-python-quality-pages/django-python
+          run-id: ${{ steps.django_python_quality_source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------------------------
+      # Go quality report (golangci-lint)
+      # ----------------------------------------------------------------
+
+      - name: Resolve Go quality artifact source run
+        id: go_quality_source
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/pages/resolve-go-quality-source.sh
+
+      - name: Download Go quality report
+        id: download_go_quality
+        if: steps.go_quality_source.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: quality-report-go
+          path: ./.go-quality-pages/go
+          run-id: ${{ steps.go_quality_source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------------------------
+      # CodeQL security & quality report
+      # ----------------------------------------------------------------
+
+      - name: Resolve CodeQL artifact source run
+        id: codeql_source
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_ID: ${{ github.event.workflow_run.id }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: bash scripts/pages/resolve-codeql-source.sh
+
+      - name: Download CodeQL quality report
+        id: download_codeql_quality
+        if: steps.codeql_source.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: quality-report-codeql
+          path: ./.codeql-quality-pages/codeql
+          run-id: ${{ steps.codeql_source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Assemble Qodana pages
         shell: bash
         env:
@@ -164,6 +259,18 @@ jobs:
           NEXTJS_QUALITY_HEAD_SHA: ${{ steps.nextjs_quality_source.outputs.head_sha }}
           NEXTJS_DOWNLOAD_OUTCOME: ${{ steps.download_nextjs_quality.outcome }}
           NEXTJS_QUALITY_PAGES_DIR: ./.nextjs-quality-pages
+          DJANGO_PYTHON_QUALITY_RUN_ID: ${{ steps.django_python_quality_source.outputs.run_id }}
+          DJANGO_PYTHON_QUALITY_HEAD_SHA: ${{ steps.django_python_quality_source.outputs.head_sha }}
+          DJANGO_PYTHON_DOWNLOAD_OUTCOME: ${{ steps.download_django_python_quality.outcome }}
+          DJANGO_PYTHON_QUALITY_PAGES_DIR: ./.django-python-quality-pages
+          GO_QUALITY_RUN_ID: ${{ steps.go_quality_source.outputs.run_id }}
+          GO_QUALITY_HEAD_SHA: ${{ steps.go_quality_source.outputs.head_sha }}
+          GO_DOWNLOAD_OUTCOME: ${{ steps.download_go_quality.outcome }}
+          GO_QUALITY_PAGES_DIR: ./.go-quality-pages
+          CODEQL_QUALITY_RUN_ID: ${{ steps.codeql_source.outputs.run_id }}
+          CODEQL_QUALITY_HEAD_SHA: ${{ steps.codeql_source.outputs.head_sha }}
+          CODEQL_DOWNLOAD_OUTCOME: ${{ steps.download_codeql_quality.outcome }}
+          CODEQL_QUALITY_PAGES_DIR: ./.codeql-quality-pages
           SITE_DIR: ./_site
         run: bash scripts/pages/assemble-qodana-pages.sh
 
@@ -172,7 +279,13 @@ jobs:
 
   # Deployment job
   deploy:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+      || (github.event.workflow_run.name == 'Go Quality'
+          && github.event.workflow_run.conclusion == 'failure')
+      || (github.event.workflow_run.name == 'CodeQL'
+          && github.event.workflow_run.conclusion == 'failure')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

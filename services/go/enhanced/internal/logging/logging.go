@@ -1,3 +1,5 @@
+// Package logging provides structured slog handlers with trace-context injection
+// and multi-handler fan-out support.
 package logging
 
 import (
@@ -24,10 +26,12 @@ type MultiHandler struct {
 	handlers []slog.Handler
 }
 
+// NewMultiHandler creates a MultiHandler that fans out to the given handlers.
 func NewMultiHandler(handlers ...slog.Handler) *MultiHandler {
 	return &MultiHandler{handlers: handlers}
 }
 
+// Enabled reports whether any of the underlying handlers is enabled for the given level.
 func (m *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	for _, h := range m.handlers {
 		if h.Enabled(ctx, level) {
@@ -37,6 +41,7 @@ func (m *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return false
 }
 
+// Handle forwards the record to each enabled handler, joining any errors.
 func (m *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
 	var errs []error
 	for _, h := range m.handlers {
@@ -49,6 +54,7 @@ func (m *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
 	return errors.Join(errs...)
 }
 
+// WithAttrs returns a new MultiHandler whose underlying handlers all include the given attrs.
 func (m *MultiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	next := make([]slog.Handler, 0, len(m.handlers))
 	for _, h := range m.handlers {
@@ -57,6 +63,7 @@ func (m *MultiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &MultiHandler{handlers: next}
 }
 
+// WithGroup returns a new MultiHandler whose underlying handlers all use the given group name.
 func (m *MultiHandler) WithGroup(name string) slog.Handler {
 	next := make([]slog.Handler, 0, len(m.handlers))
 	for _, h := range m.handlers {
@@ -66,20 +73,23 @@ func (m *MultiHandler) WithGroup(name string) slog.Handler {
 }
 
 // TraceContextHandler enriches log records with trace_id and span_id when available.
-// This is useful when logs are scraped from stdout (e.g. by Grafana Alloy) and you
+// This is useful when logs are scraped from stdout (e.g., by Grafana Alloy) and you
 // want correlation without requiring OTLP logs.
 type TraceContextHandler struct {
 	inner slog.Handler
 }
 
+// NewTraceContextHandler wraps inner with trace-context attribute injection.
 func NewTraceContextHandler(inner slog.Handler) *TraceContextHandler {
 	return &TraceContextHandler{inner: inner}
 }
 
+// Enabled delegates to the inner handler.
 func (h *TraceContextHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.inner.Enabled(ctx, level)
 }
 
+// Handle injects trace_id and span_id attributes when a valid span is present, then delegates.
 func (h *TraceContextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
 		r.AddAttrs(
@@ -90,10 +100,12 @@ func (h *TraceContextHandler) Handle(ctx context.Context, r slog.Record) error {
 	return h.inner.Handle(ctx, r)
 }
 
+// WithAttrs returns a new TraceContextHandler wrapping the inner handler with the given attrs.
 func (h *TraceContextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &TraceContextHandler{inner: h.inner.WithAttrs(attrs)}
 }
 
+// WithGroup returns a new TraceContextHandler wrapping the inner handler with the given group name.
 func (h *TraceContextHandler) WithGroup(name string) slog.Handler {
 	return &TraceContextHandler{inner: h.inner.WithGroup(name)}
 }

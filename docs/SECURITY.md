@@ -189,6 +189,16 @@ OpenTelemetry agents are configured with:
 - Regular security scans recommended
 - Code review process for security-sensitive changes
 
+### CodeQL Automated Scanning
+
+[GitHub CodeQL](https://codeql.github.com/) runs automated security vulnerability detection across all major languages in the repository (Java/Kotlin, Python, Go, JavaScript/TypeScript). The workflow (`.github/workflows/codeql.yml`) executes on every push to `main`, on pull requests, and on a weekly schedule to catch newly published CWE patterns.
+
+- **SARIF results** are uploaded to GitHub's Security tab (Code Scanning alerts)
+- **HTML report** is published to [GitHub Pages](https://george-c-odes.github.io/Observability-Benchmarking/quality/codeql/)
+- Reports are always published, even when findings are detected, so the hosted page stays current
+
+For details on the CodeQL configuration and how to run it locally, see [docs/LINTING_AND_CODE_QUALITY.md](LINTING_AND_CODE_QUALITY.md#codeql-configuration-security--quality-analysis).
+
 ## Runtime Security
 
 ### Java Security Manager

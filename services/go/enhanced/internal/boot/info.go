@@ -1,3 +1,4 @@
+// Package boot provides startup diagnostics, log-level parsing, and runtime info logging.
 package boot
 
 import (
@@ -5,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"runtime/metrics"
@@ -261,7 +263,7 @@ func parseCgroupMemToMB(raw string) (string, bool) {
 
 func readFirstExisting(paths ...string) string {
 	for _, p := range paths {
-		b, err := os.ReadFile(p)
+		b, err := os.ReadFile(filepath.Clean(p))
 		if err == nil {
 			return strings.TrimSpace(string(b))
 		}

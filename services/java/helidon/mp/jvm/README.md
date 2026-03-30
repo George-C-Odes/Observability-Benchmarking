@@ -5,7 +5,7 @@ A high-performance REST service implementation built with Helidon 4.3.4 MicroPro
 
 ## Purpose
 - Benchmark Helidon 4 MP performance with virtual threads against the SE variant and other frameworks
-- Demonstrate CDI-based clean architecture with ports & adapters on Helidon MP
+- Demonstrate CDI-based clean architecture with ports and adapters on Helidon MP
 - Provide comprehensive observability with metrics, traces, logs via OTLP/gRPC
 - Exercise high-concurrency cache retrieval patterns with MicroProfile Config injection
 
@@ -57,7 +57,7 @@ Dependencies point inward: `web → application ← infra`. The application laye
 - **Metrics**: Micrometer → OTel MeterProvider bridge → OTLP/gRPC → Alloy
   - `hello.request.count` — per-endpoint counter (via `MicrometerMetricsAdapter`)
   - `http.server.requests` — per-request timer (via `HttpMetricsFilter`, consistent with Spring/Quarkus/Micronaut)
-  - JVM extras — process memory & thread metrics (via `JvmExtrasMetricsConfiguration`)
+  - JVM extras — process memory and thread metrics (via `JvmExtrasMetricsConfiguration`)
 - **Logs**: Logback → OTel LogRecord appender → OTLP/gRPC → Alloy
 - **Signal correlation**: Trace/span IDs are automatically correlated across logs via the OTel Logback appender
 
@@ -65,7 +65,7 @@ All three signal pipelines share the same SDK instance, configured via `OTEL_*` 
 
 **OTel SDK early initialization**: The SDK is initialized in `OtelSdkInitExtension` (a CDI `Extension`) during Weld extension loading — the earliest possible point in the CDI lifecycle. This ensures `GlobalOpenTelemetry` is populated before Helidon's `TracingCdiExtension` resolves the tracer.
 
-### Throughput Optimisations
+### Throughput Optimizations
 
 The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 MB heap):
 
@@ -88,7 +88,7 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 - Port mapping: `8096:8080`
 - Multi-stage build: Maven shade → jlink (strips unused JDK modules, adds `java.net.http` for OTel OTLP HTTP sender) → distroless
 - Service-specific Maven cache mount (`maven-m2-helidon-mp-jvm-*`) avoids contention with other builds
-- `pom.xml` is copied before `dependency:go-offline`; checkstyle files and sources are deferred to later layers for optimal cache utilisation
+- `pom.xml` is copied before `dependency:go-offline`; checkstyle files and sources are deferred to later layers for optimal cache utilization
 
 ### Build Command
 
@@ -113,5 +113,5 @@ docker buildx build `
 7. **`TimeUnit` enum owns conversion (OCP)**: Each `TimeUnit` constant implements `toMillis()` — adapters never need a switch/if for new units.
 8. **Unified request flow**: Every request — regardless of `sleep` — calls `helloService.hello()` which increments the metric, optionally sleeps, and reads the Caffeine cache. This ensures a realistic workload consistent with all other benchmark modules.
 9. **Metrics warm-up at CDI startup**: `StartupListener` injects `MicrometerMetricsAdapter` and calls `warmUp()` for all `HelloMode` values before first traffic.
-10. **`JvmExtrasMetricsConfiguration` instance-based (DIP)**: Registry is injected, not accessed via static global — testable and scoped to CDI lifecycle.
+10. **`JvmExtrasMetricsConfiguration` instance-based (DIP)**: Registry is injected, not accessed via static global — testable, and scoped to CDI lifecycle.
 

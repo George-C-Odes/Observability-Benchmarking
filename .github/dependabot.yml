@@ -40,3 +40,12 @@ updates:
       interval: weekly
     commit-message:
       prefix: "deps(nextjs-dash)"
+
+  # Go / Enhanced service
+  - package-ecosystem: gomod
+    directory: /services/go/enhanced
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(go-enhanced)"
+

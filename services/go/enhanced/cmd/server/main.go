@@ -1,3 +1,4 @@
+// Package main is the entry point for the enhanced Go REST service.
 package main
 
 import (
@@ -107,8 +108,8 @@ func main() {
 	if cfg.HTTPMiddlewareEnabled {
 		spanNameFn := middleware.MakeSpanNameFormatter(cfg.HTTPSpanNameMode)
 
-		// Pre-normalise ignored paths once.
-		ignorePaths := middleware.NormalisePaths(cfg.HTTPIgnorePaths)
+		// Pre-normalize ignored paths once.
+		ignorePaths := middleware.NormalizePaths(cfg.HTTPIgnorePaths)
 
 		// For performance, we default to TraceContext only (no baggage).
 		var propagators propagation.TextMapPropagator

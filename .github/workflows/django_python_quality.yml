@@ -111,4 +111,48 @@ jobs:
         run: python manage.py check
 
       - name: Unit tests
-        run: python manage.py test obbench_django_common.tests
+        run: python manage.py test obbench_django_common.tests --verbosity=2
+
+  qodana:
+    name: Qodana Python (Django)
+    needs: common
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The Qodana job is allowed to fail without blocking the overall workflow
+    # so the HTML report artifact is still uploaded and the Pages deployment
+    # can download it. The job itself shows as failed (yellow) in the Actions
+    # UI when the quality gate is violated, keeping the signal visible.
+    # Remove this once the codebase is clean or a reviewed baseline is in place.
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Qodana Python Community Scan
+        env:
+          RESULTS_DIR: ${{ runner.temp }}/qodana-python/results
+        run: |
+          mkdir -p "$RESULTS_DIR"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/data/project" \
+            -v "$RESULTS_DIR:/data/results" \
+            jetbrains/qodana-python-community:2025.3 \
+            --project-dir=/data/project \
+            --config=/data/project/services/python/django/qodana.yaml \
+            --only-directory=services/python/django \
+            --results-dir=/data/results
+
+      # Explicit upload of the HTML report directory so the Pages workflow
+      # can download and host it alongside the JVM and Next.js reports.
+      - name: Upload Qodana HTML report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: qodana-report-django-python
+          path: ${{ runner.temp }}/qodana-python/results/report/
+          retention-days: 30
+          if-no-files-found: warn

@@ -67,7 +67,7 @@ export DEPLOYMENT_ENV="local"
 ```
 
 Notes:
-- Traces + metrics are stable in OpenTelemetry Go; logs are still experimental/beta (this project keeps OTLP logs optional).
+- Traces and metrics are stable in OpenTelemetry Go; logs are still experimental/beta (this project keeps OTLP logs optional).
 - The Fiber middleware (`otelfiber`) produces standard HTTP server spans and metrics out of the box.
 - Runtime metrics (memory, GC, goroutines, etc.) are enabled via the OTel runtime instrumentation.
 
@@ -77,7 +77,7 @@ Notes:
 
 This project supports Grafana's **Span Profiles** approach:
 - Start Pyroscope profiling (Go push mode).
-- Wrap the OTel TracerProvider with `otel-profiling-go` so profile samples are labelled with span IDs.
+- Wrap the OTel TracerProvider with `otel-profiling-go` so profile samples are labeled with span IDs.
 
 Guide:
 https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/go-span-profiles/
@@ -94,20 +94,19 @@ export PYROSCOPE_PROFILE_TYPES="cpu,alloc,inuse,goroutines"
 
 ## Configuration
 
-| Env var | Default | Description |
-|---|---:|---|
-| `PORT` | `8080` | HTTP port |
-| `CACHE_SIZE` | `50000` | Size of pre-built cache |
-| `CACHE_IMPL` | `slice` | `slice` (fast for sequential keys) or `map` |
-| `MAX_SLEEP_SECONDS` | `10` | Upper bound for `sleep` query param |
-| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `` | OTLP endpoint URL/host |
-| `OTEL_EXPORTER_OTLP_INSECURE` | `true` | Use insecure OTLP (common for local stacks) |
-| `OTEL_TRACES_SAMPLER_RATIO` | `1.0` | Trace sampling ratio (0..1) |
-| `OTEL_METRICS_EXPORT_INTERVAL` | `5s` | Metric export interval |
-| `OTEL_LOGS_ENABLED` | `false` | Export logs via OTLP (experimental) |
-| `PYROSCOPE_SERVER_ADDRESS` | `` | Enables Pyroscope push mode |
-| `PYROSCOPE_APPLICATION_NAME` | `` | Pyroscope app name |
+| Env var                        |  Default | Description                                             |
+|--------------------------------|---------:|---------------------------------------------------------|
+| `PORT`                         |   `8080` | HTTP port                                               |
+| `CACHE_SIZE`                   |  `50000` | Size of pre-built cache                                 |
+| `CACHE_IMPL`                   | `theine` | `slice`, `map`, `ristretto`, `theine`, or `otter`       |
+| `LOG_LEVEL`                    |   `info` | `debug`, `info`, `warn`, `error`                        |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`  |       `` | OTLP endpoint URL/host                                  |
+| `OTEL_EXPORTER_OTLP_INSECURE`  |   `true` | Use insecure OTLP (common for local stacks)             |
+| `OTEL_TRACES_SAMPLER_ARG`      |    `1.0` | Trace sampling ratio (0..1), used with `*traceidratio*` |
+| `OTEL_METRICS_EXPORT_INTERVAL` |    `15s` | Metric export interval                                  |
+| `OTEL_LOGS_ENABLED`            |  `false` | Export logs via OTLP (experimental)                     |
+| `PYROSCOPE_SERVER_ADDRESS`     |       `` | Enables Pyroscope push mode                             |
+| `PYROSCOPE_APPLICATION_NAME`   |       `` | Pyroscope app name                                      |
 
 ---
 

@@ -1,0 +1,314 @@
+name: CodeQL
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  # Acknowledge the April 2026 default: skip file-coverage computation on
+  # PRs for faster analysis.  Coverage is still computed on push, schedule,
+  # and workflow_dispatch runs that feed the hosted quality report.
+  CODEQL_ACTION_FILE_COVERAGE_ON_PRS: 'false'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/java/**'
+      - 'services/python/**'
+      - 'services/go/**'
+      - 'utils/nextjs-dash/**'
+      - 'utils/orchestrator/**'
+      - 'scripts/pages/generate-codeql-report.mjs'
+      - '.github/workflows/codeql.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/java/**'
+      - 'services/python/**'
+      - 'services/go/**'
+      - 'utils/nextjs-dash/**'
+      - 'utils/orchestrator/**'
+      - 'scripts/pages/generate-codeql-report.mjs'
+      - '.github/workflows/codeql.yml'
+  schedule:
+    # Weekly full scan — Monday at 05:30 UTC.
+    # Scheduled runs ensure new CWE patterns and updated CodeQL query packs
+    # are evaluated even when source code has not changed.
+    - cron: '30 5 * * 1'
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: python
+            build-mode: none
+          - language: go
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # Full history for the java-kotlin leg so git-diff can identify
+          # which modules actually changed (incremental builds).
+          # Other languages keep the default shallow clone.
+          fetch-depth: ${{ matrix.language == 'java-kotlin' && '0' || 1 }}
+
+      # ── Fast-path: skip the entire java-kotlin leg when no Java-related
+      # paths changed (the workflow triggers on python/go/js paths too). ──
+      - name: Detect Java changes
+        id: java-changes
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # Scheduled / manual runs always do a full scan.
+          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          diff_base=""
+          if [[ "$EVENT_NAME" == "pull_request" && -n "${PR_BASE_SHA:-}" ]]; then
+            diff_base="$PR_BASE_SHA"
+          elif [[ -n "${PUSH_BEFORE:-}" && "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+            diff_base="$PUSH_BEFORE"
+          fi
+
+          # When the diff base is unknown, assume modules are affected.
+          if [[ -z "$diff_base" ]]; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed="$(git diff --name-only "$diff_base"...HEAD 2>/dev/null || echo "")"
+
+          if [[ -z "$changed" ]]; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$)'; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Java/Kotlin paths in changeset — skipping java-kotlin leg"
+            echo "has_modules=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Java modules require JDK 25 (maven.compiler.release=25 across all
+      # 12 JVM projects).  Maven dependency cache is seeded from the JVM
+      # pom files only (native modules are excluded from CodeQL builds).
+      - name: Set up JDK 25
+        if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: |
+            services/java/**/jvm/**/pom.xml
+            utils/orchestrator/pom.xml
+
+      - name: Initialize CodeQL
+        if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      # ----------------------------------------------------------------
+      # Java manual build
+      #
+      # • 12 JVM modules are compiled (11 services + orchestrator).
+      # • 6 native-image modules are deliberately skipped — they are
+      #   very slow, resource-heavy, and duplicate the source of their
+      #   JVM counterparts (CodeQL already sees that code).
+      # • On schedule / dispatch: all 12 modules are built (full scan).
+      # • On push / PR: only modules whose source tree actually changed
+      #   are built; shared config changes (checkstyle, workflow) trigger
+      #   a full rebuild.
+      # ----------------------------------------------------------------
+      - name: Build Java modules
+        if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # ── Module registry (native modules deliberately excluded) ──
+          SERVICE_MODULES=(
+            services/java/dropwizard/jvm
+            services/java/helidon/mp/jvm
+            services/java/helidon/se/jvm
+            services/java/javalin/jvm
+            services/java/micronaut/jvm
+            services/java/pekko/jvm
+            services/java/quarkus/jvm
+            services/java/spark/jvm
+            services/java/spring/jvm/netty
+            services/java/spring/jvm/tomcat
+            services/java/vertx/jvm
+          )
+          ALL_MODULES=( "${SERVICE_MODULES[@]}" utils/orchestrator )
+
+          # ── Determine which modules need building ──
+          build_modules=()
+
+          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "Full scan — building all JVM modules"
+            build_modules=("${ALL_MODULES[@]}")
+          else
+            # Compute the merge-base diff reference
+            diff_base=""
+            if [[ "$EVENT_NAME" == "pull_request" && -n "${PR_BASE_SHA:-}" ]]; then
+              diff_base="$PR_BASE_SHA"
+            elif [[ -n "${PUSH_BEFORE:-}" && "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+              diff_base="$PUSH_BEFORE"
+            fi
+
+            if [[ -z "$diff_base" ]]; then
+              echo "Cannot determine diff base — building all JVM modules"
+              build_modules=("${ALL_MODULES[@]}")
+            else
+              changed="$(git diff --name-only "$diff_base"...HEAD 2>/dev/null || echo "")"
+
+              if [[ -z "$changed" ]]; then
+                echo "Empty diff or diff failed — building all JVM modules"
+                build_modules=("${ALL_MODULES[@]}")
+              elif echo "$changed" | grep -qE '^\.github/workflows/codeql\.yml$'; then
+                echo "Workflow file changed — building all JVM modules"
+                build_modules=("${ALL_MODULES[@]}")
+              else
+                # Shared services/java/ checkstyle config → all service modules
+                if echo "$changed" | grep -qE '^services/java/checkstyle'; then
+                  echo "Shared checkstyle config changed — including all service JVM modules"
+                  build_modules=("${SERVICE_MODULES[@]}")
+                fi
+
+                # Map remaining changed files to their owning module
+                declare -A seen
+                for m in "${build_modules[@]+"${build_modules[@]}"}"; do seen["$m"]=1; done
+
+                while IFS= read -r file; do
+                  [[ -z "$file" ]] && continue
+                  for mod in "${ALL_MODULES[@]}"; do
+                    if [[ "$file" == "$mod/"* && -z "${seen[$mod]:-}" ]]; then
+                      build_modules+=("$mod")
+                      seen["$mod"]=1
+                      break
+                    fi
+                  done
+                done <<< "$changed"
+              fi
+            fi
+          fi
+
+          if [[ ${#build_modules[@]} -eq 0 ]]; then
+            echo "No specific JVM modules mapped from changes — building all JVM modules as fallback"
+            build_modules=("${ALL_MODULES[@]}")
+          fi
+
+          echo "Building ${#build_modules[@]} JVM module(s):"
+          printf '  • %s\n' "${build_modules[@]}"
+
+          # ── Compile each affected module ──
+          # Checkstyle enforcement is configured in the module/orchestrator pom.xml.
+          for mod_dir in "${build_modules[@]}"; do
+            echo "::group::Building $mod_dir"
+            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q
+            echo "::endgroup::"
+          done
+
+      # Go has multiple independent modules under services/go/ with no
+      # root-level go.mod, so autobuild cannot discover them.  Build each
+      # module explicitly so CodeQL extracts all Go source correctly.
+      - name: Build Go modules
+        if: matrix.language == 'go'
+        shell: bash
+        run: |
+          for mod_dir in services/go/enhanced services/go/simple; do
+            echo "::group::Building $mod_dir"
+            pushd "$mod_dir" > /dev/null
+            go build ./...
+            popd > /dev/null
+            echo "::endgroup::"
+          done
+
+      - name: Perform CodeQL Analysis
+        if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        with:
+          category: "/language:${{ matrix.language }}"
+          output: codeql-results
+
+      # Upload SARIF as a reusable artifact so the report job and the
+      # Pages workflow can build a hosted HTML summary.
+      - name: Upload SARIF artifact
+        if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: codeql-results/*.sarif
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ------------------------------------------------------------------
+  # Combine per-language SARIF files into a single HTML quality report
+  # that the Pages workflow publishes under /quality/codeql/.
+  # ------------------------------------------------------------------
+  report:
+    name: Generate report
+    needs: analyze
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Download all SARIF artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: codeql-sarif-*
+          path: .codeql-sarif
+          merge-multiple: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '22'
+
+      - name: Generate HTML report
+        run: node scripts/pages/generate-codeql-report.mjs
+
+      - name: Upload quality report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: quality-report-codeql
+          path: codeql-quality-report/
+          retention-days: 30
+          if-no-files-found: warn
+

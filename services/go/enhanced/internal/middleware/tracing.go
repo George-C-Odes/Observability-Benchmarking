@@ -1,3 +1,4 @@
+// Package middleware provides Fiber middleware for HTTP tracing and observability.
 package middleware
 
 import (
@@ -16,9 +17,9 @@ var traceContextHeaderKeys = []string{"traceparent", "tracestate"}
 // MinimalHTTPTracingMiddleware returns a lightweight Fiber handler that creates
 // a single server span per request using the provided tracer.
 //
-// ignorePaths must be pre-normalised (trimmed, with empty entries removed), e.g.
-// via NormalisePaths. This keeps the hot path allocation-free and avoids
-// ambiguity about who owns normalisation.
+// ignorePaths must be pre-normalized (trimmed, with empty entries removed), e.g.,
+// via NormalizePaths. This keeps the hot path allocation-free and avoids
+// ambiguity about who owns normalization.
 //
 // Compared to otelfiber this avoids attribute-heavy spans and per-request
 // allocations while keeping distributed-trace propagation intact.
@@ -28,7 +29,7 @@ func MinimalHTTPTracingMiddleware(
 	propagators propagation.TextMapPropagator,
 	ignorePaths []string,
 ) fiber.Handler {
-	// ignorePaths is expected to already be normalised (see docstring).
+	// ignorePaths is expected to already be normalized (see docstring).
 	trimmed := ignorePaths
 
 	return func(c fiber.Ctx) error {
@@ -60,7 +61,7 @@ func MinimalHTTPTracingMiddleware(
 	}
 }
 
-// fiberTraceContextCarrier is a small carrier optimised for TraceContext extraction.
+// fiberTraceContextCarrier is a small carrier optimized for TraceContext extraction.
 type fiberTraceContextCarrier struct {
 	c fiber.Ctx
 }
@@ -89,9 +90,7 @@ func MakeSpanNameFormatter(mode string) func(c fiber.Ctx) string {
 			return c.Method()
 		}
 	case "route":
-		return func(c fiber.Ctx) string {
-			return routeTemplate(c)
-		}
+		return routeTemplate
 	case "path":
 		return func(c fiber.Ctx) string {
 			return c.Path()
@@ -120,19 +119,19 @@ func routeTemplate(c fiber.Ctx) string {
 	return c.Path()
 }
 
-// IsIgnoredPath reports whether path matches any entry in the (pre-normalised)
+// IsIgnoredPath reports whether path matches any entry in the (pre-normalized)
 // ignore list. It supports exact matches and simple prefix globs ending in "*".
 func IsIgnoredPath(path string, ignore []string) bool {
 	return isIgnoredPath(path, ignore)
 }
 
-// NormalisePaths trims whitespace from each path once. Use the result
+// NormalizePaths trims whitespace from each path once. Use the result
 // with IsIgnoredPath to avoid per-request allocations.
-func NormalisePaths(paths []string) []string {
-	return normalisePaths(paths)
+func NormalizePaths(paths []string) []string {
+	return normalizePaths(paths)
 }
 
-func normalisePaths(paths []string) []string {
+func normalizePaths(paths []string) []string {
 	out := make([]string, 0, len(paths))
 	for _, p := range paths {
 		p = strings.TrimSpace(p)
