@@ -323,27 +323,27 @@ if [[ -n "${GO_QUALITY_RUN_ID:-}" ]]; then
   fi
 fi
 
-# CodeQL security & quality report messages
-codeql_item_text='codeql security & quality report is not available yet.'
+# CodeQL security and quality report messages
+codeql_item_text='codeql security and quality report is not available yet.'
 codeql_item_html='<li>codeql security &amp; quality report is not available yet.</li>'
 codeql_metadata_text=''
 codeql_metadata_html=''
 
 case "$codeql_status" in
   available)
-    codeql_item_text='codeql security & quality report is available (CodeQL SARIF).'
+    codeql_item_text='codeql security and quality report is available (CodeQL SARIF).'
     codeql_item_html='<li><a href="./codeql/">codeql security &amp; quality report</a> (CodeQL SARIF)</li>'
     ;;
   'download failed')
-    codeql_item_text='codeql security & quality report could not be downloaded for the resolved run.'
+    codeql_item_text='codeql security and quality report could not be downloaded for the resolved run.'
     codeql_item_html='<li>codeql security &amp; quality report could not be downloaded for the resolved run.</li>'
     ;;
   unavailable)
-    codeql_item_text='codeql security & quality report is not available for the resolved run.'
+    codeql_item_text='codeql security and quality report is not available for the resolved run.'
     codeql_item_html='<li>codeql security &amp; quality report is not available for the resolved run.</li>'
     ;;
   undetermined)
-    codeql_item_text='codeql security & quality report availability could not be determined for the resolved run.'
+    codeql_item_text='codeql security and quality report availability could not be determined for the resolved run.'
     codeql_item_html='<li>codeql security &amp; quality report availability could not be determined for the resolved run.</li>'
     ;;
 esac
