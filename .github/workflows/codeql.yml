@@ -249,19 +249,33 @@ jobs:
           done
 
           # ── Phase 2: Checkstyle validation (non-blocking) ──
-          # Violations are logged as workflow warnings.  The aggregate result
-          # is captured so a later step can fail the job *after* SARIF upload.
+          # Violations are logged as workflow warnings.  A JSON summary is
+          # written for the quality-report generator, and the aggregate
+          # result is captured so a later step can fail the job *after*
+          # SARIF upload.
           checkstyle_failed=0
+          modules_failed=0
+          build_warnings=()
           for mod_dir in "${build_modules[@]}"; do
             echo "::group::Checkstyle $mod_dir"
             if ! mvn -f "$mod_dir/pom.xml" checkstyle:check -B; then
               echo "::warning::Checkstyle violations found in $mod_dir"
               checkstyle_failed=1
+              modules_failed=$((modules_failed + 1))
+              build_warnings+=("Checkstyle violations found in $mod_dir")
             fi
             echo "::endgroup::"
           done
           echo "checkstyle_failed=$checkstyle_failed" >> "$GITHUB_OUTPUT"
 
+          # Write build-warnings JSON for the quality report generator.
+          # jq is pre-installed on GitHub-hosted runners and handles all
+          # JSON escaping automatically.
+          jq -n \
+            --argjson checked "${#build_modules[@]}" \
+            --argjson failed "$modules_failed" \
+            --args '{modulesChecked: $checked, modulesFailed: $failed, warnings: $ARGS.positional}' \
+            -- "${build_warnings[@]+"${build_warnings[@]}"}" > codeql-build-warnings.json
       # Go has multiple independent modules under services/go/ with no
       # root-level go.mod, so autobuild cannot discover them.  Build each
       # module explicitly so CodeQL extracts all Go source correctly.
@@ -295,6 +309,17 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # Upload build-warning details so the report job can surface
+      # checkstyle violations in the hosted HTML quality page.
+      - name: Upload build warnings
+        if: always() && !cancelled() && matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: codeql-build-warnings
+          path: codeql-build-warnings.json
+          retention-days: 30
+          if-no-files-found: warn
+
       # ── Deferred checkstyle gate ──
       # Placed after SARIF upload so checkstyle violations fail the job
       # without preventing CodeQL report generation.
@@ -325,6 +350,13 @@ jobs:
           pattern: codeql-sarif-*
           path: .codeql-sarif
           merge-multiple: false
+
+      - name: Download build warnings
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: codeql-build-warnings
+          path: .codeql-build-warnings
 
       - name: Set up Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0

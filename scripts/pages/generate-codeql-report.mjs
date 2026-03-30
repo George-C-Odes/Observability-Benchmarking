@@ -67,10 +67,67 @@ if (!existsSync(sarifInputDir)) {
       } catch (err) {
         parseFailed = true;
         parseFailCount++;
-        console.warn(`Warning: could not parse ${filePath}: ${err.message}`);
+        console.warn(`Warning: could not parse ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// 1b. Discover and read build warnings (checkstyle violations, etc.)
+// ---------------------------------------------------------------------------
+
+const buildWarningsDir = resolve(rootDir, '.codeql-build-warnings');
+
+/** @type {{modulesChecked: number, modulesFailed: number, warnings: string[]}} */
+let buildWarnings = { modulesChecked: 0, modulesFailed: 0, warnings: [] };
+let buildWarningsParseFailed = false;
+
+const buildWarningsFile = join(buildWarningsDir, 'codeql-build-warnings.json');
+if (existsSync(buildWarningsFile)) {
+  try {
+    const raw = readFileSync(buildWarningsFile, 'utf-8');
+    const parsed = JSON.parse(raw);
+    const warningsArr = Array.isArray(parsed.warnings) ? parsed.warnings : [];
+    const rawChecked = Number(parsed.modulesChecked);
+    const rawFailed = Number(parsed.modulesFailed);
+    const modulesFailed = Number.isFinite(rawFailed) ? rawFailed : 0;
+    const modulesChecked = Number.isFinite(rawChecked)
+      ? rawChecked
+      : Number.isFinite(rawFailed)
+        ? rawFailed
+        : (warningsArr.length > 0 ? warningsArr.length : 0);
+    buildWarnings = {
+      modulesChecked,
+      modulesFailed,
+      warnings: warningsArr,
+    };
+    if (buildWarnings.warnings.length > 0) {
+      console.log(`Build warnings loaded: ${buildWarnings.warnings.length} warning(s) from ${buildWarningsFile}`);
+    }
+  } catch (err) {
+    buildWarningsParseFailed = true;
+    console.warn(`Warning: could not parse ${buildWarningsFile}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+} else {
+  console.log('No build-warnings artifact found; checkstyle results will not be shown.');
+}
+
+// Treat build warnings as present when either the warnings array has entries
+// OR modulesFailed > 0 (guards against a producer that sets the count but
+// omits/truncates the warnings list).
+const hasBuildWarnings = buildWarnings.warnings.length > 0 || buildWarnings.modulesFailed > 0;
+
+if (buildWarnings.modulesFailed > 0 && buildWarnings.warnings.length === 0) {
+  console.warn(
+    `Warning: modulesFailed=${buildWarnings.modulesFailed} but warnings array is empty — ` +
+    'the JSON producer may have omitted failure details.',
+  );
+} else if (buildWarnings.modulesFailed === 0 && buildWarnings.warnings.length > 0) {
+  console.warn(
+    `Warning: warnings array has ${buildWarnings.warnings.length} entries but modulesFailed=0 — ` +
+    'inconsistent build-warnings JSON.',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -145,9 +202,10 @@ const warningCount = allFindings.filter((f) => f.level === 'warning').length;
 const noteCount = allFindings.filter((f) => f.level === 'note').length;
 const otherCount = totalFindings - errorCount - warningCount - noteCount;
 
-// A clean pass requires valid input, zero findings, AND no parse errors
-// (a partial parse failure means we cannot guarantee the full picture).
-const overallPass = hasValidData && !parseFailed && totalFindings === 0;
+// A clean pass requires valid input, zero findings, no parse errors,
+// no build warnings (e.g. checkstyle violations), AND no build-warnings
+// parse failures (a malformed JSON means we cannot trust the result).
+const overallPass = hasValidData && !parseFailed && !buildWarningsParseFailed && totalFindings === 0 && !hasBuildWarnings;
 
 let overallLabel = 'Pass';
 let overallDetail = '';
@@ -163,8 +221,23 @@ if (inputMissing) {
   overallDetail =
     `${parseFailCount} SARIF file${parseFailCount !== 1 ? 's' : ''} could not be parsed` +
     ` \u2014 results may be incomplete.`;
+} else if (buildWarningsParseFailed) {
+  overallLabel = totalFindings > 0 ? 'Findings + Build Warning Parse Error' : 'Build Warning Parse Error';
+  overallDetail =
+    'The build-warnings file (codeql-build-warnings.json) could not be parsed \u2014 ' +
+    'checkstyle results are unknown.';
+} else if (totalFindings > 0 && hasBuildWarnings) {
+  overallLabel = 'Findings + Build Warnings';
+  overallDetail =
+    `${buildWarnings.modulesFailed} of ${buildWarnings.modulesChecked} Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} ` +
+    `failed checkstyle; CodeQL also reported findings.`;
 } else if (totalFindings > 0) {
   overallLabel = 'Findings';
+} else if (hasBuildWarnings) {
+  overallLabel = 'Build Warnings';
+  overallDetail =
+    `${buildWarnings.modulesFailed} of ${buildWarnings.modulesChecked} Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} ` +
+    `failed checkstyle validation.`;
 }
 
 // Group by language
@@ -179,8 +252,14 @@ for (const f of allFindings) {
   byRule[f.ruleId] = (byRule[f.ruleId] || 0) + 1;
 }
 
-// Languages analyzed (from SARIF entries, even if 0 findings)
-const analyzedLanguages = [...new Set(sarifEntries.map((e) => e.language))].sort();
+// Languages analyzed (from SARIF entries, even if 0 findings).
+// Display order: java-kotlin → go → python → javascript-typescript.
+const languageDisplayOrder = ['java-kotlin', 'go', 'python', 'javascript-typescript'];
+const analyzedLanguages = [...new Set(sarifEntries.map((e) => e.language))].sort((a, b) => {
+  const ia = languageDisplayOrder.indexOf(a);
+  const ib = languageDisplayOrder.indexOf(b);
+  return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib) || a.localeCompare(b);
+});
 
 // Unique files with findings
 const filesWithFindings = new Set(allFindings.map((f) => f.file).filter(Boolean)).size;
@@ -296,6 +375,30 @@ if (analyzedLanguages.length > 0) {
 }
 
 // ---------------------------------------------------------------------------
+// 8b. Build warnings section (checkstyle violations, etc.)
+// ---------------------------------------------------------------------------
+
+let buildWarningsHtml = '';
+if (buildWarningsParseFailed) {
+  buildWarningsHtml = `
+  <div class="warnings-box warnings-box-error">
+    <h2>\u274C Build Warning Parse Error</h2>
+    <p>The build-warnings file (<code>codeql-build-warnings.json</code>) was found but could not be
+    parsed. Checkstyle results are unknown &mdash; treat this as a failure until the file is fixed.</p>
+  </div>`;
+} else if (hasBuildWarnings) {
+  const items = buildWarnings.warnings.map((w) => `<li>${esc(w)}</li>`).join('\n        ');
+  const listHtml = items
+    ? `\n    <ul>\n        ${items}\n    </ul>`
+    : '\n    <p class="muted">No per-module details were provided by the build step.</p>';
+  buildWarningsHtml = `
+  <div class="warnings-box">
+    <h2>\u26A0\uFE0F Build Warnings</h2>
+    <p><strong>${buildWarnings.modulesFailed}</strong> of <strong>${buildWarnings.modulesChecked}</strong> Java module${buildWarnings.modulesChecked !== 1 ? 's' : ''} failed checkstyle validation.</p>${listHtml}
+  </div>`;
+}
+
+// ---------------------------------------------------------------------------
 // 9. Metadata section
 // ---------------------------------------------------------------------------
 
@@ -400,6 +503,16 @@ const html = `<!doctype html>
     .meta span + span::before { content: ' \\00b7  '; }
     .back-link { margin-bottom: 1.5rem; font-size: 0.9rem; }
     .empty-state { color: var(--muted); font-style: italic; padding: 1.5rem 0; }
+
+    .warnings-box {
+      background: color-mix(in srgb, var(--warn) 10%, var(--bg));
+      border: 1px solid var(--warn); border-radius: 0.5rem;
+      padding: 0.75rem 1.25rem; margin-bottom: 1.5rem;
+    }
+    .warnings-box h2 { border-bottom: none; margin-top: 0.5rem; }
+    .warnings-box ul { margin: 0.5rem 0 0.25rem; padding-left: 1.5rem; }
+    .warnings-box li { font-family: monospace; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .warnings-box-error { border-color: var(--error); }
   </style>
 </head>
 <body>
@@ -433,6 +546,8 @@ const html = `<!doctype html>
       <div class="card-detail">unique CodeQL rules with findings</div>
     </div>
   </div>
+
+  ${buildWarningsHtml}
 
   <h2>Language Breakdown</h2>
   ${languageBreakdown}
