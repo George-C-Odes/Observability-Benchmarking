@@ -34,12 +34,14 @@ public final class HelloRoutes {
         void incrementHello();
     }
 
-    private static final class MicrometerHelloMetrics implements HelloMetrics {
-        /** Micrometer counter tracking hello endpoint invocations. */
-        private final Counter helloCounter;
-
-        private MicrometerHelloMetrics(Counter helloCounter) {
-            this.helloCounter = Objects.requireNonNull(helloCounter, "helloCounter");
+    /**
+     * Micrometer-backed hello metrics.
+     *
+     * @param helloCounter the counter used to track hello requests
+     */
+    private record MicrometerHelloMetrics(Counter helloCounter) implements HelloMetrics {
+        private MicrometerHelloMetrics {
+            Objects.requireNonNull(helloCounter, "helloCounter");
         }
 
         @Override
@@ -56,7 +58,7 @@ public final class HelloRoutes {
      */
     private record HelloParams(int sleepSeconds, boolean log) {
         static HelloParams from(Context ctx) {
-            int sleepSeconds = parseInt(ctx.queryParam("sleep"), 0);
+            int sleepSeconds = parseInt(ctx.queryParam("sleep"));
             boolean log = parseBoolean(ctx.queryParam("log"));
             return new HelloParams(sleepSeconds, log);
         }
@@ -101,7 +103,6 @@ public final class HelloRoutes {
         switch (config.threadMode()) {
             case PLATFORM -> registerPlatform(routes);
             case VIRTUAL -> registerVirtual(routes);
-            default -> throw new IllegalStateException("Unsupported THREAD_MODE: " + config.threadMode());
         }
     }
 
@@ -166,9 +167,9 @@ public final class HelloRoutes {
         T get() throws Exception;
     }
 
-    private static int parseInt(String value, int defaultValue) {
+    private static int parseInt(String value) {
         if (value == null || value.isBlank()) {
-            return defaultValue;
+            return 0;
         }
         return Integer.parseInt(value.trim());
     }
