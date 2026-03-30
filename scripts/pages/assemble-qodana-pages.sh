@@ -494,6 +494,7 @@ create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
 create_scope_page 'nextjs-dash' "$nextjs_item_text"
 create_scope_page 'django-python' "$django_python_item_text"
+create_scope_page 'go' "$go_item_text"
 
 # Landing page
 write_html_file "$SITE_DIR/quality/index.html" \
