@@ -198,7 +198,7 @@ const html = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Go Enhanced Service \u2014 Quality Report</title>
+  <title>Go Services \u2014 Quality Report</title>
   <style>
     :root {
       --bg: #ffffff; --fg: #1a1a2e; --muted: #6e7781;
