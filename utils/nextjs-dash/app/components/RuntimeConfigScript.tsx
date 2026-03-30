@@ -14,17 +14,23 @@ export type RuntimeClientConfig = {
   };
 };
 
-function escapeJsonForHtml(json: string) {
-  // Prevent </script> breaking out.
-  return json.replace(/</g, '\\u003c');
-}
-
 /**
- * Injects a tiny runtime config object into the browser for passing server info for display
+ * Injects a tiny runtime config object into the browser for passing server info for display.
+ *
+ * Safety: the data is double-encoded via JSON.stringify (producing a safe JS
+ * string literal) and decoded at runtime with JSON.parse, so the payload is
+ * never evaluated as executable code.
  */
 export function RuntimeConfigScript(props: RuntimeClientConfig) {
-  const payload = escapeJsonForHtml(JSON.stringify(props));
-  const code = `(() => { try { window.__OBS_DASH_CONFIG__ = ${payload}; } catch (e) {} })();`;
+  // Inner JSON.stringify serialises the object → JSON string.
+  // Outer JSON.stringify turns that string into a safe JS string literal
+  // (all special chars are escaped).  The </script> replacement prevents
+  // breaking out of the <script> block in the HTML.
+  const safeStringLiteral = JSON.stringify(JSON.stringify(props)).replace(
+    /</g,
+    '\\u003c',
+  );
+  const code = `(() => { try { window.__OBS_DASH_CONFIG__ = JSON.parse(${safeStringLiteral}); } catch (e) {} })();`;
 
   return (
     <Script
