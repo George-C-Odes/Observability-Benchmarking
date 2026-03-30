@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # scripts/pages/assemble-qodana-pages.sh
 #
-# Resolves Qodana report statuses, generates human-readable messages,
-# logs the resolution, and assembles the HTML pages under _site/quality/.
+# Resolves quality-report statuses for every scope (Qodana JVM, Qodana
+# Python, Go, Next.js), generates human-readable messages, logs the
+# resolution, and assembles the HTML pages under _site/quality/.
 #
 # This single script replaces the previous inline steps:
-#   "Resolve normalized Qodana report statuses"
-#   "Resolve Qodana report messages"
-#   "Log Qodana report resolution"
-#   "Publish Qodana reports into the Pages site"
+#   "Resolve normalized quality-report statuses"
+#   "Resolve quality-report messages"
+#   "Log quality-report resolution"
+#   "Publish quality reports into the Pages site"
 #
 # Required env:
 #   SERVICES_ARTIFACT_PRESENT    – true | false | unknown
@@ -155,8 +156,8 @@ services_item_text='services-java report is not available yet.'
 services_item_html='<li>services-java report is not available yet.</li>'
 orchestrator_item_text='orchestrator report is not available yet.'
 orchestrator_item_html='<li>orchestrator report is not available yet.</li>'
-report_metadata_text='No successful Qodana report has been published to GitHub Pages yet.'
-report_metadata_html='<p>No successful Qodana report has been published to GitHub Pages yet.</p>'
+report_metadata_text='No successful Qodana JVM report has been published to GitHub Pages yet.'
+report_metadata_html='<p>No successful Qodana JVM report has been published to GitHub Pages yet.</p>'
 status_notice_text=''
 status_notice_html=''
 
@@ -299,24 +300,24 @@ if [[ -n "${QODANA_RUN_ID:-}" ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
     report_metadata_html="<p>This page currently hosts reports from workflow run <code>$QODANA_RUN_ID</code> for commit <code>$QODANA_HEAD_SHA</code>.</p>"
   else
-    report_metadata_text="A successful Qodana run was found for workflow run $QODANA_RUN_ID at commit $QODANA_HEAD_SHA, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run."
-    report_metadata_html="<p>A successful Qodana run was found for workflow run <code>$QODANA_RUN_ID</code> at commit <code>$QODANA_HEAD_SHA</code>, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run.</p>"
+    report_metadata_text="A successful Qodana JVM run was found for workflow run $QODANA_RUN_ID at commit $QODANA_HEAD_SHA, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana JVM reports for that run."
+    report_metadata_html="<p>A successful Qodana JVM run was found for workflow run <code>$QODANA_RUN_ID</code> at commit <code>$QODANA_HEAD_SHA</code>, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana JVM reports for that run.</p>"
   fi
 fi
 
 if [[ "$SERVICES_ARTIFACT_PRESENT" == 'unknown' || "$ORCHESTRATOR_ARTIFACT_PRESENT" == 'unknown' ]]; then
-  status_notice_text='GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.'
-  status_notice_html='<p><strong>Note:</strong> GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.</p>'
+  status_notice_text='GitHub Pages could not determine artifact availability for the resolved Qodana JVM run, so missing reports are shown as undetermined rather than unavailable.'
+  status_notice_html='<p><strong>Note:</strong> GitHub Pages could not determine artifact availability for the resolved Qodana JVM run, so missing reports are shown as undetermined rather than unavailable.</p>'
 elif [[ "$SERVICES_DOWNLOAD_OUTCOME" == 'failure' || "$ORCHESTRATOR_DOWNLOAD_OUTCOME" == 'failure' ]]; then
-  status_notice_text='At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.'
-  status_notice_html='<p><strong>Note:</strong> At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.</p>'
+  status_notice_text='At least one Qodana JVM artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.'
+  status_notice_html='<p><strong>Note:</strong> At least one Qodana JVM artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.</p>'
 fi
 
 # ---------------------------------------------------------------------------
 # 3. Log resolution
 # ---------------------------------------------------------------------------
 
-echo 'Qodana Pages report resolution:'
+echo 'Qodana JVM report resolution:'
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   echo "  resolved run id: $QODANA_RUN_ID"
   echo "  resolved head sha: $QODANA_HEAD_SHA"
