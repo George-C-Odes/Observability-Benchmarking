@@ -188,14 +188,10 @@ jobs:
           printf '  • %s\n' "${build_modules[@]}"
 
           # ── Compile each affected module ──
-          # Checkstyle enforcement mirrors the orchestrator pom.xml:
-          #   failsOnError=true  failOnViolation=true  violationSeverity=warning
+          # Checkstyle enforcement is configured in the module/orchestrator pom.xml.
           for mod_dir in "${build_modules[@]}"; do
             echo "::group::Building $mod_dir"
-            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q \
-              -Dcheckstyle.failsOnError=true \
-              -Dcheckstyle.failOnViolation=true \
-              -Dcheckstyle.violationSeverity=warning
+            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q
             echo "::endgroup::"
           done
 
