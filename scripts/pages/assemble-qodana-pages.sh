@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # scripts/pages/assemble-qodana-pages.sh
 #
-# Resolves Qodana report statuses, generates human-readable messages,
-# logs the resolution, and assembles the HTML pages under _site/qodana/.
+# Resolves quality-report statuses for every scope (Qodana JVM, Qodana
+# Python, Go, Next.js), generates human-readable messages, logs the
+# resolution, and assembles the HTML pages under _site/quality/.
 #
 # This single script replaces the previous inline steps:
-#   "Resolve normalized Qodana report statuses"
-#   "Resolve Qodana report messages"
-#   "Log Qodana report resolution"
-#   "Publish Qodana reports into the Pages site"
+#   "Resolve normalized quality-report statuses"
+#   "Resolve quality-report messages"
+#   "Log quality-report resolution"
+#   "Publish quality reports into the Pages site"
 #
 # Required env:
 #   SERVICES_ARTIFACT_PRESENT    – true | false | unknown
@@ -155,8 +156,8 @@ services_item_text='services-java report is not available yet.'
 services_item_html='<li>services-java report is not available yet.</li>'
 orchestrator_item_text='orchestrator report is not available yet.'
 orchestrator_item_html='<li>orchestrator report is not available yet.</li>'
-report_metadata_text='No successful Qodana report has been published to GitHub Pages yet.'
-report_metadata_html='<p>No successful Qodana report has been published to GitHub Pages yet.</p>'
+report_metadata_text='No successful Qodana JVM report has been published to GitHub Pages yet.'
+report_metadata_html='<p>No successful Qodana JVM report has been published to GitHub Pages yet.</p>'
 status_notice_text=''
 status_notice_html=''
 
@@ -299,24 +300,24 @@ if [[ -n "${QODANA_RUN_ID:-}" ]]; then
     report_metadata_text="This page currently hosts reports from workflow run $QODANA_RUN_ID for commit $QODANA_HEAD_SHA."
     report_metadata_html="<p>This page currently hosts reports from workflow run <code>$QODANA_RUN_ID</code> for commit <code>$QODANA_HEAD_SHA</code>.</p>"
   else
-    report_metadata_text="A successful Qodana run was found for workflow run $QODANA_RUN_ID at commit $QODANA_HEAD_SHA, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run."
-    report_metadata_html="<p>A successful Qodana run was found for workflow run <code>$QODANA_RUN_ID</code> at commit <code>$QODANA_HEAD_SHA</code>, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana reports for that run.</p>"
+    report_metadata_text="A successful Qodana JVM run was found for workflow run $QODANA_RUN_ID at commit $QODANA_HEAD_SHA, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana JVM reports for that run."
+    report_metadata_html="<p>A successful Qodana JVM run was found for workflow run <code>$QODANA_RUN_ID</code> at commit <code>$QODANA_HEAD_SHA</code>, but its report artifacts are currently unavailable. GitHub Pages will continue to publish the documentation site without hosted Qodana JVM reports for that run.</p>"
   fi
 fi
 
 if [[ "$SERVICES_ARTIFACT_PRESENT" == 'unknown' || "$ORCHESTRATOR_ARTIFACT_PRESENT" == 'unknown' ]]; then
-  status_notice_text='GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.'
-  status_notice_html='<p><strong>Note:</strong> GitHub Pages could not determine artifact availability for the resolved Qodana run, so missing reports are shown as undetermined rather than unavailable.</p>'
+  status_notice_text='GitHub Pages could not determine artifact availability for the resolved Qodana JVM run, so missing reports are shown as undetermined rather than unavailable.'
+  status_notice_html='<p><strong>Note:</strong> GitHub Pages could not determine artifact availability for the resolved Qodana JVM run, so missing reports are shown as undetermined rather than unavailable.</p>'
 elif [[ "$SERVICES_DOWNLOAD_OUTCOME" == 'failure' || "$ORCHESTRATOR_DOWNLOAD_OUTCOME" == 'failure' ]]; then
-  status_notice_text='At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.'
-  status_notice_html='<p><strong>Note:</strong> At least one Qodana artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.</p>'
+  status_notice_text='At least one Qodana JVM artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.'
+  status_notice_html='<p><strong>Note:</strong> At least one Qodana JVM artifact existed for the resolved run but could not be downloaded. This usually indicates an artifact retrieval problem rather than a missing report.</p>'
 fi
 
 # ---------------------------------------------------------------------------
 # 3. Log resolution
 # ---------------------------------------------------------------------------
 
-echo 'Qodana Pages report resolution:'
+echo 'Qodana JVM report resolution:'
 if [[ -n "${QODANA_RUN_ID:-}" ]]; then
   echo "  resolved run id: $QODANA_RUN_ID"
   echo "  resolved head sha: $QODANA_HEAD_SHA"
@@ -383,7 +384,7 @@ fi
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/qodana/services-java" "$SITE_DIR/qodana/orchestrator" "$SITE_DIR/qodana/nextjs-dash" "$SITE_DIR/qodana/django-python" "$SITE_DIR/qodana/go"
+mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go"
 
 write_html_file() {
   local target_path="$1"
@@ -393,7 +394,7 @@ write_html_file() {
 
 create_scope_page() {
   local scope_name="$1"
-  local scope_dir="$SITE_DIR/qodana/$scope_name"
+  local scope_dir="$SITE_DIR/quality/$scope_name"
   local scope_message="$2"
 
   local nested_index
@@ -434,10 +435,11 @@ print(html.escape(sys.stdin.read().strip()))
       '  <meta charset="utf-8">' \
       "  <meta http-equiv=\"refresh\" content=\"0; url=./${nested_index_html}\">" \
       '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
-      "  <title>${scope_name} Qodana report</title>" \
+      '  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">' \
+      "  <title>${scope_name} quality report</title>" \
       '</head>' \
       '<body>' \
-      "  <p>Redirecting to the hosted Qodana report for <code>${scope_name}</code>...</p>" \
+      "  <p>Redirecting to the hosted quality report for <code>${scope_name}</code>...</p>" \
       "  <p>If the redirect does not happen automatically, open <a href=\"./${nested_index_html}\">the report here</a>.</p>" \
       '</body>' \
       '</html>'
@@ -448,16 +450,17 @@ print(html.escape(sys.stdin.read().strip()))
       '<head>' \
       '  <meta charset="utf-8">' \
       '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
-      "  <title>${scope_name} Qodana report</title>" \
+      '  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">' \
+      "  <title>${scope_name} quality report</title>" \
       '  <style>' \
       '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
       '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
       '  </style>' \
       '</head>' \
       '<body>' \
-      "  <h1>${scope_name} Qodana report</h1>" \
+      "  <h1>${scope_name} quality report</h1>" \
       "  <p>${scope_message}</p>" \
-      '  <p>Return to the <a href="../">main Qodana report index</a>.</p>' \
+      '  <p>Return to the <a href="../">quality reports index</a>.</p>' \
       '</body>' \
       '</html>'
   fi
@@ -465,51 +468,56 @@ print(html.escape(sys.stdin.read().strip()))
 
 # Copy downloaded report directories into the site tree.
 if [[ -d "$QODANA_PAGES_DIR/services-java" ]]; then
-  cp -a "$QODANA_PAGES_DIR/services-java/." "$SITE_DIR/qodana/services-java/"
+  cp -a "$QODANA_PAGES_DIR/services-java/." "$SITE_DIR/quality/services-java/"
 fi
 
 if [[ -d "$QODANA_PAGES_DIR/orchestrator" ]]; then
-  cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/qodana/orchestrator/"
+  cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/quality/orchestrator/"
 fi
 
 # Copy the pre-generated Next.js quality report (index.html) into the site tree.
 if [[ -d "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" ]]; then
-  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/qodana/nextjs-dash/"
+  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/quality/nextjs-dash/"
 fi
 
 # Copy the Qodana Python Community report into the site tree.
 if [[ -d "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" ]]; then
-  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/qodana/django-python/"
+  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/quality/django-python/"
 fi
 
 # Copy the Go golangci-lint quality report into the site tree.
 if [[ -d "$GO_QUALITY_PAGES_DIR/go" ]]; then
-  cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/qodana/go/"
+  cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/quality/go/"
 fi
 
 create_scope_page 'services-java' "$services_item_text"
 create_scope_page 'orchestrator' "$orchestrator_item_text"
 create_scope_page 'nextjs-dash' "$nextjs_item_text"
 create_scope_page 'django-python' "$django_python_item_text"
+create_scope_page 'go' "$go_item_text"
 
 # Landing page
-write_html_file "$SITE_DIR/qodana/index.html" \
+write_html_file "$SITE_DIR/quality/index.html" \
   '<!doctype html>' \
   '<html lang="en">' \
   '<head>' \
   '  <meta charset="utf-8">' \
   '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
+  '  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">' \
   '  <title>Quality reports</title>' \
   '  <style>' \
   '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
   '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
   '    h2 { margin-top: 1.5rem; }' \
+  '    h3 { margin-top: 1.25rem; }' \
   '  </style>' \
   '</head>' \
   '<body>' \
   '  <h1>Quality reports</h1>' \
   '  <p>Latest published code-quality reports from GitHub Actions on <code>main</code>.</p>' \
-  '  <h2>Qodana (JVM)</h2>' \
+  '  <h2>Qodana</h2>' \
+  '  <p>Static analysis powered by JetBrains Qodana.</p>' \
+  '  <h3>JVM</h3>' \
   '  <p>IntelliJ-based static analysis via <code>jetbrains/qodana-jvm-community</code>.</p>' \
   '  <ul>' \
   "    ${services_item_html}" \
@@ -517,13 +525,7 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   '  </ul>' \
   "  ${report_metadata_html}" \
   "  ${status_notice_html}" \
-  '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
-  '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
-  '  <ul>' \
-  "    ${nextjs_item_html}" \
-  '  </ul>' \
-  "  ${nextjs_metadata_html}" \
-  '  <h2>Qodana (Python)</h2>' \
+  '  <h3>Python</h3>' \
   '  <p>PyCharm Community-based static analysis via <code>jetbrains/qodana-python-community</code>.</p>' \
   '  <ul>' \
   "    ${django_python_item_html}" \
@@ -535,5 +537,11 @@ write_html_file "$SITE_DIR/qodana/index.html" \
   "    ${go_item_html}" \
   '  </ul>' \
   "  ${go_metadata_html}" \
+  '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
+  '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
+  '  <ul>' \
+  "    ${nextjs_item_html}" \
+  '  </ul>' \
+  "  ${nextjs_metadata_html}" \
   '</body>' \
   '</html>'

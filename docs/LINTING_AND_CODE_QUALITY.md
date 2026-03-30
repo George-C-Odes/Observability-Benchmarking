@@ -143,11 +143,11 @@ How it works:
   - `qodana-report-orchestrator`
 - the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
-  - `qodana/services-java/`
-  - `qodana/orchestrator/`
+  - `quality/services-java/`
+  - `quality/orchestrator/`
 - versioned scripts handle report resolution, message generation, logging, and HTML assembly under `scripts/pages/` for easier testing and review
-- it also creates a small landing page at `qodana/index.html`
-- each scope URL (`qodana/services-java/` and `qodana/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
+- it also creates a small landing page at `quality/index.html`
+- each scope URL (`quality/services-java/` and `quality/orchestrator/`) now always has its own landing page: if a nested Qodana HTML entrypoint is found it redirects there, otherwise it explains that the hosted report is unavailable for that scope/run
 - during the Pages build, the workflow logs the resolved Qodana run ID, commit SHA, and a final per-artifact status (`available`, `unavailable`, `download failed`, or `undetermined`) for easier troubleshooting in the Actions UI
 
 Why this is a good first implementation:
@@ -167,9 +167,9 @@ The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow sc
 Expected URL shape:
 
 ```text
-https://<owner>.github.io/<repo>/qodana/
-https://<owner>.github.io/<repo>/qodana/services-java/
-https://<owner>.github.io/<repo>/qodana/orchestrator/
+https://<owner>.github.io/<repo>/quality/
+https://<owner>.github.io/<repo>/quality/services-java/
+https://<owner>.github.io/<repo>/quality/orchestrator/
 ```
 
 If your repository uses a custom GitHub Pages domain, replace the `github.io/<repo>` part with that domain's base URL.
@@ -397,10 +397,10 @@ This is a safe initial rollout pattern: the Qodana report is published for visib
 The Qodana Python HTML report is published to GitHub Pages alongside the JVM and Next.js reports:
 
 ```text
-https://george-c-odes.github.io/Observability-Benchmarking/qodana/django-python/
+https://george-c-odes.github.io/Observability-Benchmarking/quality/django-python/
 ```
 
-The Pages workflow triggers on successful `Django Python Quality` runs on `main`, downloads the `qodana-report-django-python` artifact, and copies it into the site under `qodana/django-python/`.
+The Pages workflow triggers on successful `Django Python Quality` runs on `main`, downloads the `qodana-report-django-python` artifact, and copies it into the site under `quality/django-python/`.
 
 #### Testing Qodana Python Locally
 
@@ -537,7 +537,7 @@ After each run, the workflow uses the `golangci-lint run` step, configured via `
 Expected URL:
 
 ```text
-https://george-c-odes.github.io/Observability-Benchmarking/qodana/go/
+https://george-c-odes.github.io/Observability-Benchmarking/quality/go/
 ```
 
 The report includes:
@@ -671,15 +671,15 @@ The report includes:
 Expected URL:
 
 ```text
-https://george-c-odes.github.io/Observability-Benchmarking/qodana/nextjs-dash/
+https://george-c-odes.github.io/Observability-Benchmarking/quality/nextjs-dash/
 ```
 
-The landing page at `qodana/` now links to all five scopes:
-- `qodana/services-java/` — Qodana JVM (IntelliJ inspections)
-- `qodana/orchestrator/` — Qodana JVM (IntelliJ inspections)
-- `qodana/nextjs-dash/` — ESLint + TypeScript (free alternative)
-- `qodana/django-python/` — Qodana Python Community (PyCharm inspections)
-- `qodana/go/` — golangci-lint (aggregated Go static analysis)
+The landing page at `quality/` now links to all five scopes:
+- `quality/services-java/` — Qodana JVM (IntelliJ inspections)
+- `quality/orchestrator/` — Qodana JVM (IntelliJ inspections)
+- `quality/django-python/` — Qodana Python Community (PyCharm inspections)
+- `quality/go/` — golangci-lint (aggregated Go static analysis)
+- `quality/nextjs-dash/` — ESLint + TypeScript (free alternative)
 
 The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
 
