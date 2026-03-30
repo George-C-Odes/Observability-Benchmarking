@@ -51,7 +51,7 @@ jobs:
           - language: python
             build-mode: none
           - language: go
-            build-mode: autobuild
+            build-mode: manual
           - language: javascript-typescript
             build-mode: none
     steps:
@@ -67,6 +67,21 @@ jobs:
       - name: Autobuild
         if: matrix.build-mode == 'autobuild'
         uses: github/codeql-action/autobuild@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+
+      # Go has multiple independent modules under services/go/ with no
+      # root-level go.mod, so autobuild cannot discover them.  Build each
+      # module explicitly so CodeQL extracts all Go source correctly.
+      - name: Build Go modules
+        if: matrix.language == 'go'
+        shell: bash
+        run: |
+          for mod_dir in services/go/enhanced services/go/simple; do
+            echo "::group::Building $mod_dir"
+            pushd "$mod_dir" > /dev/null
+            go build ./...
+            popd > /dev/null
+            echo "::endgroup::"
+          done
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
