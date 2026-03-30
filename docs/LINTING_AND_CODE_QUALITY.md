@@ -555,8 +555,8 @@ cd services/go/enhanced
 # Run lint
 golangci-lint run
 
-# Run lint with JSON output (same as CI)
-golangci-lint run --out-format=json
+# Run lint with JSON output (same as CI) and write the report file
+golangci-lint run --out-format=json > golangci-lint-report.json
 
 # Run all quality checks matching CI
 go vet ./...
