@@ -434,10 +434,11 @@ print(html.escape(sys.stdin.read().strip()))
       '  <meta charset="utf-8">' \
       "  <meta http-equiv=\"refresh\" content=\"0; url=./${nested_index_html}\">" \
       '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
-      "  <title>${scope_name} Qodana report</title>" \
+      '  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">' \
+      "  <title>${scope_name} quality report</title>" \
       '</head>' \
       '<body>' \
-      "  <p>Redirecting to the hosted Qodana report for <code>${scope_name}</code>...</p>" \
+      "  <p>Redirecting to the hosted quality report for <code>${scope_name}</code>...</p>" \
       "  <p>If the redirect does not happen automatically, open <a href=\"./${nested_index_html}\">the report here</a>.</p>" \
       '</body>' \
       '</html>'
@@ -448,16 +449,17 @@ print(html.escape(sys.stdin.read().strip()))
       '<head>' \
       '  <meta charset="utf-8">' \
       '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
-      "  <title>${scope_name} Qodana report</title>" \
+      '  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">' \
+      "  <title>${scope_name} quality report</title>" \
       '  <style>' \
       '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \
       '    code { background: #f3f4f6; padding: 0.15rem 0.35rem; border-radius: 0.25rem; }' \
       '  </style>' \
       '</head>' \
       '<body>' \
-      "  <h1>${scope_name} Qodana report</h1>" \
+      "  <h1>${scope_name} quality report</h1>" \
       "  <p>${scope_message}</p>" \
-      '  <p>Return to the <a href="../">main Qodana report index</a>.</p>' \
+      '  <p>Return to the <a href="../">quality reports index</a>.</p>' \
       '</body>' \
       '</html>'
   fi
@@ -499,6 +501,7 @@ write_html_file "$SITE_DIR/quality/index.html" \
   '<head>' \
   '  <meta charset="utf-8">' \
   '  <meta name="viewport" content="width=device-width, initial-scale=1">' \
+  '  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">' \
   '  <title>Quality reports</title>' \
   '  <style>' \
   '    body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.6; padding: 0 1rem; }' \

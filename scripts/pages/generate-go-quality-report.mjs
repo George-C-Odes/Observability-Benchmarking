@@ -198,6 +198,7 @@ const html = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
   <title>Go Services \u2014 Quality Report</title>
   <style>
     :root {
