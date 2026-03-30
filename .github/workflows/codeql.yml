@@ -51,7 +51,7 @@ jobs:
       matrix:
         include:
           - language: java-kotlin
-            build-mode: autobuild
+            build-mode: manual
           - language: python
             build-mode: none
           - language: go
@@ -61,6 +61,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # Full history for the java-kotlin leg so git-diff can identify
+          # which modules actually changed (incremental builds).
+          # Other languages keep the default shallow clone.
+          fetch-depth: ${{ matrix.language == 'java-kotlin' && '0' || 1 }}
+
+      # Java modules require JDK 25 (maven.compiler.release=25 across all
+      # 12 JVM projects).  Maven dependency cache is seeded from the JVM
+      # pom files only (native modules are excluded from CodeQL builds).
+      - name: Set up JDK 25
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: |
+            services/java/**/jvm/**/pom.xml
+            utils/orchestrator/pom.xml
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
@@ -68,9 +87,117 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
-      - name: Autobuild
-        if: matrix.build-mode == 'autobuild'
-        uses: github/codeql-action/autobuild@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+      # ----------------------------------------------------------------
+      # Java manual build
+      #
+      # • 12 JVM modules are compiled (11 services + orchestrator).
+      # • 6 native-image modules are deliberately skipped — they are
+      #   very slow, resource-heavy, and duplicate the source of their
+      #   JVM counterparts (CodeQL already sees that code).
+      # • Checkstyle is enforced as fatal, matching the orchestrator:
+      #   failsOnError=true, failOnViolation=true, violationSeverity=warning.
+      # • On schedule / dispatch: all 12 modules are built (full scan).
+      # • On push / PR: only modules whose source tree actually changed
+      #   are built; shared config changes (checkstyle, workflow) trigger
+      #   a full rebuild.
+      # ----------------------------------------------------------------
+      - name: Build Java modules
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # ── Module registry (native modules deliberately excluded) ──
+          SERVICE_MODULES=(
+            services/java/dropwizard/jvm
+            services/java/helidon/mp/jvm
+            services/java/helidon/se/jvm
+            services/java/javalin/jvm
+            services/java/micronaut/jvm
+            services/java/pekko/jvm
+            services/java/quarkus/jvm
+            services/java/spark/jvm
+            services/java/spring/jvm/netty
+            services/java/spring/jvm/tomcat
+            services/java/vertx/jvm
+          )
+          ALL_MODULES=( "${SERVICE_MODULES[@]}" utils/orchestrator )
+
+          # ── Determine which modules need building ──
+          build_modules=()
+
+          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "Full scan — building all JVM modules"
+            build_modules=("${ALL_MODULES[@]}")
+          else
+            # Compute the merge-base diff reference
+            diff_base=""
+            if [[ "$EVENT_NAME" == "pull_request" && -n "${PR_BASE_SHA:-}" ]]; then
+              diff_base="$PR_BASE_SHA"
+            elif [[ -n "${PUSH_BEFORE:-}" && "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+              diff_base="$PUSH_BEFORE"
+            fi
+
+            if [[ -z "$diff_base" ]]; then
+              echo "Cannot determine diff base — building all JVM modules"
+              build_modules=("${ALL_MODULES[@]}")
+            else
+              changed="$(git diff --name-only "$diff_base"...HEAD 2>/dev/null || echo "")"
+
+              if [[ -z "$changed" ]]; then
+                echo "Empty diff or diff failed — building all JVM modules"
+                build_modules=("${ALL_MODULES[@]}")
+              elif echo "$changed" | grep -qE '^\.github/workflows/codeql\.yml$'; then
+                echo "Workflow file changed — building all JVM modules"
+                build_modules=("${ALL_MODULES[@]}")
+              else
+                # Shared services/java/ checkstyle config → all service modules
+                if echo "$changed" | grep -qE '^services/java/checkstyle'; then
+                  echo "Shared checkstyle config changed — including all service JVM modules"
+                  build_modules=("${SERVICE_MODULES[@]}")
+                fi
+
+                # Map remaining changed files to their owning module
+                declare -A seen
+                for m in "${build_modules[@]+"${build_modules[@]}"}"; do seen["$m"]=1; done
+
+                while IFS= read -r file; do
+                  [[ -z "$file" ]] && continue
+                  for mod in "${ALL_MODULES[@]}"; do
+                    if [[ "$file" == "$mod/"* && -z "${seen[$mod]:-}" ]]; then
+                      build_modules+=("$mod")
+                      seen["$mod"]=1
+                      break
+                    fi
+                  done
+                done <<< "$changed"
+              fi
+            fi
+          fi
+
+          if [[ ${#build_modules[@]} -eq 0 ]]; then
+            echo "No JVM modules affected by this change — skipping Java build"
+            exit 0
+          fi
+
+          echo "Building ${#build_modules[@]} JVM module(s):"
+          printf '  • %s\n' "${build_modules[@]}"
+
+          # ── Compile each affected module ──
+          # Checkstyle enforcement mirrors the orchestrator pom.xml:
+          #   failsOnError=true  failOnViolation=true  violationSeverity=warning
+          for mod_dir in "${build_modules[@]}"; do
+            echo "::group::Building $mod_dir"
+            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q \
+              -Dcheckstyle.failsOnError=true \
+              -Dcheckstyle.failOnViolation=true \
+              -Dcheckstyle.violationSeverity=warning
+            echo "::endgroup::"
+          done
 
       # Go has multiple independent modules under services/go/ with no
       # root-level go.mod, so autobuild cannot discover them.  Build each

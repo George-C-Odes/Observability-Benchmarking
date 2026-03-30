@@ -55,7 +55,7 @@ At the moment, the Checkstyle plugin is configured in these Maven modules with `
 #### Code Style
 - Maximum line length: 120 characters
 - Indentation: four spaces (no tabs)
-- Braces required for all control structures
+- Braces are required for all control structures
 - Proper whitespace around operators and keywords
 
 #### Javadoc Requirements
@@ -361,7 +361,7 @@ The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the
    - `--project-dir=/data/project` — repository root
    - `--config=/data/project/services/python/django/qodana.yaml` — Python-specific config
    - `--only-directory=services/python/django` — scopes analysis to Django code only
-3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
+3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without a bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
 4. Uploads the HTML report directory as `qodana-report-django-python`.
 
 The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
@@ -387,7 +387,7 @@ failureConditions:
 The `qodana` job uses `continue-on-error: true` at the job level. This means:
 
 - When the quality gate is violated, the **job** is marked as neutral (yellow, allowed failure) in the Actions UI — findings remain visible.
-- The **workflow** still succeeds, so the HTML report artifact is uploaded and the Pages deployment can download and host it.
+- The **workflow** still succeeds, so the HTML report artifact is uploaded, and the Pages deployment can download and host it.
 - The `modules` job (Ruff lint, format, Django checks, unit tests) is unaffected — it still gates the workflow independently.
 
 This is a safe initial rollout pattern: the Qodana report is published for visibility while the existing Ruff and test gates remain strict. Once the Qodana findings are fixed or acknowledged via a reviewed SARIF baseline, `continue-on-error` can be removed to promote the Qodana gate to a hard gate.
@@ -574,7 +574,7 @@ make test
 
 ### Pages Integration for the Go Quality Report
 
-The Pages workflow resolves the Go quality report source independently from other report sources:
+The Pages workflow resolves the Go quality report source independently of other report sources:
 
 - When triggered by the `Go Quality` workflow, the triggering run is used for the Go report and the latest successful runs for Qodana, Next.js, and Django Python are resolved via API
 - When triggered by any other workflow or by push/manual dispatch, the latest successful `Go Quality` run on `main` is resolved via API
@@ -592,12 +592,33 @@ This project uses [GitHub CodeQL](https://codeql.github.com/) for automated secu
 
 ### Languages Scanned
 
-| Language                 | Build Mode | Coverage                                     |
-|--------------------------|------------|----------------------------------------------|
-| `java-kotlin`            | autobuild  | `services/java/**`, `utils/orchestrator/**`  |
-| `python`                 | none       | `services/python/**`                         |
-| `go`                     | manual     | `services/go/**`                             |
-| `javascript-typescript`  | none       | `utils/nextjs-dash/**`                       |
+| Language                | Build Mode | Coverage                                           |
+|-------------------------|------------|----------------------------------------------------|
+| `java-kotlin`           | manual     | `services/java/**/jvm/**`, `utils/orchestrator/**` |
+| `python`                | none       | `services/python/**`                               |
+| `go`                    | manual     | `services/go/**`                                   |
+| `javascript-typescript` | none       | `utils/nextjs-dash/**`                             |
+
+### Java Build Details
+
+The `java-kotlin` analysis compiles **12 JVM modules** (11 services and orchestrator) using `manual` build mode.
+Six native-image modules (`quarkus/native`, `spring/native/*`, `helidon/*/native`, `micronaut/native`) are
+**deliberately excluded** — they are very slow, resource-heavy, and duplicate the source of their JVM counterparts
+(CodeQL already sees that code via the JVM builds).
+
+**Checkstyle enforcement**: Every module is compiled with checkstyle enforced as fatal
+(`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`), matching the
+orchestrator module's configuration.
+
+**Incremental builds**: On `push` and `pull_request` events, only modules whose source tree
+actually changed are compiled. A `git diff` against the previous commit (push) or PR base (pull request)
+maps changed files to the owning module directory. Shared configuration changes
+(`services/java/checkstyle*.xml`, `.github/workflows/codeql.yml`) trigger a full rebuild of all
+affected modules. On `schedule` and `workflow_dispatch`, all 12 modules are always built.
+
+**Maven caching**: The `setup-java` action caches `~/.m2/repository` keyed on the JVM module
+`pom.xml` files, mirroring the dependency-warming strategy used in the Dockerfiles
+(`mvn dependency:go-offline` with `--mount=type=cache`).
 
 ### Workflow
 
@@ -625,7 +646,7 @@ The report includes:
 - Overall pass/fail status
 - Findings by language breakdown
 - Findings by CodeQL rule breakdown
-- Detailed findings table with file, location, severity, language, rule, and message
+- Detailed findings table with a file, location, severity, language, rule, and message
 
 ### Running CodeQL Locally
 
@@ -749,7 +770,7 @@ The report is always generated (even when earlier quality steps fail) so that th
 
 #### Pages Integration for the Next.js Quality Report
 
-The Pages workflow resolves the Next.js quality report source independently from the Qodana source:
+The Pages workflow resolves the Next.js quality report source independently of the Qodana source:
 
 - When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
 - When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
@@ -801,7 +822,7 @@ The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_da
 
 The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR.
 
-GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab and a combined HTML report is published to GitHub Pages.
+GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab, and a combined HTML report is published to GitHub Pages.
 
 When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`, the workflow automatically uses it for that scope to filter acknowledged historical findings while still reporting new ones.
 
@@ -835,7 +856,7 @@ To customize Checkstyle or Qodana rules for your needs:
 
 #### Eclipse
 1. Install the Checkstyle Plug-in
-2. Right-click project → Properties → Checkstyle
+2. Right-click the project → Properties → Checkstyle
 3. Select `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
 4. Enable Checkstyle for the project
 

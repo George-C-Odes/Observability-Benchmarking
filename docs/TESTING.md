@@ -81,12 +81,12 @@ The project implements a comprehensive testing strategy covering:
 
 **Java (Spark)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Direct HTTP + unit tests
+- HTTP Testing: Direct HTTP and unit tests
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Javalin)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Direct HTTP + unit tests
+- HTTP Testing: Direct HTTP and unit tests
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Dropwizard)**
@@ -233,7 +233,7 @@ public void testPlatformEndpoint() throws Exception {
 **Key Features Tested**:
 - Spring Boot 4.0.5 with OpenTelemetry Java Agent
 - Micrometer metrics integration
-- Platform vs Virtual thread behavior
+- Platform vs. Virtual thread behavior
 - POM refactoring (no parent dependency)
 
 #### Running Spring Boot Netty Tests
@@ -349,7 +349,7 @@ ok      hello/internal/handlers  1.0s
 ```
 
 **Key Features Tested**:
-- Fiber web framework routing + request testing via `httptest`
+- Fiber web framework routing and request testing via `httptest`
 - OpenTelemetry SDK usage (but unit tests use noop providers)
 - Custom metric counter (`hello.request.count`) (exported via observable counter)
 - Cache behavior across different implementations
@@ -486,7 +486,7 @@ The dashboard uses a dual-environment Vitest configuration:
 | `vitest.config.node.ts` | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`       |
 | `vitest.config.dom.ts`  | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*` |
 
-The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom + React Testing Library.
+The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom and React Testing Library.
 
 #### Running Dashboard Tests
 
@@ -543,7 +543,7 @@ npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 
 ## Integration Tests
 
-Integration tests validate the entire deployment stack including Docker containers, networking, and observability components.
+Integration tests validate the entire deployment stack, including Docker containers, networking, and observability components.
 
 ### Location
 
@@ -595,7 +595,7 @@ docker compose --project-directory compose ps
 docker compose --project-directory compose logs -f quarkus-jvm
 ```
 
-**Wait Time**: Allow 30-60 seconds for all services to initialize.
+**Wait Time**: Allow 30–60 seconds for all services to initialize.
 
 ### Running Integration Tests
 
@@ -1158,7 +1158,7 @@ sleep 10
 
 1. Open Grafana: http://localhost:3000
 2. Go to Explore
-3. Select data source: Loki
+3. Select a data source: Loki
 4. Query: `{service_name="quarkus-jvm"}`
 5. Filter by log level: `|= "INFO"` or `|= "ERROR"`
 
@@ -1248,7 +1248,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Set up Java 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'corretto'
