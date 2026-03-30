@@ -532,7 +532,7 @@ The workflow is triggered on:
 - pushes to `main` touching `services/go/enhanced/**`
 
 ### Hosted Quality Report on GitHub Pages
-After each run, the workflow generates a self-contained HTML quality report from `golangci-lint --out-format=json` output using `scripts/pages/generate-go-quality-report.mjs`. The report is uploaded as a `quality-report-go-enhanced` artifact and published to GitHub Pages by the Pages workflow.
+After each run, the workflow uses the `golangci-lint run` step, configured via `.golangci.yml` `output.formats`, to write a `golangci-lint-report.json` file, which is then consumed by `scripts/pages/generate-go-quality-report.mjs` to generate a self-contained HTML quality report. The report is uploaded as a `quality-report-go-enhanced` artifact and published to GitHub Pages by the Pages workflow.
 
 Expected URL:
 
