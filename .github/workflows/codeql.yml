@@ -67,11 +67,57 @@ jobs:
           # Other languages keep the default shallow clone.
           fetch-depth: ${{ matrix.language == 'java-kotlin' && '0' || 1 }}
 
+      # ── Fast-path: skip the entire java-kotlin leg when no Java-related
+      # paths changed (the workflow triggers on python/go/js paths too). ──
+      - name: Detect Java changes
+        id: java-changes
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # Scheduled / manual runs always do a full scan.
+          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          diff_base=""
+          if [[ "$EVENT_NAME" == "pull_request" && -n "${PR_BASE_SHA:-}" ]]; then
+            diff_base="$PR_BASE_SHA"
+          elif [[ -n "${PUSH_BEFORE:-}" && "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+            diff_base="$PUSH_BEFORE"
+          fi
+
+          # When the diff base is unknown, assume modules are affected.
+          if [[ -z "$diff_base" ]]; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed="$(git diff --name-only "$diff_base"...HEAD 2>/dev/null || echo "")"
+
+          if [[ -z "$changed" ]]; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$)'; then
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Java/Kotlin paths in changeset — skipping java-kotlin leg"
+            echo "has_modules=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Java modules require JDK 25 (maven.compiler.release=25 across all
       # 12 JVM projects).  Maven dependency cache is seeded from the JVM
       # pom files only (native modules are excluded from CodeQL builds).
       - name: Set up JDK 25
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
@@ -82,6 +128,7 @@ jobs:
             utils/orchestrator/pom.xml
 
       - name: Initialize CodeQL
+        if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
         uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           languages: ${{ matrix.language }}
@@ -94,15 +141,13 @@ jobs:
       # • 6 native-image modules are deliberately skipped — they are
       #   very slow, resource-heavy, and duplicate the source of their
       #   JVM counterparts (CodeQL already sees that code).
-      # • Checkstyle is enforced as fatal, matching the orchestrator:
-      #   failsOnError=true, failOnViolation=true, violationSeverity=warning.
       # • On schedule / dispatch: all 12 modules are built (full scan).
       # • On push / PR: only modules whose source tree actually changed
       #   are built; shared config changes (checkstyle, workflow) trigger
       #   a full rebuild.
       # ----------------------------------------------------------------
       - name: Build Java modules
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -211,6 +256,7 @@ jobs:
           done
 
       - name: Perform CodeQL Analysis
+        if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
         uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           category: "/language:${{ matrix.language }}"
@@ -219,7 +265,7 @@ jobs:
       # Upload SARIF as a reusable artifact so the report job and the
       # Pages workflow can build a hosted HTML summary.
       - name: Upload SARIF artifact
-        if: always() && !cancelled()
+        if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: codeql-sarif-${{ matrix.language }}
