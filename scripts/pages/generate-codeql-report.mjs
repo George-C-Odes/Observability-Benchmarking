@@ -37,6 +37,7 @@ const sarifEntries = [];
 
 let inputMissing = false;
 let parseFailed = false;
+let parseFailCount = 0;
 
 if (!existsSync(sarifInputDir)) {
   inputMissing = true;
@@ -65,6 +66,7 @@ if (!existsSync(sarifInputDir)) {
         sarifEntries.push({ language, sarif, file });
       } catch (err) {
         parseFailed = true;
+        parseFailCount++;
         console.warn(`Warning: could not parse ${filePath}: ${err.message}`);
       }
     }
@@ -132,7 +134,10 @@ for (const entry of sarifEntries) {
 // 3. Compute summaries
 // ---------------------------------------------------------------------------
 
-const hasValidData = !inputMissing && !parseFailed && sarifEntries.length > 0;
+// hasValidData is true when at least one SARIF file was successfully parsed,
+// even if other files failed.  This lets partial results surface findings
+// while a separate flag (parseFailed) drives the warning UI.
+const hasValidData = !inputMissing && sarifEntries.length > 0;
 const totalFindings = allFindings.length;
 
 const errorCount = allFindings.filter((f) => f.level === 'error').length;
@@ -140,7 +145,9 @@ const warningCount = allFindings.filter((f) => f.level === 'warning').length;
 const noteCount = allFindings.filter((f) => f.level === 'note').length;
 const otherCount = totalFindings - errorCount - warningCount - noteCount;
 
-const overallPass = hasValidData && totalFindings === 0;
+// A clean pass requires valid input, zero findings, AND no parse errors
+// (a partial parse failure means we cannot guarantee the full picture).
+const overallPass = hasValidData && !parseFailed && totalFindings === 0;
 
 let overallLabel = 'Pass';
 let overallDetail = '';
@@ -150,6 +157,12 @@ if (inputMissing) {
 } else if (parseFailed && sarifEntries.length === 0) {
   overallLabel = 'Parse Error';
   overallDetail = 'SARIF files could not be parsed \u2014 CodeQL results are unknown.';
+} else if (parseFailed) {
+  // Partial parse failure: some SARIF files parsed, others did not.
+  overallLabel = totalFindings > 0 ? 'Findings' : 'Partial Parse Error';
+  overallDetail =
+    `${parseFailCount} SARIF file${parseFailCount !== 1 ? 's' : ''} could not be parsed` +
+    ` \u2014 results may be incomplete.`;
 } else if (totalFindings > 0) {
   overallLabel = 'Findings';
 }
@@ -259,6 +272,9 @@ if (Object.keys(byRule).length > 0) {
   ruleBreakdown = '<p class="muted">No SARIF files found \u2014 CodeQL output is unavailable.</p>';
 } else if (parseFailed && sarifEntries.length === 0) {
   ruleBreakdown = '<p class="muted">SARIF files could not be parsed.</p>';
+} else if (parseFailed) {
+  ruleBreakdown = '<p class="muted">No findings from successfully parsed files, but ' +
+    `${parseFailCount} file${parseFailCount !== 1 ? 's' : ''} could not be parsed \u2014 results may be incomplete.</p>`;
 } else {
   ruleBreakdown = '<p class="muted">No findings \u2014 all CodeQL checks passed.</p>';
 }
@@ -432,7 +448,9 @@ const html = `<!doctype html>
         ? '<p class="empty-state">No findings available \u2014 no SARIF files were found.</p>'
         : parseFailed && sarifEntries.length === 0
           ? '<p class="empty-state">No findings available \u2014 SARIF files could not be parsed.</p>'
-          : '<p class="empty-state">No findings \u2014 all CodeQL checks passed across all languages. \u{1F389}</p>'
+          : parseFailed
+            ? `<p class="empty-state">No findings from successfully parsed files, but ${parseFailCount} file${parseFailCount !== 1 ? 's' : ''} could not be parsed \u2014 results may be incomplete.</p>`
+            : '<p class="empty-state">No findings \u2014 all CodeQL checks passed across all languages. \u{1F389}</p>'
   }
 
   <div class="meta">
