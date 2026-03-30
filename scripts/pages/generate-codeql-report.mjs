@@ -101,7 +101,7 @@ if (existsSync(buildWarningsFile)) {
     console.warn(`Warning: could not parse ${buildWarningsFile}: ${err.message}`);
   }
 } else {
-  console.log('No build-warnings artifact found (expected when java-kotlin leg was skipped).');
+  console.log('No build-warnings artifact found; checkstyle results will not be shown.');
 }
 
 const hasBuildWarnings = buildWarnings.warnings.length > 0;
