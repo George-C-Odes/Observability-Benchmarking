@@ -1,3 +1,4 @@
+// Package middleware provides Fiber middleware for HTTP tracing and observability.
 package middleware
 
 import (
@@ -16,7 +17,7 @@ var traceContextHeaderKeys = []string{"traceparent", "tracestate"}
 // MinimalHTTPTracingMiddleware returns a lightweight Fiber handler that creates
 // a single server span per request using the provided tracer.
 //
-// ignorePaths must be pre-normalized (trimmed, with empty entries removed), e.g.
+// ignorePaths must be pre-normalized (trimmed, with empty entries removed), e.g.,
 // via NormalizePaths. This keeps the hot path allocation-free and avoids
 // ambiguity about who owns normalization.
 //
@@ -60,7 +61,7 @@ func MinimalHTTPTracingMiddleware(
 	}
 }
 
-// fiberTraceContextCarrier is a small carrier optimised for TraceContext extraction.
+// fiberTraceContextCarrier is a small carrier optimized for TraceContext extraction.
 type fiberTraceContextCarrier struct {
 	c fiber.Ctx
 }
@@ -89,9 +90,7 @@ func MakeSpanNameFormatter(mode string) func(c fiber.Ctx) string {
 			return c.Method()
 		}
 	case "route":
-		return func(c fiber.Ctx) string {
-			return routeTemplate(c)
-		}
+		return routeTemplate
 	case "path":
 		return func(c fiber.Ctx) string {
 			return c.Path()

@@ -1,3 +1,4 @@
+// Package otel configures and initialises the OpenTelemetry SDK pipelines.
 package otel
 
 import (

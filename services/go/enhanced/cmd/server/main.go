@@ -1,3 +1,4 @@
+// Package main is the entry point for the enhanced Go REST service.
 package main
 
 import (
