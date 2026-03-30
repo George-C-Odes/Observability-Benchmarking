@@ -1052,7 +1052,7 @@ This project is actively evolving with ambitious goals for enhanced functionalit
 ### 🤝 How You Can Help
 
 Interested in contributing to these goals? See the [Contributing](#-contributing) section below or open an issue to discuss:
-- Which frameworks/ languages you would like to see
+- Which frameworks/languages you would like to see
 - Feature requests and improvements
 - Documentation enhancements
 - Bug reports and fixes
