@@ -214,6 +214,6 @@ The tests currently cover:
 If the number of generated READMEs grows, the next step could be to add one of these:
 
 - a richer manifest format with named template groups or per-template metadata
-- a npm/package script wrapper for common render/check commands
+- an npm/package script wrapper for common render/check commands
 - CI validation that runs `render-readmes.mjs --check` against the agreed template list
 
