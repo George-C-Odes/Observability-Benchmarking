@@ -221,7 +221,8 @@ jobs:
       # https://app.codecov.io/gh/{owner}/{repo}/settings and add it
       # under Settings → Secrets and variables → Actions.
       # To switch to tokenless (OIDC) uploads for public repos, remove
-      # the `token:` input and keep `id-token: write` above.
+      # the `token:` input and add `permissions: id-token: write` to
+      # this workflow.
       - name: Upload to Codecov
         if: always() && !cancelled() && steps.build.outcome == 'success'
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
