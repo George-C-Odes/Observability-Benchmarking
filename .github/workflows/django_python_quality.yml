@@ -16,6 +16,9 @@ on:
     paths:
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
+  schedule:
+    # Weekly scan — Monday at 06:30 UTC (staggered after Next.js at 06:15).
+    - cron: '30 6 * * 1'
 
 permissions:
   contents: read

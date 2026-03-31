@@ -1,7 +1,9 @@
 name: Qodana
+
 env:
   # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 on:
   workflow_dispatch:
   pull_request:
@@ -21,6 +23,10 @@ on:
       - 'qodana.yaml'
       - '.qodana/baseline/**'
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   qodana:
     name: Qodana (${{ matrix.name }})
@@ -36,9 +42,6 @@ jobs:
           - name: orchestrator
             source_dir: utils/orchestrator
             baseline_file: .qodana/baseline/orchestrator.sarif.json
-    permissions:
-      contents: read
-      checks: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6

@@ -10,6 +10,7 @@ on:
     paths:
       - 'utils/nextjs-dash/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
+      - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
   push:
     branches:
@@ -17,7 +18,11 @@ on:
     paths:
       - 'utils/nextjs-dash/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
+      - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+  schedule:
+    # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
+    - cron: '15 6 * * 1'
 
 permissions:
   contents: read

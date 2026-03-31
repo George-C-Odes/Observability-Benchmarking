@@ -20,8 +20,11 @@
 //   GITHUB_SHA, GITHUB_RUN_ID, GITHUB_REPOSITORY,
 //   ESLINT_VERSION, TSC_VERSION, NODE_VERSION
 
-import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, relative } from 'node:path';
+import { resolve } from 'node:path';
+import {
+  esc, statusIcon, shortPath, readOptionalFile,
+  buildMetaParts, renderMeta, htmlPage, writeReport,
+} from './report-helpers.mjs';
 
 // ---------------------------------------------------------------------------
 // 1. Read inputs
@@ -29,14 +32,8 @@ import { resolve, relative } from 'node:path';
 
 const cwd = process.cwd();
 
-function readOptionalFile(name) {
-  const p = resolve(cwd, name);
-  if (!existsSync(p)) return null;
-  return readFileSync(p, 'utf-8');
-}
-
-const eslintRaw = readOptionalFile('eslint-report.json');
-const tscRaw = readOptionalFile('tsc-output.txt');
+const eslintRaw = readOptionalFile(cwd, 'eslint-report.json');
+const tscRaw = readOptionalFile(cwd, 'tsc-output.txt');
 
 /** @type {Array<{filePath:string, messages:Array<{ruleId:string|null, severity:number, message:string, line:number, column:number}>, errorCount:number, warningCount:number}>} */
 let eslintResults = [];
@@ -71,7 +68,49 @@ const tscPass = tscErrorCount === 0;
 const overallPass = eslintPass && tscPass;
 
 // ---------------------------------------------------------------------------
-// 3. Metadata
+// 3. Severity badge (Next.js-specific: numeric severity from ESLint)
+// ---------------------------------------------------------------------------
+
+function severityBadge(sev) {
+  if (sev === 2) return '<span class="badge badge-error">error</span>';
+  if (sev === 1) return '<span class="badge badge-warn">warning</span>';
+  return '<span class="badge">info</span>';
+}
+
+// ---------------------------------------------------------------------------
+// 4. Build ESLint findings table
+// ---------------------------------------------------------------------------
+
+let eslintTableRows = '';
+for (const file of eslintResults) {
+  if (file.messages.length === 0) continue;
+  const fp = esc(shortPath(cwd, file.filePath));
+  for (const msg of file.messages) {
+    eslintTableRows += '<tr>'
+      + `<td class="cell-file" title="${esc(file.filePath)}">${fp}</td>`
+      + `<td class="cell-loc">${msg.line}:${msg.column}</td>`
+      + `<td>${severityBadge(msg.severity)}</td>`
+      + `<td class="cell-rule">${esc(msg.ruleId || '\u2014')}</td>`
+      + `<td>${esc(msg.message)}</td>`
+      + '</tr>\n';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 5. Build TypeScript diagnostics block
+// ---------------------------------------------------------------------------
+
+let tscBlock;
+if (tscDiagnostics.length > 0) {
+  tscBlock = `<pre class="tsc-output">${tscDiagnostics.map((l) => esc(l)).join('\n')}</pre>`;
+} else if (tscRaw === null) {
+  tscBlock = '<p class="muted">TypeScript diagnostics file was not found.</p>';
+} else {
+  tscBlock = '<p class="muted">No TypeScript diagnostics \u2014 all checks passed.</p>';
+}
+
+// ---------------------------------------------------------------------------
+// 6. Metadata
 // ---------------------------------------------------------------------------
 
 const commitSha = process.env.GITHUB_SHA || 'local';
@@ -82,231 +121,95 @@ const eslintVersion = process.env.ESLINT_VERSION || '';
 const tscVersion = process.env.TSC_VERSION || '';
 const timestamp = new Date().toISOString();
 
-// ---------------------------------------------------------------------------
-// 4. HTML helpers
-// ---------------------------------------------------------------------------
+const metaExtras = [];
+if (nodeVersion) metaExtras.push(`Node ${esc(nodeVersion)}`);
+if (eslintVersion) metaExtras.push(`ESLint ${esc(eslintVersion)}`);
+if (tscVersion) metaExtras.push(`tsc ${esc(tscVersion)}`);
 
-/** Escape HTML special characters. */
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** Shorten absolute file paths to project-relative. */
-function shortPath(p) {
-  try {
-    const r = relative(cwd, p);
-    return r.startsWith('..') ? p : r;
-  } catch {
-    return p;
-  }
-}
-
-function severityBadge(sev) {
-  if (sev === 2) return '<span class="badge badge-error">error</span>';
-  if (sev === 1) return '<span class="badge badge-warn">warning</span>';
-  return '<span class="badge">info</span>';
-}
-
-function statusIcon(pass) {
-  return pass ? '✅' : '❌';
-}
+const metaParts = buildMetaParts({ repo, commitSha, runId, timestamp, extras: metaExtras });
 
 // ---------------------------------------------------------------------------
-// 5. Build ESLint findings table
+// 7. ESLint findings section
 // ---------------------------------------------------------------------------
 
-let eslintTableRows = '';
-for (const file of eslintResults) {
-  if (file.messages.length === 0) continue;
-  const fp = esc(shortPath(file.filePath));
-  for (const msg of file.messages) {
-    eslintTableRows += `<tr>
-      <td class="cell-file" title="${esc(file.filePath)}">${fp}</td>
-      <td class="cell-loc">${msg.line}:${msg.column}</td>
-      <td>${severityBadge(msg.severity)}</td>
-      <td class="cell-rule">${esc(msg.ruleId || '—')}</td>
-      <td>${esc(msg.message)}</td>
-    </tr>\n`;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 6. Build TypeScript diagnostics block
-// ---------------------------------------------------------------------------
-
-let tscBlock;
-if (tscDiagnostics.length > 0) {
-  tscBlock = `<pre class="tsc-output">${tscDiagnostics.map((l) => esc(l)).join('\n')}</pre>`;
-} else if (tscRaw === null) {
-  tscBlock = '<p class="muted">TypeScript diagnostics file was not found.</p>';
+let eslintSection;
+if (eslintTableRows) {
+  eslintSection = '<div style="overflow-x:auto">'
+    + '<table>'
+    + '<thead><tr><th>File</th><th>Location</th><th>Severity</th><th>Rule</th><th>Message</th></tr></thead>'
+    + `<tbody>${eslintTableRows}</tbody>`
+    + '</table></div>';
 } else {
-  tscBlock = '<p class="muted">No TypeScript diagnostics — all checks passed.</p>';
+  eslintSection = '<p class="empty-state">No ESLint findings \u2014 all checks passed.</p>';
 }
 
 // ---------------------------------------------------------------------------
-// 7. Metadata section
+// 8. Report-specific CSS
 // ---------------------------------------------------------------------------
 
-const metaParts = [];
-if (repo && commitSha !== 'local') {
-  metaParts.push(
-    `Commit <code><a href="https://github.com/${esc(repo)}/commit/${esc(commitSha)}">${esc(commitSha.slice(0, 10))}</a></code>`,
-  );
-}
-if (runId && repo) {
-  metaParts.push(
-    `Workflow run <code><a href="https://github.com/${esc(repo)}/actions/runs/${esc(runId)}">${esc(runId)}</a></code>`,
-  );
-}
-metaParts.push(`Generated ${esc(timestamp)}`);
-if (nodeVersion) metaParts.push(`Node ${esc(nodeVersion)}`);
-if (eslintVersion) metaParts.push(`ESLint ${esc(eslintVersion)}`);
-if (tscVersion) metaParts.push(`tsc ${esc(tscVersion)}`);
+const extraCSS = [
+  '    pre.tsc-output {',
+  '      background: var(--pre-bg); border: 1px solid var(--card-border);',
+  '      border-radius: 0.5rem; padding: 1rem; overflow-x: auto;',
+  '      font-size: 0.82rem; line-height: 1.6;',
+  '    }',
+  '    .collapse-toggle { cursor: pointer; user-select: none; }',
+  '    .collapse-toggle::before { content: \'\\25b8 \'; font-size: 0.85em; }',
+  '    .collapse-toggle[open]::before { content: \'\\25be \'; }',
+].join('\n');
 
 // ---------------------------------------------------------------------------
-// 8. Assemble HTML
+// 9. Assemble HTML
 // ---------------------------------------------------------------------------
 
-const html = `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cpath d=%27M32 2L6 14v18c0 16.6 11.1 32.1 26 36 14.9-3.9 26-19.4 26-36V14Z%27 fill=%27%234695EB%27/%3E%3Cpath d=%27M28 40l-9-9 3.5-3.5L28 33l13.5-13.5L45 23Z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
-  <title>Next.js Dashboard — Quality Report</title>
-  <style>
-    :root {
-      --bg: #ffffff; --fg: #1a1a2e; --muted: #6e7781;
-      --card-bg: #f6f8fa; --card-border: #d0d7de;
-      --accent: #0969da; --error: #cf222e; --warn: #bf8700; --pass: #1a7f37;
-      --table-stripe: #f6f8fa; --table-border: #d8dee4;
-      --badge-error-bg: #cf222e; --badge-warn-bg: #bf8700;
-      --pre-bg: #f6f8fa;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e;
-        --card-bg: #161b22; --card-border: #30363d;
-        --accent: #58a6ff; --error: #f85149; --warn: #d29922; --pass: #3fb950;
-        --table-stripe: #161b22; --table-border: #30363d;
-        --badge-error-bg: #da3633; --badge-warn-bg: #9e6a03;
-        --pre-bg: #161b22;
-      }
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-      margin: 0; padding: 2rem 1rem;
-      background: var(--bg); color: var(--fg);
-      max-width: 72rem; margin-left: auto; margin-right: auto;
-      line-height: 1.5;
-    }
-    h1 { margin: 0 0 0.5rem; font-size: 1.75rem; }
-    h2 { margin: 2rem 0 0.75rem; font-size: 1.25rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.35rem; }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code { background: var(--card-bg); padding: 0.15rem 0.35rem; border-radius: 0.25rem; font-size: 0.9em; }
+const eslintPassClass = eslintPass ? 'status-pass' : 'status-fail';
+const tscPassClass = tscPass ? 'status-pass' : 'status-fail';
+const overallPassClass = overallPass ? 'status-pass' : 'status-fail';
 
-    .subtitle { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem; }
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-    .card {
-      background: var(--card-bg); border: 1px solid var(--card-border);
-      border-radius: 0.5rem; padding: 1rem 1.25rem;
-    }
-    .card-title { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.95rem; }
-    .card-value { font-size: 1.6rem; font-weight: 700; }
-    .card-detail { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
-    .status-pass { color: var(--pass); }
-    .status-fail { color: var(--error); }
+const body = [
+  '  <h1>Next.js Dashboard \u2014 Quality Report</h1>',
+  '  <p class="subtitle">',
+  '    Static analysis results from ESLint and TypeScript \u2014 the free, open-source',
+  '    equivalent of JetBrains IDE inspections for JavaScript and TypeScript.',
+  '  </p>',
+  '',
+  '  <div class="summary-grid">',
+  '    <div class="card">',
+  '      <div class="card-title">Overall</div>',
+  `      <div class="card-value ${overallPassClass}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div>`,
+  '    </div>',
+  '    <div class="card">',
+  '      <div class="card-title">ESLint</div>',
+  `      <div class="card-value ${eslintPassClass}">${statusIcon(eslintPass)} ${eslintTotalErrors} errors, ${eslintTotalWarnings} warnings</div>`,
+  `      <div class="card-detail">${eslintTotalFiles} files analyzed${eslintFilesWithIssues > 0 ? `, ${eslintFilesWithIssues} with issues` : ''}</div>`,
+  '    </div>',
+  '    <div class="card">',
+  '      <div class="card-title">TypeScript</div>',
+  `      <div class="card-value ${tscPassClass}">${statusIcon(tscPass)} ${tscErrorCount} errors${tscWarningCount > 0 ? `, ${tscWarningCount} warnings` : ''}</div>`,
+  '      <div class="card-detail">Strict mode (tsc --noEmit)</div>',
+  '    </div>',
+  '  </div>',
+  '',
+  '  <h2>ESLint Findings</h2>',
+  `  ${eslintSection}`,
+  '',
+  '  <h2>TypeScript Diagnostics</h2>',
+  `  ${tscBlock}`,
+  '',
+  `  ${renderMeta(metaParts)}`,
+].join('\n');
 
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin: 0.5rem 0 1rem; }
-    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--table-border); }
-    th { font-weight: 600; background: var(--card-bg); position: sticky; top: 0; }
-    tbody tr:nth-child(even) { background: var(--table-stripe); }
-    .cell-file { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 0.82rem; }
-    .cell-loc { font-family: monospace; white-space: nowrap; }
-    .cell-rule { font-family: monospace; font-size: 0.82rem; white-space: nowrap; }
-
-    .badge {
-      display: inline-block; padding: 0.1rem 0.5rem; border-radius: 1rem;
-      font-size: 0.75rem; font-weight: 600; color: #fff; text-transform: uppercase;
-    }
-    .badge-error { background: var(--badge-error-bg); }
-    .badge-warn { background: var(--badge-warn-bg); }
-
-    pre.tsc-output {
-      background: var(--pre-bg); border: 1px solid var(--card-border);
-      border-radius: 0.5rem; padding: 1rem; overflow-x: auto;
-      font-size: 0.82rem; line-height: 1.6;
-    }
-    .muted { color: var(--muted); }
-    .meta { color: var(--muted); font-size: 0.82rem; margin-top: 2rem; border-top: 1px solid var(--card-border); padding-top: 1rem; }
-    .meta span + span::before { content: ' · '; }
-    .back-link { margin-bottom: 1.5rem; font-size: 0.9rem; }
-    .empty-state { color: var(--muted); font-style: italic; padding: 1.5rem 0; }
-    .collapse-toggle { cursor: pointer; user-select: none; }
-    .collapse-toggle::before { content: '▸ '; font-size: 0.85em; }
-    .collapse-toggle[open]::before { content: '▾ '; }
-  </style>
-</head>
-<body>
-  <p class="back-link"><a href="../">← Back to quality reports index</a></p>
-  <h1>Next.js Dashboard — Quality Report</h1>
-  <p class="subtitle">
-    Static analysis results from ESLint and TypeScript — the free, open-source
-    equivalent of JetBrains IDE inspections for JavaScript and TypeScript.
-  </p>
-
-  <div class="summary-grid">
-    <div class="card">
-      <div class="card-title">Overall</div>
-      <div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">ESLint</div>
-      <div class="card-value ${eslintPass ? 'status-pass' : 'status-fail'}">${statusIcon(eslintPass)} ${eslintTotalErrors} errors, ${eslintTotalWarnings} warnings</div>
-      <div class="card-detail">${eslintTotalFiles} files analyzed${eslintFilesWithIssues > 0 ? `, ${eslintFilesWithIssues} with issues` : ''}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">TypeScript</div>
-      <div class="card-value ${tscPass ? 'status-pass' : 'status-fail'}">${statusIcon(tscPass)} ${tscErrorCount} errors${tscWarningCount > 0 ? `, ${tscWarningCount} warnings` : ''}</div>
-      <div class="card-detail">Strict mode (tsc --noEmit)</div>
-    </div>
-  </div>
-
-  <h2>ESLint Findings</h2>
-  ${
-    eslintTableRows
-      ? `<div style="overflow-x:auto">
-    <table>
-      <thead><tr><th>File</th><th>Location</th><th>Severity</th><th>Rule</th><th>Message</th></tr></thead>
-      <tbody>${eslintTableRows}</tbody>
-    </table>
-  </div>`
-      : '<p class="empty-state">No ESLint findings — all checks passed.</p>'
-  }
-
-  <h2>TypeScript Diagnostics</h2>
-  ${tscBlock}
-
-  <div class="meta">
-    ${metaParts.map((p) => `<span>${p}</span>`).join('\n    ')}
-  </div>
-</body>
-</html>`;
+const html = htmlPage({
+  title: 'Next.js Dashboard \u2014 Quality Report',
+  extraCSS,
+  body,
+});
 
 // ---------------------------------------------------------------------------
-// 9. Write output
+// 10. Write output
 // ---------------------------------------------------------------------------
 
-const outDir = resolve(cwd, 'quality-report');
-mkdirSync(outDir, { recursive: true });
-const outFile = resolve(outDir, 'index.html');
-writeFileSync(outFile, html, 'utf-8');
+const outFile = writeReport(resolve(cwd, 'quality-report'), html);
 
 const issueCount = eslintTotalErrors + eslintTotalWarnings + tscErrorCount + tscWarningCount;
 console.log(
