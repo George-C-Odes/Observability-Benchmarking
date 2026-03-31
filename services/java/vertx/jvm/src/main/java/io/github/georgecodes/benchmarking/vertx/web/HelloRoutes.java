@@ -15,7 +15,7 @@ import java.util.Objects;
  * HTTP routes for the Vert.x reactive hello endpoint.
  *
  * <p>All handler code runs on the Vert.x event-loop; blocking operations
- * (e.g. sleep for benchmarking) are dispatched via {@code vertx.setTimer} to
+ * (e.g., sleep for benchmarking) are dispatched via {@code vertx.setTimer} to
  * avoid blocking the event loop.
  */
 public final class HelloRoutes {
@@ -58,7 +58,7 @@ public final class HelloRoutes {
     private void handleReactive(RoutingContext ctx, Vertx vertx) {
         metricsProvider.incrementReactive();
 
-        int sleepSeconds = parseIntParam(ctx.queryParam("sleep"), 0);
+        int sleepSeconds = parseIntParam(ctx.queryParam("sleep"));
         boolean printLog = parseBoolParam(ctx.queryParam("log"));
 
         if (printLog) {
@@ -82,13 +82,13 @@ public final class HelloRoutes {
             .end(body);
     }
 
-    private static int parseIntParam(java.util.List<String> values, int defaultValue) {
+    private static int parseIntParam(java.util.List<String> values) {
         if (values == null || values.isEmpty()) {
-            return defaultValue;
+            return 0;
         }
         String v = values.getFirst();
         if (v == null || v.isBlank()) {
-            return defaultValue;
+            return 0;
         }
         return Integer.parseInt(v.trim());
     }

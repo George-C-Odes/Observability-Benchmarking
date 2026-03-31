@@ -103,6 +103,7 @@ public final class HelloRoutes {
         switch (config.threadMode()) {
             case PLATFORM -> registerPlatform(routes);
             case VIRTUAL -> registerVirtual(routes);
+            default -> throw new IllegalStateException("Unsupported THREAD_MODE: " + config.threadMode());
         }
     }
 
