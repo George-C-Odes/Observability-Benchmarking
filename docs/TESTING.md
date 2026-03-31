@@ -46,10 +46,10 @@ The project implements a comprehensive testing strategy covering:
 | Javalin JVM    | ✅ 19 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Dropwizard JVM | ✅ 17 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Vert.x JVM     | ✅ 14 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Pekko JVM      | ✅ 3 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Go Fiber       | ✅ 7 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **200 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **229 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -105,7 +105,7 @@ The project implements a comprehensive testing strategy covering:
 
 **Java (Pekko)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Pekko HTTP testkit
+- HTTP Testing: Embedded Pekko HTTP server + Java HttpClient
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Go**
@@ -172,7 +172,8 @@ services/java/
 │   └── HelloModeTest.java, HelloServiceTest.java, CacheProviderTest.java,
 │       MetricsProviderTest.java, ServiceConfigTest.java
 └── pekko/jvm/src/test/java/
-    └── HelloServiceTest.java
+    └── HelloRoutesTest.java, HelloServiceTest.java, HelloModeTest.java,
+        CacheProviderTest.java, MetricsProviderTest.java, ServiceConfigTest.java
 ```
 
 #### Running Quarkus Tests
