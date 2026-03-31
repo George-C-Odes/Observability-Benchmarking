@@ -1368,6 +1368,7 @@ Codecov via `codecov/codecov-action@v6.0.0`:
 
 ```yaml
 - name: Upload to Codecov
+  uses: codecov/codecov-action@v6.0.0
   with:
     files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
     flags: java-${{ matrix.name }}
