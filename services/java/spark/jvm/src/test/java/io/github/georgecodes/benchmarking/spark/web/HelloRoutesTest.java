@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -147,7 +148,7 @@ class HelloRoutesTest {
     }
 
     @Test
-    void counterIncrementsOnConstruction() {
+    void counterStartsAtZeroOnConstruction() {
         MeterRegistry reg = new SimpleMeterRegistry();
         HelloService service = new HelloService(CacheProvider.create(10));
 
@@ -157,7 +158,7 @@ class HelloRoutesTest {
             .tag("endpoint", "/hello/platform")
             .counter();
         assertNotNull(counter, "Counter should be registered");
-        // Counter starts at 0 after construction (no requests yet)
-        assertTrue(counter.count() >= 0, "Counter should be non-negative");
+        // No requests have been made yet, so the counter must be exactly 0
+        assertEquals(0.0, counter.count(), "Counter should be 0 after construction (no requests yet)");
     }
 }
