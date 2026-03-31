@@ -119,7 +119,10 @@
                 </configuration>
             </plugin>
 
-            <!-- JaCoCo code coverage — report + threshold check (soft gate) -->
+            <!-- JaCoCo code coverage — report + advisory threshold check.
+                 haltOnFailure=false: violations are logged but do not fail
+                 the build locally or in CI. CI evaluates thresholds
+                 independently in the GitHub Step Summary. -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -145,6 +148,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <haltOnFailure>false</haltOnFailure>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>

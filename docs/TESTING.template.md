@@ -1280,15 +1280,18 @@ the `verify` phase in all 12 modules. Current thresholds are uniform:
 
 These conservative starting thresholds are intentionally set well below the
 actual coverage of all modules to avoid false-positive build failures while the
-baseline stabilizes. The CI workflow uses job-level `continue-on-error: true`
-(soft gate), so a threshold violation causes the job to show as failed (yellow)
-in the Checks UI — keeping the signal visible — but does **not** block merges.
+baseline stabilizes. All 12 modules set `<haltOnFailure>false</haltOnFailure>` in
+their `jacoco:check` configuration, so threshold violations are **logged as
+warnings** but do **not** fail `mvn verify` — locally or in CI. The CI workflow's
+Python parser evaluates thresholds independently and writes the result (✅ / ⚠️)
+to the GitHub Step Summary. The job-level `continue-on-error: true` ensures that
+even a test failure shows as yellow in the Checks UI without blocking merges.
 
 | Stage       | Behaviour                                                             | Status  |
 |-------------|-----------------------------------------------------------------------|---------|
 | Report-only | Coverage numbers in Step Summary + artifacts; no failure              | Done    |
-| Soft gate   | `jacoco:check` with `continue-on-error: true`; yellow badge in CI     | Current |
-| Hard gate   | `jacoco:check` fails the workflow below thresholds                    | Future  |
+| Advisory    | `jacoco:check` with `haltOnFailure=false`; CI evaluates independently | Current |
+| Hard gate   | Remove `haltOnFailure=false`; `jacoco:check` fails the build          | Future  |
 
 **Tightening roadmap**: once baselines are collected from 2–3 CI runs, thresholds
 will be raised per-module to ~5% below their observed coverage. Modules that

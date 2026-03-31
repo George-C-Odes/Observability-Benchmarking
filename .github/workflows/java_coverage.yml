@@ -121,6 +121,10 @@ jobs:
               total = missed + covered
               return "—" if total == 0 else f"{covered * 100 / total:.1f}"
 
+          def ratio(missed, covered):
+              total = missed + covered
+              return 0.0 if total == 0 else covered / total
+
           metrics = [
               ("Instructions", "INSTRUCTION"),
               ("Branches",     "BRANCH"),
@@ -128,10 +132,20 @@ jobs:
               ("Methods",      "METHOD"),
           ]
 
-          if build_outcome == "success":
+          # Evaluate thresholds independently (haltOnFailure=false in Maven,
+          # so build_outcome does not reflect coverage violations).
+          LINE_MIN, BRANCH_MIN = 0.15, 0.10
+          line_m, line_c = counters.get("LINE", (0, 0))
+          br_m, br_c     = counters.get("BRANCH", (0, 0))
+          thresholds_met = (ratio(line_m, line_c) >= LINE_MIN
+                            and ratio(br_m, br_c) >= BRANCH_MIN)
+
+          if build_outcome != "success":
+              badge = "❌ Build failed"
+          elif thresholds_met:
               badge = "✅ Thresholds passed"
           else:
-              badge = "⚠️ Threshold check failed (soft gate — not blocking)"
+              badge = "⚠️ Coverage below threshold (advisory — not blocking)"
 
           with open(summary_file, "a") as f:
               f.write(f"### 📊 Coverage: {module_name}\n\n")
