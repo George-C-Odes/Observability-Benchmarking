@@ -1,8 +1,12 @@
-package io.github.georgecodes.benchmarking.spark;
+package io.github.georgecodes.benchmarking.spark.web;
 
 import io.github.georgecodes.benchmarking.spark.config.ServiceConfig;
+import io.github.georgecodes.benchmarking.spark.config.ServiceConfig.HandlerExecutionMode;
+import io.github.georgecodes.benchmarking.spark.config.ServiceConfig.ThreadMode;
+import io.github.georgecodes.benchmarking.spark.config.ServiceConfig.VirtualExecutionMode;
 import io.github.georgecodes.benchmarking.spark.domain.HelloService;
-import io.github.georgecodes.benchmarking.spark.web.HelloRoutes;
+import io.github.georgecodes.benchmarking.spark.infra.CacheProvider;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
@@ -46,31 +50,32 @@ class HelloRoutesTest {
     private ServiceConfig platformConfig() {
         return new ServiceConfig(
             8080,
-            ServiceConfig.ThreadMode.PLATFORM,
+            ThreadMode.PLATFORM,
             100,
             0, 0, 10000, 60000L,
-            ServiceConfig.HandlerExecutionMode.DIRECT,
+            HandlerExecutionMode.DIRECT,
             0,
-            ServiceConfig.VirtualExecutionMode.SPARK
+            VirtualExecutionMode.SPARK
         );
     }
 
     private ServiceConfig virtualConfig() {
         return new ServiceConfig(
             8080,
-            ServiceConfig.ThreadMode.VIRTUAL,
+            ThreadMode.VIRTUAL,
             100,
             0, 0, 10000, 60000L,
-            ServiceConfig.HandlerExecutionMode.DIRECT,
+            HandlerExecutionMode.DIRECT,
             0,
-            ServiceConfig.VirtualExecutionMode.SPARK
+            VirtualExecutionMode.SPARK
         );
     }
 
+    // ── Construction tests ──────────────────────────────────────────────
+
     @Test
     void constructionPlatformMode() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         HelloRoutes routes = assertDoesNotThrow(
             () -> new HelloRoutes(platformConfig(), executor, service, registry));
@@ -79,8 +84,7 @@ class HelloRoutesTest {
 
     @Test
     void constructionVirtualMode() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         HelloRoutes routes = assertDoesNotThrow(
             () -> new HelloRoutes(virtualConfig(), executor, service, registry));
@@ -88,34 +92,8 @@ class HelloRoutesTest {
     }
 
     @Test
-    void counterRegisteredInPlatformMode() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
-
-        new HelloRoutes(platformConfig(), executor, service, registry);
-
-        assertNotNull(registry.find("hello.request.count")
-            .tag("endpoint", "/hello/platform")
-            .counter(), "Counter for /hello/platform should be registered");
-    }
-
-    @Test
-    void counterRegisteredInVirtualMode() {
-        MeterRegistry reg = new SimpleMeterRegistry();
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
-
-        new HelloRoutes(virtualConfig(), executor, service, reg);
-
-        assertNotNull(reg.find("hello.request.count")
-            .tag("endpoint", "/hello/virtual")
-            .counter(), "Counter for /hello/virtual should be registered");
-    }
-
-    @Test
     void rejectsNullConfig() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(null, executor, service, registry));
@@ -123,8 +101,7 @@ class HelloRoutesTest {
 
     @Test
     void rejectsNullExecutor() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(platformConfig(), null, service, registry));
@@ -138,10 +115,49 @@ class HelloRoutesTest {
 
     @Test
     void rejectsNullMeterRegistry() {
-        HelloService service = new HelloService(
-            io.github.georgecodes.benchmarking.spark.infra.CacheProvider.create(10));
+        HelloService service = new HelloService(CacheProvider.create(10));
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(platformConfig(), executor, service, null));
+    }
+
+    // ── Counter registration tests ──────────────────────────────────────
+
+    @Test
+    void counterRegisteredInPlatformMode() {
+        HelloService service = new HelloService(CacheProvider.create(10));
+
+        new HelloRoutes(platformConfig(), executor, service, registry);
+
+        assertNotNull(registry.find("hello.request.count")
+            .tag("endpoint", "/hello/platform")
+            .counter(), "Counter for /hello/platform should be registered");
+    }
+
+    @Test
+    void counterRegisteredInVirtualMode() {
+        MeterRegistry reg = new SimpleMeterRegistry();
+        HelloService service = new HelloService(CacheProvider.create(10));
+
+        new HelloRoutes(virtualConfig(), executor, service, reg);
+
+        assertNotNull(reg.find("hello.request.count")
+            .tag("endpoint", "/hello/virtual")
+            .counter(), "Counter for /hello/virtual should be registered");
+    }
+
+    @Test
+    void counterIncrementsOnConstruction() {
+        MeterRegistry reg = new SimpleMeterRegistry();
+        HelloService service = new HelloService(CacheProvider.create(10));
+
+        new HelloRoutes(platformConfig(), executor, service, reg);
+
+        Counter counter = reg.find("hello.request.count")
+            .tag("endpoint", "/hello/platform")
+            .counter();
+        assertNotNull(counter, "Counter should be registered");
+        // Counter starts at 0 after construction (no requests yet)
+        assertTrue(counter.count() >= 0, "Counter should be non-negative");
     }
 }

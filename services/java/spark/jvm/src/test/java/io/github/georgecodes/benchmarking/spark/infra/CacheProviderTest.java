@@ -1,7 +1,6 @@
-package io.github.georgecodes.benchmarking.javalin;
+package io.github.georgecodes.benchmarking.spark.infra;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.georgecodes.benchmarking.javalin.infra.CacheProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,4 +37,3 @@ class CacheProviderTest {
         assertNull(cache.getIfPresent("6"));
     }
 }
-
