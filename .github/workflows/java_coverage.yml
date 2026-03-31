@@ -173,11 +173,19 @@ jobs:
           if-no-files-found: warn
 
   # ── Approval gate ──────────────────────────────────────────────────
-  # When every matrix leg passes, this job resolves immediately.
-  # When any leg fails (threshold violation or build error), the
-  # 'coverage-review' environment pauses the job and shows
-  # "Waiting for review" in the Actions UI until a designated
-  # reviewer approves.
+  # Two mutually-exclusive jobs share the display name "Coverage Gate"
+  # so a single branch-protection required check covers both paths:
+  #
+  #  • All matrix legs pass  → coverage-gate runs (no environment).
+  #  • Any matrix leg fails  → coverage-gate-review runs, gated behind
+  #    the 'coverage-review' environment which pauses the job until a
+  #    designated reviewer approves in the Actions UI.
+  #
+  # Why two jobs instead of a conditional environment expression?
+  # In GitHub Actions expressions `cond && '' || 'fallback'` always
+  # resolves to 'fallback' because '' is falsy.  Two jobs with the
+  # same display name sidestep this; GitHub treats skipped check runs
+  # as neutral so only the running job matters for required checks.
   #
   # One-time setup (repo owner):
   #   Settings → Environments → New environment "coverage-review"
@@ -187,17 +195,19 @@ jobs:
   coverage-gate:
     name: Coverage Gate
     needs: coverage
-    if: always() && !cancelled()
+    if: always() && !cancelled() && needs.coverage.result == 'success'
     runs-on: ubuntu-latest
-    environment: ${{ needs.coverage.result == 'success' && '' || 'coverage-review' }}
     steps:
       - name: Gate result
-        env:
-          RESULT: ${{ needs.coverage.result }}
-        run: |
-          if [[ "$RESULT" == "success" ]]; then
-            echo "✅ All coverage thresholds met"
-          else
-            echo "::notice::Coverage violations reviewed and approved."
-          fi
+        run: echo "✅ All coverage thresholds met"
+
+  coverage-gate-review:
+    name: Coverage Gate
+    needs: coverage
+    if: always() && !cancelled() && needs.coverage.result == 'failure'
+    runs-on: ubuntu-latest
+    environment: coverage-review
+    steps:
+      - name: Gate result
+        run: echo "::notice::Coverage violations reviewed and approved."
 
