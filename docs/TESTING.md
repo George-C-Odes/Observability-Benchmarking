@@ -42,14 +42,14 @@ The project implements a comprehensive testing strategy covering:
 | Micronaut JVM  | ✅ 5 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon SE JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon MP JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
-| Spark JVM      | ✅ 20 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Javalin JVM    | ✅ 19 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Dropwizard JVM | ✅ 17 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Vert.x JVM     | ✅ 34 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Spark JVM      | ✅ 61 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Javalin JVM    | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Dropwizard JVM | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Vert.x JVM     | ✅ 35 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Go Fiber       | ✅ 7 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Go Fiber       | ✅ 12 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **249 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **360 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -1385,20 +1385,18 @@ Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
 
 #### Authentication (public repos)
 
-In this repository, uploads authenticate using a `CODECOV_TOKEN` repository
-secret passed to the action via the `token:` input (see the workflow snippet
-above). Generate the token in the Codecov repository settings page and store
-it as a `CODECOV_TOKEN` secret in this GitHub repository.
+For public repositories, Codecov supports **tokenless uploads** via GitHub
+OIDC. To use tokenless uploads, your workflow/job must grant
+`permissions: id-token: write` and you must omit the `token:` input from
+the `codecov/codecov-action` step.
 
-For public repositories, Codecov also supports **tokenless uploads** via
-GitHub OIDC — no secret is strictly required. To use tokenless uploads
-instead of `CODECOV_TOKEN`, you must:
+The example workflow above is currently configured to use a
+`CODECOV_TOKEN` secret via the `token:` input and will fail without that
+secret. Generate the token at the Codecov repository settings page.
 
-- Configure the workflow or job with:
-  ```yaml
-  permissions:
-    id-token: write
-    contents: read
+If you prefer tokenless uploads, remove the `token:` input from the step and
+ensure the appropriate `permissions: id-token: write` setting is present in
+the workflow definition.
 #### Adding Go or Python coverage uploads (future)
 
 When Go or Python coverage workflows are extended:
