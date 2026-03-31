@@ -15,6 +15,7 @@
 - [Integration Tests](#integration-tests)
 - [Observability Testing](#observability-testing)
 - [Performance Testing](#performance-testing)
+- [Code Coverage](#code-coverage)
 - [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -1225,6 +1226,97 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 # - Check resource usage (CPU, memory)
 # - Check GC pauses (should be minimal)
 ```
+
+## Code Coverage
+
+### Java — JaCoCo
+
+All 12 Java/Maven JVM modules are instrumented with the
+[JaCoCo Maven plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
+(version 0.8.14). Coverage reports are generated automatically during the
+Maven `verify` phase — no extra flags are needed.
+
+#### Running locally
+
+```bash
+# From any Java module directory, e.g.:
+cd services/java/vertx/jvm
+mvn verify -Dcheckstyle.skip=true
+
+# HTML report → target/site/jacoco/index.html
+# XML report  → target/site/jacoco/jacoco.xml
+```
+
+#### How it works
+
+1. **`prepare-agent`** (initialize phase) — JaCoCo injects a Java agent via
+   the `@{argLine}` Maven property placeholder in each module's Surefire
+   configuration.
+2. **`report`** (verify phase) — JaCoCo reads the execution data
+   (`target/jacoco.exec`) and produces HTML and XML reports under
+   `target/site/jacoco/`.
+
+#### CI workflow
+
+The **Java Coverage** GitHub Actions workflow (`.github/workflows/java_coverage.yml`)
+runs on every PR and push to `main` that touches `services/java/**` or
+`utils/orchestrator/**`. It:
+
+- Builds and tests each module in a matrix (12 parallel jobs).
+- Parses the JaCoCo XML report and writes a coverage table to the
+  **GitHub Step Summary**.
+- Uploads the full HTML and XML report as an artifact named
+  `coverage-java-{module}` (retained for 30 days).
+
+#### Threshold strategy
+
+Coverage thresholds are enforced via the `jacoco:check` Maven goal, bound to
+the `verify` phase in all 12 modules. Current thresholds are uniform:
+
+| Metric | Minimum |
+|--------|--------:|
+| Line   |     15% |
+| Branch |     10% |
+
+These conservative starting thresholds are intentionally set well below the
+actual coverage of all modules to avoid false-positive build failures while the
+baseline stabilizes. All 12 modules set `<haltOnFailure>false</haltOnFailure>` in
+their `jacoco:check` configuration, so threshold violations are **logged as
+warnings** but do **not** fail `mvn verify` — locally or in CI. The CI workflow's
+Python parser evaluates thresholds independently and writes each module's status
+(`pass`, `threshold_violation`, `build_failure`, or `report_missing`) to a small
+status artifact.
+
+A **Coverage Verdict** job downloads all status artifacts and classifies the
+aggregate result. Two **Coverage Gate** jobs (same display name for branch
+protection) then act on the verdict:
+
+| Verdict           | Trigger                                                  | Gate behaviour                                      |
+|-------------------|----------------------------------------------------------|-----------------------------------------------------|
+| **pass**          | All builds passed, all reports exist, all thresholds met | Auto-passes ✅                                       |
+| **review_needed** | Builds passed but ≥ 1 module is below threshold          | Requires `coverage-review` environment approval ⏳   |
+| **hard_fail**     | ≥ 1 build/test failure **or** missing JaCoCo report      | Hard-fails ❌ — **cannot** be overridden by reviewer |
+
+> **One-time setup (repo owner):**
+> Settings → Environments → New environment `coverage-review` → Required
+> reviewers → add team or individuals.  Then add **Coverage Gate** as a required
+> status check in Settings → Branches → Branch protection rules.
+
+| Stage       | Behaviour                                                             | Status  |
+|-------------|-----------------------------------------------------------------------|---------|
+| Report-only | Coverage numbers in Step Summary + artifacts; no failure              | Done    |
+| Review gate | `haltOnFailure=false` in Maven; CI evaluates + gates on verdict       | Current |
+| Hard gate   | Remove `haltOnFailure=false`; `jacoco:check` fails the build directly | Future  |
+
+**Tightening roadmap**: once baselines are collected from 2–3 CI runs, thresholds
+will be raised per-module to ~5% below their observed coverage. Modules that
+consistently exceed 50% line coverage will be promoted to hard gate first.
+
+### Go & Python (planned)
+
+Coverage tooling for Go (`go test -coverprofile`) and Python (`coverage.py`)
+will be added in a later phase, following the same phased tightening roadmap
+described above.
 
 ## CI/CD Integration
 

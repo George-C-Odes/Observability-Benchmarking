@@ -1,0 +1,293 @@
+name: Java Coverage
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/java/**'
+      - 'utils/orchestrator/**'
+      - '.github/workflows/java_coverage.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/java/**'
+      - 'utils/orchestrator/**'
+      - '.github/workflows/java_coverage.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Coverage (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: spring-tomcat
+            module_dir: services/java/spring/jvm/tomcat
+          - name: spring-netty
+            module_dir: services/java/spring/jvm/netty
+          - name: quarkus-jvm
+            module_dir: services/java/quarkus/jvm
+          - name: micronaut-jvm
+            module_dir: services/java/micronaut/jvm
+          - name: helidon-se-jvm
+            module_dir: services/java/helidon/se/jvm
+          - name: helidon-mp-jvm
+            module_dir: services/java/helidon/mp/jvm
+          - name: spark-jvm
+            module_dir: services/java/spark/jvm
+          - name: javalin-jvm
+            module_dir: services/java/javalin/jvm
+          - name: dropwizard-jvm
+            module_dir: services/java/dropwizard/jvm
+          - name: vertx-jvm
+            module_dir: services/java/vertx/jvm
+          - name: pekko-jvm
+            module_dir: services/java/pekko/jvm
+          - name: orchestrator
+            module_dir: utils/orchestrator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: |
+            services/java/**/jvm/**/pom.xml
+            utils/orchestrator/pom.xml
+
+      - name: Run tests with coverage
+        id: build
+        working-directory: ${{ matrix.module_dir }}
+        run: mvn verify -B -q -Dcheckstyle.skip=true
+
+      # ── Parse JaCoCo XML and write GitHub Step Summary ──
+      - name: Generate coverage summary
+        if: always() && !cancelled()
+        env:
+          MODULE_NAME: ${{ matrix.name }}
+          MODULE_DIR: ${{ matrix.module_dir }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          python3 << 'PYEOF'
+          import os, sys, xml.etree.ElementTree as ET
+
+          module_name   = os.environ["MODULE_NAME"]
+          module_dir    = os.environ["MODULE_DIR"]
+          build_outcome = os.environ["BUILD_OUTCOME"]
+          summary_file  = os.environ["GITHUB_STEP_SUMMARY"]
+
+          jacoco_xml = f"{module_dir}/target/site/jacoco/jacoco.xml"
+          status_dir = "coverage-status"
+          os.makedirs(status_dir, exist_ok=True)
+
+          def write_status(value):
+              with open(f"{status_dir}/status.txt", "w") as fh:
+                  fh.write(value)
+
+          # ── No JaCoCo report ──────────────────────────────────────
+          if not os.path.isfile(jacoco_xml):
+              if build_outcome == "success":
+                  # Build passed but report missing — likely misconfigured
+                  # JaCoCo or unexpectedly skipped tests.  Fail the step so
+                  # the job result becomes 'failure' → hard-fail gate.
+                  print(f"::error::Build succeeded but JaCoCo report "
+                        f"not found at {jacoco_xml}")
+                  with open(summary_file, "a") as f:
+                      f.write(f"### ❌ Coverage: {module_name}\n\n")
+                      f.write("Build succeeded but no JaCoCo report was "
+                              "generated. Check JaCoCo plugin configuration.\n")
+                  write_status("report_missing")
+                  sys.exit(1)
+              else:
+                  print(f"::warning::JaCoCo report not found at {jacoco_xml}")
+                  with open(summary_file, "a") as f:
+                      f.write(f"### ⚠️ Coverage: {module_name}\n\n")
+                      f.write("No JaCoCo report was generated. Tests may "
+                              "have been skipped or failed before the "
+                              "report phase.\n")
+                  write_status("build_failure")
+                  sys.exit(0)   # build step already failed the job
+
+          # ── Parse JaCoCo XML ──────────────────────────────────────
+          tree = ET.parse(jacoco_xml)
+          root = tree.getroot()
+
+          counters = {}
+          for counter in root.findall("counter"):
+              ctype   = counter.get("type")
+              missed  = int(counter.get("missed", "0"))
+              covered = int(counter.get("covered", "0"))
+              counters[ctype] = (missed, covered)
+
+          def pct(missed, covered):
+              total = missed + covered
+              return "0.0" if total == 0 else f"{covered * 100 / total:.1f}"
+
+          def ratio(missed, covered):
+              total = missed + covered
+              return 0.0 if total == 0 else covered / total
+
+          metrics = [
+              ("Instructions", "INSTRUCTION"),
+              ("Branches",     "BRANCH"),
+              ("Lines",        "LINE"),
+              ("Methods",      "METHOD"),
+          ]
+
+          # Evaluate thresholds independently (haltOnFailure=false in Maven).
+          LINE_MIN, BRANCH_MIN = 0.15, 0.10
+          line_m, line_c = counters.get("LINE", (0, 0))
+          br_m, br_c     = counters.get("BRANCH", (0, 0))
+          thresholds_met = (ratio(line_m, line_c) >= LINE_MIN
+                            and ratio(br_m, br_c) >= BRANCH_MIN)
+
+          if build_outcome != "success":
+              status, badge = "build_failure", "❌ Build failed"
+          elif thresholds_met:
+              status, badge = "pass", "✅ Thresholds passed"
+          else:
+              status, badge = "threshold_violation", \
+                  "⚠️ Coverage below threshold — review required"
+
+          with open(summary_file, "a") as f:
+              f.write(f"### 📊 Coverage: {module_name}\n\n")
+              f.write(f"**{badge}** · Minimum: 15% line, 10% branch\n\n")
+              f.write("| Metric       | Covered | Missed | Total | Coverage |\n")
+              f.write("|--------------|--------:|-------:|------:|---------:|\n")
+              for label, ctype in metrics:
+                  missed, covered = counters.get(ctype, (0, 0))
+                  total = missed + covered
+                  p = pct(missed, covered)
+                  f.write(f"| {label} | {covered} | {missed} | {total} | {p}% |\n")
+              f.write(f"\n> Report generated from `{jacoco_xml}`\n")
+
+          write_status(status)
+
+          # Exit codes:
+          # • build_failure:        0 — build step already failed the job
+          # • threshold_violation:  0 — communicated via status artifact;
+          #     job stays 'success' so the gate can distinguish this from
+          #     a build error and route to the review environment
+          # • pass:                 0
+          PYEOF
+
+      - name: Upload threshold status
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: coverage-status-${{ matrix.name }}
+          path: coverage-status/
+          retention-days: 1
+          if-no-files-found: warn
+
+      - name: Upload coverage report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: coverage-java-${{ matrix.name }}
+          path: |
+            ${{ matrix.module_dir }}/target/site/jacoco/
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ── Verdict aggregation ─────────────────────────────────────────────
+  # Determines why the matrix failed (if it did) by inspecting
+  # needs.coverage.result and the per-leg status artifacts.
+  #
+  # Possible verdicts:
+  #   pass           – all builds passed, all reports exist, all thresholds met
+  #   review_needed  – builds passed but ≥1 module is below threshold
+  #   hard_fail      – ≥1 build/test failure or missing JaCoCo report
+  coverage-verdict:
+    name: Coverage Verdict
+    needs: coverage
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    outputs:
+      verdict: ${{ steps.check.outputs.verdict }}
+    steps:
+      - name: Download threshold status files
+        if: needs.coverage.result == 'success'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: coverage-status-*
+          path: statuses/
+
+      - name: Determine verdict
+        id: check
+        run: |
+          # Build/test failure or missing report → hard fail (not approvable)
+          if [[ "${{ needs.coverage.result }}" != "success" ]]; then
+            echo "verdict=hard_fail" >> "$GITHUB_OUTPUT"
+            echo "::error::One or more modules had build/test failures or missing JaCoCo reports"
+            exit 0
+          fi
+
+          # All builds passed, all reports exist — check threshold statuses
+          verdict=pass
+          for f in statuses/coverage-status-*/status.txt; do
+            if [[ -f "$f" ]]; then
+              status=$(cat "$f")
+              if [[ "$status" == "threshold_violation" ]]; then
+                verdict=review_needed
+                module=$(basename "$(dirname "$f")" | sed 's/^coverage-status-//')
+                echo "::warning::Coverage below threshold: $module"
+              fi
+            fi
+          done
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+
+  # ── Approval gate ──────────────────────────────────────────────────
+  # Two mutually-exclusive jobs share the display name "Coverage Gate"
+  # so a single branch-protection required check covers all outcomes:
+  #
+  #  • pass           → coverage-gate auto-passes (no environment)
+  #  • hard_fail      → coverage-gate hard-fails (exit 1, NOT approvable)
+  #  • review_needed  → coverage-gate-review requires 'coverage-review'
+  #                     environment approval before passing
+  #
+  # One-time setup (repo owner):
+  #   Settings → Environments → New environment "coverage-review"
+  #   → Required reviewers → add team or individuals.
+  #   Then add "Coverage Gate" as a required status check in
+  #   Settings → Branches → Branch protection rules.
+  coverage-gate:
+    name: Coverage Gate
+    needs: coverage-verdict
+    if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict != 'review_needed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate result
+        run: |
+          verdict="${{ needs.coverage-verdict.outputs.verdict }}"
+          if [[ "$verdict" == "pass" ]]; then
+            echo "✅ All coverage thresholds met"
+          else
+            echo "::error::Build/test failure or missing JaCoCo report — cannot be overridden by coverage review"
+            exit 1
+          fi
+
+  coverage-gate-review:
+    name: Coverage Gate
+    needs: coverage-verdict
+    if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict == 'review_needed'
+    runs-on: ubuntu-latest
+    environment: coverage-review
+    steps:
+      - name: Gate result
+        run: echo "::notice::Coverage threshold violations reviewed and approved."
+
