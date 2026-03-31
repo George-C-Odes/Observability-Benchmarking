@@ -1383,11 +1383,20 @@ Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
 
 #### Authentication (public repos)
 
-For public repositories, the action supports **tokenless uploads** via GitHub
-OIDC — no secret is strictly required. However, setting a `CODECOV_TOKEN`
-repository secret is recommended for reliability and to avoid rate limits.
-Generate the token at the Codecov repository settings page.
+In this repository, uploads authenticate using a `CODECOV_TOKEN` repository
+secret passed to the action via the `token:` input (see the workflow snippet
+above). Generate the token in the Codecov repository settings page and store
+it as a `CODECOV_TOKEN` secret in this GitHub repository.
 
+For public repositories, Codecov also supports **tokenless uploads** via
+GitHub OIDC — no secret is strictly required. To use tokenless uploads
+instead of `CODECOV_TOKEN`, you must:
+
+- Configure the workflow or job with:
+  ```yaml
+  permissions:
+    id-token: write
+    contents: read
 #### Adding Go or Python coverage uploads (future)
 
 When Go or Python coverage workflows are extended:
