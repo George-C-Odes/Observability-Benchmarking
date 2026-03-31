@@ -27,6 +27,7 @@
 [![Next.js Dashboard Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/nextjs_dash_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/nextjs_dash_quality.yml)
 [![CodeQL](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/codeql.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/codeql.yml)
 [![Java Coverage](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/java_coverage.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/java_coverage.yml)
+[![codecov](https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graph/badge.svg?token=RY6UM4T2BW)](https://codecov.io/github/George-C-Odes/Observability-Benchmarking)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
 

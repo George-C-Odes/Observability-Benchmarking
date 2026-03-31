@@ -16,6 +16,9 @@
 - [Observability Testing](#observability-testing)
 - [Performance Testing](#performance-testing)
 - [Code Coverage](#code-coverage)
+  - [Java — JaCoCo](#java--jacoco)
+  - [Codecov (repo-wide visibility)](#codecov-repo-wide-visibility)
+  - [Go & Python (planned)](#go--python-planned)
 - [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -1312,6 +1315,101 @@ protection) then act on the verdict:
 will be raised per-module to ~5% below their observed coverage. Modules that
 consistently exceed 50% line coverage will be promoted to hard gate first.
 
+### Codecov (repo-wide visibility)
+
+[Codecov](https://app.codecov.io) provides an additional reporting layer on top
+of the GitHub-native Step Summary and artifact uploads described above. It adds:
+
+- **PR annotations** — inline coverage diffs on changed files.
+- **PR comment** — condensed coverage summary posted automatically on each PR.
+- **Trend tracking** — historical coverage graphs per flag, component, and
+  repository.
+- **Monorepo dashboard** — per-component views for Java, Go, and Python
+  services.
+
+<p style="text-align: center;">
+  <a href="https://codecov.io/github/George-C-Odes/Observability-Benchmarking">
+    <img src="https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graphs/sunburst.svg?token=RY6UM4T2BW" alt="Codecov sunburst graph" width="300" />
+  </a>
+</p>
+
+> The sunburst graph shows repository coverage at a glance — each ring
+> represents a directory level, and the size/color of each arc reflects the
+> coverage of the files it contains. Click through to the
+> [Codecov dashboard](https://codecov.io/github/George-C-Odes/Observability-Benchmarking)
+> for interactive exploration.
+
+Codecov is **informational only** — its status checks are set to
+`informational: true` and never block merges. The existing three-tier Coverage
+Gate (`pass` / `review_needed` / `hard_fail`) in `java_coverage.yml` remains
+the sole enforcement mechanism.
+
+#### Configuration
+
+The repository-level `codecov.yml` (at the repo root) defines:
+
+- **Flags** — one per module, named `java-{matrix.name}` (e.g.
+  `java-spring-tomcat`, `java-orchestrator`). Each flag maps to the module's
+  source path so Codecov can attribute coverage lines correctly.
+- **Components** — language-level groups that aggregate flags:
+  - `java_services` — all 12 Java/Maven modules
+  - `go_services` — Go modules (placeholder, activated when Go coverage is added)
+  - `python_services` — Python modules (placeholder, activated when Python
+    coverage is added)
+- **Ignored paths** — native-image modules, docs, config, scripts, and other
+  non-source directories are excluded from the coverage denominator.
+- **Carryforward** — enabled for all flags so that modules not re-built in a
+  given commit retain their previous coverage data.
+
+#### How uploads work
+
+Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
+Codecov via `codecov/codecov-action@v6.0.0`:
+
+```yaml
+- name: Upload to Codecov
+  uses: codecov/codecov-action@v6.0.0
+  with:
+    files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
+    flags: java-${{ matrix.name }}
+    name: java-${{ matrix.name }}
+    token: ${{ secrets.CODECOV_TOKEN }}
+    fail_ci_if_error: false
+    disable_search: true
+```
+
+The upload runs only when the build step succeeds. If the upload fails (e.g.,
+Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
+
+#### Authentication (public repos)
+
+In this repository, uploads authenticate using a `CODECOV_TOKEN` repository
+secret passed to the action via the `token:` input (see the workflow snippet
+above). Generate the token in the Codecov repository settings page and store
+it as a `CODECOV_TOKEN` secret in this GitHub repository.
+
+For public repositories, Codecov also supports **tokenless uploads** via
+GitHub OIDC — no secret is strictly required. To use tokenless uploads
+instead of `CODECOV_TOKEN`, you must:
+
+- Configure the workflow or job with:
+  ```yaml
+  permissions:
+    id-token: write
+    contents: read
+#### Adding Go or Python coverage uploads (future)
+
+When Go or Python coverage workflows are extended:
+
+1. Add a `codecov/codecov-action@v6.0.0` step to the respective workflow, with:
+   - `files` pointing to the coverage report (e.g., `coverage.out` for Go,
+     `coverage.xml` for Python).
+   - `flags` matching the naming convention: `go-{module}` or
+     `python-{module}`.
+2. Uncomment the corresponding flag block in `codecov.yml`.
+3. The component (`go_services` or `python_services`) will automatically pick
+   up the new uploads because its `paths` pattern already matches.
+
 ### Go & Python (planned)
 
 Coverage tooling for Go (`go test -coverprofile`) and Python (`coverage.py`)
@@ -1384,7 +1482,7 @@ jobs:
           go test ./... -v -cover -coverprofile=coverage.out
       
       - name: Upload Coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           files: ./services/go/enhanced/coverage.out
           flags: go-service
