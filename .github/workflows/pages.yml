@@ -108,7 +108,10 @@ jobs:
           WR_ID: ${{ github.event.workflow_run.id }}
           WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: bash scripts/pages/resolve-qodana-source.sh
+          RESOLVE_WORKFLOW_NAME: Qodana
+          RESOLVE_WORKFLOW_FILE: qodana_code_quality.yml
+          RESOLVE_ACCEPTED: success
+        run: bash scripts/pages/resolve-source.sh
 
       - name: Inspect available Qodana artifacts
         id: qodana_artifacts
@@ -154,7 +157,10 @@ jobs:
           WR_ID: ${{ github.event.workflow_run.id }}
           WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: bash scripts/pages/resolve-nextjs-quality-source.sh
+          RESOLVE_WORKFLOW_NAME: Next.js Dashboard Quality
+          RESOLVE_WORKFLOW_FILE: nextjs_dash_quality.yml
+          RESOLVE_ACCEPTED: success
+        run: bash scripts/pages/resolve-source.sh
 
       - name: Download Next.js quality report
         id: download_nextjs_quality
@@ -180,7 +186,10 @@ jobs:
           WR_ID: ${{ github.event.workflow_run.id }}
           WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: bash scripts/pages/resolve-django-python-quality-source.sh
+          RESOLVE_WORKFLOW_NAME: Django Python Quality
+          RESOLVE_WORKFLOW_FILE: django_python_quality.yml
+          RESOLVE_ACCEPTED: success
+        run: bash scripts/pages/resolve-source.sh
 
       - name: Download Django Python quality report
         id: download_django_python_quality
@@ -206,7 +215,10 @@ jobs:
           WR_ID: ${{ github.event.workflow_run.id }}
           WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: bash scripts/pages/resolve-go-quality-source.sh
+          RESOLVE_WORKFLOW_NAME: Go Quality
+          RESOLVE_WORKFLOW_FILE: go_quality.yml
+          RESOLVE_ACCEPTED: success,failure
+        run: bash scripts/pages/resolve-source.sh
 
       - name: Download Go quality report
         id: download_go_quality
@@ -232,7 +244,10 @@ jobs:
           WR_ID: ${{ github.event.workflow_run.id }}
           WR_NAME: ${{ github.event.workflow_run.name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: bash scripts/pages/resolve-codeql-source.sh
+          RESOLVE_WORKFLOW_NAME: CodeQL
+          RESOLVE_WORKFLOW_FILE: codeql.yml
+          RESOLVE_ACCEPTED: success,failure
+        run: bash scripts/pages/resolve-source.sh
 
       - name: Download CodeQL quality report
         id: download_codeql_quality
@@ -245,7 +260,7 @@ jobs:
           run-id: ${{ steps.codeql_source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Assemble Qodana pages
+      - name: Assemble quality pages
         shell: bash
         env:
           SERVICES_ARTIFACT_PRESENT: ${{ steps.qodana_artifacts.outputs.services_java_present }}
@@ -272,20 +287,15 @@ jobs:
           CODEQL_DOWNLOAD_OUTCOME: ${{ steps.download_codeql_quality.outcome }}
           CODEQL_QUALITY_PAGES_DIR: ./.codeql-quality-pages
           SITE_DIR: ./_site
-        run: bash scripts/pages/assemble-qodana-pages.sh
+        run: bash scripts/pages/assemble-quality-pages.sh
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
 
   # Deployment job
+  # No explicit `if` needed — `needs: build` already ensures this job only
+  # runs when the build job succeeds (which has its own workflow_run gate).
   deploy:
-    if: >-
-      github.event_name != 'workflow_run'
-      || github.event.workflow_run.conclusion == 'success'
-      || (github.event.workflow_run.name == 'Go Quality'
-          && github.event.workflow_run.conclusion == 'failure')
-      || (github.event.workflow_run.name == 'CodeQL'
-          && github.event.workflow_run.conclusion == 'failure')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

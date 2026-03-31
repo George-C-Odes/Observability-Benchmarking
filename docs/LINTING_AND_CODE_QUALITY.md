@@ -580,9 +580,9 @@ The Pages workflow resolves the Go quality report source independently of other 
 - When triggered by any other workflow or by push/manual dispatch, the latest successful `Go Quality` run on `main` is resolved via API
 
 Scripts involved:
-- `scripts/pages/resolve-go-quality-source.sh` — resolves the Go Quality workflow run to fetch the report artifact from
+- `scripts/pages/resolve-source.sh` — generic parameterized resolver for any quality workflow run (accepts `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` env vars)
 - `scripts/pages/generate-go-quality-report.mjs` — generates the HTML report from golangci-lint JSON output
-- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `go` scope alongside existing scopes
+- `scripts/pages/assemble-quality-pages.sh` — assembles all quality report scopes (Qodana JVM, Django Python, Go, Next.js, CodeQL) into the Pages site
 
 ## CodeQL Configuration (Security & Quality Analysis)
 
@@ -781,10 +781,8 @@ The Pages workflow resolves the Next.js quality report source independently of t
 This ensures every Pages deployment gets the freshest available version of all reports.
 
 Scripts involved:
-- `scripts/pages/resolve-nextjs-quality-source.sh` — resolves the Next.js quality workflow run to fetch the report artifact from
-- `scripts/pages/resolve-django-python-quality-source.sh` — resolves the Django Python quality workflow run to fetch the Qodana Python report artifact from
-- `scripts/pages/resolve-go-quality-source.sh` — resolves the Go Quality workflow run to fetch the golangci-lint report artifact from
-- `scripts/pages/assemble-qodana-pages.sh` — extended to handle the `nextjs-dash`, `django-python`, and `go` scopes alongside the existing Qodana JVM scopes
+- `scripts/pages/resolve-source.sh` — generic parameterized resolver; each Pages step supplies `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` (Go Quality and CodeQL accept `success,failure`; others accept `success` only)
+- `scripts/pages/assemble-quality-pages.sh` — assembles all quality report scopes (Qodana JVM, Django Python, Go, Next.js, CodeQL) into the Pages site
 
 ### Documentation
 All public classes and methods should include:

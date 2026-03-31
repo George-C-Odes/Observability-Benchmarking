@@ -1,5 +1,10 @@
 name: Go Quality
 
+# Scope: services/go/enhanced only.
+# services/go/simple is a minimal reference implementation without linter
+# config or tests — it receives CodeQL analysis but is intentionally excluded
+# from golangci-lint quality checks.
+
 env:
   # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -10,6 +15,7 @@ on:
     paths:
       - 'services/go/enhanced/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
+      - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
   push:
     branches:
@@ -17,7 +23,11 @@ on:
     paths:
       - 'services/go/enhanced/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
+      - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+  schedule:
+    # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
@@ -45,8 +55,12 @@ jobs:
         with:
           version: v2.11.4
           working-directory: services/go/enhanced
-          # We only install here; the actual lint run with JSON output
-          # happens in a later step so we can capture the report.
+          # The action runs `golangci-lint run` by default after install.
+          # We only want to install the binary here — the actual lint run
+          # with JSON output happens in a later step so we can capture the
+          # report.  Passing --help makes the default invocation exit 0
+          # without linting (the documented workaround; v9 has no
+          # skip-run / install-only option).
           args: --help
 
       - name: Print tool versions
@@ -108,5 +122,4 @@ jobs:
           path: services/go/enhanced/quality-report/
           retention-days: 30
           if-no-files-found: warn
-
 

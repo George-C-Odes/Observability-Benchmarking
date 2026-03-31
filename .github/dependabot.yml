@@ -49,3 +49,11 @@ updates:
     commit-message:
       prefix: "deps(go-enhanced)"
 
+  # Go / Simple service
+  - package-ecosystem: gomod
+    directory: /services/go/simple
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(go-simple)"
+

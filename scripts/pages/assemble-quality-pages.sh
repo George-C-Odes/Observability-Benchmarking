@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
-# scripts/pages/assemble-qodana-pages.sh
+# scripts/pages/assemble-quality-pages.sh
 #
 # Resolves quality-report statuses for every scope (Qodana JVM, Qodana
 # Python, Go, Next.js, CodeQL), generates human-readable messages, logs the
 # resolution, and assembles the HTML pages under _site/quality/.
-#
-# This single script replaces the previous inline steps:
-#   "Resolve normalized quality-report statuses"
-#   "Resolve quality-report messages"
-#   "Log quality-report resolution"
-#   "Publish quality reports into the Pages site"
 #
 # Required env:
 #   SERVICES_ARTIFACT_PRESENT    – true | false | unknown
@@ -62,6 +56,7 @@ resolve_status() {
   local directory_path="$1"
   local artifact_present="$2"
   local download_outcome="$3"
+  local run_id="${4:-}"
 
   if [[ -d "$directory_path" ]]; then
     if find "$directory_path" -type f -name 'index.html' -print -quit | grep -q .; then
@@ -72,7 +67,7 @@ resolve_status() {
       echo 'download failed'
     elif [[ "$artifact_present" == 'false' ]]; then
       echo 'unavailable'
-    elif [[ -n "${QODANA_RUN_ID:-}" ]]; then
+    elif [[ -n "$run_id" ]]; then
       echo 'undetermined'
     else
       echo 'not-applicable'
@@ -81,23 +76,24 @@ resolve_status() {
     echo 'download failed'
   elif [[ "$artifact_present" == 'false' ]]; then
     echo 'unavailable'
-  elif [[ -n "${QODANA_RUN_ID:-}" ]]; then
+  elif [[ -n "$run_id" ]]; then
     echo 'undetermined'
   else
     echo 'not-applicable'
   fi
 }
 
-services_status="$(resolve_status "$QODANA_PAGES_DIR/services-java" "$SERVICES_ARTIFACT_PRESENT" "$SERVICES_DOWNLOAD_OUTCOME")"
-orchestrator_status="$(resolve_status "$QODANA_PAGES_DIR/orchestrator" "$ORCHESTRATOR_ARTIFACT_PRESENT" "$ORCHESTRATOR_DOWNLOAD_OUTCOME")"
+services_status="$(resolve_status "$QODANA_PAGES_DIR/services-java" "$SERVICES_ARTIFACT_PRESENT" "$SERVICES_DOWNLOAD_OUTCOME" "${QODANA_RUN_ID:-}")"
+orchestrator_status="$(resolve_status "$QODANA_PAGES_DIR/orchestrator" "$ORCHESTRATOR_ARTIFACT_PRESENT" "$ORCHESTRATOR_DOWNLOAD_OUTCOME" "${QODANA_RUN_ID:-}")"
 
-# Next.js Dashboard quality report: simpler resolution — there is no
-# artifact-inspection step (only one artifact, not a matrix).  If the
-# download step ran and succeeded the directory will contain index.html.
-resolve_nextjs_status() {
+# Simple status resolution for single-artifact scopes (Next.js, Django, Go, CodeQL).
+# Unlike resolve_status() which checks artifact-presence flags from the
+# inspection step, these scopes have no separate inspection step — a download
+# outcome and optional run_id are sufficient.
+resolve_simple_status() {
   local dir="$1"
-  local download_outcome="${NEXTJS_DOWNLOAD_OUTCOME:-}"
-  local run_id="${NEXTJS_QUALITY_RUN_ID:-}"
+  local download_outcome="$2"
+  local run_id="$3"
 
   if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
     echo 'available'
@@ -111,70 +107,11 @@ resolve_nextjs_status() {
     echo 'not-applicable'
   fi
 }
-nextjs_status="$(resolve_nextjs_status "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash")"
 
-# Django Python quality report: same simple resolution as Next.js — single
-# artifact from the Django Python Quality workflow.
-resolve_django_python_status() {
-  local dir="$1"
-  local download_outcome="${DJANGO_PYTHON_DOWNLOAD_OUTCOME:-}"
-  local run_id="${DJANGO_PYTHON_QUALITY_RUN_ID:-}"
-
-  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
-    echo 'available'
-  elif [[ "$download_outcome" == 'failure' ]]; then
-    echo 'download failed'
-  elif [[ "$download_outcome" == 'success' ]]; then
-    echo 'unavailable'
-  elif [[ -n "$run_id" ]]; then
-    echo 'undetermined'
-  else
-    echo 'not-applicable'
-  fi
-}
-django_python_status="$(resolve_django_python_status "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python")"
-
-# Go quality report: same simple resolution as Next.js and Django —
-# single artifact from the Go Quality workflow.
-resolve_go_status() {
-  local dir="$1"
-  local download_outcome="${GO_DOWNLOAD_OUTCOME:-}"
-  local run_id="${GO_QUALITY_RUN_ID:-}"
-
-  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
-    echo 'available'
-  elif [[ "$download_outcome" == 'failure' ]]; then
-    echo 'download failed'
-  elif [[ "$download_outcome" == 'success' ]]; then
-    echo 'unavailable'
-  elif [[ -n "$run_id" ]]; then
-    echo 'undetermined'
-  else
-    echo 'not-applicable'
-  fi
-}
-go_status="$(resolve_go_status "$GO_QUALITY_PAGES_DIR/go")"
-
-# CodeQL security & quality report: same simple resolution as Go —
-# single artifact from the CodeQL workflow.
-resolve_codeql_status() {
-  local dir="$1"
-  local download_outcome="${CODEQL_DOWNLOAD_OUTCOME:-}"
-  local run_id="${CODEQL_QUALITY_RUN_ID:-}"
-
-  if [[ -d "$dir" ]] && find "$dir" -type f -name 'index.html' -print -quit | grep -q .; then
-    echo 'available'
-  elif [[ "$download_outcome" == 'failure' ]]; then
-    echo 'download failed'
-  elif [[ "$download_outcome" == 'success' ]]; then
-    echo 'unavailable'
-  elif [[ -n "$run_id" ]]; then
-    echo 'undetermined'
-  else
-    echo 'not-applicable'
-  fi
-}
-codeql_status="$(resolve_codeql_status "$CODEQL_QUALITY_PAGES_DIR/codeql")"
+nextjs_status="$(resolve_simple_status "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" "${NEXTJS_DOWNLOAD_OUTCOME:-}" "${NEXTJS_QUALITY_RUN_ID:-}")"
+django_python_status="$(resolve_simple_status "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" "${DJANGO_PYTHON_DOWNLOAD_OUTCOME:-}" "${DJANGO_PYTHON_QUALITY_RUN_ID:-}")"
+go_status="$(resolve_simple_status "$GO_QUALITY_PAGES_DIR/go" "${GO_DOWNLOAD_OUTCOME:-}" "${GO_QUALITY_RUN_ID:-}")"
+codeql_status="$(resolve_simple_status "$CODEQL_QUALITY_PAGES_DIR/codeql" "${CODEQL_DOWNLOAD_OUTCOME:-}" "${CODEQL_QUALITY_RUN_ID:-}")"
 
 # ---------------------------------------------------------------------------
 # 2. Resolve human-readable messages

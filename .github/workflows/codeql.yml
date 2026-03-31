@@ -18,17 +18,19 @@ on:
       - 'utils/nextjs-dash/**'
       - 'utils/orchestrator/**'
       - 'scripts/pages/generate-codeql-report.mjs'
+      - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
   push:
     branches:
       - main
     paths:
       - 'services/java/**'
+      - 'utils/orchestrator/**'
       - 'services/python/**'
       - 'services/go/**'
       - 'utils/nextjs-dash/**'
-      - 'utils/orchestrator/**'
       - 'scripts/pages/generate-codeql-report.mjs'
+      - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
   schedule:
     # Weekly full scan — Monday at 05:30 UTC.
@@ -65,7 +67,7 @@ jobs:
           # Full history for the java-kotlin leg so git-diff can identify
           # which modules actually changed (incremental builds).
           # Other languages keep the default shallow clone.
-          fetch-depth: ${{ matrix.language == 'java-kotlin' && '0' || 1 }}
+          fetch-depth: ${{ matrix.language == 'java-kotlin' && '0' || '1' }}
 
       # ── Fast-path: skip the entire java-kotlin leg when no Java-related
       # paths changed (the workflow triggers on python/go/js paths too). ──
