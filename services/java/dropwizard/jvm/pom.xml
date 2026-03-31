@@ -111,11 +111,34 @@
                 <version>${surefire-plugin.version}</version>
                 <configuration>
                     <argLine>
+                        @{argLine}
                         --add-opens=java.base/java.lang=ALL-UNNAMED
                         --enable-native-access=ALL-UNNAMED
                         -Djdk.tracePinnedThreads=full
                     </argLine>
                 </configuration>
+            </plugin>
+
+            <!-- JaCoCo code coverage (report-only, no enforcement) -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.14</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Checkstyle plugin for code style checking -->

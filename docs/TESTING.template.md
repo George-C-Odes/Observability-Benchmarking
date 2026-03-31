@@ -15,6 +15,7 @@
 - [Integration Tests](#integration-tests)
 - [Observability Testing](#observability-testing)
 - [Performance Testing](#performance-testing)
+- [Code Coverage](#code-coverage)
 - [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -1225,6 +1226,61 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 # - Check resource usage (CPU, memory)
 # - Check GC pauses (should be minimal)
 ```
+
+## Code Coverage
+
+### Java — JaCoCo
+
+All 12 Java/Maven JVM modules are instrumented with the
+[JaCoCo Maven plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
+(version 0.8.14). Coverage reports are generated automatically during the
+Maven `verify` phase — no extra flags are needed.
+
+#### Running locally
+
+```bash
+# From any Java module directory, e.g.:
+cd services/java/vertx/jvm
+mvn verify -Dcheckstyle.skip=true
+
+# HTML report → target/site/jacoco/index.html
+# XML report  → target/site/jacoco/jacoco.xml
+```
+
+#### How it works
+
+1. **`prepare-agent`** (initialize phase) — JaCoCo injects a Java agent via
+   the `@{argLine}` Maven property placeholder in each module's Surefire
+   configuration.
+2. **`report`** (verify phase) — JaCoCo reads the execution data
+   (`target/jacoco.exec`) and produces HTML and XML reports under
+   `target/site/jacoco/`.
+
+#### CI workflow
+
+The **Java Coverage** GitHub Actions workflow (`.github/workflows/java_coverage.yml`)
+runs on every PR and push to `main` that touches `services/java/**` or
+`utils/orchestrator/**`. It:
+
+- Builds and tests each module in a matrix (12 parallel jobs).
+- Parses the JaCoCo XML report and writes a coverage table to the
+  **GitHub Step Summary**.
+- Uploads the full HTML and XML report as an artifact named
+  `coverage-java-{module}` (retained for 30 days).
+
+#### Threshold strategy
+
+| Stage       | Behaviour                                                   | Status  |
+|-------------|-------------------------------------------------------------|---------|
+| Report-only | Coverage numbers in Step Summary + artifacts; no failure    | Current |
+| Soft gate   | `jacoco:check` with `continue-on-error`; yellow badge in CI | Planned |
+| Hard gate   | `jacoco:check` fails the workflow below thresholds          | Future  |
+
+### Go & Python (planned)
+
+Coverage tooling for Go (`go test -coverprofile`) and Python (`coverage.py`)
+will be added in a later phase. See `plan-javaCoverage.prompt.md` for the
+full roadmap.
 
 ## CI/CD Integration
 
