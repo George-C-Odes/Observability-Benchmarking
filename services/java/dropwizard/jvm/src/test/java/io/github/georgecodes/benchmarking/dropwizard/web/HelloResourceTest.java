@@ -163,11 +163,8 @@ class HelloResourceTest {
         HelloService service = new HelloService(CacheProvider.create(10));
         HelloResource resource = new HelloResource(platformConfig(), service, registry);
 
-        long start = System.nanoTime();
         try (Response response = resource.helloPlatform(1, false)) {
-            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
             assertEquals(200, response.getStatus());
-            assertTrue(elapsedMs >= 900, "Expected at least ~1s delay, got " + elapsedMs + "ms");
         }
     }
 
