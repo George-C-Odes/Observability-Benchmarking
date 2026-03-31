@@ -1,10 +1,11 @@
-package io.github.georgecodes.benchmarking.javalin;
+package io.github.georgecodes.benchmarking.javalin.domain;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.georgecodes.benchmarking.javalin.domain.HelloService;
 import io.github.georgecodes.benchmarking.javalin.infra.CacheProvider;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,17 +14,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class HelloServiceTest {
 
-    private final Cache<String, String> cache = CacheProvider.create(10);
-    private final HelloService helloService = new HelloService(cache);
+    private HelloService helloService;
+
+    @BeforeEach
+    void setUp() {
+        Cache<String, String> cache = CacheProvider.create(10);
+        helloService = new HelloService(cache);
+    }
 
     @Test
     void handleReturnsPrefixPlusCachedValue() throws InterruptedException {
         String result = helloService.handle("Hello from Javalin platform REST ", 0);
         assertNotNull(result);
-        assertTrue(result.startsWith("Hello from Javalin platform REST "),
-            "Expected prefix, got: " + result);
-        assertTrue(result.contains("value-1"),
-            "Expected cached value 'value-1' in result, got: " + result);
+        assertEquals("Hello from Javalin platform REST value-1", result);
     }
 
     @Test
@@ -41,8 +44,17 @@ class HelloServiceTest {
 
         String result = emptyService.handle("prefix ", 0);
         assertNotNull(result);
-        assertTrue(result.startsWith("prefix "),
-            "Expected prefix, got: " + result);
+        assertEquals("prefix null", result);
+    }
+
+    @Test
+    void handleWithSleepDelays() throws InterruptedException {
+        // Verify that the service returns the correct result even with a sleep delay.
+        // We deliberately avoid asserting wall-clock elapsed time because Thread.sleep
+        // timing is non-deterministic and flaky under CI load / VM scheduling jitter.
+        String result = helloService.handle("Hello from Javalin platform REST ", 1);
+
+        assertNotNull(result);
+        assertEquals("Hello from Javalin platform REST value-1", result);
     }
 }
-

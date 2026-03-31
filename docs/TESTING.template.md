@@ -42,14 +42,14 @@ The project implements a comprehensive testing strategy covering:
 | Micronaut JVM  | ✅ 5 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon SE JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon MP JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
-| Spark JVM      | ✅ 20 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Javalin JVM    | ✅ 19 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Dropwizard JVM | ✅ 17 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Vert.x JVM     | ✅ 34 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Spark JVM      | ✅ 61 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Javalin JVM    | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Dropwizard JVM | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Vert.x JVM     | ✅ 35 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Go Fiber       | ✅ 7 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Go Fiber       | ✅ 12 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **249 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **360 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 

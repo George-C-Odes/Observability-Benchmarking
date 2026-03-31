@@ -1,7 +1,6 @@
-package io.github.georgecodes.benchmarking.dropwizard;
+package io.github.georgecodes.benchmarking.javalin.infra;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.georgecodes.benchmarking.dropwizard.infra.CacheProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

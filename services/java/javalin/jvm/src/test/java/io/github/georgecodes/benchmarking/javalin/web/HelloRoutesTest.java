@@ -1,9 +1,11 @@
-package io.github.georgecodes.benchmarking.javalin;
+package io.github.georgecodes.benchmarking.javalin.web;
 
 import io.github.georgecodes.benchmarking.javalin.config.ServiceConfig;
+import io.github.georgecodes.benchmarking.javalin.config.ServiceConfig.HandlerExecutionMode;
+import io.github.georgecodes.benchmarking.javalin.config.ServiceConfig.ThreadMode;
 import io.github.georgecodes.benchmarking.javalin.domain.HelloService;
 import io.github.georgecodes.benchmarking.javalin.infra.CacheProvider;
-import io.github.georgecodes.benchmarking.javalin.web.HelloRoutes;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,10 +51,10 @@ class HelloRoutesTest {
     private ServiceConfig platformConfig() {
         return new ServiceConfig(
             8080,
-            ServiceConfig.ThreadMode.PLATFORM,
+            ThreadMode.PLATFORM,
             100,
             0, 0, 10000, 60000L,
-            ServiceConfig.HandlerExecutionMode.DIRECT,
+            HandlerExecutionMode.DIRECT,
             0
         );
     }
@@ -59,13 +62,15 @@ class HelloRoutesTest {
     private ServiceConfig virtualConfig() {
         return new ServiceConfig(
             8080,
-            ServiceConfig.ThreadMode.VIRTUAL,
+            ThreadMode.VIRTUAL,
             100,
             0, 0, 10000, 60000L,
-            ServiceConfig.HandlerExecutionMode.DIRECT,
+            HandlerExecutionMode.DIRECT,
             0
         );
     }
+
+    // ── Construction tests ──────────────────────────────────────────────
 
     @Test
     void constructionPlatformMode() {
@@ -83,29 +88,6 @@ class HelloRoutesTest {
         HelloRoutes routes = assertDoesNotThrow(
             () -> new HelloRoutes(virtualConfig(), executor, service, registry));
         assertNotNull(routes);
-    }
-
-    @Test
-    void counterRegisteredInPlatformMode() {
-        HelloService service = new HelloService(CacheProvider.create(10));
-
-        new HelloRoutes(platformConfig(), executor, service, registry);
-
-        assertNotNull(registry.find("hello.request.count")
-            .tag("endpoint", "/hello/platform")
-            .counter(), "Counter for /hello/platform should be registered");
-    }
-
-    @Test
-    void counterRegisteredInVirtualMode() {
-        MeterRegistry reg = new SimpleMeterRegistry();
-        HelloService service = new HelloService(CacheProvider.create(10));
-
-        new HelloRoutes(virtualConfig(), executor, service, reg);
-
-        assertNotNull(reg.find("hello.request.count")
-            .tag("endpoint", "/hello/virtual")
-            .counter(), "Counter for /hello/virtual should be registered");
     }
 
     @Test
@@ -136,5 +118,45 @@ class HelloRoutesTest {
 
         assertThrows(NullPointerException.class,
             () -> new HelloRoutes(platformConfig(), executor, service, null));
+    }
+
+    // ── Counter registration tests ──────────────────────────────────────
+
+    @Test
+    void counterRegisteredInPlatformMode() {
+        HelloService service = new HelloService(CacheProvider.create(10));
+
+        new HelloRoutes(platformConfig(), executor, service, registry);
+
+        assertNotNull(registry.find("hello.request.count")
+            .tag("endpoint", "/hello/platform")
+            .counter(), "Counter for /hello/platform should be registered");
+    }
+
+    @Test
+    void counterRegisteredInVirtualMode() {
+        MeterRegistry reg = new SimpleMeterRegistry();
+        HelloService service = new HelloService(CacheProvider.create(10));
+
+        new HelloRoutes(virtualConfig(), executor, service, reg);
+
+        assertNotNull(reg.find("hello.request.count")
+            .tag("endpoint", "/hello/virtual")
+            .counter(), "Counter for /hello/virtual should be registered");
+    }
+
+    @Test
+    void counterStartsAtZeroOnConstruction() {
+        MeterRegistry reg = new SimpleMeterRegistry();
+        HelloService service = new HelloService(CacheProvider.create(10));
+
+        new HelloRoutes(platformConfig(), executor, service, reg);
+
+        Counter counter = reg.find("hello.request.count")
+            .tag("endpoint", "/hello/platform")
+            .counter();
+        assertNotNull(counter, "Counter should be registered");
+        // No requests have been made yet, so the counter must be exactly 0
+        assertEquals(0.0, counter.count(), "Counter should be 0 after construction (no requests yet)");
     }
 }
