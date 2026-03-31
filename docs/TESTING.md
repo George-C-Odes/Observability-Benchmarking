@@ -1283,15 +1283,19 @@ actual coverage of all modules to avoid false-positive build failures while the
 baseline stabilizes. All 12 modules set `<haltOnFailure>false</haltOnFailure>` in
 their `jacoco:check` configuration, so threshold violations are **logged as
 warnings** but do **not** fail `mvn verify` — locally or in CI. The CI workflow's
-Python parser evaluates thresholds independently and exits with a non-zero code
-when any threshold is not met, failing the matrix leg.
+Python parser evaluates thresholds independently and writes each module's status
+(`pass`, `threshold_violation`, `build_failure`, or `report_missing`) to a small
+status artifact.
 
-A follow-up **Coverage Gate** job aggregates the matrix result:
+A **Coverage Verdict** job downloads all status artifacts and classifies the
+aggregate result. Two **Coverage Gate** jobs (same display name for branch
+protection) then act on the verdict:
 
-- **All thresholds met** → the gate job passes immediately (no environment).
-- **Any threshold violated** → the gate job references the `coverage-review`
-  environment, which pauses the job and shows **"Waiting for review"** in the
-  Actions UI until a designated reviewer approves.
+| Verdict           | Trigger                                                  | Gate behaviour                                      |
+|-------------------|----------------------------------------------------------|-----------------------------------------------------|
+| **pass**          | All builds passed, all reports exist, all thresholds met | Auto-passes ✅                                       |
+| **review_needed** | Builds passed but ≥ 1 module is below threshold          | Requires `coverage-review` environment approval ⏳   |
+| **hard_fail**     | ≥ 1 build/test failure **or** missing JaCoCo report      | Hard-fails ❌ — **cannot** be overridden by reviewer |
 
 > **One-time setup (repo owner):**
 > Settings → Environments → New environment `coverage-review` → Required
@@ -1301,7 +1305,7 @@ A follow-up **Coverage Gate** job aggregates the matrix result:
 | Stage       | Behaviour                                                             | Status  |
 |-------------|-----------------------------------------------------------------------|---------|
 | Report-only | Coverage numbers in Step Summary + artifacts; no failure              | Done    |
-| Review gate | `haltOnFailure=false` in Maven; CI fails + requires reviewer approval | Current |
+| Review gate | `haltOnFailure=false` in Maven; CI evaluates + gates on verdict       | Current |
 | Hard gate   | Remove `haltOnFailure=false`; `jacoco:check` fails the build directly | Future  |
 
 **Tightening roadmap**: once baselines are collected from 2–3 CI runs, thresholds

@@ -85,22 +85,44 @@ jobs:
           python3 << 'PYEOF'
           import os, sys, xml.etree.ElementTree as ET
 
-          module_name  = os.environ["MODULE_NAME"]
-          module_dir   = os.environ["MODULE_DIR"]
+          module_name   = os.environ["MODULE_NAME"]
+          module_dir    = os.environ["MODULE_DIR"]
           build_outcome = os.environ["BUILD_OUTCOME"]
-          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
+          summary_file  = os.environ["GITHUB_STEP_SUMMARY"]
 
           jacoco_xml = f"{module_dir}/target/site/jacoco/jacoco.xml"
+          status_dir = "coverage-status"
+          os.makedirs(status_dir, exist_ok=True)
 
+          def write_status(value):
+              with open(f"{status_dir}/status.txt", "w") as fh:
+                  fh.write(value)
+
+          # ── No JaCoCo report ──────────────────────────────────────
           if not os.path.isfile(jacoco_xml):
-              print(f"::warning::JaCoCo report not found at {jacoco_xml}")
-              with open(summary_file, "a") as f:
-                  f.write(f"### ⚠️ Coverage: {module_name}\n\n")
-                  f.write("No JaCoCo report was generated. "
-                          "Tests may have been skipped or failed before the report phase.\n")
-              sys.exit(0)
+              if build_outcome == "success":
+                  # Build passed but report missing — likely misconfigured
+                  # JaCoCo or unexpectedly skipped tests.  Fail the step so
+                  # the job result becomes 'failure' → hard-fail gate.
+                  print(f"::error::Build succeeded but JaCoCo report "
+                        f"not found at {jacoco_xml}")
+                  with open(summary_file, "a") as f:
+                      f.write(f"### ❌ Coverage: {module_name}\n\n")
+                      f.write("Build succeeded but no JaCoCo report was "
+                              "generated. Check JaCoCo plugin configuration.\n")
+                  write_status("report_missing")
+                  sys.exit(1)
+              else:
+                  print(f"::warning::JaCoCo report not found at {jacoco_xml}")
+                  with open(summary_file, "a") as f:
+                      f.write(f"### ⚠️ Coverage: {module_name}\n\n")
+                      f.write("No JaCoCo report was generated. Tests may "
+                              "have been skipped or failed before the "
+                              "report phase.\n")
+                  write_status("build_failure")
+                  sys.exit(0)   # build step already failed the job
 
-          # Parse the JaCoCo XML — direct children of <report> are the aggregates
+          # ── Parse JaCoCo XML ──────────────────────────────────────
           tree = ET.parse(jacoco_xml)
           root = tree.getroot()
 
@@ -126,8 +148,7 @@ jobs:
               ("Methods",      "METHOD"),
           ]
 
-          # Evaluate thresholds independently (haltOnFailure=false in Maven,
-          # so build_outcome does not reflect coverage violations).
+          # Evaluate thresholds independently (haltOnFailure=false in Maven).
           LINE_MIN, BRANCH_MIN = 0.15, 0.10
           line_m, line_c = counters.get("LINE", (0, 0))
           br_m, br_c     = counters.get("BRANCH", (0, 0))
@@ -135,11 +156,12 @@ jobs:
                             and ratio(br_m, br_c) >= BRANCH_MIN)
 
           if build_outcome != "success":
-              badge = "❌ Build failed"
+              status, badge = "build_failure", "❌ Build failed"
           elif thresholds_met:
-              badge = "✅ Thresholds passed"
+              status, badge = "pass", "✅ Thresholds passed"
           else:
-              badge = "⚠️ Coverage below threshold — review required"
+              status, badge = "threshold_violation", \
+                  "⚠️ Coverage below threshold — review required"
 
           with open(summary_file, "a") as f:
               f.write(f"### 📊 Coverage: {module_name}\n\n")
@@ -153,14 +175,24 @@ jobs:
                   f.write(f"| {label} | {covered} | {missed} | {total} | {p}% |\n")
               f.write(f"\n> Report generated from `{jacoco_xml}`\n")
 
-          # Fail this step when thresholds are not met (and the build itself
-          # passed), so the coverage-gate job sees needs.coverage.result
-          # != 'success' and requires manual reviewer approval.
-          if build_outcome == "success" and not thresholds_met:
-              print("::warning::Coverage below minimum thresholds "
-                    "— reviewer approval required via Coverage Gate")
-              sys.exit(1)
+          write_status(status)
+
+          # Exit codes:
+          # • build_failure:        0 — build step already failed the job
+          # • threshold_violation:  0 — communicated via status artifact;
+          #     job stays 'success' so the gate can distinguish this from
+          #     a build error and route to the review environment
+          # • pass:                 0
           PYEOF
+
+      - name: Upload threshold status
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: coverage-status-${{ matrix.name }}
+          path: coverage-status/
+          retention-days: 1
+          if-no-files-found: warn
 
       - name: Upload coverage report
         if: always() && !cancelled()
@@ -172,20 +204,61 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+  # ── Verdict aggregation ─────────────────────────────────────────────
+  # Determines why the matrix failed (if it did) by inspecting
+  # needs.coverage.result and the per-leg status artifacts.
+  #
+  # Possible verdicts:
+  #   pass           – all builds passed, all reports exist, all thresholds met
+  #   review_needed  – builds passed but ≥1 module is below threshold
+  #   hard_fail      – ≥1 build/test failure or missing JaCoCo report
+  coverage-verdict:
+    name: Coverage Verdict
+    needs: coverage
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    outputs:
+      verdict: ${{ steps.check.outputs.verdict }}
+    steps:
+      - name: Download threshold status files
+        if: needs.coverage.result == 'success'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: coverage-status-*
+          path: statuses/
+
+      - name: Determine verdict
+        id: check
+        run: |
+          # Build/test failure or missing report → hard fail (not approvable)
+          if [[ "${{ needs.coverage.result }}" != "success" ]]; then
+            echo "verdict=hard_fail" >> "$GITHUB_OUTPUT"
+            echo "::error::One or more modules had build/test failures or missing JaCoCo reports"
+            exit 0
+          fi
+
+          # All builds passed, all reports exist — check threshold statuses
+          verdict=pass
+          for f in statuses/coverage-status-*/status.txt; do
+            if [[ -f "$f" ]]; then
+              status=$(cat "$f")
+              if [[ "$status" == "threshold_violation" ]]; then
+                verdict=review_needed
+                module=$(basename "$(dirname "$f")" | sed 's/^coverage-status-//')
+                echo "::warning::Coverage below threshold: $module"
+              fi
+            fi
+          done
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+
   # ── Approval gate ──────────────────────────────────────────────────
   # Two mutually-exclusive jobs share the display name "Coverage Gate"
-  # so a single branch-protection required check covers both paths:
+  # so a single branch-protection required check covers all outcomes:
   #
-  #  • All matrix legs pass  → coverage-gate runs (no environment).
-  #  • Any matrix leg fails  → coverage-gate-review runs, gated behind
-  #    the 'coverage-review' environment which pauses the job until a
-  #    designated reviewer approves in the Actions UI.
-  #
-  # Why two jobs instead of a conditional environment expression?
-  # In GitHub Actions expressions `cond && '' || 'fallback'` always
-  # resolves to 'fallback' because '' is falsy.  Two jobs with the
-  # same display name sidestep this; GitHub treats skipped check runs
-  # as neutral so only the running job matters for required checks.
+  #  • pass           → coverage-gate auto-passes (no environment)
+  #  • hard_fail      → coverage-gate hard-fails (exit 1, NOT approvable)
+  #  • review_needed  → coverage-gate-review requires 'coverage-review'
+  #                     environment approval before passing
   #
   # One-time setup (repo owner):
   #   Settings → Environments → New environment "coverage-review"
@@ -194,20 +267,27 @@ jobs:
   #   Settings → Branches → Branch protection rules.
   coverage-gate:
     name: Coverage Gate
-    needs: coverage
-    if: always() && !cancelled() && needs.coverage.result == 'success'
+    needs: coverage-verdict
+    if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict != 'review_needed'
     runs-on: ubuntu-latest
     steps:
       - name: Gate result
-        run: echo "✅ All coverage thresholds met"
+        run: |
+          verdict="${{ needs.coverage-verdict.outputs.verdict }}"
+          if [[ "$verdict" == "pass" ]]; then
+            echo "✅ All coverage thresholds met"
+          else
+            echo "::error::Build/test failure or missing JaCoCo report — cannot be overridden by coverage review"
+            exit 1
+          fi
 
   coverage-gate-review:
     name: Coverage Gate
-    needs: coverage
-    if: always() && !cancelled() && needs.coverage.result == 'failure'
+    needs: coverage-verdict
+    if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict == 'review_needed'
     runs-on: ubuntu-latest
     environment: coverage-review
     steps:
       - name: Gate result
-        run: echo "::notice::Coverage violations reviewed and approved."
+        run: echo "::notice::Coverage threshold violations reviewed and approved."
 
