@@ -219,7 +219,7 @@ jobs:
       # Authentication: the `token` input is set explicitly, so a
       # CODECOV_TOKEN repository secret is required.  Generate it at
       # https://app.codecov.io/gh/{owner}/{repo}/settings and add it
-      # under Settings → Secrets → Actions.
+      # under Settings → Secrets and variables → Actions.
       # To switch to tokenless (OIDC) uploads for public repos, remove
       # the `token:` input and keep `id-token: write` above.
       - name: Upload to Codecov
