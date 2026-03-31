@@ -1331,7 +1331,7 @@ of the GitHub-native Step Summary and artifact uploads described above. It adds:
 
 <p style="text-align: center;">
   <a href="https://codecov.io/github/George-C-Odes/Observability-Benchmarking">
-    <img src="https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graphs/sunburst.svg?token=RY6UM4T2BW" alt="Codecov sunburst graph" width="300" />
+    <img src="https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graphs/sunburst.svg?token=RY6UM4T2BW" alt="Codecov sunburst graph" width="300" style="width: 300px;" />
   </a>
 </p>
 
@@ -1360,17 +1360,21 @@ The repository-level `codecov.yml` (at the repo root) defines:
     coverage is added)
 - **Ignored paths** — native-image modules, docs, config, scripts, and other
   non-source directories are excluded from the coverage denominator.
+  Application entry-point classes (`*Application.java`) are also excluded —
+  they contain only bootstrap/main wiring that is not a meaningful coverage
+  target. Quarkus-based modules (quarkus-jvm, orchestrator) and Helidon MP
+  auto-generate their entry point, so no explicit file is excluded for them.
 - **Carryforward** — enabled for all flags so that modules not re-built in a
   given commit retain their previous coverage data.
 
 #### How uploads work
 
 Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
-Codecov via `codecov/codecov-action@v6.0.0`:
+Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.0):
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@v6.0.0
+  uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
   with:
     files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
     flags: java-${{ matrix.name }}
@@ -1385,23 +1389,21 @@ Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
 
 #### Authentication (public repos)
 
-For public repositories, Codecov supports **tokenless uploads** via GitHub
-OIDC. To use tokenless uploads, your workflow/job must grant
-`permissions: id-token: write` and you must omit the `token:` input from
-the `codecov/codecov-action` step.
+The workflow currently passes `token: ${{ secrets.CODECOV_TOKEN }}`
+explicitly, so a **`CODECOV_TOKEN` repository secret is required**.
+Generate the token at the
+[Codecov repository settings page](https://app.codecov.io) and add it
+under Settings → Secrets and variables → Actions.
 
-The example workflow above is currently configured to use a
-`CODECOV_TOKEN` secret via the `token:` input and will fail without that
-secret. Generate the token at the Codecov repository settings page.
-
-If you prefer tokenless uploads, remove the `token:` input from the step and
-ensure the appropriate `permissions: id-token: write` setting is present in
-the workflow definition.
+For public repositories, Codecov also supports **tokenless uploads** via
+GitHub OIDC. To switch to tokenless, **remove** the `token:` input from
+the `codecov/codecov-action` step and ensure the job grants
+`permissions: id-token: write` (already present in the workflow).
 #### Adding Go or Python coverage uploads (future)
 
 When Go or Python coverage workflows are extended:
 
-1. Add a `codecov/codecov-action@v6.0.0` step to the respective workflow, with:
+1. Add a `codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2` (v6.0.0) step to the respective workflow, with:
    - `files` pointing to the coverage report (e.g., `coverage.out` for Go,
      `coverage.xml` for Python).
    - `flags` matching the naming convention: `go-{module}` or
