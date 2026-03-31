@@ -1270,11 +1270,28 @@ runs on every PR and push to `main` that touches `services/java/**` or
 
 #### Threshold strategy
 
-| Stage       | Behaviour                                                   | Status  |
-|-------------|-------------------------------------------------------------|---------|
-| Report-only | Coverage numbers in Step Summary + artifacts; no failure    | Current |
-| Soft gate   | `jacoco:check` with `continue-on-error`; yellow badge in CI | Planned |
-| Hard gate   | `jacoco:check` fails the workflow below thresholds          | Future  |
+Coverage thresholds are enforced via the `jacoco:check` Maven goal, bound to
+the `verify` phase in all 12 modules. Current thresholds are uniform:
+
+| Metric | Minimum |
+|--------|--------:|
+| Line   |     15% |
+| Branch |     10% |
+
+These conservative starting thresholds are intentionally set well below the
+actual coverage of all modules to avoid false-positive build failures while the
+baseline stabilizes. The CI workflow uses `continue-on-error: true` (soft gate),
+so a threshold violation produces a yellow badge but does **not** block merges.
+
+| Stage       | Behaviour                                                         | Status  |
+|-------------|-------------------------------------------------------------------|---------|
+| Report-only | Coverage numbers in Step Summary + artifacts; no failure          | Done    |
+| Soft gate   | `jacoco:check` with `continue-on-error: true`; yellow badge in CI | Current |
+| Hard gate   | `jacoco:check` fails the workflow below thresholds                | Future  |
+
+**Tightening roadmap**: once baselines are collected from 2–3 CI runs, thresholds
+will be raised per-module to ~5% below their observed coverage. Modules that
+consistently exceed 50% line coverage will be promoted to hard gate first.
 
 ### Go & Python (planned)
 

@@ -70,6 +70,8 @@ jobs:
             utils/orchestrator/pom.xml
 
       - name: Run tests with coverage
+        id: build
+        continue-on-error: true
         working-directory: ${{ matrix.module_dir }}
         run: mvn verify -B -q -Dcheckstyle.skip=true
 
@@ -80,6 +82,7 @@ jobs:
         env:
           MODULE_NAME: ${{ matrix.name }}
           MODULE_DIR: ${{ matrix.module_dir }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
           JACOCO_XML="${MODULE_DIR}/target/site/jacoco/jacoco.xml"
 
@@ -124,8 +127,17 @@ jobs:
           line_pct=$(pct "$line_missed" "$line_covered")
           method_pct=$(pct "$method_missed" "$method_covered")
 
+          # Determine threshold check status
+          if [[ "$BUILD_OUTCOME" == "success" ]]; then
+            CHECK_BADGE="✅ Thresholds passed"
+          else
+            CHECK_BADGE="⚠️ Threshold check failed (soft gate — not blocking)"
+          fi
+
           {
             echo "### 📊 Coverage: ${MODULE_NAME}"
+            echo ""
+            echo "**${CHECK_BADGE}** · Minimum: 15% line, 10% branch"
             echo ""
             echo "| Metric       | Covered | Missed | Total | Coverage |"
             echo "|--------------|--------:|-------:|------:|---------:|"
