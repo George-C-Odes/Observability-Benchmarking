@@ -191,9 +191,17 @@ class HelloRoutesTest {
         assertEquals("\"Hello from Vertx reactive REST value-1\"", response.body());
     }
 
-    // Note: the sleep>0 branch (Vert.x timer-based delay) is intentionally
-    // not tested here because the route only accepts whole seconds, so the
-    // minimum delay is 1 s.  That timer path is covered by integration tests.
+    @Test
+    void helloReactiveWithSleepOne() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(baseUrl + "/hello/reactive?sleep=1"))
+            .GET()
+            .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(200, response.statusCode());
+        assertEquals("\"Hello from Vertx reactive REST value-1\"", response.body());
+    }
 
     @Test
     void helloReactiveWithBothParams() throws Exception {

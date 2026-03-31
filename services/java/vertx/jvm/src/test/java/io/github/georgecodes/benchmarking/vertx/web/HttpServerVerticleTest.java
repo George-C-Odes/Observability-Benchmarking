@@ -15,17 +15,15 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Integration tests for {@link HttpServerVerticle}.
- * Deploys the verticle on a random port and validates end-to-end behaviour.
+ * Deploys the verticle on a random port and validates end-to-end behavior.
  */
 class HttpServerVerticleTest {
 
@@ -40,34 +38,31 @@ class HttpServerVerticleTest {
         HelloService helloService = new HelloService(cache);
         MetricsProvider metricsProvider = MetricsProvider.create(HelloMode.REACTIVE.endpointTag());
 
-        int testPort = findFreePort();
+        // Bind to port 0 — the OS assigns a random free port, no race possible
         HttpServerOptions serverOptions = new HttpServerOptions()
             .setHost("127.0.0.1")
-            .setPort(testPort);
+            .setPort(0);
 
         HttpServerVerticle verticle = new HttpServerVerticle(
-            testPort, helloService, metricsProvider, serverOptions);
+            0, helloService, metricsProvider, serverOptions);
 
         vertx.deployVerticle(verticle)
             .toCompletionStage()
             .toCompletableFuture()
             .get(10, TimeUnit.SECONDS);
-        baseUrl = "http://127.0.0.1:" + testPort;
+
+        assertTrue(verticle.actualPort() > 0, "Server should bind to a valid port");
+        baseUrl = "http://127.0.0.1:" + verticle.actualPort();
         httpClient = HttpClient.newHttpClient();
     }
 
     @AfterAll
     static void tearDownAll() throws Exception {
         if (vertx != null) {
-            CountDownLatch latch = new CountDownLatch(1);
-            vertx.close().onComplete(_ -> latch.countDown());
-            assertTrue(latch.await(10, TimeUnit.SECONDS), "Vert.x should close within 10 seconds");
-        }
-    }
-
-    private static int findFreePort() throws Exception {
-        try (var socket = new java.net.ServerSocket(0)) {
-            return socket.getLocalPort();
+            vertx.close()
+                .toCompletionStage()
+                .toCompletableFuture()
+                .get(10, TimeUnit.SECONDS);
         }
     }
 
