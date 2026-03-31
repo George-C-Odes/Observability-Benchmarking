@@ -129,6 +129,7 @@ class HelloRoutesTest {
     void readyEndpointReturnsUp() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/ready"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -141,6 +142,7 @@ class HelloRoutesTest {
     void helloReactiveEndpointReturnsOk() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -154,6 +156,7 @@ class HelloRoutesTest {
     void helloReactiveEndpointReturnsExpectedBody() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -166,6 +169,7 @@ class HelloRoutesTest {
     void helloReactiveWithLogParam() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?log=true"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -178,6 +182,7 @@ class HelloRoutesTest {
     void helloReactiveWithLogParamFalse() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?log=false"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
