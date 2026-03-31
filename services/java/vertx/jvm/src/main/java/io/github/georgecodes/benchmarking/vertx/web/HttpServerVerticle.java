@@ -36,6 +36,9 @@ public final class HttpServerVerticle extends AbstractVerticle {
     /** Pre-configured HTTP server options (shared across verticle instances). */
     private final HttpServerOptions serverOptions;
 
+    /** Actual port bound by the HTTP server (set after successful listen). */
+    private volatile int actualPort;
+
     public HttpServerVerticle(int port,
                               HelloService helloService,
                               MetricsProvider metricsProvider,
@@ -57,6 +60,7 @@ public final class HttpServerVerticle extends AbstractVerticle {
             .requestHandler(router)
             .listen(port)
             .onSuccess(server -> {
+                actualPort = server.actualPort();
                 LOG.info("Vert.x HTTP server verticle listening on port {} (event-loop: {})",
                     server.actualPort(), Thread.currentThread().getName());
                 startPromise.complete();
@@ -65,5 +69,15 @@ public final class HttpServerVerticle extends AbstractVerticle {
                 LOG.error("Failed to start Vert.x HTTP server verticle", err);
                 startPromise.fail(err);
             });
+    }
+
+    /**
+     * Returns the actual port bound by the HTTP server.
+     * Only valid after the verticle has started successfully.
+     *
+     * @return the bound port, or 0 if the server has not started yet
+     */
+    int actualPort() {
+        return actualPort;
     }
 }

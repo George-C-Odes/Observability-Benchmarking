@@ -1,6 +1,5 @@
-package io.github.georgecodes.benchmarking.vertx;
+package io.github.georgecodes.benchmarking.vertx.infra;
 
-import io.github.georgecodes.benchmarking.vertx.infra.MetricsProvider;
 import io.micrometer.core.instrument.Metrics;
 import org.junit.jupiter.api.Test;
 
@@ -31,3 +30,4 @@ class MetricsProviderTest {
         assertNotNull(Metrics.globalRegistry, "Registry should not be null after binding");
     }
 }
+

@@ -1,6 +1,5 @@
-package io.github.georgecodes.benchmarking.vertx;
+package io.github.georgecodes.benchmarking.vertx.config;
 
-import io.github.georgecodes.benchmarking.vertx.config.ServiceConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,3 +31,4 @@ class ServiceConfigTest {
         assertEquals(expected, config.resolvedEventLoopSize());
     }
 }
+

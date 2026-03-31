@@ -45,11 +45,11 @@ The project implements a comprehensive testing strategy covering:
 | Spark JVM      | ✅ 20 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Javalin JVM    | ✅ 19 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Dropwizard JVM | ✅ 17 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Vert.x JVM     | ✅ 14 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Pekko JVM      | ✅ 3 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Vert.x JVM     | ✅ 34 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Go Fiber       | ✅ 7 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **200 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **249 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -100,12 +100,12 @@ The project implements a comprehensive testing strategy covering:
 
 **Java (Vert.x)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Vert.x test utilities
+- HTTP Testing: Embedded Vert.x HTTP server + Java HttpClient
 - Metrics: Micrometer (OpenTelemetry)
 
 **Java (Pekko)**
 - Testing Framework: JUnit 5
-- HTTP Testing: Pekko HTTP testkit
+- HTTP Testing: Embedded Pekko HTTP server + Java HttpClient
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Go**
@@ -170,9 +170,11 @@ services/java/
 │       MetricsProviderTest.java, ServiceConfigTest.java
 ├── vertx/jvm/src/test/java/
 │   └── HelloModeTest.java, HelloServiceTest.java, CacheProviderTest.java,
-│       MetricsProviderTest.java, ServiceConfigTest.java
+│       MetricsProviderTest.java, ServiceConfigTest.java, HelloRoutesTest.java,
+│       HttpServerVerticleTest.java
 └── pekko/jvm/src/test/java/
-    └── HelloServiceTest.java
+    └── HelloRoutesTest.java, HelloServiceTest.java, HelloModeTest.java,
+        CacheProviderTest.java, MetricsProviderTest.java, ServiceConfigTest.java
 ```
 
 #### Running Quarkus Tests
