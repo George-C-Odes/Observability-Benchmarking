@@ -204,6 +204,30 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # ── Codecov upload ──────────────────────────────────────────────
+      # Additional reporting layer — does NOT replace the GitHub Step
+      # Summary or artifact uploads above.  Codecov provides PR
+      # annotations, coverage diffs, and trend tracking.
+      #
+      # Flag naming: java-{matrix.name}  (e.g. java-spring-tomcat).
+      # See codecov.yml at the repo root for flag → path mappings and
+      # component definitions.
+      #
+      # Authentication: uses CODECOV_TOKEN secret when available.  For
+      # public repos without a token, the action falls back to tokenless
+      # upload via GitHub OIDC.  Setting the token is recommended for
+      # reliability — see https://docs.codecov.com/docs/adding-the-codecov-token
+      - name: Upload to Codecov
+        if: always() && !cancelled() && steps.build.outcome == 'success'
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
+          flags: java-${{ matrix.name }}
+          name: java-${{ matrix.name }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          disable_search: true
+
   # ── Verdict aggregation ─────────────────────────────────────────────
   # Determines why the matrix failed (if it did) by inspecting
   # needs.coverage.result and the per-leg status artifacts.

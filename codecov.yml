@@ -1,0 +1,145 @@
+# Codecov configuration for the Observability-Benchmarking monorepo.
+#
+# Each language/module uploads coverage with a dedicated flag (set in the
+# GitHub Actions workflow).  Flags map to source paths so Codecov can
+# correctly attribute lines and produce per-component dashboards.
+#
+# Docs: https://docs.codecov.com/docs/codecov-yaml
+# Validate: curl -X POST --data-binary @codecov.yml https://codecov.io/validate
+
+# ── General ───────────────────────────────────────────────────────────
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
+# ── Coverage status checks ────────────────────────────────────────────
+# Informational only — the existing Coverage Gate job in java_coverage.yml
+# handles enforcement.  Codecov status checks appear on PRs but never
+# block merges.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+# ── PR comment ────────────────────────────────────────────────────────
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer"
+  behavior: default
+  require_changes: true
+  require_base: false
+  require_head: true
+
+# ── Flag definitions ──────────────────────────────────────────────────
+# Naming convention:  java-{matrix.name}  |  go-{module}  |  python-{module}
+#
+# `carryforward: true` keeps previous coverage data for flags that were
+# not uploaded in the current commit.  This is important in a monorepo
+# where not every workflow runs on every push (e.g., path-filtered
+# triggers or future per-module path filters).
+#
+# `paths` tells Codecov which source files belong to this flag so
+# coverage is attributed correctly in the file viewer and PR diff.
+
+flags:
+  # ── Java services (uploaded by java_coverage.yml) ───────────────────
+  java-spring-tomcat:
+    paths: [services/java/spring/jvm/tomcat/]
+    carryforward: true
+  java-spring-netty:
+    paths: [services/java/spring/jvm/netty/]
+    carryforward: true
+  java-quarkus-jvm:
+    paths: [services/java/quarkus/jvm/]
+    carryforward: true
+  java-micronaut-jvm:
+    paths: [services/java/micronaut/jvm/]
+    carryforward: true
+  java-helidon-se-jvm:
+    paths: [services/java/helidon/se/jvm/]
+    carryforward: true
+  java-helidon-mp-jvm:
+    paths: [services/java/helidon/mp/jvm/]
+    carryforward: true
+  java-spark-jvm:
+    paths: [services/java/spark/jvm/]
+    carryforward: true
+  java-javalin-jvm:
+    paths: [services/java/javalin/jvm/]
+    carryforward: true
+  java-dropwizard-jvm:
+    paths: [services/java/dropwizard/jvm/]
+    carryforward: true
+  java-vertx-jvm:
+    paths: [services/java/vertx/jvm/]
+    carryforward: true
+  java-pekko-jvm:
+    paths: [services/java/pekko/jvm/]
+    carryforward: true
+  java-orchestrator:
+    paths: [utils/orchestrator/]
+    carryforward: true
+
+  # ── Go services (future — uploaded by go_quality.yml) ───────────────
+  # go-enhanced:
+  #   paths: [services/go/enhanced/]
+  #   carryforward: true
+  # go-simple:
+  #   paths: [services/go/simple/]
+  #   carryforward: true
+
+  # ── Python services (future — uploaded by django_python_quality.yml) ─
+  # python-django-platform:
+  #   paths: [services/python/django/]
+  #   carryforward: true
+  # python-django-reactive:
+  #   paths: [services/python/django/]
+  #   carryforward: true
+
+# ── Component definitions ─────────────────────────────────────────────
+# Components aggregate flags into language-level groups.  The Codecov
+# dashboard shows per-component coverage trends and PR diffs.
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        informational: true
+  individual_components:
+    - component_id: java_services
+      name: Java Services
+      paths:
+        - services/java/**
+        - utils/orchestrator/**
+    - component_id: go_services
+      name: Go Services
+      paths:
+        - services/go/**
+    - component_id: python_services
+      name: Python Services
+      paths:
+        - services/python/**
+
+# ── Ignored paths ─────────────────────────────────────────────────────
+# Native-image modules duplicate JVM source but have no unit tests or
+# JaCoCo instrumentation.  Exclude them so they don't drag down the
+# overall coverage percentage.
+ignore:
+  - "services/java/spring/native/**"
+  - "services/java/quarkus/native/**"
+  - "services/java/micronaut/native/**"
+  - "services/java/helidon/se/native/**"
+  - "services/java/helidon/mp/native/**"
+  - "docs/**"
+  - "config/**"
+  - "compose/**"
+  - "data/**"
+  - "scripts/**"
+  - "integration-tests/**"
+  - "results/**"
+
