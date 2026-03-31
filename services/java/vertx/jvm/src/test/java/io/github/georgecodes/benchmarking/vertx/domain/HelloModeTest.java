@@ -1,6 +1,5 @@
-package io.github.georgecodes.benchmarking.vertx;
+package io.github.georgecodes.benchmarking.vertx.domain;
 
-import io.github.georgecodes.benchmarking.vertx.domain.HelloMode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,3 +26,4 @@ class HelloModeTest {
         assertEquals("Hello from Vertx reactive REST ", HelloMode.REACTIVE.responsePrefix());
     }
 }
+

@@ -3,7 +3,7 @@ package io.github.georgecodes.benchmarking.pekko.config;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Unit tests for {@link ServiceConfig}.
@@ -20,13 +20,16 @@ class ServiceConfigTest {
 
     @Test
     void fromEnvironmentReturnsDefaults() {
-        // Without SERVICE_PORT / CACHE_SIZE env vars set, defaults should apply.
+        // Only assert concrete defaults when the env vars are absent;
+        // skip gracefully in CI / developer shells that set them.
+        assumeTrue(System.getenv("SERVICE_PORT") == null,
+            "SERVICE_PORT is set — skipping defaults assertion");
+        assumeTrue(System.getenv("CACHE_SIZE") == null,
+            "CACHE_SIZE is set — skipping defaults assertion");
+
         ServiceConfig config = ServiceConfig.fromEnvironment();
-        assertNotNull(config);
-        // Default port is 8080, default cacheSize is 50,000
-        // (actual values depend on env; just assert non-null and positive)
-        assert config.port() > 0 : "port must be positive";
-        assert config.cacheSize() > 0 : "cacheSize must be positive";
+        assertEquals(8080, config.port());
+        assertEquals(50000, config.cacheSize());
     }
 
     @Test

@@ -1,8 +1,6 @@
-package io.github.georgecodes.benchmarking.vertx;
+package io.github.georgecodes.benchmarking.vertx.domain;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.georgecodes.benchmarking.vertx.domain.HelloMode;
-import io.github.georgecodes.benchmarking.vertx.domain.HelloService;
 import io.github.georgecodes.benchmarking.vertx.infra.CacheProvider;
 import org.junit.jupiter.api.Test;
 
@@ -38,3 +36,4 @@ class HelloServiceTest {
             "Expected prefix, got: " + result);
     }
 }
+

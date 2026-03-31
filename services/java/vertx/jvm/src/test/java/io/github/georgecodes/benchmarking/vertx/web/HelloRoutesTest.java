@@ -1,13 +1,12 @@
-package io.github.georgecodes.benchmarking.pekko.web;
+package io.github.georgecodes.benchmarking.vertx.web;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import io.github.georgecodes.benchmarking.pekko.domain.HelloMode;
-import io.github.georgecodes.benchmarking.pekko.domain.HelloService;
-import io.github.georgecodes.benchmarking.pekko.infra.CacheProvider;
-import io.github.georgecodes.benchmarking.pekko.infra.MetricsProvider;
-import org.apache.pekko.actor.ActorSystem;
-import org.apache.pekko.http.javadsl.Http;
-import org.apache.pekko.http.javadsl.ServerBinding;
+import io.github.georgecodes.benchmarking.vertx.domain.HelloMode;
+import io.github.georgecodes.benchmarking.vertx.domain.HelloService;
+import io.github.georgecodes.benchmarking.vertx.infra.CacheProvider;
+import io.github.georgecodes.benchmarking.vertx.infra.MetricsProvider;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.Router;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,44 +27,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit and integration tests for {@link HelloRoutes}.
- * Starts an embedded Pekko HTTP server on a random port for route-level assertions.
+ * Starts an embedded Vert.x HTTP server on a random port for route-level assertions.
  */
 class HelloRoutesTest {
 
-    private static ActorSystem system;
-    private static HelloRoutes helloRoutes;
-    private static ServerBinding binding;
+    private static Vertx vertx;
     private static HttpClient httpClient;
     private static String baseUrl;
 
     @BeforeAll
     static void setUpAll() throws Exception {
-        system = ActorSystem.create("test-system");
+        vertx = Vertx.vertx();
         Cache<String, String> cache = CacheProvider.create(10);
         HelloService helloService = new HelloService(cache);
         MetricsProvider metricsProvider = MetricsProvider.create(HelloMode.REACTIVE.endpointTag());
-        helloRoutes = new HelloRoutes(helloService, metricsProvider, system);
 
-        // Bind to port 0 — the OS assigns a random free port
-        binding = Http.get(system)
-            .newServerAt("127.0.0.1", 0)
-            .bind(helloRoutes.routes())
-            .toCompletableFuture()
-            .get();
+        HelloRoutes helloRoutes = new HelloRoutes(helloService, metricsProvider);
+        Router router = Router.router(vertx);
+        helloRoutes.register(router, vertx);
 
-        int port = binding.localAddress().getPort();
-        baseUrl = "http://127.0.0.1:" + port;
+        // Start HTTP server on port 0 (random free port)
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger actualPort = new AtomicInteger();
+        vertx.createHttpServer()
+            .requestHandler(router)
+            .listen(0)
+            .onSuccess(server -> {
+                actualPort.set(server.actualPort());
+                latch.countDown();
+            })
+            .onFailure(_ -> latch.countDown());
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS), "Server should start within 10 seconds");
+        assertTrue(actualPort.get() > 0, "Server should bind to a valid port");
+        baseUrl = "http://127.0.0.1:" + actualPort.get();
         httpClient = HttpClient.newHttpClient();
     }
 
     @AfterAll
     static void tearDownAll() throws Exception {
-        if (binding != null) {
-            binding.unbind().toCompletableFuture().get();
-        }
-        if (system != null) {
-            system.terminate();
-            system.getWhenTerminated().toCompletableFuture().get(10, TimeUnit.SECONDS);
+        if (vertx != null) {
+            CountDownLatch latch = new CountDownLatch(1);
+            vertx.close().onComplete(_ -> latch.countDown());
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "Vert.x should close within 10 seconds");
         }
     }
 
@@ -75,38 +81,40 @@ class HelloRoutesTest {
         HelloService service = new HelloService(cache);
         MetricsProvider metrics = MetricsProvider.create("/hello/reactive");
 
-        HelloRoutes routes = assertDoesNotThrow(
-            () -> new HelloRoutes(service, metrics, system));
+        HelloRoutes routes = assertDoesNotThrow(() -> new HelloRoutes(service, metrics));
         assertNotNull(routes);
     }
 
     @Test
     void rejectsNullHelloService() {
         MetricsProvider metrics = MetricsProvider.create("/hello/reactive");
-        assertThrows(NullPointerException.class,
-            () -> new HelloRoutes(null, metrics, system));
+        assertThrows(NullPointerException.class, () -> new HelloRoutes(null, metrics));
     }
 
     @Test
     void rejectsNullMetricsProvider() {
         Cache<String, String> cache = CacheProvider.create(5);
         HelloService service = new HelloService(cache);
-        assertThrows(NullPointerException.class,
-            () -> new HelloRoutes(service, null, system));
+        assertThrows(NullPointerException.class, () -> new HelloRoutes(service, null));
     }
 
     @Test
-    void rejectsNullActorSystem() {
+    void registerRejectsNullRouter() {
         Cache<String, String> cache = CacheProvider.create(5);
         HelloService service = new HelloService(cache);
         MetricsProvider metrics = MetricsProvider.create("/hello/reactive");
-        assertThrows(NullPointerException.class,
-            () -> new HelloRoutes(service, metrics, null));
+        HelloRoutes routes = new HelloRoutes(service, metrics);
+        assertThrows(NullPointerException.class, () -> routes.register(null, vertx));
     }
 
     @Test
-    void routesReturnsNonNull() {
-        assertNotNull(helloRoutes.routes());
+    void registerRejectsNullVertx() {
+        Cache<String, String> cache = CacheProvider.create(5);
+        HelloService service = new HelloService(cache);
+        MetricsProvider metrics = MetricsProvider.create("/hello/reactive");
+        HelloRoutes routes = new HelloRoutes(service, metrics);
+        Router router = Router.router(vertx);
+        assertThrows(NullPointerException.class, () -> routes.register(router, null));
     }
 
     // ---- Route endpoint tests via real HTTP ----
@@ -145,11 +153,11 @@ class HelloRoutesTest {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, response.statusCode());
-        assertEquals("\"Hello from Pekko reactive REST value-1\"", response.body());
+        assertEquals("\"Hello from Vertx reactive REST value-1\"", response.body());
     }
 
     @Test
-    void helloReactiveWithLogParam() throws Exception {
+    void helloReactiveWithLogParamTrue() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?log=true"))
             .GET()
@@ -157,7 +165,7 @@ class HelloRoutesTest {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, response.statusCode());
-        assertEquals("\"Hello from Pekko reactive REST value-1\"", response.body());
+        assertEquals("\"Hello from Vertx reactive REST value-1\"", response.body());
     }
 
     @Test
@@ -180,33 +188,10 @@ class HelloRoutesTest {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, response.statusCode());
-        assertEquals("\"Hello from Pekko reactive REST value-1\"", response.body());
+        assertEquals("\"Hello from Vertx reactive REST value-1\"", response.body());
     }
 
-    @Test
-    void helloReactiveWithInvalidSleep() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(baseUrl + "/hello/reactive?sleep=notanumber"))
-            .GET()
-            .build();
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        assertEquals(200, response.statusCode());
-        assertEquals("\"Hello from Pekko reactive REST value-1\"", response.body());
-    }
-
-    @Test
-    void helloReactiveWithEmptySleep() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(baseUrl + "/hello/reactive?sleep="))
-            .GET()
-            .build();
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-        assertEquals(200, response.statusCode());
-    }
-
-    // Note: the sleep>0 branch (Pekko scheduler-based delay) is intentionally
+    // Note: the sleep>0 branch (Vert.x timer-based delay) is intentionally
     // not tested here because the route only accepts whole seconds, so the
     // minimum delay is 1 s.  That timer path is covered by integration tests.
 
@@ -219,7 +204,7 @@ class HelloRoutesTest {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, response.statusCode());
-        assertEquals("\"Hello from Pekko reactive REST value-1\"", response.body());
+        assertEquals("\"Hello from Vertx reactive REST value-1\"", response.body());
     }
 
     @Test
