@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -31,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Starts an embedded Pekko HTTP server on a random port for route-level assertions.
  */
 class HelloRoutesTest {
+
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
     private static ActorSystem system;
     private static HelloRoutes helloRoutes;
@@ -62,7 +65,9 @@ class HelloRoutesTest {
 
         int port = binding.localAddress().getPort();
         baseUrl = "http://127.0.0.1:" + port;
-        httpClient = HttpClient.newHttpClient();
+        httpClient = HttpClient.newBuilder()
+            .connectTimeout(REQUEST_TIMEOUT)
+            .build();
     }
 
     @AfterAll
@@ -184,6 +189,7 @@ class HelloRoutesTest {
     void helloReactiveWithSleepZero() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=0"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -196,6 +202,7 @@ class HelloRoutesTest {
     void helloReactiveWithInvalidSleep() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=notanumber"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -208,6 +215,7 @@ class HelloRoutesTest {
     void helloReactiveWithEmptySleep() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep="))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -219,6 +227,7 @@ class HelloRoutesTest {
     void helloReactiveWithSleepOne() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=1"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -231,6 +240,7 @@ class HelloRoutesTest {
     void helloReactiveWithBothParams() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=0&log=true"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -243,6 +253,7 @@ class HelloRoutesTest {
     void unknownPathReturns404() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/unknown"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

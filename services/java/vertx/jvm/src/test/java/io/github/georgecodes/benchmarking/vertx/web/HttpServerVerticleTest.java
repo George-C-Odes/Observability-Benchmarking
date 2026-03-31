@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Deploys the verticle on a random port and validates end-to-end behavior.
  */
 class HttpServerVerticleTest {
+
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
     private static Vertx vertx;
     private static HttpClient httpClient;
@@ -53,7 +56,9 @@ class HttpServerVerticleTest {
 
         assertTrue(verticle.actualPort() > 0, "Server should bind to a valid port");
         baseUrl = "http://127.0.0.1:" + verticle.actualPort();
-        httpClient = HttpClient.newHttpClient();
+        httpClient = HttpClient.newBuilder()
+            .connectTimeout(REQUEST_TIMEOUT)
+            .build();
     }
 
     @AfterAll
@@ -100,6 +105,7 @@ class HttpServerVerticleTest {
     void readyEndpointReturnsUp() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/ready"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -112,6 +118,7 @@ class HttpServerVerticleTest {
     void helloReactiveEndpointReturnsOk() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -126,6 +133,7 @@ class HttpServerVerticleTest {
     void helloReactiveWithLogParam() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?log=true"))
+            .timeout(REQUEST_TIMEOUT)
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

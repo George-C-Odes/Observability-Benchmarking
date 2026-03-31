@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +72,9 @@ class HelloRoutesTest {
         }
         assertTrue(actualPort.get() > 0, "Server should bind to a valid port");
         baseUrl = "http://127.0.0.1:" + actualPort.get();
-        httpClient = HttpClient.newHttpClient();
+        httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
     }
 
     @AfterAll
@@ -133,6 +136,7 @@ class HelloRoutesTest {
     void readyEndpointReturnsUp() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/ready"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -145,6 +149,7 @@ class HelloRoutesTest {
     void helloReactiveEndpointReturnsOk() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -158,6 +163,7 @@ class HelloRoutesTest {
     void helloReactiveEndpointReturnsExpectedBody() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -170,6 +176,7 @@ class HelloRoutesTest {
     void helloReactiveWithLogParamTrue() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?log=true"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -182,6 +189,7 @@ class HelloRoutesTest {
     void helloReactiveWithLogParamFalse() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?log=false"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -193,6 +201,7 @@ class HelloRoutesTest {
     void helloReactiveWithSleepZero() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=0"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -205,6 +214,7 @@ class HelloRoutesTest {
     void helloReactiveWithSleepOne() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=1"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -217,6 +227,7 @@ class HelloRoutesTest {
     void helloReactiveWithBothParams() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/hello/reactive?sleep=0&log=true"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -229,6 +240,7 @@ class HelloRoutesTest {
     void unknownPathReturns404() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/unknown"))
+            .timeout(Duration.ofSeconds(5))
             .GET()
             .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

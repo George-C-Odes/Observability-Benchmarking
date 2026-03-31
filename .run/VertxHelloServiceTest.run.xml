@@ -8,8 +8,8 @@
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.vertx" />
-    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.vertx.HelloServiceTest" />
+    <option name="PACKAGE_NAME" value="io.github.georgecodes.benchmarking.vertx.domain" />
+    <option name="MAIN_CLASS_NAME" value="io.github.georgecodes.benchmarking.vertx.domain.HelloServiceTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">
