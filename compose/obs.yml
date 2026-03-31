@@ -90,7 +90,7 @@ services:
 
   mimir:
     profiles: ["${DOCKER_PROF_MIMIR:-skip}"]
-    image: grafana/mimir:3.0.4
+    image: grafana/mimir:3.0.5
     container_name: mimir
     volumes:
       - ${HOST_REPO}/config/mimir:/etc/mimir-config
