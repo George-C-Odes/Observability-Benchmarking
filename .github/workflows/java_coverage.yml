@@ -119,7 +119,7 @@ jobs:
 
           def pct(missed, covered):
               total = missed + covered
-              return "—" if total == 0 else f"{covered * 100 / total:.1f}"
+              return "0.0" if total == 0 else f"{covered * 100 / total:.1f}"
 
           def ratio(missed, covered):
               total = missed + covered
