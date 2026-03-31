@@ -1300,8 +1300,8 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Go & Python (planned)
 
 Coverage tooling for Go (`go test -coverprofile`) and Python (`coverage.py`)
-will be added in a later phase. See `plan-javaCoverage.prompt.md` for the
-full roadmap.
+will be added in a later phase, following the same phased tightening roadmap
+described above.
 
 ## CI/CD Integration
 
