@@ -788,6 +788,7 @@ Observability-Benchmarking/
 │   └── pyroscope/           # Pyroscope profiling config
 ├── utils/                   # Load generation tools and scripts
 ├── results/                 # Benchmark results and outputs
+├── scripts/                 # Repository-level helper scripts (README rendering, Pages report generation)
 ├── docs/                    # Additional documentation
 │   ├── LINTING_AND_CODE_QUALITY.md
 │   ├── SECURITY.md
@@ -805,6 +806,7 @@ Observability-Benchmarking/
 - **`compose/`**: Docker Compose files using profiles for flexible deployment (OBS, SERVICES, RAIN_FIRE)
 - **`config/`**: Centralized configuration for all observability tools
 - **`utils/`**: wrk2 wrappers and benchmark automation scripts
+- **`scripts/`**: Repository-level helper scripts — README template rendering (`render-readmes.mjs`) and GitHub Pages quality report generation/assembly (`pages/` subdirectory)
 - **`results/`**: Stores benchmark outputs with timestamps for reproducibility
 
 For a comprehensive breakdown of the directory structure with detailed notes, see **[docs/STRUCTURE.md](docs/STRUCTURE.md)**.

@@ -13,9 +13,10 @@ Observability-Benchmarking/
 ├── compose/                  # Docker Compose project (profiles: OBS / SERVICES / RAIN_FIRE)
 ├── config/                   # Provisioned configs for Grafana + LGTM components
 ├── data/                     # Local persisted volumes (dev/test only)
-├── docs/                     # GitHub Pages site sources (what you’re reading)
+├── docs/                     # GitHub Pages site sources (what you're reading)
 ├── integration-tests/        # Integration test harness
 ├── results/                  # Benchmark artifacts and summaries
+├── scripts/                  # Repository-level helper scripts
 ├── services/                 # Benchmark targets (Go + Java + Python frameworks)
 ├── utils/                    # Supporting tooling (wrk2, dashboard, orchestrator)
 ├── LICENSE
@@ -84,6 +85,18 @@ Benchmark outputs and run summaries.
 
 - `results/benchmarks/…` contains timestamped runs.
 - See `results/README.md` for the recommended per-run folder structure and metadata.
+
+### `scripts/`
+
+Repository-level helper scripts:
+
+- `scripts/render-readmes.mjs` — renders generated README files from `.template.md` sources using values from `compose/.env`
+- `scripts/pages/` — GitHub Pages deployment scripts:
+  - `resolve-source.sh` — generic parameterized resolver for quality-report workflow run artifacts
+  - `report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators
+  - `generate-go-quality-report.mjs`, `generate-nextjs-quality-report.mjs`, `generate-codeql-report.mjs` — HTML quality report generators
+  - `assemble-quality-pages.sh` — assembles all quality report scopes into the Pages site
+  - `inspect-qodana-artifacts.sh` — inspects available Qodana artifacts for a resolved workflow run
 
 ### `services/`
 
