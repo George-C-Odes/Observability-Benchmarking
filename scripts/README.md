@@ -8,6 +8,22 @@ This directory contains small repository-level helper scripts.
 - `render-readmes.test.mjs` - lightweight tests for the README rendering logic
 - `render-readmes.manifest.json` - default list of README templates rendered when no explicit template paths are passed
 
+## Pages scripts (`pages/`)
+
+The `pages/` subdirectory contains scripts used by the GitHub Pages deployment workflow to resolve quality-report artifacts, generate HTML reports, and assemble them into the published site.
+
+| Script                               | Purpose                                                                                                                                                                                                                                                                                                                                           |
+|--------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `resolve-source.sh`                  | Generic parameterized resolver for quality-report workflow run artifacts. Accepts `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` env vars. Replaces the five near-identical `resolve-*-source.sh` scripts that existed previously.                                                                                      |
+| `inspect-qodana-artifacts.sh`        | Inspects available Qodana artifacts for the resolved workflow run.                                                                                                                                                                                                                                                                                |
+| `report-helpers.mjs`                 | Shared module exporting HTML escaping (`esc`), status icons (`statusIcon`), path shortening (`shortPath`), optional file reading (`readOptionalFile`), metadata assembly (`buildMetaParts`, `renderMeta`), CSS theming (`themeCSS`), HTML page shell (`htmlPage`), and report writing (`writeReport`). Used by all three report generators below. |
+| `generate-go-quality-report.mjs`     | Generates a self-contained HTML quality report from golangci-lint JSON output.                                                                                                                                                                                                                                                                    |
+| `generate-nextjs-quality-report.mjs` | Generates a self-contained HTML quality report from ESLint JSON and TypeScript diagnostics.                                                                                                                                                                                                                                                       |
+| `generate-codeql-report.mjs`         | Generates a self-contained HTML quality report from CodeQL SARIF output across all analyzed languages.                                                                                                                                                                                                                                            |
+| `assemble-quality-pages.sh`          | Resolves per-scope report statuses, generates human-readable messages, and assembles all quality report scopes (Qodana JVM, Django Python, Go, Next.js, CodeQL) into the Pages site under `_site/quality/`.                                                                                                                                       |
+
+The three HTML report generators (`generate-go-quality-report.mjs`, `generate-nextjs-quality-report.mjs`, `generate-codeql-report.mjs`) all import from `report-helpers.mjs` to share common HTML helpers, CSS theming, metadata assembly, and file output logic. Each generator retains its own report-specific logic (SARIF parsing, linter breakdown tables, TSC diagnostics, etc.).
+
 ## README rendering
 
 The README renderer exists to keep repeated version values in sync with the repository's existing source of truth: `compose/.env`.
@@ -198,6 +214,6 @@ The tests currently cover:
 If the number of generated READMEs grows, the next step could be to add one of these:
 
 - a richer manifest format with named template groups or per-template metadata
-- an npm/package script wrapper for common render/check commands
+- a npm/package script wrapper for common render/check commands
 - CI validation that runs `render-readmes.mjs --check` against the agreed template list
 
