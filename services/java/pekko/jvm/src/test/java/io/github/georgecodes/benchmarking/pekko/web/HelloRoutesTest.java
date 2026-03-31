@@ -1,6 +1,8 @@
 package io.github.georgecodes.benchmarking.pekko.web;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import io.github.georgecodes.benchmarking.pekko.domain.HelloMode;
 import io.github.georgecodes.benchmarking.pekko.domain.HelloService;
 import io.github.georgecodes.benchmarking.pekko.infra.CacheProvider;
@@ -38,7 +40,14 @@ class HelloRoutesTest {
 
     @BeforeAll
     static void setUpAll() throws Exception {
-        system = ActorSystem.create("test-system");
+        // pekko-http 1.3.0's reference.conf and pekko-actor 1.4.0's reference.conf
+        // both declare pekko.version; classpath ordering in the unshaded test
+        // classpath (especially inside Docker) can let the wrong value win.
+        // Pinning the version here makes the test deterministic everywhere.
+        Config config = ConfigFactory.parseString(
+                "pekko.version = \"" + ActorSystem.Version() + "\"")
+            .withFallback(ConfigFactory.load());
+        system = ActorSystem.create("test-system", config);
         Cache<String, String> cache = CacheProvider.create(10);
         HelloService helloService = new HelloService(cache);
         MetricsProvider metricsProvider = MetricsProvider.create(HelloMode.REACTIVE.endpointTag());

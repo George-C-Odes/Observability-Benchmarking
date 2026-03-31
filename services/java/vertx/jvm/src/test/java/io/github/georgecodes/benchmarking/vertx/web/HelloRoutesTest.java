@@ -18,12 +18,14 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Unit and integration tests for {@link HelloRoutes}.
@@ -49,6 +51,7 @@ class HelloRoutesTest {
         // Start HTTP server on port 0 (random free port)
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger actualPort = new AtomicInteger();
+        AtomicReference<Throwable> startFailure = new AtomicReference<>();
         vertx.createHttpServer()
             .requestHandler(router)
             .listen(0)
@@ -56,9 +59,16 @@ class HelloRoutesTest {
                 actualPort.set(server.actualPort());
                 latch.countDown();
             })
-            .onFailure(_ -> latch.countDown());
+            .onFailure(err -> {
+                startFailure.set(err);
+                latch.countDown();
+            });
 
         assertTrue(latch.await(10, TimeUnit.SECONDS), "Server should start within 10 seconds");
+        if (startFailure.get() != null) {
+            fail("HTTP server failed to start: " + startFailure.get().getMessage(),
+                startFailure.get());
+        }
         assertTrue(actualPort.get() > 0, "Server should bind to a valid port");
         baseUrl = "http://127.0.0.1:" + actualPort.get();
         httpClient = HttpClient.newHttpClient();
