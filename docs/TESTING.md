@@ -1331,7 +1331,7 @@ of the GitHub-native Step Summary and artifact uploads described above. It adds:
 
 <p style="text-align: center;">
   <a href="https://codecov.io/github/George-C-Odes/Observability-Benchmarking">
-    <img src="https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graphs/sunburst.svg?token=RY6UM4T2BW" alt="Codecov sunburst graph" style="width: 300px;" />
+    <img src="https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graphs/sunburst.svg?token=RY6UM4T2BW" alt="Codecov sunburst graph" width="300" style="width: 300px;" />
   </a>
 </p>
 
