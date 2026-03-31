@@ -20,7 +20,7 @@ django==6.0.3
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 googleapis-common-protos==1.73.1
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.78.0
+grpcio==1.80.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc

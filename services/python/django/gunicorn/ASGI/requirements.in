@@ -26,7 +26,7 @@ opentelemetry-sdk>=1.35.0
 
 # gRPC exporters (traces, metrics, logs)
 opentelemetry-exporter-otlp-proto-grpc>=1.35.0
-grpcio>=1.73.1
+grpcio>=1.80.0
 
 # Auto-instrumentation for Django (handles both WSGI and ASGI natively)
 opentelemetry-instrumentation-django>=0.56b0
