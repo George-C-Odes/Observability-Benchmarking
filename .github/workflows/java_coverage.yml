@@ -27,6 +27,12 @@ jobs:
     name: Coverage (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Job-level soft gate: the job itself shows as failed (yellow) in the
+    # Checks UI when tests or jacoco:check fail, keeping the signal visible,
+    # but it does not block the overall workflow or PR merges.
+    # Matches the pattern used in django_python_quality.yml.
+    # Remove once thresholds are promoted to hard gate.
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -71,83 +77,74 @@ jobs:
 
       - name: Run tests with coverage
         id: build
-        continue-on-error: true
         working-directory: ${{ matrix.module_dir }}
         run: mvn verify -B -q -Dcheckstyle.skip=true
 
       # ── Parse JaCoCo XML and write GitHub Step Summary ──
       - name: Generate coverage summary
         if: always() && !cancelled()
-        shell: bash
         env:
           MODULE_NAME: ${{ matrix.name }}
           MODULE_DIR: ${{ matrix.module_dir }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
-          JACOCO_XML="${MODULE_DIR}/target/site/jacoco/jacoco.xml"
+          python3 << 'PYEOF'
+          import os, sys, xml.etree.ElementTree as ET
 
-          if [[ ! -f "$JACOCO_XML" ]]; then
-            echo "::warning::JaCoCo report not found at $JACOCO_XML"
-            echo "### ⚠️ Coverage: ${MODULE_NAME}" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "No JaCoCo report was generated. Tests may have been skipped or failed before the report phase." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
+          module_name  = os.environ["MODULE_NAME"]
+          module_dir   = os.environ["MODULE_DIR"]
+          build_outcome = os.environ["BUILD_OUTCOME"]
+          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
 
-          # Extract the report-level aggregate counters from the JaCoCo XML.
-          # In JaCoCo's output the last <counter> of each type belongs to the
-          # top-level <report> element (after all <package> elements).
-          # We use grep -oP (GNU grep PCRE, pre-installed on Ubuntu runners)
-          # which is portable — mawk (the default awk on ubuntu-latest) does
-          # NOT support gawk-style match() capture groups.
-          parse_counter() {
-            local type="$1"
-            local line
-            line=$(grep "type=\"${type}\"" "$JACOCO_XML" | tail -1)
-            local missed covered
-            missed=$(echo "$line" | grep -oP 'missed="\K[0-9]+')
-            covered=$(echo "$line" | grep -oP 'covered="\K[0-9]+')
-            echo "${missed:-0} ${covered:-0}"
-          }
+          jacoco_xml = f"{module_dir}/target/site/jacoco/jacoco.xml"
 
-          read -r inst_missed inst_covered   <<< "$(parse_counter INSTRUCTION)"
-          read -r br_missed br_covered       <<< "$(parse_counter BRANCH)"
-          read -r line_missed line_covered   <<< "$(parse_counter LINE)"
-          read -r method_missed method_covered <<< "$(parse_counter METHOD)"
+          if not os.path.isfile(jacoco_xml):
+              print(f"::warning::JaCoCo report not found at {jacoco_xml}")
+              with open(summary_file, "a") as f:
+                  f.write(f"### ⚠️ Coverage: {module_name}\n\n")
+                  f.write("No JaCoCo report was generated. "
+                          "Tests may have been skipped or failed before the report phase.\n")
+              sys.exit(0)
 
-          pct() {
-            local missed=$1 covered=$2
-            local total=$((missed + covered))
-            if [[ $total -eq 0 ]]; then echo "—"; return; fi
-            echo "scale=1; $covered * 100 / $total" | bc
-          }
+          # Parse the JaCoCo XML — direct children of <report> are the aggregates
+          tree = ET.parse(jacoco_xml)
+          root = tree.getroot()
 
-          inst_pct=$(pct "$inst_missed" "$inst_covered")
-          br_pct=$(pct "$br_missed" "$br_covered")
-          line_pct=$(pct "$line_missed" "$line_covered")
-          method_pct=$(pct "$method_missed" "$method_covered")
+          counters = {}
+          for counter in root.findall("counter"):
+              ctype   = counter.get("type")
+              missed  = int(counter.get("missed", "0"))
+              covered = int(counter.get("covered", "0"))
+              counters[ctype] = (missed, covered)
 
-          # Determine threshold check status
-          if [[ "$BUILD_OUTCOME" == "success" ]]; then
-            CHECK_BADGE="✅ Thresholds passed"
-          else
-            CHECK_BADGE="⚠️ Threshold check failed (soft gate — not blocking)"
-          fi
+          def pct(missed, covered):
+              total = missed + covered
+              return "—" if total == 0 else f"{covered * 100 / total:.1f}"
 
-          {
-            echo "### 📊 Coverage: ${MODULE_NAME}"
-            echo ""
-            echo "**${CHECK_BADGE}** · Minimum: 15% line, 10% branch"
-            echo ""
-            echo "| Metric       | Covered | Missed | Total | Coverage |"
-            echo "|--------------|--------:|-------:|------:|---------:|"
-            echo "| Instructions | ${inst_covered} | ${inst_missed} | $((inst_covered + inst_missed)) | ${inst_pct}% |"
-            echo "| Branches     | ${br_covered} | ${br_missed} | $((br_covered + br_missed)) | ${br_pct}% |"
-            echo "| Lines        | ${line_covered} | ${line_missed} | $((line_covered + line_missed)) | ${line_pct}% |"
-            echo "| Methods      | ${method_covered} | ${method_missed} | $((method_covered + method_missed)) | ${method_pct}% |"
-            echo ""
-            echo "> Report generated from \`${JACOCO_XML}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          metrics = [
+              ("Instructions", "INSTRUCTION"),
+              ("Branches",     "BRANCH"),
+              ("Lines",        "LINE"),
+              ("Methods",      "METHOD"),
+          ]
+
+          if build_outcome == "success":
+              badge = "✅ Thresholds passed"
+          else:
+              badge = "⚠️ Threshold check failed (soft gate — not blocking)"
+
+          with open(summary_file, "a") as f:
+              f.write(f"### 📊 Coverage: {module_name}\n\n")
+              f.write(f"**{badge}** · Minimum: 15% line, 10% branch\n\n")
+              f.write("| Metric       | Covered | Missed | Total | Coverage |\n")
+              f.write("|--------------|--------:|-------:|------:|---------:|\n")
+              for label, ctype in metrics:
+                  missed, covered = counters.get(ctype, (0, 0))
+                  total = missed + covered
+                  p = pct(missed, covered)
+                  f.write(f"| {label} | {covered} | {missed} | {total} | {p}% |\n")
+              f.write(f"\n> Report generated from `{jacoco_xml}`\n")
+          PYEOF
 
       - name: Upload coverage report
         if: always() && !cancelled()

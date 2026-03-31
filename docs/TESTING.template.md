@@ -1280,8 +1280,9 @@ the `verify` phase in all 12 modules. Current thresholds are uniform:
 
 These conservative starting thresholds are intentionally set well below the
 actual coverage of all modules to avoid false-positive build failures while the
-baseline stabilizes. The CI workflow uses `continue-on-error: true` (soft gate),
-so a threshold violation produces a yellow badge but does **not** block merges.
+baseline stabilizes. The CI workflow uses job-level `continue-on-error: true`
+(soft gate), so a threshold violation causes the job to show as failed (yellow)
+in the Checks UI — keeping the signal visible — but does **not** block merges.
 
 | Stage       | Behaviour                                                             | Status  |
 |-------------|-----------------------------------------------------------------------|---------|
