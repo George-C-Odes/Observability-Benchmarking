@@ -1283,15 +1283,26 @@ actual coverage of all modules to avoid false-positive build failures while the
 baseline stabilizes. All 12 modules set `<haltOnFailure>false</haltOnFailure>` in
 their `jacoco:check` configuration, so threshold violations are **logged as
 warnings** but do **not** fail `mvn verify` — locally or in CI. The CI workflow's
-Python parser evaluates thresholds independently and writes the result (✅ / ⚠️)
-to the GitHub Step Summary. The job-level `continue-on-error: true` ensures that
-even a test failure shows as yellow in the Checks UI without blocking merges.
+Python parser evaluates thresholds independently and exits with a non-zero code
+when any threshold is not met, failing the matrix leg.
+
+A follow-up **Coverage Gate** job aggregates the matrix result:
+
+- **All thresholds met** → the gate job passes immediately (no environment).
+- **Any threshold violated** → the gate job references the `coverage-review`
+  environment, which pauses the job and shows **"Waiting for review"** in the
+  Actions UI until a designated reviewer approves.
+
+> **One-time setup (repo owner):**
+> Settings → Environments → New environment `coverage-review` → Required
+> reviewers → add team or individuals.  Then add **Coverage Gate** as a required
+> status check in Settings → Branches → Branch protection rules.
 
 | Stage       | Behaviour                                                             | Status  |
 |-------------|-----------------------------------------------------------------------|---------|
 | Report-only | Coverage numbers in Step Summary + artifacts; no failure              | Done    |
-| Advisory    | `jacoco:check` with `haltOnFailure=false`; CI evaluates independently | Current |
-| Hard gate   | Remove `haltOnFailure=false`; `jacoco:check` fails the build          | Future  |
+| Review gate | `haltOnFailure=false` in Maven; CI fails + requires reviewer approval | Current |
+| Hard gate   | Remove `haltOnFailure=false`; `jacoco:check` fails the build directly | Future  |
 
 **Tightening roadmap**: once baselines are collected from 2–3 CI runs, thresholds
 will be raised per-module to ~5% below their observed coverage. Modules that

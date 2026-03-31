@@ -27,12 +27,6 @@ jobs:
     name: Coverage (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Job-level soft gate: the job itself shows as failed (yellow) in the
-    # Checks UI when tests or jacoco:check fail, keeping the signal visible,
-    # but it does not block the overall workflow or PR merges.
-    # Matches the pattern used in django_python_quality.yml.
-    # Remove once thresholds are promoted to hard gate.
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -145,7 +139,7 @@ jobs:
           elif thresholds_met:
               badge = "✅ Thresholds passed"
           else:
-              badge = "⚠️ Coverage below threshold (advisory — not blocking)"
+              badge = "⚠️ Coverage below threshold — review required"
 
           with open(summary_file, "a") as f:
               f.write(f"### 📊 Coverage: {module_name}\n\n")
@@ -158,6 +152,14 @@ jobs:
                   p = pct(missed, covered)
                   f.write(f"| {label} | {covered} | {missed} | {total} | {p}% |\n")
               f.write(f"\n> Report generated from `{jacoco_xml}`\n")
+
+          # Fail this step when thresholds are not met (and the build itself
+          # passed), so the coverage-gate job sees needs.coverage.result
+          # != 'success' and requires manual reviewer approval.
+          if build_outcome == "success" and not thresholds_met:
+              print("::warning::Coverage below minimum thresholds "
+                    "— reviewer approval required via Coverage Gate")
+              sys.exit(1)
           PYEOF
 
       - name: Upload coverage report
@@ -169,4 +171,33 @@ jobs:
             ${{ matrix.module_dir }}/target/site/jacoco/
           retention-days: 30
           if-no-files-found: warn
+
+  # ── Approval gate ──────────────────────────────────────────────────
+  # When every matrix leg passes, this job resolves immediately.
+  # When any leg fails (threshold violation or build error), the
+  # 'coverage-review' environment pauses the job and shows
+  # "Waiting for review" in the Actions UI until a designated
+  # reviewer approves.
+  #
+  # One-time setup (repo owner):
+  #   Settings → Environments → New environment "coverage-review"
+  #   → Required reviewers → add team or individuals.
+  #   Then add "Coverage Gate" as a required status check in
+  #   Settings → Branches → Branch protection rules.
+  coverage-gate:
+    name: Coverage Gate
+    needs: coverage
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    environment: ${{ needs.coverage.result == 'success' && '' || 'coverage-review' }}
+    steps:
+      - name: Gate result
+        env:
+          RESULT: ${{ needs.coverage.result }}
+        run: |
+          if [[ "$RESULT" == "success" ]]; then
+            echo "✅ All coverage thresholds met"
+          else
+            echo "::notice::Coverage violations reviewed and approved."
+          fi
 
