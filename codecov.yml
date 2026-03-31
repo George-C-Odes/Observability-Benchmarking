@@ -35,7 +35,7 @@ comment:
   require_head: true
 
 # ── Flag definitions ──────────────────────────────────────────────────
-# Naming convention:  java-{matrix.name}  |  go-{module}  |  python-{module}
+# Naming convention: java-{matrix.name} | nextjs-dash-{env} | go-{module} | python-{module}
 #
 # `carryforward: true` keeps previous coverage data for flags that were
 # not uploaded in the current commit.  This is important in a monorepo
@@ -84,6 +84,14 @@ flags:
     paths: [utils/orchestrator/]
     carryforward: true
 
+  # ── Next.js dashboard (uploaded by nextjs_dash_coverage.yml) ─────────
+  nextjs-dash-node:
+    paths: [utils/nextjs-dash/lib/, utils/nextjs-dash/app/api/]
+    carryforward: true
+  nextjs-dash-dom:
+    paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/]
+    carryforward: true
+
   # ── Go services (future — uploaded by go_quality.yml) ───────────────
   # go-enhanced:
   #   paths: [services/go/enhanced/]
@@ -116,6 +124,10 @@ component_management:
       paths:
         - services/java/**
         - utils/orchestrator/**
+    - component_id: nextjs_dashboard
+      name: Next.js Dashboard
+      paths:
+        - utils/nextjs-dash/**
     - component_id: go_services
       name: Go Services
       paths:
