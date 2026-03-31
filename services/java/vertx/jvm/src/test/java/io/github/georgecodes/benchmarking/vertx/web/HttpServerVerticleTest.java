@@ -48,15 +48,10 @@ class HttpServerVerticleTest {
         HttpServerVerticle verticle = new HttpServerVerticle(
             testPort, helloService, metricsProvider, serverOptions);
 
-        CountDownLatch latch = new CountDownLatch(1);
         vertx.deployVerticle(verticle)
-            .onSuccess(_ -> latch.countDown())
-            .onFailure(err -> {
-                fail("Failed to deploy verticle: " + err.getMessage());
-                latch.countDown();
-            });
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS), "Verticle should deploy within 10 seconds");
+            .toCompletionStage()
+            .toCompletableFuture()
+            .get(10, TimeUnit.SECONDS);
         baseUrl = "http://127.0.0.1:" + testPort;
         httpClient = HttpClient.newHttpClient();
     }
