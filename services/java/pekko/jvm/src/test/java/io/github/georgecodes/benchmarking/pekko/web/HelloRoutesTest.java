@@ -59,7 +59,7 @@ class HelloRoutesTest {
     @AfterAll
     static void tearDownAll() throws Exception {
         if (binding != null) {
-            binding.unbind().toCompletableFuture().get();
+            binding.unbind().toCompletableFuture().get(10, TimeUnit.SECONDS);
         }
         if (system != null) {
             system.terminate();
