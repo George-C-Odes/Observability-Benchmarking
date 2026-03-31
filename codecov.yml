@@ -129,12 +129,30 @@ component_management:
 # Native-image modules duplicate JVM source but have no unit tests or
 # JaCoCo instrumentation.  Exclude them so they don't drag down the
 # overall coverage percentage.
+#
+# Application entry-point classes are also excluded — they contain only
+# bootstrap/main wiring (server startup, DI initialisation) that is not
+# a meaningful coverage target.  Quarkus-based modules (quarkus-jvm,
+# orchestrator) and Helidon MP auto-generate their entry point, so they
+# have no explicit *Application.java to exclude.
 ignore:
+  # ── Native-image modules ─────────────────────────────────────────────
   - "services/java/spring/native/**"
   - "services/java/quarkus/native/**"
   - "services/java/micronaut/native/**"
   - "services/java/helidon/se/native/**"
   - "services/java/helidon/mp/native/**"
+  # ── Application entry-point / bootstrap classes ──────────────────────
+  - "services/java/spring/jvm/tomcat/src/main/java/**/TomcatApplication.java"
+  - "services/java/spring/jvm/netty/src/main/java/**/NettyApplication.java"
+  - "services/java/micronaut/jvm/src/main/java/**/MicronautApplication.java"
+  - "services/java/helidon/se/jvm/src/main/java/**/HelidonApplication.java"
+  - "services/java/spark/jvm/src/main/java/**/SparkApplication.java"
+  - "services/java/javalin/jvm/src/main/java/**/JavalinApplication.java"
+  - "services/java/dropwizard/jvm/src/main/java/**/DropwizardApplication.java"
+  - "services/java/vertx/jvm/src/main/java/**/VertxApplication.java"
+  - "services/java/pekko/jvm/src/main/java/**/PekkoApplication.java"
+  # ── Non-source directories ──────────────────────────────────────────
   - "docs/**"
   - "config/**"
   - "compose/**"
@@ -142,4 +160,3 @@ ignore:
   - "scripts/**"
   - "integration-tests/**"
   - "results/**"
-
