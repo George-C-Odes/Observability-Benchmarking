@@ -242,3 +242,7 @@ ignore:
   - "scripts/**"
   - "integration-tests/**"
   - "results/**"
+
+  # ── 12. Test directories ────────────────────────────────────────────
+  - "utils/nextjs-dash/__tests__/**"
+

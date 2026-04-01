@@ -1323,12 +1323,14 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 The Next.js dashboard (`utils/nextjs-dash`) uses
 [Vitest](https://vitest.dev/) with the
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
-coverage. The project's existing dual-environment split is preserved:
+coverage. The project's existing dual-environment split is preserved.
+All test files live under `__tests__/` (mirroring the source tree), keeping
+source directories free of test code.
 
-| Config File             | Environment | Coverage Scope                       | Report Directory  |
-|-------------------------|-------------|--------------------------------------|-------------------|
-| `vitest.config.node.ts` | `node`      | `lib/**`, `app/api/**`               | `coverage/node/`  |
-| `vitest.config.dom.ts`  | `jsdom`     | `app/components/**`, `app/hooks/**`  | `coverage/dom/`   |
+| Config File             | Environment | Tests                                                                             | Coverage Scope (source)                                                  | Report Directory |
+|-------------------------|-------------|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------|------------------|
+| `vitest.config.node.ts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        | `lib/**`, `app/api/**`                                                   | `coverage/node/` |
+| `vitest.config.dom.ts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` | `app/components/**`, `app/hooks/**`, `app/theme.ts`, `app/Providers.tsx` | `coverage/dom/`  |
 
 Each environment produces four report formats: **text** (console summary),
 **HTML** (browsable), **JSON** (machine-readable summary), and **LCOV**

@@ -287,7 +287,7 @@ The Dockerfile uses a four-stage multi-stage build optimized for 16-core build m
 Key design decisions:
 
 - **Quality gates the build**: `builder` depends on `quality` via a sentinel file (`COPY --from=quality /tmp/.quality-ok`). BuildKit won't start the build stage until lint/typecheck/tests pass.
-- **Test files excluded from builder**: a post-COPY `find … -delete` removes `*.test.ts` and `*.test.tsx` files so they don't bloat the standalone output.
+- **Test files excluded by convention**: all tests live under `__tests__/`, which is never `COPY`'d into the builder stage, so they don't bloat the standalone output.
 - **Config-before-source COPY split**: `package.json` + `next.config.ts` + `tsconfig.json` are copied before `app/` + `lib/` for better layer cache hit rate.
 - **Skip quality for fast iteration**: temporarily comment out the `COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok` line in the Dockerfile, then run `docker buildx build --target builder .` to build without lint/typecheck/tests during development.
 
@@ -333,7 +333,7 @@ docker run -p 3001:3001 `
 
 We have a focused hook test that simulates: an SSE stream error followed by the events-meta endpoint returning **404**, which mimics an orchestrator restart (or any state loss).
 
-- Test file: `app/hooks/useJobRunner.orchRestart.test.ts`
+- Test file: `__tests__/app/hooks/useJobRunner.orchRestart.test.ts`
 - What it asserts:
   - the hook terminates the job as `FAILED`
   - it stops reconnect attempts

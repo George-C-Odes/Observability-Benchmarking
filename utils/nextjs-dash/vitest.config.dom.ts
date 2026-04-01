@@ -13,11 +13,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
 
-    // Only DOM-requiring tests.
+    // Only DOM-requiring tests (all tests live under __tests__/).
     include: [
-      'app/components/**/*.test.{ts,tsx}',
-      'app/hooks/**/*.test.{ts,tsx}',
-      'app/*.test.{ts,tsx}',   // theme.test.ts, Providers.test.tsx
+      '__tests__/app/components/**/*.test.{ts,tsx}',
+      '__tests__/app/hooks/**/*.test.{ts,tsx}',
+      '__tests__/app/*.test.{ts,tsx}',   // theme.test.ts, Providers.test.tsx
     ],
 
     // JSDOM is heavy. Too many workers on Windows can hurt wall time.

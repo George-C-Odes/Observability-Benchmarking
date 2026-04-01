@@ -50,14 +50,12 @@ COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok
 # Copy config files first (changes rarely → good cache hit rate)
 COPY --link package.json next.config.ts tsconfig.json ./
 
-# Copy source (changes often → only this layer + build invalidated).
+# Source (changes often → only this layer + build invalidated).
 COPY --link app ./app
 COPY --link lib ./lib
 COPY --link public ./public
 
-# Remove test files from the builder so they don't bloat the standalone output
-# and test-only edits don't affect the next build's trace cache.
-RUN find app lib -type f \( -name '*.test.ts' -o -name '*.test.tsx' \) -delete
+# Test files live under __tests__/ (not COPY'd here), so no cleanup needed.
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PATH=/app/node_modules/.bin:$PATH

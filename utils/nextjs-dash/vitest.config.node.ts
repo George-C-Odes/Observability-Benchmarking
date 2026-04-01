@@ -12,10 +12,10 @@ export default defineConfig({
     environment: 'node',
     globals: true,
 
-    // Only node-safe tests.
-    include: ['lib/**/*.test.{ts,tsx}', 'app/api/**/*.test.{ts,tsx}'],
+    // Only node-safe tests (all tests live under __tests__/).
+    include: ['__tests__/lib/**/*.test.{ts,tsx}', '__tests__/app/api/**/*.test.{ts,tsx}'],
 
-    // Keep it modest; node tests are cheap and benefit less from large worker counts.
+    // Keep it modest; node tests are inexpensive and benefit less from large worker counts.
     pool: 'threads',
     fileParallelism: true,
     maxWorkers: 4,
@@ -38,4 +38,3 @@ export default defineConfig({
     },
   },
 });
-
