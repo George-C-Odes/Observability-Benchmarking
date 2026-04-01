@@ -478,9 +478,9 @@ the same flow.
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.1
+Next.js: 16.2.2
 React: 19.2.4
-TypeScript: 5.9.3
+TypeScript: 6.0.2
 Vitest: 4.x
 ```
 
@@ -488,12 +488,22 @@ Vitest: 4.x
 
 The dashboard uses a dual-environment Vitest configuration:
 
-| Config File             | Environment | Tests Covered                                         |
-|-------------------------|-------------|-------------------------------------------------------|
-| `vitest.config.node.ts` | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`       |
-| `vitest.config.dom.ts`  | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*` |
+| Config File               | Environment | Tests Covered                                            |
+|---------------------------|-------------|----------------------------------------------------------|
+| `vitest.config.node.ts`   | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`          |
+| `vitest.config.dom.ts`    | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*`    |
+| `vitest.config.shared.ts` | —           | Shared resolve aliases, pool settings, coverage excludes |
 
 The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom and React Testing Library.
+
+#### Shared Test Helpers (`__tests__/_helpers/`)
+
+| Helper                         | Purpose                                                                           |
+|--------------------------------|-----------------------------------------------------------------------------------|
+| `mocks.ts`                     | Reference mock factory objects (`CLIENT_LOGGER_MOCK`, `SERVER_LOGGER_MOCK`, etc.) |
+| `consoleSpy.ts`                | `silenceConsole()` — spies on all four `console.*` methods                        |
+| `storage.ts`                   | `createMockStorage()` — in-memory `Storage` stub                                  |
+| `useJobRunner.test-helpers.ts` | `MockEventSource`, `MockBroadcastChannel`, `installMockGlobals`                   |
 
 #### Running Dashboard Tests
 
@@ -539,7 +549,8 @@ npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 - ✅ API route handlers (proxy logic, health endpoints)
 - ✅ Library utilities and runtime config types
 - ✅ React hooks (runtime config, job runner, SSE orchestrator restart simulation)
-- ✅ React components (service health, script runner, logs UI, benchmark targets)
+- ✅ React components (service health, script runner, env editor, client home shell, logs UI, benchmark targets)
+- ✅ Server-side route wrapper (logging, request context, error handling)
 
 **Key Features Tested**:
 - Next.js API route proxy behavior
@@ -547,6 +558,10 @@ npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 - Hook lifecycle (useRuntimeConfig factory, useJobRunner)
 - SSE stream error handling and orchestrator restart simulation
 - Material-UI component integration
+- Tab navigation, lazy loading, and localStorage persistence (ClientHome)
+- Environment variable parsing, FYI-readonly fields, save/reload (EnvEditor)
+- Script categorization, execution flow, status chips, and SSE states (ScriptRunner)
+- Server-side route wrapper request context, logging, and error handling (routeWrapper)
 
 ## Integration Tests
 
@@ -1294,7 +1309,14 @@ Python parser evaluates thresholds independently and writes each module's status
 status artifact.
 
 A **Coverage Verdict** job downloads all status artifacts and classifies the
-aggregate result. Two **Coverage Gate** jobs (same display name for branch
+aggregate result. It also downloads all per-module JaCoCo XML reports and
+computes a **combined weighted average** (covered ÷ total summed across all
+modules) that mirrors Codecov's methodology. This aggregate row appears as a
+highlighted section in the Step Summary, providing an apples-to-apples
+comparison with the Codecov dashboard without leaving the GitHub UI. A
+collapsible per-module breakdown shows line and branch coverage for each module.
+
+Two **Coverage Gate** jobs (same display name for branch
 protection) then act on the verdict:
 
 | Verdict           | Trigger                                                  | Gate behaviour                                      |
@@ -1323,12 +1345,14 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 The Next.js dashboard (`utils/nextjs-dash`) uses
 [Vitest](https://vitest.dev/) with the
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
-coverage. The project's existing dual-environment split is preserved:
+coverage. The project's existing dual-environment split is preserved.
+All test files live under `__tests__/` (mirroring the source tree), keeping
+source directories free of test code.
 
-| Config File             | Environment | Coverage Scope                       | Report Directory  |
-|-------------------------|-------------|--------------------------------------|-------------------|
-| `vitest.config.node.ts` | `node`      | `lib/**`, `app/api/**`               | `coverage/node/`  |
-| `vitest.config.dom.ts`  | `jsdom`     | `app/components/**`, `app/hooks/**`  | `coverage/dom/`   |
+| Config File             | Environment | Tests                                                                             | Coverage Scope (source)                                                  | Report Directory |
+|-------------------------|-------------|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------|------------------|
+| `vitest.config.node.ts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        | `lib/**`, `app/api/**`                                                   | `coverage/node/` |
+| `vitest.config.dom.ts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` | `app/components/**`, `app/hooks/**`, `app/theme.ts`, `app/Providers.tsx` | `coverage/dom/`  |
 
 Each environment produces four report formats: **text** (console summary),
 **HTML** (browsable), **JSON** (machine-readable summary), and **LCOV**
@@ -1369,6 +1393,10 @@ The **Next.js Dashboard Coverage** GitHub Actions workflow
 - Parses the Vitest JSON coverage summaries and writes a coverage table to
   the **GitHub Step Summary** (lines, statements, functions, branches for
   each environment).
+- Computes a **combined weighted average** row that mirrors Codecov's
+  calculation (covered ÷ total summed across both environments). This
+  provides an apples-to-apples comparison with the Codecov dashboard
+  without leaving the GitHub UI.
 - Uploads the full HTML + JSON + LCOV reports as artifacts named
   `coverage-nextjs-dash-node` and `coverage-nextjs-dash-dom` (retained for
   30 days).
@@ -1383,6 +1411,10 @@ SSR pipeline. The current test suite covers:
 
 - ✅ Client components, hooks, and event handlers (via React Testing Library + jsdom)
 - ✅ Server-side library utilities and API route handlers (via Node environment)
+- ✅ Server-side route wrapper (request context, structured logging, error paths)
+- ✅ Client shell (tab navigation, lazy loading, theme selection)
+- ✅ Environment editor (parse, edit, save, reload, FYI-readonly logic)
+- ✅ Script runner (categories, execution states, SSE, banners, env blocking)
 - ❌ Async Server Components (`page.tsx`, `layout.tsx`) — these are effectively
   integration-level and would benefit from a **Playwright** or **Cypress** e2e
   phase in the future

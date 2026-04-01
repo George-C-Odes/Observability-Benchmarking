@@ -256,6 +256,89 @@ jobs:
           pattern: coverage-status-*
           path: statuses/
 
+      - name: Download coverage reports
+        if: needs.coverage.result == 'success'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: coverage-java-*
+          path: reports/
+
+      # ── Combined weighted average (Codecov-comparable) ───────────
+      - name: Generate combined coverage summary
+        if: needs.coverage.result == 'success'
+        run: |
+          python3 << 'PYEOF'
+          import os, glob, xml.etree.ElementTree as ET
+
+          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
+
+          # Aggregate counters across all JaCoCo reports
+          aggregate = {}  # type -> (total_missed, total_covered)
+          module_rows = []
+
+          for jacoco_xml in sorted(glob.glob("reports/coverage-java-*/jacoco.xml")):
+              module = os.path.basename(os.path.dirname(jacoco_xml)).replace("coverage-java-", "")
+              tree = ET.parse(jacoco_xml)
+              root = tree.getroot()
+
+              mod_counters = {}
+              for counter in root.findall("counter"):
+                  ctype  = counter.get("type")
+                  missed = int(counter.get("missed", "0"))
+                  covered = int(counter.get("covered", "0"))
+                  mod_counters[ctype] = (missed, covered)
+                  prev = aggregate.get(ctype, (0, 0))
+                  aggregate[ctype] = (prev[0] + missed, prev[1] + covered)
+
+              # Per-module line coverage for the table
+              lm, lc = mod_counters.get("LINE", (0, 0))
+              bm, bc = mod_counters.get("BRANCH", (0, 0))
+              lt = lm + lc
+              bt = bm + bc
+              lpct = f"{lc * 100 / lt:.1f}" if lt > 0 else "0.0"
+              bpct = f"{bc * 100 / bt:.1f}" if bt > 0 else "0.0"
+              module_rows.append((module, lc, lm, lt, lpct, bc, bm, bt, bpct))
+
+          if not aggregate:
+              print("No JaCoCo reports found to aggregate")
+              exit(0)
+
+          def pct(missed, covered):
+              total = missed + covered
+              return "0.0" if total == 0 else f"{covered * 100 / total:.1f}"
+
+          metrics = [
+              ("Instructions", "INSTRUCTION"),
+              ("Branches",     "BRANCH"),
+              ("Lines",        "LINE"),
+              ("Methods",      "METHOD"),
+          ]
+
+          with open(summary_file, "a") as f:
+              f.write("\n---\n\n")
+              f.write("### 🔵 Combined Java Coverage (Codecov-comparable weighted average)\n\n")
+              f.write("> This table mirrors Codecov's calculation: covered ÷ total "
+                      "summed across all Java modules.\n\n")
+              f.write("| Metric       | Covered | Missed | Total | Coverage |\n")
+              f.write("|--------------|--------:|-------:|------:|---------:|\n")
+              for label, ctype in metrics:
+                  missed, covered = aggregate.get(ctype, (0, 0))
+                  total = missed + covered
+                  p = pct(missed, covered)
+                  f.write(f"| **{label}** | **{covered}** | **{missed}** "
+                          f"| **{total}** | **{p}%** |\n")
+
+              f.write(f"\n*Aggregated from {len(module_rows)} module(s)*\n\n")
+
+              # Per-module breakdown
+              f.write("<details>\n<summary>Per-module breakdown (lines / branches)</summary>\n\n")
+              f.write("| Module | Lines Covered | Lines Total | Line % | Branch Covered | Branch Total | Branch % |\n")
+              f.write("|--------|-------------:|------------:|-------:|---------------:|-------------:|---------:|\n")
+              for mod, lc, lm, lt, lpct, bc, bm, bt, bpct in module_rows:
+                  f.write(f"| {mod} | {lc} | {lt} | {lpct}% | {bc} | {bt} | {bpct}% |\n")
+              f.write("\n</details>\n")
+          PYEOF
+
       - name: Determine verdict
         id: check
         run: |

@@ -1,0 +1,41 @@
+import { describe, expect, it, vi } from 'vitest';
+import { NextRequest } from 'next/server';
+
+import { GET } from '@/app/api/script-runner/config/route';
+import { DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG } from '@/lib/runtimeConfigTypes';
+
+// noinspection JSUnusedGlobalSymbols — mock consumed by vi.mock, not test code
+const serverLoggerMock = vi.hoisted(() => ({
+  serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}));
+vi.mock('@/lib/serverLogger', () => serverLoggerMock);
+
+describe('/api/script-runner/config route', () => {
+  it('returns defaults when env vars are missing', async () => {
+    delete process.env.SCRIPT_RUNNER_EXEC_LOG_MAX_LINES;
+    delete process.env.SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS;
+
+    const req = new NextRequest('http://localhost/api/script-runner/config', { method: 'GET' });
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toContain('no-store');
+
+    const json = (await res.json()) as { maxExecutionLogLines: number; eventStreamTimeoutMs: number; debug: boolean };
+    expect(json.maxExecutionLogLines).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines);
+    expect(json.eventStreamTimeoutMs).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs);
+    expect(json.debug).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.debug);
+  });
+
+  it('uses env vars when set', async () => {
+    process.env.SCRIPT_RUNNER_EXEC_LOG_MAX_LINES = '123';
+    process.env.SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS = '456';
+
+    const req = new NextRequest('http://localhost/api/script-runner/config', { method: 'GET' });
+    const res = await GET(req);
+    const json = (await res.json()) as { maxExecutionLogLines: number; eventStreamTimeoutMs: number; debug: boolean };
+
+    expect(json.maxExecutionLogLines).toBe(123);
+    expect(json.eventStreamTimeoutMs).toBe(456);
+    expect(json.debug).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.debug);
+  });
+});
