@@ -29,7 +29,18 @@ export default defineConfig({
       reportsDirectory: 'coverage/dom',
       reporter: ['text', 'html', 'json', 'json-summary', 'lcov'],
       include: ['app/components/**/*.{ts,tsx}', 'app/hooks/**/*.ts'],
-      exclude: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/node_modules/**'],
+      exclude: [
+        '**/*.test.{ts,tsx}',
+        '**/*.spec.{ts,tsx}',
+        '**/node_modules/**',
+        // Inline <Script> components inject raw JS strings via
+        // dangerouslySetInnerHTML — they need a real browser, not jsdom.
+        'app/components/PreHydrationScript.tsx',
+        'app/components/RuntimeConfigScript.tsx',
+        // Side-effect-only component (returns null). Testing would just
+        // mock every dependency; no meaningful assertions possible.
+        'app/components/BootLogger.tsx',
+      ],
     },
   },
 });

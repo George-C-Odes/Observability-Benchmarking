@@ -27,7 +27,14 @@ export default defineConfig({
       reportsDirectory: 'coverage/node',
       reporter: ['text', 'html', 'json', 'json-summary', 'lcov'],
       include: ['lib/**/*.ts', 'app/api/**/*.ts'],
-      exclude: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/node_modules/**'],
+      exclude: [
+        '**/*.test.{ts,tsx}',
+        '**/*.spec.{ts,tsx}',
+        '**/node_modules/**',
+        // Pure type definitions / static defaults — no executable logic.
+        'lib/runtimeConfigTypes.ts',
+        'lib/loggingTypes.ts',
+      ],
     },
   },
 });

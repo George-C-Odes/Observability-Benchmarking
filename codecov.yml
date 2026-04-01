@@ -138,23 +138,33 @@ component_management:
         - services/python/**
 
 # ── Ignored paths ─────────────────────────────────────────────────────
-# Native-image modules duplicate JVM source but have no unit tests or
-# JaCoCo instrumentation.  Exclude them so they don't drag down the
-# overall coverage percentage.
+# Files listed here are excluded from Codecov's coverage denominator.
+# Only exclude files that cannot be meaningfully unit-tested or that
+# contain no runtime logic (pure types, static data, framework wiring).
 #
-# Application entry-point classes are also excluded — they contain only
-# bootstrap/main wiring (server startup, DI initialisation) that is not
-# a meaningful coverage target.  Quarkus-based modules (quarkus-jvm,
-# orchestrator) and Helidon MP auto-generate their entry point, so they
-# have no explicit *Application.java to exclude.
+# Categories:
+#   1. Native-image modules — duplicate JVM source, no tests/JaCoCo
+#   2. Application entry points — bootstrap wiring only
+#   3. Pure interfaces / trivial enums — no executable logic
+#   4. CDI/Spring startup listeners — framework event observers
+#   5. Metrics wiring — CDI producers / static binder registration
+#   6. Pure DTO records — auto-generated accessors, no methods
+#   7. JAX-RS application / annotation classes — framework boilerplate
+#   8. Next.js Server Components — require Next.js runtime, untestable
+#      with Vitest + jsdom
+#   9. Next.js inline <Script> components — inject raw JS strings,
+#      untestable without a real browser
+#  10. Pure type / constant files — no logic to exercise
+#  11. Non-source directories
 ignore:
-  # ── Native-image modules ─────────────────────────────────────────────
+  # ── 1. Native-image modules ──────────────────────────────────────────
   - "services/java/spring/native/**"
   - "services/java/quarkus/native/**"
   - "services/java/micronaut/native/**"
   - "services/java/helidon/se/native/**"
   - "services/java/helidon/mp/native/**"
-  # ── Application entry-point / bootstrap classes ──────────────────────
+
+  # ── 2. Application entry-point / bootstrap classes ───────────────────
   - "services/java/spring/jvm/tomcat/src/main/java/**/TomcatApplication.java"
   - "services/java/spring/jvm/netty/src/main/java/**/NettyApplication.java"
   - "services/java/micronaut/jvm/src/main/java/**/MicronautApplication.java"
@@ -164,7 +174,66 @@ ignore:
   - "services/java/dropwizard/jvm/src/main/java/**/DropwizardApplication.java"
   - "services/java/vertx/jvm/src/main/java/**/VertxApplication.java"
   - "services/java/pekko/jvm/src/main/java/**/PekkoApplication.java"
-  # ── Non-source directories ──────────────────────────────────────────
+
+  # ── 3. Pure interfaces and trivial enums (no executable logic) ───────
+  # Port interfaces define contracts only — implementations are tested.
+  - "services/java/**/port/CachePort.java"
+  - "services/java/**/port/SleepPort.java"
+  - "services/java/**/port/MetricsPort.java"
+  - "services/java/**/port/TimeUnit.java"
+  # Orchestrator port interfaces
+  - "utils/orchestrator/**/job/CommandRunner.java"
+  - "utils/orchestrator/**/job/JobAdmissionPolicy.java"
+  - "utils/orchestrator/**/job/JobEventPublisher.java"
+  - "utils/orchestrator/**/job/JobStore.java"
+  - "utils/orchestrator/**/job/HeartbeatScheduler.java"
+  # Simple enum — five constants, no methods
+  - "utils/orchestrator/**/domain/JobStatus.java"
+
+  # ── 4. CDI / startup listeners (framework observers, logging only) ──
+  - "services/java/quarkus/jvm/**/bootstrap/StartupDiagnosticsLogger.java"
+  - "services/java/quarkus/jvm/**/bootstrap/MetricsWarmupStartupObserver.java"
+  - "services/java/helidon/mp/jvm/**/infra/JulBridgeStartupListener.java"
+
+  # ── 5. Metrics wiring (CDI producers / static binder registration) ──
+  # These produce MeterBinder beans or call bindTo() — pure plumbing.
+  - "services/java/quarkus/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/spark/jvm/**/infra/MetricsProvider.java"
+  - "services/java/vertx/jvm/**/infra/MetricsProvider.java"
+  - "services/java/javalin/jvm/**/infra/MetricsProvider.java"
+  - "services/java/pekko/jvm/**/infra/MetricsProvider.java"
+
+  # ── 6. Pure DTO records (auto-generated accessors, no methods) ───────
+  - "utils/orchestrator/**/api/RunRequest.java"
+  - "utils/orchestrator/**/api/RunResponse.java"
+  - "utils/orchestrator/**/api/ErrorResponse.java"
+  - "utils/orchestrator/**/api/CommandPreset.java"
+  - "utils/orchestrator/**/api/JobStatusResponse.java"
+  - "utils/orchestrator/**/api/ServiceHealthResponse.java"
+  - "utils/orchestrator/**/api/HealthAggregateResponse.java"
+
+  # ── 7. JAX-RS application / annotation classes ───────────────────────
+  - "services/java/helidon/mp/jvm/**/web/HelloApplication.java"
+  - "utils/orchestrator/**/security/RequireOrchestratorAuth.java"
+
+  # ── 8. Next.js async Server Components (untestable with Vitest) ──────
+  # These require the Next.js server runtime and React streaming SSR.
+  # A future Playwright e2e phase would cover them.
+  - "utils/nextjs-dash/app/page.tsx"
+  - "utils/nextjs-dash/app/layout.tsx"
+  - "utils/nextjs-dash/app/Providers.tsx"
+  - "utils/nextjs-dash/app/theme.ts"
+  - "utils/nextjs-dash/next.config.ts"
+
+  # ── 9. Inline <Script> components (need real browser, not jsdom) ─────
+  - "utils/nextjs-dash/app/components/PreHydrationScript.tsx"
+  - "utils/nextjs-dash/app/components/RuntimeConfigScript.tsx"
+
+  # ── 10. Pure type definitions / static defaults (no logic) ───────────
+  - "utils/nextjs-dash/lib/runtimeConfigTypes.ts"
+  - "utils/nextjs-dash/lib/loggingTypes.ts"
+
+  # ── 11. Non-source directories ───────────────────────────────────────
   - "docs/**"
   - "config/**"
   - "compose/**"
