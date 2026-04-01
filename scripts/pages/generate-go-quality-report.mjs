@@ -211,7 +211,7 @@ const body = [
 ].join('\n');
 
 const html = htmlPage({
-  title: `${reportTitle} \u2014 Quality Report`,
+  title: `${esc(reportTitle)} \u2014 Quality Report`,
   body,
 });
 
