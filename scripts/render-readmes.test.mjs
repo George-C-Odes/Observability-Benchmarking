@@ -197,12 +197,30 @@ function testRealignMarkdownTables() {
 
   const centeredAligned = realignMarkdownTables(centered);
   const centeredExpected = [
-    '| A | B         |',
+    '| A |         B |',
     '|:-:|----------:|',
     '| x | longvalue |',
   ].join('\n');
 
   assert.equal(centeredAligned, centeredExpected);
+
+  // Table with right-aligned column must right-pad values.
+  const rightAligned = [
+    '| Metric | Minimum |',
+    '|--------|--------:|',
+    '| Line   |     15% |',
+    '| Branch |     10% |',
+  ].join('\n');
+
+  const rightAlignedResult = realignMarkdownTables(rightAligned);
+  const rightAlignedExpected = [
+    '| Metric | Minimum |',
+    '|--------|--------:|',
+    '| Line   |     15% |',
+    '| Branch |     10% |',
+  ].join('\n');
+
+  assert.equal(rightAlignedResult, rightAlignedExpected);
 }
 
 function main() {

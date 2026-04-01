@@ -17,6 +17,7 @@
 - [Performance Testing](#performance-testing)
 - [Code Coverage](#code-coverage)
   - [Java — JaCoCo](#java--jacoco)
+  - [Next.js Dashboard — Vitest + v8](#nextjs-dashboard--vitest--v8)
   - [Codecov (repo-wide visibility)](#codecov-repo-wide-visibility)
   - [Go & Python (planned)](#go--python-planned)
 - [CI/CD Integration](#cicd-integration)
@@ -1317,6 +1318,79 @@ protection) then act on the verdict:
 will be raised per-module to ~5% below their observed coverage. Modules that
 consistently exceed 50% line coverage will be promoted to hard gate first.
 
+### Next.js Dashboard — Vitest + v8
+
+The Next.js dashboard (`utils/nextjs-dash`) uses
+[Vitest](https://vitest.dev/) with the
+[@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
+coverage. The project's existing dual-environment split is preserved:
+
+| Config File             | Environment | Coverage Scope                       | Report Directory  |
+|-------------------------|-------------|--------------------------------------|-------------------|
+| `vitest.config.node.ts` | `node`      | `lib/**`, `app/api/**`               | `coverage/node/`  |
+| `vitest.config.dom.ts`  | `jsdom`     | `app/components/**`, `app/hooks/**`  | `coverage/dom/`   |
+
+Each environment produces four report formats: **text** (console summary),
+**HTML** (browsable), **JSON** (machine-readable summary), and **LCOV**
+(for Codecov upload).
+
+#### Running locally
+
+```bash
+cd utils/nextjs-dash
+npm install
+
+# Run both environments with coverage
+npm run test:coverage
+
+# Run only node-environment coverage
+npm run test:coverage:node
+
+# Run only DOM-environment coverage
+npm run test:coverage:dom
+
+# Reports:
+#   Node HTML  → coverage/node/index.html
+#   DOM  HTML  → coverage/dom/index.html
+#   Node JSON  → coverage/node/coverage-summary.json
+#   DOM  JSON  → coverage/dom/coverage-summary.json
+#   Node LCOV  → coverage/node/lcov.info
+#   DOM  LCOV  → coverage/dom/lcov.info
+```
+
+#### CI workflow
+
+The **Next.js Dashboard Coverage** GitHub Actions workflow
+(`.github/workflows/nextjs_dash_coverage.yml`) runs on every PR and push to
+`main` that touches `utils/nextjs-dash/**`. It:
+
+- Installs dependencies with `npm ci` (deterministic, cache-friendly).
+- Runs coverage for both Node and DOM environments sequentially.
+- Parses the Vitest JSON coverage summaries and writes a coverage table to
+  the **GitHub Step Summary** (lines, statements, functions, branches for
+  each environment).
+- Uploads the full HTML + JSON + LCOV reports as artifacts named
+  `coverage-nextjs-dash-node` and `coverage-nextjs-dash-dom` (retained for
+  30 days).
+- Uploads LCOV reports to Codecov with flags `nextjs-dash-node` and
+  `nextjs-dash-dom`.
+
+#### Limitations and future work
+
+Next.js **async Server Components** (RSC) cannot be unit-tested with Vitest +
+jsdom because they require the Next.js server runtime and React's streaming
+SSR pipeline. The current test suite covers:
+
+- ✅ Client components, hooks, and event handlers (via React Testing Library + jsdom)
+- ✅ Server-side library utilities and API route handlers (via Node environment)
+- ❌ Async Server Components (`page.tsx`, `layout.tsx`) — these are effectively
+  integration-level and would benefit from a **Playwright** or **Cypress** e2e
+  phase in the future
+
+A dedicated e2e testing phase using Playwright is recommended as a follow-up to
+cover Server Component rendering, client–server data flow, and full-page
+interaction scenarios.
+
 ### Codecov (repo-wide visibility)
 
 [Codecov](https://app.codecov.io) provides an additional reporting layer on top
@@ -1351,10 +1425,13 @@ the sole enforcement mechanism.
 The repository-level `codecov.yml` (at the repo root) defines:
 
 - **Flags** — one per module, named `java-{matrix.name}` (e.g.
-  `java-spring-tomcat`, `java-orchestrator`). Each flag maps to the module's
-  source path so Codecov can attribute coverage lines correctly.
+  `java-spring-tomcat`, `java-orchestrator`) for Java, and
+  `nextjs-dash-{env}` (e.g. `nextjs-dash-node`, `nextjs-dash-dom`) for the
+  Next.js dashboard. Each flag maps to the module's source path so Codecov
+  can attribute coverage lines correctly.
 - **Components** — language-level groups that aggregate flags:
   - `java_services` — all 12 Java/Maven modules
+  - `nextjs_dashboard` — Next.js dashboard (node + DOM coverage)
   - `go_services` — Go modules (placeholder, activated when Go coverage is added)
   - `python_services` — Python modules (placeholder, activated when Python
     coverage is added)

@@ -21,5 +21,15 @@ export default defineConfig({
     pool: 'threads',
     fileParallelism: true,
     maxWorkers: 4,
+
+    // Coverage via @vitest/coverage-v8.
+    // Output goes to coverage/dom/ so it can be merged with the Node run.
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: 'coverage/dom',
+      reporter: ['text', 'html', 'json', 'json-summary', 'lcov'],
+      include: ['app/components/**/*.{ts,tsx}', 'app/hooks/**/*.ts'],
+      exclude: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/node_modules/**'],
+    },
   },
 });

@@ -70,9 +70,35 @@ function splitTableRow(line) {
   return inner.split('|').map((cell) => cell.trim());
 }
 
+function columnAlignment(separatorCell) {
+  const hasLeft = separatorCell.startsWith(':');
+  const hasRight = separatorCell.endsWith(':') && separatorCell.length > 1;
+  if (hasLeft && hasRight) return 'center';
+  if (hasRight) return 'right';
+  return 'left';
+}
+
+function padCell(text, width, align) {
+  if (align === 'right') return ' ' + text.padStart(width) + ' ';
+  if (align === 'center') {
+    const total = width - text.length;
+    const left = Math.floor(total / 2);
+    const right = total - left;
+    return ' ' + ' '.repeat(left) + text + ' '.repeat(right) + ' ';
+  }
+  return ' ' + text.padEnd(width) + ' ';
+}
+
 function alignTable(lines) {
   const rows = lines.map(splitTableRow);
   const colCount = Math.max(...rows.map((r) => r.length));
+
+  // Derive alignment per column from the separator row (index 1).
+  const separatorRow = rows.length > 1 ? rows[1] : [];
+  const aligns = [];
+  for (let c = 0; c < colCount; c++) {
+    aligns.push(c < separatorRow.length ? columnAlignment(separatorRow[c]) : 'left');
+  }
 
   // Determine max content width per column (skip separator row at index 1).
   const widths = new Array(colCount).fill(0);
@@ -103,7 +129,7 @@ function alignTable(lines) {
         const dashCount = w + 2 - (hasLeft ? 1 : 0) - (hasRight ? 1 : 0);
         formatted.push((hasLeft ? ':' : '') + '-'.repeat(dashCount) + (hasRight ? ':' : ''));
       } else {
-        formatted.push(' ' + cell.padEnd(w) + ' ');
+        formatted.push(padCell(cell, w, aligns[c]));
       }
     }
 
