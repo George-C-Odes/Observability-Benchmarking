@@ -164,10 +164,29 @@ func newRistrettoCache(size int) (*ristrettoCache, error) {
 		return nil, err
 	}
 
+	// Ristretto's Set is asynchronous — items go into a ring buffer that a
+	// background goroutine drains.  When the buffer is full, Set returns
+	// false and the item is silently dropped.  Flushing (Wait) every batch
+	// keeps the buffer from filling up and lets retries succeed.
+	const batchSize = 1000
 	for i := size; i >= 1; i-- {
 		k := itoa(i)
-		// Ristretto may drop Set for admission; retry a few times to ensure warm cache.
 		retrySetRistretto(rc, k, "value-"+k, 1, defaultTTL)
+		if i%batchSize == 0 {
+			rc.Wait()
+		}
+	}
+	rc.Wait()
+
+	// Verification pass — the TinyLFU admission policy may still have
+	// rejected some entries that hadn't accumulated enough frequency.
+	// One extra pass is enough because all keys have been "seen" at least
+	// once by now, which satisfies the frequency threshold.
+	for i := 1; i <= size; i++ {
+		k := itoa(i)
+		if _, ok := rc.Get(k); !ok {
+			retrySetRistretto(rc, k, "value-"+k, 1, defaultTTL)
+		}
 	}
 	rc.Wait()
 
