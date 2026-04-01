@@ -196,6 +196,21 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # ── Fix coverage paths for Codecov ──────────────────────────
+      # Go coverage profiles use the module name as the path prefix
+      # (e.g. "hello/cmd/server/main.go"), but Codecov needs paths
+      # relative to the repository root (e.g. "services/go/simple/
+      # cmd/server/main.go").  This step rewrites the prefix so
+      # Codecov can match coverage data to source files.
+      - name: Fix coverage paths for Codecov
+        if: always() && !cancelled() && steps.test.outcome == 'success'
+        env:
+          MODULE_DIR: ${{ matrix.module_dir }}
+        run: |
+          go_module="$(head -1 go.mod | awk '{print $2}')"
+          echo "Rewriting coverage paths: ${go_module}/ → ${MODULE_DIR}/"
+          sed "s|${go_module}/|${MODULE_DIR}/|g" coverage.out > coverage-codecov.out
+
       # ── Codecov upload ───────────────────────────────────────────
       # Upload Go coverage using the standard coverage.out format.
       # Codecov natively supports Go coverage profiles.
@@ -207,7 +222,7 @@ jobs:
         if: always() && !cancelled() && steps.test.outcome == 'success'
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
-          files: ${{ matrix.module_dir }}/coverage.out
+          files: ${{ matrix.module_dir }}/coverage-codecov.out
           flags: ${{ matrix.name }}
           name: ${{ matrix.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
