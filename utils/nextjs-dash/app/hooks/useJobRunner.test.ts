@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 import { useJobRunner } from './useJobRunner';
+import { MockEventSource, installMockGlobals, restoreMockGlobals } from './useJobRunner.test-helpers';
 
 // Mock the runtime config hook so tests are deterministic and fast.
 vi.mock('@/app/hooks/useScriptRunnerConfig', () => ({
@@ -17,101 +18,12 @@ vi.mock('@/app/hooks/useScriptRunnerConfig', () => ({
   }),
 }));
 
-class MockEventSource {
-  static instances: MockEventSource[] = [];
-  onopen: (() => void) | null = null;
-  onmessage: ((ev: { data: string }) => void) | null = null;
-  onerror: (() => void) | null = null;
-  url: string;
-  close = vi.fn();
-
-  constructor(url: string) {
-    this.url = url;
-    // Touch onerror so TS doesn't flag it as unused; the hook sets it.
-    void this.onerror;
-    MockEventSource.instances.push(this);
-  }
-
-  emitOpen() {
-    this.onopen?.();
-  }
-
-  emitMessage(data: string) {
-    this.onmessage?.({ data });
-  }
-}
-
-class MockBroadcastChannel {
-  static channels = new Map<string, Set<MockBroadcastChannel>>();
-
-  private readonly name: string;
-  private readonly listeners = new Set<(ev: MessageEvent) => void>();
-
-  constructor(name: string) {
-    this.name = name;
-    const set = MockBroadcastChannel.channels.get(name) ?? new Set();
-    set.add(this);
-    MockBroadcastChannel.channels.set(name, set);
-  }
-
-  postMessage(data: unknown) {
-    const peers = MockBroadcastChannel.channels.get(this.name);
-    if (!peers) return;
-    for (const peer of peers) {
-      if (peer === this) continue;
-      for (const cb of peer.listeners) {
-        cb(new MessageEvent('message', { data }));
-      }
-    }
-  }
-
-  addEventListener(type: 'message', cb: (ev: MessageEvent) => void) {
-    if (type === 'message') this.listeners.add(cb);
-  }
-
-  removeEventListener(type: 'message', cb: (ev: MessageEvent) => void) {
-    if (type === 'message') this.listeners.delete(cb);
-  }
-
-  close() {
-    const peers = MockBroadcastChannel.channels.get(this.name);
-    peers?.delete(this);
-    this.listeners.clear();
-  }
-}
-
-declare global {
-  interface GlobalThis {
-    EventSource: typeof EventSource;
-    BroadcastChannel: typeof BroadcastChannel;
-    sessionStorage: Storage;
-  }
-}
-
 beforeEach(() => {
-  MockEventSource.instances = [];
-  globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
-
-  // Provide BroadcastChannel for tests so the hook doesn't throw.
-  globalThis.BroadcastChannel = MockBroadcastChannel as unknown as typeof BroadcastChannel;
-
-  // Minimal sessionStorage stub for hook persistence.
-  const store = new Map<string, string>();
-  globalThis.sessionStorage = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k),
-    clear: () => void store.clear(),
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    get length() {
-      return store.size;
-    },
-  } as unknown as Storage;
+  installMockGlobals();
 });
 
 afterEach(() => {
-  vi.useRealTimers();
-  vi.restoreAllMocks();
+  restoreMockGlobals();
 });
 
 describe('useJobRunner', () => {
