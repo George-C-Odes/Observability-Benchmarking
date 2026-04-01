@@ -139,7 +139,7 @@ Some environments terminate long-lived HTTP connections.
 
 - Standardized backend logging with per-request correlation ids (requestId) and stable UI rendering.
 - Refactored complex UI into hooks + components to improve testability.
-- Added unit tests for core hooks and Logs UI.
+- Added unit tests for core hooks, Logs UI, ScriptRunner, EnvEditor, ClientHome, and routeWrapper.
 - Reduced Next.js "business logic" (validation rules) in API routes in favor of orchestrator ownership.
 - **Lazy-mount tab panels**: tabs are code-split via `React.lazy` and mounted only on first visit ("mount once, keep alive"), eliminating background API calls, SSE connections, and timers from inactive tabs.
 - **Consolidated pre-hydration scripts**: three separate `beforeInteractive` scripts (theme, color-scheme, tab restore) merged into a single `PreHydrationScript` to reduce blocking script evaluations.
