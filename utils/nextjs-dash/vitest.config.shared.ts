@@ -2,12 +2,18 @@
  * Shared Vitest configuration options.
  *
  * Both `vitest.config.node.ts` and `vitest.config.dom.ts` spread from
- * this base, eliminating duplication of resolve aliases, pool settings,
+ * this base, removing duplication of resolve aliases, pool settings,
  * and common exclude patterns.
  */
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const dirname = path.resolve(import.meta.dirname ?? '.');
+/**
+ * Derive this file's directory from `import.meta.url` instead of relying on
+ * `import.meta.dirname` (Node ≥ 21.2 only). This keeps the `@` alias stable
+ * regardless of the working directory or Node version.
+ */
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Resolve alias shared across all test configs. */
 export const sharedResolve = {
