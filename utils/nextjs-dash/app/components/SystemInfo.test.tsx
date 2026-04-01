@@ -14,10 +14,10 @@ describe('SystemInfo', () => {
       systemInfo: {
         nodejs: 'v25.8.2',
         npm: '11.12.1',
-        nextjs: '16.2.1',
+        nextjs: '16.2.2',
         react: '19.2.4',
         mui: '7.3.9',
-        typescript: '5.9.3',
+        typescript: '6.0.2',
         platform: 'linux',
         arch: 'x64',
       },

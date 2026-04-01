@@ -478,9 +478,9 @@ the same flow.
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.1
+Next.js: 16.2.2
 React: 19.2.4
-TypeScript: 5.9.3
+TypeScript: 6.0.2
 Vitest: 4.x
 ```
 

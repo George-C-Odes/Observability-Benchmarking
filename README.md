@@ -92,9 +92,9 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.3   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.1  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.2  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 5.9.3   | Type-safe frontend development                                       |
+| **Frontend**      | Language           | TypeScript                 | 6.0.2   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.4.2  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1   | Log aggregation                                                      |
@@ -160,7 +160,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.1 and Material-UI 7.3.9
+  - Built with Next.js 16.2.2 and Material-UI 7.3.9
 
 ### 🚀 REST Service Implementations
 
