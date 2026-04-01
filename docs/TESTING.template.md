@@ -314,11 +314,13 @@ OpenTelemetry: Latest stable
 ```
 services/go/enhanced/internal/handlers/hello_test.go
 services/go/enhanced/internal/cache/cache_test.go
+services/go/simple/cmd/server/main_test.go
 ```
 
 #### Running Go Tests
 
 ```bash
+# Enhanced module
 cd services/go/enhanced
 
 # Download dependencies (first time only)
@@ -335,11 +337,26 @@ go test ./... -cover
 go test ./... -run TestVirtual_Defaults -v
 ```
 
-**Test Coverage**:
+```bash
+# Simple module
+cd services/go/simple
+
+go mod download
+go test ./... -v
+go test ./... -cover
+```
+
+**Test Coverage (Enhanced)**:
 - ✅ HTTP endpoint (`/hello/virtual`)
 - ✅ Query parameters (`sleep`, `log`) including bad-parameter validation (400)
 - ✅ Cache implementations and basic hit/miss behavior
 - ✅ OpenTelemetry wiring (uses noop providers in unit tests for determinism)
+- ✅ Fiber framework integration
+
+**Test Coverage (Simple)**:
+- ✅ HTTP endpoint (`/hello/virtual`)
+- ✅ Cache initialization and lookup
+- ✅ OTel meter and tracer provider initialization
 - ✅ Fiber framework integration
 
 **Example Test Output**:

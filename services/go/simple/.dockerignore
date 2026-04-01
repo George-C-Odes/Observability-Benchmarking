@@ -1,0 +1,30 @@
+# VCS
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go build artifacts
+**/*.test
+**/*.out
+bin/
+dist/
+coverage/
+*.prof
+
+# Node / misc
+node_modules/
+
+# CI quality report artifacts
+quality-report/
+golangci-lint-report.json
+
+# Docker / compose artifacts
+**/*-debug.log
+

@@ -2,9 +2,9 @@ name: Go Quality
 
 # Scope: both Go modules.
 #   services/go/enhanced — full quality pipeline (golangci-lint, vet, test,
-#     build, hosted HTML report).
-#   services/go/simple — lightweight quality checks (vet, test, build).
-#     No golangci-lint config; it receives CodeQL analysis separately.
+#     build, govulncheck, hosted HTML report).
+#   services/go/simple — full quality pipeline (golangci-lint, vet, test,
+#     build, govulncheck, hosted HTML report).
 
 env:
   # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
@@ -78,6 +78,14 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Check go.mod tidiness
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum || {
+            echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
+            exit 1
+          }
+
       - name: Vet
         run: go vet ./...
 
@@ -93,6 +101,12 @@ jobs:
 
       - name: Build check
         run: go build ./cmd/server
+
+      - name: Govulncheck
+        continue-on-error: true
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
 
       # ------------------------------------------------------------------
       # Quality report: generate an HTML report from the JSON output
@@ -114,6 +128,7 @@ jobs:
         env:
           GOLANGCI_LINT_VERSION: ${{ steps.versions.outputs.golangci_lint }}
           GO_VERSION: ${{ steps.versions.outputs.go }}
+          REPORT_TITLE: Go Enhanced Service
         run: node ../../../scripts/pages/generate-go-quality-report.mjs
 
       - name: Upload quality report
@@ -125,11 +140,9 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-  # ── Simple module: lightweight quality checks ──────────────────────
-  # No golangci-lint (no .golangci.yml config) and no quality report.
-  # CodeQL provides separate security analysis.
+  # ── Simple module: full quality pipeline ────────────────────────────
   quality-simple:
-    name: Simple — vet, test & build
+    name: Simple — lint, vet, test & build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -145,14 +158,73 @@ jobs:
           go-version-file: services/go/simple/go.mod
           cache-dependency-path: services/go/simple/go.sum
 
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.11.4
+          working-directory: services/go/simple
+          args: --help
+
+      - name: Print tool versions
+        id: versions
+        run: |
+          go_ver="$(go version | awk '{print $3}')"
+          lint_ver="$(golangci-lint version --short 2>&1 || echo unknown)"
+          echo "Go: $go_ver"
+          echo "golangci-lint: $lint_ver"
+          echo "go=$go_ver"           >> "$GITHUB_OUTPUT"
+          echo "golangci_lint=$lint_ver" >> "$GITHUB_OUTPUT"
+
       - name: Download dependencies
         run: go mod download
 
+      - name: Check go.mod tidiness
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum || {
+            echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
+            exit 1
+          }
+
       - name: Vet
         run: go vet ./...
+
+      - name: Lint (golangci-lint)
+        id: lint
+        run: golangci-lint run
 
       - name: Unit tests
         run: go test ./... -race -count=1
 
       - name: Build check
         run: go build ./cmd/server
+
+      - name: Govulncheck
+        continue-on-error: true
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: Set up Node.js (for report generation)
+        if: always() && !cancelled()
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '22'
+
+      - name: Generate quality report
+        if: always() && !cancelled()
+        env:
+          GOLANGCI_LINT_VERSION: ${{ steps.versions.outputs.golangci_lint }}
+          GO_VERSION: ${{ steps.versions.outputs.go }}
+          REPORT_TITLE: Go Simple Service
+        run: node ../../../scripts/pages/generate-go-quality-report.mjs
+
+      - name: Upload quality report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: quality-report-go-simple
+          path: services/go/simple/quality-report/
+          retention-days: 30
+          if-no-files-found: warn
+

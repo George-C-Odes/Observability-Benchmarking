@@ -33,6 +33,12 @@
 #   GO_DOWNLOAD_OUTCOME    – success | failure | skipped | (empty)
 #   GO_QUALITY_PAGES_DIR   – staging path, e.g. ./.go-quality-pages
 #
+# Go Simple quality report (optional):
+#   GO_SIMPLE_QUALITY_RUN_ID      – resolved Go Simple quality workflow run ID (may be empty)
+#   GO_SIMPLE_QUALITY_HEAD_SHA    – resolved commit SHA (may be empty)
+#   GO_SIMPLE_DOWNLOAD_OUTCOME    – success | failure | skipped | (empty)
+#   GO_SIMPLE_QUALITY_PAGES_DIR   – staging path, e.g. ./.go-simple-quality-pages
+#
 # CodeQL security & quality report (optional):
 #   CODEQL_QUALITY_RUN_ID      – resolved CodeQL workflow run ID (may be empty)
 #   CODEQL_QUALITY_HEAD_SHA    – resolved commit SHA (may be empty)
@@ -46,6 +52,7 @@ SITE_DIR="${SITE_DIR:-./_site}"
 NEXTJS_QUALITY_PAGES_DIR="${NEXTJS_QUALITY_PAGES_DIR:-./.nextjs-quality-pages}"
 DJANGO_PYTHON_QUALITY_PAGES_DIR="${DJANGO_PYTHON_QUALITY_PAGES_DIR:-./.django-python-quality-pages}"
 GO_QUALITY_PAGES_DIR="${GO_QUALITY_PAGES_DIR:-./.go-quality-pages}"
+GO_SIMPLE_QUALITY_PAGES_DIR="${GO_SIMPLE_QUALITY_PAGES_DIR:-./.go-simple-quality-pages}"
 CODEQL_QUALITY_PAGES_DIR="${CODEQL_QUALITY_PAGES_DIR:-./.codeql-quality-pages}"
 
 # ---------------------------------------------------------------------------
@@ -111,6 +118,7 @@ resolve_simple_status() {
 nextjs_status="$(resolve_simple_status "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" "${NEXTJS_DOWNLOAD_OUTCOME:-}" "${NEXTJS_QUALITY_RUN_ID:-}")"
 django_python_status="$(resolve_simple_status "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" "${DJANGO_PYTHON_DOWNLOAD_OUTCOME:-}" "${DJANGO_PYTHON_QUALITY_RUN_ID:-}")"
 go_status="$(resolve_simple_status "$GO_QUALITY_PAGES_DIR/go" "${GO_DOWNLOAD_OUTCOME:-}" "${GO_QUALITY_RUN_ID:-}")"
+go_simple_status="$(resolve_simple_status "$GO_SIMPLE_QUALITY_PAGES_DIR/go-simple" "${GO_SIMPLE_DOWNLOAD_OUTCOME:-}" "${GO_SIMPLE_QUALITY_RUN_ID:-}")"
 codeql_status="$(resolve_simple_status "$CODEQL_QUALITY_PAGES_DIR/codeql" "${CODEQL_DOWNLOAD_OUTCOME:-}" "${CODEQL_QUALITY_RUN_ID:-}")"
 
 # ---------------------------------------------------------------------------
@@ -260,6 +268,38 @@ if [[ -n "${GO_QUALITY_RUN_ID:-}" ]]; then
   fi
 fi
 
+# Go Simple quality report messages
+go_simple_item_text='go-simple quality report is not available yet.'
+go_simple_item_html='<li>go-simple quality report is not available yet.</li>'
+go_simple_metadata_text=''
+go_simple_metadata_html=''
+
+case "$go_simple_status" in
+  available)
+    go_simple_item_text='go-simple quality report is available (golangci-lint).'
+    go_simple_item_html='<li><a href="./go-simple/">go-simple quality report</a> (golangci-lint)</li>'
+    ;;
+  'download failed')
+    go_simple_item_text='go-simple quality report could not be downloaded for the resolved run.'
+    go_simple_item_html='<li>go-simple quality report could not be downloaded for the resolved run.</li>'
+    ;;
+  unavailable)
+    go_simple_item_text='go-simple quality report is not available for the resolved run.'
+    go_simple_item_html='<li>go-simple quality report is not available for the resolved run.</li>'
+    ;;
+  undetermined)
+    go_simple_item_text='go-simple quality report availability could not be determined for the resolved run.'
+    go_simple_item_html='<li>go-simple quality report availability could not be determined for the resolved run.</li>'
+    ;;
+esac
+
+if [[ -n "${GO_SIMPLE_QUALITY_RUN_ID:-}" ]]; then
+  if [[ "$go_simple_status" == 'available' ]]; then
+    go_simple_metadata_text="Go Simple quality report from workflow run ${GO_SIMPLE_QUALITY_RUN_ID} for commit ${GO_SIMPLE_QUALITY_HEAD_SHA:-unknown}."
+    go_simple_metadata_html="<p>Go Simple quality report from workflow run <code>${GO_SIMPLE_QUALITY_RUN_ID}</code> for commit <code>${GO_SIMPLE_QUALITY_HEAD_SHA:-unknown}</code>.</p>"
+  fi
+fi
+
 # CodeQL security and quality report messages
 codeql_item_text='codeql security and quality report is not available yet.'
 codeql_item_html='<li>codeql security &amp; quality report is not available yet.</li>'
@@ -377,6 +417,20 @@ if [[ -n "$go_metadata_text" ]]; then
   echo "  go metadata: $go_metadata_text"
 fi
 echo ''
+echo 'Go Simple quality report resolution:'
+if [[ -n "${GO_SIMPLE_QUALITY_RUN_ID:-}" ]]; then
+  echo "  resolved run id: $GO_SIMPLE_QUALITY_RUN_ID"
+  echo "  resolved head sha: ${GO_SIMPLE_QUALITY_HEAD_SHA:-none}"
+else
+  echo '  resolved run id: none'
+fi
+echo "  go-simple download outcome: ${GO_SIMPLE_DOWNLOAD_OUTCOME:-not-run}"
+echo "  go-simple final status: $go_simple_status"
+echo "  go-simple message: $go_simple_item_text"
+if [[ -n "$go_simple_metadata_text" ]]; then
+  echo "  go-simple metadata: $go_simple_metadata_text"
+fi
+echo ''
 echo 'CodeQL security & quality report resolution:'
 if [[ -n "${CODEQL_QUALITY_RUN_ID:-}" ]]; then
   echo "  resolved run id: $CODEQL_QUALITY_RUN_ID"
@@ -395,7 +449,7 @@ fi
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go" "$SITE_DIR/quality/codeql"
+mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go" "$SITE_DIR/quality/go-simple" "$SITE_DIR/quality/codeql"
 
 write_html_file() {
   local target_path="$1"
@@ -501,6 +555,11 @@ if [[ -d "$GO_QUALITY_PAGES_DIR/go" ]]; then
   cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/quality/go/"
 fi
 
+# Copy the Go Simple golangci-lint quality report into the site tree.
+if [[ -d "$GO_SIMPLE_QUALITY_PAGES_DIR/go-simple" ]]; then
+  cp -a "$GO_SIMPLE_QUALITY_PAGES_DIR/go-simple/." "$SITE_DIR/quality/go-simple/"
+fi
+
 # Copy the CodeQL security & quality report into the site tree.
 if [[ -d "$CODEQL_QUALITY_PAGES_DIR/codeql" ]]; then
   cp -a "$CODEQL_QUALITY_PAGES_DIR/codeql/." "$SITE_DIR/quality/codeql/"
@@ -511,6 +570,7 @@ create_scope_page 'orchestrator' "$orchestrator_item_text"
 create_scope_page 'nextjs-dash' "$nextjs_item_text"
 create_scope_page 'django-python' "$django_python_item_text"
 create_scope_page 'go' "$go_item_text"
+create_scope_page 'go-simple' "$go_simple_item_text"
 create_scope_page 'codeql' "$codeql_item_text"
 
 # Landing page
@@ -552,8 +612,10 @@ write_html_file "$SITE_DIR/quality/index.html" \
   '  <p>Aggregated Go static analysis via <code>golangci-lint</code> — govet, staticcheck, errcheck, gosec, revive, and more.</p>' \
   '  <ul>' \
   "    ${go_item_html}" \
+  "    ${go_simple_item_html}" \
   '  </ul>' \
   "  ${go_metadata_html}" \
+  "  ${go_simple_metadata_html}" \
   '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
   '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
   '  <ul>' \
