@@ -92,13 +92,13 @@ flags:
     paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/, utils/nextjs-dash/app/theme.ts, utils/nextjs-dash/app/Providers.tsx]
     carryforward: true
 
-  # ── Go services (future — uploaded by go_quality.yml) ───────────────
-  # go-enhanced:
-  #   paths: [services/go/enhanced/]
-  #   carryforward: true
-  # go-simple:
-  #   paths: [services/go/simple/]
-  #   carryforward: true
+  # ── Go services (uploaded by go_coverage.yml) ──────────────────────
+  go-enhanced:
+    paths: [services/go/enhanced/]
+    carryforward: true
+  go-simple:
+    paths: [services/go/simple/]
+    carryforward: true
 
   # ── Python services (future — uploaded by django_python_quality.yml) ─
   # python-django-platform:

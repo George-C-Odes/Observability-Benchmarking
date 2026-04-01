@@ -1,0 +1,207 @@
+name: Go Coverage
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/go/**'
+      - '.github/workflows/go_coverage.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/go/**'
+      - '.github/workflows/go_coverage.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Coverage (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: go-enhanced
+            module_dir: services/go/enhanced
+          - name: go-simple
+            module_dir: services/go/simple
+    defaults:
+      run:
+        working-directory: ${{ matrix.module_dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: ${{ matrix.module_dir }}/go.mod
+          cache-dependency-path: |
+            services/go/enhanced/go.sum
+            services/go/simple/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests with coverage
+        id: test
+        run: |
+          go test ./... -race -count=1 \
+            -coverprofile=coverage.out \
+            -covermode=atomic
+
+      # ── Parse coverage and write GitHub Step Summary ──────────────
+      - name: Generate coverage summary
+        if: always() && !cancelled()
+        env:
+          MODULE_NAME: ${{ matrix.name }}
+          MODULE_DIR: ${{ matrix.module_dir }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+        run: |
+          python3 << 'PYEOF'
+          import os, re, sys
+
+          module_name  = os.environ["MODULE_NAME"]
+          module_dir   = os.environ["MODULE_DIR"]
+          test_outcome = os.environ["TEST_OUTCOME"]
+          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
+
+          coverage_out = "coverage.out"
+
+          # ── No coverage file ────────────────────────────────────────
+          if not os.path.isfile(coverage_out):
+              with open(summary_file, "a") as f:
+                  if test_outcome == "success":
+                      f.write(f"### ❌ Coverage: {module_name}\n\n")
+                      f.write("Tests passed but no coverage profile was generated.\n")
+                      print(f"::error::Tests passed but {coverage_out} not found")
+                      sys.exit(1)
+                  else:
+                      f.write(f"### ⚠️ Coverage: {module_name}\n\n")
+                      f.write("No coverage profile generated. Tests may have failed.\n")
+                      sys.exit(0)
+
+          # ── Parse coverage.out ──────────────────────────────────────
+          # Go coverage profile format (after the mode line):
+          #   file:startLine.startCol,endLine.endCol numStatements count
+          #
+          # A statement block is "covered" if count > 0, "missed" if count == 0.
+          total_stmts   = 0
+          covered_stmts = 0
+          per_file      = {}  # file -> (stmts, covered)
+
+          with open(coverage_out) as fh:
+              for line in fh:
+                  line = line.strip()
+                  if line.startswith("mode:") or not line:
+                      continue
+                  # Example: hello/internal/cache/cache.go:15.40,17.2 1 5
+                  parts = line.rsplit(" ", 2)
+                  if len(parts) != 3:
+                      continue
+                  loc, stmts_s, count_s = parts
+                  try:
+                      stmts = int(stmts_s)
+                      count = int(count_s)
+                  except ValueError:
+                      continue
+
+                  fname = loc.split(":")[0]
+
+                  total_stmts   += stmts
+                  if count > 0:
+                      covered_stmts += stmts
+
+                  prev = per_file.get(fname, (0, 0))
+                  file_covered = stmts if count > 0 else 0
+                  per_file[fname] = (prev[0] + stmts, prev[1] + file_covered)
+
+          missed_stmts = total_stmts - covered_stmts
+          pct = (covered_stmts * 100 / total_stmts) if total_stmts > 0 else 0.0
+
+          # ── Also parse `go tool cover -func` output for function-level detail ──
+          func_output = os.popen("go tool cover -func=coverage.out 2>/dev/null").read()
+
+          # ── Write Step Summary ──────────────────────────────────────
+          with open(summary_file, "a") as f:
+              if test_outcome == "success":
+                  badge = "✅ Tests passed"
+              else:
+                  badge = "⚠️ Tests had issues"
+
+              f.write(f"### 📊 Coverage: {module_name}\n\n")
+              f.write(f"**{badge}**\n\n")
+
+              # Summary table
+              f.write("| Metric     | Covered | Missed | Total | Coverage |\n")
+              f.write("|------------|--------:|-------:|------:|---------:|\n")
+              f.write(f"| **Statements** | **{covered_stmts}** "
+                      f"| **{missed_stmts}** "
+                      f"| **{total_stmts}** "
+                      f"| **{pct:.1f}%** |\n\n")
+
+              # Per-file breakdown
+              if per_file:
+                  f.write("<details>\n<summary>Per-file breakdown</summary>\n\n")
+                  f.write("| File | Statements | Covered | Coverage |\n")
+                  f.write("|------|----------:|---------:|---------:|\n")
+                  for fname in sorted(per_file.keys()):
+                      fstmts, fcovered = per_file[fname]
+                      fpct = (fcovered * 100 / fstmts) if fstmts > 0 else 0.0
+                      f.write(f"| `{fname}` | {fstmts} | {fcovered} | {fpct:.1f}% |\n")
+                  f.write("\n</details>\n\n")
+
+              # Function-level detail from go tool cover -func
+              if func_output.strip():
+                  f.write("<details>\n<summary>Function-level detail (go tool cover -func)</summary>\n\n")
+                  f.write("```\n")
+                  f.write(func_output.strip())
+                  f.write("\n```\n\n</details>\n\n")
+
+              f.write(f"> Report generated from `{module_dir}/coverage.out`\n")
+          PYEOF
+
+      # ── Generate HTML coverage report ────────────────────────────
+      - name: Generate HTML coverage report
+        if: always() && !cancelled() && steps.test.outcome == 'success'
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      # ── Upload coverage artifacts ────────────────────────────────
+      - name: Upload coverage report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: coverage-${{ matrix.name }}
+          path: |
+            ${{ matrix.module_dir }}/coverage.out
+            ${{ matrix.module_dir }}/coverage.html
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ── Codecov upload ───────────────────────────────────────────
+      # Upload Go coverage using the standard coverage.out format.
+      # Codecov natively supports Go coverage profiles.
+      #
+      # Flag naming: go-{module} (e.g., go-enhanced, go-simple).
+      # See codecov.yml at the repo root for flag → path mappings
+      # and component definitions.
+      - name: Upload to Codecov
+        if: always() && !cancelled() && steps.test.outcome == 'success'
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          files: ${{ matrix.module_dir }}/coverage.out
+          flags: ${{ matrix.name }}
+          name: ${{ matrix.name }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          disable_search: true

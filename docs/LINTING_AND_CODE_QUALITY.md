@@ -519,17 +519,27 @@ The Go Enhanced service (`services/go/enhanced`) uses [golangci-lint](https://go
 Test files (`_test.go`) have relaxed rules: `errcheck` and `gosec` are excluded.
 
 ### GitHub Actions Workflow
-The workflow in `.github/workflows/go_quality.yml` performs:
+The workflow in `.github/workflows/go_quality.yml` covers both Go modules in parallel jobs:
+
+**Enhanced** (`quality` job) — full quality pipeline:
 
 1. **go vet** — built-in Go analysis
 2. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
 3. **go test** — unit tests with race detector (`-race`)
 4. **go build** — compilation smoke test
 
+**Simple** (`quality-simple` job) — lightweight quality checks:
+
+1. **go vet** — built-in Go analysis
+2. **go test** — unit tests with race detector (`-race`)
+3. **go build** — compilation smoke test
+
+The simple module has no `.golangci.yml` configuration and no hosted quality report; CodeQL provides its security analysis.
+
 The workflow is triggered on:
 - manual dispatch
-- pull requests touching `services/go/enhanced/**`
-- pushes to `main` touching `services/go/enhanced/**`
+- pull requests touching `services/go/**`
+- pushes to `main` touching `services/go/**`
 
 ### Hosted Quality Report on GitHub Pages
 After each run, the workflow uses the `golangci-lint run` step, configured via `.golangci.yml` `output.formats`, to write a `golangci-lint-report.json` file, which is then consumed by `scripts/pages/generate-go-quality-report.mjs` (using shared utilities from `scripts/pages/report-helpers.mjs`) to generate a self-contained HTML quality report. The report is uploaded as a `quality-report-go` artifact and published to GitHub Pages by the Pages workflow.
@@ -822,7 +832,7 @@ The Django Python quality workflow (`.github/workflows/django_python_quality.yml
 
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
-The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR.
+The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR. The Go Simple module is also covered by the same workflow with lightweight quality checks (`go vet`, unit tests with race detection, and a build smoke test) but without golangci-lint since it has no linter configuration.
 
 GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab, and a combined HTML report is published to GitHub Pages.
 

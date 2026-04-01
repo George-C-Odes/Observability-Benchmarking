@@ -19,7 +19,8 @@
   - [Java — JaCoCo](#java--jacoco)
   - [Next.js Dashboard — Vitest + v8](#nextjs-dashboard--vitest--v8)
   - [Codecov (repo-wide visibility)](#codecov-repo-wide-visibility)
-  - [Go & Python (planned)](#go--python-planned)
+  - [Go — native `go test` coverage](#go--native-go-test-coverage)
+  - [Python (planned)](#python-planned)
 - [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -1457,14 +1458,15 @@ the sole enforcement mechanism.
 The repository-level `codecov.yml` (at the repo root) defines:
 
 - **Flags** — one per module, named `java-{matrix.name}` (e.g.
-  `java-spring-tomcat`, `java-orchestrator`) for Java, and
+  `java-spring-tomcat`, `java-orchestrator`) for Java,
   `nextjs-dash-{env}` (e.g. `nextjs-dash-node`, `nextjs-dash-dom`) for the
-  Next.js dashboard. Each flag maps to the module's source path so Codecov
+  Next.js dashboard, and `go-{module}` (e.g. `go-enhanced`, `go-simple`)
+  for Go. Each flag maps to the module's source path so Codecov
   can attribute coverage lines correctly.
 - **Components** — language-level groups that aggregate flags:
   - `java_services` — all 12 Java/Maven modules
   - `nextjs_dashboard` — Next.js dashboard (node + DOM coverage)
-  - `go_services` — Go modules (placeholder, activated when Go coverage is added)
+  - `go_services` — Go modules (`go-enhanced` and `go-simple` flags)
   - `python_services` — Python modules (placeholder, activated when Python
     coverage is added)
 - **Ignored paths** — native-image modules, docs, config, scripts, and other
@@ -1496,6 +1498,21 @@ Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.0):
 The upload runs only when the build step succeeds. If the upload fails (e.g.,
 Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
 
+Each matrix leg in the **Go Coverage** workflow uploads its `coverage.out` to
+Codecov the same way. Codecov natively supports Go coverage profiles:
+
+```yaml
+- name: Upload to Codecov
+  uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+  with:
+    files: ${{ matrix.module_dir }}/coverage.out
+    flags: ${{ matrix.name }}
+    name: ${{ matrix.name }}
+    token: ${{ secrets.CODECOV_TOKEN }}
+    fail_ci_if_error: false
+    disable_search: true
+```
+
 #### Authentication (public repos)
 
 The workflow currently passes `token: ${{ secrets.CODECOV_TOKEN }}`
@@ -1508,24 +1525,70 @@ For public repositories, Codecov also supports **tokenless uploads** via
 GitHub OIDC. To switch to tokenless, **remove** the `token:` input from
 the `codecov/codecov-action` step and ensure the job grants
 `permissions: id-token: write` (already present in the workflow).
-#### Adding Go or Python coverage uploads (future)
+#### Adding Python coverage uploads (future)
 
-When Go or Python coverage workflows are extended:
+When Python coverage workflows are extended:
 
 1. Add a `codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2` (v6.0.0) step to the respective workflow, with:
-   - `files` pointing to the coverage report (e.g., `coverage.out` for Go,
-     `coverage.xml` for Python).
-   - `flags` matching the naming convention: `go-{module}` or
-     `python-{module}`.
+   - `files` pointing to the coverage report (e.g., `coverage.xml` for Python).
+   - `flags` matching the naming convention: `python-{module}`.
 2. Uncomment the corresponding flag block in `codecov.yml`.
-3. The component (`go_services` or `python_services`) will automatically pick
+3. The component (`python_services`) will automatically pick
    up the new uploads because its `paths` pattern already matches.
 
-### Go & Python (planned)
+### Go — native `go test` coverage
 
-Coverage tooling for Go (`go test -coverprofile`) and Python (`coverage.py`)
-will be added in a later phase, following the same phased tightening roadmap
-described above.
+Both Go modules (`services/go/enhanced` and `services/go/simple`) use Go's
+built-in coverage tooling. No external library is required — `go test
+-coverprofile` and `go tool cover` handle everything.
+
+#### Running locally
+
+```bash
+# Enhanced module
+cd services/go/enhanced
+go test ./... -race -coverprofile=coverage.out -covermode=atomic
+
+# Text summary → stdout
+go tool cover -func=coverage.out
+
+# HTML report → open in browser
+go tool cover -html=coverage.out -o coverage.html
+
+# Simple module
+cd services/go/simple
+go test ./... -race -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
+```
+
+#### CI workflow
+
+The **Go Coverage** GitHub Actions workflow
+(`.github/workflows/go_coverage.yml`) runs on every PR and push to `main`
+that touches `services/go/**`. It:
+
+- Runs tests with coverage for each module in a matrix (two parallel jobs:
+  `go-enhanced` and `go-simple`).
+- Parses the Go coverage profile and writes a coverage table to the
+  **GitHub Step Summary** (statements covered/missed/total/%, per-file
+  breakdown, and function-level detail).
+- Generates an HTML coverage report via `go tool cover -html`.
+- Uploads `coverage.out` and `coverage.html` as artifacts named
+  `coverage-go-enhanced` and `coverage-go-simple` (retained for 30 days).
+- Uploads coverage to Codecov with flags `go-enhanced` and `go-simple`.
+
+#### Module-specific notes
+
+| Module          | Test files | Notes                                                                 |
+|-----------------|------------|-----------------------------------------------------------------------|
+| `go/enhanced`   | 2          | Tests for cache and handler packages; uses noop OTel providers        |
+| `go/simple`     | 1          | Tests in `cmd/server`; some OTel tests may log expected errors        |
+
+### Python (planned)
+
+Coverage tooling for Python (`coverage.py`) will be added in a later phase,
+following the same phased tightening roadmap described above.
 
 ## CI/CD Integration
 
