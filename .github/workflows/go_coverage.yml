@@ -69,7 +69,7 @@ jobs:
           TEST_OUTCOME: ${{ steps.test.outcome }}
         run: |
           python3 << 'PYEOF'
-          import os, re, sys
+          import os, sys
 
           module_name  = os.environ["MODULE_NAME"]
           module_dir   = os.environ["MODULE_DIR"]
