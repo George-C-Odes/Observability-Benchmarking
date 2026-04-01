@@ -29,7 +29,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write   # Required for Codecov OIDC tokenless uploads
     strategy:
       fail-fast: false
       matrix:
@@ -212,7 +211,7 @@ jobs:
       # Summary or artifact uploads above.  Codecov provides PR
       # annotations, coverage diffs, and trend tracking.
       #
-      # Flag naming: java-{matrix.name}  (e.g. java-spring-tomcat).
+      # Flag naming: java-{matrix.name}  (e.g., java-spring-tomcat).
       # See codecov.yml at the repo root for flag → path mappings and
       # component definitions.
       #
