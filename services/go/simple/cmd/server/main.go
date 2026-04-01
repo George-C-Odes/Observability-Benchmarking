@@ -1,3 +1,4 @@
+// Package main implements the Go simple REST service for benchmarking.
 package main
 
 import (
@@ -13,14 +14,10 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/metric"
-
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/sdk/trace"
-
-	_ "go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"google.golang.org/grpc"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 var numberCache map[int]int
@@ -37,7 +34,6 @@ func initMeterProvider(ctx context.Context) (*sdkmetric.MeterProvider, error) {
 	exporter, err := otlpmetricgrpc.New(ctx,
 		otlpmetricgrpc.WithInsecure(),
 		otlpmetricgrpc.WithEndpoint(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")),
-		otlpmetricgrpc.WithDialOption(grpc.WithBlock()),
 	)
 	if err != nil {
 		return nil, err
@@ -77,7 +73,7 @@ func logGoVersion() {
 	}
 }
 
-func main() {
+func run() error {
 	logGoVersion()
 	ctx := context.Background()
 
@@ -86,14 +82,14 @@ func main() {
 	// Initialize metrics
 	mp, err := initMeterProvider(ctx)
 	if err != nil {
-		log.Fatalf("failed to init meter provider: %v", err)
+		return fmt.Errorf("init meter provider: %w", err)
 	}
 	defer func() { _ = mp.Shutdown(ctx) }()
 
 	// Initialize tracing
 	tp, err := initTracerProvider(ctx)
 	if err != nil {
-		log.Fatalf("failed to init tracer provider: %v", err)
+		return fmt.Errorf("init tracer provider: %w", err)
 	}
 	defer func() { _ = tp.Shutdown(ctx) }()
 
@@ -122,7 +118,11 @@ func main() {
 
 	port := ":8080"
 	fmt.Printf("Fiber server running on %s\n", port)
-	if err := app.Listen(port); err != nil {
+	return app.Listen(port)
+}
+
+func main() {
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }
