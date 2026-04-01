@@ -14,7 +14,11 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
 
     // Only DOM-requiring tests.
-    include: ['app/components/**/*.test.{ts,tsx}', 'app/hooks/**/*.test.{ts,tsx}'],
+    include: [
+      'app/components/**/*.test.{ts,tsx}',
+      'app/hooks/**/*.test.{ts,tsx}',
+      'app/*.test.{ts,tsx}',   // theme.test.ts, Providers.test.tsx
+    ],
 
     // JSDOM is heavy. Too many workers on Windows can hurt wall time.
     // Tune locally via: npx vitest run -c vitest.config.dom.ts --maxWorkers=N
@@ -28,7 +32,12 @@ export default defineConfig({
       provider: 'v8',
       reportsDirectory: 'coverage/dom',
       reporter: ['text', 'html', 'json', 'json-summary', 'lcov'],
-      include: ['app/components/**/*.{ts,tsx}', 'app/hooks/**/*.ts'],
+      include: [
+        'app/components/**/*.{ts,tsx}',
+        'app/hooks/**/*.ts',
+        'app/theme.ts',        // client-side theme logic
+        'app/Providers.tsx',   // client-side context / theme wiring
+      ],
       exclude: [
         '**/*.test.{ts,tsx}',
         '**/*.spec.{ts,tsx}',

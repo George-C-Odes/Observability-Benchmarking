@@ -216,13 +216,14 @@ ignore:
   - "services/java/helidon/mp/jvm/**/web/HelloApplication.java"
   - "utils/orchestrator/**/security/RequireOrchestratorAuth.java"
 
-  # ── 8. Next.js async Server Components (untestable with Vitest) ──────
-  # These require the Next.js server runtime and React streaming SSR.
-  # A future Playwright e2e phase would cover them.
+  # ── 8. Next.js untestable files (Server Components / build config) ───
+  # These require the Next.js server runtime, React streaming SSR, or are
+  # build-time configuration with no runtime logic.
+  # A future Playwright e2e phase would cover the Server Components.
+  # NOTE: Providers.tsx and theme.ts are 'use client' with testable logic
+  # — they are NOT excluded; they have dedicated Vitest tests.
   - "utils/nextjs-dash/app/page.tsx"
   - "utils/nextjs-dash/app/layout.tsx"
-  - "utils/nextjs-dash/app/Providers.tsx"
-  - "utils/nextjs-dash/app/theme.ts"
   - "utils/nextjs-dash/next.config.ts"
 
   # ── 9. Inline <Script> components (need real browser, not jsdom) ─────
