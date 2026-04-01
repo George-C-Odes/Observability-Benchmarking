@@ -16,6 +16,7 @@ Thumbs.db
 bin/
 dist/
 coverage/
+coverage.html
 *.prof
 
 # Node / misc
