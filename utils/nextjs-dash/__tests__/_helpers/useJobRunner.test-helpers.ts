@@ -101,21 +101,57 @@ export class MockBroadcastChannel {
 // Common setup / teardown
 // ---------------------------------------------------------------------------
 
+/** Captured prior globals so we can restore them after tests. */
+let savedEventSource: typeof globalThis.EventSource | undefined;
+let savedBroadcastChannel: typeof globalThis.BroadcastChannel | undefined;
+let savedSessionStorage: typeof globalThis.sessionStorage | undefined;
+
 /**
  * Installs MockEventSource, MockBroadcastChannel, and a stub
  * sessionStorage on `globalThis`.  Call from `beforeEach`.
+ *
+ * Previous global values are preserved and restored by
+ * {@link restoreMockGlobals}.
  */
 export function installMockGlobals(): void {
+  // Preserve current globals so they can be restored later.
+  savedEventSource = globalThis.EventSource;
+  savedBroadcastChannel = globalThis.BroadcastChannel;
+  savedSessionStorage = globalThis.sessionStorage;
+
+  // Reset static state that can leak across tests.
   MockEventSource.instances = [];
+  MockBroadcastChannel.channels.clear();
+
   globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
   globalThis.BroadcastChannel = MockBroadcastChannel as unknown as typeof BroadcastChannel;
   globalThis.sessionStorage = createMockStorage();
 }
 
 /**
- * Restores real timers and mocks.  Call from `afterEach`.
+ * Restores real timers, mocks, and the original globals that were
+ * overwritten by {@link installMockGlobals}.  Call from `afterEach`.
  */
 export function restoreMockGlobals(): void {
   vi.useRealTimers();
   vi.restoreAllMocks();
+
+  // Clear static state accumulated during the test.
+  MockEventSource.instances = [];
+  MockBroadcastChannel.channels.clear();
+
+  // Restore the prior global values captured during install.
+  if (savedEventSource !== undefined) {
+    globalThis.EventSource = savedEventSource;
+  }
+  if (savedBroadcastChannel !== undefined) {
+    globalThis.BroadcastChannel = savedBroadcastChannel;
+  }
+  if (savedSessionStorage !== undefined) {
+    globalThis.sessionStorage = savedSessionStorage;
+  }
+
+  savedEventSource = undefined;
+  savedBroadcastChannel = undefined;
+  savedSessionStorage = undefined;
 }
