@@ -12,7 +12,7 @@
     "test": "vitest run -c vitest.config.node.ts && vitest run -c vitest.config.dom.ts",
     "test:node": "vitest run -c vitest.config.node.ts",
     "test:dom": "vitest run -c vitest.config.dom.ts",
-    "test:fast": "vitest run -c vitest.config.node.ts --maxWorkers=4 && vitest run -c vitest.config.dom.ts --maxWorkers=4",
+    "test:fast": "vitest run -c vitest.config.node.ts --bail=1 && vitest run -c vitest.config.dom.ts --bail=1",
     "test:watch": "vitest -c vitest.config.dom.ts",
     "test:coverage": "vitest run -c vitest.config.node.ts --coverage && vitest run -c vitest.config.dom.ts --coverage",
     "test:coverage:node": "vitest run -c vitest.config.node.ts --coverage",

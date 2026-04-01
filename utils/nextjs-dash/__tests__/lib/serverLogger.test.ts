@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { silenceConsole } from '@/__tests__/_helpers/consoleSpy';
 
 import { logServer } from '@/lib/serverLogger';
 
@@ -8,11 +9,7 @@ describe('serverLogger output mode', () => {
 
   beforeEach(() => {
     globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ = 'debug';
-
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'debug').mockImplementation(() => {});
+    silenceConsole();
   });
 
   afterEach(() => {

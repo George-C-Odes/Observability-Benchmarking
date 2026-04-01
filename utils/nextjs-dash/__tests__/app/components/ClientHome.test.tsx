@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createMockStorage } from '@/__tests__/_helpers/storage';
 
 // ── Module mocks ──────────────────────────────────────────────────────
 
@@ -23,20 +24,12 @@ vi.mock('@/app/Providers', () => ({
 import ClientHome from '@/app/components/ClientHome';
 
 // ── localStorage stub ─────────────────────────────────────────────────
-// jsdom's localStorage is not always fully functional; use a simple stub.
-let storageMap: Record<string, string> = {};
-const mockStorage: Storage = {
-  getItem: (key: string) => storageMap[key] ?? null,
-  setItem: (key: string, value: string) => { storageMap[key] = value; },
-  removeItem: (key: string) => { delete storageMap[key]; },
-  clear: () => { storageMap = {}; },
-  key: (index: number) => Object.keys(storageMap)[index] ?? null,
-  get length() { return Object.keys(storageMap).length; },
-};
+// jsdom's localStorage is not always fully functional; use a deterministic stub.
+const mockStorage = createMockStorage();
 
 beforeEach(() => {
   vi.clearAllMocks();
-  storageMap = {};
+  mockStorage.clear();
   vi.stubGlobal('localStorage', mockStorage);
   delete document.documentElement.dataset.dashboardTab;
 });

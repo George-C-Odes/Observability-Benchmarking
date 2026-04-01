@@ -57,11 +57,11 @@ describe('fetchJson', () => {
       text: () => Promise.resolve('validation failed'),
     });
 
-    await expect(fetchJson('http://example.com/api')).rejects.toThrow(HttpError);
-
     try {
       await fetchJson('http://example.com/api');
+      expect.unreachable('should have thrown');
     } catch (e) {
+      expect(e).toBeInstanceOf(HttpError);
       const err = e as HttpError;
       expect(err.status).toBe(422);
       expect(err.bodyText).toBe('validation failed');
@@ -76,11 +76,11 @@ describe('fetchJson', () => {
       text: () => Promise.reject(new Error('stream error')),
     });
 
-    await expect(fetchJson('http://example.com/api')).rejects.toThrow(HttpError);
-
     try {
       await fetchJson('http://example.com/api');
+      expect.unreachable('should have thrown');
     } catch (e) {
+      expect(e).toBeInstanceOf(HttpError);
       const err = e as HttpError;
       expect(err.status).toBe(500);
       expect(err.bodyText).toBe('');

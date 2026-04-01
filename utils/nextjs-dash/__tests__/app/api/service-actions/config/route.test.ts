@@ -3,14 +3,11 @@ import { NextRequest } from 'next/server';
 
 import { GET } from '@/app/api/service-actions/config/route';
 
-vi.mock('@/lib/serverLogger', () => ({
-  serverLogger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  },
+// noinspection JSUnusedGlobalSymbols — mock consumed by vi.mock, not test code
+const serverLoggerMock = vi.hoisted(() => ({
+  serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
+vi.mock('@/lib/serverLogger', () => serverLoggerMock);
 
 describe('/api/service-actions/config route', () => {
   it('returns resolved enabled flags (no-store)', async () => {

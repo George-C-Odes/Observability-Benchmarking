@@ -89,7 +89,7 @@ flags:
     paths: [utils/nextjs-dash/lib/, utils/nextjs-dash/app/api/]
     carryforward: true
   nextjs-dash-dom:
-    paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/]
+    paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/, utils/nextjs-dash/app/theme.ts, utils/nextjs-dash/app/Providers.tsx]
     carryforward: true
 
   # ── Go services (future — uploaded by go_quality.yml) ───────────────

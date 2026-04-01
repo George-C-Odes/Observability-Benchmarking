@@ -4,22 +4,17 @@ import userEvent from '@testing-library/user-event';
 
 // ── Module mocks ──────────────────────────────────────────────────────
 
-vi.mock('@/lib/clientLogger', () => ({
-  createClientLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
+// noinspection JSUnusedGlobalSymbols — consumed by vi.mock, not test code
+const mocks = vi.hoisted(() => ({
+  clientLogger: {
+    createClientLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+  },
+  inwardPulse: { InwardPulse: () => null },
+  timedPulse: { useTimedPulse: () => ({ on: false, fire: vi.fn() }) },
 }));
-
-vi.mock('@/app/components/ui/InwardPulse', () => ({
-  InwardPulse: () => null,
-}));
-
-vi.mock('@/app/hooks/useTimedPulse', () => ({
-  useTimedPulse: () => ({ on: false, fire: vi.fn() }),
-}));
+vi.mock('@/lib/clientLogger', () => mocks.clientLogger);
+vi.mock('@/app/components/ui/InwardPulse', () => mocks.inwardPulse);
+vi.mock('@/app/hooks/useTimedPulse', () => mocks.timedPulse);
 
 // Mock useScripts
 const mockRefresh = vi.fn();

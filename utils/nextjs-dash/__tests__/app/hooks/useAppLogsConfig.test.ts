@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAppLogsConfig } from '@/app/hooks/useAppLogsConfig';
 import { DEFAULT_APP_LOGS_RUNTIME_CONFIG } from '@/lib/runtimeConfigTypes';
+import { silenceConsole } from '@/__tests__/_helpers/consoleSpy';
 
 describe('useAppLogsConfig', () => {
   const originalFetch = globalThis.fetch;
@@ -55,7 +56,7 @@ describe('useAppLogsConfig', () => {
       text: () => Promise.resolve('server error'),
     });
 
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    silenceConsole();
 
     const { result } = renderHook(() => useAppLogsConfig());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -67,7 +68,7 @@ describe('useAppLogsConfig', () => {
   it('sets error on fetch exception', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('network down'));
 
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    silenceConsole();
 
     const { result } = renderHook(() => useAppLogsConfig());
     await waitFor(() => expect(result.current.loading).toBe(false));

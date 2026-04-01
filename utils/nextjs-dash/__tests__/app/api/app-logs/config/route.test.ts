@@ -4,14 +4,11 @@ import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/app-logs/config/route';
 import { DEFAULT_APP_LOGS_RUNTIME_CONFIG } from '@/lib/runtimeConfigTypes';
 
-vi.mock('@/lib/serverLogger', () => ({
-  serverLogger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  },
+// noinspection JSUnusedGlobalSymbols — mock consumed by vi.mock, not test code
+const serverLoggerMock = vi.hoisted(() => ({
+  serverLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
+vi.mock('@/lib/serverLogger', () => serverLoggerMock);
 
 describe('/api/app-logs/config route', () => {
   it('returns defaults when env vars are missing', async () => {

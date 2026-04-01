@@ -20,32 +20,33 @@ type MockService = {
   body?: unknown;
 };
 
+/** Default enabled-flags for service actions (OBS core on, everything else off). */
+const SERVICE_ACTIONS_ENABLED_DEFAULT: Record<string, boolean> = {
+  alloy: true,
+  grafana: true,
+  loki: true,
+  mimir: true,
+  pyroscope: true,
+  tempo: true,
+
+  // everything else off by default; tests can opt-in via overrides
+  'spring-jvm-tomcat-platform': false,
+  'spring-jvm-tomcat-virtual': false,
+  'spring-jvm-netty': false,
+  'spring-native-tomcat-platform': false,
+  'spring-native-tomcat-virtual': false,
+  'spring-native-netty': false,
+  'quarkus-jvm': false,
+  'quarkus-native': false,
+  go: false,
+  'nextjs-dash': false,
+  orchestrator: false,
+  wrk2: false,
+};
+
 function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnabled?: Record<string, boolean> }) {
-  const enabledDefault = {
-    alloy: true,
-    grafana: true,
-    loki: true,
-    mimir: true,
-    pyroscope: true,
-    tempo: true,
-
-    // everything else off by default; tests can opt-in via overrides
-    'spring-jvm-tomcat-platform': false,
-    'spring-jvm-tomcat-virtual': false,
-    'spring-jvm-netty': false,
-    'spring-native-tomcat-platform': false,
-    'spring-native-tomcat-virtual': false,
-    'spring-native-netty': false,
-    'quarkus-jvm': false,
-    'quarkus-native': false,
-    go: false,
-    'nextjs-dash': false,
-    orchestrator: false,
-    wrk2: false,
-  };
-
   const serviceActionsEnabled = {
-    ...enabledDefault,
+    ...SERVICE_ACTIONS_ENABLED_DEFAULT,
     ...(opts?.serviceActionsEnabled ?? {}),
   };
 
@@ -91,6 +92,7 @@ function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnab
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   cleanup();
 });
 
@@ -104,28 +106,7 @@ beforeEach(() => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({
-            enabled: {
-              alloy: true,
-              grafana: true,
-              loki: true,
-              mimir: true,
-              pyroscope: true,
-              tempo: true,
-              'spring-jvm-tomcat-platform': false,
-              'spring-jvm-tomcat-virtual': false,
-              'spring-jvm-netty': false,
-              'spring-native-tomcat-platform': false,
-              'spring-native-tomcat-virtual': false,
-              'spring-native-netty': false,
-              'quarkus-jvm': false,
-              'quarkus-native': false,
-              go: false,
-              'nextjs-dash': false,
-              orchestrator: false,
-              wrk2: false,
-            },
-          }),
+          json: async () => ({ enabled: SERVICE_ACTIONS_ENABLED_DEFAULT }),
           text: async () => '',
         } as unknown as Response;
       }
@@ -149,10 +130,6 @@ beforeEach(() => {
 
     return { services: [] };
   });
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
 });
 
 describe('ServiceHealth', () => {
@@ -194,28 +171,7 @@ describe('ServiceHealth', () => {
     vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/service-actions/config') {
-        return {
-          enabled: {
-            alloy: true,
-            grafana: true,
-            loki: true,
-            mimir: true,
-            pyroscope: true,
-            tempo: true,
-            'spring-jvm-tomcat-platform': false,
-            'spring-jvm-tomcat-virtual': false,
-            'spring-jvm-netty': false,
-            'spring-native-tomcat-platform': false,
-            'spring-native-tomcat-virtual': false,
-            'spring-native-netty': false,
-            'quarkus-jvm': false,
-            'quarkus-native': false,
-            go: false,
-            'nextjs-dash': false,
-            orchestrator: false,
-            wrk2: false,
-          },
-        };
+        return { enabled: SERVICE_ACTIONS_ENABLED_DEFAULT };
       }
       if (url.startsWith('/api/health')) {
         healthCalls += 1;

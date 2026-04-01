@@ -15,7 +15,7 @@ You *can* do all of this from a terminal, but the dashboard provides a faster �
 
 - A UI for editing the env file safely
 - A UI for running curated command presets
-- A single place to view buffered client + server logs
+- A single place to view buffered client and server logs
 
 Just as important: this dashboard is intentionally a **presentation layer**.
 
@@ -138,7 +138,7 @@ Some environments terminate long-lived HTTP connections.
 ## MVPs implemented now
 
 - Standardized backend logging with per-request correlation ids (requestId) and stable UI rendering.
-- Refactored complex UI into hooks + components to improve testability.
+- Refactored complex UI into hooks and components to improve testability.
 - Added unit tests for core hooks, Logs UI, ScriptRunner, EnvEditor, ClientHome, and routeWrapper.
 - Reduced Next.js "business logic" (validation rules) in API routes in favor of orchestrator ownership.
 - **Lazy-mount tab panels**: tabs are code-split via `React.lazy` and mounted only on first visit ("mount once, keep alive"), eliminating background API calls, SSE connections, and timers from inactive tabs.
@@ -153,7 +153,7 @@ Some environments terminate long-lived HTTP connections.
 - **Environment Configuration Editor**: Edit the `compose/.env` file through an intuitive UI
 - **Benchmark Targets Manager**: Chip-based multiselect UI for choosing which service endpoints to include in benchmark runs, with quick-filter rows (Language, Framework, Runtime, Endpoint) and JVM/Native subgroup layouts
 - **Script Runner**: Execute run presets via the orchestrator
-- **Application Logs**: Client console + buffered Next.js server logs for local/dev troubleshooting
+- **Application Logs**: Client console and buffered Next.js server logs for local/dev troubleshooting
 - **Professional UI**: Built with Material-UI for a polished interface
 - **Docker Support**: Runs in its own containerized environment
 
@@ -329,6 +329,37 @@ docker run -p 3001:3001 `
 
 ## Testing
 
+Tests are split into two Vitest configurations to avoid running JSDOM for
+pure-Node tests:
+
+| Config                  | Environment | Scope                                                                             |
+|-------------------------|-------------|-----------------------------------------------------------------------------------|
+| `vitest.config.node.ts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        |
+| `vitest.config.dom.ts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` |
+
+Both configs extend `vitest.config.shared.ts` for common resolve aliases,
+pool settings, and coverage excludes.
+
+### Shared test helpers (`__tests__/_helpers/`)
+
+| Helper                         | Purpose                                                                                                                    |
+|--------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `mocks.ts`                     | Reusable `vi.mock()` factory objects (`CLIENT_LOGGER_MOCK`, `SERVER_LOGGER_MOCK`, `INWARD_PULSE_MOCK`, `TIMED_PULSE_MOCK`) |
+| `consoleSpy.ts`                | `silenceConsole()` — spies on all four `console.*` methods with no-op implementations                                      |
+| `storage.ts`                   | `createMockStorage()` — in-memory `Storage` stub for `localStorage` / `sessionStorage`                                     |
+| `useJobRunner.test-helpers.ts` | `MockEventSource`, `MockBroadcastChannel`, `installMockGlobals` / `restoreMockGlobals`                                     |
+
+### Available scripts
+
+```bash
+npm test              # run all tests (node + dom)
+npm run test:node     # node tests only
+npm run test:dom      # DOM tests only
+npm run test:fast     # all tests with --bail=1 (fail fast)
+npm run test:watch    # watch mode (DOM config)
+npm run test:coverage # all tests with coverage
+```
+
 ### Orchestrator restart simulation (unit/integration-ish)
 
 We have a focused hook test that simulates: an SSE stream error followed by the events-meta endpoint returning **404**, which mimics an orchestrator restart (or any state loss).
@@ -374,7 +405,7 @@ node ..\orchestrator\scripts\direct-sse-smoke.mjs
 - Build a dedicated TypeScript client (and later mobile-native clients) that talks to the orchestrator.
 - Harden real-time channels (SSE reconnect support, Last-Event-ID, heartbeats).
 
-### When auth & roles come into play
+### When auth and roles come into play
 
 - Integrate Keycloak in orchestrator.
 - Enforce RBAC at orchestrator endpoints.

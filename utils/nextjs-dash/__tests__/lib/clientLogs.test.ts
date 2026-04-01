@@ -6,6 +6,7 @@ import {
   setClientLogsMaxEntries,
   type ClientLogEntry,
 } from '@/lib/clientLogs';
+import { silenceConsole } from '@/__tests__/_helpers/consoleSpy';
 
 // Helper to reset the global state between tests.
 function resetGlobalState() {
@@ -46,18 +47,16 @@ describe('clientLogs', () => {
   });
 
   describe('installConsoleCapture', () => {
+    beforeEach(() => {
+      silenceConsole();
+    });
+
     it('captures console.log as info entries', () => {
       const received: ClientLogEntry[][] = [];
       subscribeClientLogs((entries) => {
         received.length = 0;
         received.push(entries);
       });
-
-      // Spy so originals don't pollute test output.
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
 
       installConsoleCapture();
 
@@ -74,11 +73,6 @@ describe('clientLogs', () => {
         received.push(entries);
       });
 
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       installConsoleCapture();
 
       console.warn('caution');
@@ -92,11 +86,6 @@ describe('clientLogs', () => {
         received.length = 0;
         received.push(entries);
       });
-
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
 
       installConsoleCapture();
 
@@ -112,11 +101,6 @@ describe('clientLogs', () => {
         received.push(entries);
       });
 
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       installConsoleCapture();
 
       console.debug('trace');
@@ -125,11 +109,6 @@ describe('clientLogs', () => {
     });
 
     it('is idempotent (second call is a no-op)', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       installConsoleCapture();
       installConsoleCapture(); // should not double-wrap
       const received: ClientLogEntry[][] = [];
@@ -145,12 +124,11 @@ describe('clientLogs', () => {
   });
 
   describe('append serialization', () => {
-    it('serializes Error to stack/message', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
+    beforeEach(() => {
+      silenceConsole();
+    });
 
+    it('serializes Error to stack/message', () => {
       installConsoleCapture();
       const received: ClientLogEntry[][] = [];
       subscribeClientLogs((entries) => {
@@ -164,11 +142,6 @@ describe('clientLogs', () => {
     });
 
     it('serializes objects to JSON', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       installConsoleCapture();
       const received: ClientLogEntry[][] = [];
       subscribeClientLogs((entries) => {
@@ -181,11 +154,6 @@ describe('clientLogs', () => {
     });
 
     it('falls back to String() for circular objects', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       installConsoleCapture();
       const received: ClientLogEntry[][] = [];
       subscribeClientLogs((entries) => {
@@ -200,11 +168,6 @@ describe('clientLogs', () => {
     });
 
     it('joins multiple args with spaces', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       installConsoleCapture();
       const received: ClientLogEntry[][] = [];
       subscribeClientLogs((entries) => {
@@ -218,12 +181,11 @@ describe('clientLogs', () => {
   });
 
   describe('clearClientLogs', () => {
-    it('clears all entries and notifies subscribers', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
+    beforeEach(() => {
+      silenceConsole();
+    });
 
+    it('clears all entries and notifies subscribers', () => {
       installConsoleCapture();
       console.log('entry1');
       console.log('entry2');
@@ -240,12 +202,11 @@ describe('clientLogs', () => {
   });
 
   describe('setClientLogsMaxEntries', () => {
-    it('trims existing entries when max is reduced', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
+    beforeEach(() => {
+      silenceConsole();
+    });
 
+    it('trims existing entries when max is reduced', () => {
       installConsoleCapture();
       for (let i = 0; i < 10; i++) console.log(`msg-${i}`);
 
@@ -268,11 +229,6 @@ describe('clientLogs', () => {
     });
 
     it('enforces new max on subsequent appends', () => {
-      vi.spyOn(console, 'log').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'debug').mockImplementation(() => {});
-
       setClientLogsMaxEntries(2);
       installConsoleCapture();
 

@@ -1,24 +1,15 @@
 import { defineConfig } from 'vitest/config';
-import path from 'node:path';
+import { sharedResolve, sharedTestOptions, sharedCoverageExclude } from './vitest.config.shared';
 
 // Node test suite: pure library and API-route unit tests that do NOT need JSDOM.
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, '.'),
-    },
-  },
+  resolve: sharedResolve,
   test: {
+    ...sharedTestOptions,
     environment: 'node',
-    globals: true,
 
     // Only node-safe tests (all tests live under __tests__/).
     include: ['__tests__/lib/**/*.test.{ts,tsx}', '__tests__/app/api/**/*.test.{ts,tsx}'],
-
-    // Keep it modest; node tests are inexpensive and benefit less from large worker counts.
-    pool: 'threads',
-    fileParallelism: true,
-    maxWorkers: 4,
 
     // Coverage via @vitest/coverage-v8.
     // Output goes to coverage/node/ so it can be merged with the DOM run.
@@ -28,9 +19,7 @@ export default defineConfig({
       reporter: ['text', 'html', 'json', 'json-summary', 'lcov'],
       include: ['lib/**/*.ts', 'app/api/**/*.ts'],
       exclude: [
-        '**/*.test.{ts,tsx}',
-        '**/*.spec.{ts,tsx}',
-        '**/node_modules/**',
+        ...sharedCoverageExclude,
         // Pure type definitions / static defaults — no executable logic.
         'lib/runtimeConfigTypes.ts',
         'lib/loggingTypes.ts',

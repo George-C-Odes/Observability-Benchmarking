@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useLoggingConfig } from '@/app/hooks/useLoggingConfig';
 import { DEFAULT_LOGGING_RUNTIME_CONFIG } from '@/lib/loggingTypes';
+import { silenceConsole } from '@/__tests__/_helpers/consoleSpy';
 
 describe('useLoggingConfig', () => {
   const originalFetch = globalThis.fetch;
@@ -54,7 +55,7 @@ describe('useLoggingConfig', () => {
 
   it('sets error on network failure', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('offline'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    silenceConsole();
 
     const { result } = renderHook(() => useLoggingConfig());
     await waitFor(() => expect(result.current.loading).toBe(false));

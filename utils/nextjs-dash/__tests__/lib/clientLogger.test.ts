@@ -4,18 +4,13 @@ import {
   setClientLogLevel,
   getClientLogLevel,
 } from '@/lib/clientLogger';
+import { silenceConsole, type ConsoleSpy } from '@/__tests__/_helpers/consoleSpy';
 
 describe('clientLogger', () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-  let warnSpy: ReturnType<typeof vi.spyOn>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
-  let debugSpy: ReturnType<typeof vi.spyOn>;
+  let spies: ConsoleSpy;
 
   beforeEach(() => {
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    spies = silenceConsole();
     // Reset to default level.
     setClientLogLevel('info');
   });
@@ -42,26 +37,26 @@ describe('clientLogger', () => {
     it('logs info via console.log with correct prefix', () => {
       const logger = createClientLogger('test-scope');
       logger.info('hello', 42);
-      expect(logSpy).toHaveBeenCalledWith('[client][test-scope]', 'hello', 42);
+      expect(spies.log).toHaveBeenCalledWith('[client][test-scope]', 'hello', 42);
     });
 
     it('logs warn via console.warn', () => {
       const logger = createClientLogger('w');
       logger.warn('caution');
-      expect(warnSpy).toHaveBeenCalledWith('[client][w]', 'caution');
+      expect(spies.warn).toHaveBeenCalledWith('[client][w]', 'caution');
     });
 
     it('logs error via console.error', () => {
       const logger = createClientLogger('e');
       logger.error('fail');
-      expect(errorSpy).toHaveBeenCalledWith('[client][e]', 'fail');
+      expect(spies.error).toHaveBeenCalledWith('[client][e]', 'fail');
     });
 
     it('logs debug via console.debug', () => {
       setClientLogLevel('debug');
       const logger = createClientLogger('d');
       logger.debug('trace');
-      expect(debugSpy).toHaveBeenCalledWith('[client][d]', 'trace');
+      expect(spies.debug).toHaveBeenCalledWith('[client][d]', 'trace');
     });
   });
 
@@ -70,7 +65,7 @@ describe('clientLogger', () => {
       setClientLogLevel('info');
       const logger = createClientLogger('test');
       logger.debug('should not appear');
-      expect(debugSpy).not.toHaveBeenCalled();
+      expect(spies.debug).not.toHaveBeenCalled();
     });
 
     it('suppresses info and debug when level is warn', () => {
@@ -80,10 +75,10 @@ describe('clientLogger', () => {
       logger.info('no');
       logger.warn('yes');
       logger.error('yes');
-      expect(debugSpy).not.toHaveBeenCalled();
-      expect(logSpy).not.toHaveBeenCalled();
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(spies.debug).not.toHaveBeenCalled();
+      expect(spies.log).not.toHaveBeenCalled();
+      expect(spies.warn).toHaveBeenCalledTimes(1);
+      expect(spies.error).toHaveBeenCalledTimes(1);
     });
 
     it('suppresses everything below error when level is error', () => {
@@ -93,10 +88,10 @@ describe('clientLogger', () => {
       logger.info('no');
       logger.warn('no');
       logger.error('yes');
-      expect(debugSpy).not.toHaveBeenCalled();
-      expect(logSpy).not.toHaveBeenCalled();
-      expect(warnSpy).not.toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(spies.debug).not.toHaveBeenCalled();
+      expect(spies.log).not.toHaveBeenCalled();
+      expect(spies.warn).not.toHaveBeenCalled();
+      expect(spies.error).toHaveBeenCalledTimes(1);
     });
 
     it('suppresses everything when level is silent', () => {
@@ -106,10 +101,10 @@ describe('clientLogger', () => {
       logger.info('no');
       logger.warn('no');
       logger.error('no');
-      expect(debugSpy).not.toHaveBeenCalled();
-      expect(logSpy).not.toHaveBeenCalled();
-      expect(warnSpy).not.toHaveBeenCalled();
-      expect(errorSpy).not.toHaveBeenCalled();
+      expect(spies.debug).not.toHaveBeenCalled();
+      expect(spies.log).not.toHaveBeenCalled();
+      expect(spies.warn).not.toHaveBeenCalled();
+      expect(spies.error).not.toHaveBeenCalled();
     });
   });
 });

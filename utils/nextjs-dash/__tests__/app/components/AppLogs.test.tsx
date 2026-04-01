@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MockEventSource } from '@/__tests__/_helpers/useJobRunner.test-helpers';
 
 vi.mock('@/app/hooks/useAppLogsConfig', () => ({
   useAppLogsConfig: () => ({
@@ -12,25 +13,6 @@ vi.mock('@/app/hooks/useAppLogsConfig', () => ({
 
 import AppLogs from '@/app/components/AppLogs';
 
-class MockEventSource {
-  onmessage: ((ev: { data: string }) => void) | null = null;
-  onerror: (() => void) | null = null;
-
-  constructor() {
-    void this.onmessage;
-    void this.onerror;
-  }
-
-  close() {
-    // no-op
-  }
-}
-
-declare global {
-  interface GlobalThis {
-    EventSource: typeof EventSource;
-  }
-}
 
 describe('AppLogs', () => {
   it('renders RID chip for server logs with requestId meta', async () => {

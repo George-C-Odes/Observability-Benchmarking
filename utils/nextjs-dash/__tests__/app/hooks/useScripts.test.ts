@@ -1,10 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-
 import { useScripts } from '@/app/hooks/useScripts';
-
-beforeEach(() => {
-});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -18,7 +14,7 @@ describe('useScripts', () => {
         new Response(JSON.stringify({ scripts: [{ name: 'A', description: 'd', command: 'c', category: 'test' }] }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
-        }) as unknown as Response
+        })
       );
 
     const { result } = renderHook(() => useScripts());

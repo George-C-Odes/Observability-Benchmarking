@@ -488,12 +488,22 @@ Vitest: 4.x
 
 The dashboard uses a dual-environment Vitest configuration:
 
-| Config File             | Environment | Tests Covered                                         |
-|-------------------------|-------------|-------------------------------------------------------|
-| `vitest.config.node.ts` | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`       |
-| `vitest.config.dom.ts`  | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*` |
+| Config File               | Environment | Tests Covered                                            |
+|---------------------------|-------------|----------------------------------------------------------|
+| `vitest.config.node.ts`   | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`          |
+| `vitest.config.dom.ts`    | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*`    |
+| `vitest.config.shared.ts` | —           | Shared resolve aliases, pool settings, coverage excludes |
 
 The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom and React Testing Library.
+
+#### Shared Test Helpers (`__tests__/_helpers/`)
+
+| Helper                         | Purpose                                                                           |
+|--------------------------------|-----------------------------------------------------------------------------------|
+| `mocks.ts`                     | Reference mock factory objects (`CLIENT_LOGGER_MOCK`, `SERVER_LOGGER_MOCK`, etc.) |
+| `consoleSpy.ts`                | `silenceConsole()` — spies on all four `console.*` methods                        |
+| `storage.ts`                   | `createMockStorage()` — in-memory `Storage` stub                                  |
+| `useJobRunner.test-helpers.ts` | `MockEventSource`, `MockBroadcastChannel`, `installMockGlobals`                   |
 
 #### Running Dashboard Tests
 

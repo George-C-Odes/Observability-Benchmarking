@@ -5,6 +5,7 @@
  * sessionStorage used by the hook under test.
  */
 import { vi } from 'vitest';
+import { createMockStorage } from './storage';
 
 // ---------------------------------------------------------------------------
 // MockEventSource
@@ -97,24 +98,6 @@ export class MockBroadcastChannel {
 }
 
 // ---------------------------------------------------------------------------
-// sessionStorage stub
-// ---------------------------------------------------------------------------
-
-export function createMockSessionStorage(): Storage {
-  const store = new Map<string, string>();
-  return {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k),
-    clear: () => void store.clear(),
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    get length() {
-      return store.size;
-    },
-  } as unknown as Storage;
-}
-
-// ---------------------------------------------------------------------------
 // Common setup / teardown
 // ---------------------------------------------------------------------------
 
@@ -126,7 +109,7 @@ export function installMockGlobals(): void {
   MockEventSource.instances = [];
   globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
   globalThis.BroadcastChannel = MockBroadcastChannel as unknown as typeof BroadcastChannel;
-  globalThis.sessionStorage = createMockSessionStorage();
+  globalThis.sessionStorage = createMockStorage();
 }
 
 /**

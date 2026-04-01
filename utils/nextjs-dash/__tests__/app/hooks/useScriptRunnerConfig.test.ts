@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useScriptRunnerConfig } from '@/app/hooks/useScriptRunnerConfig';
 import { DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG } from '@/lib/runtimeConfigTypes';
+import { silenceConsole } from '@/__tests__/_helpers/consoleSpy';
 
 describe('useScriptRunnerConfig', () => {
   const originalFetch = globalThis.fetch;
@@ -58,7 +59,7 @@ describe('useScriptRunnerConfig', () => {
       status: 503,
       text: () => Promise.resolve('unavailable'),
     });
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    silenceConsole();
 
     const { result } = renderHook(() => useScriptRunnerConfig());
     await waitFor(() => expect(result.current.loading).toBe(false));
