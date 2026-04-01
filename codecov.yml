@@ -229,6 +229,8 @@ ignore:
   # ── 9. Inline <Script> components (need real browser, not jsdom) ─────
   - "utils/nextjs-dash/app/components/PreHydrationScript.tsx"
   - "utils/nextjs-dash/app/components/RuntimeConfigScript.tsx"
+  # Side-effect-only component (returns null); excluded from Vitest DOM coverage.
+  - "utils/nextjs-dash/app/components/BootLogger.tsx"
 
   # ── 10. Pure type definitions / static defaults (no logic) ───────────
   - "utils/nextjs-dash/lib/runtimeConfigTypes.ts"
