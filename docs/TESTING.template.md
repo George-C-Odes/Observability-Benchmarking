@@ -1331,7 +1331,7 @@ coverage. The project's existing dual-environment split is preserved:
 | `vitest.config.dom.ts`  | `jsdom`     | `app/components/**`, `app/hooks/**`  | `coverage/dom/`   |
 
 Each environment produces four report formats: **text** (console summary),
-**HTML** (browseable), **JSON** (machine-readable summary), and **LCOV**
+**HTML** (browsable), **JSON** (machine-readable summary), and **LCOV**
 (for Codecov upload).
 
 #### Running locally
