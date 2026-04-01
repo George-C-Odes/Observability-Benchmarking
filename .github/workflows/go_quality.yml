@@ -129,7 +129,7 @@ jobs:
   # No golangci-lint (no .golangci.yml config) and no quality report.
   # CodeQL provides separate security analysis.
   quality-simple:
-    name: Simple — vet & test
+    name: Simple — vet, test & build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
