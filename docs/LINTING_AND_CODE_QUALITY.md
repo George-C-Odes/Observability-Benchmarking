@@ -162,7 +162,7 @@ Important behavior:
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
 - if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
 
-The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v6`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v5`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
+The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v6`, `actions/upload-pages-artifact@v5`, and `actions/deploy-pages@v5`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
 
 Expected URL shape:
 
