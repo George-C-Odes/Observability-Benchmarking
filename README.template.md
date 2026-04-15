@@ -82,7 +82,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 25.3.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 25.8.2                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.9.0                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -94,10 +94,10 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.2                  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4                  | UI rendering layer                                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.3                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.5                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.2                   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9                   | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0                   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.4.2                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.3                  | Distributed tracing backend                                          |
@@ -117,7 +117,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.8                  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.4                   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -162,7 +162,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.2 and Material-UI 7.3.9
+  - Built with Next.js 16.2.3 and Material-UI 9.0.0
 
 ### 🚀 REST Service Implementations
 

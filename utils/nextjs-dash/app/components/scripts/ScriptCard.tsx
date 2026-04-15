@@ -49,11 +49,11 @@ export const ScriptCard = React.memo(function ScriptCard({
   return (
     <Card key={script.name} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flexGrow: 1 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-          <Box display="flex" alignItems="center">
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <TerminalIcon sx={{ mr: 1, color: accentColor }} />
             <Tooltip title={script.command} arrow placement="top">
-              <Typography variant="h6" component="div" fontSize="0.95rem">
+              <Typography variant="h6" component="div" sx={{ fontSize: '0.95rem' }}>
                 {script.name}
               </Typography>
             </Tooltip>

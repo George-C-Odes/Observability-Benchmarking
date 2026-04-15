@@ -17,7 +17,7 @@ import {
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import { createClientLogger } from '@/lib/clientLogger';
 import { InwardPulse } from '@/app/components/ui/InwardPulse';
 import { useTimedPulse } from '@/app/hooks/useTimedPulse';
@@ -398,7 +398,7 @@ export default function BenchmarkTargets() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
         <CircularProgress />
       </Box>
     );
@@ -430,9 +430,9 @@ export default function BenchmarkTargets() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
         <TrackChangesIcon color="primary" />
-        <Typography variant="h5" fontWeight={600}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Benchmark Targets
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
@@ -465,7 +465,7 @@ export default function BenchmarkTargets() {
         </Typography>
         <Stack spacing={0.75}>
           {FILTER_ROWS.map((row) => (
-            <Stack key={row.label} direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Stack key={row.label} direction="row" spacing={0.75} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -520,14 +520,14 @@ export default function BenchmarkTargets() {
                     >
                       {sub.label}
                     </Typography>
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
                       {sub.urls.map(renderEndpointChip)}
                     </Stack>
                   </Box>
                 ))}
               </Stack>
             ) : (
-              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
                 {group.urls.map(renderEndpointChip)}
               </Stack>
             )}

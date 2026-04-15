@@ -23,22 +23,22 @@ IMAGE_TAG: ghcr.io/acme/app:1.2.3
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
     SPRING_BOOT_VERSION: '4.0.5',
-    GO_VERSION: '1.26.1',
+    GO_VERSION: '1.26.2',
   });
 
-  assert.equal(rendered, 'Spring 4.0.5 / Go 1.26.1');
+  assert.equal(rendered, 'Spring 4.0.5 / Go 1.26.2');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
-    GO_VERSION: '1.26.1',
+    GO_VERSION: '1.26.2',
   });
 
-  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.26.1');
+  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.26.2');
 
   const jekyllSnippet = renderTemplate("Image {{ '/images/foo.png' | relative_url }} with {{GO_VERSION}}", {
-    GO_VERSION: '1.26.1',
+    GO_VERSION: '1.26.2',
   });
 
-  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.26.1");
+  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.26.2");
 
   assert.throws(
     () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.0.5' }),
@@ -168,8 +168,8 @@ function testRealignMarkdownTables() {
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
     '| Spring | 4.0.5 | Main framework |',
-    '| Go     | 1.26.1          | Alt runtime    |',
-    '| Node   | 25.8.2                  | Frontend       |',
+    '| Go     | 1.26.2          | Alt runtime    |',
+    '| Node   | 25.9.0                  | Frontend       |',
   ].join('\n');
 
   const aligned = realignMarkdownTables(ragged);
@@ -178,8 +178,8 @@ function testRealignMarkdownTables() {
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
     '| Spring | 4.0.5   | Main framework |',
-    '| Go     | 1.26.1  | Alt runtime    |',
-    '| Node   | 25.8.2  | Frontend       |',
+    '| Go     | 1.26.2  | Alt runtime    |',
+    '| Node   | 25.9.0  | Frontend       |',
   ].join('\n');
 
   assert.equal(aligned, expected);

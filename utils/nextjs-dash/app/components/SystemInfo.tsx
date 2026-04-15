@@ -58,7 +58,7 @@ export default function SystemInfo() {
 
   return (
     <Box>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
         <InfoOutlinedIcon color="primary" />
         <Typography variant="h5">System Information</Typography>
       </Stack>
@@ -81,7 +81,7 @@ export default function SystemInfo() {
             {serverCards.map((c) => (
               <Card key={c.label} sx={{ height: '100%' }}>
                 <CardContent sx={{ py: 1.5 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
                     <Box sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>{c.icon}</Box>
                     <Typography color="text.secondary" variant="caption">
                       {c.label}
@@ -115,7 +115,7 @@ export default function SystemInfo() {
             {clientCards.map((c) => (
               <Card key={c.label} sx={{ height: '100%' }}>
                 <CardContent sx={{ py: 1.5 }}>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
                     <Box sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center' }}>{c.icon}</Box>
                     <Typography color="text.secondary" variant="caption">
                       {c.label}

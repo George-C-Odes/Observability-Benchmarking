@@ -140,8 +140,8 @@ JAVALIN_VERSION="7.1.0"
 DROPWIZARD_VERSION="5.0.1"
 VERTX_VERSION="5.0.8"
 PEKKO_VERSION="1.3.0"
-GO_VERSION="1.26.1"
-DJANGO_VERSION="6.0.3"
+GO_VERSION="1.26.2"
+DJANGO_VERSION="6.0.4"
 
 # Helper function to test HTTP endpoint
 # expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")

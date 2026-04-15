@@ -304,7 +304,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.26.1+
+Go: 1.26.2+
 Fiber: v3.1.0
 OpenTelemetry: Latest stable
 ```
@@ -496,8 +496,8 @@ the same flow.
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.2
-React: 19.2.4
+Next.js: 16.2.3
+React: 19.2.5
 TypeScript: 6.0.2
 Vitest: 4.x
 ```
@@ -802,8 +802,8 @@ Testing Framework Versions:
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
 - Pekko: 1.3.0
-- Go: 1.26.1
-- Django: 6.0.3
+- Go: 1.26.2
+- Django: 6.0.4
 
 ==========================================
 JVM Services - Deployment Tests
@@ -1212,7 +1212,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.26.1 | Build version: go1.26.1
+2025-12-16T10:30:00.123Z Runtime version: go1.26.2 | Build version: go1.26.2
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1661,10 +1661,10 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
-      - name: Set up Go 1.26.1
+      - name: Set up Go 1.26.2
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: '1.26.1'
+          go-version: '1.26.2'
       
       - name: Test Go Service
         run: |
@@ -1716,7 +1716,7 @@ jobs:
           - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.34.1" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.5" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.5" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.1" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.2" }
     
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -1788,7 +1788,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.26.1
+  image: golang:1.26.2
   script:
     - cd services/go/enhanced
     - go mod download

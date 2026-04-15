@@ -22,7 +22,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import CachedIcon from '@mui/icons-material/Cached';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import PendingIcon from '@mui/icons-material/Pending';
 import AppsIcon from '@mui/icons-material/Apps';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -317,7 +317,7 @@ export default function ServiceHealth() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
         <CircularProgress />
       </Box>
     );
@@ -427,14 +427,10 @@ export default function ServiceHealth() {
                 <Typography
                   variant="subtitle1"
                   component="div"
-                  // Keep title consistent across all cards (including Spring).
-                  fontSize={undefined}
                   sx={{
                     flex: '1 1 auto',
                     minWidth: 0,
                     width: '100%',
-                    // Prefer keeping names (<= 30 chars) on a single line.
-                    // If space is tighter, ellipsize without overlapping the actions column.
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -446,7 +442,7 @@ export default function ServiceHealth() {
               </Box>
 
               {/* Status row */}
-              <Box display="flex" alignItems="center" gap={1} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
                   Status
                 </Typography>
@@ -496,8 +492,8 @@ export default function ServiceHealth() {
             <Stack
               direction="column"
               spacing={0}
-              alignItems="stretch"
               sx={{
+                alignItems: 'stretch',
                 justifySelf: 'end',
                 mt: 0,
                 '@container (max-width: 440px)': {
@@ -590,7 +586,7 @@ export default function ServiceHealth() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <HealthAndSafetyIcon /> Service Health Status
@@ -643,8 +639,8 @@ export default function ServiceHealth() {
             },
           }}
         >
-          <Box display="flex" alignItems="center" justifyContent="space-between" gap={2} flexWrap="wrap">
-            <Box display="flex" alignItems="center" gap={1}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <AppsIcon color="primary" />
               <Typography variant="h6">Overview</Typography>
             </Box>
@@ -968,3 +964,4 @@ export default function ServiceHealth() {
     </Box>
   );
 }
+

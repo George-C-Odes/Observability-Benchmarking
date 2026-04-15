@@ -16,9 +16,9 @@
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
-[![Go](https://img.shields.io/badge/Go-1.26.1-38BDF8.svg)](https://golang.org/)
-[![Python](https://img.shields.io/badge/Python-3.13.12-2F5D8C.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-6.0.3-8B2C3D.svg)](https://www.djangoproject.com/)
+[![Go](https://img.shields.io/badge/Go-1.26.2-38BDF8.svg)](https://golang.org/)
+[![Python](https://img.shields.io/badge/Python-3.13.13-2F5D8C.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-6.0.4-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
 [![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
@@ -79,10 +79,10 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Runtime            | Go                         | 1.26.2  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Python (CPython)           | 3.13.13 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 25.3.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.9.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.34.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
@@ -93,11 +93,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.0.3   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.2  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
+| **Backend**       | Framework          | Django                     | 6.0.4   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Frontend**      | Framework          | Next.js                    | 16.2.3  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.5  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.2   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.4.2  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.3  | Distributed tracing backend                                          |
@@ -117,7 +117,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.8  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.4   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -162,7 +162,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.2 and Material-UI 7.3.9
+  - Built with Next.js 16.2.3 and Material-UI 9.0.0
 
 ### 🚀 REST Service Implementations
 
@@ -210,12 +210,12 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM build
     - Reactive (Pekko dispatcher)
 
-#### Go (1.26.1)
+#### Go (1.26.2)
 - Fiber framework integration
 - Full observability setup
 
-#### Python (3.13.12)
-- **Django**: 6.0.3
+#### Python (3.13.13)
+- **Django**: 6.0.4
   - Platform (WSGI — Gunicorn gthread workers)
   - Reactive (ASGI — Gunicorn + UvicornWorker)
 
@@ -473,7 +473,7 @@ The numbers below are a curated summary of a representative run.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Django 6.0.3 runs on CPython 3.13.12 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Django 6.0.4 runs on CPython 3.13.13 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -514,9 +514,9 @@ The numbers below are a curated summary of a representative run.
 - **Dropwizard**: 5.0.1
 - **Vert.x**: 5.0.8
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
-- **Go**: 1.26.1 (Fiber v3.1.0)
-- **Python**: 3.13.12 (CPython)
-- **Django**: 6.0.3 (Gunicorn 25.3.0)
+- **Go**: 1.26.2 (Fiber v3.1.0)
+- **Python**: 3.13.13 (CPython)
+- **Django**: 6.0.4 (Gunicorn 25.3.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

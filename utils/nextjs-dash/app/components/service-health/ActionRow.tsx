@@ -35,10 +35,10 @@ export const ActionRow = React.memo(function ActionRow(props: ActionRowProps) {
 
   return (
     <Box
-      display="flex"
-      alignItems="center"
-      gap={1}
       sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
         minHeight: 22,
         ...(isRefresh
           ? {

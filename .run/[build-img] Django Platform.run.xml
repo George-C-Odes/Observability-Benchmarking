@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Django Platform" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="django-platform:6.0.3_latest" />
+        <option name="imageTag" value="django-platform:6.0.4_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="PYTHON_VERSION" />
-              <option name="value" value="3.13.12" />
+              <option name="value" value="3.13.13" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="django-platform:6.0.3_latest" />
+              <option name="value" value="django-platform:6.0.4_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

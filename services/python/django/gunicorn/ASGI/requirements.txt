@@ -12,13 +12,13 @@ cachetools==7.0.5
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 cffi==2.0.0
     # via pyroscope-io
-click==8.3.1
+click==8.3.2
     # via uvicorn
 colorama==0.4.6
     # via click
-django==6.0.3
+django==6.0.4
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-googleapis-common-protos==1.73.1
+googleapis-common-protos==1.74.0
     # via opentelemetry-exporter-otlp-proto-grpc
 grpcio==1.80.0
     # via
@@ -30,7 +30,7 @@ h11==0.16.0
     # via uvicorn
 importlib-metadata==8.7.1
     # via opentelemetry-api
-opentelemetry-api==1.40.0
+opentelemetry-api==1.41.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-distro
@@ -43,50 +43,50 @@ opentelemetry-api==1.40.0
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
     #   pyroscope-otel
-opentelemetry-distro==0.61b0
+opentelemetry-distro==0.62b0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-opentelemetry-exporter-otlp-proto-common==1.40.0
+opentelemetry-exporter-otlp-proto-common==1.41.0
     # via opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-exporter-otlp-proto-grpc==1.40.0
+opentelemetry-exporter-otlp-proto-grpc==1.41.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-opentelemetry-instrumentation==0.61b0
+opentelemetry-instrumentation==0.62b0
     # via
     #   opentelemetry-distro
     #   opentelemetry-instrumentation-asgi
     #   opentelemetry-instrumentation-django
     #   opentelemetry-instrumentation-logging
     #   opentelemetry-instrumentation-wsgi
-opentelemetry-instrumentation-asgi==0.61b0
+opentelemetry-instrumentation-asgi==0.62b0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-opentelemetry-instrumentation-django==0.61b0
+opentelemetry-instrumentation-django==0.62b0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-opentelemetry-instrumentation-logging==0.61b0
+opentelemetry-instrumentation-logging==0.62b0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-opentelemetry-instrumentation-wsgi==0.61b0
+opentelemetry-instrumentation-wsgi==0.62b0
     # via opentelemetry-instrumentation-django
-opentelemetry-proto==1.40.0
+opentelemetry-proto==1.41.0
     # via
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-grpc
-opentelemetry-sdk==1.40.0
+opentelemetry-sdk==1.41.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-distro
     #   opentelemetry-exporter-otlp-proto-grpc
     #   pyroscope-otel
-opentelemetry-semantic-conventions==0.61b0
+opentelemetry-semantic-conventions==0.62b0
     # via
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-asgi
     #   opentelemetry-instrumentation-django
     #   opentelemetry-instrumentation-wsgi
     #   opentelemetry-sdk
-opentelemetry-util-http==0.61b0
+opentelemetry-util-http==0.62b0
     # via
     #   opentelemetry-instrumentation-asgi
     #   opentelemetry-instrumentation-django
     #   opentelemetry-instrumentation-wsgi
-packaging==26.0
+packaging==26.1
     # via
     #   gunicorn
     #   opentelemetry-instrumentation
@@ -96,7 +96,7 @@ protobuf==6.33.6
     #   opentelemetry-proto
 pycparser==3.0
     # via cffi
-pyroscope-io==1.0.4
+pyroscope-io==1.0.5
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   pyroscope-otel
@@ -111,11 +111,11 @@ typing-extensions==4.15.0
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-tzdata==2025.3
+tzdata==2026.1
     # via django
-uvicorn==0.42.0
+uvicorn==0.44.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-wrapt==1.17.3
+wrapt==2.1.2
     # via opentelemetry-instrumentation
-zipp==3.23.0
+zipp==3.23.1
     # via importlib-metadata

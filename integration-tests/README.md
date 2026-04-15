@@ -172,8 +172,8 @@ The runner prints the versions it is designed against (these values are embedded
 | Dropwizard      | 5.0.1   |
 | Vert.x          | 5.0.8   |
 | Pekko           | 1.3.0   |
-| Go              | 1.26.1  |
-| Django          | 6.0.3   |
+| Go              | 1.26.2  |
+| Django          | 6.0.4   |
 
 ## Service Port Mappings
 

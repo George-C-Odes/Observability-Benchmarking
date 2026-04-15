@@ -68,7 +68,7 @@ const ResourceCard = React.memo(function ResourceCard({ resource }: { resource: 
       }}
     >
       <CardContent>
-        <Box display="flex" alignItems="center" mb={2} gap={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
           {resource.icon}
           <Typography variant="h6" sx={{ ml: 0.5, flexGrow: 1 }}>
             {resource.title}

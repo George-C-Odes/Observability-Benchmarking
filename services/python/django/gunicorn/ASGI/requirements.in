@@ -11,7 +11,7 @@
 # ------------------------------------------------------------------
 
 # Django 6.x — ASGI-capable framework
-Django>=6.0.3,<7
+Django>=6.0.4,<7
 
 # Process manager / master-worker lifecycle hooks
 gunicorn>=25.3.0,<26

@@ -35,7 +35,7 @@ Example:
 ## Quick start (local)
 
 ### Prerequisites
-- Go **1.26.x** (tested with Go 1.26.1)
+- Go **1.26.x** (tested with Go 1.26.2)
 - Docker (optional)
 
 ### Run
@@ -119,8 +119,8 @@ go test ./... -race
 
 ### Docker
 ```bash
-docker build -t go:1.26.1_latest .
-docker run --rm -p 8080:8080 go:1.26.1_latest
+docker build -t go:1.26.2_latest .
+docker run --rm -p 8080:8080 go:1.26.2_latest
 ```
 
 ---

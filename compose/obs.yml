@@ -8,7 +8,7 @@ services:
   alloy:
     profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.14.1
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.15.1
     container_name: alloy
     command:
       - run
@@ -43,7 +43,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:12.4.2
+    image: grafana/grafana:13.0.0
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -103,7 +103,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:1.19.1
+    image: grafana/pyroscope:1.20.3
     container_name: pyroscope
     ports:
       - "4040:4040"
@@ -117,7 +117,7 @@ services:
 
   tempo:
     profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
-    image: grafana/tempo:2.10.3
+    image: grafana/tempo:2.10.4
     container_name: tempo
     command:
       - "-config.file=/etc/tempo-config/config.yaml"

@@ -439,7 +439,7 @@ mvn package -Pnative
 
 **Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
-### Django 6.0.3
+### Django 6.0.4
 
 **Official Site**: [https://www.djangoproject.com/](https://www.djangoproject.com/) | [GitHub](https://github.com/django/django)
 
@@ -450,9 +450,9 @@ mvn package -Pnative
 - Demonstrates the impact of Python's GIL on throughput under high concurrency
 
 **Implementation Details**:
-- **Django 6.0.3** (latest major release)
+- **Django 6.0.4** (latest major release)
 - **Gunicorn 25.3.0** as the production WSGI/ASGI server
-- **Python 3.13.12** (CPython)
+- **Python 3.13.13** (CPython)
 - Two modules sharing a common application package (`gunicorn/common`):
   - **WSGI module** (`django-platform`): Gunicorn `gthread` workers (threaded platform model)
   - **ASGI module** (`django-reactive`): Gunicorn with `UvicornWorker` (async event loop)
@@ -964,10 +964,10 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Runtime            | Go                         | 1.26.2  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Python (CPython)           | 3.13.13 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 25.3.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.9.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.34.1  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
@@ -978,11 +978,11 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.0.3   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.2  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
+| **Backend**       | Framework          | Django                     | 6.0.4   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Frontend**      | Framework          | Next.js                    | 16.2.3  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.5  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.2   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 12.4.2  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.3  | Distributed tracing backend                                          |
@@ -1002,7 +1002,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.8  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.4   | Frontend unit testing                                                |
 
 ---
 

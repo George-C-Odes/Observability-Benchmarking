@@ -156,7 +156,7 @@ export default function EnvEditor() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
         <CircularProgress />
       </Box>
     );
@@ -186,7 +186,7 @@ export default function EnvEditor() {
           return (
             <Box key={index} sx={isHostRepo ? { position: 'relative' } : undefined}>
               {variable.comment && (
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                   {variable.comment}
                 </Typography>
               )}
