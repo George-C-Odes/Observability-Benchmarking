@@ -979,7 +979,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.4   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.3  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.4  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.5  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.2   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0   | Component library and theming                                        |
