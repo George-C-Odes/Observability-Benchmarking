@@ -17,7 +17,7 @@ describe('SystemInfo', () => {
         nextjs: '16.2.4',
         react: '19.2.5',
         mui: '9.0.0',
-        typescript: '6.0.2',
+        typescript: '6.0.3',
         platform: 'linux',
         arch: 'x64',
       },

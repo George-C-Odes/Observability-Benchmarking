@@ -43,7 +43,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:13.0.0
+    image: grafana/grafana:13.0.1
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -103,7 +103,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:1.20.3
+    image: grafana/pyroscope:1.21.0
     container_name: pyroscope
     ports:
       - "4040:4040"

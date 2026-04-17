@@ -498,7 +498,7 @@ the same flow.
 Node.js: 22.12+
 Next.js: 16.2.4
 React: 19.2.5
-TypeScript: 6.0.2
+TypeScript: 6.0.3
 Vitest: 4.x
 ```
 

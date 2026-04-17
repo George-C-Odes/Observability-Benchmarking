@@ -96,15 +96,15 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.2.4                  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.5                  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 6.0.2                   | Type-safe frontend development                                       |
+| **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.2                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.0.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1                   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.3                  | Distributed tracing backend                                          |
+| **Observability** | Tracing            | Tempo                      | 2.10.4                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.4                   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.19.1                  | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 1.21.0                  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1                  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.61.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.1                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |

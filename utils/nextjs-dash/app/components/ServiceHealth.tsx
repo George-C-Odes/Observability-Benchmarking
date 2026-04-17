@@ -32,6 +32,7 @@ import { fetchJson } from '@/lib/fetchJson';
 import { orchestratorConfig } from '@/lib/config';
 import { buildDockerControlCommand } from '@/lib/dockerComposeControl';
 import { useServiceActionsConfig } from '@/app/hooks/useServiceActionsConfig';
+import { useTimedPulse } from '@/app/hooks/useTimedPulse';
 import { ActionRow } from './service-health/ActionRow';
 import { DataRow } from './service-health/DataRow';
 import { ServiceGroup } from './service-health/ServiceGroup';
@@ -145,6 +146,11 @@ function isObsCoreServiceName(serviceName: string): boolean {
   return ['alloy', 'grafana', 'loki', 'mimir', 'pyroscope', 'tempo'].includes(serviceName);
 }
 
+async function readAllServices(): Promise<ServiceHealth[]> {
+  const data = await fetchJson<{ services?: HealthApiService[] }>(`/api/health`);
+  return (data.services || []).map(normalizeServiceFromApi).sort(byName);
+}
+
 export default function ServiceHealth() {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,70 +161,59 @@ export default function ServiceHealth() {
   const serviceActionsCfg = useServiceActionsConfig();
 
   const statusCounts = useMemo(() => countByStatus(services), [services]);
-  const [countsPulseKey, setCountsPulseKey] = useState(0);
-  const [countsPulseOn, setCountsPulseOn] = useState(false);
+  const countsPulseKey = useMemo(
+    () => `${statusCounts.up}-${statusCounts.down}-${statusCounts.pending}-${statusCounts.total}`,
+    [statusCounts.up, statusCounts.down, statusCounts.pending, statusCounts.total]
+  );
+  const { on: countsPulseOn } = useTimedPulse({ durationMs: 700, trigger: countsPulseKey, allowFalsy: true });
 
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  const [updatedFlashOn, setUpdatedFlashOn] = useState(false);
-
-  // Ticker used to keep the relative 'Last updated' text fresh.
-  const [nowTick, setNowTick] = useState(0);
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  const updatedFlashTrigger = lastUpdatedAt?.toISOString() ?? null;
+  const { on: updatedFlashOn } = useTimedPulse({ durationMs: 900, trigger: updatedFlashTrigger, allowFalsy: true });
 
   useEffect(() => {
     if (!lastUpdatedAt) return;
 
-    const id = window.setInterval(() => setNowTick((t) => t + 1), 1_000);
+    const id = window.setInterval(() => setNowMs(Date.now()), 1_000);
     return () => window.clearInterval(id);
   }, [lastUpdatedAt]);
 
-  function markUpdated() {
-    setLastUpdatedAt(new Date());
-    setUpdatedFlashOn(true);
-    const t = setTimeout(() => setUpdatedFlashOn(false), 900);
-    return () => clearTimeout(t);
-  }
+  const markUpdated = useCallback(() => {
+    const updatedAt = new Date();
+    setLastUpdatedAt(updatedAt);
+    setNowMs(updatedAt.getTime());
+  }, []);
 
   const lastUpdatedText = useMemo(() => {
     if (!lastUpdatedAt) return '—';
 
-    // Depend on nowTick so component recalculates every second once we have a timestamp.
-    void nowTick;
-
     const thenMs = lastUpdatedAt.getTime();
-    const deltaMs = Math.max(0, Date.now() - thenMs);
+    const currentNowMs = Math.max(thenMs, nowMs ?? thenMs);
+    const deltaMs = Math.max(0, currentNowMs - thenMs);
 
     // When older than a day, show explicit date+time.
     if (deltaMs >= 24 * 60 * 60_000) {
       return lastUpdatedAt.toLocaleString();
     }
 
-    const rel = formatRelativeSince(Date.now(), thenMs);
+    const rel = formatRelativeSince(currentNowMs, thenMs);
     const exact = formatExactTime(lastUpdatedAt);
     return `${rel} · ${exact}`;
-  }, [lastUpdatedAt, nowTick]);
-
-  // Trigger an eye-catching pulse whenever counts change (refresh, optimistic updates, etc.)
-  useEffect(() => {
-    setCountsPulseKey((k) => k + 1);
-    setCountsPulseOn(true);
-    const t = setTimeout(() => setCountsPulseOn(false), 700);
-    return () => clearTimeout(t);
-  }, [statusCounts.up, statusCounts.down, statusCounts.pending, statusCounts.total]);
+  }, [lastUpdatedAt, nowMs]);
 
   const fetchAllServices = useCallback(async () => {
     setLoading(true);
     setMessage(null);
     try {
-      const data = await fetchJson<{ services?: HealthApiService[] }>(`/api/health`);
-      const normalized = (data.services || []).map(normalizeServiceFromApi).sort(byName);
-      setServices(normalized);
+      setServices(await readAllServices());
       markUpdated();
     } catch {
       setMessage({ type: 'error', text: 'Failed to check service health (dashboard backend unreachable)' });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [markUpdated]);
 
   const refreshService = useCallback(async (serviceName: string) => {
     setRefreshing(serviceName);
@@ -236,7 +231,7 @@ export default function ServiceHealth() {
     } finally {
       setRefreshing(null);
     }
-  }, []);
+  }, [markUpdated]);
 
   const submitDockerControl = useCallback(
     async (
@@ -274,12 +269,35 @@ export default function ServiceHealth() {
         setSubmitting(null);
       }
     },
-    [refreshService]
+    [markUpdated, refreshService]
   );
 
   useEffect(() => {
-    void fetchAllServices();
-  }, [fetchAllServices]);
+    let cancelled = false;
+
+    const loadInitialServices = async () => {
+      try {
+        const nextServices = await readAllServices();
+        if (cancelled) return;
+
+        setServices(nextServices);
+        markUpdated();
+      } catch {
+        if (cancelled) return;
+        setMessage({ type: 'error', text: 'Failed to check service health (dashboard backend unreachable)' });
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadInitialServices();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [markUpdated]);
 
   const groupedServices = useMemo(() => {
     const observability = services

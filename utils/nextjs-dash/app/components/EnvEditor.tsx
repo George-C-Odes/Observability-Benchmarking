@@ -26,6 +26,50 @@ type EnvVariable = {
   comment?: string;
 };
 
+function parseEnvContent(content: string): EnvVariable[] {
+  // Note: This project uses YAML-style "KEY: VALUE" format, not standard "KEY=VALUE"
+  const lines = content.split('\n');
+  const variables: EnvVariable[] = [];
+  let currentComment = '';
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('#')) {
+      currentComment = trimmed.substring(1).trim();
+    } else if (trimmed.includes(':')) {
+      const [key, ...valueParts] = trimmed.split(':');
+      const value = valueParts.join(':').trim();
+      variables.push({
+        key: key.trim(),
+        value,
+        comment: currentComment,
+      });
+      currentComment = '';
+    } else if (trimmed === '') {
+      currentComment = '';
+    }
+  });
+
+  return variables;
+}
+
+async function readEnvFileContent(): Promise<string> {
+  const response = await fetch('/api/env', {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load environment file (HTTP ${response.status})`);
+  }
+
+  const data = (await response.json()) as { content?: string };
+  return typeof data.content === 'string' ? data.content : '';
+}
+
 export default function EnvEditor() {
   const [envContent, setEnvContent] = useState('');
   const [envVariables, setEnvVariables] = useState<EnvVariable[]>([]);
@@ -37,21 +81,9 @@ export default function EnvEditor() {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('/api/env', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        setMessage({ type: 'error', text: 'Failed to load environment file' });
-        return;
-      }
-
-      const data = await response.json();
-      setEnvContent(data.content);
-      parseEnvContent(data.content);
+      const content = await readEnvFileContent();
+      setEnvContent(content);
+      setEnvVariables(parseEnvContent(content));
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to load environment file' });
       clientLogger.error('Failed to load env file', error);
@@ -60,38 +92,8 @@ export default function EnvEditor() {
     }
   }, []);
 
-  const parseEnvContent = (content: string) => {
-    // Note: This project uses YAML-style "KEY: VALUE" format, not standard "KEY=VALUE"
-    const lines = content.split('\n');
-    const variables: EnvVariable[] = [];
-    let currentComment = '';
-
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-      
-      if (trimmed.startsWith('#')) {
-        currentComment = trimmed.substring(1).trim();
-      } else if (trimmed.includes(':')) {
-        const [key, ...valueParts] = trimmed.split(':');
-        const value = valueParts.join(':').trim();
-        variables.push({
-          key: key.trim(),
-          value,
-          comment: currentComment,
-        });
-        currentComment = '';
-      } else if (trimmed === '') {
-        currentComment = '';
-      }
-    });
-
-    setEnvVariables(variables);
-  };
-
   const handleVariableChange = (index: number, newValue: string) => {
-    const updated = [...envVariables];
-    updated[index].value = newValue;
-    setEnvVariables(updated);
+    setEnvVariables((prev) => prev.map((variable, i) => (i === index ? { ...variable, value: newValue } : variable)));
   };
 
   const handleSave = async () => {
@@ -140,8 +142,32 @@ export default function EnvEditor() {
   };
 
   useEffect(() => {
-    void fetchEnvFile();
-  }, [fetchEnvFile]);
+    let cancelled = false;
+
+    const loadInitialEnvFile = async () => {
+      try {
+        const content = await readEnvFileContent();
+        if (cancelled) return;
+
+        setEnvContent(content);
+        setEnvVariables(parseEnvContent(content));
+      } catch (error) {
+        if (cancelled) return;
+        setMessage({ type: 'error', text: 'Failed to load environment file' });
+        clientLogger.error('Failed to load env file', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadInitialEnvFile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const hostRepoVar = envVariables.find((v) => v.key === 'HOST_REPO');
   const hostRepoExists = Boolean(hostRepoVar);

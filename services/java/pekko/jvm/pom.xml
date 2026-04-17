@@ -16,7 +16,7 @@
         <pekko.version>1.3.0</pekko.version>
         <caffeine.version>3.2.3</caffeine.version>
         <logback.version>1.5.32</logback.version>
-        <micrometer.version>1.16.4</micrometer.version>
+        <micrometer.version>1.16.5</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <junit-jupiter.version>5.14.3</junit-jupiter.version>
         <surefire-plugin.version>3.5.5</surefire-plugin.version>
