@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:4.10.18_latest `
-  --build-arg MICRONAUT_VERSION=4.10.18 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.18_latest `
+  -t micronaut-jvm:4.10.21_latest `
+  --build-arg MICRONAUT_VERSION=4.10.21 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.21_latest `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:4.10.18_latest `
-  --build-arg MICRONAUT_VERSION=4.10.18 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.18_latest `
+  -t micronaut-native:4.10.21_latest `
+  --build-arg MICRONAUT_VERSION=4.10.21 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.21_latest `
   --load `
   services/java
 ```

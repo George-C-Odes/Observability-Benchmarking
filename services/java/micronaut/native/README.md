@@ -1,7 +1,7 @@
 # Micronaut Native Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 4.10.18 compiled to a **GraalVM native executable**. This service shares the exact same source code as the JVM module (via `build-helper-maven-plugin`) and supports the same three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment. The native build trades JIT-level peak throughput for near-instant startup, lower memory usage, and a smaller container image.
+A high-performance REST service implementation built with Micronaut 4.10.21 compiled to a **GraalVM native executable**. This service shares the exact same source code as the JVM module (via `build-helper-maven-plugin`) and supports the same three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment. The native build trades JIT-level peak throughput for near-instant startup, lower memory usage, and a smaller container image.
 
 ## Purpose
 - Benchmark Micronaut's native image performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Micronaut 4.10.18 comp
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 4.10.18
+- **Framework**: Micronaut 4.10.21
 - **Compiler**: GraalVM Native Image 25.0.2 (Enterprise — G1 GC)
 - **Base Java**: 25.0.2
 - **GC**: G1 Garbage Collector (Enterprise only)
@@ -245,7 +245,7 @@ docker compose --project-directory compose \
 ```bash
 cd services/java/micronaut/native
 ./mvnw package -Dnative \
-  -Dmicronaut.version=4.10.18 \
+  -Dmicronaut.version=4.10.21 \
   -Dmaven.compiler.release=25
 ```
 
