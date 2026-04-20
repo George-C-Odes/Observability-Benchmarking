@@ -128,8 +128,8 @@ describe('BenchmarkTargets', () => {
 
     await screen.findByText(countMatcher('0 / 33 selected'));
 
-    fireEvent.click(screen.getByRole('button', { name: 'http://quarkus-jvm:8080/hello/virtual' }));
-    fireEvent.click(screen.getByRole('button', { name: 'http://spring-jvm-tomcat-platform:8080/hello/platform' }));
+    fireEvent.click(screen.getByRole('button', { name: 'quarkus-jvm / virtual' }));
+    fireEvent.click(screen.getByRole('button', { name: 'spring-jvm-tomcat-platform / platform' }));
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
 
     expect(await screen.findByText('Saved 2 benchmark target(s)')).toBeInTheDocument();
