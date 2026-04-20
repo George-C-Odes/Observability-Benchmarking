@@ -125,6 +125,8 @@ describe('ScriptRunner', () => {
       loading: true,
     });
 
+    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
+
     render(<ScriptRunner />);
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });

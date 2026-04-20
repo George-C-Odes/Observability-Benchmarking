@@ -23,6 +23,21 @@ vi.mock('@/app/Providers', () => ({
 
 import ClientHome from '@/app/components/ClientHome';
 
+const TAB_TEST_IDS = {
+  0: 'mock-service-health',
+  1: 'mock-script-runner',
+  2: 'mock-env-editor',
+  3: 'mock-benchmark-targets',
+  4: 'mock-app-logs',
+  5: 'mock-system-info',
+  6: 'mock-project-hub',
+} as const;
+
+async function renderClientHomeAndWaitForActiveTab(activeTab: keyof typeof TAB_TEST_IDS = 0) {
+  render(<ClientHome />);
+  await screen.findByTestId(TAB_TEST_IDS[activeTab]);
+}
+
 // ── localStorage stub ─────────────────────────────────────────────────
 // jsdom's localStorage is not always fully functional; use a deterministic stub.
 const mockStorage = createMockStorage();
@@ -40,13 +55,13 @@ afterEach(() => {
 });
 
 describe('ClientHome', () => {
-  it('renders the dashboard title', () => {
-    render(<ClientHome />);
+  it('renders the dashboard title', async () => {
+    await renderClientHomeAndWaitForActiveTab();
     expect(screen.getByText('Observability Benchmarking Dashboard')).toBeInTheDocument();
   });
 
-  it('renders all seven tab labels', () => {
-    render(<ClientHome />);
+  it('renders all seven tab labels', async () => {
+    await renderClientHomeAndWaitForActiveTab();
     const tabLabels = [
       'Service Health', 'Script Runner', 'Environment Config',
       'Benchmark Targets', 'Logs', 'System Info', 'Project Hub',
@@ -57,12 +72,12 @@ describe('ClientHome', () => {
   });
 
   it('renders the first tab content by default', async () => {
-    render(<ClientHome />);
-    expect(await screen.findByTestId('mock-service-health')).toBeInTheDocument();
+    await renderClientHomeAndWaitForActiveTab();
+    expect(screen.getByTestId('mock-service-health')).toBeInTheDocument();
   });
 
-  it('does not render unvisited tab content', () => {
-    render(<ClientHome />);
+  it('does not render unvisited tab content', async () => {
+    await renderClientHomeAndWaitForActiveTab();
     expect(screen.queryByTestId('mock-script-runner')).not.toBeInTheDocument();
     expect(screen.queryByTestId('mock-env-editor')).not.toBeInTheDocument();
     expect(screen.queryByTestId('mock-project-hub')).not.toBeInTheDocument();
@@ -70,7 +85,7 @@ describe('ClientHome', () => {
 
   it('mounts tab content on first visit and keeps it alive', async () => {
     const user = userEvent.setup();
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab();
 
     await user.click(screen.getByRole('tab', { name: 'Script Runner' }));
     expect(await screen.findByTestId('mock-script-runner')).toBeInTheDocument();
@@ -81,58 +96,59 @@ describe('ClientHome', () => {
 
   it('saves selected tab to localStorage', async () => {
     const user = userEvent.setup();
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab();
 
     await user.click(screen.getByRole('tab', { name: 'Logs' }));
+    await screen.findByTestId('mock-app-logs');
     expect(localStorage.getItem('dashboardTab')).toBe('4');
   });
 
-  it('restores initial tab from localStorage', () => {
+  it('restores initial tab from localStorage', async () => {
     localStorage.setItem('dashboardTab', '2');
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab(2);
 
     const envTab = screen.getByRole('tab', { name: 'Environment Config' });
     expect(envTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('restores initial tab from data attribute', () => {
+  it('restores initial tab from data attribute', async () => {
     document.documentElement.dataset.dashboardTab = '3';
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab(3);
 
     const targetTab = screen.getByRole('tab', { name: 'Benchmark Targets' });
     expect(targetTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('prefers data attribute over localStorage for initial tab', () => {
+  it('prefers data attribute over localStorage for initial tab', async () => {
     localStorage.setItem('dashboardTab', '1');
     document.documentElement.dataset.dashboardTab = '5';
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab(5);
 
     const systemTab = screen.getByRole('tab', { name: 'System Info' });
     expect(systemTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('defaults to tab 0 for invalid localStorage value', () => {
+  it('defaults to tab 0 for invalid localStorage value', async () => {
     localStorage.setItem('dashboardTab', 'not-a-number');
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab();
 
     expect(screen.getByRole('tab', { name: 'Service Health' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('defaults to tab 0 for invalid data attribute', () => {
+  it('defaults to tab 0 for invalid data attribute', async () => {
     document.documentElement.dataset.dashboardTab = 'abc';
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab();
 
     expect(screen.getByRole('tab', { name: 'Service Health' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('renders the theme selector', () => {
-    render(<ClientHome />);
+  it('renders the theme selector', async () => {
+    await renderClientHomeAndWaitForActiveTab();
     expect(screen.getByLabelText('Theme')).toBeInTheDocument();
   });
 
   it('renders active tab panel with correct ARIA attributes', async () => {
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab();
 
     const panel = screen.getByRole('tabpanel');
     expect(panel).toBeInTheDocument();
@@ -141,7 +157,7 @@ describe('ClientHome', () => {
 
   it('switches all seven tabs without crashing', async () => {
     const user = userEvent.setup();
-    render(<ClientHome />);
+    await renderClientHomeAndWaitForActiveTab();
 
     const tabNames = [
       'Service Health', 'Script Runner', 'Environment Config',
@@ -150,7 +166,6 @@ describe('ClientHome', () => {
 
     for (const name of tabNames) {
       await user.click(screen.getByRole('tab', { name }));
-      // Wait for lazy component to mount
       await waitFor(() => {
         const tab = screen.getByRole('tab', { name });
         expect(tab).toHaveAttribute('aria-selected', 'true');

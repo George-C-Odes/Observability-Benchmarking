@@ -20,6 +20,12 @@ function countMatcher(expected: string) {
   return (_content: string, element: Element | null) => element?.textContent === expected;
 }
 
+async function waitForSelectedCount(expected: string) {
+  await waitFor(() => {
+    expect(screen.getByText(countMatcher(expected))).toBeInTheDocument();
+  });
+}
+
 type FetchState = {
   urls: string[];
   getStatus: number;
@@ -94,17 +100,18 @@ describe('BenchmarkTargets', () => {
   });
 
   it('applies All and None quick filters', async () => {
-    const user = userEvent.setup();
     render(<BenchmarkTargets />);
 
-    await screen.findByText(countMatcher('2 / 33 selected'));
+    await waitForSelectedCount('2 / 33 selected');
 
-    await user.click(screen.getByRole('button', { name: 'All' }));
-    expect(screen.getByText(countMatcher('33 / 33 selected'))).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    await waitForSelectedCount('33 / 33 selected');
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
+    });
 
-    await user.click(screen.getByRole('button', { name: 'None' }));
-    expect(screen.getByText(countMatcher('0 / 33 selected'))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'None' }));
+    await waitForSelectedCount('0 / 33 selected');
   });
 
   it('saves selected targets in canonical endpoint order', async () => {
