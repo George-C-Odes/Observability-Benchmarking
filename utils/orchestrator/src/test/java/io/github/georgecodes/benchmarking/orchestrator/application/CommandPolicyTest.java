@@ -50,6 +50,33 @@ public class CommandPolicyTest {
   }
 
   @Test
+  void validate_rejects_short_nonDocker_and_shellLike_commands() {
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker"));
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("podman ps"));
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker ps && whoami"));
+  }
+
+  @Test
+  void compose_allows_equals_form_and_rejects_missing_values_or_unknown_subcommands() {
+    var cmd = policy.validate("docker compose --profile=OBS version");
+
+    assertContainsSubsequence(cmd.argv(), List.of("--profile=OBS", "version"));
+
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose --project-name"));
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose exec sh"));
+  }
+
+  @Test
+  void buildx_accepts_workspace_relative_file_and_rejects_missing_or_unknown_subcommands() {
+    var cmd = policy.validate("docker buildx build -f compose/docker-compose.yml .");
+
+    assertEquals(List.of("docker", "buildx", "build", "-f", "compose/docker-compose.yml", "."), cmd.argv());
+
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker buildx"));
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker buildx imaginary"));
+  }
+
+  @Test
   void allows_docker_buildx_prune_force_all() {
     var cmd = policy.validate("docker buildx prune -a --force");
     assertEquals(List.of("docker", "buildx", "prune", "-a", "--force"), cmd.argv());
@@ -69,6 +96,12 @@ public class CommandPolicyTest {
   @Test
   void builder_prune_rejects_extra_options() {
     assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder prune -a --force --filter foo"));
+  }
+
+  @Test
+  void builder_prune_requires_prune_subcommand_and_readonly_docker_commands_are_allowed() {
+    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder ls"));
+    assertEquals(List.of("docker", "info"), policy.validate("docker info").argv());
   }
 
   private static void assertContainsSubsequence(List<String> haystack, List<String> needle) {

@@ -1,5 +1,17 @@
 # For tests, replace the default CommandRunner bean with a fake one.
 quarkus:
+  # noinspection YAMLSchemaValidation
   arc:
     selected-alternatives:
       - io.github.georgecodes.benchmarking.orchestrator.application.job.FakeCommandRunner
+  log:
+    # noinspection YAMLSchemaValidation
+    category:
+      "io.github.georgecodes.benchmarking.orchestrator.application.EnvFileService":
+        level: "OFF"
+      "io.github.georgecodes.benchmarking.orchestrator.application.BenchmarkTargetsService":
+        level: "OFF"
+      "io.github.georgecodes.benchmarking.orchestrator.application.RunPresetService":
+        level: "OFF"
+      "io.github.georgecodes.benchmarking.orchestrator.application.JobManager":
+        level: "OFF"
