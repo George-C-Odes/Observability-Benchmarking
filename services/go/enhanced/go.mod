@@ -5,7 +5,7 @@ go 1.26.2
 require (
 	github.com/Yiling-J/theine-go v0.6.2
 	github.com/dgraph-io/ristretto/v2 v2.4.0
-	github.com/gofiber/contrib/v3/otel v1.1.0
+	github.com/gofiber/contrib/v3/otel v1.1.1
 	github.com/gofiber/fiber/v3 v3.1.0
 	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go v1.2.8
@@ -33,7 +33,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gofiber/schema v1.7.0 // indirect
+	github.com/gofiber/schema v1.7.1 // indirect
 	github.com/gofiber/utils/v2 v2.0.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.9 // indirect
