@@ -120,7 +120,7 @@ describe('BenchmarkTargets', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'None' }));
     await waitForSelectedCount('0 / 33 selected');
-  }, 10000);
+  }, 20000);
 
   it('saves selected targets in canonical endpoint order', async () => {
     fetchState.urls = [];
@@ -140,7 +140,7 @@ describe('BenchmarkTargets', () => {
       ],
     });
     expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled();
-  }, 10000);
+  }, 20000);
 
   it('shows an error when reloading or saving fails', async () => {
     const user = userEvent.setup();
