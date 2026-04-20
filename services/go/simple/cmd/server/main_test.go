@@ -250,6 +250,38 @@ func TestRunWithContext(t *testing.T) {
 	}
 }
 
+func TestRun(t *testing.T) {
+	port := "9094"
+	setEnv(t, "PORT", &port)
+
+	withRunHooks(
+		t,
+		func(context.Context) (*sdkmetric.MeterProvider, error) {
+			return sdkmetric.NewMeterProvider(), nil
+		},
+		func(context.Context) (*sdktrace.TracerProvider, error) {
+			return sdktrace.NewTracerProvider(), nil
+		},
+		func(app *fiber.App, gotPort string) error {
+			if gotPort != ":9094" {
+				t.Fatalf("expected port %q, got %q", ":9094", gotPort)
+			}
+			resp, err := app.Test(httptest.NewRequest(http.MethodGet, helloEndpoint, nil))
+			if err != nil {
+				t.Fatalf("app.Test: %v", err)
+			}
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("expected status 200, got %d", resp.StatusCode)
+			}
+			return nil
+		},
+	)
+
+	if err := run(); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+}
+
 func TestRunWithContextMeterProviderError(t *testing.T) {
 	withRunHooks(
 		t,
@@ -307,6 +339,22 @@ func TestInitMeterProvider(t *testing.T) {
 	}
 }
 
+func TestInitMeterProviderSuccess(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	endpoint := "localhost:4317"
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", &endpoint)
+
+	mp, err := initMeterProvider(ctx)
+	if err != nil {
+		t.Fatalf("initMeterProvider: %v", err)
+	}
+	if mp == nil {
+		t.Fatal("expected meter provider")
+	}
+}
+
 func TestInitTracerProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -318,5 +366,21 @@ func TestInitTracerProvider(t *testing.T) {
 
 	if err != nil {
 		t.Logf("expected initTracerProvider error for invalid endpoint: %v", err)
+	}
+}
+
+func TestInitTracerProviderSuccess(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	endpoint := "localhost:4317"
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", &endpoint)
+
+	tp, err := initTracerProvider(ctx)
+	if err != nil {
+		t.Fatalf("initTracerProvider: %v", err)
+	}
+	if tp == nil {
+		t.Fatal("expected tracer provider")
 	}
 }
