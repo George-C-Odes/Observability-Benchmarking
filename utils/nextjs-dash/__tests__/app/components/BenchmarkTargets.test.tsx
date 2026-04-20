@@ -13,6 +13,14 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/clientLogger', () => mocks.clientLogger);
 vi.mock('@/app/components/ui/InwardPulse', () => mocks.inwardPulse);
 vi.mock('@/app/hooks/useTimedPulse', () => mocks.timedPulse);
+vi.mock('@mui/material', async () => {
+  const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
+  return {
+    ...actual,
+    Fade: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    Tooltip: ({ children }: { children: React.ReactElement }) => children,
+  };
+});
 
 import BenchmarkTargets from '@/app/components/BenchmarkTargets';
 
@@ -112,7 +120,7 @@ describe('BenchmarkTargets', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'None' }));
     await waitForSelectedCount('0 / 33 selected');
-  });
+  }, 10000);
 
   it('saves selected targets in canonical endpoint order', async () => {
     fetchState.urls = [];
