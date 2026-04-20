@@ -12,7 +12,7 @@
 [![Micronaut](https://img.shields.io/badge/Micronaut-4.10.21-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.3.4-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-7.1.0-00AFCF.svg)](https://javalin.io/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.2.0-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
@@ -89,7 +89,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.2.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
@@ -195,7 +195,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Javalin**: 7.1.0
+- **Javalin**: 7.2.0
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -510,7 +510,7 @@ The numbers below are a curated summary of a representative run.
 - **Micronaut**: 4.10.21
 - **Helidon**: 4.3.4
 - **Spark**: 3.0.4
-- **Javalin**: 7.1.0
+- **Javalin**: 7.2.0
 - **Dropwizard**: 5.0.1
 - **Vert.x**: 5.0.8
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)

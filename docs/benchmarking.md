@@ -136,7 +136,7 @@ memory: 2GB        # Maximum memory
 - Micronaut: 4.10.21
 - Helidon: 4.3.4
 - Spark: 3.0.4
-- Javalin: 7.1.0
+- Javalin: 7.2.0
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
 - Pekko: 1.3.0 (Pekko Core 1.4.0)

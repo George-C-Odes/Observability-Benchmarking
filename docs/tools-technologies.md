@@ -266,7 +266,7 @@ mvn package -Pnative
 - No native image support
 - Official project is largely unmaintained; the Zoomba fork keeps it viable
 
-### Javalin 7.1.0
+### Javalin 7.2.0
 
 **Official Site**: [https://javalin.io/](https://javalin.io/)
 
@@ -277,7 +277,7 @@ mvn package -Pnative
 - Good middle ground between Spark's minimalism and Spring's richness
 
 **Implementation Details**:
-- **Javalin 7.1.0** (latest major release)
+- **Javalin 7.2.0** (latest major release)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -974,7 +974,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.2.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
