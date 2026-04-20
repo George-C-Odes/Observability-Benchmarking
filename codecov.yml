@@ -247,6 +247,3 @@ ignore:
 
   # ── 12. Test directories ────────────────────────────────────────────
   - "utils/nextjs-dash/__tests__/**"
-
-  # ── 13. Temporarily excluded (TODO: re-enable) ────────────────────
-  - "services/go/simple/**"

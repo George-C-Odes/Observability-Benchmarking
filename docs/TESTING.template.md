@@ -326,11 +326,16 @@ cd services/go/enhanced
 # Download dependencies (first time only)
 go mod download
 
+# Lint + vet
+golangci-lint run
+go vet ./...
+
 # Run all tests with verbose output
 go test ./... -v
 
 # Run tests with coverage summary
-go test ./... -cover
+go test ./... -race -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
 
 # Run a focused handler test
 # (the enhanced service exercises the /hello/virtual endpoint)
@@ -342,8 +347,11 @@ go test ./... -run TestVirtual_Defaults -v
 cd services/go/simple
 
 go mod download
+golangci-lint run
+go vet ./...
 go test ./... -v
-go test ./... -cover
+go test ./... -race -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
 ```
 
 **Test Coverage (Enhanced)**:
@@ -356,6 +364,9 @@ go test ./... -cover
 **Test Coverage (Simple)**:
 - ✅ HTTP endpoint (`/hello/virtual`)
 - ✅ Cache initialization and lookup
+- ✅ 404 path when the cache is empty
+- ✅ `PORT` resolution and boot logging
+- ✅ `runWithContext` success path plus boot failure paths
 - ✅ OTel meter and tracer provider initialization
 - ✅ Fiber framework integration
 
@@ -378,6 +389,20 @@ ok      hello/internal/handlers  1.0s
 - OpenTelemetry SDK usage (but unit tests use noop providers)
 - Custom metric counter (`hello.request.count`) (exported via observable counter)
 - Cache behavior across different implementations
+
+**Makefile shortcuts**:
+
+```bash
+cd services/go/enhanced
+make lint
+make test
+make coverage
+
+cd ../simple
+make lint
+make test
+make coverage
+```
 
 **Note**: The Go module name is `hello` (see `services/go/enhanced/go.mod`), so `go test` output uses `hello/...` package paths.
 
@@ -1597,10 +1622,13 @@ that touches `services/go/**`. It:
 
 #### Module-specific notes
 
-| Module          | Test files | Notes                                                                 |
-|-----------------|------------|-----------------------------------------------------------------------|
-| `go/enhanced`   | 2          | Tests for cache and handler packages; uses noop OTel providers        |
-| `go/simple`     | 1          | Tests in `cmd/server`; some OTel tests may log expected errors        |
+| Module        | Test files | Notes                                                                        |
+|---------------|------------|------------------------------------------------------------------------------|
+| `go/enhanced` | 2          | Tests for cache and handler packages; uses noop OTel providers               |
+| `go/simple`   | 1          | Tests in `cmd/server`; covers route, bootstrap, env parsing, and error paths |
+
+The `coverage-gate` job currently enforces a **30%** minimum statement threshold
+for `go-simple` and **40%** for `go-enhanced`.
 
 ### Python (planned)
 
