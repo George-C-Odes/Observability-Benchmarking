@@ -6,8 +6,11 @@ This module mirrors the `/hello/*` contracts used by the existing Spring JVM and
 
 ## Endpoints
 
+- `GET /ready`
 - `GET /hello/platform`
 - `GET /hello/virtual`
+
+`/ready` returns `200 OK` with body `UP` and is always available for liveness/readiness checks.
 
 ### Query params
 - `sleep` (int, default `0`) – sleep duration in **seconds**
@@ -23,7 +26,8 @@ One mode per deployment, controlled via env var:
 - `THREAD_MODE=platform` (default)
 - `THREAD_MODE=virtual`
 
-If the service is started in platform mode, `/hello/virtual` returns `500` and vice-versa.
+Only the active `/hello/*` route is registered for the selected thread mode.
+If the service is started in platform mode, `/hello/virtual` returns `404` and vice-versa.
 
 ## Configuration (env)
 - `SERVICE_PORT` (default `8080`)

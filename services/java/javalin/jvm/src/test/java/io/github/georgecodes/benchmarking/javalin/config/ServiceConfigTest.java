@@ -7,6 +7,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.lang.reflect.Method;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -128,5 +130,31 @@ class ServiceConfigTest {
         assertEquals(60000L, config.jettyIdleTimeoutMs());
         assertEquals(HandlerExecutionMode.DIRECT, config.handlerExecutionMode());
         assertEquals(0, config.platformExecutorThreads());
+    }
+
+    @Test
+    void parseIntHelperUsesDefaultForBlankAndTrimsNumericInput() throws Exception {
+        assertEquals(42, invokeParseInt(null));
+        assertEquals(42, invokeParseInt("   "));
+        assertEquals(7, invokeParseInt(" 7 "));
+    }
+
+    @Test
+    void parseLongHelperUsesDefaultForBlankAndTrimsNumericInput() throws Exception {
+        assertEquals(99L, invokeParseLong(null));
+        assertEquals(99L, invokeParseLong("\t"));
+        assertEquals(15L, invokeParseLong(" 15 "));
+    }
+
+    private int invokeParseInt(String value) throws Exception {
+        Method method = ServiceConfig.class.getDeclaredMethod("parseInt", String.class, int.class);
+        method.setAccessible(true);
+        return (int) method.invoke(null, value, 42);
+    }
+
+    private long invokeParseLong(String value) throws Exception {
+        Method method = ServiceConfig.class.getDeclaredMethod("parseLong", String.class, long.class);
+        method.setAccessible(true);
+        return (long) method.invoke(null, value, 99L);
     }
 }

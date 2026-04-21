@@ -1515,8 +1515,11 @@ The repository-level `codecov.yml` (at the repo root) defines:
   non-source directories are excluded from the coverage denominator.
   Application entry-point classes (`*Application.java`) are also excluded —
   they contain only bootstrap/main wiring that is not a meaningful coverage
-  target. Quarkus-based modules (quarkus-jvm, orchestrator) and Helidon MP
-  auto-generate their entry point, so no explicit file is excluded for them.
+  target. A small set of pure metrics-plumbing helpers (for example the
+  Javalin/Spark/Vert.x/Pekko `MetricsProvider` binders) are excluded for the
+  same reason. Quarkus-based modules (quarkus-jvm, orchestrator) and Helidon
+  MP auto-generate their entry point, so no explicit file is excluded for
+  them.
 - **Carryforward** — enabled for all flags so that modules not re-built in a
   given commit retain their previous coverage data.
 
