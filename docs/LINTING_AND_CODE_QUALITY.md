@@ -847,6 +847,8 @@ Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `util
 
 The Django Python quality workflow (`.github/workflows/django_python_quality.yml`) enforces Ruff lint and format checks, Django system checks, and unit tests — plus a Qodana Python Community scan that applies the same severity gate (`critical: 0`, `high: 0`, `moderate: 0`).
 
+A separate Django coverage workflow (`.github/workflows/django_python_coverage.yml`) runs the same shared test suite under `coverage.py` for both runtime modules, writes GitHub Step Summary coverage tables, publishes HTML/XML artifacts, and uploads `coverage.xml` reports to Codecov with the `python-django-platform` and `python-django-reactive` flags.
+
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
 The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR. The Go Simple module is also covered by the same workflow with lightweight quality checks (`go vet`, unit tests with race detection, and a build smoke test) but without golangci-lint since it has no linter configuration.

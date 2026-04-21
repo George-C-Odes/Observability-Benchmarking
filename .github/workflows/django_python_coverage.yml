@@ -1,0 +1,225 @@
+name: Django Python Coverage
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'services/python/**'
+      - '.github/workflows/django_python_coverage.yml'
+      - 'codecov.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/python/**'
+      - '.github/workflows/django_python_coverage.yml'
+      - 'codecov.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Coverage (${{ matrix.summary_name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      OTEL_SDK_DISABLED: 'true'
+      PYROSCOPE_ENABLED: 'false'
+      COMMON_SOURCE_DIR: services/python/django/gunicorn/common/src/obbench_django_common
+      COVERAGE_FILE: ${{ matrix.module_dir }}/.coverage
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - summary_name: django-platform
+            codecov_flag: python-django-platform
+            module_dir: services/python/django/gunicorn/WSGI
+          - summary_name: django-reactive
+            codecov_flag: python-django-reactive
+            module_dir: services/python/django/gunicorn/ASGI
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            services/python/django/gunicorn/common/pyproject.toml
+            ${{ matrix.module_dir }}/requirements.txt
+            ${{ matrix.module_dir }}/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            -e services/python/django/gunicorn/common \
+            -r ${{ matrix.module_dir }}/requirements.txt \
+            -r ${{ matrix.module_dir }}/requirements-dev.txt \
+            coverage[toml]
+
+      - name: Run tests with coverage
+        id: test
+        run: |
+          python -m coverage run \
+            --branch \
+            --source="${{ matrix.module_dir }},${COMMON_SOURCE_DIR}" \
+            --omit="*/tests/*" \
+            ${{ matrix.module_dir }}/manage.py test obbench_django_common.tests --verbosity=2
+
+      - name: Generate coverage reports
+        if: always() && !cancelled() && steps.test.outcome == 'success'
+        run: |
+          python -m coverage json -o ${{ matrix.module_dir }}/coverage-summary.json --pretty-print
+          python -m coverage xml -o ${{ matrix.module_dir }}/coverage.xml
+          python -m coverage html -d ${{ matrix.module_dir }}/htmlcov
+          python -m coverage report -m > ${{ matrix.module_dir }}/coverage-report.txt
+
+      - name: Generate coverage summary
+        if: always() && !cancelled()
+        env:
+          MODULE_NAME: ${{ matrix.summary_name }}
+          MODULE_DIR: ${{ matrix.module_dir }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          COVERAGE_JSON: ${{ matrix.module_dir }}/coverage-summary.json
+        run: |
+          python3 << 'PYEOF'
+          import json
+          import os
+          import sys
+
+          module_name = os.environ["MODULE_NAME"]
+          module_dir = os.environ["MODULE_DIR"].replace("\\", "/")
+          test_outcome = os.environ["TEST_OUTCOME"]
+          coverage_json = os.environ["COVERAGE_JSON"]
+          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
+          workspace = os.environ.get("GITHUB_WORKSPACE", "")
+
+          def write_missing_report_message() -> None:
+              with open(summary_file, "a", encoding="utf-8") as fh:
+                  if test_outcome == "success":
+                      fh.write(f"### ❌ Coverage: {module_name}\n\n")
+                      fh.write("Tests passed but no coverage summary was generated.\n")
+                      print(f"::error::Tests passed but {coverage_json} was not found")
+                      sys.exit(1)
+                  fh.write(f"### ⚠️ Coverage: {module_name}\n\n")
+                  fh.write("No coverage summary generated. Tests may have failed.\n")
+
+          if not os.path.isfile(coverage_json):
+              write_missing_report_message()
+              sys.exit(0)
+
+          with open(coverage_json, encoding="utf-8") as fh:
+              data = json.load(fh)
+
+          totals = data.get("totals", {})
+          files = data.get("files", {})
+
+          covered_statements = int(totals.get("covered_lines", 0))
+          missed_statements = int(totals.get("missing_lines", 0))
+          total_statements = int(totals.get("num_statements", covered_statements + missed_statements))
+          statement_pct = (covered_statements * 100 / total_statements) if total_statements else 0.0
+
+          covered_branches = int(totals.get("covered_branches", 0))
+          missed_branches = int(totals.get("missing_branches", 0))
+          total_branches = int(totals.get("num_branches", covered_branches + missed_branches))
+          branch_pct = (covered_branches * 100 / total_branches) if total_branches else None
+          partial_branches = int(totals.get("num_partial_branches", 0))
+          overall_pct = float(totals.get("percent_covered", statement_pct))
+
+          def normalize_path(path: str) -> str:
+              path = path.replace("\\", "/")
+              if workspace and os.path.isabs(path):
+                  try:
+                      return os.path.relpath(path, workspace).replace("\\", "/")
+                  except ValueError:
+                      return path
+              if path.startswith("../"):
+                  return os.path.normpath(os.path.join(module_dir, path)).replace("\\", "/")
+              if path.startswith("services/"):
+                  return path
+              return f"{module_dir}/{path}".replace("//", "/")
+
+          with open(summary_file, "a", encoding="utf-8") as fh:
+              badge = "✅ Tests passed" if test_outcome == "success" else "⚠️ Tests had issues"
+              fh.write(f"### 📊 Coverage: {module_name}\n\n")
+              fh.write(f"**{badge}**\n\n")
+              fh.write("| Metric | Covered | Missed | Total | Coverage |\n")
+              fh.write("|--------|--------:|-------:|------:|---------:|\n")
+              fh.write(
+                  f"| **Statements** | **{covered_statements}** | **{missed_statements}** | "
+                  f"**{total_statements}** | **{statement_pct:.1f}%** |\n"
+              )
+              if branch_pct is None:
+                  fh.write(
+                      f"| **Branches** | **{covered_branches}** | **{missed_branches}** | "
+                      f"**{total_branches}** | **n/a** |\n\n"
+                  )
+              else:
+                  fh.write(
+                      f"| **Branches** | **{covered_branches}** | **{missed_branches}** | "
+                      f"**{total_branches}** | **{branch_pct:.1f}%** |\n\n"
+                  )
+
+              fh.write(
+                  f"> coverage.py overall coverage (statements + branches): **{overall_pct:.1f}%**"
+                  f" · partial branches: **{partial_branches}**\n\n"
+              )
+
+              if files:
+                  fh.write("<details>\n<summary>Per-file breakdown</summary>\n\n")
+                  fh.write("| File | Statements | Covered | Branches | Covered branches | Coverage |\n")
+                  fh.write("|------|-----------:|--------:|---------:|-----------------:|---------:|\n")
+                  for raw_path in sorted(files):
+                      summary = files[raw_path].get("summary", {})
+                      total_stmt = int(summary.get("num_statements", 0))
+                      covered_stmt = int(summary.get("covered_lines", 0))
+                      total_branch = int(summary.get("num_branches", 0))
+                      covered_branch = int(summary.get("covered_branches", 0))
+                      file_pct = float(summary.get("percent_covered", 0.0))
+                      fh.write(
+                          f"| `{normalize_path(raw_path)}` | {total_stmt} | {covered_stmt} | "
+                          f"{total_branch} | {covered_branch} | {file_pct:.1f}% |\n"
+                      )
+                  fh.write("\n</details>\n\n")
+
+              fh.write(
+                  f"> Reports generated from `{module_dir}/coverage-summary.json`, `{module_dir}/coverage.xml`, "
+                  f"and `{module_dir}/htmlcov/`\n"
+              )
+          PYEOF
+
+      - name: Upload coverage report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.codecov_flag }}
+          path: |
+            ${{ matrix.module_dir }}/.coverage
+            ${{ matrix.module_dir }}/coverage-summary.json
+            ${{ matrix.module_dir }}/coverage-report.txt
+            ${{ matrix.module_dir }}/coverage.xml
+            ${{ matrix.module_dir }}/htmlcov/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload to Codecov
+        if: always() && !cancelled() && steps.test.outcome == 'success'
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          files: ${{ matrix.module_dir }}/coverage.xml
+          flags: ${{ matrix.codecov_flag }}
+          name: ${{ matrix.codecov_flag }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          disable_search: true
+

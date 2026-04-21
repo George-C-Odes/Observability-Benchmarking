@@ -100,13 +100,13 @@ flags:
     paths: [services/go/simple/]
     carryforward: true
 
-  # ── Python services (future — uploaded by django_python_quality.yml) ─
-  # python-django-platform:
-  #   paths: [services/python/django/]
-  #   carryforward: true
-  # python-django-reactive:
-  #   paths: [services/python/django/]
-  #   carryforward: true
+  # ── Python services (uploaded by django_python_coverage.yml) ────────
+  python-django-platform:
+    paths: [services/python/django/gunicorn/WSGI/, services/python/django/gunicorn/common/src/]
+    carryforward: true
+  python-django-reactive:
+    paths: [services/python/django/gunicorn/ASGI/, services/python/django/gunicorn/common/src/]
+    carryforward: true
 
 # ── Component definitions ─────────────────────────────────────────────
 # Components aggregate flags into language-level groups.  The Codecov
@@ -251,3 +251,4 @@ ignore:
 
   # ── 12. Test directories ────────────────────────────────────────────
   - "utils/nextjs-dash/__tests__/**"
+  - "services/python/**/tests/**"

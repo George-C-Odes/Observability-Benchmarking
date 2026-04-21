@@ -108,6 +108,9 @@ desktop.ini
 
 # Test / coverage
 coverage/
+.coverage*
+coverage.xml
+htmlcov/
 *.lcov
 .junit_cache/
 test-results/

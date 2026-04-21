@@ -20,7 +20,7 @@
   - [Next.js Dashboard — Vitest + v8](#nextjs-dashboard--vitest--v8)
   - [Codecov (repo-wide visibility)](#codecov-repo-wide-visibility)
   - [Go — native `go test` coverage](#go--native-go-test-coverage)
-  - [Python (planned)](#python-planned)
+  - [Python — coverage.py](#python--coveragepy)
 - [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -452,10 +452,14 @@ cd -
 > attempting to connect to a collector during tests.  This is the same
 > command the Dockerfiles execute at build time.
 
-#### Matching the Django CI workflow locally
+#### Matching the Django CI workflows locally
 
-The Django quality workflow in `.github/workflows/django_python_quality.yml`
-does more than execute tests:
+The Django repository automation is split across two workflows:
+
+- `.github/workflows/django_python_quality.yml` — syntax checks, Ruff lint/format, `manage.py check`, shared unit tests, and Qodana
+- `.github/workflows/django_python_coverage.yml` — `coverage.py` runs for the WSGI and ASGI runtimes, GitHub Step Summary coverage tables, HTML/XML artifacts, and Codecov upload
+
+The quality workflow does more than execute tests:
 
 1. Runs syntax checks, prints the Ruff version for visibility, then runs Ruff lint and format checks for the shared `common` package.
 2. Installs the shared package into each runtime module environment.
@@ -497,6 +501,40 @@ OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbo
 `services/python/django/README.md` includes PowerShell-friendly equivalents for
 the same flow.
 
+#### Matching the Django coverage workflow locally
+
+The coverage workflow uses `coverage.py` with branch coverage and counts both the runtime module directory (`manage.py`, `gunicorn.conf.py`, `hello_project/**`) and the shared package under `common/src/obbench_django_common`.
+
+```bash
+# WSGI coverage
+python -m pip install coverage[toml]
+python -m pip install -e services/python/django/gunicorn/common \
+  -r services/python/django/gunicorn/WSGI/requirements.txt \
+  -r services/python/django/gunicorn/WSGI/requirements-dev.txt
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/WSGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/WSGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/WSGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+
+# ASGI coverage
+python -m pip install coverage[toml]
+python -m pip install -e services/python/django/gunicorn/common \
+  -r services/python/django/gunicorn/ASGI/requirements.txt \
+  -r services/python/django/gunicorn/ASGI/requirements-dev.txt
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/ASGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/ASGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/ASGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+```
+
+> `services/python/django/README.md` includes PowerShell-friendly commands and the Windows-specific `pyroscope*` dependency filtering needed for local runs.
+
 **Test Coverage**:
 - ✅ HTTP endpoints (`/hello/platform`, `/hello/reactive`)
 - ✅ Service logic and response format
@@ -507,6 +545,8 @@ the same flow.
 - ✅ Pyroscope profiling setup and failure handling
 - ✅ Log formatting
 - ✅ OpenTelemetry wiring and test-safe disable path
+- ✅ Runtime entrypoints (`manage.py`, `hello_project/wsgi.py`, `hello_project/asgi.py`)
+- ✅ Gunicorn hook/config helpers (`post_fork`, `worker_exit`, env parsing)
 
 **Key Features Tested**:
 - Django request/response lifecycle
@@ -1503,14 +1543,15 @@ The repository-level `codecov.yml` (at the repo root) defines:
   `java-spring-tomcat`, `java-orchestrator`) for Java,
   `nextjs-dash-{env}` (e.g. `nextjs-dash-node`, `nextjs-dash-dom`) for the
   Next.js dashboard, and `go-{module}` (e.g. `go-enhanced`, `go-simple`)
-  for Go. Each flag maps to the module's source path so Codecov
+  for Go, plus `python-{module}` (`python-django-platform`,
+  `python-django-reactive`) for Django. Each flag maps to the module's source path so Codecov
   can attribute coverage lines correctly.
 - **Components** — language-level groups that aggregate flags:
   - `java_services` — all 12 Java/Maven modules
   - `nextjs_dashboard` — Next.js dashboard (node + DOM coverage)
   - `go_services` — Go modules (`go-enhanced` and `go-simple` flags)
-  - `python_services` — Python modules (placeholder, activated when Python
-    coverage is added)
+  - `python_services` — Python modules (`python-django-platform` and
+    `python-django-reactive`)
 - **Ignored paths** — native-image modules, docs, config, scripts, and other
   non-source directories are excluded from the coverage denominator.
   Application entry-point classes (`*Application.java`) are also excluded —
@@ -1558,6 +1599,22 @@ Codecov the same way. Codecov natively supports Go coverage profiles:
     disable_search: true
 ```
 
+    Each matrix leg in the **Django Python Coverage** workflow uploads its
+    `coverage.xml` to Codecov using the Python-specific flags
+    `python-django-platform` and `python-django-reactive`:
+
+    ```yaml
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+      with:
+        files: ${{ matrix.module_dir }}/coverage.xml
+        flags: ${{ matrix.codecov_flag }}
+        name: ${{ matrix.codecov_flag }}
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        disable_search: true
+    ```
+
 #### Authentication (public repos)
 
 The workflow currently passes `token: ${{ secrets.CODECOV_TOKEN }}`
@@ -1570,16 +1627,8 @@ For public repositories, Codecov also supports **tokenless uploads** via
 GitHub OIDC. To switch to tokenless, **remove** the `token:` input from
 the `codecov/codecov-action` step and ensure the job grants
 `permissions: id-token: write` (already present in the workflow).
-#### Adding Python coverage uploads (future)
-
-When Python coverage workflows are extended:
-
-1. Add a `codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2` (v6.0.0) step to the respective workflow, with:
-   - `files` pointing to the coverage report (e.g., `coverage.xml` for Python).
-   - `flags` matching the naming convention: `python-{module}`.
-2. Uncomment the corresponding flag block in `codecov.yml`.
-3. The component (`python_services`) will automatically pick
-   up the new uploads because its `paths` pattern already matches.
+The same `fail_ci_if_error: false` behavior is used for Python, so a transient
+Codecov outage does not fail the overall Django coverage job.
 
 ### Go — native `go test` coverage
 
@@ -1633,10 +1682,54 @@ that touches `services/go/**`. It:
 The `coverage-gate` job currently enforces a **30%** minimum statement threshold
 for `go-simple` and **40%** for `go-enhanced`.
 
-### Python (planned)
+### Python — coverage.py
 
-Coverage tooling for Python (`coverage.py`) will be added in a later phase,
-following the same phased tightening roadmap described above.
+The Django modules use [coverage.py](https://coverage.readthedocs.io/) with
+branch coverage enabled. Each runtime (`services/python/django/gunicorn/WSGI`
+and `services/python/django/gunicorn/ASGI`) runs the shared Django test suite
+but reports coverage against its own runtime files plus the shared
+`common/src/obbench_django_common` package.
+
+#### Running locally
+
+```bash
+# WSGI
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/WSGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/WSGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/WSGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+python -m coverage xml -o services/python/django/gunicorn/WSGI/coverage.xml
+python -m coverage html -d services/python/django/gunicorn/WSGI/htmlcov
+
+# ASGI
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/ASGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/ASGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/ASGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+python -m coverage xml -o services/python/django/gunicorn/ASGI/coverage.xml
+python -m coverage html -d services/python/django/gunicorn/ASGI/htmlcov
+```
+
+#### CI workflow
+
+The **Django Python Coverage** GitHub Actions workflow
+(`.github/workflows/django_python_coverage.yml`) runs on every PR and push to
+`main` that touches `services/python/**`. It:
+
+- runs the shared Django test suite under `coverage.py` for both runtimes in a matrix (`django-platform` and `django-reactive`)
+- writes a GitHub Step Summary table with statement and branch coverage, plus a per-file breakdown
+- uploads `.coverage`, JSON, XML, text, and HTML artifacts for each runtime
+- uploads `coverage.xml` to Codecov with flags `python-django-platform` and `python-django-reactive`
+
+In local verification after the runtime-entrypoint tests were added, coverage
+was comfortably above the target in both legs: **95%** for WSGI and **94%** for
+ASGI.
 
 ## CI/CD Integration
 
