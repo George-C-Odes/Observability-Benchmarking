@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createMockStorage } from '@/__tests__/_helpers/storage';
 
 // ── Module mocks ──────────────────────────────────────────────────────
@@ -36,6 +35,12 @@ const TAB_TEST_IDS = {
 async function renderClientHomeAndWaitForActiveTab(activeTab: keyof typeof TAB_TEST_IDS = 0) {
   render(<ClientHome />);
   await screen.findByTestId(TAB_TEST_IDS[activeTab]);
+}
+
+async function activateTab(label: string, activeTab: keyof typeof TAB_TEST_IDS) {
+  fireEvent.click(screen.getByRole('tab', { name: label }));
+  await screen.findByTestId(TAB_TEST_IDS[activeTab]);
+  expect(screen.getByRole('tab', { name: label })).toHaveAttribute('aria-selected', 'true');
 }
 
 // ── localStorage stub ─────────────────────────────────────────────────
@@ -84,22 +89,18 @@ describe('ClientHome', () => {
   });
 
   it('mounts tab content on first visit and keeps it alive', async () => {
-    const user = userEvent.setup();
     await renderClientHomeAndWaitForActiveTab();
 
-    await user.click(screen.getByRole('tab', { name: 'Script Runner' }));
-    expect(await screen.findByTestId('mock-script-runner')).toBeInTheDocument();
+    await activateTab('Script Runner', 1);
 
-    await user.click(screen.getByRole('tab', { name: 'Service Health' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Service Health' }));
     expect(screen.getByTestId('mock-script-runner')).toBeInTheDocument();
   });
 
   it('saves selected tab to localStorage', async () => {
-    const user = userEvent.setup();
     await renderClientHomeAndWaitForActiveTab();
 
-    await user.click(screen.getByRole('tab', { name: 'Logs' }));
-    await screen.findByTestId('mock-app-logs');
+    await activateTab('Logs', 4);
     expect(localStorage.getItem('dashboardTab')).toBe('4');
   });
 
@@ -156,31 +157,28 @@ describe('ClientHome', () => {
   });
 
   it('switches all seven tabs without crashing', async () => {
-    const user = userEvent.setup();
     await renderClientHomeAndWaitForActiveTab();
 
-    const tabNames = [
-      'Service Health', 'Script Runner', 'Environment Config',
-      'Benchmark Targets', 'Logs', 'System Info', 'Project Hub',
+    const tabNames: Array<[label: string, activeTab: keyof typeof TAB_TEST_IDS]> = [
+      ['Service Health', 0],
+      ['Script Runner', 1],
+      ['Environment Config', 2],
+      ['Benchmark Targets', 3],
+      ['Logs', 4],
+      ['System Info', 5],
+      ['Project Hub', 6],
     ];
 
-    for (const name of tabNames) {
-      await user.click(screen.getByRole('tab', { name }));
-      await waitFor(() => {
-        const tab = screen.getByRole('tab', { name });
-        expect(tab).toHaveAttribute('aria-selected', 'true');
-      });
+    for (const [label, activeTab] of tabNames) {
+      await activateTab(label, activeTab);
     }
 
-    // All visited panels should be in the document
-    await waitFor(() => {
-      expect(screen.getByTestId('mock-service-health')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-script-runner')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-env-editor')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-benchmark-targets')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-app-logs')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-system-info')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-project-hub')).toBeInTheDocument();
-    });
+    expect(screen.getByTestId('mock-service-health')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-script-runner')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-env-editor')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-benchmark-targets')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-app-logs')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-system-info')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-project-hub')).toBeInTheDocument();
   });
 });
