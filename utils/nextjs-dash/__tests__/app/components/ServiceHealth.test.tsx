@@ -57,13 +57,11 @@ vi.mock('@mui/material', async () => {
   }
 
   function MockChip({ label, icon, children, ...props }: MockChipProps) {
-    const {
-      color: _color,
-      size: _size,
-      variant: _variant,
-      sx: _sx,
-      ...domProps
-    } = props;
+    const domProps = { ...props };
+    delete domProps.color;
+    delete domProps.size;
+    delete domProps.variant;
+    delete domProps.sx;
 
     return <div {...domProps}>{icon}{label ?? children}</div>;
   }
