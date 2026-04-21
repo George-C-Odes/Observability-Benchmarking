@@ -6,11 +6,14 @@ import io.github.georgecodes.benchmarking.helidon.se.infra.cache.CaffeineCacheAd
 import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.MicrometerMetricsAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.infra.time.ThreadSleepAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.web.HelloRouting;
+import io.github.georgecodes.benchmarking.helidon.se.web.HttpMetricsFilter;
 import io.helidon.http.Status;
 import io.helidon.webclient.http1.Http1Client;
 import io.helidon.webclient.http1.Http1ClientResponse;
 import io.helidon.webserver.WebServer;
 import io.helidon.webserver.observe.ObserveFeature;
+import io.micrometer.core.instrument.Metrics;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -35,7 +38,10 @@ class HelloRoutingTest {
         server = WebServer.builder()
                 .port(0)
                 .addFeature(observe)
-                .routing(routing -> HelloRouting.register(routing, helloService))
+                .routing(routing -> {
+                    routing.addFilter(new HttpMetricsFilter());
+                    HelloRouting.register(routing, helloService);
+                })
                 .build()
                 .start();
 
@@ -49,6 +55,11 @@ class HelloRoutingTest {
         if (server != null) {
             server.stop();
         }
+    }
+
+    @AfterEach
+    void clearMeters() {
+        Metrics.globalRegistry.getMeters().forEach(Metrics.globalRegistry::remove);
     }
 
     @Test
@@ -71,6 +82,19 @@ class HelloRoutingTest {
             assertTrue(body.contains("Hello from Helidon SE virtual REST"));
         }
     }
+
+    @Test
+    void virtualEndpointWithLoggingEnabled() {
+        try (Http1ClientResponse response = client.get("/hello/virtual")
+                .queryParam("sleep", "0")
+                .queryParam("log", "true")
+                .request()) {
+            assertEquals(Status.OK_200, response.status());
+            String body = response.as(String.class);
+            assertTrue(body.contains("Hello from Helidon SE virtual REST"));
+        }
+    }
+
 
     @Test
     void healthEndpoint() {

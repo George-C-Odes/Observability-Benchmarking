@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HelloResourceTest {
 
     @Inject
+    @SuppressWarnings("CdiInjectionPointsInspection")
     private WebTarget target;
 
     @Test
