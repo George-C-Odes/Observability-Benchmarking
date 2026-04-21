@@ -47,11 +47,11 @@ The project implements a comprehensive testing strategy covering:
 | Spark JVM      | ✅ 61 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Javalin JVM    | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Dropwizard JVM | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Vert.x JVM     | ✅ 35 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Vert.x JVM     | ✅ 42 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Go Fiber       | ✅ 12 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **370 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **377 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 

@@ -1,5 +1,7 @@
 package io.github.georgecodes.benchmarking.vertx.web;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.georgecodes.benchmarking.vertx.domain.HelloMode;
 import io.github.georgecodes.benchmarking.vertx.domain.HelloService;
@@ -10,15 +12,18 @@ import io.vertx.core.http.HttpServerOptions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -99,6 +104,16 @@ class HttpServerVerticleTest {
             () -> new HttpServerVerticle(8080, service, metrics, null));
     }
 
+    @Test
+    void actualPortIsZeroBeforeStart() {
+        Cache<String, String> cache = CacheProvider.create(5);
+        HelloService service = new HelloService(cache);
+        MetricsProvider metrics = MetricsProvider.create("/hello/reactive");
+        HttpServerVerticle verticle = new HttpServerVerticle(8080, service, metrics, new HttpServerOptions());
+
+        assertEquals(0, verticle.actualPort());
+    }
+
     // ---- Endpoint tests via deployed verticle ----
 
     @Test
@@ -139,5 +154,45 @@ class HttpServerVerticleTest {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, response.statusCode());
+    }
+
+    @Test
+    void deploymentFailsWhenPortIsAlreadyInUse() throws Exception {
+        var occupyingServer = vertx.createHttpServer(new HttpServerOptions().setHost("127.0.0.1"))
+            .requestHandler(_ -> {
+            })
+            .listen(0)
+            .toCompletionStage()
+            .toCompletableFuture()
+            .get(10, TimeUnit.SECONDS);
+
+        int occupiedPort = occupyingServer.actualPort();
+        Cache<String, String> cache = CacheProvider.create(5);
+        HelloService service = new HelloService(cache);
+        MetricsProvider metrics = MetricsProvider.create(HelloMode.REACTIVE.endpointTag());
+        HttpServerOptions serverOptions = new HttpServerOptions()
+            .setHost("127.0.0.1")
+            .setPort(occupiedPort);
+        HttpServerVerticle verticle = new HttpServerVerticle(occupiedPort, service, metrics, serverOptions);
+        Logger logger = (Logger) LoggerFactory.getLogger(HttpServerVerticle.class);
+        Level previousLevel = logger.getLevel();
+
+        try {
+            logger.setLevel(Level.OFF);
+
+            ExecutionException exception = assertThrows(ExecutionException.class, () -> vertx.deployVerticle(verticle)
+                .toCompletionStage()
+                .toCompletableFuture()
+                .get(10, TimeUnit.SECONDS));
+
+            assertEquals(0, verticle.actualPort());
+            assertNotNull(exception.getCause(), "Deployment should fail with an underlying cause");
+        } finally {
+            logger.setLevel(previousLevel);
+            occupyingServer.close()
+                .toCompletionStage()
+                .toCompletableFuture()
+                .get(10, TimeUnit.SECONDS);
+        }
     }
 }

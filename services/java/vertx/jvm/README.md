@@ -86,3 +86,18 @@ Export is handled by the OpenTelemetry Java agent in the benchmark stack.
 | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
 |----------|-----|---------------|-----------------|
 | Reactive | 26k | 336           | 220             |
+
+## Testing
+
+### Local Test + Coverage Run
+
+```bash
+cd services/java/vertx/jvm
+mvn verify -Dcheckstyle.skip=true
+```
+
+This generates the local JaCoCo reports at:
+- `target/site/jacoco/index.html`
+- `target/site/jacoco/jacoco.xml`
+
+> Note: local JaCoCo coverage excludes the bootstrap-only `VertxApplication`, so coverage reporting stays focused on testable application logic (`config`, `domain`, `infra`, and `web`) in the same style already used by other JVM modules in this repository.
