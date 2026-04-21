@@ -43,6 +43,7 @@ public class ProcessCommandRunner implements CommandRunner {
     ProcessBuilder pb = new ProcessBuilder(argv);
     pb.directory(new File(workspace));
     pb.redirectErrorStream(false);
+    EventSink serialSink = serializing(sink);
 
     Map<String, String> env = pb.environment();
     for (var e : envOverrides.entrySet()) {
@@ -50,7 +51,7 @@ public class ProcessCommandRunner implements CommandRunner {
     }
 
     log.infof("Executing: %s", String.join(" ", argv));
-    sink.emit(JobEvent.status("EXEC " + String.join(" ", argv)));
+    serialSink.emit(JobEvent.status("EXEC " + String.join(" ", argv)));
 
     Process p = pb.start();
 
@@ -59,8 +60,8 @@ public class ProcessCommandRunner implements CommandRunner {
       t.setDaemon(true);
       return t;
     }))) {
-      Future<?> outF = streams.submit(() -> streamLines(p.getInputStream(), "stdout", sink));
-      Future<?> errF = streams.submit(() -> streamLines(p.getErrorStream(), "stderr", sink));
+      Future<?> outF = streams.submit(() -> streamLines(p.getInputStream(), "stdout", serialSink));
+      Future<?> errF = streams.submit(() -> streamLines(p.getErrorStream(), "stderr", serialSink));
 
       int exit = p.waitFor();
       outF.get(10, TimeUnit.SECONDS);
@@ -84,6 +85,15 @@ public class ProcessCommandRunner implements CommandRunner {
     } catch (Exception ex) {
       log.tracef("Stream %s closed: %s", stream, ex.getMessage());
     }
+  }
+
+  private static EventSink serializing(EventSink sink) {
+    Object monitor = new Object();
+    return event -> {
+      synchronized (monitor) {
+        sink.emit(event);
+      }
+    };
   }
 
   /**
