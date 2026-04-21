@@ -315,10 +315,19 @@ curl "http://localhost:8092/hello/platform?sleep=2"
 ```bash
 cd services/java/micronaut/jvm
 mvn test
+
+# Coverage report
+mvn verify -Dcheckstyle.skip=true
+# HTML report -> target/site/jacoco/index.html
+# XML report  -> target/site/jacoco/jacoco.xml
 ```
 
 Tests include:
 - `HelloControllerTest` — HTTP-level endpoint tests via Micronaut's embedded server
+- `HelloControllerUnitTest` — direct controller branch coverage for `log=true` and virtual-event-loop delegation
+- `HelloServiceTest` — application-layer coverage for metrics, sleep, and interrupt handling
+- `CaffeineCacheAdapterTest` — cache-size clamping and pre-populated cache behavior
+- `ThreadSleepAdapterTest` — supported and unsupported sleep-unit handling
 - `MetricsWiringTest` — verifies Micrometer registry and OTel bridge wiring
 
 ### Checkstyle

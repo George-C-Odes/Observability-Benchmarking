@@ -41,7 +41,7 @@ The project implements a comprehensive testing strategy covering:
 | Quarkus JVM    | ✅ 18 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Spring Tomcat  | ✅ 30 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Spring Netty   | ✅ 16 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Micronaut JVM  | ✅ 5 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Micronaut JVM  | ✅ 15 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon SE JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon MP JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Spark JVM      | ✅ 61 tests    | ✅ Covered          | ✅ Metrics/Traces    |
@@ -51,7 +51,7 @@ The project implements a comprehensive testing strategy covering:
 | Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Go Fiber       | ✅ 12 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **360 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **370 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
