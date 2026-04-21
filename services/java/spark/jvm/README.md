@@ -81,6 +81,22 @@ docker buildx build `
   services/java
 ```
 
+## Testing
+
+### Local Test + Coverage Run
+
+```bash
+cd services/java/spark/jvm
+mvn verify -Dcheckstyle.skip=true
+```
+
+This generates the local JaCoCo reports at:
+- `target/site/jacoco/index.html`
+- `target/site/jacoco/jacoco.xml`
+
+> Note: local JaCoCo coverage excludes `SparkApplication` and `MetricsProvider`, matching the repo-level
+> coverage policy used for Spark JVM coverage reporting.
+
 ## Metrics
 Defines a Micrometer counter:
 - `hello.request.count{endpoint="/hello/platform"}`
