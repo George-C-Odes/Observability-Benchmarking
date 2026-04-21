@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
   clientLogger: {
@@ -17,6 +16,16 @@ vi.mock('@mui/material', async () => {
   const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
   return {
     ...actual,
+    Chip: ({ label, onClick, disabled, children, ...props }: {
+      label?: React.ReactNode;
+      onClick?: () => void;
+      disabled?: boolean;
+      children?: React.ReactNode;
+    }) => (
+      <button type="button" onClick={onClick} disabled={disabled} {...props}>
+        {label ?? children}
+      </button>
+    ),
     Fade: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     Tooltip: ({ children }: { children: React.ReactElement }) => children,
   };
@@ -32,6 +41,11 @@ async function waitForSelectedCount(expected: string) {
   await waitFor(() => {
     expect(screen.getByText(countMatcher(expected))).toBeInTheDocument();
   });
+}
+
+async function renderBenchmarkTargetsAndWaitForInitialLoad() {
+  render(<BenchmarkTargets />);
+  await waitForSelectedCount('2 / 33 selected');
 }
 
 type FetchState = {
@@ -95,9 +109,9 @@ describe('BenchmarkTargets', () => {
   });
 
   it('loads targets, shows counts, and renders grouped sections', async () => {
-    render(<BenchmarkTargets />);
+    await renderBenchmarkTargetsAndWaitForInitialLoad();
 
-    expect(await screen.findByText('Benchmark Targets')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark Targets')).toBeInTheDocument();
     expect(screen.getByText(countMatcher('2 / 33 selected'))).toBeInTheDocument();
     expect(screen.getByText('Quick filters (toggle groups)')).toBeInTheDocument();
     expect(screen.getByText('spring')).toBeInTheDocument();
@@ -108,14 +122,14 @@ describe('BenchmarkTargets', () => {
   });
 
   it('applies All and None quick filters', async () => {
-    render(<BenchmarkTargets />);
+    await renderBenchmarkTargetsAndWaitForInitialLoad();
 
-    await waitForSelectedCount('2 / 33 selected');
+    const saveButton = screen.getByRole('button', { name: /^(Saved|Save Changes)$/ });
 
     fireEvent.click(screen.getByRole('button', { name: 'All' }));
     await waitForSelectedCount('33 / 33 selected');
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
+      expect(saveButton).toBeEnabled();
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'None' }));
@@ -143,19 +157,16 @@ describe('BenchmarkTargets', () => {
   }, 20000);
 
   it('shows an error when reloading or saving fails', async () => {
-    const user = userEvent.setup();
-    render(<BenchmarkTargets />);
-
-    await screen.findByText(countMatcher('2 / 33 selected'));
+    await renderBenchmarkTargetsAndWaitForInitialLoad();
 
     fetchState.getStatus = 500;
-    await user.click(screen.getByRole('button', { name: 'Reload' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
     expect(await screen.findByText('Failed to load benchmark targets')).toBeInTheDocument();
 
     fetchState.getStatus = 200;
-    await user.click(screen.getByRole('button', { name: 'All' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
     fetchState.postStatus = 500;
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
 
     await waitFor(() => {
       expect(screen.getByText('Failed to save benchmark targets')).toBeInTheDocument();
