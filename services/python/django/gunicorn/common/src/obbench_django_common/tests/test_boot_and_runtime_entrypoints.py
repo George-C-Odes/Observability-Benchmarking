@@ -4,30 +4,61 @@ import builtins
 import os
 import runpy
 import sys
+from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
-from unittest import TestCase, mock
+from unittest import SkipTest, TestCase, mock
 
 from obbench_django_common.application.hello_service import HelloService
 from obbench_django_common.infrastructure import boot
 
-_GUNICORN_DIR = Path(__file__).resolve().parents[4]
-_WSGI_DIR = _GUNICORN_DIR / "WSGI"
-_ASGI_DIR = _GUNICORN_DIR / "ASGI"
+
+@lru_cache(maxsize=1)
+def _resolve_gunicorn_dir() -> Path:
+    def is_gunicorn_dir(path: Path) -> bool:
+        return all((path / runtime / "manage.py").is_file() for runtime in ("WSGI", "ASGI"))
+
+    def candidate_paths(root: Path) -> tuple[Path, Path]:
+        return root, root / "services" / "python" / "django" / "gunicorn"
+
+    bases: list[Path] = []
+    workspace = os.environ.get("GITHUB_WORKSPACE")
+    if workspace:
+        bases.append(Path(workspace))
+
+    cwd = Path.cwd().resolve()
+    bases.extend((cwd, *cwd.parents))
+    bases.extend(Path(__file__).resolve().parents)
+
+    seen: set[Path] = set()
+    for base in bases:
+        for candidate in candidate_paths(base.resolve()):
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            if is_gunicorn_dir(candidate):
+                return candidate
+
+    raise FileNotFoundError(
+        "Could not locate services/python/django/gunicorn from the current working directory, "
+        "GitHub workspace, or installed test package location."
+    )
 
 
 class _FakeCache:
     def __init__(self, size: int = 3) -> None:
         self._size = size
 
-    def get(self, key: str) -> str:
+    @staticmethod
+    def get(key: str) -> str:
         return f"value-{key}"
 
     def size(self) -> int:
         return self._size
 
-    def close(self) -> None:
+    @staticmethod
+    def close() -> None:
         return None
 
 
@@ -44,7 +75,8 @@ class BootTests(TestCase):
         boot._State.hello_service = None
         boot._State.booted = False
 
-    def test_on_startup_returns_immediately_when_already_booted(self) -> None:
+    @staticmethod
+    def test_on_startup_returns_immediately_when_already_booted() -> None:
         boot._State.booted = True
 
         with (
@@ -125,6 +157,13 @@ class BootTests(TestCase):
 
 class RuntimeEntrypointTests(TestCase):
     @staticmethod
+    def _runtime_dir(runtime: str) -> Path:
+        try:
+            return _resolve_gunicorn_dir() / runtime
+        except FileNotFoundError as exc:
+            raise SkipTest(str(exc)) from exc
+
+    @staticmethod
     def _run_path(
         path: Path,
         *,
@@ -136,7 +175,8 @@ class RuntimeEntrypointTests(TestCase):
             return namespace, dict(os.environ)
 
     def test_manage_py_sets_settings_module_and_executes_cli_for_both_runtimes(self) -> None:
-        for module_dir in (_WSGI_DIR, _ASGI_DIR):
+        for runtime in ("WSGI", "ASGI"):
+            module_dir = self._runtime_dir(runtime)
             with self.subTest(module_dir=module_dir.name):
                 with (
                     mock.patch(
@@ -159,13 +199,15 @@ class RuntimeEntrypointTests(TestCase):
 
         with mock.patch("builtins.__import__", side_effect=fake_import):
             with self.assertRaisesRegex(ImportError, "Couldn't import Django"):
-                self._run_path(_WSGI_DIR / "manage.py", run_name="__main__")
+                self._run_path(self._runtime_dir("WSGI") / "manage.py", run_name="__main__")
 
     def test_wsgi_entrypoint_sets_defaults_and_exports_application(self) -> None:
         sentinel = object()
 
         with mock.patch("django.core.wsgi.get_wsgi_application", return_value=sentinel):
-            namespace, env_after = self._run_path(_WSGI_DIR / "hello_project" / "wsgi.py")
+            namespace, env_after = self._run_path(
+                self._runtime_dir("WSGI") / "hello_project" / "wsgi.py"
+            )
 
         self.assertIs(sentinel, namespace["application"])
         self.assertEqual("platform", env_after["HELLO_VARIANT"])
@@ -182,7 +224,9 @@ class RuntimeEntrypointTests(TestCase):
                 return_value=wrapped_app,
             ) as wrap_asgi_application,
         ):
-            namespace, env_after = self._run_path(_ASGI_DIR / "hello_project" / "asgi.py")
+            namespace, env_after = self._run_path(
+                self._runtime_dir("ASGI") / "hello_project" / "asgi.py"
+            )
 
         self.assertIs(wrapped_app, namespace["application"])
         wrap_asgi_application.assert_called_once_with(asgi_app)
@@ -193,14 +237,16 @@ class RuntimeEntrypointTests(TestCase):
         sentinel = object()
 
         with mock.patch("django.core.wsgi.get_wsgi_application", return_value=sentinel):
-            namespace, env_after = self._run_path(_ASGI_DIR / "hello_project" / "wsgi.py")
+            namespace, env_after = self._run_path(
+                self._runtime_dir("ASGI") / "hello_project" / "wsgi.py"
+            )
 
         self.assertIs(sentinel, namespace["application"])
         self.assertEqual("hello_project.settings", env_after["DJANGO_SETTINGS_MODULE"])
 
     def test_wsgi_gunicorn_config_reads_env_and_invokes_hooks(self) -> None:
         namespace, _ = self._run_path(
-            _WSGI_DIR / "gunicorn.conf.py",
+            self._runtime_dir("WSGI") / "gunicorn.conf.py",
             env={
                 "PORT": "9090",
                 "DJANGO_PLATFORM_WORKERS": "bad",
@@ -234,7 +280,7 @@ class RuntimeEntrypointTests(TestCase):
 
     def test_asgi_gunicorn_config_reads_env_and_invokes_hooks(self) -> None:
         namespace, _ = self._run_path(
-            _ASGI_DIR / "gunicorn.conf.py",
+            self._runtime_dir("ASGI") / "gunicorn.conf.py",
             env={
                 "PORT": "9191",
                 "DJANGO_REACTIVE_WORKERS": "5",

@@ -33,7 +33,8 @@ class OTelSetupExtraTests(TestCase):
         self.assertTrue(any("optional step failed" in message for message in logs.output))
         self.assertTrue(otel_setup._run_optional_otel_step(mock.Mock(), "unused"))
 
-    def test_apply_instrumentor_helpers_import_and_invoke_expected_methods(self) -> None:
+    @staticmethod
+    def test_apply_instrumentor_helpers_import_and_invoke_expected_methods() -> None:
         django_instrumentor = mock.Mock()
         logging_instrumentor = mock.Mock()
         modules = {
@@ -105,7 +106,8 @@ class OTelSetupExtraTests(TestCase):
         application = object()
         self.assertIs(application, otel_setup.wrap_asgi_application(application))
 
-    def test_do_configure_sdk_wires_tracing_metrics_and_log_export(self) -> None:
+    @staticmethod
+    def test_do_configure_sdk_wires_tracing_metrics_and_log_export() -> None:
         trace_api = types.SimpleNamespace(set_tracer_provider=mock.Mock())
         metrics_api = types.SimpleNamespace(set_meter_provider=mock.Mock())
         resource = object()
@@ -156,7 +158,8 @@ class OTelSetupExtraTests(TestCase):
         metrics_api.set_meter_provider.assert_called_once_with(meter_provider)
         configure_log_export.assert_called_once_with(resource)
 
-    def test_configure_log_export_attaches_handlers_and_sets_global_provider(self) -> None:
+    @staticmethod
+    def test_configure_log_export_attaches_handlers_and_sets_global_provider() -> None:
         logger_provider = mock.Mock()
         batch_log_record_processor = object()
         otel_handler = object()
@@ -196,7 +199,8 @@ class OTelSetupExtraTests(TestCase):
         hello_logger.addHandler.assert_called_once_with(otel_handler)
         django_logger.addHandler.assert_called_once_with(otel_handler)
 
-    def test_shutdown_helpers_call_provider_shutdown_when_available(self) -> None:
+    @staticmethod
+    def test_shutdown_helpers_call_provider_shutdown_when_available() -> None:
         tracer_provider = mock.Mock()
         meter_provider = mock.Mock()
         logger_provider = mock.Mock()
