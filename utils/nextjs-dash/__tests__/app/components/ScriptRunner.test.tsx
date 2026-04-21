@@ -1,6 +1,51 @@
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+
+vi.mock('@mui/material', async () => {
+  const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
+
+  type MockTooltipProps = {
+    children: React.ReactNode;
+  };
+
+  type MockCollapseProps = {
+    children: React.ReactNode;
+    in?: boolean;
+  };
+
+  type MockChipProps = {
+    label?: React.ReactNode;
+    icon?: React.ReactNode;
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  };
+
+  function MockTooltip({ children }: MockTooltipProps) {
+    return <>{children}</>;
+  }
+
+  function MockCollapse({ children, in: open }: MockCollapseProps) {
+    return open ? <>{children}</> : null;
+  }
+
+  function MockChip({ label, icon, children, ...props }: MockChipProps) {
+    const domProps = { ...props };
+    delete domProps.color;
+    delete domProps.size;
+    delete domProps.variant;
+    delete domProps.sx;
+
+    return <div {...domProps}>{icon}{label ?? children}</div>;
+  }
+
+  return {
+    ...actual,
+    Chip: MockChip,
+    Collapse: MockCollapse,
+    Tooltip: MockTooltip,
+  };
+});
 
 // ── Module mocks ──────────────────────────────────────────────────────
 
@@ -87,144 +132,156 @@ import ScriptRunner from '@/app/components/ScriptRunner';
 import { useScripts } from '@/app/hooks/useScripts';
 import { useJobRunner } from '@/app/hooks/useJobRunner';
 
+type ScriptsState = ReturnType<typeof useScripts>;
+type JobRunnerState = ReturnType<typeof useJobRunner>;
+type EnvValidationState = { loaded: boolean; hostRepoSet: boolean };
+
+function setScriptsState(overrides: Partial<ScriptsState> = {}) {
+  vi.mocked(useScripts).mockReturnValue({
+    ...defaultScriptsReturn,
+    ...overrides,
+  });
+}
+
+function setJobRunnerState(overrides: Partial<JobRunnerState> = {}) {
+  vi.mocked(useJobRunner).mockReturnValue({
+    ...defaultJobRunnerReturn,
+    ...overrides,
+  } as JobRunnerState);
+}
+
+function mockEnvValidation(validation?: EnvValidationState) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === '/api/env') {
+      if (!validation) {
+        return new Promise(() => {});
+      }
+
+      return new Response(
+        JSON.stringify({ validation }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    return new Response('Not found', { status: 404 });
+  });
+}
+
+function renderScriptRunner() {
+  render(<ScriptRunner />);
+}
+
 // ── Setup / teardown ──────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal('setInterval', vi.fn(() => 0));
+  vi.stubGlobal('clearInterval', vi.fn());
 
   // Reset mocks to default return values
-  vi.mocked(useScripts).mockReturnValue(defaultScriptsReturn);
-  vi.mocked(useJobRunner).mockReturnValue(defaultJobRunnerReturn as ReturnType<typeof useJobRunner>);
-
-  // Mock fetch for the env validation call
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url === '/api/env') {
-      return new Response(
-        JSON.stringify({ validation: { loaded: true, hostRepoSet: true } }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
-    return new Response('Not found', { status: 404 });
-  });
-
+  setScriptsState();
+  setJobRunnerState();
+  mockEnvValidation();
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  cleanup();
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────
 
 describe('ScriptRunner', () => {
   it('shows loading spinner when scripts are loading', () => {
-    vi.mocked(useScripts).mockReturnValue({
-      ...defaultScriptsReturn,
-      scripts: [],
-      loading: true,
-    });
+    setScriptsState({ scripts: [], loading: true });
 
-    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
-
-    render(<ScriptRunner />);
+    renderScriptRunner();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('renders the heading after loading', async () => {
-    render(<ScriptRunner />);
-    expect(await screen.findByText('Script Runner')).toBeInTheDocument();
+  it('renders the heading after loading', () => {
+    renderScriptRunner();
+    expect(screen.getByText('Script Runner')).toBeInTheDocument();
   });
 
-  it('renders script sections by category', async () => {
-    render(<ScriptRunner />);
+  it('renders script sections by category', () => {
+    renderScriptRunner();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('section-Build Images')).toBeInTheDocument();
-    });
-
+    expect(screen.getByTestId('section-Build Images')).toBeInTheDocument();
     expect(screen.getByTestId('section-Tests')).toBeInTheDocument();
   });
 
-  it('renders the Current Execution card', async () => {
-    render(<ScriptRunner />);
-    expect(await screen.findByText('Current Execution')).toBeInTheDocument();
+  it('renders the Current Execution card', () => {
+    renderScriptRunner();
+    expect(screen.getByText('Current Execution')).toBeInTheDocument();
   });
 
   it('executes a script when the execute button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('execute-Build All')).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('execute-Build All'));
     });
-
-    await user.click(screen.getByTestId('execute-Build All'));
 
     expect(mockReset).toHaveBeenCalled();
     expect(mockRunCommand).toHaveBeenCalledWith('docker compose build', 'Build All');
   });
 
-  it('shows Refresh button', async () => {
-    render(<ScriptRunner />);
-    expect(await screen.findByRole('button', { name: /Refresh/i })).toBeInTheDocument();
+  it('shows Refresh button', () => {
+    renderScriptRunner();
+    expect(screen.getByRole('button', { name: /Refresh/i })).toBeInTheDocument();
   });
 
   it('calls refresh when Refresh button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    await user.click(await screen.findByRole('button', { name: /Refresh/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Refresh/i }));
     expect(mockRefresh).toHaveBeenCalled();
   });
 
-  it('shows Custom Command button', async () => {
-    render(<ScriptRunner />);
-    expect(await screen.findByRole('button', { name: /Custom Command/i })).toBeInTheDocument();
+  it('shows Custom Command button', () => {
+    renderScriptRunner();
+    expect(screen.getByRole('button', { name: /Custom Command/i })).toBeInTheDocument();
   });
 
-  it('toggles free text input when Custom Command is clicked', async () => {
-    const user = userEvent.setup();
-    render(<ScriptRunner />);
+  it('toggles free text input when Custom Command is clicked', () => {
+    renderScriptRunner();
 
-    const customBtn = await screen.findByRole('button', { name: /Custom Command/i });
-    await user.click(customBtn);
+    fireEvent.click(screen.getByRole('button', { name: /Custom Command/i }));
 
     expect(screen.getByText('Execute Custom Command')).toBeInTheDocument();
   });
 
-  it('shows banner message on successful execution', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows banner message on successful execution', () => {
+    setJobRunnerState({
       eventLogs: ['line1', 'line2'],
       currentJobId: 'job-123',
       lastJobStatus: { jobId: 'job-123', status: 'SUCCEEDED' },
       lastCommand: 'docker compose build',
       lastLabel: 'Build All',
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText(/"Build All" completed successfully\./)).toBeInTheDocument();
+    expect(screen.getByText(/"Build All" completed successfully\./)).toBeInTheDocument();
   });
 
-  it('shows error banner on failed execution', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows error banner on failed execution', () => {
+    setJobRunnerState({
       currentJobId: 'job-456',
       lastJobStatus: { jobId: 'job-456', status: 'FAILED', exitCode: 1 },
       lastCommand: 'npm test',
       lastLabel: 'Run Tests',
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText(/"Run Tests" failed.*exitCode=1/)).toBeInTheDocument();
+    expect(screen.getByText(/"Run Tests" failed.*exitCode=1/)).toBeInTheDocument();
   });
 
-  it('shows status chip with RUNNING state', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows status chip with RUNNING state', () => {
+    setJobRunnerState({
       executing: true,
       eventLogs: ['starting...'],
       currentJobId: 'job-789',
@@ -232,56 +289,48 @@ describe('ScriptRunner', () => {
       lastCommand: 'docker compose up',
       lastLabel: 'Start OBS',
       sseConnected: true,
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('RUNNING')).toBeInTheDocument();
+    expect(screen.getByText('RUNNING')).toBeInTheDocument();
   });
 
-  it('shows Execution Logs section when there is execution state', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows Execution Logs section when there is execution state', () => {
+    setJobRunnerState({
       eventLogs: ['log line 1'],
       currentJobId: 'job-abc',
       lastJobStatus: { jobId: 'job-abc', status: 'SUCCEEDED' },
       lastCommand: 'test',
       lastLabel: 'Test',
-    } as ReturnType<typeof useJobRunner>);
-
-    render(<ScriptRunner />);
-
-    expect(await screen.findByText('Execution Logs')).toBeInTheDocument();
-  });
-
-  it('shows "no scripts found" when script list is empty and not loading', async () => {
-    vi.mocked(useScripts).mockReturnValue({
-      ...defaultScriptsReturn,
-      scripts: [],
     });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(
-      await screen.findByText(/No scripts found with required prefixes/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Execution Logs')).toBeInTheDocument();
   });
 
-  it('shows error alert when useScripts returns an error', async () => {
-    vi.mocked(useScripts).mockReturnValue({
-      ...defaultScriptsReturn,
+  it('shows "no scripts found" when script list is empty and not loading', () => {
+    setScriptsState({ scripts: [] });
+
+    renderScriptRunner();
+
+    expect(screen.getByText(/No scripts found with required prefixes/)).toBeInTheDocument();
+  });
+
+  it('shows error alert when useScripts returns an error', () => {
+    setScriptsState({
       scripts: [],
       error: 'Failed to load scripts',
     });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('Failed to load scripts')).toBeInTheDocument();
+    expect(screen.getByText('Failed to load scripts')).toBeInTheDocument();
   });
 
-  it('shows reconnect count chip', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows reconnect count chip', () => {
+    setJobRunnerState({
       eventLogs: ['line'],
       currentJobId: 'job-rc',
       lastJobStatus: { jobId: 'job-rc', status: 'RUNNING' },
@@ -289,16 +338,15 @@ describe('ScriptRunner', () => {
       lastCommand: 'cmd',
       lastLabel: 'Cmd',
       sseConnected: true,
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('3')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
   });
 
-  it('shows SSE Connected chip in Execution Logs when connected', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows SSE Connected chip in Execution Logs when connected', () => {
+    setJobRunnerState({
       executing: true,
       eventLogs: ['starting'],
       currentJobId: 'job-sse',
@@ -306,88 +354,75 @@ describe('ScriptRunner', () => {
       lastCommand: 'cmd',
       lastLabel: 'Cmd',
       sseConnected: true,
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('SSE Connected')).toBeInTheDocument();
+    expect(screen.getByText('SSE Connected')).toBeInTheDocument();
   });
 
-  it('shows SSE Disconnected chip when not connected', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows SSE Disconnected chip when not connected', () => {
+    setJobRunnerState({
       eventLogs: ['done'],
       currentJobId: 'job-disc',
       lastJobStatus: { jobId: 'job-disc', status: 'SUCCEEDED' },
       lastCommand: 'cmd',
       lastLabel: 'Cmd',
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('SSE Disconnected')).toBeInTheDocument();
+    expect(screen.getByText('SSE Disconnected')).toBeInTheDocument();
   });
 
-  it('shows CANCELED status', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows CANCELED status', () => {
+    setJobRunnerState({
       currentJobId: 'job-cancel',
       lastJobStatus: { jobId: 'job-cancel', status: 'CANCELED' },
       lastCommand: 'cmd',
       lastLabel: 'My Script',
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('CANCELED')).toBeInTheDocument();
-    expect(await screen.findByText(/"My Script" was canceled\./)).toBeInTheDocument();
+    expect(screen.getByText('CANCELED')).toBeInTheDocument();
+    expect(screen.getByText(/"My Script" was canceled\./)).toBeInTheDocument();
   });
 
   it('blocks execution when HOST_REPO is not set', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url === '/api/env') {
-        return new Response(
-          JSON.stringify({ validation: { loaded: true, hostRepoSet: false } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        );
-      }
-      return new Response('Not found', { status: 404 });
-    });
+    mockEnvValidation({ loaded: true, hostRepoSet: false });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
+    const execBtn = screen.getByTestId('execute-Build All');
     await waitFor(() => {
-      const execBtn = screen.getByTestId('execute-Build All');
       expect(execBtn).toBeDisabled();
     });
   });
 
-  it('shows job id chip', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows job id chip', () => {
+    setJobRunnerState({
       currentJobId: 'abc-def-123',
       lastJobStatus: { jobId: 'abc-def-123', status: 'SUCCEEDED' },
       lastCommand: 'cmd',
       lastLabel: 'Test',
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('abc-def-123')).toBeInTheDocument();
+    expect(screen.getByText('abc-def-123')).toBeInTheDocument();
   });
 
-  it('shows exit code on finished jobs', async () => {
-    vi.mocked(useJobRunner).mockReturnValue({
-      ...defaultJobRunnerReturn,
+  it('shows exit code on finished jobs', () => {
+    setJobRunnerState({
       currentJobId: 'job-exit',
       lastJobStatus: { jobId: 'job-exit', status: 'FAILED', exitCode: 137 },
       lastCommand: 'cmd',
       lastLabel: 'Test',
-    } as ReturnType<typeof useJobRunner>);
+    });
 
-    render(<ScriptRunner />);
+    renderScriptRunner();
 
-    expect(await screen.findByText('137')).toBeInTheDocument();
+    expect(screen.getByText('137')).toBeInTheDocument();
   });
 });

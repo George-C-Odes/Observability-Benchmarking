@@ -1002,7 +1002,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.8                  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.4                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.5                   | Frontend unit testing                                                |
 
 ---
 
