@@ -197,8 +197,12 @@ ignore:
 
   # ── 5. Metrics wiring (CDI producers / static binder registration) ──
   # These produce MeterBinder beans or call bindTo() — pure plumbing.
+  - "services/java/micronaut/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
   - "services/java/quarkus/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/helidon/se/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/helidon/mp/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
   - "services/java/spark/jvm/**/infra/MetricsProvider.java"
+  - "services/java/dropwizard/jvm/**/infra/MetricsProvider.java"
   - "services/java/vertx/jvm/**/infra/MetricsProvider.java"
   - "services/java/javalin/jvm/**/infra/MetricsProvider.java"
   - "services/java/pekko/jvm/**/infra/MetricsProvider.java"

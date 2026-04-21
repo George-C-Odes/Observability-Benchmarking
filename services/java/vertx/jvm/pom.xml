@@ -171,6 +171,7 @@
                 <configuration>
                     <excludes>
                         <exclude>io/github/georgecodes/benchmarking/vertx/VertxApplication*</exclude>
+                        <exclude>io/github/georgecodes/benchmarking/vertx/infra/MetricsProvider*</exclude>
                     </excludes>
                 </configuration>
                 <executions>

@@ -242,6 +242,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.14</version>
+                <configuration>
+                    <excludes>
+                        <exclude>io/github/georgecodes/benchmarking/helidon/se/HelidonApplication*</exclude>
+                        <exclude>io/github/georgecodes/benchmarking/helidon/se/infra/metrics/JvmExtrasMetricsConfiguration*</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
