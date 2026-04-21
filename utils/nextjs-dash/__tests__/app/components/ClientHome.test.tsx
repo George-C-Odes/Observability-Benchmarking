@@ -1,8 +1,47 @@
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { createMockStorage } from '@/__tests__/_helpers/storage';
 
 // ── Module mocks ──────────────────────────────────────────────────────
+
+vi.mock('@mui/material', async () => {
+  const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
+
+  type MockTabsProps = {
+    children?: React.ReactNode;
+    value?: number;
+    onChange?: (event: React.SyntheticEvent, value: number) => void;
+    'aria-label'?: string;
+  };
+
+  type MockTabProps = {
+    label: React.ReactNode;
+    selected?: boolean;
+    onSelect?: (event: React.SyntheticEvent) => void;
+  };
+
+  return {
+    ...actual,
+    Tabs: ({ children, value, onChange, 'aria-label': ariaLabel }: MockTabsProps) => (
+      <div role="tablist" aria-label={ariaLabel}>
+        {React.Children.map(children, (child, index) => {
+          if (!React.isValidElement(child)) return child;
+
+          return React.cloneElement(child as React.ReactElement<MockTabProps>, {
+            selected: value === index,
+            onSelect: (event: React.SyntheticEvent) => onChange?.(event, index),
+          });
+        })}
+      </div>
+    ),
+    Tab: ({ label, selected, onSelect }: MockTabProps) => (
+      <button type="button" role="tab" aria-selected={selected ? 'true' : 'false'} onClick={onSelect}>
+        {label}
+      </button>
+    ),
+  };
+});
 
 vi.mock('@/app/components/ServiceHealth', () => ({ default: () => <div data-testid="mock-service-health">ServiceHealth</div> }));
 vi.mock('@/app/components/ScriptRunner', () => ({ default: () => <div data-testid="mock-script-runner">ScriptRunner</div> }));
@@ -35,12 +74,24 @@ const TAB_TEST_IDS = {
 async function renderClientHomeAndWaitForActiveTab(activeTab: keyof typeof TAB_TEST_IDS = 0) {
   render(<ClientHome />);
   await screen.findByTestId(TAB_TEST_IDS[activeTab]);
+
+  return {
+    tabs: {
+      serviceHealth: screen.getByRole('tab', { name: 'Service Health' }),
+      scriptRunner: screen.getByRole('tab', { name: 'Script Runner' }),
+      environmentConfig: screen.getByRole('tab', { name: 'Environment Config' }),
+      benchmarkTargets: screen.getByRole('tab', { name: 'Benchmark Targets' }),
+      logs: screen.getByRole('tab', { name: 'Logs' }),
+      systemInfo: screen.getByRole('tab', { name: 'System Info' }),
+      projectHub: screen.getByRole('tab', { name: 'Project Hub' }),
+    },
+  };
 }
 
-async function activateTab(label: string, activeTab: keyof typeof TAB_TEST_IDS) {
-  fireEvent.click(screen.getByRole('tab', { name: label }));
+async function activateTab(tab: HTMLElement, activeTab: keyof typeof TAB_TEST_IDS) {
+  fireEvent.click(tab);
   await screen.findByTestId(TAB_TEST_IDS[activeTab]);
-  expect(screen.getByRole('tab', { name: label })).toHaveAttribute('aria-selected', 'true');
+  expect(tab).toHaveAttribute('aria-selected', 'true');
 }
 
 // ── localStorage stub ─────────────────────────────────────────────────
@@ -56,7 +107,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  cleanup();
 });
 
 describe('ClientHome', () => {
@@ -89,18 +139,18 @@ describe('ClientHome', () => {
   });
 
   it('mounts tab content on first visit and keeps it alive', async () => {
-    await renderClientHomeAndWaitForActiveTab();
+    const { tabs } = await renderClientHomeAndWaitForActiveTab();
 
-    await activateTab('Script Runner', 1);
+    await activateTab(tabs.scriptRunner, 1);
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Service Health' }));
+    fireEvent.click(tabs.serviceHealth);
     expect(screen.getByTestId('mock-script-runner')).toBeInTheDocument();
   });
 
   it('saves selected tab to localStorage', async () => {
-    await renderClientHomeAndWaitForActiveTab();
+    const { tabs } = await renderClientHomeAndWaitForActiveTab();
 
-    await activateTab('Logs', 4);
+    await activateTab(tabs.logs, 4);
     expect(localStorage.getItem('dashboardTab')).toBe('4');
   });
 
@@ -157,20 +207,20 @@ describe('ClientHome', () => {
   });
 
   it('switches all seven tabs without crashing', async () => {
-    await renderClientHomeAndWaitForActiveTab();
+    const { tabs } = await renderClientHomeAndWaitForActiveTab();
 
-    const tabNames: Array<[label: string, activeTab: keyof typeof TAB_TEST_IDS]> = [
-      ['Service Health', 0],
-      ['Script Runner', 1],
-      ['Environment Config', 2],
-      ['Benchmark Targets', 3],
-      ['Logs', 4],
-      ['System Info', 5],
-      ['Project Hub', 6],
+    const tabSequence: Array<[tab: HTMLElement, activeTab: keyof typeof TAB_TEST_IDS]> = [
+      [tabs.serviceHealth, 0],
+      [tabs.scriptRunner, 1],
+      [tabs.environmentConfig, 2],
+      [tabs.benchmarkTargets, 3],
+      [tabs.logs, 4],
+      [tabs.systemInfo, 5],
+      [tabs.projectHub, 6],
     ];
 
-    for (const [label, activeTab] of tabNames) {
-      await activateTab(label, activeTab);
+    for (const [tab, activeTab] of tabSequence) {
+      await activateTab(tab, activeTab);
     }
 
     expect(screen.getByTestId('mock-service-health')).toBeInTheDocument();

@@ -1,6 +1,79 @@
+import React from 'react';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+
+vi.mock('@mui/material', async () => {
+  const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
+
+  type MockTooltipProps = {
+    children: React.ReactNode;
+    title: React.ReactNode;
+  };
+
+  type MockChipProps = {
+    label?: React.ReactNode;
+    icon?: React.ReactNode;
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  };
+
+  function MockTooltip({ children, title }: MockTooltipProps) {
+    const [open, setOpen] = React.useState(false);
+
+    if (!React.isValidElement(children)) {
+      return open ? <>{children}<div>{title}</div></> : <>{children}</>;
+    }
+
+    const child = children as React.ReactElement<{
+      onMouseEnter?: (event: React.MouseEvent) => void;
+      onMouseLeave?: (event: React.MouseEvent) => void;
+      onFocus?: (event: React.FocusEvent) => void;
+      onBlur?: (event: React.FocusEvent) => void;
+    }>;
+
+    return (
+      <>
+        {React.cloneElement(child, {
+          onMouseEnter: (event: React.MouseEvent) => {
+            child.props.onMouseEnter?.(event);
+            setOpen(true);
+          },
+          onMouseLeave: (event: React.MouseEvent) => {
+            child.props.onMouseLeave?.(event);
+            setOpen(false);
+          },
+          onFocus: (event: React.FocusEvent) => {
+            child.props.onFocus?.(event);
+            setOpen(true);
+          },
+          onBlur: (event: React.FocusEvent) => {
+            child.props.onBlur?.(event);
+            setOpen(false);
+          },
+        })}
+        {open ? <div>{title}</div> : null}
+      </>
+    );
+  }
+
+  function MockChip({ label, icon, children, ...props }: MockChipProps) {
+    const {
+      color: _color,
+      size: _size,
+      variant: _variant,
+      sx: _sx,
+      ...domProps
+    } = props;
+
+    return <div {...domProps}>{icon}{label ?? children}</div>;
+  }
+
+  return {
+    ...actual,
+    Chip: MockChip,
+    Tooltip: MockTooltip,
+  };
+});
 
 // ServiceHealth calls fetchJson at module scope.
 vi.mock('@/lib/fetchJson', () => {
@@ -99,7 +172,7 @@ function setServiceActionsConfig(overrides?: Record<string, boolean>) {
 
 async function renderServiceHealth() {
   render(<ServiceHealth />);
-  await screen.findByText('Overview');
+  await screen.findByTestId('overview-total');
 }
 
 function getServiceCard(name: string) {
@@ -109,11 +182,13 @@ function getServiceCard(name: string) {
 }
 
 afterEach(() => {
-  cleanup();
+  vi.unstubAllGlobals();
 });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal('setInterval', vi.fn(() => 0));
+  vi.stubGlobal('clearInterval', vi.fn());
   setServiceActionsConfig();
   useTimedPulseMock.mockImplementation(() => ({ on: false, fire: vi.fn() }));
 
@@ -230,7 +305,6 @@ describe('ServiceHealth', () => {
       serviceActionsEnabled: { 'quarkus-jvm': true },
     });
 
-    const user = userEvent.setup();
     await renderServiceHealth();
 
     expect(screen.getByText('quarkus-jvm')).toBeInTheDocument();
@@ -238,7 +312,7 @@ describe('ServiceHealth', () => {
 
     const deleteBtn = within(card).getByLabelText('Delete');
     expect(deleteBtn).not.toBeDisabled();
-    await user.hover(deleteBtn);
+    fireEvent.mouseEnter(deleteBtn.closest('span') ?? deleteBtn);
 
     expect(
       await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm')
@@ -250,7 +324,6 @@ describe('ServiceHealth', () => {
       serviceActionsEnabled: { go: true },
     });
 
-    const user = userEvent.setup();
     await renderServiceHealth();
 
     expect(screen.getByText('go')).toBeInTheDocument();
@@ -258,7 +331,7 @@ describe('ServiceHealth', () => {
 
     const deleteBtn = within(card).getByLabelText('Delete');
     expect(deleteBtn).not.toBeDisabled();
-    await user.hover(deleteBtn);
+    fireEvent.mouseEnter(deleteBtn.closest('span') ?? deleteBtn);
 
     expect(
       await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s go')
