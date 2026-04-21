@@ -33,7 +33,8 @@ jobs:
       OTEL_SDK_DISABLED: 'true'
       PYROSCOPE_ENABLED: 'false'
       COMMON_SOURCE_DIR: services/python/django/gunicorn/common/src/obbench_django_common
-      COVERAGE_FILE: ${{ matrix.module_dir }}/.coverage
+      COVERAGE_OUTPUT_DIR: ${{ github.workspace }}/${{ matrix.module_dir }}
+      COVERAGE_FILE: ${{ github.workspace }}/${{ matrix.module_dir }}/.coverage
     strategy:
       fail-fast: false
       matrix:
@@ -79,10 +80,17 @@ jobs:
       - name: Generate coverage reports
         if: always() && !cancelled() && steps.test.outcome == 'success'
         run: |
-          python -m coverage json -o ${{ matrix.module_dir }}/coverage-summary.json --pretty-print
-          python -m coverage xml -o ${{ matrix.module_dir }}/coverage.xml
-          python -m coverage html -d ${{ matrix.module_dir }}/htmlcov
-          python -m coverage report -m > ${{ matrix.module_dir }}/coverage-report.txt
+          python -m coverage json -o "${COVERAGE_OUTPUT_DIR}/coverage-summary.json" --pretty-print
+          python -m coverage xml -o "${COVERAGE_OUTPUT_DIR}/coverage.xml"
+          python -m coverage html -d "${COVERAGE_OUTPUT_DIR}/htmlcov"
+          python -m coverage report -m > "${COVERAGE_OUTPUT_DIR}/coverage-report.txt"
+
+      - name: Verify generated coverage files
+        if: always() && !cancelled() && steps.test.outcome == 'success'
+        run: |
+          test -f "${COVERAGE_OUTPUT_DIR}/coverage.xml"
+          test -f "${COVERAGE_OUTPUT_DIR}/coverage-summary.json"
+          test -f "${COVERAGE_FILE}"
 
       - name: Generate coverage summary
         if: always() && !cancelled()
@@ -90,7 +98,7 @@ jobs:
           MODULE_NAME: ${{ matrix.summary_name }}
           MODULE_DIR: ${{ matrix.module_dir }}
           TEST_OUTCOME: ${{ steps.test.outcome }}
-          COVERAGE_JSON: ${{ matrix.module_dir }}/coverage-summary.json
+          COVERAGE_JSON: ${{ github.workspace }}/${{ matrix.module_dir }}/coverage-summary.json
         run: |
           python3 << 'PYEOF'
           import json
@@ -204,11 +212,11 @@ jobs:
         with:
           name: coverage-${{ matrix.codecov_flag }}
           path: |
-            ${{ matrix.module_dir }}/.coverage
-            ${{ matrix.module_dir }}/coverage-summary.json
-            ${{ matrix.module_dir }}/coverage-report.txt
-            ${{ matrix.module_dir }}/coverage.xml
-            ${{ matrix.module_dir }}/htmlcov/
+            ${{ github.workspace }}/${{ matrix.module_dir }}/.coverage
+            ${{ github.workspace }}/${{ matrix.module_dir }}/coverage-summary.json
+            ${{ github.workspace }}/${{ matrix.module_dir }}/coverage-report.txt
+            ${{ github.workspace }}/${{ matrix.module_dir }}/coverage.xml
+            ${{ github.workspace }}/${{ matrix.module_dir }}/htmlcov/
           retention-days: 30
           if-no-files-found: warn
 
@@ -216,7 +224,7 @@ jobs:
         if: always() && !cancelled() && steps.test.outcome == 'success'
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
-          files: ${{ matrix.module_dir }}/coverage.xml
+          files: ${{ github.workspace }}/${{ matrix.module_dir }}/coverage.xml
           flags: ${{ matrix.codecov_flag }}
           name: ${{ matrix.codecov_flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
