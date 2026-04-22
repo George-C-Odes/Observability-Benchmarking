@@ -22,7 +22,7 @@
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <opentelemetry.version>1.61.0</opentelemetry.version>
-        <opentelemetry.instrumentation.version>2.26.1</opentelemetry.instrumentation.version>
+        <opentelemetry.instrumentation.version>2.27.0</opentelemetry.instrumentation.version>
         <native.image.name>helidon-mp-native</native.image.name>
         <exec.mainClass>io.github.georgecodes.benchmarking.helidon.mp.Bootstrap</exec.mainClass>
         <maven.test.skip>true</maven.test.skip>

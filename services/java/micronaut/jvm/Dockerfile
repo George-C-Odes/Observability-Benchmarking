@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG MAVEN_RELEASE=3.9.14
+ARG MAVEN_RELEASE=3.9.15
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble

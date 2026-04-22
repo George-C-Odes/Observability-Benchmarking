@@ -6,7 +6,7 @@
 #
 asgiref==3.11.1
     # via django
-cachetools==7.0.5
+cachetools==7.0.6
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 cffi==2.0.0
     # via pyroscope-io

@@ -8,7 +8,7 @@ asgiref==3.11.1
     # via
     #   django
     #   opentelemetry-instrumentation-asgi
-cachetools==7.0.5
+cachetools==7.0.6
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 cffi==2.0.0
     # via pyroscope-io
@@ -113,7 +113,7 @@ typing-extensions==4.15.0
     #   opentelemetry-semantic-conventions
 tzdata==2026.1
     # via django
-uvicorn==0.44.0
+uvicorn==0.45.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 wrapt==2.1.2
     # via opentelemetry-instrumentation

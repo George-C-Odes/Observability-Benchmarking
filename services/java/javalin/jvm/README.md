@@ -50,7 +50,7 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.9.14-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.9.15-eclipse-temurin-25-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
