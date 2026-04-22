@@ -1,1 +1,11 @@
 *.exe
+*.test
+*.out
+*.prof
+bin/
+dist/
+coverage/
+quality-report/
+golangci-lint-report.json
+.DS_Store
+Thumbs.db

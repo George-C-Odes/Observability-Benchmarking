@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -15,8 +16,19 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
 )
+
+type stubCache struct {
+	value string
+	ok    bool
+}
+
+func (s stubCache) Get(string) (string, bool) { return s.value, s.ok }
+func (s stubCache) Size() int                 { return 1 }
+func (s stubCache) Close() error              { return nil }
 
 func newTestLogger(buf io.Writer) *slog.Logger {
 	// Use INFO so we don't accidentally capture debug-only internal logs and fail assertions.
@@ -145,6 +157,153 @@ func TestVirtual_BadParams(t *testing.T) {
 		}
 	}
 }
+
+func TestNewHelloHandler_RequiresCache(t *testing.T) {
+	if _, err := NewHelloHandler(HelloHandlerOpts{}); err == nil {
+		t.Fatal("expected cache is required error")
+	}
+}
+
+func TestNewHelloHandler_DefaultsFromEnv(t *testing.T) {
+	original := os.Getenv("APP_HANDLER_SPANS_ENABLED")
+	if err := os.Setenv("APP_HANDLER_SPANS_ENABLED", "true"); err != nil {
+		t.Fatalf("Setenv: %v", err)
+	}
+	t.Cleanup(func() {
+		if original == "" {
+			_ = os.Unsetenv("APP_HANDLER_SPANS_ENABLED")
+		} else {
+			_ = os.Setenv("APP_HANDLER_SPANS_ENABLED", original)
+		}
+	})
+
+	h, err := NewHelloHandler(HelloHandlerOpts{Cache: stubCache{value: "value-1", ok: true}})
+	if err != nil {
+		t.Fatalf("NewHelloHandler: %v", err)
+	}
+	if h.logger == nil || h.tracer == nil || h.spansEnabled == nil || !*h.spansEnabled {
+		t.Fatalf("expected defaults to be populated, got %#v", h)
+	}
+	if h.reqCountReg == nil {
+		t.Fatal("expected observable counter registration to be created")
+	}
+}
+
+func TestVirtual_NotFound(t *testing.T) {
+	app := fiber.New()
+	h, err := NewHelloHandler(HelloHandlerOpts{
+		Cache:        stubCache{},
+		Logger:       newTestLogger(io.Discard),
+		Meter:        metricnoop.NewMeterProvider().Meter("test"),
+		Tracer:       tracenoop.NewTracerProvider().Tracer("test"),
+		SpansEnabled: boolPtr(false),
+	})
+	if err != nil {
+		t.Fatalf("NewHelloHandler: %v", err)
+	}
+	app.Get("/hello/virtual", h.Virtual)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/hello/virtual", nil))
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusNotFound {
+		t.Fatalf("expected 404, got %d", resp.StatusCode)
+	}
+}
+
+func TestVirtual_SpansEnabled(t *testing.T) {
+	recorder := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
+	app := fiber.New()
+	h, err := NewHelloHandler(HelloHandlerOpts{
+		Cache:        stubCache{value: "value-1", ok: true},
+		Logger:       newTestLogger(io.Discard),
+		Meter:        metricnoop.NewMeterProvider().Meter("test"),
+		Tracer:       tp.Tracer("test"),
+		SpansEnabled: boolPtr(true),
+	})
+	if err != nil {
+		t.Fatalf("NewHelloHandler: %v", err)
+	}
+	app.Get("/hello/virtual", h.Virtual)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/hello/virtual", nil))
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	spans := recorder.Ended()
+	if len(spans) != 1 || spans[0].Name() != "hello.virtual" {
+		t.Fatalf("unexpected recorded spans: %#v", spans)
+	}
+}
+
+func TestParseHelloParams(t *testing.T) {
+	cases := []struct {
+		name       string
+		query      string
+		wantLog    bool
+		wantSleep  int
+		wantErrMsg string
+	}{
+		{name: "empty", query: "", wantLog: false, wantSleep: 0},
+		{name: "truthy numeric", query: "log=1&sleep=2", wantLog: true, wantSleep: 2},
+		{name: "false zero", query: "log=0&sleep=0", wantLog: false, wantSleep: 0},
+		{name: "empty log value", query: "log=&sleep=3", wantLog: false, wantSleep: 3},
+		{name: "missing equals ignored", query: "orphan&sleep=4", wantLog: false, wantSleep: 4},
+		{name: "invalid log", query: "log=maybe", wantErrMsg: "invalid log value"},
+		{name: "invalid sleep", query: "sleep=nope", wantErrMsg: "invalid sleep value"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			logEnabled, sleep, err := parseHelloParams([]byte(tc.query))
+			if tc.wantErrMsg != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErrMsg) {
+					t.Fatalf("expected error containing %q, got %v", tc.wantErrMsg, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("parseHelloParams(%q): %v", tc.query, err)
+			}
+			if logEnabled != tc.wantLog || sleep != tc.wantSleep {
+				t.Fatalf("parseHelloParams(%q) = (%v, %d), want (%v, %d)", tc.query, logEnabled, sleep, tc.wantLog, tc.wantSleep)
+			}
+		})
+	}
+}
+
+func TestBytesEqualStringAndIndexByte(t *testing.T) {
+	if !bytesEqualString([]byte("hello"), "hello") {
+		t.Fatal("expected bytesEqualString match")
+	}
+	if bytesEqualString([]byte("hello"), "world") {
+		t.Fatal("did not expect bytesEqualString mismatch to match")
+	}
+	if got := indexByte([]byte("a=b"), '='); got != 1 {
+		t.Fatalf("expected '=' at index 1, got %d", got)
+	}
+	if got := indexByte([]byte("abc"), '='); got != -1 {
+		t.Fatalf("expected missing byte index -1, got %d", got)
+	}
+}
+
+func TestParseNonNegInt_InvalidInputs(t *testing.T) {
+	for _, input := range [][]byte{nil, []byte(""), []byte("-1"), []byte("abc")} {
+		if _, ok := parseNonNegInt(input); ok {
+			t.Fatalf("expected parse failure for %q", string(input))
+		}
+	}
+	if n, ok := parseNonNegInt([]byte("123")); !ok || n != 123 {
+		t.Fatalf("expected successful parse, got n=%d ok=%v", n, ok)
+	}
+}
+
+func boolPtr(v bool) *bool { return &v }
 
 func TestParseNonNegInt_OverflowRejected(t *testing.T) {
 	// A value larger than MaxInt should be rejected (previous implementation could wrap silently).

@@ -45,11 +45,11 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (WebFlux - Reactor)
-- Quarkus 3.34.1 (JVM and Native)
+- Quarkus 3.34.6 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 4.10.18 (JVM and Native)
+- Micronaut 4.10.21 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)
@@ -60,7 +60,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 - Spark 3.0.4 (JVM)
   - Platform threads
   - Virtual threads
-- Javalin 7.1.0 (JVM)
+- Javalin 7.2.0 (JVM)
   - Platform threads
   - Virtual threads
 - Dropwizard 5.0.1 (JVM)
@@ -70,9 +70,9 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Reactive (event-loop)
 - Pekko 1.3.0 (JVM)
   - Reactive (Pekko dispatcher)
-- Go 1.26.1
+- Go 1.26.2
   - Fiber framework (v3.1.0)
-- Django 6.0.3 (CPython)
+- Django 6.0.4 (CPython)
   - Platform threads (Gunicorn gthread)
   - Reactive (Gunicorn + UvicornWorker ASGI)
 

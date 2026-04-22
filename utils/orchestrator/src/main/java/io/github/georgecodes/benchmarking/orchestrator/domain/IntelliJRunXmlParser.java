@@ -2,15 +2,24 @@ package io.github.georgecodes.benchmarking.orchestrator.domain;
 
 import lombok.extern.jbosslog.JBossLog;
 import org.apache.commons.lang3.StringUtils;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +35,9 @@ import java.util.Map;
  */
 @JBossLog
 public final class IntelliJRunXmlParser {
+
+  /** Error handler that rethrows parser diagnostics without writing them to stderr. */
+  private static final ErrorHandler THROWING_ERROR_HANDLER = new ThrowingErrorHandler();
 
   private IntelliJRunXmlParser() { }
 
@@ -54,7 +66,7 @@ public final class IntelliJRunXmlParser {
    */
   public record EnvVar(String name, String value) { }
 
-  public static ParsedRunConfig parse(Path file) throws Exception {
+  public static ParsedRunConfig parse(Path file) throws ParserConfigurationException, IOException, SAXException {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     // Secure-by-default XML parsing (avoid XXE).
     dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -62,10 +74,20 @@ public final class IntelliJRunXmlParser {
     dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
     dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
     dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+    dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+    dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
     dbf.setXIncludeAware(false);
     dbf.setExpandEntityReferences(false);
 
-    Document doc = dbf.newDocumentBuilder().parse(file.toFile());
+    var documentBuilder = dbf.newDocumentBuilder();
+    documentBuilder.setErrorHandler(THROWING_ERROR_HANDLER);
+
+    Document doc;
+    try (InputStream inputStream = Files.newInputStream(file)) {
+      InputSource inputSource = new InputSource(inputStream);
+      inputSource.setSystemId(file.toUri().toString());
+      doc = documentBuilder.parse(inputSource);
+    }
     doc.getDocumentElement().normalize();
 
     Element cfg = firstElement(doc, "configuration");
@@ -211,7 +233,7 @@ public final class IntelliJRunXmlParser {
         Path df = Path.of(dockerfile);
         Path parent = df.getParent();
         context = (parent == null) ? "." : parent.toString();
-      } catch (Exception e) {
+      } catch (InvalidPathException e) {
         context = ".";
       }
     }
@@ -346,5 +368,22 @@ public final class IntelliJRunXmlParser {
       }
     }
     return sb.toString();
+  }
+
+  private static final class ThrowingErrorHandler implements ErrorHandler {
+    @Override
+    public void warning(SAXParseException exception) throws SAXException {
+      throw exception;
+    }
+
+    @Override
+    public void error(SAXParseException exception) throws SAXException {
+      throw exception;
+    }
+
+    @Override
+    public void fatalError(SAXParseException exception) throws SAXException {
+      throw exception;
+    }
   }
 }

@@ -21,7 +21,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CodeIcon from '@mui/icons-material/Code';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -292,7 +292,7 @@ export default function ScriptRunner() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
         <CircularProgress />
       </Box>
     );
@@ -350,7 +350,7 @@ export default function ScriptRunner() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TerminalIcon /> Script Runner
@@ -359,7 +359,7 @@ export default function ScriptRunner() {
             Execute scripts from the .run directory with environment parameters
           </Typography>
         </Box>
-        <Box display="flex" gap={2}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={loading}>
             Refresh
           </Button>
@@ -405,7 +405,7 @@ export default function ScriptRunner() {
               variant="outlined"
               sx={{ mb: 2 }}
             />
-            <Box display="flex" gap={2}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <Tooltip
                 title={envBlocked ? envBlockedReason : executeBlockedReason}
                 arrow
@@ -453,8 +453,8 @@ export default function ScriptRunner() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2} flexWrap="wrap">
-            <Box display="flex" flexDirection="column" gap={1} minWidth={260}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 260 }}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TerminalIcon fontSize="small" /> Current Execution
               </Typography>
@@ -570,7 +570,7 @@ export default function ScriptRunner() {
               </Box>
             </Box>
 
-            <Box display="flex" flexDirection="column" gap={1} minWidth={260} flex={1}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 260, flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                 <Typography variant="caption" color="text.secondary">
                   Runtime:
@@ -635,8 +635,8 @@ export default function ScriptRunner() {
       {hasAnyExecutionState && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Box display="flex" alignItems="center" gap={1}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <ListAltIcon />
                 <Typography variant="h6">Execution Logs</Typography>
                 <Chip
@@ -657,7 +657,7 @@ export default function ScriptRunner() {
                 )}
               </Box>
 
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Tooltip title="Reset execution state (clears logs, status, and active job)">
                   <Button
                     size="small"
@@ -724,7 +724,7 @@ export default function ScriptRunner() {
                 {eventLogs.join('\n') || '—'}
               </Box>
 
-              <Box mt={1} display="flex" justifyContent="flex-end">
+              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button size="small" variant="outlined" onClick={clearEventLogs} sx={{ mr: 1 }}>
                   Clear Text
                 </Button>
@@ -787,7 +787,7 @@ export default function ScriptRunner() {
       />
 
       {scripts.length === 0 && !loading && (
-        <Box textAlign="center" py={4}>
+        <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="text.secondary">
             No scripts found with required prefixes ([build-img], [multi-cont], [single-cont], [test])
           </Typography>
@@ -796,3 +796,4 @@ export default function ScriptRunner() {
     </Box>
   );
 }
+

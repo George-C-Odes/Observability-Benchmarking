@@ -782,7 +782,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9.14-eclipse-temurin-25-noble AS builder
+FROM maven:3.9.15-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
@@ -967,7 +967,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 25.3.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 25.8.2                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.9.0                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -979,30 +979,30 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.2                  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4                  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 6.0.2                   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.2                  | Metrics, logs, traces dashboards                                     |
+| **Frontend**      | Framework          | Next.js                    | 16.2.4                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.5                  | UI rendering layer                                                   |
+| **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0                   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 13.0.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1                   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.3                  | Distributed tracing backend                                          |
+| **Observability** | Tracing            | Tempo                      | 2.10.4                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.5                   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.19.1                  | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 1.21.0                  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.1                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.61.0                  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.27.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.1                  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.14                  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.15                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.12.1                 | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.8                  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.5                   | Frontend unit testing                                                |
 
 ---
 

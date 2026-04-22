@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // scripts/pages/generate-go-quality-report.mjs
 //
-// Generates a self-contained HTML quality report for the Go Enhanced service
+// Generates a self-contained HTML quality report for a Go service module
 // from golangci-lint JSON output.
 //
 // Designed as the free alternative to Qodana-Go for CI quality reporting.
 //
-// Usage (from services/go/enhanced working directory):
+// Usage (from a Go module working directory):
 //   node ../../../scripts/pages/generate-go-quality-report.mjs
 //
 // Expected input files (in cwd):
@@ -17,7 +17,8 @@
 //
 // Environment variables (optional, auto-detected in GitHub Actions):
 //   GITHUB_SHA, GITHUB_RUN_ID, GITHUB_REPOSITORY,
-//   GOLANGCI_LINT_VERSION, GO_VERSION
+//   GOLANGCI_LINT_VERSION, GO_VERSION,
+//   REPORT_TITLE  – heading for the report (default: "Go Enhanced Service")
 
 import { resolve } from 'node:path';
 import {
@@ -177,8 +178,10 @@ if (issueTableRows) {
 
 const passClass = overallPass ? 'status-pass' : 'status-fail';
 
+const reportTitle = process.env.REPORT_TITLE || 'Go Enhanced Service';
+
 const body = [
-  '  <h1>Go Enhanced Service \u2014 Quality Report</h1>',
+  `  <h1>${esc(reportTitle)} \u2014 Quality Report</h1>`,
   '  <p class="subtitle">',
   '    Static analysis results from <code>golangci-lint</code> \u2014 a fast, parallel Go linter',
   '    aggregating dozens of analyzers including <code>govet</code>, <code>staticcheck</code>,',
@@ -208,7 +211,7 @@ const body = [
 ].join('\n');
 
 const html = htmlPage({
-  title: 'Go Services \u2014 Quality Report',
+  title: `${esc(reportTitle)} \u2014 Quality Report`,
   body,
 });
 

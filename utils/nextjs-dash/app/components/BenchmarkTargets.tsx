@@ -17,7 +17,7 @@ import {
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import { createClientLogger } from '@/lib/clientLogger';
 import { InwardPulse } from '@/app/components/ui/InwardPulse';
 import { useTimedPulse } from '@/app/hooks/useTimedPulse';
@@ -235,12 +235,25 @@ function badgeChipSx(
   };
 }
 
+async function readBenchmarkTargets(): Promise<Set<string>> {
+  const response = await fetch('/api/benchmark-targets', {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load benchmark targets (HTTP ${response.status})`);
+  }
+
+  const data = (await response.json()) as { urls?: string[] };
+  return new Set(data.urls ?? []);
+}
+
 export default function BenchmarkTargets() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [dirty, setDirty] = useState(false);
   const { on: savePulseOn } = useTimedPulse({ durationMs: 800, trigger: saving, allowFalsy: true });
 
   /** Tracks the persisted set so we can compare for dirty state */
@@ -250,22 +263,9 @@ export default function BenchmarkTargets() {
     setLoading(true);
     setMessage(null);
     try {
-      const response = await fetch('/api/benchmark-targets', {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      });
-
-      if (!response.ok) {
-        setMessage({ type: 'error', text: 'Failed to load benchmark targets' });
-        return;
-      }
-
-      const data = (await response.json()) as { urls?: string[] };
-      const urls = data.urls ?? [];
-      const urlSet = new Set(urls);
-      setSelected(urlSet);
-      setPersistedUrls(urlSet);
-      setDirty(false);
+      const urlSet = await readBenchmarkTargets();
+      setSelected(new Set(urlSet));
+      setPersistedUrls(new Set(urlSet));
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to load benchmark targets' });
       clientLogger.error('Failed to load benchmark targets', error);
@@ -275,8 +275,32 @@ export default function BenchmarkTargets() {
   }, []);
 
   useEffect(() => {
-    fetchTargets();
-  }, [fetchTargets]);
+    let cancelled = false;
+
+    const loadInitialTargets = async () => {
+      try {
+        const urlSet = await readBenchmarkTargets();
+        if (cancelled) return;
+
+        setSelected(new Set(urlSet));
+        setPersistedUrls(new Set(urlSet));
+      } catch (error) {
+        if (cancelled) return;
+        setMessage({ type: 'error', text: 'Failed to load benchmark targets' });
+        clientLogger.error('Failed to load benchmark targets', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadInitialTargets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleToggle = useCallback((url: string) => {
     setSelected((prev) => {
@@ -288,7 +312,6 @@ export default function BenchmarkTargets() {
       }
       return next;
     });
-    setDirty(true);
   }, []);
 
   const handleGroupFilter = useCallback((group: FilterGroup) => {
@@ -310,7 +333,6 @@ export default function BenchmarkTargets() {
         return next;
       });
     }
-    setDirty(true);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -332,7 +354,6 @@ export default function BenchmarkTargets() {
       }
 
       setPersistedUrls(new Set(urls));
-      setDirty(false);
       setMessage({ type: 'success', text: `Saved ${urls.length} benchmark target(s)` });
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to save benchmark targets' });
@@ -342,15 +363,17 @@ export default function BenchmarkTargets() {
     }
   }, [selected]);
 
-  /** Compute dirty state whenever selected changes */
-  useEffect(() => {
-    if (loading) return;
+  /** Compute dirty state from selected vs persisted state. */
+  const dirty = useMemo(() => {
+    if (loading) return false;
+
     const currentUrls = ALL_ENDPOINTS.filter((u) => selected.has(u));
     const persistedArr = ALL_ENDPOINTS.filter((u) => persistedUrls.has(u));
-    const isDirty =
+
+    return (
       currentUrls.length !== persistedArr.length ||
-      currentUrls.some((u, i) => u !== persistedArr[i]);
-    setDirty(isDirty);
+      currentUrls.some((u, i) => u !== persistedArr[i])
+    );
   }, [selected, persistedUrls, loading]);
 
   /** Group endpoints by framework/service for visual organization */
@@ -398,7 +421,7 @@ export default function BenchmarkTargets() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
         <CircularProgress />
       </Box>
     );
@@ -430,9 +453,9 @@ export default function BenchmarkTargets() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
         <TrackChangesIcon color="primary" />
-        <Typography variant="h5" fontWeight={600}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Benchmark Targets
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
@@ -465,7 +488,7 @@ export default function BenchmarkTargets() {
         </Typography>
         <Stack spacing={0.75}>
           {FILTER_ROWS.map((row) => (
-            <Stack key={row.label} direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Stack key={row.label} direction="row" spacing={0.75} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -520,14 +543,14 @@ export default function BenchmarkTargets() {
                     >
                       {sub.label}
                     </Typography>
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
                       {sub.urls.map(renderEndpointChip)}
                     </Stack>
                   </Box>
                 ))}
               </Stack>
             ) : (
-              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap' }}>
                 {group.urls.map(renderEndpointChip)}
               </Stack>
             )}

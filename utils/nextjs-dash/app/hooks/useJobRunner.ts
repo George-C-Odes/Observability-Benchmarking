@@ -55,6 +55,17 @@ type PersistedJobState = {
   savedAtMs: number;
 };
 
+type RestoredJobState = {
+  jobId: string;
+  runId: string | null;
+  lastCommand: string | null;
+  lastLabel: string | null;
+  reconnectCount: number;
+  lastJobStatus: JobStatus | null;
+  eventLogs: string[];
+  shouldReconnect: boolean;
+};
+
 const SESSION_KEY = 'scriptRunner.activeJob.v2';
 
 function writePersistedState(state: PersistedJobState | null) {
@@ -111,19 +122,50 @@ function normalizeString(v: unknown): string | null {
   return t ? t : null;
 }
 
+function getRestoredJobState(maxExecutionLogLines: number): RestoredJobState | null {
+  const persisted = readPersistedState();
+  if (!persisted) return null;
+
+  const jobId = normalizeJobId(persisted.jobId);
+  if (!jobId) return null;
+
+  const lastJobStatus = persisted.lastJobStatus ?? null;
+  const status = lastJobStatus?.status;
+  const shouldReconnect = status !== 'SUCCEEDED' && status !== 'FAILED' && status !== 'CANCELED';
+
+  const tail = Array.isArray(persisted.eventLogsTail) ? persisted.eventLogsTail : [];
+
+  const eventLogs = shouldReconnect
+    ? [...tail, `[client] Restored active job from session: ${jobId}. Reconnecting...`].slice(-maxExecutionLogLines)
+    : tail.slice(-maxExecutionLogLines);
+
+  return {
+    jobId,
+    runId: persisted.runId ?? null,
+    lastCommand: persisted.lastCommand ?? null,
+    lastLabel: persisted.lastLabel ?? null,
+    reconnectCount: persisted.reconnectCount ?? 0,
+    lastJobStatus,
+    eventLogs,
+    shouldReconnect,
+  };
+}
+
 // NOTE: The remainder of this hook had drifted into a different API shape.
 // Re-align it to the SSE-only contract: submit -> stream -> terminal.
 
 export function useJobRunner(): UseJobRunnerState {
   const { config: scriptRunnerConfig } = useScriptRunnerConfig();
 
+  const [restoredState] = useState<RestoredJobState | null>(() => getRestoredJobState(scriptRunnerConfig.maxExecutionLogLines));
+
   const [executing, setExecuting] = useState(false);
-  const [eventLogs, setEventLogs] = useState<string[]>([]);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const [lastJobStatus, setLastJobStatus] = useState<JobStatus | null>(null);
-  const [reconnectCount, setReconnectCount] = useState(0);
-  const [lastCommand, setLastCommand] = useState<string | null>(null);
-  const [lastLabel, setLastLabel] = useState<string | null>(null);
+  const [eventLogs, setEventLogs] = useState<string[]>(() => restoredState?.eventLogs ?? []);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(() => restoredState?.jobId ?? null);
+  const [lastJobStatus, setLastJobStatus] = useState<JobStatus | null>(() => restoredState?.lastJobStatus ?? null);
+  const [reconnectCount, setReconnectCount] = useState(() => restoredState?.reconnectCount ?? 0);
+  const [lastCommand, setLastCommand] = useState<string | null>(() => restoredState?.lastCommand ?? null);
+  const [lastLabel, setLastLabel] = useState<string | null>(() => restoredState?.lastLabel ?? null);
   const [sseConnected, setSseConnected] = useState(false);
   const sseConnectedRef = useRef(false);
   const [sseLastError, setSseLastError] = useState<string | null>(null);
@@ -137,9 +179,9 @@ export function useJobRunner(): UseJobRunnerState {
   const sseAutoCloseTimerRef = useRef<number | null>(null);
 
   const tabIdRef = useRef<string>(makeTabId());
-  const runningJobIdRef = useRef<string | null>(null);
+  const runningJobIdRef = useRef<string | null>(restoredState?.jobId ?? null);
   const jobGenerationRef = useRef(0);
-  const runIdRef = useRef<string | null>(null);
+  const runIdRef = useRef<string | null>(restoredState?.runId ?? null);
 
   const clientLogger = useMemo(() => createClientLogger('useJobRunner'), []);
 
@@ -496,48 +538,18 @@ export function useJobRunner(): UseJobRunnerState {
   }, [streamJobEvents]);
 
   useEffect(() => {
-    const persisted = readPersistedState();
-    if (!persisted) return;
+    if (!restoredState?.shouldReconnect) return;
 
-    const normalizedJobId = normalizeJobId(persisted.jobId);
-    if (!normalizedJobId) {
-      writePersistedState(null);
-      return;
-    }
+    jobGenerationRef.current += 1;
+    const generation = jobGenerationRef.current;
+    const timer = window.setTimeout(() => {
+      streamJobEventsRef.current?.(restoredState.jobId, generation);
+    }, 0);
 
-    runIdRef.current = persisted.runId ?? null;
-    runningJobIdRef.current = normalizedJobId;
-    setCurrentJobId(normalizedJobId);
-    setLastCommand(persisted.lastCommand ?? null);
-    setLastLabel(persisted.lastLabel ?? null);
-    setReconnectCount(persisted.reconnectCount ?? 0);
-    setLastJobStatus(persisted.lastJobStatus ?? null);
-
-    const tail = Array.isArray(persisted.eventLogsTail) ? persisted.eventLogsTail : [];
-    if (tail.length > 0) {
-      setEventLogs(tail.slice(-scriptRunnerConfig.maxExecutionLogLines));
-    }
-
-    const status = persisted.lastJobStatus?.status;
-    const isTerminal = status === 'SUCCEEDED' || status === 'FAILED' || status === 'CANCELED';
-
-    // If restored state indicates we're still running, reopen SSE.
-    if (!isTerminal) {
-      jobGenerationRef.current += 1;
-      const generation = jobGenerationRef.current;
-      setEventLogs((prev) => {
-        const updated = [...prev, `[client] Restored active job from session: ${normalizedJobId}. Reconnecting...`];
-        return updated.slice(-scriptRunnerConfig.maxExecutionLogLines);
-      });
-
-      window.setTimeout(() => {
-        streamJobEventsRef.current?.(normalizedJobId, generation);
-      }, 0);
-    }
-
-    // Intentionally run once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [restoredState]);
 
   // Persist a small tail of logs and the latest status so a refresh can resume.
   useEffect(() => {

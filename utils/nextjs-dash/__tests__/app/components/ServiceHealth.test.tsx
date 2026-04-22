@@ -1,6 +1,77 @@
+import React from 'react';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, within, cleanup, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+
+vi.mock('@mui/material', async () => {
+  const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
+
+  type MockTooltipProps = {
+    children: React.ReactNode;
+    title: React.ReactNode;
+  };
+
+  type MockChipProps = {
+    label?: React.ReactNode;
+    icon?: React.ReactNode;
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  };
+
+  function MockTooltip({ children, title }: MockTooltipProps) {
+    const [open, setOpen] = React.useState(false);
+
+    if (!React.isValidElement(children)) {
+      return open ? <>{children}<div>{title}</div></> : <>{children}</>;
+    }
+
+    const child = children as React.ReactElement<{
+      onMouseEnter?: (event: React.MouseEvent) => void;
+      onMouseLeave?: (event: React.MouseEvent) => void;
+      onFocus?: (event: React.FocusEvent) => void;
+      onBlur?: (event: React.FocusEvent) => void;
+    }>;
+
+    return (
+      <>
+        {React.cloneElement(child, {
+          onMouseEnter: (event: React.MouseEvent) => {
+            child.props.onMouseEnter?.(event);
+            setOpen(true);
+          },
+          onMouseLeave: (event: React.MouseEvent) => {
+            child.props.onMouseLeave?.(event);
+            setOpen(false);
+          },
+          onFocus: (event: React.FocusEvent) => {
+            child.props.onFocus?.(event);
+            setOpen(true);
+          },
+          onBlur: (event: React.FocusEvent) => {
+            child.props.onBlur?.(event);
+            setOpen(false);
+          },
+        })}
+        {open ? <div>{title}</div> : null}
+      </>
+    );
+  }
+
+  function MockChip({ label, icon, children, ...props }: MockChipProps) {
+    const domProps = { ...props };
+    delete domProps.color;
+    delete domProps.size;
+    delete domProps.variant;
+    delete domProps.sx;
+
+    return <div {...domProps}>{icon}{label ?? children}</div>;
+  }
+
+  return {
+    ...actual,
+    Chip: MockChip,
+    Tooltip: MockTooltip,
+  };
+});
 
 // ServiceHealth calls fetchJson at module scope.
 vi.mock('@/lib/fetchJson', () => {
@@ -8,6 +79,17 @@ vi.mock('@/lib/fetchJson', () => {
     fetchJson: vi.fn(),
   };
 });
+
+const useServiceActionsConfigMock = vi.hoisted(() => vi.fn());
+const useTimedPulseMock = vi.hoisted(() => vi.fn(() => ({ on: false, fire: vi.fn() })));
+
+vi.mock('@/app/hooks/useServiceActionsConfig', () => ({
+  useServiceActionsConfig: useServiceActionsConfigMock,
+}));
+
+vi.mock('@/app/hooks/useTimedPulse', () => ({
+  useTimedPulse: useTimedPulseMock,
+}));
 
 import { fetchJson } from '@/lib/fetchJson';
 import ServiceHealth from '@/app/components/ServiceHealth';
@@ -45,25 +127,7 @@ const SERVICE_ACTIONS_ENABLED_DEFAULT: Record<string, boolean> = {
 };
 
 function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnabled?: Record<string, boolean> }) {
-  const serviceActionsEnabled = {
-    ...SERVICE_ACTIONS_ENABLED_DEFAULT,
-    ...(opts?.serviceActionsEnabled ?? {}),
-  };
-
-  // Update global fetch mock for this test case (used by useServiceActionsConfig).
-  const fetchMock = vi.mocked(globalThis.fetch as unknown as ReturnType<typeof vi.fn>);
-  fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url === '/api/service-actions/config') {
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ enabled: serviceActionsEnabled }),
-        text: async () => '',
-      } as unknown as Response;
-    }
-    throw new Error(`Unexpected fetch call: ${url}`);
-  });
+  setServiceActionsConfig(opts?.serviceActionsEnabled);
 
   vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
@@ -90,38 +154,44 @@ function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnab
   });
 }
 
+function setServiceActionsConfig(overrides?: Record<string, boolean>) {
+  useServiceActionsConfigMock.mockReturnValue({
+    config: {
+      enabled: {
+        ...SERVICE_ACTIONS_ENABLED_DEFAULT,
+        ...(overrides ?? {}),
+      },
+    },
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  });
+}
+
+async function renderServiceHealth() {
+  render(<ServiceHealth />);
+  await screen.findByTestId('overview-total');
+}
+
+function getServiceCard(name: string) {
+  const card = screen.getByText(name).closest('.MuiCard-root');
+  expect(card).toBeTruthy();
+  return card as HTMLElement;
+}
+
 afterEach(() => {
-  vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  cleanup();
 });
 
 beforeEach(() => {
-  // Mock global fetch used by useServiceActionsConfig.
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url === '/api/service-actions/config') {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ enabled: SERVICE_ACTIONS_ENABLED_DEFAULT }),
-          text: async () => '',
-        } as unknown as Response;
-      }
-      throw new Error(`Unexpected fetch call: ${url}`);
-    })
-  );
+  vi.clearAllMocks();
+  vi.stubGlobal('setInterval', vi.fn(() => 0));
+  vi.stubGlobal('clearInterval', vi.fn());
+  setServiceActionsConfig();
+  useTimedPulseMock.mockImplementation(() => ({ on: false, fire: vi.fn() }));
 
-  // Default mock for the fetchJson calls used by ServiceHealth (health + docker control).
   vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-
-    if (url === '/api/docker/controle') {
-      // typo safety
-      throw new Error('Unexpected endpoint');
-    }
 
     if (url === '/api/docker/control') {
       expect(init?.method).toBe('POST');
@@ -140,9 +210,7 @@ describe('ServiceHealth', () => {
       { name: 'tempo', status: 'pending', baseUrl: 'http://tempo:3200' },
     ]);
 
-    render(<ServiceHealth />);
-
-    expect(await screen.findByText('Overview')).toBeInTheDocument();
+    await renderServiceHealth();
 
     expect(screen.getByTestId('overview-last-updated')).not.toHaveTextContent('—');
 
@@ -170,9 +238,6 @@ describe('ServiceHealth', () => {
 
     vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/service-actions/config') {
-        return { enabled: SERVICE_ACTIONS_ENABLED_DEFAULT };
-      }
       if (url.startsWith('/api/health')) {
         healthCalls += 1;
         return { services: healthCalls === 1 ? first : second };
@@ -183,10 +248,7 @@ describe('ServiceHealth', () => {
       throw new Error(`Unexpected fetchJson call: ${url}`);
     });
 
-    const user = userEvent.setup();
-    render(<ServiceHealth />);
-
-    expect(await screen.findByText('Overview')).toBeInTheDocument();
+    await renderServiceHealth();
 
     const initialUpdated = screen.getByTestId('overview-last-updated').textContent;
     expect(initialUpdated).toBeTruthy();
@@ -199,7 +261,7 @@ describe('ServiceHealth', () => {
     expect(screen.getByTestId('overview-total')).toHaveTextContent('TOTAL');
     expect(screen.getByTestId('overview-total')).toHaveTextContent('2');
 
-    await user.click(screen.getByRole('button', { name: 'Refresh All' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh All' }));
 
     expect(await screen.findByTestId('overview-up')).toHaveTextContent('1');
     expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
@@ -217,22 +279,19 @@ describe('ServiceHealth', () => {
       { serviceActionsEnabled: { wrk2: true } }
     );
 
-    const user = userEvent.setup();
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('wrk2')).toBeInTheDocument();
+    expect(screen.getByText('wrk2')).toBeInTheDocument();
     expect(screen.getByTestId('overview-pending')).toHaveTextContent('PENDING');
     expect(screen.getByTestId('overview-pending')).toHaveTextContent('0');
     expect(screen.getByTestId('overview-down')).toHaveTextContent('DOWN');
     expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
 
-    const wrk2Card = screen.getByText('wrk2').closest('.MuiCard-root') as HTMLElement;
-    expect(wrk2Card).toBeTruthy();
+    const wrk2Card = getServiceCard('wrk2');
 
-    const startBtn = await within(wrk2Card).findByLabelText('Start');
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
-    await waitFor(() => expect(startBtn).not.toBeDisabled());
-    await user.click(startBtn);
+    const startBtn = within(wrk2Card).getByLabelText('Start');
+    expect(startBtn).not.toBeDisabled();
+    fireEvent.click(startBtn);
 
     expect(await within(wrk2Card).findByText('PENDING')).toBeInTheDocument();
     expect(screen.getByTestId('overview-pending')).toHaveTextContent('1');
@@ -244,17 +303,14 @@ describe('ServiceHealth', () => {
       serviceActionsEnabled: { 'quarkus-jvm': true },
     });
 
-    const user = userEvent.setup();
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('quarkus-jvm')).toBeInTheDocument();
-    const card = screen.getByText('quarkus-jvm').closest('.MuiCard-root') as HTMLElement;
-    expect(card).toBeTruthy();
+    expect(screen.getByText('quarkus-jvm')).toBeInTheDocument();
+    const card = getServiceCard('quarkus-jvm');
 
-    const deleteBtn = await within(card).findByLabelText('Delete');
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
-    await waitFor(() => expect(deleteBtn).not.toBeDisabled());
-    await user.hover(deleteBtn);
+    const deleteBtn = within(card).getByLabelText('Delete');
+    expect(deleteBtn).not.toBeDisabled();
+    fireEvent.mouseEnter(deleteBtn.closest('span') ?? deleteBtn);
 
     expect(
       await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm')
@@ -266,17 +322,14 @@ describe('ServiceHealth', () => {
       serviceActionsEnabled: { go: true },
     });
 
-    const user = userEvent.setup();
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('go')).toBeInTheDocument();
-    const card = screen.getByText('go').closest('.MuiCard-root') as HTMLElement;
-    expect(card).toBeTruthy();
+    expect(screen.getByText('go')).toBeInTheDocument();
+    const card = getServiceCard('go');
 
-    const deleteBtn = await within(card).findByLabelText('Delete');
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
-    await waitFor(() => expect(deleteBtn).not.toBeDisabled());
-    await user.hover(deleteBtn);
+    const deleteBtn = within(card).getByLabelText('Delete');
+    expect(deleteBtn).not.toBeDisabled();
+    fireEvent.mouseEnter(deleteBtn.closest('span') ?? deleteBtn);
 
     expect(
       await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s go')
@@ -291,8 +344,7 @@ describe('ServiceHealth', () => {
     ]);
 
     const { container } = render(<ServiceHealth />);
-
-    expect(await screen.findByText('Utils')).toBeInTheDocument();
+    await screen.findByText('Utils');
 
     const utilsHeader = screen.getByText('Utils');
     const utilsGrid = utilsHeader.nextElementSibling as HTMLElement;
@@ -316,18 +368,15 @@ describe('ServiceHealth', () => {
       serviceActionsEnabled: { wrk2: true },
     });
 
-    const user = userEvent.setup();
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('wrk2')).toBeInTheDocument();
+    expect(screen.getByText('wrk2')).toBeInTheDocument();
 
-    const wrk2Card = screen.getByText('wrk2').closest('.MuiCard-root') as HTMLElement;
-    expect(wrk2Card).toBeTruthy();
+    const wrk2Card = getServiceCard('wrk2');
 
-    const startButton = await within(wrk2Card).findByLabelText('Start');
-    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
-    await waitFor(() => expect(startButton).not.toBeDisabled());
-    await user.click(startButton);
+    const startButton = within(wrk2Card).getByLabelText('Start');
+    expect(startButton).not.toBeDisabled();
+    fireEvent.click(startButton);
 
     expect(fetchJson).toHaveBeenCalledWith(
       '/api/docker/control',
@@ -353,18 +402,15 @@ describe('ServiceHealth', () => {
         serviceActionsEnabled: { orchestrator: true },
       });
 
-      const user = userEvent.setup();
       const { unmount } = render(<ServiceHealth />);
 
       expect(await screen.findByText('orchestrator')).toBeInTheDocument();
 
-      const orchCard = screen.getByText('orchestrator').closest('.MuiCard-root') as HTMLElement;
-      expect(orchCard).toBeTruthy();
+      const orchCard = getServiceCard('orchestrator');
 
-      const btn = await within(orchCard).findByLabelText(a.label);
-      await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith('/api/service-actions/config', expect.anything()));
-      await waitFor(() => expect(btn).not.toBeDisabled());
-      await user.click(btn);
+      const btn = within(orchCard).getByLabelText(a.label);
+      expect(btn).not.toBeDisabled();
+      fireEvent.click(btn);
 
       expect(fetchJson).toHaveBeenCalledWith(
         '/api/docker/control',
@@ -389,9 +435,9 @@ describe('ServiceHealth', () => {
       },
     ]);
 
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('connection refused')).toBeInTheDocument();
+    expect(screen.getByText('connection refused')).toBeInTheDocument();
     expect(screen.getByText('Response body (hover)')).toBeInTheDocument();
 
     expect(screen.queryByText(/"details"/)).not.toBeInTheDocument();
@@ -402,12 +448,11 @@ describe('ServiceHealth', () => {
       serviceActionsEnabled: { go: false },
     });
 
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('go')).toBeInTheDocument();
+    expect(screen.getByText('go')).toBeInTheDocument();
 
-    const goCard = screen.getByText('go').closest('.MuiCard-root') as HTMLElement;
-    expect(goCard).toBeTruthy();
+    const goCard = getServiceCard('go');
 
     expect(within(goCard).getByLabelText('Refresh')).not.toBeDisabled();
 
@@ -421,9 +466,9 @@ describe('ServiceHealth', () => {
   it('renders Base URL as plain text (not a link)', async () => {
     mockHealthResponse([{ name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' }]);
 
-    render(<ServiceHealth />);
+    await renderServiceHealth();
 
-    expect(await screen.findByText('grafana')).toBeInTheDocument();
+    expect(screen.getByText('grafana')).toBeInTheDocument();
 
     expect(screen.getByText('http://grafana:3000')).toBeInTheDocument();
 

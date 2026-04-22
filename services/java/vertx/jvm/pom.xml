@@ -14,7 +14,7 @@
 
         <vertx.version>5.0.8</vertx.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <micrometer.version>1.16.4</micrometer.version>
+        <micrometer.version>1.16.5</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <logback.version>1.5.32</logback.version>
@@ -168,6 +168,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.14</version>
+                <configuration>
+                    <excludes>
+                        <exclude>io/github/georgecodes/benchmarking/vertx/VertxApplication*</exclude>
+                        <exclude>io/github/georgecodes/benchmarking/vertx/infra/MetricsProvider*</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

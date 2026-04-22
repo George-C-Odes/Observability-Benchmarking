@@ -3,7 +3,7 @@
 # Quarkus JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.34.1 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Quarkus 3.34.6 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Quarkus performance across platform threads, virtual threads, and reactive programming models
@@ -14,18 +14,18 @@ A high-performance REST service implementation built with Quarkus 3.34.1 running
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.34.1
+- **Framework**: Quarkus 3.34.6
 - **Java Version**: Eclipse Temurin 25.0.2
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
 ### Docker
 
-**Image**: `quarkus-jvm:3.34.1_latest`
+**Image**: `quarkus-jvm:3.34.6_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.9.14-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.9.15-eclipse-temurin-25-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 This Docker image uses a multi-stage build:
@@ -126,19 +126,30 @@ quarkus:
   micrometer:
     enabled: true
     binder:
+      enable-all: false
+      grpc-client:
+        enabled: false
+      grpc-server:
+        enabled: false
+      http-client:
+        enabled: false
       http-server:
+        enabled: false
+      jvm: false
+      netty:
         enabled: true
-      jvm: true
+      system: true
       virtual-threads:
         enabled: true
       vertx:
-        enabled: false
+        enabled: true
     export:
       json:
         enabled: true
         path: metrics/json
       prometheus:
         enabled: false
+        path: metrics/prometheus
 ```
 
 #### Health
@@ -146,7 +157,7 @@ quarkus:
 quarkus:
   smallrye-health:
     ui:
-      enabled: true
+      enabled: false
 ```
 
 ### JVM Options (via JAVA_TOOL_OPTIONS)
@@ -301,22 +312,22 @@ Tracks request count per endpoint.
 ### Local Development
 ```bash
 cd services/java/quarkus/jvm
-./mvnw quarkus:dev
+mvn quarkus:dev
 ```
 
 ### Production Build
 ```bash
 cd services/java/quarkus/jvm
-./mvnw clean package -DskipTests
+mvn clean package -DskipTests
 ```
 
 ### Docker Build
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.34.1_latest `
-  --build-arg QUARKUS_VERSION=3.34.1 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.34.1_latest `
+  -t quarkus-jvm:3.34.6_latest `
+  --build-arg QUARKUS_VERSION=3.34.6 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.34.6_latest `
   --load `
   services/java
 ```
@@ -332,6 +343,16 @@ docker compose --project-directory compose \
 
 ## Testing
 
+### Local Test + Coverage Run
+```bash
+cd services/java/quarkus/jvm
+mvn verify -Dcheckstyle.skip=true
+```
+
+This generates the local JaCoCo reports at:
+- `target/site/jacoco/index.html`
+- `target/site/jacoco/jacoco.xml`
+
 ### Health Checks
 ```bash
 # Readiness
@@ -339,10 +360,9 @@ curl http://localhost:8080/q/health/ready
 
 # Liveness
 curl http://localhost:8080/q/health/live
-
-# Health UI
-open http://localhost:8080/q/health-ui/
 ```
+
+> Note: the SmallRye Health UI is currently disabled in `application.yml`.
 
 ### Endpoint Testing
 ```bash
@@ -403,13 +423,13 @@ rate(jvm_gc_pause_seconds_sum[1m])
 ## Dependencies
 
 ### Key Dependencies (pom.xml)
+- `io.quarkus:quarkus-config-yaml` - YAML-based Quarkus configuration
 - `io.quarkus:quarkus-rest` - RESTful web services
 - `io.quarkus:quarkus-rest-jackson` - JSON serialization
-- `io.quarkus:quarkus-micrometer` - Metrics
-- `io.quarkus:quarkus-virtual-threads` - Virtual thread support
+- `io.quarkus:quarkus-arc` - CDI / dependency injection
+- `io.quarkus:quarkus-micrometer-opentelemetry` - Micrometer metrics bridged into OpenTelemetry
 - `io.quarkus:quarkus-smallrye-health` - Health checks
-- `io.quarkus:quarkus-smallrye-fault-tolerance` - Resilience
-- `com.github.ben-manes.caffeine:caffeine` - In-memory cache
+- `io.quarkus:quarkus-caffeine` - Caffeine-backed cache integration
 - `io.github.mweirauch:micrometer-jvm-extras` - Enhanced JVM metrics
 
 ## Known Issues

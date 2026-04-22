@@ -35,7 +35,7 @@ Example:
 ## Quick start (local)
 
 ### Prerequisites
-- Go **1.26.x** (tested with Go 1.26.1)
+- Go **1.26.x** (tested with Go 1.26.2)
 - Docker (optional)
 
 ### Run
@@ -119,9 +119,81 @@ go test ./... -race
 
 ### Docker
 ```bash
-docker build -t go:1.26.1_latest .
-docker run --rm -p 8080:8080 go:1.26.1_latest
+docker build -t go:1.26.2_latest .
+docker run --rm -p 8080:8080 go:1.26.2_latest
 ```
+
+---
+
+## Local quality checks
+
+This module is fully wired into the repository's Go quality and coverage
+workflows, and the local commands below mirror those CI checks closely.
+
+### Direct commands
+
+```bash
+cd services/go/enhanced
+go mod download
+go vet ./...
+golangci-lint run
+go test ./... -race -count=1
+go build ./cmd/server
+
+# Optional parity with the non-blocking CI vuln scan
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
+
+# Coverage
+go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
+```
+
+### Makefile shortcuts
+
+```bash
+cd services/go/enhanced
+make lint
+make test
+make coverage
+```
+
+## CI, reporting, and coverage
+
+- **Lint / quality workflow**: `.github/workflows/go_quality.yml`
+  - verifies `go.mod` / `go.sum` tidiness, then runs `go vet`, `golangci-lint run`, `go test -race`, `go build`, and `govulncheck`
+  - uploads a hosted HTML quality report artifact: `quality-report-go`
+- **Coverage workflow**: `.github/workflows/go_coverage.yml`
+  - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
+  - uploads `coverage.out` and `coverage.html`
+  - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
+  - enforces the current enhanced-module statement threshold of **40%**
+- **Codecov flag**: `go-enhanced`
+  - mapped in the repository root `codecov.yml` to `services/go/enhanced/`
+
+Hosted report URL on GitHub Pages:
+
+```text
+https://george-c-odes.github.io/Observability-Benchmarking/quality/go/
+```
+
+## Testing notes
+
+The current unit tests cover:
+
+- handler behavior for `/hello/virtual`
+- query parameter parsing and validation (`sleep`, `log`, bad values)
+- cache implementations and hit/miss behavior
+- configuration parsing from environment variables
+- logging and trace-correlation helpers
+- HTTP tracing middleware utilities
+- OpenTelemetry and Pyroscope setup using deterministic test doubles where needed
+
+If your local Windows Go toolchain has filesystem-permission issues with the
+managed toolchain cache or C toolchain headers, run the same commands in Docker
+instead. The GitHub Actions workflows run on Linux and remain the source of
+truth for `-race`, build, and coverage parity.
 
 ---
 

@@ -14,7 +14,7 @@
 
         <dropwizard.version>5.0.1</dropwizard.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <micrometer.version>1.16.4</micrometer.version>
+        <micrometer.version>1.16.5</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <junit-jupiter.version>5.14.3</junit-jupiter.version>
@@ -127,6 +127,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.14</version>
+                <configuration>
+                    <excludes>
+                        <exclude>io/github/georgecodes/benchmarking/dropwizard/DropwizardApplication*</exclude>
+                        <exclude>io/github/georgecodes/benchmarking/dropwizard/infra/MetricsProvider*</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

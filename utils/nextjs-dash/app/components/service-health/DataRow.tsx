@@ -18,10 +18,10 @@ export interface DataRowProps {
 export const DataRow = React.memo(function DataRow(props: DataRowProps) {
   return (
     <Box
-      display="flex"
-      alignItems="center"
-      gap={1}
       sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
         minHeight: 22,
         py: 0.125,
         minWidth: 0,

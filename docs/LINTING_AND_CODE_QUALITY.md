@@ -162,7 +162,7 @@ Important behavior:
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
 - if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
 
-The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v6`, `actions/upload-pages-artifact@v4`, and `actions/deploy-pages@v5`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
+The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v6`, `actions/upload-pages-artifact@v5`, and `actions/deploy-pages@v5`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
 
 Expected URL shape:
 
@@ -497,10 +497,13 @@ For full CI parity, run the shared test suite from each module as documented in
 
 Ruff is also available as an IDE plugin for real-time feedback.
 
-## golangci-lint Configuration (Go Enhanced Service)
+## golangci-lint Configuration (Go Services)
 
 ### Overview
-The Go Enhanced service (`services/go/enhanced`) uses [golangci-lint](https://golangci-lint.run/) as an aggregated Go linter running dozens of analyzers in parallel. The configuration lives in `services/go/enhanced/.golangci.yml`.
+Both Go modules — `services/go/enhanced` and `services/go/simple` — use [golangci-lint](https://golangci-lint.run/) as an aggregated Go linter running multiple analyzers in parallel. Each module keeps its own configuration file:
+
+- `services/go/enhanced/.golangci.yml`
+- `services/go/simple/.golangci.yml`
 
 ### Enabled Linters
 - **govet** — reports suspicious constructs (e.g., Printf calls with mismatched format strings)
@@ -519,25 +522,45 @@ The Go Enhanced service (`services/go/enhanced`) uses [golangci-lint](https://go
 Test files (`_test.go`) have relaxed rules: `errcheck` and `gosec` are excluded.
 
 ### GitHub Actions Workflow
-The workflow in `.github/workflows/go_quality.yml` performs:
+The workflow in `.github/workflows/go_quality.yml` covers both Go modules in parallel jobs:
 
-1. **go vet** — built-in Go analysis
-2. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
-3. **go test** — unit tests with race detector (`-race`)
-4. **go build** — compilation smoke test
+**Enhanced** (`quality` job) — full quality pipeline:
+
+1. **go mod tidy verification** — ensures `go.mod` / `go.sum` stay tidy
+2. **go vet** — built-in Go analysis
+3. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
+4. **go test** — unit tests with race detector (`-race`)
+5. **go build** — compilation smoke test
+6. **govulncheck** — non-blocking vulnerability scan for visibility in CI
+
+**Simple** (`quality-simple` job) — full quality pipeline:
+
+1. **go mod tidy verification** — ensures `go.mod` / `go.sum` stay tidy
+2. **go vet** — built-in Go analysis
+3. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
+4. **go test** — unit tests with race detector (`-race`)
+5. **go build** — compilation smoke test
+6. **govulncheck** — non-blocking vulnerability scan for visibility in CI
 
 The workflow is triggered on:
 - manual dispatch
-- pull requests touching `services/go/enhanced/**`
-- pushes to `main` touching `services/go/enhanced/**`
+- pull requests touching `services/go/**`
+- pushes to `main` touching `services/go/**`
+- a weekly scheduled run (Monday at 06:00 UTC)
 
-### Hosted Quality Report on GitHub Pages
-After each run, the workflow uses the `golangci-lint run` step, configured via `.golangci.yml` `output.formats`, to write a `golangci-lint-report.json` file, which is then consumed by `scripts/pages/generate-go-quality-report.mjs` (using shared utilities from `scripts/pages/report-helpers.mjs`) to generate a self-contained HTML quality report. The report is uploaded as a `quality-report-go` artifact and published to GitHub Pages by the Pages workflow.
+### Hosted Quality Reports on GitHub Pages
+After each run, both Go jobs use the `golangci-lint run` step, configured via `.golangci.yml` `output.formats`, to write a `golangci-lint-report.json` file. That JSON is then consumed by `scripts/pages/generate-go-quality-report.mjs` (using shared utilities from `scripts/pages/report-helpers.mjs`) to generate self-contained HTML quality reports.
 
-Expected URL:
+Uploaded artifacts:
+
+- `quality-report-go` → enhanced module
+- `quality-report-go-simple` → simple module
+
+Expected URLs:
 
 ```text
 https://george-c-odes.github.io/Observability-Benchmarking/quality/go/
+https://george-c-odes.github.io/Observability-Benchmarking/quality/go-simple/
 ```
 
 The report includes:
@@ -551,13 +574,14 @@ The report includes:
 
 ```bash
 cd services/go/enhanced
-
-# Run lint (uses .golangci.yml, same behavior as CI: text to stdout + JSON report file)
 golangci-lint run
-
-# Run all quality checks matching CI
 go vet ./...
+go test ./... -race
+go build ./cmd/server
+
+cd ../simple
 golangci-lint run
+go vet ./...
 go test ./... -race
 go build ./cmd/server
 ```
@@ -570,6 +594,12 @@ Or use the provided Makefile targets:
 cd services/go/enhanced
 make lint
 make test
+make coverage
+
+cd ../simple
+make lint
+make test
+make coverage
 ```
 
 ### Pages Integration for the Go Quality Report
@@ -670,7 +700,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@v4.35.1` (SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@v4.35.2` (SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
@@ -762,12 +792,14 @@ Expected URL:
 https://george-c-odes.github.io/Observability-Benchmarking/quality/nextjs-dash/
 ```
 
-The landing page at `quality/` now links to all five scopes:
+The landing page at `quality/` now links to all seven scopes:
 - `quality/services-java/` — Qodana JVM (IntelliJ inspections)
 - `quality/orchestrator/` — Qodana JVM (IntelliJ inspections)
 - `quality/django-python/` — Qodana Python Community (PyCharm inspections)
 - `quality/go/` — golangci-lint (aggregated Go static analysis)
+- `quality/go-simple/` — golangci-lint (aggregated Go static analysis)
 - `quality/nextjs-dash/` — ESLint + TypeScript (free alternative)
+- `quality/codeql/` — CodeQL (semantic security and quality analysis)
 
 The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
 
@@ -820,9 +852,11 @@ Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `util
 
 The Django Python quality workflow (`.github/workflows/django_python_quality.yml`) enforces Ruff lint and format checks, Django system checks, and unit tests — plus a Qodana Python Community scan that applies the same severity gate (`critical: 0`, `high: 0`, `moderate: 0`).
 
+A separate Django coverage workflow (`.github/workflows/django_python_coverage.yml`) runs the same shared test suite under `coverage.py` for both runtime modules, writes GitHub Step Summary coverage tables, publishes HTML/XML artifacts, and uploads `coverage.xml` reports to Codecov with the `python-django-platform` and `python-django-reactive` flags.
+
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
 
-The Go Enhanced service has its own quality workflow (`.github/workflows/go_quality.yml`) that enforces `go vet`, `golangci-lint run` (with govet, staticcheck, errcheck, gosec, revive, and more), unit tests with race detection, and a build smoke test on every push and PR.
+The Go quality workflow (`.github/workflows/go_quality.yml`) now covers both Go modules — `services/go/enhanced` and `services/go/simple` — with the same full pipeline: dependency download, `go mod tidy` verification, `go vet`, `golangci-lint run`, unit tests with race detection, a build smoke test, and a non-blocking `govulncheck` scan. Both jobs also generate Pages-hosted HTML quality report artifacts (`quality-report-go` and `quality-report-go-simple`).
 
 GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab, and a combined HTML report is published to GitHub Pages.
 

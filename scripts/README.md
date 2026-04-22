@@ -32,7 +32,7 @@ It currently reads the repo's custom env format:
 
 ```dotenv
 SPRING_BOOT_VERSION: 4.0.5
-QUARKUS_VERSION: 3.34.1
+QUARKUS_VERSION: 3.34.6
 ```
 
 Note that this is **not** standard dotenv `KEY=value` syntax. The renderer is intentionally built for this repository's `KEY: VALUE` format.

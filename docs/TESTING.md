@@ -19,7 +19,8 @@
   - [Java — JaCoCo](#java--jacoco)
   - [Next.js Dashboard — Vitest + v8](#nextjs-dashboard--vitest--v8)
   - [Codecov (repo-wide visibility)](#codecov-repo-wide-visibility)
-  - [Go & Python (planned)](#go--python-planned)
+  - [Go — native `go test` coverage](#go--native-go-test-coverage)
+  - [Python — coverage.py](#python--coveragepy)
 - [CI/CD Integration](#cicd-integration)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -40,17 +41,17 @@ The project implements a comprehensive testing strategy covering:
 | Quarkus JVM    | ✅ 18 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Spring Tomcat  | ✅ 30 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Spring Netty   | ✅ 16 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Micronaut JVM  | ✅ 5 tests     | ✅ Covered          | ✅ Metrics/Traces    |
+| Micronaut JVM  | ✅ 15 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon SE JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Helidon MP JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
 | Spark JVM      | ✅ 61 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Javalin JVM    | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Dropwizard JVM | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Vert.x JVM     | ✅ 35 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Vert.x JVM     | ✅ 42 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Go Fiber       | ✅ 12 tests    | ✅ Covered          | ✅ Metrics/Traces    |
 | Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| **Total**      | **360 tests** | **100+ scenarios** | **Full stack**      |
+| **Total**      | **377 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
 
@@ -136,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
 Maven: 3.9+
 Spring Boot: 4.0.5 (3.5.13 also supported)
-Quarkus: 3.34.1
+Quarkus: 3.34.6
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -303,7 +304,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.26.1+
+Go: 1.26.2+
 Fiber: v3.1.0
 OpenTelemetry: Latest stable
 ```
@@ -313,32 +314,70 @@ OpenTelemetry: Latest stable
 ```
 services/go/enhanced/internal/handlers/hello_test.go
 services/go/enhanced/internal/cache/cache_test.go
+services/go/simple/cmd/server/main_test.go
 ```
 
 #### Running Go Tests
 
 ```bash
+# Enhanced module
 cd services/go/enhanced
 
 # Download dependencies (first time only)
 go mod download
 
-# Run all tests with verbose output
-go test ./... -v
+# Lint + vet
+golangci-lint run
+go vet ./...
+
+# Match the quality workflow
+go test ./... -race -count=1
+go build ./cmd/server
+
+# Optional CI parity for the non-blocking vuln scan
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
 
 # Run tests with coverage summary
-go test ./... -cover
+go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
 
 # Run a focused handler test
 # (the enhanced service exercises the /hello/virtual endpoint)
 go test ./... -run TestVirtual_Defaults -v
 ```
 
-**Test Coverage**:
+```bash
+# Simple module
+cd services/go/simple
+
+go mod download
+golangci-lint run
+go vet ./...
+go test ./... -race -count=1
+go build ./cmd/server
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
+go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
+```
+
+**Test Coverage (Enhanced)**:
 - ✅ HTTP endpoint (`/hello/virtual`)
 - ✅ Query parameters (`sleep`, `log`) including bad-parameter validation (400)
 - ✅ Cache implementations and basic hit/miss behavior
 - ✅ OpenTelemetry wiring (uses noop providers in unit tests for determinism)
+- ✅ Fiber framework integration
+
+**Test Coverage (Simple)**:
+- ✅ HTTP endpoint (`/hello/virtual`)
+- ✅ Cache initialization and lookup
+- ✅ 404 path when the cache is empty
+- ✅ `PORT` resolution and boot logging
+- ✅ `runWithContext` success path plus boot failure paths
+- ✅ OTel meter and tracer provider initialization
 - ✅ Fiber framework integration
 
 **Example Test Output**:
@@ -360,6 +399,20 @@ ok      hello/internal/handlers  1.0s
 - OpenTelemetry SDK usage (but unit tests use noop providers)
 - Custom metric counter (`hello.request.count`) (exported via observable counter)
 - Cache behavior across different implementations
+
+**Makefile shortcuts**:
+
+```bash
+cd services/go/enhanced
+make lint
+make test
+make coverage
+
+cd ../simple
+make lint
+make test
+make coverage
+```
 
 **Note**: The Go module name is `hello` (see `services/go/enhanced/go.mod`), so `go test` output uses `hello/...` package paths.
 
@@ -409,10 +462,14 @@ cd -
 > attempting to connect to a collector during tests.  This is the same
 > command the Dockerfiles execute at build time.
 
-#### Matching the Django CI workflow locally
+#### Matching the Django CI workflows locally
 
-The Django quality workflow in `.github/workflows/django_python_quality.yml`
-does more than execute tests:
+The Django repository automation is split across two workflows:
+
+- `.github/workflows/django_python_quality.yml` — syntax checks, Ruff lint/format, `manage.py check`, shared unit tests, and Qodana
+- `.github/workflows/django_python_coverage.yml` — `coverage.py` runs for the WSGI and ASGI runtimes, GitHub Step Summary coverage tables, HTML/XML artifacts, and Codecov upload
+
+The quality workflow does more than execute tests:
 
 1. Runs syntax checks, prints the Ruff version for visibility, then runs Ruff lint and format checks for the shared `common` package.
 2. Installs the shared package into each runtime module environment.
@@ -454,6 +511,40 @@ OTEL_SDK_DISABLED=true python manage.py test obbench_django_common.tests --verbo
 `services/python/django/README.md` includes PowerShell-friendly equivalents for
 the same flow.
 
+#### Matching the Django coverage workflow locally
+
+The coverage workflow uses `coverage.py` with branch coverage and counts both the runtime module directory (`manage.py`, `gunicorn.conf.py`, `hello_project/**`) and the shared package under `common/src/obbench_django_common`.
+
+```bash
+# WSGI coverage
+python -m pip install coverage[toml]
+python -m pip install -e services/python/django/gunicorn/common \
+  -r services/python/django/gunicorn/WSGI/requirements.txt \
+  -r services/python/django/gunicorn/WSGI/requirements-dev.txt
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/WSGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/WSGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/WSGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+
+# ASGI coverage
+python -m pip install coverage[toml]
+python -m pip install -e services/python/django/gunicorn/common \
+  -r services/python/django/gunicorn/ASGI/requirements.txt \
+  -r services/python/django/gunicorn/ASGI/requirements-dev.txt
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/ASGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/ASGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/ASGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+```
+
+> `services/python/django/README.md` includes PowerShell-friendly commands and the Windows-specific `pyroscope*` dependency filtering needed for local runs.
+
 **Test Coverage**:
 - ✅ HTTP endpoints (`/hello/platform`, `/hello/reactive`)
 - ✅ Service logic and response format
@@ -464,6 +555,8 @@ the same flow.
 - ✅ Pyroscope profiling setup and failure handling
 - ✅ Log formatting
 - ✅ OpenTelemetry wiring and test-safe disable path
+- ✅ Runtime entrypoints (`manage.py`, `hello_project/wsgi.py`, `hello_project/asgi.py`)
+- ✅ Gunicorn hook/config helpers (`post_fork`, `worker_exit`, env parsing)
 
 **Key Features Tested**:
 - Django request/response lifecycle
@@ -478,9 +571,9 @@ the same flow.
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.2
-React: 19.2.4
-TypeScript: 6.0.2
+Next.js: 16.2.4
+React: 19.2.5
+TypeScript: 6.0.3
 Vitest: 4.x
 ```
 
@@ -776,16 +869,16 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.0.5
-- Quarkus: 3.34.1
-- Micronaut: 4.10.18
+- Quarkus: 3.34.6
+- Micronaut: 4.10.21
 - Helidon: 4.3.4
 - Spark: 3.0.4
-- Javalin: 7.1.0
+- Javalin: 7.2.0
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.8
 - Pekko: 1.3.0
-- Go: 1.26.1
-- Django: 6.0.3
+- Go: 1.26.2
+- Django: 6.0.4
 
 ==========================================
 JVM Services - Deployment Tests
@@ -1194,7 +1287,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.26.1 | Build version: go1.26.1
+2025-12-16T10:30:00.123Z Runtime version: go1.26.2 | Build version: go1.26.2
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1457,22 +1550,27 @@ the sole enforcement mechanism.
 The repository-level `codecov.yml` (at the repo root) defines:
 
 - **Flags** — one per module, named `java-{matrix.name}` (e.g.
-  `java-spring-tomcat`, `java-orchestrator`) for Java, and
+  `java-spring-tomcat`, `java-orchestrator`) for Java,
   `nextjs-dash-{env}` (e.g. `nextjs-dash-node`, `nextjs-dash-dom`) for the
-  Next.js dashboard. Each flag maps to the module's source path so Codecov
+  Next.js dashboard, and `go-{module}` (e.g. `go-enhanced`, `go-simple`)
+  for Go, plus `python-{module}` (`python-django-platform`,
+  `python-django-reactive`) for Django. Each flag maps to the module's source path so Codecov
   can attribute coverage lines correctly.
 - **Components** — language-level groups that aggregate flags:
   - `java_services` — all 12 Java/Maven modules
   - `nextjs_dashboard` — Next.js dashboard (node + DOM coverage)
-  - `go_services` — Go modules (placeholder, activated when Go coverage is added)
-  - `python_services` — Python modules (placeholder, activated when Python
-    coverage is added)
+  - `go_services` — Go modules (`go-enhanced` and `go-simple` flags)
+  - `python_services` — Python modules (`python-django-platform` and
+    `python-django-reactive`)
 - **Ignored paths** — native-image modules, docs, config, scripts, and other
   non-source directories are excluded from the coverage denominator.
   Application entry-point classes (`*Application.java`) are also excluded —
   they contain only bootstrap/main wiring that is not a meaningful coverage
-  target. Quarkus-based modules (quarkus-jvm, orchestrator) and Helidon MP
-  auto-generate their entry point, so no explicit file is excluded for them.
+  target. A small set of pure metrics-plumbing helpers (for example the
+  Javalin/Spark/Vert.x/Pekko `MetricsProvider` binders) are excluded for the
+  same reason. Quarkus-based modules (quarkus-jvm, orchestrator) and Helidon
+  MP auto-generate their entry point, so no explicit file is excluded for
+  them.
 - **Carryforward** — enabled for all flags so that modules not re-built in a
   given commit retain their previous coverage data.
 
@@ -1496,6 +1594,43 @@ Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.0):
 The upload runs only when the build step succeeds. If the upload fails (e.g.,
 Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
 
+Each matrix leg in the **Go Coverage** workflow first rewrites `coverage.out`
+to `coverage-codecov.out` before uploading to Codecov. Go coverage profiles use
+the module name as their path prefix (for example `hello/cmd/server/main.go`),
+but Codecov needs repository-relative paths such as
+`services/go/simple/cmd/server/main.go` or
+`services/go/enhanced/internal/handlers/hello.go`. The rewrite step keeps the
+artifact upload in native Go format while making the Codecov upload line up with
+the monorepo source tree:
+
+```yaml
+- name: Upload to Codecov
+  uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+  with:
+    files: ${{ matrix.module_dir }}/coverage-codecov.out
+    flags: ${{ matrix.name }}
+    name: ${{ matrix.name }}
+    token: ${{ secrets.CODECOV_TOKEN }}
+    fail_ci_if_error: false
+    disable_search: true
+```
+
+    Each matrix leg in the **Django Python Coverage** workflow uploads its
+    `coverage.xml` to Codecov using the Python-specific flags
+    `python-django-platform` and `python-django-reactive`:
+
+    ```yaml
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+      with:
+        files: ${{ matrix.module_dir }}/coverage.xml
+        flags: ${{ matrix.codecov_flag }}
+        name: ${{ matrix.codecov_flag }}
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        disable_search: true
+    ```
+
 #### Authentication (public repos)
 
 The workflow currently passes `token: ${{ secrets.CODECOV_TOKEN }}`
@@ -1506,26 +1641,113 @@ under Settings → Secrets and variables → Actions.
 
 For public repositories, Codecov also supports **tokenless uploads** via
 GitHub OIDC. To switch to tokenless, **remove** the `token:` input from
-the `codecov/codecov-action` step and ensure the job grants
-`permissions: id-token: write` (already present in the workflow).
-#### Adding Go or Python coverage uploads (future)
+the `codecov/codecov-action` step and add `permissions: id-token: write`
+to the relevant coverage job first — the current coverage workflows do not
+grant that permission today.
+The same `fail_ci_if_error: false` behavior is used for Python, so a transient
+Codecov outage does not fail the overall Django coverage job.
 
-When Go or Python coverage workflows are extended:
+### Go — native `go test` coverage
 
-1. Add a `codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2` (v6.0.0) step to the respective workflow, with:
-   - `files` pointing to the coverage report (e.g., `coverage.out` for Go,
-     `coverage.xml` for Python).
-   - `flags` matching the naming convention: `go-{module}` or
-     `python-{module}`.
-2. Uncomment the corresponding flag block in `codecov.yml`.
-3. The component (`go_services` or `python_services`) will automatically pick
-   up the new uploads because its `paths` pattern already matches.
+Both Go modules (`services/go/enhanced` and `services/go/simple`) use Go's
+built-in coverage tooling. No external library is required — `go test
+-coverprofile` and `go tool cover` handle everything.
 
-### Go & Python (planned)
+#### Running locally
 
-Coverage tooling for Go (`go test -coverprofile`) and Python (`coverage.py`)
-will be added in a later phase, following the same phased tightening roadmap
-described above.
+```bash
+# Enhanced module
+cd services/go/enhanced
+go test ./... -race -coverprofile=coverage.out -covermode=atomic
+
+# Text summary → stdout
+go tool cover -func=coverage.out
+
+# HTML report → open in browser
+go tool cover -html=coverage.out -o coverage.html
+
+# Simple module
+cd services/go/simple
+go test ./... -race -coverprofile=coverage.out -covermode=atomic
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
+```
+
+#### CI workflow
+
+The **Go Coverage** GitHub Actions workflow
+(`.github/workflows/go_coverage.yml`) runs on every PR and push to `main`
+that touches `services/go/**`. It:
+
+- Runs tests with coverage for each module in a matrix (two parallel jobs:
+  `go-enhanced` and `go-simple`).
+- Parses the Go coverage profile and writes a coverage table to the
+  **GitHub Step Summary** (statements covered/missed/total/%, per-file
+  breakdown, and function-level detail).
+- Generates an HTML coverage report via `go tool cover -html`.
+- Uploads `coverage.out` and `coverage.html` as artifacts named
+  `coverage-go-enhanced` and `coverage-go-simple` (retained for 30 days).
+- Rewrites the profile to `coverage-codecov.out` for Codecov path mapping, then
+  uploads coverage with flags `go-enhanced` and `go-simple`.
+
+#### Module-specific notes
+
+| Module        | Test files | Notes                                                                        |
+|---------------|------------|------------------------------------------------------------------------------|
+| `go/enhanced` | 2          | Tests for cache and handler packages; uses noop OTel providers               |
+| `go/simple`   | 1          | Tests in `cmd/server`; covers route, bootstrap, env parsing, and error paths |
+
+The `coverage-gate` job currently enforces a **30%** minimum statement threshold
+for `go-simple` and **40%** for `go-enhanced`.
+
+### Python — coverage.py
+
+The Django modules use [coverage.py](https://coverage.readthedocs.io/) with
+branch coverage enabled. Each runtime (`services/python/django/gunicorn/WSGI`
+and `services/python/django/gunicorn/ASGI`) runs the shared Django test suite
+but reports coverage against its own runtime files plus the shared
+`common/src/obbench_django_common` package.
+
+#### Running locally
+
+```bash
+# WSGI
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/WSGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/WSGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/WSGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+python -m coverage xml -o services/python/django/gunicorn/WSGI/coverage.xml
+python -m coverage html -d services/python/django/gunicorn/WSGI/htmlcov
+
+# ASGI
+OTEL_SDK_DISABLED=true PYROSCOPE_ENABLED=false \
+  COVERAGE_FILE=services/python/django/gunicorn/ASGI/.coverage \
+  python -m coverage run --branch \
+    --source="services/python/django/gunicorn/ASGI,services/python/django/gunicorn/common/src/obbench_django_common" \
+    --omit="*/tests/*" \
+    services/python/django/gunicorn/ASGI/manage.py test obbench_django_common.tests --verbosity=2
+python -m coverage report -m
+python -m coverage xml -o services/python/django/gunicorn/ASGI/coverage.xml
+python -m coverage html -d services/python/django/gunicorn/ASGI/htmlcov
+```
+
+#### CI workflow
+
+The **Django Python Coverage** GitHub Actions workflow
+(`.github/workflows/django_python_coverage.yml`) runs on every PR and push to
+`main` that touches `services/python/**`. It:
+
+- runs the shared Django test suite under `coverage.py` for both runtimes in a matrix (`django-platform` and `django-reactive`)
+- writes a GitHub Step Summary table with statement and branch coverage, plus a per-file breakdown
+- uploads `.coverage`, JSON, XML, text, and HTML artifacts for each runtime
+- uploads `coverage.xml` to Codecov with flags `python-django-platform` and `python-django-reactive`
+
+In local verification after the runtime-entrypoint tests were added, coverage
+was comfortably above the target in both legs: **95%** for WSGI and **94%** for
+ASGI.
 
 ## CI/CD Integration
 
@@ -1571,7 +1793,7 @@ jobs:
       
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: java-test-reports
           path: '**/target/surefire-reports/**'
@@ -1581,10 +1803,10 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
-      - name: Set up Go 1.26.1
+      - name: Set up Go 1.26.2
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: '1.26.1'
+          go-version: '1.26.2'
       
       - name: Test Go Service
         run: |
@@ -1623,7 +1845,7 @@ jobs:
       
       - name: Upload Logs
         if: failure()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integration-test-logs
           path: logs/
@@ -1633,10 +1855,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.34.1" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.34.6" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.5" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.5" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.1" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.2" }
     
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -1708,7 +1930,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.26.1
+  image: golang:1.26.2
   script:
     - cd services/go/enhanced
     - go mod download

@@ -20,7 +20,7 @@
         <lombok.version>1.18.44</lombok.version>
         <logback.version>1.5.32</logback.version>
 
-        <micronaut.version>4.10.18</micronaut.version>
+        <micronaut.version>4.10.21</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
         <micronaut.test.version>4.10.2</micronaut.test.version>
@@ -30,8 +30,8 @@
 
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
-        <opentelemetry.version>1.60.1</opentelemetry.version>
-        <opentelemetry.instrumentation.version>2.26.1</opentelemetry.instrumentation.version>
+        <opentelemetry.version>1.61.0</opentelemetry.version>
+        <opentelemetry.instrumentation.version>2.27.0</opentelemetry.instrumentation.version>
 
         <native.image.name>micronaut-native</native.image.name>
         <exec.mainClass>io.github.georgecodes.benchmarking.micronaut.MicronautApplication</exec.mainClass>

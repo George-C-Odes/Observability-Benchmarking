@@ -154,23 +154,34 @@ type ristrettoCache struct {
 }
 
 func newRistrettoCache(size int) (*ristrettoCache, error) {
-	// Typical guidance: NumCounters ~ 10x max entries for good hit ratio.
+	// NumCounters ~ 10x max entries for a good hit ratio (Ristretto guidance).
+	// IgnoreInternalCost must be true because we use logical unit costs (1
+	// per item), not byte costs.  Without this flag Ristretto adds the
+	// internal memory overhead of each key-value pair to the cost, causing
+	// massive over-eviction during bulk load.
 	rc, err := ristretto.NewCache(&ristretto.Config[string, string]{
-		NumCounters: int64(size * 10),
-		MaxCost:     int64(size),
-		BufferItems: 64,
+		NumCounters:        int64(size * 10),
+		MaxCost:            int64(size),
+		BufferItems:        64,
+		IgnoreInternalCost: true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// Ristretto's Set is asynchronous — items enter a ring buffer that a
+	// background goroutine drains.  When the buffer is full Set returns
+	// false and the item is silently dropped.  Flushing (Wait) every batch
+	// keeps the buffer from saturating and lets retries succeed.
+	const batchSize = 1000
 	for i := size; i >= 1; i-- {
 		k := itoa(i)
-		// Ristretto may drop Set for admission; retry a few times to ensure warm cache.
 		retrySetRistretto(rc, k, "value-"+k, 1, defaultTTL)
+		if i%batchSize == 0 {
+			rc.Wait()
+		}
 	}
 	rc.Wait()
-
 	return &ristrettoCache{size: size, c: rc}, nil
 }
 

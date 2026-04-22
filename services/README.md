@@ -100,9 +100,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.34.1_latest `
-  --build-arg QUARKUS_VERSION=3.34.1 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.34.1_latest `
+  -t quarkus-jvm:3.34.6_latest `
+  --build-arg QUARKUS_VERSION=3.34.6 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.34.6_latest `
   --load `
   services/java
 ```
@@ -110,9 +110,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.34.1_latest `
-    --build-arg QUARKUS_VERSION=3.34.1 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.34.1_latest `
+    -t quarkus-native:3.34.6_latest `
+    --build-arg QUARKUS_VERSION=3.34.6 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.34.6_latest `
     --load `
     services/java
 ```
@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:4.10.18_latest `
-  --build-arg MICRONAUT_VERSION=4.10.18 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.18_latest `
+  -t micronaut-jvm:4.10.21_latest `
+  --build-arg MICRONAUT_VERSION=4.10.21 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.21_latest `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:4.10.18_latest `
-  --build-arg MICRONAUT_VERSION=4.10.18 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.18_latest `
+  -t micronaut-native:4.10.21_latest `
+  --build-arg MICRONAUT_VERSION=4.10.21 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:4.10.21_latest `
   --load `
   services/java
 ```
@@ -200,9 +200,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-platform:7.1.0_latest `
-  --build-arg JAVALIN_VERSION=7.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.1.0_latest `
+  -t javalin-jvm-platform:7.2.0_latest `
+  --build-arg JAVALIN_VERSION=7.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.0_latest `
   --load `
   services/java
 ```
@@ -210,9 +210,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-virtual:7.1.0_latest `
-  --build-arg JAVALIN_VERSION=7.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.1.0_latest `
+  -t javalin-jvm-virtual:7.2.0_latest `
+  --build-arg JAVALIN_VERSION=7.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.0_latest `
   --load `
   services/java
 ```
@@ -260,9 +260,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/go/enhanced/Dockerfile `
-    -t go:1.26.1_latest `
-    --build-arg GO_VERSION=1.26.1 `
-    --build-arg BUILDKIT_BUILD_NAME=go:1.26.1_latest `
+    -t go:1.26.2_latest `
+    --build-arg GO_VERSION=1.26.2 `
+    --build-arg BUILDKIT_BUILD_NAME=go:1.26.2_latest `
     --load `
     services/go/enhanced
 ```
@@ -270,9 +270,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/python/django/gunicorn/WSGI/Dockerfile `
-    -t django-platform:6.0.3_latest `
-    --build-arg PYTHON_VERSION=3.13.12 `
-    --build-arg BUILDKIT_BUILD_NAME=django-platform:6.0.3_latest `
+    -t django-platform:6.0.4_latest `
+    --build-arg PYTHON_VERSION=3.13.13 `
+    --build-arg BUILDKIT_BUILD_NAME=django-platform:6.0.4_latest `
     --load `
     services/python/django
 ```
@@ -280,9 +280,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/python/django/gunicorn/ASGI/Dockerfile `
-    -t django-reactive:6.0.3_latest `
-    --build-arg PYTHON_VERSION=3.13.12 `
-    --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.0.3_latest `
+    -t django-reactive:6.0.4_latest `
+    --build-arg PYTHON_VERSION=3.13.13 `
+    --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.0.4_latest `
     --load `
     services/python/django
 ```

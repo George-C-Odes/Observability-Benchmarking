@@ -92,21 +92,21 @@ flags:
     paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/, utils/nextjs-dash/app/theme.ts, utils/nextjs-dash/app/Providers.tsx]
     carryforward: true
 
-  # ── Go services (future — uploaded by go_quality.yml) ───────────────
-  # go-enhanced:
-  #   paths: [services/go/enhanced/]
-  #   carryforward: true
-  # go-simple:
-  #   paths: [services/go/simple/]
-  #   carryforward: true
+  # ── Go services (uploaded by go_coverage.yml) ──────────────────────
+  go-enhanced:
+    paths: [services/go/enhanced/]
+    carryforward: true
+  go-simple:
+    paths: [services/go/simple/]
+    carryforward: true
 
-  # ── Python services (future — uploaded by django_python_quality.yml) ─
-  # python-django-platform:
-  #   paths: [services/python/django/]
-  #   carryforward: true
-  # python-django-reactive:
-  #   paths: [services/python/django/]
-  #   carryforward: true
+  # ── Python services (uploaded by django_python_coverage.yml) ────────
+  python-django-platform:
+    paths: [services/python/django/gunicorn/WSGI/, services/python/django/gunicorn/common/src/]
+    carryforward: true
+  python-django-reactive:
+    paths: [services/python/django/gunicorn/ASGI/, services/python/django/gunicorn/common/src/]
+    carryforward: true
 
 # ── Component definitions ─────────────────────────────────────────────
 # Components aggregate flags into language-level groups.  The Codecov
@@ -197,8 +197,12 @@ ignore:
 
   # ── 5. Metrics wiring (CDI producers / static binder registration) ──
   # These produce MeterBinder beans or call bindTo() — pure plumbing.
+  - "services/java/micronaut/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
   - "services/java/quarkus/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/helidon/se/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/helidon/mp/jvm/**/metrics/JvmExtrasMetricsConfiguration.java"
   - "services/java/spark/jvm/**/infra/MetricsProvider.java"
+  - "services/java/dropwizard/jvm/**/infra/MetricsProvider.java"
   - "services/java/vertx/jvm/**/infra/MetricsProvider.java"
   - "services/java/javalin/jvm/**/infra/MetricsProvider.java"
   - "services/java/pekko/jvm/**/infra/MetricsProvider.java"
@@ -247,4 +251,4 @@ ignore:
 
   # ── 12. Test directories ────────────────────────────────────────────
   - "utils/nextjs-dash/__tests__/**"
-
+  - "services/python/**/tests/**"

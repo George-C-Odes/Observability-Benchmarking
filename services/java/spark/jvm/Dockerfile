@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG MAVEN_RELEASE=3.9.14
+ARG MAVEN_RELEASE=3.9.15
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
@@ -75,7 +75,7 @@ RUN set -eux; \
 FROM alpine:3.23.3 AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=1.1.0
-ARG OTEL_JAVA_AGENT_VERSION=2.26.1
+ARG OTEL_JAVA_AGENT_VERSION=2.27.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 

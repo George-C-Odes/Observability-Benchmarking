@@ -12,9 +12,9 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <javalin.version>7.1.0</javalin.version>
+        <javalin.version>7.2.0</javalin.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <micrometer.version>1.16.4</micrometer.version>
+        <micrometer.version>1.16.5</micrometer.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
         <logback.version>1.5.32</logback.version>
@@ -120,6 +120,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.14</version>
+                <configuration>
+                    <excludes>
+                        <exclude>io/github/georgecodes/benchmarking/javalin/JavalinApplication*</exclude>
+                        <exclude>io/github/georgecodes/benchmarking/javalin/infra/MetricsProvider*</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

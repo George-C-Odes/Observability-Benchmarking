@@ -80,9 +80,12 @@ pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.t
 
 ## Run quality gates locally
 
-The Django CI workflow validates the shared `common` package once, then runs
-module-specific syntax checks, Ruff lint and format checks, Django system checks, and the shared
-test suite (39 tests) that runs from both runtime modules.
+The Django GitHub Actions setup is split into two workflows:
+
+- `.github/workflows/django_python_quality.yml` — shared/package syntax checks, Ruff lint and format checks, Django system checks, unit tests, and Qodana
+- `.github/workflows/django_python_coverage.yml` — per-runtime `coverage.py` runs, GitHub Step Summary tables, artifacts, and Codecov upload
+
+The shared Django test suite now covers both runtime modules plus the thin runtime entrypoints (`manage.py`, `hello_project/*.py`) and Gunicorn hook/config helpers.
 
 ### Shared package checks
 
@@ -106,6 +109,66 @@ cd services/python/django/gunicorn/ASGI; python -m pip install ../common -r requ
 If you only want the shared unit suite, the final `python manage.py test
 obbench_django_common.tests --verbosity=2` command can be executed from either
 module directory.
+
+## Run coverage locally
+
+The coverage workflow uses `coverage.py` with branch coverage and uploads `coverage.xml` to Codecov for both runtime modules.
+
+### WSGI coverage (PowerShell)
+
+```powershell
+python -m pip install coverage[toml]
+(Get-Content services\python\django\gunicorn\WSGI\requirements.txt) `
+    | Where-Object { $_ -notmatch 'pyroscope' } `
+    | Set-Content $env:TEMP\django-wsgi-reqs.txt
+
+python -m pip install `
+    -e services\python\django\gunicorn\common `
+    -r $env:TEMP\django-wsgi-reqs.txt `
+    -r services\python\django\gunicorn\WSGI\requirements-dev.txt
+
+$env:OTEL_SDK_DISABLED = 'true'
+$env:PYROSCOPE_ENABLED = 'false'
+$env:COVERAGE_FILE = 'services/python/django/gunicorn/WSGI/.coverage'
+
+python -m coverage run --branch `
+    --source="services/python/django/gunicorn/WSGI,services/python/django/gunicorn/common/src/obbench_django_common" `
+    --omit="*/tests/*" `
+    services/python/django/gunicorn/WSGI/manage.py test obbench_django_common.tests --verbosity=2
+
+python -m coverage report -m
+python -m coverage xml -o services/python/django/gunicorn/WSGI/coverage.xml
+python -m coverage html -d services/python/django/gunicorn/WSGI/htmlcov
+```
+
+### ASGI coverage (PowerShell)
+
+```powershell
+python -m pip install coverage[toml]
+(Get-Content services\python\django\gunicorn\ASGI\requirements.txt) `
+    | Where-Object { $_ -notmatch 'pyroscope' } `
+    | Set-Content $env:TEMP\django-asgi-reqs.txt
+
+python -m pip install `
+    -e services\python\django\gunicorn\common `
+    -r $env:TEMP\django-asgi-reqs.txt `
+    -r services\python\django\gunicorn\ASGI\requirements-dev.txt
+
+$env:OTEL_SDK_DISABLED = 'true'
+$env:PYROSCOPE_ENABLED = 'false'
+$env:COVERAGE_FILE = 'services/python/django/gunicorn/ASGI/.coverage'
+
+python -m coverage run --branch `
+    --source="services/python/django/gunicorn/ASGI,services/python/django/gunicorn/common/src/obbench_django_common" `
+    --omit="*/tests/*" `
+    services/python/django/gunicorn/ASGI/manage.py test obbench_django_common.tests --verbosity=2
+
+python -m coverage report -m
+python -m coverage xml -o services/python/django/gunicorn/ASGI/coverage.xml
+python -m coverage html -d services/python/django/gunicorn/ASGI/htmlcov
+```
+
+> On Windows, `pyroscope-io` requires a native Rust toolchain and may fail to build locally, so the commands above filter out `pyroscope*` dependencies before installing requirements. The CI coverage workflow runs on Ubuntu and installs the full dependency set there.
 
 See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
@@ -162,17 +225,17 @@ python -m ruff format services/python/django/gunicorn/common services/python/dja
 ```powershell
 docker buildx build `
     -f services/python/django/gunicorn/WSGI/Dockerfile `
-    -t django-platform:6.0.3_latest `
-    --build-arg PYTHON_VERSION=3.13.12 `
-    --build-arg BUILDKIT_BUILD_NAME=django-platform:6.0.3_latest `
+    -t django-platform:6.0.4_latest `
+    --build-arg PYTHON_VERSION=3.13.13 `
+    --build-arg BUILDKIT_BUILD_NAME=django-platform:6.0.4_latest `
     --load `
     services/python/django
 
 docker buildx build `
     -f services/python/django/gunicorn/ASGI/Dockerfile `
-    -t django-reactive:6.0.3_latest `
-    --build-arg PYTHON_VERSION=3.13.12 `
-    --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.0.3_latest `
+    -t django-reactive:6.0.4_latest `
+    --build-arg PYTHON_VERSION=3.13.13 `
+    --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.0.4_latest `
     --load `
     services/python/django
 ```

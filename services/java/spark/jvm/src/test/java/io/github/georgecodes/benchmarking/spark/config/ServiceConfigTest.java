@@ -8,7 +8,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -159,5 +163,65 @@ class ServiceConfigTest {
         assertEquals(HandlerExecutionMode.DIRECT, config.handlerExecutionMode());
         assertEquals(0, config.platformExecutorThreads());
         assertEquals(VirtualExecutionMode.SPARK, config.virtualExecutionMode());
+    }
+
+    @Test
+    void parseIntReturnsDefaultForNullAndBlank() throws Exception {
+        Method method = parseIntMethod();
+
+        assertEquals(8080, (int) method.invoke(null, null, 8080));
+        assertEquals(8181, (int) method.invoke(null, "   ", 8181));
+    }
+
+    @Test
+    void parseIntTrimsNumericValues() throws Exception {
+        assertEquals(9090, (int) parseIntMethod().invoke(null, " 9090 ", 8080));
+    }
+
+    @Test
+    void parseIntRejectsInvalidNumbers() throws Exception {
+        Method method = parseIntMethod();
+        InvocationTargetException thrown = assertThrows(
+            InvocationTargetException.class,
+            () -> method.invoke(null, "bogus", 8080)
+        );
+
+        assertInstanceOf(NumberFormatException.class, thrown.getCause());
+    }
+
+    @Test
+    void parseLongReturnsDefaultForNullAndBlank() throws Exception {
+        Method method = parseLongMethod();
+
+        assertEquals(50000L, (long) method.invoke(null, null, 50000L));
+        assertEquals(50000L, (long) method.invoke(null, "\t", 50000L));
+    }
+
+    @Test
+    void parseLongTrimsNumericValues() throws Exception {
+        assertEquals(60000L, (long) parseLongMethod().invoke(null, " 60000 ", 0L));
+    }
+
+    @Test
+    void parseLongRejectsInvalidNumbers() throws Exception {
+        Method method = parseLongMethod();
+        InvocationTargetException thrown = assertThrows(
+            InvocationTargetException.class,
+            () -> method.invoke(null, "bogus", 50000L)
+        );
+
+        assertInstanceOf(NumberFormatException.class, thrown.getCause());
+    }
+
+    private Method parseIntMethod() throws NoSuchMethodException {
+        Method method = ServiceConfig.class.getDeclaredMethod("parseInt", String.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private Method parseLongMethod() throws NoSuchMethodException {
+        Method method = ServiceConfig.class.getDeclaredMethod("parseLong", String.class, long.class);
+        method.setAccessible(true);
+        return method;
     }
 }

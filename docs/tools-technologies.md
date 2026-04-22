@@ -82,7 +82,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.34.1
+### Quarkus 3.34.6
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -93,7 +93,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.34.1** (latest stable)
+- **Quarkus 3.34.6** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 4.10.18
+### Micronaut 4.10.21
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 4.10.18** (latest stable)
+- **Micronaut 4.10.21** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -266,7 +266,7 @@ mvn package -Pnative
 - No native image support
 - Official project is largely unmaintained; the Zoomba fork keeps it viable
 
-### Javalin 7.1.0
+### Javalin 7.2.0
 
 **Official Site**: [https://javalin.io/](https://javalin.io/)
 
@@ -277,7 +277,7 @@ mvn package -Pnative
 - Good middle ground between Spark's minimalism and Spring's richness
 
 **Implementation Details**:
-- **Javalin 7.1.0** (latest major release)
+- **Javalin 7.2.0** (latest major release)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -439,7 +439,7 @@ mvn package -Pnative
 
 **Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
-### Django 6.0.3
+### Django 6.0.4
 
 **Official Site**: [https://www.djangoproject.com/](https://www.djangoproject.com/) | [GitHub](https://github.com/django/django)
 
@@ -450,9 +450,9 @@ mvn package -Pnative
 - Demonstrates the impact of Python's GIL on throughput under high concurrency
 
 **Implementation Details**:
-- **Django 6.0.3** (latest major release)
+- **Django 6.0.4** (latest major release)
 - **Gunicorn 25.3.0** as the production WSGI/ASGI server
-- **Python 3.13.12** (CPython)
+- **Python 3.13.13** (CPython)
 - Two modules sharing a common application package (`gunicorn/common`):
   - **WSGI module** (`django-platform`): Gunicorn `gthread` workers (threaded platform model)
   - **ASGI module** (`django-reactive`): Gunicorn with `UvicornWorker` (async event loop)
@@ -782,7 +782,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9.14-eclipse-temurin-25-noble AS builder
+FROM maven:3.9.15-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
@@ -964,45 +964,45 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.1  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Python (CPython)           | 3.13.12 | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Runtime            | Go                         | 1.26.2  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Python (CPython)           | 3.13.13 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 25.3.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 25.8.2  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 25.9.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.34.1  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 4.10.18 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Quarkus                    | 3.34.6  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 4.10.21 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.1.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.2.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.0.3   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.2  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.4  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 6.0.2   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 7.3.9   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 12.4.2  | Metrics, logs, traces dashboards                                     |
+| **Backend**       | Framework          | Django                     | 6.0.4   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Frontend**      | Framework          | Next.js                    | 16.2.4  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.5  | UI rendering layer                                                   |
+| **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 13.0.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.1   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.3  | Distributed tracing backend                                          |
+| **Observability** | Tracing            | Tempo                      | 2.10.4  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.0.5   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.19.1  | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 1.21.0  | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.60.1  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.26.1  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.61.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.27.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.1  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.14  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.15  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.12.1 | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.8  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.2   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.5   | Frontend unit testing                                                |
 
 ---
 

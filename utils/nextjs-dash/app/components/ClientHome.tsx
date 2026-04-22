@@ -65,7 +65,7 @@ function LazyTabPanel({ children, value, index, visited }: LazyTabPanelProps) {
     >
       <Suspense
         fallback={
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
             <CircularProgress />
           </Box>
         }

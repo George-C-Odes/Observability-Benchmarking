@@ -1,6 +1,10 @@
 package cache
 
-import "testing"
+import (
+	"math"
+	"strconv"
+	"testing"
+)
 
 func TestCaches_StringKeysAndValues(t *testing.T) {
 	impls := []string{"slice", "map", "ristretto", "theine", "otter"}
@@ -53,6 +57,59 @@ func TestSliceCache_ParseFast(t *testing.T) {
 	}
 	if _, ok := c.Get("11"); ok {
 		t.Fatalf("expected miss for >size")
+	}
+}
+
+func TestNewValidationAndDefaults(t *testing.T) {
+	if _, err := New(0, "map"); err == nil {
+		t.Fatal("expected size validation error")
+	}
+	if _, err := New(10, "unknown"); err == nil {
+		t.Fatal("expected unknown implementation error")
+	}
+
+	c, err := New(10, "")
+	if err != nil {
+		t.Fatalf("New default impl: %v", err)
+	}
+	defer closeIfPossible(t, c)
+	if _, ok := c.Get("1"); !ok {
+		t.Fatal("expected default implementation to contain key 1")
+	}
+}
+
+func TestParsePositiveIntFast(t *testing.T) {
+	cases := []struct {
+		input string
+		want  int
+		ok    bool
+	}{
+		{input: "1", want: 1, ok: true},
+		{input: "0007", want: 7, ok: true},
+		{input: "", ok: false},
+		{input: "-1", ok: false},
+		{input: "abc", ok: false},
+	}
+
+	for _, tc := range cases {
+		got, ok := parsePositiveIntFast(tc.input)
+		if ok != tc.ok || got != tc.want {
+			t.Fatalf("parsePositiveIntFast(%q) = (%d, %v), want (%d, %v)", tc.input, got, ok, tc.want, tc.ok)
+		}
+	}
+
+	overMax := strconv.Itoa(math.MaxInt) + "1"
+	if _, ok := parsePositiveIntFast(overMax); ok {
+		t.Fatal("expected overflow to be rejected")
+	}
+}
+
+func TestItoa(t *testing.T) {
+	if got := itoa(1); got != "1" {
+		t.Fatalf("itoa(1) = %q", got)
+	}
+	if got := itoa(12345); got != "12345" {
+		t.Fatalf("itoa(12345) = %q", got)
 	}
 }
 

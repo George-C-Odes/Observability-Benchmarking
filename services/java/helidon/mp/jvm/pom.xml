@@ -23,8 +23,8 @@
 
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
 
-        <opentelemetry.version>1.60.1</opentelemetry.version>
-        <opentelemetry.instrumentation.version>2.26.1</opentelemetry.instrumentation.version>
+        <opentelemetry.version>1.61.0</opentelemetry.version>
+        <opentelemetry.instrumentation.version>2.27.0</opentelemetry.instrumentation.version>
 
         <exec.mainClass>io.helidon.microprofile.cdi.Main</exec.mainClass>
     </properties>
@@ -256,6 +256,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.14</version>
+                <configuration>
+                    <excludes>
+                        <exclude>io/github/georgecodes/benchmarking/helidon/mp/web/HelloApplication*</exclude>
+                        <exclude>io/github/georgecodes/benchmarking/helidon/mp/infra/metrics/JvmExtrasMetricsConfiguration*</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>

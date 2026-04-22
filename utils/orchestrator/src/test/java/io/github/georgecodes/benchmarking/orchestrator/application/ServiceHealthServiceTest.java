@@ -8,6 +8,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,15 +24,20 @@ class ServiceHealthServiceTest {
   private static ServiceHealthService service;
 
   private static ServiceHealthConfig configFor(Map<String, ServiceHealthConfig.Service> services) {
+    return configFor(2000, 4, services);
+  }
+
+  private static ServiceHealthConfig configFor(long timeoutMs, int concurrency,
+                                               Map<String, ServiceHealthConfig.Service> services) {
     return new ServiceHealthConfig() {
       @Override
       public long timeoutMs() {
-        return 2000;
+        return timeoutMs;
       }
 
       @Override
       public int concurrency() {
-        return 4;
+        return concurrency;
       }
 
       @Override
@@ -158,5 +166,65 @@ class ServiceHealthServiceTest {
 
     assertTrue(resp.services().stream().noneMatch(s -> s.name().equals("grafana")));
     assertTrue(resp.services().stream().anyMatch(s -> s.name().equals("loki")));
+  }
+
+  @Test
+  void nullBlankAndDisabledBaseUrlsAreSkipped() {
+    Map<String, ServiceHealthConfig.Service> services = new LinkedHashMap<>();
+    services.put("null-config", null);
+    services.put("blank", svc(" ", "/health"));
+    services.put("disabled", svc("FALSE", "/health"));
+    services.put("ok", svc("http://localhost:" + okPort, "/ready"));
+
+    service = new ServiceHealthService(
+      new io.vertx.mutiny.core.Vertx(serverVertx),
+      configFor(services)
+    );
+
+    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+
+    assertEquals(1, resp.services().size());
+    assertEquals("ok", resp.services().getFirst().name());
+    assertEquals("up", resp.services().getFirst().status());
+  }
+
+  @Test
+  void nonPositiveTimeoutAndConcurrencyFallbackStillWorkAndNormalizePaths() {
+    service = new ServiceHealthService(
+      new io.vertx.mutiny.core.Vertx(serverVertx),
+      configFor(0, 0, Map.of(
+        "loki", svc("http://localhost:" + okPort + "/base/", "ready/")
+      ))
+    );
+
+    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+
+    assertEquals(1, resp.services().size());
+    assertEquals("loki", resp.services().getFirst().name());
+    assertEquals("up", resp.services().getFirst().status());
+    assertEquals(200, resp.services().getFirst().statusCode());
+  }
+
+  @Test
+  void unreachableHost_marksServiceDownWithRecoveredError() throws IOException {
+    int unusedPort;
+    try (ServerSocket socket = new ServerSocket(0)) {
+      unusedPort = socket.getLocalPort();
+    }
+
+    service = new ServiceHealthService(
+      new io.vertx.mutiny.core.Vertx(serverVertx),
+      configFor(Map.of(
+        "orphan", svc("http://localhost:" + unusedPort, "/ready")
+      ))
+    );
+
+    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+    ServiceHealthResponse orphan = resp.services().getFirst();
+
+    assertEquals("orphan", orphan.name());
+    assertEquals("down", orphan.status());
+    assertNull(orphan.statusCode());
+    assertNotNull(orphan.error());
   }
 }

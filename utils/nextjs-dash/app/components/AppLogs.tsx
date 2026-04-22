@@ -326,7 +326,7 @@ export default function AppLogs() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ArticleIcon /> Application Logs
@@ -335,7 +335,7 @@ export default function AppLogs() {
             Frontend console logs + buffered Next.js server logs (live)
           </Typography>
         </Box>
-        <Box display="flex" gap={2}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <ToggleButtonGroup value={filter} exclusive onChange={handleFilterChange} size="small">
             <ToggleButton value="all">All</ToggleButton>
             <ToggleButton value="client">Client</ToggleButton>
@@ -376,7 +376,7 @@ export default function AppLogs() {
                   borderColor: 'divider',
                 }}
               >
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography
                     component="span"
                     sx={{ color: 'text.secondary', minWidth: '90px', fontSize: '0.75rem' }}

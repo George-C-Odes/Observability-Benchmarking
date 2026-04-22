@@ -62,7 +62,7 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.9.14-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.9.15-eclipse-temurin-25-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
@@ -80,6 +80,22 @@ docker buildx build `
   --load `
   services/java
 ```
+
+## Testing
+
+### Local Test + Coverage Run
+
+```bash
+cd services/java/spark/jvm
+mvn verify -Dcheckstyle.skip=true
+```
+
+This generates the local JaCoCo reports at:
+- `target/site/jacoco/index.html`
+- `target/site/jacoco/jacoco.xml`
+
+> Note: local JaCoCo coverage excludes `SparkApplication` and `MetricsProvider`, matching the repo-level
+> coverage policy used for Spark JVM coverage reporting.
 
 ## Metrics
 Defines a Micrometer counter:
