@@ -8,7 +8,7 @@ import io.github.georgecodes.benchmarking.quarkus.application.port.SleepPort;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,14 +18,24 @@ class HelloResourceUnitTest {
     @Test
     void helloReactiveReturnsInterruptedWhenHelloServiceThrowsInterruptedException() {
         HelloResource resource = new HelloResource(new InterruptingHelloService());
-        AtomicReference<String> response = new AtomicReference<>();
+        AtomicBoolean interrupted = new AtomicBoolean();
 
-        resource.helloReactive(0, false)
-            .subscribe()
-            .with(response::set);
+        try {
+            String response = resource.helloReactive(0, false)
+                .invoke(() -> interrupted.set(Thread.currentThread().isInterrupted()))
+                .subscribeAsCompletionStage()
+                .join();
 
-        assertEquals("Interrupted", response.get());
-        assertTrue(Thread.interrupted());
+            assertEquals("Interrupted", response);
+            assertTrue(interrupted.get());
+        } finally {
+            clearCurrentThreadInterruptFlag();
+        }
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private static void clearCurrentThreadInterruptFlag() {
+        Thread.interrupted();
     }
 
     private static final class InterruptingHelloService extends HelloService {
