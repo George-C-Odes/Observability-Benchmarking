@@ -330,12 +330,18 @@ go mod download
 golangci-lint run
 go vet ./...
 
-# Run all tests with verbose output
-go test ./... -v
+# Match the quality workflow
+go test ./... -race -count=1
+go build ./cmd/server
+
+# Optional CI parity for the non-blocking vuln scan
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
 
 # Run tests with coverage summary
-go test ./... -race -coverprofile=coverage.out -covermode=atomic
+go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
 go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
 
 # Run a focused handler test
 # (the enhanced service exercises the /hello/virtual endpoint)
@@ -349,9 +355,13 @@ cd services/go/simple
 go mod download
 golangci-lint run
 go vet ./...
-go test ./... -v
-go test ./... -race -coverprofile=coverage.out -covermode=atomic
+go test ./... -race -count=1
+go build ./cmd/server
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
+go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
 go tool cover -func=coverage.out
+go tool cover -html=coverage.out -o coverage.html
 ```
 
 **Test Coverage (Enhanced)**:
@@ -1584,14 +1594,20 @@ Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.0):
 The upload runs only when the build step succeeds. If the upload fails (e.g.,
 Codecov is down), `fail_ci_if_error: false` ensures the CI job is not affected.
 
-Each matrix leg in the **Go Coverage** workflow uploads its `coverage.out` to
-Codecov the same way. Codecov natively supports Go coverage profiles:
+Each matrix leg in the **Go Coverage** workflow first rewrites `coverage.out`
+to `coverage-codecov.out` before uploading to Codecov. Go coverage profiles use
+the module name as their path prefix (for example `hello/cmd/server/main.go`),
+but Codecov needs repository-relative paths such as
+`services/go/simple/cmd/server/main.go` or
+`services/go/enhanced/internal/handlers/hello.go`. The rewrite step keeps the
+artifact upload in native Go format while making the Codecov upload line up with
+the monorepo source tree:
 
 ```yaml
 - name: Upload to Codecov
   uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
   with:
-    files: ${{ matrix.module_dir }}/coverage.out
+    files: ${{ matrix.module_dir }}/coverage-codecov.out
     flags: ${{ matrix.name }}
     name: ${{ matrix.name }}
     token: ${{ secrets.CODECOV_TOKEN }}
@@ -1625,8 +1641,9 @@ under Settings → Secrets and variables → Actions.
 
 For public repositories, Codecov also supports **tokenless uploads** via
 GitHub OIDC. To switch to tokenless, **remove** the `token:` input from
-the `codecov/codecov-action` step and ensure the job grants
-`permissions: id-token: write` (already present in the workflow).
+the `codecov/codecov-action` step and add `permissions: id-token: write`
+to the relevant coverage job first — the current coverage workflows do not
+grant that permission today.
 The same `fail_ci_if_error: false` behavior is used for Python, so a transient
 Codecov outage does not fail the overall Django coverage job.
 
@@ -1670,7 +1687,8 @@ that touches `services/go/**`. It:
 - Generates an HTML coverage report via `go tool cover -html`.
 - Uploads `coverage.out` and `coverage.html` as artifacts named
   `coverage-go-enhanced` and `coverage-go-simple` (retained for 30 days).
-- Uploads coverage to Codecov with flags `go-enhanced` and `go-simple`.
+- Rewrites the profile to `coverage-codecov.out` for Codecov path mapping, then
+  uploads coverage with flags `go-enhanced` and `go-simple`.
 
 #### Module-specific notes
 

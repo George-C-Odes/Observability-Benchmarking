@@ -90,11 +90,12 @@ make coverage
 ## CI, reporting, and coverage
 
 - **Lint / quality workflow**: `.github/workflows/go_quality.yml`
-  - runs `go vet`, `golangci-lint run`, `go test -race`, `go build`, and `govulncheck`
+  - verifies `go.mod` / `go.sum` tidiness, then runs `go vet`, `golangci-lint run`, `go test -race`, `go build`, and `govulncheck`
   - uploads a hosted HTML quality report artifact: `quality-report-go-simple`
 - **Coverage workflow**: `.github/workflows/go_coverage.yml`
   - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
   - uploads `coverage.out` and `coverage.html`
+  - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
   - enforces the current simple-module statement threshold of **30%**
 - **Codecov flag**: `go-simple`
   - mapped in the repository root `codecov.yml` to `services/go/simple/`
