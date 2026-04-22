@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * <p>
  * Tags: method, uri, status.
  * <p>
- * <b>Throughput optimisation:</b> Common HTTP status codes are pre-interned
+ * <b>Throughput optimization:</b> Common HTTP status codes are pre-interned
  * to avoid {@code String.valueOf()} per request. Timers are lazily cached by
  * a {@link TimerKey} record so only the first request per method+uri+status
  * pays the registration cost.
@@ -87,13 +87,12 @@ public class HttpMetricsFilter implements ContainerRequestFilter, ContainerRespo
         }
 
         String method = requestContext.getMethod();
-        String uri = URI_TAG_VALUE;
         int code = responseContext.getStatus();
         String status = (code >= 100 && code < STATUS_STRINGS.length)
                 ? STATUS_STRINGS[code]
                 : String.valueOf(code);
 
-        var key = new TimerKey(method, uri, status);
+        var key = new TimerKey(method, URI_TAG_VALUE, status);
         Timer timer = timers.computeIfAbsent(key, k ->
                 Timer.builder("http.server.requests")
                         .description("HTTP server request duration")
