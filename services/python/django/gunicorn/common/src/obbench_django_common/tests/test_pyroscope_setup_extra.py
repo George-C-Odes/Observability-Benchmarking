@@ -9,14 +9,13 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import pyroscope_setup
 
 
-# noinspection PyProtectedMember
-# noinspection PyPep8Naming
 class PyroscopeSetupExtraTests(TestCase):
-    def setUp(self) -> None:
+    def reset_pyroscope_for_test(self) -> None:
         pyroscope_setup.reset_pyroscope_state()
         self.addCleanup(pyroscope_setup.reset_pyroscope_state)
 
     def test_configure_pyroscope_logs_disabled_state(self) -> None:
+        self.reset_pyroscope_for_test()
         with (
             mock.patch.dict(os.environ, {"PYROSCOPE_ENABLED": "false"}, clear=False),
             self.assertLogs("hello", level="INFO") as logs,
@@ -26,6 +25,7 @@ class PyroscopeSetupExtraTests(TestCase):
         self.assertTrue(any("pyroscope disabled" in message for message in logs.output))
 
     def test_configure_pyroscope_warns_when_required_env_is_missing(self) -> None:
+        self.reset_pyroscope_for_test()
         with (
             mock.patch.dict(os.environ, {"PYROSCOPE_ENABLED": "true"}, clear=False),
             self.assertLogs("hello", level="WARNING") as logs,
@@ -37,6 +37,7 @@ class PyroscopeSetupExtraTests(TestCase):
         )
 
     def test_configure_pyroscope_logs_warning_when_import_fails(self) -> None:
+        self.reset_pyroscope_for_test()
         real_import = builtins.__import__
 
         def fake_import(name: str, *args: object, **kwargs: object) -> object:
@@ -62,6 +63,7 @@ class PyroscopeSetupExtraTests(TestCase):
         self.assertTrue(any("pyroscope setup failed" in message for message in logs.output))
 
     def test_configure_pyroscope_logs_warning_when_span_processor_registration_fails(self) -> None:
+        self.reset_pyroscope_for_test()
         pyroscope_module = types.ModuleType("pyroscope")
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock()
@@ -79,7 +81,7 @@ class PyroscopeSetupExtraTests(TestCase):
             mock.patch.dict(sys.modules, {"pyroscope": pyroscope_module}, clear=False),
             mock.patch.object(
                 pyroscope_setup,
-                "_register_span_processor",
+                "register_span_processor",
                 side_effect=RuntimeError("boom"),
             ),
             self.assertLogs("hello", level="WARNING") as logs,
@@ -112,7 +114,7 @@ class PyroscopeSetupExtraTests(TestCase):
             clear=False,
         ):
             sys.modules["opentelemetry"].trace = trace_module
-            result = pyroscope_setup._register_span_processor()
+            result = pyroscope_setup.register_span_processor()
 
         self.assertTrue(result)
         real_provider.add_span_processor.assert_called_once_with("proc")
@@ -120,8 +122,10 @@ class PyroscopeSetupExtraTests(TestCase):
     def test_register_span_processor_falls_back_to_proxy_provider_and_warns_without_adder(
         self,
     ) -> None:
-        provider = mock.Mock()
-        provider._real_provider = object()
+        provider = types.SimpleNamespace(
+            _real_provider=object(),
+            add_span_processor=mock.Mock(),
+        )
         trace_module = types.SimpleNamespace(get_tracer_provider=mock.Mock(return_value=provider))
         pyroscope_otel_module = types.SimpleNamespace(
             PyroscopeSpanProcessor=mock.Mock(return_value="proc")
@@ -137,7 +141,7 @@ class PyroscopeSetupExtraTests(TestCase):
             clear=False,
         ):
             sys.modules["opentelemetry"].trace = trace_module
-            result = pyroscope_setup._register_span_processor()
+            result = pyroscope_setup.register_span_processor()
 
         self.assertTrue(result)
         provider.add_span_processor.assert_called_once_with("proc")
@@ -160,7 +164,7 @@ class PyroscopeSetupExtraTests(TestCase):
             self.assertLogs("hello", level="WARNING") as logs,
         ):
             sys.modules["opentelemetry"].trace = trace_module
-            missing_result = pyroscope_setup._register_span_processor()
+            missing_result = pyroscope_setup.register_span_processor()
 
         self.assertFalse(missing_result)
         self.assertTrue(

@@ -13,11 +13,17 @@ class CachePort(ABC):
     @abstractmethod
     def get(self, key: str) -> str:
         """Return the cached value for *key*, or ``""`` if absent."""
+        _ = (self, key)
+        raise NotImplementedError
 
     @abstractmethod
     def size(self) -> int:
         """Return the configured maximum cache capacity."""
+        _ = self
+        raise NotImplementedError
 
     @abstractmethod
     def close(self) -> None:
         """Release any resources held by the cache."""
+        _ = self
+        raise NotImplementedError

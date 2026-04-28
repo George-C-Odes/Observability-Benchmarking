@@ -6,14 +6,13 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import otel_metrics
 
 
-# noinspection PyPep8Naming
 class OTelMetricsTests(TestCase):
-    def setUp(self) -> None:
+    def reset_metrics_for_test(self) -> None:
         otel_metrics.reset_otel_metrics_state()
         self.addCleanup(otel_metrics.reset_otel_metrics_state)
 
-    @staticmethod
-    def test_register_metrics_only_registers_once_after_success() -> None:
+    def test_register_metrics_only_registers_once_after_success(self) -> None:
+        self.reset_metrics_for_test()
         meter = mock.Mock()
         cfg = SimpleNamespace(endpoint_path="/hello/platform")
 
@@ -34,6 +33,7 @@ class OTelMetricsTests(TestCase):
         meter.create_observable_counter.assert_called_once()
 
     def test_register_metrics_retries_after_handled_failure(self) -> None:
+        self.reset_metrics_for_test()
         meter = mock.Mock()
         meter.create_observable_counter.side_effect = [RuntimeError("boom"), None]
         cfg = SimpleNamespace(endpoint_path="/hello/platform")

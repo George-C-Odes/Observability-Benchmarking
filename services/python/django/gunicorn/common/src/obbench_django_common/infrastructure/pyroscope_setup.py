@@ -15,20 +15,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 from obbench_django_common.infrastructure.optional_exceptions import (
     NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
 )
 
 logger = logging.getLogger("hello")
-
-
-# noinspection PyMissingConstructor
-class _State:
-    """Module-level mutable flag — avoids ``global`` statement."""
-
-    configured: bool = False
+_configured = False
 
 
 _PYROSCOPE_LOG_LEVELS = {
@@ -42,7 +36,7 @@ _PYROSCOPE_LOG_LEVELS = {
 }
 
 
-def resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
+def resolve_pyroscope_logging(raw_level: Optional[str]) -> tuple[bool, int]:
     """Return whether native logging is enabled and which Python level to use."""
     normalized = (raw_level or "warn").strip().lower()
     if normalized in ("off", "none", "false", "0"):
@@ -55,14 +49,16 @@ def resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
     return True, logging.WARNING
 
 
-def _resolve_pyroscope_logging(raw_level: str | None) -> tuple[bool, int]:
+def _resolve_pyroscope_logging(raw_level: Optional[str]) -> tuple[bool, int]:
     """Backward-compatible private alias for ``resolve_pyroscope_logging()``."""
     return resolve_pyroscope_logging(raw_level)
 
 
 def reset_pyroscope_state() -> None:
     """Clear module-level Pyroscope state for isolated tests."""
-    _State.configured = False
+    global _configured
+
+    _configured = False
 
 
 def _configure_profiler(pyroscope_module: Any, app_name: str, server_address: str) -> None:
@@ -82,8 +78,8 @@ def _configure_profiler(pyroscope_module: Any, app_name: str, server_address: st
     )
 
 
-# noinspection PyProtectedMember
-def _register_span_processor() -> bool:
+def register_span_processor() -> bool:
+    """Register Pyroscope's span processor with the active OTel tracer provider."""
     from opentelemetry import trace  # type: ignore[import-untyped]
     from pyroscope.otel import PyroscopeSpanProcessor  # type: ignore[import-untyped]
 
@@ -104,11 +100,18 @@ def _register_span_processor() -> bool:
     return True
 
 
+def _register_span_processor() -> bool:
+    """Backward-compatible private alias for ``register_span_processor()``."""
+    return register_span_processor()
+
+
 def configure_pyroscope() -> None:
     """Start Pyroscope profiling with span-profile correlation if enabled."""
-    if _State.configured:
+    global _configured
+
+    if _configured:
         return
-    _State.configured = True
+    _configured = True
 
     enabled = os.environ.get("PYROSCOPE_ENABLED", "false").strip().lower() in (
         "true",
@@ -153,7 +156,7 @@ def configure_pyroscope() -> None:
     #   https://github.com/grafana/otel-profiling-python
     #   https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
     try:
-        if _register_span_processor():
+        if register_span_processor():
             logger.info("pyroscope span-processor registered (trace→profile correlation active)")
     except NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS:
         logger.warning("pyroscope span-processor registration failed", exc_info=True)

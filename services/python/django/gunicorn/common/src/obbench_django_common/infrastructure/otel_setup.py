@@ -36,22 +36,20 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Callable
+from importlib import import_module
+from typing import Any, Callable
 
 from obbench_django_common.infrastructure.optional_exceptions import (
     NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
 )
 
-if TYPE_CHECKING:
-    from opentelemetry.sdk.resources import Resource
-
 logger = logging.getLogger("hello")
 
-_EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
+EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
+_EXCLUDED_URLS = EXCLUDED_URLS
 
 
-# noinspection PyMethodMayBeStatic
-class _ContextDetachFilter(logging.Filter):
+def suppress_context_detach_log_record(record: logging.LogRecord) -> bool:
     """Suppress benign 'Failed to detach context' errors from OTel.
 
     Under ASGI (Uvicorn workers), Python 3.13's stricter ``contextvars``
@@ -73,17 +71,11 @@ class _ContextDetachFilter(logging.Filter):
 
     Ref: https://github.com/open-telemetry/opentelemetry-python/issues/4236
     """
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        return "Failed to detach context" not in record.getMessage()
+    return "Failed to detach context" not in record.getMessage()
 
 
-# noinspection PyMissingConstructor
-class _State:
-    """Module-level mutable flags — avoids ``global`` statements."""
-
-    sdk_configured: bool = False
-    app_instrumented: bool = False
+_sdk_configured = False
+_app_instrumented = False
 
 
 def _sdk_disabled() -> bool:
@@ -94,10 +86,17 @@ def _sdk_disabled() -> bool:
     )
 
 
+def is_otel_sdk_disabled() -> bool:
+    """Return whether OTel SDK setup is disabled by environment."""
+    return _sdk_disabled()
+
+
 def reset_otel_setup_state() -> None:
     """Reset module-level OTel setup flags for isolated tests."""
-    _State.sdk_configured = False
-    _State.app_instrumented = False
+    global _sdk_configured, _app_instrumented
+
+    _sdk_configured = False
+    _app_instrumented = False
 
 
 def _run_optional_otel_step(
@@ -121,16 +120,40 @@ def _run_optional_otel_step(
     return True
 
 
-def _apply_django_instrumentor() -> None:
+def run_optional_otel_step(
+    action: Callable[[], None],
+    failure_message: str,
+    *,
+    failure_level: int = logging.DEBUG,
+) -> bool:
+    """Public wrapper for exercising optional OTel step behavior in tests."""
+    return _run_optional_otel_step(
+        action,
+        failure_message,
+        failure_level=failure_level,
+    )
+
+
+def apply_django_instrumentor() -> None:
     from opentelemetry.instrumentation.django import DjangoInstrumentor
 
-    DjangoInstrumentor().instrument(excluded_urls=_EXCLUDED_URLS)
+    DjangoInstrumentor().instrument(excluded_urls=EXCLUDED_URLS)
 
 
-def _apply_logging_instrumentor() -> None:
+def apply_logging_instrumentor() -> None:
     from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
     LoggingInstrumentor().instrument(set_logging_format=True)
+
+
+def _apply_django_instrumentor() -> None:
+    """Backward-compatible private alias for ``apply_django_instrumentor()``."""
+    apply_django_instrumentor()
+
+
+def _apply_logging_instrumentor() -> None:
+    """Backward-compatible private alias for ``apply_logging_instrumentor()``."""
+    apply_logging_instrumentor()
 
 
 def should_suppress_context_detach_errors() -> bool:
@@ -182,22 +205,24 @@ def instrument_app() -> None:
     delegate to whatever real provider is set per-worker later via
     ``configure_sdk()``.
     """
-    if _State.app_instrumented:
+    global _app_instrumented
+
+    if _app_instrumented:
         return
     if _sdk_disabled():
         logger.info("OTel app instrumentation skipped (OTEL_SDK_DISABLED=true)")
-        _State.app_instrumented = True
+        _app_instrumented = True
         return
-    _State.app_instrumented = True
+    _app_instrumented = True
 
     if _run_optional_otel_step(
-        _apply_django_instrumentor,
+        apply_django_instrumentor,
         "DjangoInstrumentor unavailable",
     ):
         logger.info("DjangoInstrumentor applied")
 
     if _run_optional_otel_step(
-        _apply_logging_instrumentor,
+        apply_logging_instrumentor,
         "LoggingInstrumentor unavailable",
     ):
         logger.info("LoggingInstrumentor applied (trace context in log records)")
@@ -238,19 +263,21 @@ def configure_sdk() -> None:
 
     Idempotent — second call in the same process is a no-op.
     """
-    if _State.sdk_configured:
+    global _sdk_configured
+
+    if _sdk_configured:
         return
     if _sdk_disabled():
         logger.info("OTel SDK setup skipped (OTEL_SDK_DISABLED=true)")
-        _State.sdk_configured = True
+        _sdk_configured = True
         return
-    _State.sdk_configured = True
+    _sdk_configured = True
 
     # Suppress benign "Failed to detach context" noise that can still
     # occur under ASGI + Python 3.13 (see _ContextDetachFilter docstring).
     explicit_suppress = os.environ.get("OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS", "").strip().lower()
     if should_suppress_context_detach_errors():
-        logging.getLogger("opentelemetry.context").addFilter(_ContextDetachFilter())
+        logging.getLogger("opentelemetry.context").addFilter(suppress_context_detach_log_record)
         if explicit_suppress in ("true", "1", "yes"):
             reason = "OTEL_SUPPRESS_CONTEXT_DETACH_ERRORS=%s" % explicit_suppress
         else:
@@ -258,17 +285,17 @@ def configure_sdk() -> None:
                 os.environ.get("HELLO_VARIANT", "platform"),
                 ".".join(map(str, sys.version_info[:3])),
             )
-        logger.debug("Installed _ContextDetachFilter (%s)", reason)
+        logger.debug("Installed context detach log filter (%s)", reason)
 
     if _run_optional_otel_step(
-        _do_configure_sdk,
+        configure_sdk_providers,
         "OTel SDK setup failed — telemetry disabled for this worker",
         failure_level=logging.WARNING,
     ):
         logger.info("OTel SDK configured: pid=%d", os.getpid())
 
 
-def _do_configure_sdk() -> None:
+def configure_sdk_providers() -> None:
     """Internal — heavy imports and provider wiring."""
     from opentelemetry import metrics, trace
     from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
@@ -303,45 +330,48 @@ def _do_configure_sdk() -> None:
 
     # --- Logs (optional — fail gracefully) ---
     _run_optional_otel_step(
-        lambda: _configure_log_export(resource),
+        lambda: configure_log_export(resource),
         "OTel log export not configured",
     )
 
 
-# noinspection PyProtectedMember
 # OTel's logging API still exposes the supported entry points from underscored
 # modules (``opentelemetry.sdk._logs`` / ``opentelemetry._logs``), so the IDE's
 # protected-member warning is a false positive for the current library surface.
-def _configure_log_export(resource: Resource) -> None:
+def configure_log_export(resource: Any) -> None:
     """Set up OTLP log export and attach ``LoggingHandler`` to app loggers.
 
     Note: ``opentelemetry.sdk._logs`` and ``opentelemetry._logs`` use an
     underscore prefix because the OTel Python logging API was marked
     "experimental".  These are the documented public entry-points.
     """
-    from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
-        OTLPLogExporter,
-    )
-    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+    log_exporter_module = import_module("opentelemetry.exporter.otlp.proto.grpc._log_exporter")
+    logs_module = import_module("opentelemetry.sdk._logs")
+    logs_export_module = import_module("opentelemetry.sdk._logs.export")
 
-    logger_provider = LoggerProvider(resource=resource)
+    logger_provider_cls = logs_module.LoggerProvider
+    logging_handler_cls = logs_module.LoggingHandler
+    batch_processor_cls = logs_export_module.BatchLogRecordProcessor
+    log_exporter_cls = log_exporter_module.OTLPLogExporter
+
+    logger_provider = logger_provider_cls(resource=resource)
     logger_provider.add_log_record_processor(
-        BatchLogRecordProcessor(OTLPLogExporter()),  # reads OTEL_BLRP_* env vars
+        batch_processor_cls(log_exporter_cls()),  # reads OTEL_BLRP_* env vars
     )
 
     # Set the global LoggerProvider.
     try:
-        from opentelemetry._logs import set_logger_provider as set_global_logger_provider
+        otel_logs_module = import_module("opentelemetry._logs")
     except ImportError:
-        set_global_logger_provider = None
-
-    if callable(set_global_logger_provider):
-        set_global_logger_provider(logger_provider)
+        pass
+    else:
+        set_global_logger_provider = getattr(otel_logs_module, "set_logger_provider", None)
+        if callable(set_global_logger_provider):
+            set_global_logger_provider(logger_provider)
 
     # Attach OTel LoggingHandler to application loggers so log records
     # are exported via OTLP → Alloy → Loki alongside traces and metrics.
-    otel_handler = LoggingHandler(
+    otel_handler = logging_handler_cls(
         level=logging.NOTSET,
         logger_provider=logger_provider,
     )
@@ -349,7 +379,7 @@ def _configure_log_export(resource: Resource) -> None:
         logging.getLogger(name).addHandler(otel_handler)
 
 
-def _shutdown_traces_and_metrics() -> None:
+def shutdown_traces_and_metrics() -> None:
     from opentelemetry import metrics, trace
 
     tp = trace.get_tracer_provider()
@@ -360,15 +390,35 @@ def _shutdown_traces_and_metrics() -> None:
         mp.shutdown()
 
 
-# noinspection PyProtectedMember
 # ``opentelemetry._logs`` remains the documented way to retrieve/shutdown the
 # global logger provider, despite the underscore prefix in the package name.
-def _shutdown_logs() -> None:
-    from opentelemetry._logs import get_logger_provider
+def shutdown_logs() -> None:
+    otel_logs_module = import_module("opentelemetry._logs")
+    get_logger_provider = otel_logs_module.get_logger_provider
 
     lp = get_logger_provider()
     if hasattr(lp, "shutdown"):
         lp.shutdown()
+
+
+def _configure_log_export(resource: Any) -> None:
+    """Backward-compatible private alias for ``configure_log_export()``."""
+    configure_log_export(resource)
+
+
+def _do_configure_sdk() -> None:
+    """Backward-compatible private alias for ``configure_sdk_providers()``."""
+    configure_sdk_providers()
+
+
+def _shutdown_traces_and_metrics() -> None:
+    """Backward-compatible private alias for ``shutdown_traces_and_metrics()``."""
+    shutdown_traces_and_metrics()
+
+
+def _shutdown_logs() -> None:
+    """Backward-compatible private alias for ``shutdown_logs()``."""
+    shutdown_logs()
 
 
 # ---------------------------------------------------------------------------
@@ -383,11 +433,11 @@ def shutdown_sdk() -> None:
     traces, metrics, and logs are exported before the process dies.
     """
     _run_optional_otel_step(
-        _shutdown_traces_and_metrics,
+        shutdown_traces_and_metrics,
         "OTel SDK shutdown error (traces/metrics)",
     )
 
     _run_optional_otel_step(
-        _shutdown_logs,
+        shutdown_logs,
         "OTel SDK shutdown error (logs)",
     )

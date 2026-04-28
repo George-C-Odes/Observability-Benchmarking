@@ -19,7 +19,6 @@ class _FakeHelloService:
         return self._result
 
 
-# noinspection PyPep8Naming
 class PlatformViewTests(SimpleTestCase):
     def test_platform_returns_json_and_caches_service_reference(self) -> None:
         views.reset_cached_hello_service()
@@ -68,7 +67,6 @@ class PlatformViewTests(SimpleTestCase):
         sleep_mock.assert_called_once_with(5)
 
 
-# noinspection PyPep8Naming
 class HealthViewTests(SimpleTestCase):
     def test_healthz_returns_200(self) -> None:
         response = views.healthz(RequestFactory().get("/healthz"))

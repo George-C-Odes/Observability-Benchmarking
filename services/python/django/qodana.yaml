@@ -43,6 +43,8 @@ bootstrap: |
   set -e
   pip install --quiet --disable-pip-version-check --ignore-requires-python \
     /data/project/services/python/django/gunicorn/common
+  rm -rf /data/project/services/python/django/gunicorn/common/build \
+    /data/project/services/python/django/gunicorn/common/*.egg-info
   if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/WSGI/requirements.txt \
     > /tmp/wsgi-reqs.txt; then
     status=$?
@@ -78,6 +80,8 @@ exclude:
       - services/python/django/gunicorn/WSGI/Dockerfile
       - services/python/django/gunicorn/ASGI/Dockerfile
       - services/python/django/.dockerignore
+      - services/python/django/gunicorn/common/build
+      - services/python/django/gunicorn/common/*.egg-info
 
 # Quality gate — matches the JVM config in the root qodana.yaml so the
 # Python codebase is held to the same standard.

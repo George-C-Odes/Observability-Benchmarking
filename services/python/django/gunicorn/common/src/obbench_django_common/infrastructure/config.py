@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
 from functools import lru_cache
 
 _SUPPORTED_VARIANTS = frozenset({"platform", "reactive"})
@@ -28,45 +27,57 @@ def _env_bool(name: str, default: bool) -> bool:
     return default
 
 
-@dataclass(frozen=True, slots=True)
+def env_int(name: str, default: int) -> int:
+    """Public wrapper for integer environment parsing."""
+    return _env_int(name, default)
+
+
+def env_bool(name: str, default: bool) -> bool:
+    """Public wrapper for boolean environment parsing."""
+    return _env_bool(name, default)
+
+
 class AppConfig:
     """Immutable application configuration."""
 
-    # Cache
-    cache_size: int = field(default_factory=lambda: _env_int("CACHE_SIZE", 50_000))
-    cache_impl: str = field(
-        default_factory=lambda: os.environ.get("CACHE_IMPL", "cachetools").strip().lower()
+    __slots__ = (
+        "cache_size",
+        "cache_impl",
+        "host",
+        "port",
+        "log_level",
+        "hello_variant",
+        "otel_service_name",
+        "pyroscope_enabled",
+        "pyroscope_server_address",
+        "pyroscope_application_name",
     )
 
-    # Server
-    host: str = field(default_factory=lambda: os.environ.get("HOST", "0.0.0.0"))
-    port: int = field(default_factory=lambda: _env_int("PORT", 8080))
+    cache_size: int
+    cache_impl: str
+    host: str
+    port: int
+    log_level: str
+    hello_variant: str
+    otel_service_name: str
+    pyroscope_enabled: bool
+    pyroscope_server_address: str
+    pyroscope_application_name: str
 
-    # Logging
-    log_level: str = field(default_factory=lambda: os.environ.get("LOG_LEVEL", "INFO").upper())
-
-    # Service mode
-    hello_variant: str = field(
-        default_factory=lambda: (
+    def __init__(self) -> None:
+        self.cache_size = _env_int("CACHE_SIZE", 50_000)
+        self.cache_impl = os.environ.get("CACHE_IMPL", "cachetools").strip().lower()
+        self.host = os.environ.get("HOST", "0.0.0.0")
+        self.port = _env_int("PORT", 8080)
+        self.log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+        self.hello_variant = (
             os.environ.get("HELLO_VARIANT", "platform").strip().lower() or "platform"
         )
-    )
+        self.otel_service_name = os.environ.get("OTEL_SERVICE_NAME", "django")
+        self.pyroscope_enabled = _env_bool("PYROSCOPE_ENABLED", False)
+        self.pyroscope_server_address = os.environ.get("PYROSCOPE_SERVER_ADDRESS", "")
+        self.pyroscope_application_name = os.environ.get("PYROSCOPE_APPLICATION_NAME", "")
 
-    # OTel
-    otel_service_name: str = field(
-        default_factory=lambda: os.environ.get("OTEL_SERVICE_NAME", "django")
-    )
-
-    # Pyroscope
-    pyroscope_enabled: bool = field(default_factory=lambda: _env_bool("PYROSCOPE_ENABLED", False))
-    pyroscope_server_address: str = field(
-        default_factory=lambda: os.environ.get("PYROSCOPE_SERVER_ADDRESS", "")
-    )
-    pyroscope_application_name: str = field(
-        default_factory=lambda: os.environ.get("PYROSCOPE_APPLICATION_NAME", "")
-    )
-
-    def __post_init__(self) -> None:
         if self.hello_variant not in _SUPPORTED_VARIANTS:
             raise ValueError(
                 f"Unsupported HELLO_VARIANT {self.hello_variant!r} "

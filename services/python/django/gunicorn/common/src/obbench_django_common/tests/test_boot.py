@@ -5,14 +5,13 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import boot
 
 
-# noinspection PyProtectedMember
 class BootObservabilityTests(TestCase):
     @staticmethod
     def test_instrument_app_delegates_to_otel_setup() -> None:
         with mock.patch(
             "obbench_django_common.infrastructure.otel_setup.instrument_app"
         ) as instrument_app:
-            boot._instrument_app()
+            boot.instrument_observability_app()
 
         instrument_app.assert_called_once_with()
 
@@ -33,7 +32,7 @@ class BootObservabilityTests(TestCase):
                 side_effect=lambda: calls.append("configure_pyroscope"),
             ) as configure_pyroscope,
         ):
-            boot._init_observability()
+            boot.init_observability()
 
         configure_sdk.assert_called_once_with()
         register_metrics.assert_called_once_with()
@@ -57,7 +56,7 @@ class BootObservabilityTests(TestCase):
             ) as configure_pyroscope,
         ):
             with self.assertRaisesRegex(RuntimeError, "boom"):
-                boot._init_observability()
+                boot.init_observability()
 
         register_metrics.assert_not_called()
         configure_pyroscope.assert_not_called()

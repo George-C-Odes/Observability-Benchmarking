@@ -172,9 +172,8 @@ class ShouldSuppressContextDetachErrorsTests(TestCase):
             self.assertTrue(should_suppress_context_detach_errors())
 
 
-# noinspection PyPep8Naming
 class OTelSetupLifecycleTests(TestCase):
-    def setUp(self) -> None:
+    def enable_otel_for_test(self) -> None:
         otel_setup.reset_otel_setup_state()
         self.addCleanup(otel_setup.reset_otel_setup_state)
         otel_sdk_disabled_env = mock.patch.dict(
@@ -185,11 +184,11 @@ class OTelSetupLifecycleTests(TestCase):
         otel_sdk_disabled_env.start()
         self.addCleanup(otel_sdk_disabled_env.stop)
 
-    @staticmethod
-    def test_instrument_app_applies_available_instrumentors() -> None:
+    def test_instrument_app_applies_available_instrumentors(self) -> None:
+        self.enable_otel_for_test()
         with (
-            mock.patch.object(otel_setup, "_apply_django_instrumentor") as django_inst,
-            mock.patch.object(otel_setup, "_apply_logging_instrumentor") as logging_inst,
+            mock.patch.object(otel_setup, "apply_django_instrumentor") as django_inst,
+            mock.patch.object(otel_setup, "apply_logging_instrumentor") as logging_inst,
         ):
             otel_setup.instrument_app()
 
@@ -197,13 +196,14 @@ class OTelSetupLifecycleTests(TestCase):
         logging_inst.assert_called_once_with()
 
     def test_instrument_app_continues_when_django_instrumentor_fails(self) -> None:
+        self.enable_otel_for_test()
         with (
             mock.patch.object(
                 otel_setup,
-                "_apply_django_instrumentor",
+                "apply_django_instrumentor",
                 side_effect=RuntimeError("boom"),
             ),
-            mock.patch.object(otel_setup, "_apply_logging_instrumentor") as logging_inst,
+            mock.patch.object(otel_setup, "apply_logging_instrumentor") as logging_inst,
             self.assertLogs("hello", level="DEBUG") as logs,
         ):
             otel_setup.instrument_app()
@@ -212,6 +212,7 @@ class OTelSetupLifecycleTests(TestCase):
         self.assertTrue(any("DjangoInstrumentor unavailable" in message for message in logs.output))
 
     def test_configure_sdk_logs_warning_when_sdk_wiring_fails(self) -> None:
+        self.enable_otel_for_test()
         with (
             mock.patch.object(
                 otel_setup,
@@ -220,7 +221,7 @@ class OTelSetupLifecycleTests(TestCase):
             ),
             mock.patch.object(
                 otel_setup,
-                "_do_configure_sdk",
+                "configure_sdk_providers",
                 side_effect=RuntimeError("boom"),
             ),
             self.assertLogs("hello", level="WARNING") as logs,
@@ -238,10 +239,10 @@ class OTelSetupLifecycleTests(TestCase):
         with (
             mock.patch.object(
                 otel_setup,
-                "_shutdown_traces_and_metrics",
+                "shutdown_traces_and_metrics",
                 side_effect=RuntimeError("boom"),
             ),
-            mock.patch.object(otel_setup, "_shutdown_logs") as shutdown_logs,
+            mock.patch.object(otel_setup, "shutdown_logs") as shutdown_logs,
             self.assertLogs("hello", level="DEBUG") as logs,
         ):
             otel_setup.shutdown_sdk()
