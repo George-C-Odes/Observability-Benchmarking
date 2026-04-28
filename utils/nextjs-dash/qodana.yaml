@@ -14,7 +14,7 @@ version: "1.0"
 # utils/orchestrator.  This file pins the JS linter so the Qodana
 # GitHub Actions matrix can analyze this module with the correct image.
 
-linter: jetbrains/qodana-js:2025.3
+linter: jetbrains/qodana-js:2026.1
 
 profile:
   name: qodana.starter
