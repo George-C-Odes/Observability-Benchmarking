@@ -6,6 +6,7 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import otel_metrics
 
 
+# noinspection PyPep8Naming
 class OTelMetricsTests(TestCase):
     def setUp(self) -> None:
         otel_metrics.reset_otel_metrics_state()

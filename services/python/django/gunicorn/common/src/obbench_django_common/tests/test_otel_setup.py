@@ -172,17 +172,18 @@ class ShouldSuppressContextDetachErrorsTests(TestCase):
             self.assertTrue(should_suppress_context_detach_errors())
 
 
+# noinspection PyPep8Naming
 class OTelSetupLifecycleTests(TestCase):
     def setUp(self) -> None:
         otel_setup.reset_otel_setup_state()
         self.addCleanup(otel_setup.reset_otel_setup_state)
-        self._otel_sdk_disabled_env = mock.patch.dict(
+        otel_sdk_disabled_env = mock.patch.dict(
             os.environ,
             {"OTEL_SDK_DISABLED": "false"},
             clear=False,
         )
-        self._otel_sdk_disabled_env.start()
-        self.addCleanup(self._otel_sdk_disabled_env.stop)
+        otel_sdk_disabled_env.start()
+        self.addCleanup(otel_sdk_disabled_env.stop)
 
     @staticmethod
     def test_instrument_app_applies_available_instrumentors() -> None:

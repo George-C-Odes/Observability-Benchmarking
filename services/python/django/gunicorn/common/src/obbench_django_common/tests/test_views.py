@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from unittest import mock
 
 from asgiref.sync import async_to_sync
@@ -18,20 +19,19 @@ class _FakeHelloService:
         return self._result
 
 
+# noinspection PyPep8Naming
 class PlatformViewTests(SimpleTestCase):
-    def setUp(self) -> None:
-        self.factory = RequestFactory()
+    def test_platform_returns_json_and_caches_service_reference(self) -> None:
         views.reset_cached_hello_service()
         self.addCleanup(views.reset_cached_hello_service)
-
-    def test_platform_returns_json_and_caches_service_reference(self) -> None:
+        factory = RequestFactory()
         service = _FakeHelloService()
 
         with mock.patch(
             "obbench_django_common.api.views.get_hello_service", return_value=service
         ) as get_service:
-            response = views.platform(self.factory.get("/hello/platform"))
-            cached_response = views.platform(self.factory.get("/hello/platform"))
+            response = views.platform(factory.get("/hello/platform"))
+            cached_response = views.platform(factory.get("/hello/platform"))
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(200, cached_response.status_code)
@@ -41,22 +41,26 @@ class PlatformViewTests(SimpleTestCase):
         self.assertEqual([0, 0], service.calls)
 
     def test_platform_forwards_sleep_parameter(self) -> None:
+        views.reset_cached_hello_service()
+        self.addCleanup(views.reset_cached_hello_service)
+        factory = RequestFactory()
         service = _FakeHelloService()
 
         with mock.patch("obbench_django_common.api.views.get_hello_service", return_value=service):
-            response = views.platform(self.factory.get("/hello/platform", {"sleep": "7"}))
+            response = views.platform(factory.get("/hello/platform", {"sleep": "7"}))
 
         self.assertEqual(200, response.status_code)
         self.assertEqual([7], service.calls)
 
     @mock.patch("obbench_django_common.api.views.asyncio.sleep")
-    def test_reactive_awaits_sleep_parameter(self, sleep_mock: mock.Mock) -> None:
+    def test_reactive_awaits_sleep_parameter(self, sleep_mock: Any) -> None:
+        views.reset_cached_hello_service()
+        self.addCleanup(views.reset_cached_hello_service)
+        factory = RequestFactory()
         service = _FakeHelloService("Hello from Django reactive REST value-1")
 
         with mock.patch("obbench_django_common.api.views.get_hello_service", return_value=service):
-            response = async_to_sync(views.reactive)(
-                self.factory.get("/hello/reactive", {"sleep": "5"})
-            )
+            response = async_to_sync(views.reactive)(factory.get("/hello/reactive", {"sleep": "5"}))
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(b'"Hello from Django reactive REST value-1"', response.content)
@@ -64,18 +68,16 @@ class PlatformViewTests(SimpleTestCase):
         sleep_mock.assert_called_once_with(5)
 
 
+# noinspection PyPep8Naming
 class HealthViewTests(SimpleTestCase):
-    def setUp(self) -> None:
-        self.factory = RequestFactory()
-
     def test_healthz_returns_200(self) -> None:
-        response = views.healthz(self.factory.get("/healthz"))
+        response = views.healthz(RequestFactory().get("/healthz"))
         self.assertEqual(200, response.status_code)
 
     def test_readyz_returns_200(self) -> None:
-        response = views.readyz(self.factory.get("/readyz"))
+        response = views.readyz(RequestFactory().get("/readyz"))
         self.assertEqual(200, response.status_code)
 
     def test_livez_returns_200(self) -> None:
-        response = views.livez(self.factory.get("/livez"))
+        response = views.livez(RequestFactory().get("/livez"))
         self.assertEqual(200, response.status_code)

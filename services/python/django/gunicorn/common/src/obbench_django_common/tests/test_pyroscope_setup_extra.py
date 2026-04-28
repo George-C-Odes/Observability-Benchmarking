@@ -9,6 +9,8 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import pyroscope_setup
 
 
+# noinspection PyProtectedMember
+# noinspection PyPep8Naming
 class PyroscopeSetupExtraTests(TestCase):
     def setUp(self) -> None:
         pyroscope_setup.reset_pyroscope_state()

@@ -62,6 +62,8 @@ class _FakeCache:
         return None
 
 
+# noinspection PyProtectedMember
+# noinspection PyPep8Naming
 class BootTests(TestCase):
     def setUp(self) -> None:
         boot._State.cache = None

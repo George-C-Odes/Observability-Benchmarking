@@ -5,6 +5,7 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import boot
 
 
+# noinspection PyProtectedMember
 class BootObservabilityTests(TestCase):
     @staticmethod
     def test_instrument_app_delegates_to_otel_setup() -> None:

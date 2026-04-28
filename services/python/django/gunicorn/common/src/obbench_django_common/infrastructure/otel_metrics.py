@@ -12,14 +12,21 @@ ensuring no duplicate counter registrations survive ``fork()``.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from obbench_django_common.infrastructure.optional_exceptions import (
     NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from opentelemetry.metrics import CallbackOptions, Observation
+
 logger = logging.getLogger("hello")
 
 
+# noinspection PyMissingConstructor
 class _State:
     """Module-level mutable flag — avoids ``global`` statement."""
 
@@ -37,8 +44,6 @@ def register_metrics() -> None:
         return
 
     try:
-        from collections.abc import Iterable
-
         from opentelemetry import metrics as otel_metrics
 
         from obbench_django_common.application.hello_service import get_request_count
@@ -48,9 +53,7 @@ def register_metrics() -> None:
 
         meter = otel_metrics.get_meter("hello")
 
-        def _observe_request_count(
-            _options: otel_metrics.CallbackOptions,
-        ) -> Iterable[otel_metrics.Observation]:
+        def _observe_request_count(_options: CallbackOptions) -> Iterable[Observation]:
             yield otel_metrics.Observation(
                 value=get_request_count(),
                 attributes={"endpoint": cfg.endpoint_path},

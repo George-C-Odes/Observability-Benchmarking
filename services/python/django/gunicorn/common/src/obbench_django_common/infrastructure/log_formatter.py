@@ -9,14 +9,16 @@ import json
 import logging
 import time
 import traceback
+from typing import Any
 
 _OTEL_AVAILABLE = False
+_trace: Any | None = None
 try:
     import opentelemetry.trace as _trace
 
     _OTEL_AVAILABLE = True
 except ImportError:
-    _trace = None  # type: ignore[assignment]
+    _trace = None
 
 
 class JsonFormatter(logging.Formatter):
@@ -52,6 +54,7 @@ class JsonFormatter(logging.Formatter):
 
         return json.dumps(obj, default=str)
 
+    # noinspection PyPep8Naming
     def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:  # noqa: N802
         """ISO-8601 timestamp with milliseconds."""
         ct = self.converter(record.created)

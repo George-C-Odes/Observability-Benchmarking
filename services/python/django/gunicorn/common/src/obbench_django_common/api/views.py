@@ -6,21 +6,26 @@ import asyncio
 import logging
 import os
 import threading
+from typing import TYPE_CHECKING
 
 from django.http import HttpRequest, HttpResponse
 
 from obbench_django_common.infrastructure.boot import get_hello_service
 
+if TYPE_CHECKING:
+    from obbench_django_common.application.hello_service import HelloService
+
 logger = logging.getLogger("hello")
 
 
+# noinspection PyMissingConstructor
 class _State:
     """Module-level cached reference — avoids ``global`` statement.
 
     Set on first request; safe under the GIL.
     """
 
-    svc = None
+    svc: HelloService | None = None
 
 
 # Pre-allocated content-type string (interned constant).
@@ -31,6 +36,8 @@ def platform(request: HttpRequest) -> HttpResponse:
     """Synchronous WSGI endpoint used by ``django-platform``."""
     if _State.svc is None:
         _State.svc = get_hello_service()
+    service = _State.svc
+    assert service is not None  # noqa: S101
 
     params = request.GET
 
@@ -40,7 +47,7 @@ def platform(request: HttpRequest) -> HttpResponse:
     if "log" in params and _parse_bool(params["log"]):
         _log_thread("platform")
 
-    result = _State.svc.hello(sleep_seconds)
+    result = service.hello(sleep_seconds)
 
     return _json_string_response(result)
 
@@ -49,6 +56,8 @@ async def reactive(request: HttpRequest) -> HttpResponse:
     """Async ASGI endpoint used by ``django-reactive``."""
     if _State.svc is None:
         _State.svc = get_hello_service()
+    service = _State.svc
+    assert service is not None  # noqa: S101
 
     params = request.GET
     sleep_seconds = _parse_int(params["sleep"], 0) if "sleep" in params else 0
@@ -59,7 +68,7 @@ async def reactive(request: HttpRequest) -> HttpResponse:
     if sleep_seconds > 0:
         await asyncio.sleep(sleep_seconds)
 
-    result = _State.svc.hello()
+    result = service.hello()
 
     return _json_string_response(result)
 
@@ -114,7 +123,7 @@ def livez(_request: HttpRequest) -> HttpResponse:
 # ---------------------------------------------------------------------------
 
 
-def _parse_int(raw: str, default: int) -> int:
+def _parse_int(raw: str | None, default: int) -> int:
     try:
         return int(raw)
     except (ValueError, TypeError):

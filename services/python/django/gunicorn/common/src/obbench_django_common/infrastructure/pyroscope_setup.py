@@ -24,10 +24,11 @@ from obbench_django_common.infrastructure.optional_exceptions import (
 logger = logging.getLogger("hello")
 
 
+# noinspection PyMissingConstructor
 class _State:
     """Module-level mutable flag — avoids ``global`` statement."""
 
-    configured = False
+    configured: bool = False
 
 
 _PYROSCOPE_LOG_LEVELS = {
@@ -81,6 +82,7 @@ def _configure_profiler(pyroscope_module: Any, app_name: str, server_address: st
     )
 
 
+# noinspection PyProtectedMember
 def _register_span_processor() -> bool:
     from opentelemetry import trace  # type: ignore[import-untyped]
     from pyroscope.otel import PyroscopeSpanProcessor  # type: ignore[import-untyped]

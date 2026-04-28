@@ -4,15 +4,14 @@ import logging
 import os
 import sys
 import types
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 from unittest import TestCase, mock
 
 from obbench_django_common.infrastructure import otel_setup
 
-if TYPE_CHECKING:
-    from opentelemetry.sdk.resources import Resource
 
-
+# noinspection PyProtectedMember
+# noinspection PyPep8Naming
 class OTelSetupExtraTests(TestCase):
     def setUp(self) -> None:
         otel_setup.reset_otel_setup_state()
@@ -76,7 +75,7 @@ class OTelSetupExtraTests(TestCase):
         context_logger = mock.Mock()
         real_get_logger = logging.getLogger
 
-        def fake_get_logger(name: str) -> logging.Logger | mock.Mock:
+        def fake_get_logger(name: str) -> Any:
             if name == "opentelemetry.context":
                 return context_logger
             return real_get_logger(name)
@@ -165,7 +164,7 @@ class OTelSetupExtraTests(TestCase):
         otel_handler = object()
         hello_logger = mock.Mock()
         django_logger = mock.Mock()
-        resource: Resource = cast(Any, mock.Mock())
+        resource = cast(Any, mock.Mock())
 
         modules = {
             "opentelemetry.exporter.otlp.proto.grpc._log_exporter": types.SimpleNamespace(
@@ -181,7 +180,7 @@ class OTelSetupExtraTests(TestCase):
             "opentelemetry._logs": types.SimpleNamespace(set_logger_provider=mock.Mock()),
         }
 
-        def fake_get_logger(name: str) -> mock.Mock:
+        def fake_get_logger(name: str) -> Any:
             if name == "hello":
                 return hello_logger
             if name == "django":
@@ -192,7 +191,7 @@ class OTelSetupExtraTests(TestCase):
             mock.patch.dict(sys.modules, modules, clear=False),
             mock.patch.object(logging, "getLogger", side_effect=fake_get_logger),
         ):
-            otel_setup._configure_log_export(resource)  # type: ignore[arg-type]
+            otel_setup._configure_log_export(resource)
 
         logger_provider.add_log_record_processor.assert_called_once_with(batch_log_record_processor)
         modules["opentelemetry._logs"].set_logger_provider.assert_called_once_with(logger_provider)

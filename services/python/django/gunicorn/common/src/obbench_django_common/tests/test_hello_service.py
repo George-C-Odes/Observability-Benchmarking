@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from unittest import TestCase, mock
 
 from obbench_django_common.application import hello_service
@@ -23,6 +24,8 @@ class _FakeCache(CachePort):
         return None
 
 
+# noinspection PyProtectedMember
+# noinspection PyPep8Naming
 class HelloServiceTests(TestCase):
     def setUp(self) -> None:
         hello_service._reset_counter()
@@ -38,7 +41,7 @@ class HelloServiceTests(TestCase):
         self.assertEqual(1, hello_service.get_request_count())
 
     @mock.patch("obbench_django_common.application.hello_service.time.sleep")
-    def test_platform_hello_sleeps_only_when_requested(self, sleep_mock: mock.Mock) -> None:
+    def test_platform_hello_sleeps_only_when_requested(self, sleep_mock: Any) -> None:
         service = HelloService(_FakeCache(), greeting_prefix="Hello from Django platform REST ")
 
         result = service.hello(3)

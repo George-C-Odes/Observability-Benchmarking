@@ -6,6 +6,8 @@ from unittest import TestCase, mock
 from obbench_django_common.infrastructure import config
 
 
+# noinspection PyProtectedMember
+# noinspection PyPep8Naming
 class AppConfigTests(TestCase):
     def tearDown(self) -> None:
         config.load_config.cache_clear()

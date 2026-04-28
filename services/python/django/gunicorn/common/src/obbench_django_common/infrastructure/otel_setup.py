@@ -50,6 +50,7 @@ logger = logging.getLogger("hello")
 _EXCLUDED_URLS = "/healthz,/readyz,/livez,/hello/healthz,/hello/readyz,/hello/livez"
 
 
+# noinspection PyMethodMayBeStatic
 class _ContextDetachFilter(logging.Filter):
     """Suppress benign 'Failed to detach context' errors from OTel.
 
@@ -77,11 +78,12 @@ class _ContextDetachFilter(logging.Filter):
         return "Failed to detach context" not in record.getMessage()
 
 
+# noinspection PyMissingConstructor
 class _State:
     """Module-level mutable flags — avoids ``global`` statements."""
 
-    sdk_configured = False
-    app_instrumented = False
+    sdk_configured: bool = False
+    app_instrumented: bool = False
 
 
 def _sdk_disabled() -> bool:
@@ -330,12 +332,12 @@ def _configure_log_export(resource: Resource) -> None:
 
     # Set the global LoggerProvider.
     try:
-        from opentelemetry._logs import set_logger_provider
+        from opentelemetry._logs import set_logger_provider as set_global_logger_provider
     except ImportError:
-        set_logger_provider = None  # type: ignore[assignment]
+        set_global_logger_provider = None
 
-    if set_logger_provider is not None:
-        set_logger_provider(logger_provider)
+    if callable(set_global_logger_provider):
+        set_global_logger_provider(logger_provider)
 
     # Attach OTel LoggingHandler to application loggers so log records
     # are exported via OTLP → Alloy → Loki alongside traces and metrics.
