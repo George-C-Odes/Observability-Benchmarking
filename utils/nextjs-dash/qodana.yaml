@@ -17,7 +17,7 @@ version: "1.0"
 linter: jetbrains/qodana-js:2026.1
 
 profile:
-  name: qodana.starter
+  name: qodana.recommended
 
 # Bootstrap: install npm dependencies so Qodana can resolve imports.
 bootstrap: cd utils/nextjs-dash && npm ci

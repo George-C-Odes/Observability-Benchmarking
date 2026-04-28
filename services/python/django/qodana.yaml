@@ -17,7 +17,7 @@ version: "1.0"
 # quality gate are self-contained.
 
 profile:
-  name: qodana.starter
+  name: qodana.recommended
 
 linter: jetbrains/qodana-python-community:2026.1
 
