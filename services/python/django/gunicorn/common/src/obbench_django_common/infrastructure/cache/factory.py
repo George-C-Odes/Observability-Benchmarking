@@ -5,6 +5,8 @@ Mirrors ``cache.New()`` in Go and the ``@Bean caffeineCache(...)`` in Java.
 
 from __future__ import annotations
 
+from typing import Union
+
 from obbench_django_common.application.port.cache_port import CachePort
 from obbench_django_common.infrastructure.cache.cachetools_adapter import CachetoolsAdapter
 from obbench_django_common.infrastructure.cache.dict_adapter import DictCacheAdapter
@@ -19,7 +21,7 @@ def create_cache(size: int, impl: str) -> CachePort:
     """
     impl = (impl or "cachetools").strip().lower()
 
-    adapter: CachetoolsAdapter | DictCacheAdapter
+    adapter: Union[CachetoolsAdapter, DictCacheAdapter]
     if impl in ("cachetools", "theine"):
         adapter = CachetoolsAdapter(size)
     elif impl in ("dict", "map"):

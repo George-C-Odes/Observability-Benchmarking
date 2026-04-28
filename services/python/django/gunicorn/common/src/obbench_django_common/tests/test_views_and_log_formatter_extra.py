@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 from unittest import TestCase, mock
 
 from asgiref.sync import async_to_sync
@@ -23,19 +24,17 @@ class _FakeHelloService:
 
 
 class ViewHelperTests(SimpleTestCase):
-    def setUp(self) -> None:
-        self.factory = RequestFactory()
+    def test_platform_logs_thread_when_requested(self) -> None:
         views.reset_cached_hello_service()
         self.addCleanup(views.reset_cached_hello_service)
-
-    def test_platform_logs_thread_when_requested(self) -> None:
+        factory = RequestFactory()
         service = _FakeHelloService()
 
         with (
             mock.patch("obbench_django_common.api.views.get_hello_service", return_value=service),
-            mock.patch("obbench_django_common.api.views._log_thread") as log_thread,
+            mock.patch("obbench_django_common.api.views.log_thread") as log_thread,
         ):
-            response = views.platform(self.factory.get("/hello/platform", {"log": "yes"}))
+            response = views.platform(factory.get("/hello/platform", {"log": "yes"}))
 
         self.assertEqual(200, response.status_code)
         self.assertEqual([0], service.calls)
@@ -44,16 +43,19 @@ class ViewHelperTests(SimpleTestCase):
     @mock.patch("obbench_django_common.api.views.asyncio.sleep")
     def test_reactive_ignores_invalid_sleep_and_false_log_values(
         self,
-        sleep_mock: mock.Mock,
+        sleep_mock: Any,
     ) -> None:
+        views.reset_cached_hello_service()
+        self.addCleanup(views.reset_cached_hello_service)
+        factory = RequestFactory()
         service = _FakeHelloService("Hello from Django reactive REST value-1")
 
         with (
             mock.patch("obbench_django_common.api.views.get_hello_service", return_value=service),
-            mock.patch("obbench_django_common.api.views._log_thread") as log_thread,
+            mock.patch("obbench_django_common.api.views.log_thread") as log_thread,
         ):
             response = async_to_sync(views.reactive)(
-                self.factory.get("/hello/reactive", {"sleep": "oops", "log": "no"})
+                factory.get("/hello/reactive", {"sleep": "oops", "log": "no"})
             )
 
         self.assertEqual(200, response.status_code)
@@ -63,12 +65,12 @@ class ViewHelperTests(SimpleTestCase):
         log_thread.assert_not_called()
 
     def test_parse_helpers_and_json_response_cover_fallback_paths(self) -> None:
-        self.assertEqual(9, views._parse_int("oops", 9))
-        self.assertEqual(8, views._parse_int(None, 8))  # type: ignore[arg-type]
-        self.assertTrue(views._parse_bool("TRUE"))
-        self.assertFalse(views._parse_bool("off"))
+        self.assertEqual(9, views.parse_int("oops", 9))
+        self.assertEqual(8, views.parse_int(None, 8))
+        self.assertTrue(views.parse_bool("TRUE"))
+        self.assertFalse(views.parse_bool("off"))
 
-        response = views._json_string_response("Hello")
+        response = views.json_string_response("Hello")
 
         self.assertEqual("application/json", response["Content-Type"])
         self.assertEqual(b'"Hello"', response.content)
@@ -115,4 +117,4 @@ class JsonFormatterExtraTests(TestCase):
         record.created = 0
         record.msecs = 0
 
-        self.assertEqual("1970", formatter.formatTime(record, formatter.datefmt))
+        self.assertEqual("1970", formatter.format_time(record, formatter.datefmt))

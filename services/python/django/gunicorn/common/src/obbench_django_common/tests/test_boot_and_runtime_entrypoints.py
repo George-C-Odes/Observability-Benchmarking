@@ -7,11 +7,13 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
-from unittest import SkipTest, TestCase, mock
+from typing import Any
+from unittest import TestCase, mock
 
 from obbench_django_common.application.hello_service import HelloService
+from obbench_django_common.application.port.cache_port import CachePort
 from obbench_django_common.infrastructure import boot
+from obbench_django_common.infrastructure.config import AppConfig
 
 
 @lru_cache(maxsize=1)
@@ -46,44 +48,33 @@ def _resolve_gunicorn_dir() -> Path:
     )
 
 
-class _FakeCache:
+class _FakeCache(CachePort):
     def __init__(self, size: int = 3) -> None:
         self._size = size
 
-    @staticmethod
-    def get(key: str) -> str:
+    def get(self, key: str) -> str:
+        _ = self._size
         return f"value-{key}"
 
     def size(self) -> int:
         return self._size
 
-    @staticmethod
-    def close() -> None:
+    def close(self) -> None:
+        _ = self._size
         return None
 
 
 class BootTests(TestCase):
-    def setUp(self) -> None:
-        boot._State.cache = None
-        boot._State.config = None
-        boot._State.hello_service = None
-        boot._State.booted = False
-
-    def tearDown(self) -> None:
-        boot._State.cache = None
-        boot._State.config = None
-        boot._State.hello_service = None
-        boot._State.booted = False
-
-    @staticmethod
-    def test_on_startup_returns_immediately_when_already_booted() -> None:
-        boot._State.booted = True
+    def test_on_startup_returns_immediately_when_already_booted(self) -> None:
+        boot.reset_boot_state()
+        self.addCleanup(boot.reset_boot_state)
+        boot.replace_boot_state(booted=True)
 
         with (
             mock.patch.object(boot, "load_config") as load_config,
             mock.patch.object(boot, "create_cache") as create_cache,
-            mock.patch.object(boot, "_instrument_app") as instrument_app,
-            mock.patch.object(boot, "_init_observability") as init_observability,
+            mock.patch.object(boot, "instrument_observability_app") as instrument_app,
+            mock.patch.object(boot, "init_observability") as init_observability,
         ):
             boot.on_startup()
 
@@ -93,6 +84,8 @@ class BootTests(TestCase):
         init_observability.assert_not_called()
 
     def test_on_startup_initializes_state_and_standalone_observability(self) -> None:
+        boot.reset_boot_state()
+        self.addCleanup(boot.reset_boot_state)
         cfg = SimpleNamespace(
             hello_variant="platform",
             endpoint_path="/hello/platform",
@@ -105,8 +98,8 @@ class BootTests(TestCase):
         with (
             mock.patch.object(boot, "load_config", return_value=cfg),
             mock.patch.object(boot, "create_cache", return_value=cache),
-            mock.patch.object(boot, "_instrument_app") as instrument_app,
-            mock.patch.object(boot, "_init_observability") as init_observability,
+            mock.patch.object(boot, "instrument_observability_app") as instrument_app,
+            mock.patch.object(boot, "init_observability") as init_observability,
             mock.patch.object(boot.platform, "python_version", return_value="3.13.0"),
             mock.patch.object(boot.platform, "platform", return_value="test-platform"),
             mock.patch.object(boot.os, "getpid", return_value=1234),
@@ -118,10 +111,11 @@ class BootTests(TestCase):
         ):
             boot.on_startup()
 
-        self.assertTrue(boot._State.booted)
-        self.assertIs(cfg, boot._State.config)
-        self.assertIs(cache, boot._State.cache)
-        self.assertIsInstance(boot._State.hello_service, HelloService)
+        state = boot.get_boot_state_snapshot()
+        self.assertTrue(state.booted)
+        self.assertIs(cfg, state.config)
+        self.assertIs(cache, state.cache)
+        self.assertIsInstance(state.hello_service, HelloService)
         instrument_app.assert_called_once_with()
         init_observability.assert_called_once_with()
 
@@ -130,7 +124,7 @@ class BootTests(TestCase):
             mock.patch(
                 "obbench_django_common.application.hello_service.reset_request_count"
             ) as reset_request_count,
-            mock.patch.object(boot, "_init_observability") as init_observability,
+            mock.patch.object(boot, "init_observability") as init_observability,
             mock.patch.object(boot.os, "getpid", return_value=4321),
             self.assertLogs("hello", level="INFO") as logs,
         ):
@@ -141,12 +135,14 @@ class BootTests(TestCase):
         self.assertTrue(any("worker ready: pid=4321" in message for message in logs.output))
 
     def test_getters_trigger_lazy_startup(self) -> None:
-        cfg = SimpleNamespace(endpoint_path="/hello/platform")
-        service = object()
+        boot.reset_boot_state()
+        self.addCleanup(boot.reset_boot_state)
+        cfg = AppConfig()
+        cache: CachePort = _FakeCache()
+        service = HelloService(cache, greeting_prefix=cfg.greeting_prefix)
 
         def fake_startup() -> None:
-            boot._State.config = cast(Any, cfg)
-            boot._State.hello_service = cast(Any, service)
+            boot.replace_boot_state(config=cfg, hello_service=service)
 
         with mock.patch.object(boot, "on_startup", side_effect=fake_startup) as on_startup:
             self.assertIs(service, boot.get_hello_service())
@@ -158,21 +154,19 @@ class BootTests(TestCase):
 class RuntimeEntrypointTests(TestCase):
     @staticmethod
     def _runtime_dir(runtime: str) -> Path:
-        try:
-            return _resolve_gunicorn_dir() / runtime
-        except FileNotFoundError as exc:
-            raise SkipTest(str(exc)) from exc
+        return _resolve_gunicorn_dir() / runtime
 
     @staticmethod
     def _run_path(
         path: Path,
         *,
-        env: dict[str, str] | None = None,
-        run_name: str | None = None,
-    ) -> tuple[dict[str, Any], dict[str, str]]:
+        env: Any = None,
+        run_name: Any = None,
+    ):
         with mock.patch.dict(os.environ, env or {}, clear=True):
             namespace = runpy.run_path(str(path), run_name=run_name)
-            return namespace, dict(os.environ)
+            environment = dict(os.environ)
+        return namespace, environment
 
     def test_manage_py_sets_settings_module_and_executes_cli_for_both_runtimes(self) -> None:
         for runtime in ("WSGI", "ASGI"):

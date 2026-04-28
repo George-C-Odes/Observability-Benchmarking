@@ -12,6 +12,7 @@ class BenchmarkHelloConfig(AppConfig):
 
     def ready(self) -> None:
         """Eager-load the cache and shared runtime wiring on startup."""
+        _ = self.name
         from obbench_django_common.infrastructure.boot import on_startup
 
         on_startup()

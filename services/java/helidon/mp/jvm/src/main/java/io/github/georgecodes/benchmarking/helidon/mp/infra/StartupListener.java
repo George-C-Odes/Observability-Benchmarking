@@ -58,7 +58,7 @@ public class StartupListener {
         log.info("CDI OpenTelemetry bean: {}", openTelemetry.getClass().getName());
         log.info("GlobalOpenTelemetry: {}", GlobalOpenTelemetry.get().getClass().getName());
         try {
-            var tracer = io.helidon.tracing.Tracer.global();
+            var tracer = globalHelidonTracer();
             log.info("Helidon Tracer.global(): {} (enabled={})", tracer.getClass().getName(), tracer.enabled());
         } catch (Exception e) {
             log.warn("Helidon Tracer.global() failed: {}", e.getMessage());
@@ -149,5 +149,10 @@ public class StartupListener {
         } catch (Throwable ignored) {
             return false;
         }
+    }
+
+    @SuppressWarnings("removal")
+    private static io.helidon.tracing.Tracer globalHelidonTracer() {
+        return io.helidon.tracing.Tracer.global();
     }
 }

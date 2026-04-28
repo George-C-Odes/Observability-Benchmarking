@@ -12,33 +12,32 @@ ensuring no duplicate counter registrations survive ``fork()``.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
+from typing import Any
 
 from obbench_django_common.infrastructure.optional_exceptions import (
     NON_FATAL_OPTIONAL_INTEGRATION_EXCEPTIONS,
 )
 
 logger = logging.getLogger("hello")
-
-
-class _State:
-    """Module-level mutable flag — avoids ``global`` statement."""
-
-    registered = False
+_registered = False
 
 
 def reset_otel_metrics_state() -> None:
     """Reset metrics registration state for isolated tests."""
-    _State.registered = False
+    global _registered
+
+    _registered = False
 
 
 def register_metrics() -> None:
     """Register the ``hello.request.count`` observable counter once."""
-    if _State.registered:
+    global _registered
+
+    if _registered:
         return
 
     try:
-        from collections.abc import Iterable
-
         from opentelemetry import metrics as otel_metrics
 
         from obbench_django_common.application.hello_service import get_request_count
@@ -48,9 +47,7 @@ def register_metrics() -> None:
 
         meter = otel_metrics.get_meter("hello")
 
-        def _observe_request_count(
-            _options: otel_metrics.CallbackOptions,
-        ) -> Iterable[otel_metrics.Observation]:
+        def _observe_request_count(_options: Any) -> Iterable[Any]:
             yield otel_metrics.Observation(
                 value=get_request_count(),
                 attributes={"endpoint": cfg.endpoint_path},
@@ -68,5 +65,5 @@ def register_metrics() -> None:
         )
         return
 
-    _State.registered = True
+    _registered = True
     logger.info("registered hello.request.count observable counter")
