@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 ARG IMAGE_DEPS=node:25.9.0-alpine3.23
 ARG IMAGE_RUNTIME=node:25.9.0-alpine3.23
-ARG NPM_VERSION=11.12.1
+ARG NPM_VERSION=11.13.0
 #ARG IMAGE_DEPS=node:25.9.0-bookworm-slim
 #ARG IMAGE_RUNTIME=node:25.9.0-bookworm-slim
 
