@@ -32,7 +32,7 @@ opentelemetry-instrumentation-logging>=0.56b0
 
 # --- Pyroscope span profiles ---
 # https://grafana.com/docs/pyroscope/latest/configure-client/trace-span-profiles/python-span-profiles/
-pyroscope-io>=1.0.0
+pyroscope-io>=1.0.6
 # Official OTel span-profile integration (Traces → Profiles correlation)
 # https://github.com/grafana/otel-profiling-python
 pyroscope-otel>=1.0.0
