@@ -41,7 +41,7 @@ opentelemetry-instrumentation-logging>=0.56b0
 # (pthread_t / pthread_self). It cannot be built on Windows.  The IDE will show
 # "Package … is not installed" warnings on Windows — this is expected.
 # The packages install correctly inside the Linux Docker image at build time.
-pyroscope-io>=1.0.0
+pyroscope-io>=1.0.6
 # Official OTel span-profile integration (Traces → Profiles correlation)
 # https://github.com/grafana/otel-profiling-python
 pyroscope-otel>=1.0.0
