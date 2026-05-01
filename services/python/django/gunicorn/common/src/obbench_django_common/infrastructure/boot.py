@@ -26,7 +26,7 @@ import logging
 import os
 import platform
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from obbench_django_common.application.hello_service import HelloService
 from obbench_django_common.infrastructure.cache.factory import create_cache
@@ -38,13 +38,34 @@ if TYPE_CHECKING:
 logger = logging.getLogger("hello")
 
 
-class _State:
-    """Module-level singletons (one per worker process) — avoids ``global`` statements."""
+class BootStateSnapshot:
+    """Read-only snapshot of module-level boot state for focused tests."""
 
-    cache: CachePort | None = None
-    config: AppConfig | None = None
-    hello_service: HelloService | None = None
-    booted: bool = False
+    __slots__ = ("cache", "config", "hello_service", "booted")
+
+    cache: Optional[CachePort]
+    config: Optional[AppConfig]
+    hello_service: Optional[HelloService]
+    booted: bool
+
+    def __init__(
+        self,
+        *,
+        cache: Optional[CachePort],
+        config: Optional[AppConfig],
+        hello_service: Optional[HelloService],
+        booted: bool,
+    ) -> None:
+        self.cache = cache
+        self.config = config
+        self.hello_service = hello_service
+        self.booted = booted
+
+
+_cache: Optional[CachePort] = None
+_config: Optional[AppConfig] = None
+_hello_service: Optional[HelloService] = None
+_booted = False
 
 
 # ---------------------------------------------------------------------------
@@ -69,12 +90,14 @@ def on_startup() -> None:
 
     In standalone mode (no gunicorn), OTel is also initialized here.
     """
-    if _State.booted:
+    global _booted, _cache, _config, _hello_service
+
+    if _booted:
         return
-    _State.booted = True
+    _booted = True
 
     cfg = load_config()
-    _State.config = cfg
+    _config = cfg
 
     logger.info(
         (
@@ -91,8 +114,8 @@ def on_startup() -> None:
     )
 
     cache = create_cache(cfg.cache_size, cfg.cache_impl)
-    _State.cache = cache
-    _State.hello_service = HelloService(cache, greeting_prefix=cfg.greeting_prefix)
+    _cache = cache
+    _hello_service = HelloService(cache, greeting_prefix=cfg.greeting_prefix)
 
     logger.info(
         "cache populated: impl=%s, size=%d",
@@ -102,12 +125,12 @@ def on_startup() -> None:
 
     # Apply instrumentation patches (DjangoInstrumentor, LoggingInstrumentor).
     # These survive fork() and use Proxy providers.
-    _instrument_app()
+    instrument_observability_app()
 
     # Under gunicorn, post_fork_init() handles per-worker OTel SDK setup.
     # In standalone mode (no gunicorn), initialize everything here.
     if "gunicorn" not in sys.modules:
-        _init_observability()
+        init_observability()
 
 
 def post_fork_init() -> None:
@@ -133,25 +156,62 @@ def post_fork_init() -> None:
 
     reset_request_count()
 
-    _init_observability()
+    init_observability()
 
     logger.info("worker ready: pid=%d", os.getpid())
 
 
 def get_hello_service() -> HelloService:
     """Return the singleton ``HelloService`` (creates lazily if needed)."""
-    if _State.hello_service is None:
+    if _hello_service is None:
         on_startup()
-    assert _State.hello_service is not None  # noqa: S101
-    return _State.hello_service
+    assert _hello_service is not None  # noqa: S101
+    return _hello_service
 
 
 def get_app_config() -> AppConfig:
     """Return the cached application config, initializing it if required."""
-    if _State.config is None:
+    if _config is None:
         on_startup()
-    assert _State.config is not None  # noqa: S101
-    return _State.config
+    assert _config is not None  # noqa: S101
+    return _config
+
+
+def reset_boot_state() -> None:
+    """Reset boot state for isolated tests and reload scenarios."""
+    global _booted, _cache, _config, _hello_service
+
+    _cache = None
+    _config = None
+    _hello_service = None
+    _booted = False
+
+
+def replace_boot_state(
+    *,
+    cache: Optional[CachePort] = None,
+    config: Optional[Any] = None,
+    hello_service: Optional[Any] = None,
+    booted: Optional[bool] = None,
+) -> None:
+    """Replace selected boot state values for focused tests."""
+    global _booted, _cache, _config, _hello_service
+
+    _cache = cache
+    _config = config
+    _hello_service = hello_service
+    if booted is not None:
+        _booted = booted
+
+
+def get_boot_state_snapshot() -> BootStateSnapshot:
+    """Return the current boot state without exposing mutable module internals."""
+    return BootStateSnapshot(
+        cache=_cache,
+        config=_config,
+        hello_service=_hello_service,
+        booted=_booted,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +219,7 @@ def get_app_config() -> AppConfig:
 # ---------------------------------------------------------------------------
 
 
-def _instrument_app() -> None:
+def instrument_observability_app() -> None:
     """Apply OTel instrumentation patches (Django, logging).
 
     These patches survive ``fork()`` and use Proxy providers.
@@ -173,7 +233,7 @@ def _instrument_app() -> None:
     instrument_app()
 
 
-def _init_observability() -> None:
+def init_observability() -> None:
     """Initialize per-worker OTel SDK, custom metrics, and Pyroscope.
 
     Each delegated helper already implements best-effort handling for optional
@@ -189,3 +249,13 @@ def _init_observability() -> None:
     configure_sdk()
     register_metrics()
     configure_pyroscope()
+
+
+def _instrument_app() -> None:
+    """Backward-compatible private alias for ``instrument_observability_app()``."""
+    instrument_observability_app()
+
+
+def _init_observability() -> None:
+    """Backward-compatible private alias for ``init_observability()``."""
+    init_observability()

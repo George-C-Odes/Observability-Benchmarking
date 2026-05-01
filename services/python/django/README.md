@@ -174,7 +174,7 @@ See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
 ## Qodana static analysis
 
-The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan (`jetbrains/qodana-python-community:2025.3`) that runs PyCharm Community-based inspections on all code under `services/python/django/`. The scan is configured by `services/python/django/qodana.yaml` and enforces the same quality gate as the JVM Qodana scopes (`critical: 0`, `high: 0`, `moderate: 0`).
+The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan (`jetbrains/qodana-python-community:2026.1`) that runs PyCharm Community-based inspections on all code under `services/python/django/`. The scan is configured by `services/python/django/qodana.yaml` and enforces the same quality gate as the JVM Qodana scopes (`critical: 0`, `high: 0`, `moderate: 0`).
 
 The `qodana.yaml` includes a `bootstrap` command that installs the project dependencies (Django, OpenTelemetry, gunicorn, cachetools, and the local `obbench-django-common` package) inside the Qodana container before analysis. This ensures Qodana can resolve imports and its findings match what the IDE reports. Any requirement containing `pyroscope` (for example, `pyroscope-io` or `pyroscope-otel`) is filtered out because these agents require a Rust build toolchain not present in the container.
 
@@ -188,7 +188,7 @@ New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
 docker run --rm `
   -v "${PWD}:/data/project" `
   -v "${PWD}/.qodana/django-python:/data/results" `
-  jetbrains/qodana-python-community:2025.3 `
+  jetbrains/qodana-python-community:2026.1 `
   --project-dir=/data/project `
   --config=/data/project/services/python/django/qodana.yaml `
   --only-directory=services/python/django `
