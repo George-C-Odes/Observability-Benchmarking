@@ -5,8 +5,8 @@ go 1.26.2
 require (
 	github.com/Yiling-J/theine-go v0.6.2
 	github.com/dgraph-io/ristretto/v2 v2.4.0
-	github.com/gofiber/contrib/v3/otel v1.1.1
-	github.com/gofiber/fiber/v3 v3.1.0
+	github.com/gofiber/contrib/v3/otel v1.1.3
+	github.com/gofiber/fiber/v3 v3.2.0
 	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go v1.2.8
 	github.com/maypok86/otter/v2 v2.3.0
@@ -41,7 +41,7 @@ require (
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
