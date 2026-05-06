@@ -38,4 +38,4 @@ pyroscope-io>=1.0.0
 pyroscope-otel>=1.0.0
 
 # --- Cache (TTL/LRU, pure-Python, fork-safe) ---
-cachetools>=6.0.0
+cachetools>=7.1.1
