@@ -6,25 +6,25 @@
 #
 asgiref==3.11.1
     # via django
-cachetools==7.0.6
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+cachetools==7.1.1
+    # via -r requirements.in
 cffi==2.0.0
     # via pyroscope-io
 django==6.0.4
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 googleapis-common-protos==1.74.0
     # via opentelemetry-exporter-otlp-proto-grpc
 grpcio==1.80.0
     # via
-    #   -r services/python/django/gunicorn/WSGI/requirements.in
+    #   -r requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
 gunicorn==25.3.0
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 importlib-metadata==8.7.1
     # via opentelemetry-api
 opentelemetry-api==1.41.0
     # via
-    #   -r services/python/django/gunicorn/WSGI/requirements.in
+    #   -r requirements.in
     #   opentelemetry-distro
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-instrumentation
@@ -35,11 +35,11 @@ opentelemetry-api==1.41.0
     #   opentelemetry-semantic-conventions
     #   pyroscope-otel
 opentelemetry-distro==0.62b0
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 opentelemetry-exporter-otlp-proto-common==1.41.0
     # via opentelemetry-exporter-otlp-proto-grpc
 opentelemetry-exporter-otlp-proto-grpc==1.41.0
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 opentelemetry-instrumentation==0.62b0
     # via
     #   opentelemetry-distro
@@ -47,9 +47,9 @@ opentelemetry-instrumentation==0.62b0
     #   opentelemetry-instrumentation-logging
     #   opentelemetry-instrumentation-wsgi
 opentelemetry-instrumentation-django==0.62b0
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 opentelemetry-instrumentation-logging==0.62b0
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 opentelemetry-instrumentation-wsgi==0.62b0
     # via opentelemetry-instrumentation-django
 opentelemetry-proto==1.41.0
@@ -58,7 +58,7 @@ opentelemetry-proto==1.41.0
     #   opentelemetry-exporter-otlp-proto-grpc
 opentelemetry-sdk==1.41.0
     # via
-    #   -r services/python/django/gunicorn/WSGI/requirements.in
+    #   -r requirements.in
     #   opentelemetry-distro
     #   opentelemetry-exporter-otlp-proto-grpc
     #   pyroscope-otel
@@ -84,10 +84,10 @@ pycparser==3.0
     # via cffi
 pyroscope-io==1.0.5
     # via
-    #   -r services/python/django/gunicorn/WSGI/requirements.in
+    #   -r requirements.in
     #   pyroscope-otel
 pyroscope-otel==1.0.0
-    # via -r services/python/django/gunicorn/WSGI/requirements.in
+    # via -r requirements.in
 sqlparse==0.5.5
     # via django
 typing-extensions==4.15.0
@@ -97,8 +97,6 @@ typing-extensions==4.15.0
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-tzdata==2026.1
-    # via django
 wrapt==2.1.2
     # via opentelemetry-instrumentation
 zipp==3.23.1
