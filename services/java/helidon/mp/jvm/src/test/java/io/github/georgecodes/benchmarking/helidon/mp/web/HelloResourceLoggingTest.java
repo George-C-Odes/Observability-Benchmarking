@@ -20,6 +20,7 @@ class HelloResourceLoggingTest {
 
         String response = resource.virtual(0, true);
 
-        assertTrue(response.startsWith("Hello from Helidon MP virtual REST "));
+        assertTrue(response.startsWith("\"Hello from Helidon MP virtual REST "));
+        assertTrue(response.endsWith("\""));
     }
 }

@@ -9,8 +9,8 @@
   - -initialize-at-run-time=io.opentelemetry.instrumentation.logback
   causing a fatal GraalVM error.
 
-  Instead, StartupListener programmatically adds the appender at runtime
-  using OpenTelemetryAppender.install(otel).
+  Instead, StartupListener programmatically creates, configures, and attaches
+  the appender at runtime, then points it at Helidon Telemetry's OTel SDK.
 -->
 <configuration>
 

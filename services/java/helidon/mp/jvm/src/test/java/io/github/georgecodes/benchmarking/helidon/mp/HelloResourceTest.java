@@ -27,9 +27,12 @@ class HelloResourceTest {
                 .request(MediaType.APPLICATION_JSON)
                 .get()) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+            assertEquals(MediaType.APPLICATION_JSON, response.getMediaType().toString());
             String body = response.readEntity(String.class);
-            assertTrue(body.contains("Hello from Helidon MP virtual REST"),
-                    "Expected body to contain 'Hello from Helidon MP virtual REST' but was: " + body);
+            assertTrue(body.startsWith("\"Hello from Helidon MP virtual REST "),
+                    "Expected JSON string body to start with quoted hello text but was: " + body);
+            assertTrue(body.endsWith("\""),
+                    "Expected JSON string body to end with a closing quote but was: " + body);
         }
     }
 
@@ -41,7 +44,8 @@ class HelloResourceTest {
                 .get()) {
             assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
-            assertTrue(body.contains("Hello from Helidon MP virtual REST"));
+            assertTrue(body.startsWith("\"Hello from Helidon MP virtual REST "));
+            assertTrue(body.endsWith("\""));
         }
     }
 

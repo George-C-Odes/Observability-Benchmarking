@@ -9,3 +9,13 @@ server:
   idle-connection-timeout: PT15S
   receive-buffer-size: 4096
   write-queue-length: 0
+telemetry:
+  span:
+    name-includes-method: true
+tracing:
+  service: helidon-se-jvm
+  components:
+    web-server:
+      spans:
+        - name: HTTP Request
+          new-name: "%1$s %2$s"

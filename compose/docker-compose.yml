@@ -839,6 +839,31 @@ services:
     environment:
       TZ: *default_timezone
       JAVA_TOOL_OPTIONS: *default_common_java_tool_options
+      # Helidon SE initializes the OTel SDK in-process. Keep the critical OTel
+      # autoconfigure keys available as JVM properties as well as OTEL_* env vars
+      # so the container never falls back to the SDK default http://localhost:4317.
+      JDK_JAVA_OPTIONS: >-
+        -Dotel.exporter.otlp.endpoint=http://alloy:4317
+        -Dotel.exporter.otlp.protocol=grpc
+        -Dotel.traces.exporter=otlp
+        -Dotel.metrics.exporter=otlp
+        -Dotel.logs.exporter=otlp
+        -Dotel.traces.sampler=${OTEL_TRACES_SAMPLER:-parentbased_always_on}
+        -Dotel.traces.sampler.arg=${OTEL_TRACES_SAMPLER_ARG:-1.0}
+        -Dotel.bsp.max.queue.size=${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+        -Dotel.bsp.max.export.batch.size=${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+        -Dotel.bsp.schedule.delay=${OTEL_BSP_SCHEDULE_DELAY:-1000}
+        -Dotel.bsp.export.timeout=${OTEL_BSP_EXPORT_TIMEOUT:-10000}
+        -Dtracing.protocol=http
+        -Dtracing.host=alloy
+        -Dtracing.port=4317
+        -Dtracing.exporter-type=GRPC
+        -Dtracing.max-queue-size=${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+        -Dtracing.max-export-batch-size=${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+        -Dtracing.schedule-delay=${HELIDON_TRACING_SCHEDULE_DELAY:-PT1S}
+        -Dtracing.export-timeout=${HELIDON_TRACING_EXPORT_TIMEOUT:-PT10S}
+        -Dtracing.sampler-type=${HELIDON_TRACING_SAMPLER_TYPE:-CONSTANT}
+        -Dtracing.sampler-param=${HELIDON_TRACING_SAMPLER_PARAM:-1.0}
       CACHE_SIZE: *default_cache_size
       HELIDON_MICROMETER_ENABLED: *default_metric_otel_http
 
@@ -856,7 +881,13 @@ services:
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-parentbased_always_on}
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-1.0}
+      OTEL_BSP_MAX_QUEUE_SIZE: ${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: ${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+      OTEL_BSP_SCHEDULE_DELAY: ${OTEL_BSP_SCHEDULE_DELAY:-1000}
+      OTEL_BSP_EXPORT_TIMEOUT: ${OTEL_BSP_EXPORT_TIMEOUT:-10000}
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     <<: *common_properties
 
   helidon-se-native:
@@ -892,7 +923,13 @@ services:
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-parentbased_always_on}
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-1.0}
+      OTEL_BSP_MAX_QUEUE_SIZE: ${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: ${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+      OTEL_BSP_SCHEDULE_DELAY: ${OTEL_BSP_SCHEDULE_DELAY:-1000}
+      OTEL_BSP_EXPORT_TIMEOUT: ${OTEL_BSP_EXPORT_TIMEOUT:-10000}
+      OTEL_BSP_LOG_LEVEL: "ERROR"
       OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
     entrypoint:
       - "./helidon-se-native"
@@ -916,6 +953,18 @@ services:
     environment:
       TZ: *default_timezone
       JAVA_TOOL_OPTIONS: *default_common_java_tool_options
+      # Helidon MP Telemetry reads exact MicroProfile `otel.*` system-property
+      # keys and defaults metrics/logs to `none` when they are absent.
+      JDK_JAVA_OPTIONS: >-
+        -Dotel.sdk.disabled=false
+        -Dotel.metrics.exporter=otlp
+        -Dotel.logs.exporter=otlp
+        -Dotel.traces.sampler=${OTEL_TRACES_SAMPLER:-parentbased_always_on}
+        -Dotel.traces.sampler.arg=${OTEL_TRACES_SAMPLER_ARG:-1.0}
+        -Dotel.bsp.max.queue.size=${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+        -Dotel.bsp.max.export.batch.size=${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+        -Dotel.bsp.schedule.delay=${OTEL_BSP_SCHEDULE_DELAY:-1000}
+        -Dotel.bsp.export.timeout=${OTEL_BSP_EXPORT_TIMEOUT:-10000}
       CACHE_SIZE: *default_cache_size
       HELIDON_MICROMETER_ENABLED: *default_metric_otel_http
 
@@ -933,7 +982,13 @@ services:
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-parentbased_always_on}
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-1.0}
+      OTEL_BSP_MAX_QUEUE_SIZE: ${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: ${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+      OTEL_BSP_SCHEDULE_DELAY: ${OTEL_BSP_SCHEDULE_DELAY:-1000}
+      OTEL_BSP_EXPORT_TIMEOUT: ${OTEL_BSP_EXPORT_TIMEOUT:-10000}
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     <<: *common_properties
 
   helidon-mp-native:
@@ -969,13 +1024,16 @@ services:
       OTEL_METRICS_EXPORTER: "otlp"
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
-      OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-parentbased_always_on}
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-1.0}
+      OTEL_BSP_MAX_QUEUE_SIZE: ${OTEL_BSP_MAX_QUEUE_SIZE:-2048}
+      OTEL_BSP_MAX_EXPORT_BATCH_SIZE: ${OTEL_BSP_MAX_EXPORT_BATCH_SIZE:-512}
+      OTEL_BSP_SCHEDULE_DELAY: ${OTEL_BSP_SCHEDULE_DELAY:-1000}
+      OTEL_BSP_EXPORT_TIMEOUT: ${OTEL_BSP_EXPORT_TIMEOUT:-10000}
+      OTEL_BSP_LOG_LEVEL: "ERROR"
       OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
     entrypoint:
       - "./helidon-mp-native"
-      - "-Dotel.java.global-autoconfigure.enabled=true"
-      - "-Dorg.jboss.weld.bootstrap.api.helpers.SingletonProvider=org.jboss.weld.bootstrap.api.helpers.Singletons"
-      - "-Dorg.jboss.weld.bootstrap.events.ContainerLifecycleEvents.PRELOAD_PROCESS_INJECTION_TARGET=false"
     command: *default_native_java_options
     <<: *common_properties
 
@@ -1623,7 +1681,7 @@ services:
       # OTel SDK is created per-worker in post_fork (see boot.py).
 
       # Batch tuning (traces, logs) — longer intervals reduce background-thread
-      # GIL contention from gRPC serialisation/export, giving request-handling
+      # GIL contention from gRPC serialization/export, giving request-handling
       # threads more CPU time.  15 s aligns with OTEL_METRIC_EXPORT_INTERVAL.
       OTEL_BSP_MAX_QUEUE_SIZE: 2048
       OTEL_BSP_MAX_EXPORT_BATCH_SIZE: 512

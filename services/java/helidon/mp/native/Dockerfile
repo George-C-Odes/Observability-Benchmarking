@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
-ARG JAVA_MINOR_RELEASE=.0.2
+ARG JAVA_MINOR_RELEASE=.0.3
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 
@@ -9,7 +9,7 @@ FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MI
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow -Dorg.jboss.weld.executor.threadPoolType=FIXED_TIMEOUT -Dorg.jboss.weld.executor.threadPoolSize=1"
-ARG HELIDON_VERSION=4.3.4
+ARG HELIDON_VERSION=4.4.1
 ENV HELIDON_VERSION=${HELIDON_VERSION}
 
 ENV LANGUAGE='en_US:en'
@@ -82,6 +82,8 @@ ARG NATIVE_IMAGE_EXTRA_ARGS=""
 
 RUN --mount=type=cache,id=maven-m2-helidon-mp-native-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
     --mount=type=cache,id=native-target-${JAVA_RELEASE},target=/workspace/target,uid=1000,gid=1000,mode=0775,sharing=locked \
+    rm -rf target/classes target/generated-sources target/generated-test-sources target/maven-status \
+           target/test-classes target/reports target/*.jar target/helidon-mp-native && \
     EXTRA_OPTS="" && \
     if [ -n "${NATIVE_IMAGE_INIT_BUILD_TIME}" ] || [ -n "${NATIVE_IMAGE_INIT_RUN_TIME}" ] || [ -n "${NATIVE_IMAGE_EXTRA_ARGS}" ]; then \
       EXTRA_OPTS="-Dnative.image.init.build.time.extra=${NATIVE_IMAGE_INIT_BUILD_TIME} -Dnative.image.init.run.time.extra=${NATIVE_IMAGE_INIT_RUN_TIME} -Dnative.image.args.extra=${NATIVE_IMAGE_EXTRA_ARGS}"; \
@@ -97,20 +99,6 @@ RUN --mount=type=cache,id=maven-m2-helidon-mp-native-${JAVA_RELEASE},target=/hom
     cp target/helidon-mp-native /workspace/helidon-mp-native && \
     chmod 0555 /workspace/helidon-mp-native
 
-# ── Debug (temporary): print Weld bootstrap signatures for diagnostics ──
-# Placed after the build so it doesn't block source-layer caching.
-RUN --mount=type=cache,id=maven-m2-helidon-mp-native-${JAVA_RELEASE},target=/home/maven/.m2,uid=1000,gid=1000,mode=0775,sharing=locked \
-    set -eux; \
-    JAR="/home/maven/.m2/io/helidon/microprofile/weld/weld-core-impl/${HELIDON_VERSION}/weld-core-impl-${HELIDON_VERSION}.jar"; \
-    test -f "$JAR"; \
-    echo "[debug] Inspecting $JAR"; \
-    /usr/lib64/graalvm/graalvm-java${JAVA_RELEASE}/bin/javap -classpath "$JAR" -p org.jboss.weld.bootstrap.events.ContainerLifecycleEventPreloader \
-      | tee /workspace/weld-preloader-javap.txt \
-      | sed -n '1,220p'; \
-    /usr/lib64/graalvm/graalvm-java${JAVA_RELEASE}/bin/javap -classpath "$JAR" -p org.jboss.weld.bootstrap.events.ContainerLifecycleEvents \
-      | tee /workspace/weld-events-javap.txt \
-      | sed -n '1,260p'
-
 #-----------------------  RUNTIME STAGE -----------------------
 FROM ${IMAGE_RUNTIME} AS runner
 ARG RUNTIME_USER=nonroot
@@ -120,28 +108,9 @@ ENV RUNTIME_GROUP=${RUNTIME_GROUP}
 
 WORKDIR /native
 
-# Weld's RegistrySingletonProvider isn't instantiable via Class#newInstance in native image.
-# Force Weld to use the default singleton provider implementation.
-# (This is a system property consumed by Weld during boot.)
-#
-# Note: Weld reads the provider class from system property key
-#   org.jboss.weld.bootstrap.api.helpers.SingletonProvider
-
-# Weld native-image workaround:
-# Disable container lifecycle event preloading which can NPE in native mode.
-# (Matches stacktrace: ContainerLifecycleEvents.preloadProcessInjectionTarget -> ContainerLifecycleEventPreloader)
-
-COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} /workspace/weld-preloader-javap.txt /native/weld-preloader-javap.txt
-COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} /workspace/weld-events-javap.txt /native/weld-events-javap.txt
-
 COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} /workspace/src/main/resources/application.yaml /native/application.yaml
-
-# Make Weld native flags apply to the native executable at runtime.
-# Distroless doesn't have a shell, so we pass these as args, not via sh -c.
-#
-# NOTE: These are runtime flags, not native-image build args.
 
 COPY --from=builder --chown=${RUNTIME_USER}:${RUNTIME_GROUP} --chmod=0555 /workspace/helidon-mp-native /native/helidon-mp-native
 EXPOSE 8080
 USER ${RUNTIME_USER}:${RUNTIME_GROUP}
-ENTRYPOINT ["./helidon-mp-native", "-Dorg.jboss.weld.bootstrap.api.helpers.SingletonProvider=org.jboss.weld.bootstrap.api.helpers.Singletons", "-Dorg.jboss.weld.bootstrap.events.ContainerLifecycleEvents.PRELOAD_PROCESS_INJECTION_TARGET=false"]
+ENTRYPOINT ["./helidon-mp-native"]

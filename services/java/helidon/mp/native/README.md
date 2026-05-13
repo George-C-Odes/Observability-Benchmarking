@@ -1,7 +1,7 @@
 # Helidon MP Native Image Service
 
 ## Overview
-A GraalVM native-image build of the Helidon 4.3.4 MicroProfile benchmarking service. Produces an ahead-of-time compiled binary with near-instant startup and a minimal memory footprint, running on a distroless container with no JVM.
+A GraalVM native-image build of the Helidon 4.4.1 MicroProfile benchmarking service. Produces an ahead-of-time compiled binary with near-instant startup and a minimal memory footprint, running on a distroless container with no JVM.
 
 This module **shares the Java sources** from [`helidon-mp-jvm`](../jvm/README.md) via `build-helper-maven-plugin` and overlays native-specific classes: a custom `Bootstrap` entrypoint, GraalVM substitutions for Weld threading, and a `WeldProxyBuildTimeInitFeature` for proxy class registration.
 
@@ -14,9 +14,9 @@ This module **shares the Java sources** from [`helidon-mp-jvm`](../jvm/README.md
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Helidon 4.3.4 MP (CDI + JAX-RS)
+- **Framework**: Helidon 4.4.1 MP (CDI + JAX-RS)
 - **CDI**: Weld (Jakarta CDI 4.0)
-- **Compiler**: GraalVM `native-image` 25.0.2 (`-O2`, `-march=native`)
+- **Compiler**: GraalVM `native-image` 25.0.3 (`-O2`, `-march=native`)
 - **GC**: G1 Garbage Collector (`--gc=G1`)
 - **Thread Model**: Virtual threads only (Helidon 4 default)
 
@@ -48,7 +48,7 @@ application/             → HelloService (use-case logic, @ApplicationScoped)
 application/port/        → CachePort, MetricsPort, SleepPort, HelloMode, TimeUnit (port interfaces & domain enums)
 infra/                   → StartupListener, JulBridgeStartupListener (CDI lifecycle observers)
 infra/cache/             → CaffeineCacheAdapter (@ApplicationScoped)
-infra/metrics/           → MicrometerMetricsAdapter, OtelConfig, OtelSdkInitExtension, JvmExtrasMetricsConfiguration
+infra/metrics/           → MicrometerMetricsAdapter, JvmExtrasMetricsConfiguration
 infra/time/              → ThreadSleepAdapter (@ApplicationScoped)
 ── native-only (overlaid from helidon/mp/native/src/) ──
 Bootstrap                → Native entrypoint (sets Weld system properties, invokes Helidon Main reflectively)
@@ -60,21 +60,23 @@ Dependencies point inward: `web → application ← infra`. The application laye
 
 ### Observability
 
-**Approach**: OTel SDK Autoconfigure + OTLP/gRPC exporter (identical pipeline to the JVM variant)
+**Approach**: Helidon MP Telemetry + OTel SDK autoconfigure + OTLP/gRPC exporter (matching the JVM variant)
 
-- **Traces**: Helidon MP tracing (OTel provider) → OTel SDK → OTLP/gRPC → Alloy
+- **Traces**: Helidon MP Telemetry JAX-RS filters → OTel SDK → OTLP/gRPC → Alloy
 - **Metrics**: Micrometer → OTel MeterProvider bridge → OTLP/gRPC → Alloy
   - `hello.request.count` — per-endpoint counter (via `MicrometerMetricsAdapter`)
   - `http.server.requests` — per-request timer (via `HttpMetricsFilter`, consistent with Spring/Quarkus/Micronaut)
-  - JVM extras — process memory & thread metrics (via `JvmExtrasMetricsConfiguration`)
+  - JVM extras — process memory and thread metrics (via `JvmExtrasMetricsConfiguration`)
 - **Logs**: Logback → OTel LogRecord appender → OTLP/gRPC → Alloy (attached programmatically at runtime by `StartupListener`)
 - **Signal correlation**: Trace/span IDs are automatically correlated across logs
 
-**Native-mode Logback note**: The OTel Logback appender is **not** declared in `logback.xml` for native builds. Logback is initialized at build time (required by Weld/JBoss Logging), and including the OTel appender in XML would conflict with `--initialize-at-run-time=io.opentelemetry.instrumentation.logback`. Instead, `StartupListener.attachAppenderProgrammatically()` creates and attaches the appender at runtime.
+All three signal pipelines share the same SDK instance. Docker Compose supplies the usual `OTEL_*` environment variables (`OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4317`, `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`, and `otlp` exporters for traces, metrics, and logs). The native `Bootstrap` promotes those values to `otel.*` system properties before Helidon starts so Helidon MP Telemetry and the OTel SDK see the same configuration.
 
-### Throughput Optimisations
+**Native-mode Logback note**: The OTel Logback appender is **not** declared in `logback.xml` for native builds. Logback is initialized at build time (required by Weld/JBoss Logging), and including the OTel appender in XML would conflict with `--initialize-at-run-time=io.opentelemetry.instrumentation.logback`. Instead, `StartupListener.installOtelLogbackAppender()` installs the appender at runtime.
 
-Same application-level optimisations as the JVM variant, plus native-image specific tuning:
+### Throughput Optimizations
+
+Same application-level optimizations as the JVM variant, plus native-image specific tuning:
 
 - **Cache hit on every request**: Every request calls `helloService.hello()` which reads the Caffeine cache via `cachePort.getIfPresent("1")`, consistent with all other benchmark modules.
 - **Pre-interned status codes**: HTTP status code strings (100–599) are pre-interned in `HttpMetricsFilter`.
@@ -118,30 +120,29 @@ Key `native-image` flags configured in `pom.xml`:
 
 ### Docker
 
-**Image**: `helidon-mp-native:4.3.4_latest`
+**Image**: `helidon-mp-native:4.4.1_latest`
 
 | Stage   | Image                                                           |
 |---------|-----------------------------------------------------------------|
-| Build   | `container-registry.oracle.com/graalvm/native-image:25.0.2-ol9` |
+| Build   | `container-registry.oracle.com/graalvm/native-image:25.0.3-ol9` |
 | Runtime | `gcr.io/distroless/cc-debian13:nonroot`                         |
 
 - Port mapping: `8097:8080`
 - Multi-stage build: Maven shade → GraalVM `native-image` → distroless (no JVM in runtime image)
 - Uses Maven Wrapper (`mvnw`) since GraalVM base image does not ship Maven
 - Service-specific Maven cache mount (`maven-m2-helidon-mp-native-*`) avoids contention with other builds
-- `pom.xml` is copied before `dependency:go-offline`; checkstyle files and sources are deferred to later layers for optimal cache utilisation
+- `pom.xml` is copied before `dependency:go-offline`; checkstyle files and sources are deferred to later layers for optimal cache utilization
 - `NATIVE_IMAGE_INIT_BUILD_TIME`, `NATIVE_IMAGE_INIT_RUN_TIME`, and `NATIVE_IMAGE_EXTRA_ARGS` build args allow tuning without Dockerfile changes
 - Debug step inspects Weld bootstrap class signatures for native-image troubleshooting
 
 ### Build Command
 
 ```powershell
-docker buildx build `
+docker buildx build --load `
+  -t helidon-mp-native:4.4.1_latest `
   -f services/java/helidon/mp/native/Dockerfile `
-  -t helidon-mp-native:4.3.4_latest `
-  --build-arg HELIDON_VERSION=4.3.4 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.3.4_latest `
-  --load `
+  --build-arg HELIDON_VERSION=4.4.1 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.4.1_latest `
   services/java
 ```
 
@@ -160,7 +161,7 @@ Runtime GC/memory defaults are baked into the native binary but can be overridde
 ### Key Design Decisions
 
 1. **Shared codebase**: The native module overlays JVM sources. Changes in `helidon/mp/jvm/src/` are automatically picked up by both builds.
-2. **Custom `Bootstrap` entrypoint**: Sets Weld system properties programmatically (native binaries don't support `-D` from command line), then invokes `io.helidon.microprofile.cdi.Main` reflectively to avoid eager class init during GraalVM analysis.
+2. **Custom `Bootstrap` entrypoint**: Sets Weld system properties, promotes `OTEL_*` environment variables to `otel.*` system properties, parses `-D` command-line overrides, then invokes `io.helidon.microprofile.cdi.Main` reflectively to avoid eager class init during GraalVM analysis.
 3. **Separate `pom.xml`**: Required for the `native-maven-plugin` configuration, GraalVM substitutions, and build-time/run-time initialization directives.
 4. **Maven Wrapper**: Uses `mvnw` since the GraalVM base image does not ship Maven.
 5. **Separate `logback.xml`**: Native builds use a logback config without the OTel appender (to avoid build-time init conflicts). The appender is added programmatically at runtime.

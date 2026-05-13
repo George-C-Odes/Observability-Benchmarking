@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
-ARG JAVA_MINOR_RELEASE=.0.2
+ARG JAVA_MINOR_RELEASE=.0.3
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 #ARG IMAGE_RUNTIME=debian:13.2-slim
@@ -15,7 +15,7 @@ ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ARG PROFILE=tomcat
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
-ARG SPRING_BOOT_VERSION=4.0.5
+ARG SPRING_BOOT_VERSION=4.0.6
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"

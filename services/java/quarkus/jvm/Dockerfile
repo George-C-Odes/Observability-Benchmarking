@@ -7,7 +7,7 @@ ARG BASE_BUILDER=noble
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 #ARG DISTRIBUTION=amazoncorretto
 #ARG BASE_BUILDER=debian
-#ARG IMAGE_RUNTIME=amazoncorretto:25.0.2-al2023-headless
+#ARG IMAGE_RUNTIME=amazoncorretto:25.0.3-al2023-headless
 #jre-ubi10-minimal, alpine, al2023-headless
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 #Option N/A for J21 set to "", for J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings
@@ -19,7 +19,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG QUARKUS_VERSION=3.34.6
+ARG QUARKUS_VERSION=3.35.3
 ENV QUARKUS_VERSION=${QUARKUS_VERSION}
 ENV QUARKUS_NATIVE_ENABLED=false
 ENV HOME=/home/maven

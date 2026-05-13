@@ -10,13 +10,12 @@
            that implement org.graalvm.nativeimage.hosted.Feature (hosted-only
            interface). Without this exclusion with bean-discovery-mode="all",
            Jersey/CDI scanning would pick up these classes.
-        2. helidon tracing – prevents WELD-001409 "Ambiguous dependencies for
-           type Tracer": Helidon's MpTracingCdiExtension registers
-           TracerProducer programmatically; scanning also discovers it, causing
-           ambiguous dependency.
+        2. helidon telemetry – lets Helidon Telemetry's CDI extension register
+           producer beans and avoids discovering the same producer classes by
+           scanning when resources are overlaid for the native image.
     -->
     <scan>
         <exclude name="io.github.georgecodes.benchmarking.helidon.mp.graalvm.**"/>
-        <exclude name="io.helidon.microprofile.tracing.**"/>
+        <exclude name="io.helidon.microprofile.telemetry.**"/>
     </scan>
 </beans>

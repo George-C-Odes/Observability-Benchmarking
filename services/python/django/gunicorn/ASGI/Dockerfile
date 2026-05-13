@@ -49,8 +49,13 @@ COPY --link gunicorn/ASGI/hello_project/ /build/django-reactive/hello_project/
 COPY --link gunicorn/ASGI/gunicorn.conf.py /build/django-reactive/gunicorn.conf.py
 COPY --link gunicorn/ASGI/manage.py /build/django-reactive/manage.py
 
+# Copy the full gunicorn tree for builder-time tests that validate both runtime
+# entrypoint variants and resolve them relative to a GitHub-style workspace.
+COPY --link gunicorn/ /build/services/python/django/gunicorn/
+
 # Run shared unit tests — fail the build if any test breaks.
 RUN cd /build/django-reactive && \
+    GITHUB_WORKSPACE=/build \
     OTEL_SDK_DISABLED=true \
     python manage.py test obbench_django_common.tests --verbosity=2
 

@@ -1,28 +1,31 @@
 package io.github.georgecodes.benchmarking.helidon.mp.infra;
 
+import ch.qos.logback.classic.Logger;
 import io.github.georgecodes.benchmarking.helidon.mp.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter;
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
+import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * CDI startup listener that installs the OTel Logback appender,
+ * CDI startup listener that bridges Micrometer to the Helidon MP Telemetry
+ * {@link OpenTelemetry} instance, installs the OTel Logback appender,
  * pre-warms metrics counters, and logs runtime diagnostics.
  * <p>
- * <b>JVM mode:</b> The appender is declared in {@code logback.xml} and
- * {@code OpenTelemetryAppender.install(otel)} wires it to the SDK.
- * <p>
- * <b>Native mode:</b> The appender <b>cannot</b> appear in {@code logback.xml}
- * because Logback is initialized at build time and would instantiate the
- * appender into the image heap. Instead, we programmatically create the
- * appender, attach it to the root logger, and then install the SDK.
+ * Helidon's {@code helidon-microprofile-telemetry} dependency owns OTel SDK
+ * autoconfiguration and JAX-RS tracing. This class only wires benchmark-local
+ * Micrometer meters and Logback logs into that SDK so all signals continue to
+ * use the same OTLP/gRPC batch pipeline to Alloy.
  *
  * @see JulBridgeStartupListener
  */
@@ -30,7 +33,13 @@ import java.lang.reflect.Method;
 @ApplicationScoped
 public class StartupListener {
 
-    /** CDI-managed OpenTelemetry instance initialized via {@code OtelConfig}. */
+    /** Logback appender name used by both XML-configured JVM logging and native programmatic logging. */
+    private static final String OTEL_APPENDER_NAME = "OTEL";
+
+    /** Guard to bridge Micrometer exactly once if CDI startup events are replayed in tests. */
+    private static final AtomicBoolean MICROMETER_BRIDGED = new AtomicBoolean(false);
+
+    /** CDI-managed OpenTelemetry instance initialized by Helidon MP Telemetry. */
     @Inject
     private OpenTelemetry openTelemetry;
 
@@ -39,6 +48,7 @@ public class StartupListener {
     private MicrometerMetricsAdapter metricsAdapter;
 
     void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
+        bridgeMicrometer();
         installOtelLogbackAppender();
         warmUpMetrics();
         logDiagnostics();
@@ -56,13 +66,6 @@ public class StartupListener {
 
     private void logDiagnostics() {
         log.info("CDI OpenTelemetry bean: {}", openTelemetry.getClass().getName());
-        log.info("GlobalOpenTelemetry: {}", GlobalOpenTelemetry.get().getClass().getName());
-        try {
-            var tracer = globalHelidonTracer();
-            log.info("Helidon Tracer.global(): {} (enabled={})", tracer.getClass().getName(), tracer.enabled());
-        } catch (Exception e) {
-            log.warn("Helidon Tracer.global() failed: {}", e.getMessage());
-        }
 
         Runtime runtime = Runtime.getRuntime();
         log.info("Helidon MP version: {}", io.helidon.common.Version.VERSION);
@@ -73,86 +76,38 @@ public class StartupListener {
         log.info("Available Processors: {}", runtime.availableProcessors());
     }
 
-    /**
-     * Installs the OTel Logback appender reflectively.
-     * <p>
-     * In JVM mode, logback.xml already declares the appender; we just wire the SDK.
-     * In native mode, logback.xml intentionally omits it (build-time init conflict),
-     * so we create the appender programmatically and attach it to the root logger
-     * before wiring the SDK.
-     */
+    private void bridgeMicrometer() {
+        if (MICROMETER_BRIDGED.compareAndSet(false, true)) {
+            MeterRegistry otelRegistry = OpenTelemetryMeterRegistry.builder(openTelemetry).build();
+            Metrics.globalRegistry.add(otelRegistry);
+            log.info("Micrometer to OTel bridge registered");
+        }
+    }
+
     private void installOtelLogbackAppender() {
         try {
-            Class<?> appenderClass = Class.forName(
-                    "io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender");
-
-            // If running in native image, the appender is not in logback.xml —
-            // create it programmatically and attach to the root logger.
-            if (isNativeImage()) {
-                attachAppenderProgrammatically(appenderClass);
-            }
-
-            // Wire the SDK to all OpenTelemetryAppender instances (both XML-declared and programmatic).
-            Method install = appenderClass.getMethod("install", OpenTelemetry.class);
-            install.invoke(null, openTelemetry);
+            ensureOtelLogbackAppenderExists();
+            OpenTelemetryAppender.install(openTelemetry);
             log.info("OTel logback appender installed");
-        } catch (ClassNotFoundException e) {
-            log.debug("OTel logback appender not on classpath; skipping install");
         } catch (Exception e) {
             log.warn("OTel logback appender install failed: {}", e.getMessage());
         }
     }
 
-    /**
-     * Creates an {@code OpenTelemetryAppender} instance, configures it,
-     * and attaches it to the SLF4J/Logback root logger — all via reflection
-     * to avoid compile-time dependency on the appender class.
-     */
-    private static void attachAppenderProgrammatically(Class<?> appenderClass) {
-        try {
-            // Create and configure the appender
-            Object appender = appenderClass.getDeclaredConstructor().newInstance();
-            appenderClass.getMethod("setCaptureExperimentalAttributes", boolean.class)
-                    .invoke(appender, true);
-            appenderClass.getMethod("setCaptureMdcAttributes", String.class)
-                    .invoke(appender, "*");
-
-            // Get the Logback root logger and attach the appender
-            var rootLogger = (ch.qos.logback.classic.Logger)
-                    org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-            var logbackAppender = (ch.qos.logback.core.Appender<?>) appender;
-
-            // The appender needs a context and must be started
-            logbackAppender.setContext(rootLogger.getLoggerContext());
-            logbackAppender.setName("OTEL");
-            logbackAppender.start();
-
-            // Unavoidable unchecked cast: Java type erasure prevents verifying the
-            // generic parameter of a reflectively created Appender<?>; the
-            // OpenTelemetryAppender always produces ILoggingEvent instances.
-            @SuppressWarnings("unchecked")
-            var typedAppender =
-                    (ch.qos.logback.core.Appender<ch.qos.logback.classic.spi.ILoggingEvent>) logbackAppender;
-            rootLogger.addAppender(typedAppender);
-
-            log.info("OTel logback appender attached programmatically (native mode)");
-        } catch (Exception e) {
-            log.warn("Failed to attach OTel logback appender programmatically: {}", e.getMessage());
+    private void ensureOtelLogbackAppenderExists() {
+        Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(
+                org.slf4j.Logger.ROOT_LOGGER_NAME);
+        if (rootLogger.getAppender(OTEL_APPENDER_NAME) != null) {
+            return;
         }
-    }
 
-    private static boolean isNativeImage() {
-        try {
-            Class<?> imageInfo = Class.forName("org.graalvm.nativeimage.ImageInfo");
-            Object result = imageInfo.getMethod("inImageCode").invoke(null);
-            return Boolean.TRUE.equals(result);
-        } catch (Throwable ignored) {
-            return false;
-        }
-    }
-
-    @SuppressWarnings("removal")
-    private static io.helidon.tracing.Tracer globalHelidonTracer() {
-        return io.helidon.tracing.Tracer.global();
+        OpenTelemetryAppender appender = new OpenTelemetryAppender();
+        appender.setName(OTEL_APPENDER_NAME);
+        appender.setContext(rootLogger.getLoggerContext());
+        appender.setCaptureExperimentalAttributes(true);
+        appender.setCaptureMdcAttributes("*");
+        appender.setOpenTelemetry(openTelemetry);
+        appender.start();
+        rootLogger.addAppender(appender);
     }
 }

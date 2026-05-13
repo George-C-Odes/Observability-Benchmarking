@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
-ARG JAVA_MINOR_RELEASE=.0.2
+ARG JAVA_MINOR_RELEASE=.0.3
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 

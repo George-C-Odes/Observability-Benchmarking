@@ -13,7 +13,7 @@ A high-performance REST service implementation built with Micronaut 4.10.21 runn
 
 ### Framework & Runtime
 - **Framework**: Micronaut 4.10.21
-- **Java Version**: Eclipse Temurin 25.0.2
+- **Java Version**: Eclipse Temurin 25.0.3
 - **HTTP Server**: Netty (Micronaut HTTP Server Netty)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)

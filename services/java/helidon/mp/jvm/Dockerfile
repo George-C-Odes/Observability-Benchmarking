@@ -14,7 +14,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG HELIDON_VERSION=4.3.4
+ARG HELIDON_VERSION=4.4.1
 ENV HELIDON_VERSION=${HELIDON_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -55,7 +55,6 @@ COPY --link --chown=${BUILD_UID}:${BUILD_GID} helidon/mp/jvm/src/test/ ./src/tes
 
 # ── Layer 6: Build the shaded uber-jar ──
 RUN --mount=type=cache,id=maven-m2-helidon-mp-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
-    --mount=type=cache,id=jvm-target-${JAVA_RELEASE},target=/workspace/target,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -B -ntp -T 1C \
       -Dhelidon.version=${HELIDON_VERSION} \
       -Dmaven.compiler.release=${JAVA_RELEASE} \
@@ -67,16 +66,12 @@ RUN --mount=type=cache,id=maven-m2-helidon-mp-jvm-${JAVA_RELEASE},target=/home/m
     test -f "$JAR" && cp "$JAR" /workspace/out/app.jar
 
 # ── jlink: create a stripped-down custom JRE ──
-# java.net.http is added explicitly because the OTel OTLP exporter resolves
-# the HTTP sender via SPI (HttpSenderProvider → JdkHttpSender) which jdeps
-# cannot detect through static analysis.
 RUN set -eux; \
     DEPS=$(jdeps \
       --ignore-missing-deps \
       --print-module-deps \
       --multi-release ${JAVA_RELEASE} \
       /workspace/out/app.jar 2>/dev/null || echo "java.base") && \
-    DEPS="${DEPS},java.net.http" && \
     echo "jlink modules: $DEPS" && \
     jlink \
       --add-modules "$DEPS" \
