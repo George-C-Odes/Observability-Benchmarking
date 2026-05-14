@@ -5,6 +5,7 @@ import io.github.georgecodes.benchmarking.orchestrator.api.ServiceHealthResponse
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.RequestOptions;
@@ -203,14 +204,14 @@ public class ServiceHealthService {
   }
 
   private Uni<SocketAddress> resolveServerAddress(String host, int port) {
-    return Uni.createFrom().item(() -> {
+    return Uni.createFrom().item(Unchecked.supplier(() -> {
       try {
         InetAddress address = InetAddress.getByName(host);
         return SocketAddress.inetSocketAddress(port, address.getHostAddress());
       } catch (Exception ex) {
         throw new IllegalStateException("Failed to resolve host: " + host, ex);
       }
-    }).runSubscriptionOn(Infrastructure.getDefaultExecutor());
+    })).runSubscriptionOn(Infrastructure.getDefaultExecutor());
   }
 
   private static String normalizePath(String path) {
