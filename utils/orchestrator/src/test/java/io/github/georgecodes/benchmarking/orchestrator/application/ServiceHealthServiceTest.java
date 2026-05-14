@@ -227,4 +227,22 @@ class ServiceHealthServiceTest {
     assertNull(orphan.statusCode());
     assertNotNull(orphan.error());
   }
+
+  @Test
+  void unresolvableHostname_marksServiceDownWithRecoveredError() {
+    service = new ServiceHealthService(
+      new io.vertx.mutiny.core.Vertx(serverVertx),
+      configFor(Map.of(
+        "missing-dns", svc("http://missing-host.invalid:18080", "/ready")
+      ))
+    );
+
+    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+    ServiceHealthResponse missingDns = resp.services().getFirst();
+
+    assertEquals("missing-dns", missingDns.name());
+    assertEquals("down", missingDns.status());
+    assertNull(missingDns.statusCode());
+    assertNotNull(missingDns.error());
+  }
 }
