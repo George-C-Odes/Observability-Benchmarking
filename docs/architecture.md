@@ -49,7 +49,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 4.10.21 (JVM and Native)
+- Micronaut 4.10.23 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)
@@ -66,7 +66,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 - Dropwizard 5.0.1 (JVM)
   - Platform threads
   - Virtual threads
-- Vert.x 5.0.8 (JVM)
+- Vert.x 5.0.12 (JVM)
   - Reactive (event-loop)
 - Pekko 1.3.0 (JVM)
   - Reactive (Pekko dispatcher)

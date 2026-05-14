@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 4.10.21
+### Micronaut 4.10.23
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 4.10.21** (latest stable)
+- **Micronaut 4.10.23** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -338,7 +338,7 @@ mvn package -Pnative
 - Heavier baseline than Spark or Javalin due to bundled subsystems
 - Smaller community momentum compared to Spring or Quarkus
 
-### Vert.x 5.0.8
+### Vert.x 5.0.12
 
 **Official Site**: [https://vertx.io/](https://vertx.io/) | [GitHub](https://github.com/eclipse-vertx/vert.x)
 
@@ -349,7 +349,7 @@ mvn package -Pnative
 - Lightweight — no CDI, no annotation scanning, no classpath magic; explicit wiring
 
 **Implementation Details**:
-- **Vert.x 5.0.8** (latest stable release)
+- **Vert.x 5.0.12** (latest stable release)
 - Fully reactive HTTP server on Netty event loops
 - JVM build only (no native image support at this time)
 - jlink-optimised runtime image with distroless base
@@ -970,13 +970,13 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Node.js                    | 26.1.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.6   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.35.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 4.10.21 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 4.10.23 | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.4.1   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.4.1   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.0   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Vert.x                     | 5.0.12  | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.5   | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.2.6  | SSR frontend and control dashboard                                   |
