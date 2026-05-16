@@ -110,7 +110,24 @@ bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
 
 If a gem's latest version is outside the current `~>` constraint (e.g. `~> 1.6.0` blocking a `1.7.0` release), edit the constraint in `docs/Gemfile` first, then run `bundle update <gem-name>`.
 
-On Windows, remember to run `ridk enable` before any Bundler commands.
+On Windows, run `ridk enable` before any Bundler command that may install or update gems with native extensions. Verify that MSYS2's POSIX `make` is visible before updating:
+
+```powershell
+cd docs
+ridk enable
+where.exe make
+make --version
+bundle update --all --jobs 4
+bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
+bundle exec jekyll build --destination ../_site-test
+```
+
+If native gem compilation fails with `No such file or directory - make`, `ridk enable` was not active in the current shell. If it fails with `cc1.exe: fatal error: ... Permission denied` or a compiler test cannot read Ruby headers such as `ruby/config.h`, retry serially and check antivirus/Controlled Folder Access exclusions:
+
+```powershell
+ridk enable
+bundle update --all --jobs 1
+```
 
 ### Windows setup (verified with `ridk enable`)
 
