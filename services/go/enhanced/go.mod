@@ -5,7 +5,7 @@ go 1.26.3
 require (
 	github.com/Yiling-J/theine-go v0.6.2
 	github.com/dgraph-io/ristretto/v2 v2.4.0
-	github.com/gofiber/contrib/v3/otel v1.1.4
+	github.com/gofiber/contrib/v3/otel v1.1.5
 	github.com/gofiber/fiber/v3 v3.2.0
 	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go v1.3.0
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.19.0
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 )
 
 require (
