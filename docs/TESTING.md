@@ -873,7 +873,7 @@ Testing Framework Versions:
 - Micronaut: 4.10.23
 - Helidon: 4.4.1
 - Spark: 3.0.4
-- Javalin: 7.2.0
+- Javalin: 7.2.2
 - Dropwizard: 5.0.1
 - Vert.x: 5.0.12
 - Pekko: 1.3.0

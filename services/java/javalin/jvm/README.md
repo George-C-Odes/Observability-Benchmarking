@@ -63,7 +63,7 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
   -t javalin-jvm:latest `
-  --build-arg JAVALIN_VERSION=7.2.0 `
+  --build-arg JAVALIN_VERSION=7.2.2 `
   --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
   --load `
   services/java

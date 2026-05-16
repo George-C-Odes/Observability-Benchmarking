@@ -168,7 +168,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Micronaut       | 4.10.23 |
 | Helidon SE & MP | 4.4.1   |
 | Spark           | 3.0.4   |
-| Javalin         | 7.2.0   |
+| Javalin         | 7.2.2   |
 | Dropwizard      | 5.0.1   |
 | Vert.x          | 5.0.12  |
 | Pekko           | 1.3.0   |
