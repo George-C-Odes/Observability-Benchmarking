@@ -113,7 +113,7 @@ typing-extensions==4.15.0
     #   opentelemetry-semantic-conventions
 tzdata==2026.2
     # via django
-uvicorn==0.46.0
+uvicorn==0.47.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 wrapt==2.1.2
     # via opentelemetry-instrumentation
