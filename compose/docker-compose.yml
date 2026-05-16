@@ -270,6 +270,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -342,6 +343,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -410,6 +412,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -480,6 +483,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     entrypoint:
       - "./spring-native-tomcat-platform"
     command: *default_native_java_options
@@ -532,6 +536,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     entrypoint:
       - "./spring-native-tomcat-virtual"
     command: *default_native_java_options
@@ -580,6 +585,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     entrypoint:
       - "./spring-native-netty"
     command: *default_native_java_options
@@ -756,6 +762,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     <<: *common_properties
 
   micronaut-native:
@@ -817,6 +824,7 @@ services:
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
       OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
     entrypoint:
       - "./micronaut-native"
     command: *default_native_java_options
@@ -1083,6 +1091,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1153,6 +1162,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1222,6 +1232,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1291,6 +1302,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1358,6 +1370,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1425,6 +1438,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1486,6 +1500,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
@@ -1546,6 +1561,7 @@ services:
       OTEL_LOGS_EXPORTER: "otlp"
       OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
+      OTEL_BSP_LOG_LEVEL: "ERROR"
 
       OTEL_PROFILING_ENABLED: true
       OTEL_PYROSCOPE_ADD_PROFILE_URL: true
