@@ -54,4 +54,4 @@ failureConditions:
 # Keep the JVM linter pinned here so both the action's `pull` step and
 # the later scoped `scan` step resolve the same image in this mixed-language
 # repository.
-linter: jetbrains/qodana-jvm-community:2025.3
+linter: jetbrains/qodana-jvm-community:2026.1

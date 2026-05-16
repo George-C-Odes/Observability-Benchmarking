@@ -134,9 +134,9 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
+Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
 Maven: 3.9+
-Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.13 also supported)
+Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.14 also supported)
 Quarkus: {{QUARKUS_VERSION}}
 ```
 
@@ -305,7 +305,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 
 ```
 Go: {{GO_VERSION}}+
-Fiber: v3.1.0
+Fiber: v3.2.0
 OpenTelemetry: Latest stable
 ```
 
@@ -571,8 +571,8 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.4
-React: 19.2.5
+Next.js: 16.2.6
+React: 19.2.6
 TypeScript: 6.0.3
 Vitest: 4.x
 ```

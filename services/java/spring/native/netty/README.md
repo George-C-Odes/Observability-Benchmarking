@@ -3,7 +3,7 @@
 # Spring Boot Netty Native Service
 
 ## Overview
-A reactive REST service implementation built with Spring Boot 4.0.5 compiled to a native executable using GraalVM Native Image. This service uses Spring WebFlux with Netty for reactive, non-blocking request handling with fast startup and low memory footprint.
+A reactive REST service implementation built with Spring Boot 4.0.6 compiled to a native executable using GraalVM Native Image. This service uses Spring WebFlux with Netty for reactive, non-blocking request handling with fast startup and low memory footprint.
 
 ## Purpose
 - Demonstrate Spring Boot native compilation with reactive WebFlux
@@ -14,10 +14,10 @@ A reactive REST service implementation built with Spring Boot 4.0.5 compiled to 
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.0.5 + Spring WebFlux
+- **Framework**: Spring Boot 4.0.6 + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
-- **Base Java**: 25.0.2
+- **Base Java**: 25.0.3
 - **Concurrency Model**: Reactive (Project Reactor)
 
 ### Endpoints
@@ -179,7 +179,7 @@ Native may not be best for:
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.2+ (Enterprise or Community)
+- GraalVM Native Image 25.0.3+ (Enterprise or Community)
 - Maven 3.9+
 - Docker (for containerized build recommended)
 - 16GB+ RAM (for native compilation)
@@ -225,7 +225,7 @@ docker compose --project-directory compose \
 ### Dockerfile Highlights
 ```dockerfile
 # Builder stage - GraalVM Native Image
-FROM container-registry.oracle.com/graalvm/native-image:25.0.2-ol9
+FROM container-registry.oracle.com/graalvm/native-image:25.0.3-ol9
 
 # Copy source from JVM build directory
 COPY jvm/netty/src ./netty/src

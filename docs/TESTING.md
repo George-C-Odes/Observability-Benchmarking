@@ -134,10 +134,10 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto 25.0.2 or Eclipse Temurin 25.0.2)
+Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
 Maven: 3.9+
-Spring Boot: 4.0.5 (3.5.13 also supported)
-Quarkus: 3.34.6
+Spring Boot: 4.0.6 (3.5.14 also supported)
+Quarkus: 3.35.3
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -239,7 +239,7 @@ public void testPlatformEndpoint() throws Exception {
 ```
 
 **Key Features Tested**:
-- Spring Boot 4.0.5 with OpenTelemetry Java Agent
+- Spring Boot 4.0.6 with OpenTelemetry Java Agent
 - Micrometer metrics integration
 - Platform vs. Virtual thread behavior
 - POM refactoring (no parent dependency)
@@ -304,8 +304,8 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.26.2+
-Fiber: v3.1.0
+Go: 1.26.3+
+Fiber: v3.2.0
 OpenTelemetry: Latest stable
 ```
 
@@ -571,8 +571,8 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.4
-React: 19.2.5
+Next.js: 16.2.6
+React: 19.2.6
 TypeScript: 6.0.3
 Vitest: 4.x
 ```
@@ -868,17 +868,17 @@ Integration Test Suite
 ==========================================
 
 Testing Framework Versions:
-- Spring Boot: 4.0.5
-- Quarkus: 3.34.6
-- Micronaut: 4.10.21
-- Helidon: 4.3.4
+- Spring Boot: 4.0.6
+- Quarkus: 3.35.3
+- Micronaut: 4.10.23
+- Helidon: 4.4.1
 - Spark: 3.0.4
-- Javalin: 7.2.0
+- Javalin: 7.2.2
 - Dropwizard: 5.0.1
-- Vert.x: 5.0.8
+- Vert.x: 5.0.12
 - Pekko: 1.3.0
-- Go: 1.26.2
-- Django: 6.0.4
+- Go: 1.26.3
+- Django: 6.0.5
 
 ==========================================
 JVM Services - Deployment Tests
@@ -1287,7 +1287,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.26.2 | Build version: go1.26.2
+2025-12-16T10:30:00.123Z Runtime version: go1.26.3 | Build version: go1.26.3
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1803,10 +1803,10 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       
-      - name: Set up Go 1.26.2
+      - name: Set up Go 1.26.3
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: '1.26.2'
+          go-version: '1.26.3'
       
       - name: Test Go Service
         run: |
@@ -1855,10 +1855,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.34.6" }
-          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.5" }
-          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.5" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.2" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.35.3" }
+          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.6" }
+          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.6" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.3" }
     
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -1930,7 +1930,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.26.2
+  image: golang:1.26.3
   script:
     - cd services/go/enhanced
     - go mod download

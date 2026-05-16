@@ -1,7 +1,7 @@
 # Micronaut JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 4.10.21 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
+A high-performance REST service implementation built with Micronaut 4.10.23 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
 
 ## Purpose
 - Benchmark Micronaut's compile-time DI/AOP performance across platform threads, virtual threads, and reactive programming models
@@ -12,8 +12,8 @@ A high-performance REST service implementation built with Micronaut 4.10.21 runn
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 4.10.21
-- **Java Version**: Eclipse Temurin 25.0.2
+- **Framework**: Micronaut 4.10.23
+- **Java Version**: Eclipse Temurin 25.0.3
 - **HTTP Server**: Netty (Micronaut HTTP Server Netty)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
@@ -249,7 +249,7 @@ Tracks request count per endpoint.
 
 ### Docker
 
-**Image**: `micronaut-jvm:4.10.21_latest`
+**Image**: `micronaut-jvm:4.10.23_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -264,9 +264,9 @@ Tracks request count per endpoint.
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:4.10.21_latest `
-  --build-arg MICRONAUT_VERSION=4.10.21 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.21_latest `
+  -t micronaut-jvm:4.10.23_latest `
+  --build-arg MICRONAUT_VERSION=4.10.23 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:4.10.23_latest `
   --load `
   services/java
 ```

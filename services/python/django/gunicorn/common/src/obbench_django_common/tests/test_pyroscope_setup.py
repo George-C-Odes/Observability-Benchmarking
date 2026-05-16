@@ -10,7 +10,7 @@ from obbench_django_common.infrastructure import pyroscope_setup
 
 
 class PyroscopeSetupTests(TestCase):
-    def setUp(self) -> None:
+    def reset_pyroscope_for_test(self) -> None:
         pyroscope_setup.reset_pyroscope_state()
         self.addCleanup(pyroscope_setup.reset_pyroscope_state)
 
@@ -33,8 +33,8 @@ class PyroscopeSetupTests(TestCase):
                 msg=f"unexpected mapping for raw_level={raw_level!r}",
             )
 
-    @staticmethod
-    def test_configure_pyroscope_honors_warn_level() -> None:
+    def test_configure_pyroscope_honors_warn_level(self) -> None:
+        self.reset_pyroscope_for_test()
         pyroscope_module = types.ModuleType("pyroscope")
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock()
@@ -58,7 +58,7 @@ class PyroscopeSetupTests(TestCase):
             ),
             mock.patch.object(
                 pyroscope_setup,
-                "_register_span_processor",
+                "register_span_processor",
                 return_value=True,
             ),
             mock.patch.object(
@@ -85,6 +85,7 @@ class PyroscopeSetupTests(TestCase):
         )
 
     def test_configure_pyroscope_disables_native_logging_when_level_is_off(self) -> None:
+        self.reset_pyroscope_for_test()
         pyroscope_module = types.ModuleType("pyroscope")
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock()
@@ -108,7 +109,7 @@ class PyroscopeSetupTests(TestCase):
             ),
             mock.patch.object(
                 pyroscope_setup,
-                "_register_span_processor",
+                "register_span_processor",
                 return_value=False,
             ),
             mock.patch.object(
@@ -131,6 +132,7 @@ class PyroscopeSetupTests(TestCase):
         )
 
     def test_configure_pyroscope_logs_warning_when_profiler_configuration_fails(self) -> None:
+        self.reset_pyroscope_for_test()
         pyroscope_module = types.ModuleType("pyroscope")
         pyroscope_module.LOGGER = mock.Mock()
         pyroscope_module.configure = mock.Mock(side_effect=RuntimeError("boom"))

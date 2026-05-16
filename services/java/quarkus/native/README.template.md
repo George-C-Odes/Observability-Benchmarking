@@ -16,7 +16,7 @@ A high-performance REST service implementation built with Quarkus {{QUARKUS_VERS
 ### Framework & Runtime
 - **Framework**: Quarkus {{QUARKUS_VERSION}}
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
-- **Base Java**: 25.0.2
+- **Base Java**: 25.0.3
 - **GC**: G1 Garbage Collector (Enterprise only)
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
@@ -208,7 +208,7 @@ Same as JVM version:
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.2+ (Enterprise or Community)
+- GraalVM Native Image 25.0.3+ (Enterprise or Community)
 - Maven 3.9+
 - Docker (for containerized build)
 - 16GB+ RAM (for native compilation)
@@ -262,7 +262,7 @@ docker compose --project-directory compose \
 ### Dockerfile Highlights
 ```dockerfile
 # Builder stage - GraalVM Native Image
-FROM container-registry.oracle.com/graalvm/native-image:25.0.2-ol9
+FROM container-registry.oracle.com/graalvm/native-image:25.0.3-ol9
 
 # Source code from JVM build (shared)
 COPY jvm/src /code/src

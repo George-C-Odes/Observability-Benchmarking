@@ -50,13 +50,12 @@ func newTestApp(t *testing.T, buf *bytes.Buffer) *fiber.App {
 	mp := metricnoop.NewMeterProvider()
 	tp := tracenoop.NewTracerProvider()
 
-	spansEnabled := false
 	h, err := NewHelloHandler(HelloHandlerOpts{
 		Cache:        c,
 		Logger:       newTestLogger(buf),
 		Meter:        mp.Meter("test"),
 		Tracer:       tp.Tracer("test"),
-		SpansEnabled: &spansEnabled,
+		SpansEnabled: new(false),
 	})
 	if err != nil {
 		t.Fatalf("NewHelloHandler: %v", err)
@@ -196,7 +195,7 @@ func TestVirtual_NotFound(t *testing.T) {
 		Logger:       newTestLogger(io.Discard),
 		Meter:        metricnoop.NewMeterProvider().Meter("test"),
 		Tracer:       tracenoop.NewTracerProvider().Tracer("test"),
-		SpansEnabled: boolPtr(false),
+		SpansEnabled: new(false),
 	})
 	if err != nil {
 		t.Fatalf("NewHelloHandler: %v", err)
@@ -221,7 +220,7 @@ func TestVirtual_SpansEnabled(t *testing.T) {
 		Logger:       newTestLogger(io.Discard),
 		Meter:        metricnoop.NewMeterProvider().Meter("test"),
 		Tracer:       tp.Tracer("test"),
-		SpansEnabled: boolPtr(true),
+		SpansEnabled: new(true),
 	})
 	if err != nil {
 		t.Fatalf("NewHelloHandler: %v", err)
@@ -302,8 +301,6 @@ func TestParseNonNegInt_InvalidInputs(t *testing.T) {
 		t.Fatalf("expected successful parse, got n=%d ok=%v", n, ok)
 	}
 }
-
-func boolPtr(v bool) *bool { return &v }
 
 func TestParseNonNegInt_OverflowRejected(t *testing.T) {
 	// A value larger than MaxInt should be rejected (previous implementation could wrap silently).

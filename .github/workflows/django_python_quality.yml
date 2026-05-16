@@ -143,7 +143,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/data/project" \
             -v "$RESULTS_DIR:/data/results" \
-            jetbrains/qodana-python-community:2025.3 \
+            jetbrains/qodana-python-community:2026.1 \
             --project-dir=/data/project \
             --config=/data/project/services/python/django/qodana.yaml \
             --only-directory=services/python/django \

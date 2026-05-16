@@ -9,9 +9,6 @@ server:
   idle-connection-timeout: PT15S
   receive-buffer-size: 4096
   write-queue-length: 0
-
-# Helidon tracing — uses the OpenTelemetry provider discovered on the classpath.
-# The OTel SDK is initialized by OtelSdkInitExtension during CDI extension loading,
-# so GlobalOpenTelemetry is available when Helidon resolves the tracer.
-tracing:
-  enabled: true
+telemetry:
+  span:
+    name-includes-method: true

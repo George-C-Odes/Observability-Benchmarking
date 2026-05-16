@@ -183,6 +183,17 @@
   },
 
   {
+    "name": "io.helidon.metrics.api.MeterRegistryFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.metrics.api.MetricsFactoryFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+
+  {
     "name": "io.helidon.webserver.observe.tracing.TracingObserverProvider__ServiceDescriptor",
     "fields": [{ "name": "INSTANCE" }],
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
@@ -195,6 +206,21 @@
 
   {
     "name": "io.helidon.tracing.providers.opentelemetry.OpenTelemetryTracerProvider__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.tracing.TracerFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.tracing.providers.opentelemetry.HelidonTracingBasedOpenTelemetryServiceFactory__ServiceDescriptor",
+    "fields": [{ "name": "INSTANCE" }],
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "io.helidon.webserver.cors.CorsFeature__ServiceDescriptor",
     "fields": [{ "name": "INSTANCE" }],
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
   }

@@ -218,8 +218,7 @@ func TestLogGoVersion(t *testing.T) {
 }
 
 func TestRunWithContext(t *testing.T) {
-	port := "9093"
-	setEnv(t, "PORT", &port)
+	setEnv(t, "PORT", new("9093"))
 
 	withRunHooks(
 		t,
@@ -251,8 +250,7 @@ func TestRunWithContext(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	port := "9094"
-	setEnv(t, "PORT", &port)
+	setEnv(t, "PORT", new("9094"))
 
 	withRunHooks(
 		t,
@@ -329,8 +327,7 @@ func TestInitMeterProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	invalidEndpoint := "bad endpoint"
-	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", &invalidEndpoint)
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", new("bad endpoint"))
 
 	_, err := initMeterProvider(ctx)
 
@@ -343,8 +340,7 @@ func TestInitMeterProviderSuccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	endpoint := "localhost:4317"
-	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", &endpoint)
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", new("localhost:4317"))
 
 	mp, err := initMeterProvider(ctx)
 	if err != nil {
@@ -359,8 +355,7 @@ func TestInitTracerProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	invalidEndpoint := "bad endpoint"
-	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", &invalidEndpoint)
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", new("bad endpoint"))
 
 	_, err := initTracerProvider(ctx)
 
@@ -373,8 +368,7 @@ func TestInitTracerProviderSuccess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	endpoint := "localhost:4317"
-	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", &endpoint)
+	setEnv(t, "OTEL_EXPORTER_OTLP_ENDPOINT", new("localhost:4317"))
 
 	tp, err := initTracerProvider(ctx)
 	if err != nil {

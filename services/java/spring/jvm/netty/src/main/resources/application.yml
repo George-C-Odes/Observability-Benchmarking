@@ -2,6 +2,8 @@ benchmark:
   cache:
     size: ${CACHE_SIZE:50000}
 logging:
+  level:
+    io.opentelemetry.sdk.trace.export.BatchSpanProcessor: ${OTEL_BSP_LOG_LEVEL:WARN}
   pattern:
     level: "%5p [traceId=%X{traceId:-}, spanId=%X{spanId:-}]"
 management:

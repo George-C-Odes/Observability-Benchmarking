@@ -4,13 +4,19 @@ import io.github.georgecodes.benchmarking.orchestrator.api.HealthAggregateRespon
 import io.github.georgecodes.benchmarking.orchestrator.api.ServiceHealthResponse;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.mutiny.unchecked.Unchecked;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.RequestOptions;
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -144,14 +150,35 @@ public class ServiceHealthService {
     }
 
     String host = base.getHost();
+    if (host == null || host.isBlank()) {
+      return Uni.createFrom().item(new ServiceHealthResponse(
+        endpoint.name,
+        STATUS_DOWN,
+        null,
+        0L,
+        "Invalid base URL host: " + endpoint.baseUrl,
+        endpoint.baseUrl,
+        null
+      ));
+    }
+
     String basePath = base.getPath() == null ? "" : base.getPath();
     String requestPath = normalizePath(basePath) + normalizePath(endpoint.healthPath);
+    final int requestPort = port;
+    final String requestHost = host;
+    final boolean requestSsl = ssl;
 
-    return client
-      .get(port, host, requestPath)
-      .ssl(ssl)
-      .timeout(timeoutMs)
-      .send()
+    return resolveServerAddress(requestHost, requestPort)
+      .map(serverAddress -> new RequestOptions()
+        .setServer(serverAddress)
+        .setHost(requestHost)
+        .setPort(requestPort)
+        .setURI(requestPath)
+        .setSsl(requestSsl))
+      .flatMap(requestOptions -> client
+        .request(HttpMethod.GET, requestOptions)
+        .timeout(timeoutMs)
+        .send())
       .map(resp -> {
         long took = System.currentTimeMillis() - start;
         int code = resp.statusCode();
@@ -174,6 +201,17 @@ public class ServiceHealthService {
           endpoint.name, STATUS_DOWN, null, took, msg, endpoint.baseUrl, null
         );
       });
+  }
+
+  private Uni<SocketAddress> resolveServerAddress(String host, int port) {
+    return Uni.createFrom().item(Unchecked.supplier(() -> {
+      try {
+        InetAddress address = InetAddress.getByName(host);
+        return SocketAddress.inetSocketAddress(port, address.getHostAddress());
+      } catch (Exception ex) {
+        throw new IllegalStateException("Failed to resolve host: " + host, ex);
+      }
+    })).runSubscriptionOn(Infrastructure.getDefaultExecutor());
   }
 
   private static String normalizePath(String path) {

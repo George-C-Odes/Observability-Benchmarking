@@ -5,12 +5,11 @@
        bean-discovery-mode="annotated"
        version="4.0">
     <!--
-      The tracing exclusion prevents WELD-001409 "Ambiguous dependencies for
-      type Tracer": Helidon's MpTracingCdiExtension registers TracerProducer
-      programmatically and bean discovery would also discover
-      the same class through scanning.
+      In the shaded JVM jar, dependency classes live in the same bean archive as
+      application classes. Let Helidon Telemetry's CDI extension register its
+      producer beans and avoid discovering the same producer classes by scanning.
     -->
     <scan>
-        <exclude name="io.helidon.microprofile.tracing.**"/>
+        <exclude name="io.helidon.microprofile.telemetry.**"/>
     </scan>
 </beans>

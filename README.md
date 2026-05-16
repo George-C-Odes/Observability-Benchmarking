@@ -6,19 +6,19 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
-[![Java](https://img.shields.io/badge/Java-25.0.2-ED8B00.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.34.6-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-4.10.21-1A1A2E.svg)](https://micronaut.io/)
-[![Helidon](https://img.shields.io/badge/Helidon-4.3.4-008F6B.svg)](https://helidon.io/)
+[![Java](https://img.shields.io/badge/Java-25.0.3-ED8B00.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.35.3-6C63FF.svg)](https://quarkus.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-4.10.23-1A1A2E.svg)](https://micronaut.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.4.1-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-7.2.0-00AFCF.svg)](https://javalin.io/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.2.2-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.1-C9A200.svg)](https://www.dropwizard.io/)
-[![Vert.x](https://img.shields.io/badge/Vert.x-5.0.8-782A90.svg)](https://vertx.io/)
+[![Vert.x](https://img.shields.io/badge/Vert.x-5.0.12-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
-[![Go](https://img.shields.io/badge/Go-1.26.2-38BDF8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.3-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.13-2F5D8C.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-6.0.4-8B2C3D.svg)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/Django-6.0.5-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
 [![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
@@ -77,47 +77,47 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 
 | Layer             | Category           | Technology                 | Version | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.2  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.2  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.2  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.3  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.3  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Go                         | 1.26.3  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.13 | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Server             | Gunicorn                   | 25.3.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 25.9.0  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.0.5   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.34.6  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 4.10.21 | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.3.4   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.3.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
+| **Execution**     | Runtime            | Node.js                    | 26.1.0  | Frontend tooling and SSR runtime                                     |
+| **Backend**       | Framework          | Spring Boot                | 4.0.6   | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Quarkus                    | 3.35.3  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 4.10.23 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.4.1   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.4.1   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.2.0   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.2.2   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.1   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | 5.0.8   | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Vert.x                     | 5.0.12  | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.0.4   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.4  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.5  | UI rendering layer                                                   |
+| **Backend**       | Framework          | Django                     | 6.0.5   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Frontend**      | Framework          | Next.js                    | 16.2.6  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.6  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.0   | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.0.1   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.0.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.1   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.4  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.0.4   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 1.21.0  | Continuous CPU and memory profiling                                  |
+| **Observability** | Logs               | Loki                       | 3.7.2   | Log aggregation                                                      |
+| **Observability** | Tracing            | Tempo                      | 2.10.5  | Distributed tracing backend                                          |
+| **Observability** | Metrics            | Mimir                      | 3.0.6   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 2.0.2   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.61.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.62.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.27.0  | Auto-instrumentation and exporters                                   |
-| **Performance**   | Cache              | Caffeine                   | 3.2.3   | High-performance in-memory caching (Java)                            |
+| **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.1  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.15  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.12.1 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.8  | Python linting and code formatting                                   |
+| **Build**         | Package Manager    | npm                        | 11.14.1 | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.13 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.5   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.6   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -162,12 +162,12 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.4 and Material-UI 9.0.0
+  - Built with Next.js 16.2.6 and Material-UI 9.0.1
 
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 – Eclipse Temurin)
-- **Spring Boot 4.0.5 (3.5.13 also supported)**
+- **Spring Boot 4.0.6 (3.5.14 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -176,13 +176,13 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.34.6**
+- **Quarkus 3.35.3**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 4.10.21
+- **Micronaut**: 4.10.23
   - JVM build (all three thread modes)
   - Native (all three thread modes)
-- **Helidon**: 4.3.4
+- **Helidon**: 4.4.1
   - SE JVM build
     - Virtual threads
   - SE Native build
@@ -195,7 +195,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Javalin**: 7.2.0
+- **Javalin**: 7.2.2
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -203,19 +203,19 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Vert.x**: 5.0.8
+- **Vert.x**: 5.0.12
   - JVM build
     - Reactive (event-loop)
 - **Pekko**: 1.3.0
   - JVM build
     - Reactive (Pekko dispatcher)
 
-#### Go (1.26.2)
+#### Go (1.26.3)
 - Fiber framework integration
 - Full observability setup
 
 #### Python (3.13.13)
-- **Django**: 6.0.4
+- **Django**: 6.0.5
   - Platform (WSGI — Gunicorn gthread workers)
   - Reactive (ASGI — Gunicorn + UvicornWorker)
 
@@ -473,7 +473,7 @@ The numbers below are a curated summary of a representative run.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Django 6.0.4 runs on CPython 3.13.13 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Django 6.0.5 runs on CPython 3.13.13 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -503,20 +503,20 @@ The numbers below are a curated summary of a representative run.
 - **Network**: Docker bridge network
 
 #### Software Versions
-- **Java JDK**: Eclipse Temurin 25.0.2
-- **Java Native**: GraalVM Enterprise 25.0.2-ol9
-- **Spring Boot**: 4.0.5 (3.5.13 also supported)
-- **Quarkus**: 3.34.6
-- **Micronaut**: 4.10.21
-- **Helidon**: 4.3.4
+- **Java JDK**: Eclipse Temurin 25.0.3
+- **Java Native**: GraalVM Enterprise 25.0.3-ol9
+- **Spring Boot**: 4.0.6 (3.5.14 also supported)
+- **Quarkus**: 3.35.3
+- **Micronaut**: 4.10.23
+- **Helidon**: 4.4.1
 - **Spark**: 3.0.4
-- **Javalin**: 7.2.0
+- **Javalin**: 7.2.2
 - **Dropwizard**: 5.0.1
-- **Vert.x**: 5.0.8
+- **Vert.x**: 5.0.12
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
-- **Go**: 1.26.2 (Fiber v3.1.0)
+- **Go**: 1.26.3 (Fiber v3.2.0)
 - **Python**: 3.13.13 (CPython)
-- **Django**: 6.0.4 (Gunicorn 25.3.0)
+- **Django**: 6.0.5 (Gunicorn 26.0.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
@@ -527,7 +527,7 @@ However, the environment pulls and builds **third-party container images and dep
 
 In particular:
 
-- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.2-ol9`.
+- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.3-ol9`.
 - If you build/run those images, **you are responsible** for reviewing and complying with Oracle’s applicable license terms.
 
 Nothing in this repository’s Apache-2.0 license changes the license terms of third-party dependencies or container base images.

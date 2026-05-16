@@ -15,11 +15,11 @@ This directory contains the REST service implementations used for benchmarking.
 ### Base Image Builders
 Native builder image pull from Oracle Enterprise:
   ```bash
-docker pull container-registry.oracle.com/graalvm/native-image:25.0.2-ol9
+docker pull container-registry.oracle.com/graalvm/native-image:25.0.3-ol9
   ```
 Native builder image pull from GraalVM community:
   ```bash
-docker pull ghcr.io/graalvm/native-image-community:25.0.2-ol9
+docker pull ghcr.io/graalvm/native-image-community:25.0.3-ol9
   ```
 
 ### Service Image Builders

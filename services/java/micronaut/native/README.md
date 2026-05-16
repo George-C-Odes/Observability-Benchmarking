@@ -1,7 +1,7 @@
 # Micronaut Native Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 4.10.21 compiled to a **GraalVM native executable**. This service shares the exact same source code as the JVM module (via `build-helper-maven-plugin`) and supports the same three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment. The native build trades JIT-level peak throughput for near-instant startup, lower memory usage, and a smaller container image.
+A high-performance REST service implementation built with Micronaut 4.10.23 compiled to a **GraalVM native executable**. This service shares the exact same source code as the JVM module (via `build-helper-maven-plugin`) and supports the same three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment. The native build trades JIT-level peak throughput for near-instant startup, lower memory usage, and a smaller container image.
 
 ## Purpose
 - Benchmark Micronaut's native image performance across platform threads, virtual threads, and reactive programming models
@@ -12,9 +12,9 @@ A high-performance REST service implementation built with Micronaut 4.10.21 comp
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 4.10.21
-- **Compiler**: GraalVM Native Image 25.0.2 (Enterprise — G1 GC)
-- **Base Java**: 25.0.2
+- **Framework**: Micronaut 4.10.23
+- **Compiler**: GraalVM Native Image 25.0.3 (Enterprise — G1 GC)
+- **Base Java**: 25.0.3
 - **GC**: G1 Garbage Collector (Enterprise only)
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
@@ -174,7 +174,7 @@ The native module uses `maven-shade-plugin` to produce a single fat JAR before `
 ### Build Pipeline (Dockerfile)
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  Stage 1: builder (GraalVM native-image:25.0.2-ol9)     │
+│  Stage 1: builder (GraalVM native-image:25.0.3-ol9)     │
 │  ├── Copy pom.xml + mvnw + checkstyle                   │
 │  ├── mvn dependency:go-offline                           │
 │  ├── Copy JVM module sources (shared)                    │
@@ -221,7 +221,7 @@ The native module uses `maven-shade-plugin` to produce a single fat JAR before `
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.2+ (Enterprise recommended for G1 GC)
+- GraalVM Native Image 25.0.3+ (Enterprise recommended for G1 GC)
 - Maven 3.9+ (bundled via `mvnw`)
 - Docker (for containerized build)
 - 16 GB+ RAM (for native compilation)
@@ -245,7 +245,7 @@ docker compose --project-directory compose \
 ```bash
 cd services/java/micronaut/native
 ./mvnw package -Dnative \
-  -Dmicronaut.version=4.10.21 \
+  -Dmicronaut.version=4.10.23 \
   -Dmaven.compiler.release=25
 ```
 

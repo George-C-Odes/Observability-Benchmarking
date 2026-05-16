@@ -72,6 +72,7 @@ public class HttpMetricsFilter implements ContainerRequestFilter, ContainerRespo
         if (!enabled) {
             return;
         }
+
         Timer.Sample sample = Timer.start(Metrics.globalRegistry);
         requestContext.setProperty(SAMPLE_PROPERTY, sample);
     }
@@ -93,6 +94,7 @@ public class HttpMetricsFilter implements ContainerRequestFilter, ContainerRespo
                 : String.valueOf(code);
 
         var key = new TimerKey(method, URI_TAG_VALUE, status);
+
         Timer timer = timers.computeIfAbsent(key, k ->
                 Timer.builder("http.server.requests")
                         .description("HTTP server request duration")

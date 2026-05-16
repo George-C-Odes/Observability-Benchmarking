@@ -56,8 +56,13 @@ COPY --link gunicorn/WSGI/hello_project/ /build/django-platform/hello_project/
 COPY --link gunicorn/WSGI/gunicorn.conf.py /build/django-platform/gunicorn.conf.py
 COPY --link gunicorn/WSGI/manage.py /build/django-platform/manage.py
 
+# Copy the full gunicorn tree for builder-time tests that validate both runtime
+# entrypoint variants and resolve them relative to a GitHub-style workspace.
+COPY --link gunicorn/ /build/services/python/django/gunicorn/
+
 # Run shared unit tests — fail the build if any test breaks.
 RUN cd /build/django-platform && \
+    GITHUB_WORKSPACE=/build \
     OTEL_SDK_DISABLED=true \
     python manage.py test obbench_django_common.tests --verbosity=2
 

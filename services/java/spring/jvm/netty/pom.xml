@@ -21,7 +21,7 @@
 		<url/>
 	</scm>
 	<properties>
-        <spring-boot.version>4.0.5</spring-boot.version>
+        <spring-boot.version>4.0.6</spring-boot.version>
         <maven.compiler.release>25</maven.compiler.release>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
@@ -54,7 +54,7 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.2.3</version>
+            <version>3.2.4</version>
         </dependency>
         <!-- CPU + memory extra metrics -->
         <dependency>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.44</version>
+            <version>1.18.46</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -191,7 +191,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.44</version>
+                            <version>1.18.46</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.helidon.mp.web;
 
 import io.github.georgecodes.benchmarking.helidon.mp.application.HelloService;
 import io.github.georgecodes.benchmarking.helidon.mp.application.port.HelloMode;
+import jakarta.json.Json;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DefaultValue;
@@ -54,6 +55,6 @@ public class HelloResource {
                     currentThread.getName(), currentThread.isVirtual());
         }
 
-        return helloService.hello(HelloMode.VIRTUAL, sleep);
+        return Json.createValue(helloService.hello(HelloMode.VIRTUAL, sleep)).toString();
     }
 }

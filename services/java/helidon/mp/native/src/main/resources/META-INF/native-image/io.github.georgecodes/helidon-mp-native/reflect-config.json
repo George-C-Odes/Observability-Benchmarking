@@ -1,13 +1,5 @@
 [
   {
-    "name": "io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelSdkInitExtension",
-    "methods": [{ "name": "<init>", "parameterTypes": [] }]
-  },
-  {
-    "name": "io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelSdkTracerProvider",
-    "methods": [{ "name": "<init>", "parameterTypes": [] }]
-  },
-  {
     "name": "jakarta.enterprise.event.ObserverException",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
@@ -98,12 +90,6 @@
   },
   {
     "name": "io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter",
-    "allDeclaredConstructors": true,
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelConfig",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true
@@ -373,12 +359,6 @@
   {
     "name": "io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk",
     "allDeclaredConstructors": true,
-    "allDeclaredMethods": true
-  },
-  {
-    "name": "io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelConfig",
-    "allDeclaredConstructors": true,
-    "allDeclaredFields": true,
     "allDeclaredMethods": true
   },
   {

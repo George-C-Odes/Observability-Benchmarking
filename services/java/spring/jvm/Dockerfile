@@ -7,7 +7,7 @@ ARG BASE_BUILDER=noble
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 #ARG DISTRIBUTION=amazoncorretto
 #ARG BASE_BUILDER=debian
-#ARG IMAGE_RUNTIME=amazoncorretto:25.0.2-al2023-headless
+#ARG IMAGE_RUNTIME=amazoncorretto:25.0.3-al2023-headless
 #alpine, al2023-headless
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 #Option N/A for J21 set to "", for J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings
@@ -20,7 +20,7 @@ ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
 ARG PROFILE=default
-ARG SPRING_BOOT_VERSION=4.0.5
+ARG SPRING_BOOT_VERSION=4.0.6
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"

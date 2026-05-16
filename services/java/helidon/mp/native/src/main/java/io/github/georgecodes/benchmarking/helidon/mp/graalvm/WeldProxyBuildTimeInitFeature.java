@@ -91,12 +91,6 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         System.setProperty("org.jboss.weld.executor.threadPoolType", "FIXED_TIMEOUT");
         System.setProperty("org.jboss.weld.executor.threadPoolSize", "1");
         System.out.println("[WeldProxyBuildTimeInitFeature] Set Weld executor: FIXED_TIMEOUT/1");
-
-        // Package-level build-time init for all application classes.
-        // NOTE: This covers regular classes but NOT dynamically generated Weld proxies.
-        RuntimeClassInitialization.initializeAtBuildTime(
-                "io.github.georgecodes.benchmarking"
-        );
     }
 
     @Override
@@ -672,8 +666,6 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
     private List<String> getKnownBeanClassNames() {
         List<String> beanClassNames = new ArrayList<>();
 
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OtelConfig");
-        beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.OpenTelemetry");
         beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter");
         beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.JvmExtrasMetricsConfiguration");
         beanClassNames.add("io.github.georgecodes.benchmarking.helidon.mp.infra.cache.CaffeineCacheAdapter");

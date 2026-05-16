@@ -1,7 +1,7 @@
 # Helidon SE JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Helidon 4.3.4 (SE/Níma) running on the Java Virtual Machine (JVM 25). Helidon 4 is virtual-thread–first and dropped the reactive programming model, making it ideal for benchmarking virtual thread performance with minimal framework overhead.
+A high-performance REST service implementation built with Helidon 4.4.1 (SE/Níma) running on the Java Virtual Machine (JVM 25). Helidon 4 is virtual-thread–first and dropped the reactive programming model, making it ideal for benchmarking virtual thread performance with minimal framework overhead.
 
 ## Purpose
 - Benchmark Helidon 4 SE performance with virtual threads (the only thread model in Helidon 4)
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Helidon 4.3.4 (SE/Ním
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Helidon 4.3.4 SE (Níma)
+- **Framework**: Helidon 4.4.1 SE (Níma)
 - **Java Version**: Eclipse Temurin 25
 - **JVM GC**: G1 Garbage Collector
 - **Thread Model**: Virtual threads only (Helidon 4 default — every request runs on a virtual thread)
@@ -24,7 +24,7 @@ Handles requests using Java virtual threads. In Helidon 4, all requests run on v
 
 **Query Parameters**:
 - `sleep` (int, default: 0) - Sleep duration in seconds (for testing blocking operations)
-- `log` (boolean, default: false) - Enable detailed thread logging
+- `log` (boolean, default: false) – Enable detailed thread logging
 
 **Response**: `"Hello from Helidon SE virtual REST {value}"`
 
@@ -56,13 +56,15 @@ Dependencies point inward: `web → application ← infra`. The application laye
 - **Metrics**: Micrometer → OTel MeterProvider bridge → OTLP/gRPC → Alloy
   - `hello.request.count` — per-endpoint counter (via `MicrometerMetricsAdapter`)
   - `http.server.requests` — per-request timer (via `HttpMetricsFilter`, consistent with Spring/Quarkus/Micronaut)
-  - JVM extras — process memory & thread metrics (via `JvmExtrasMetricsConfiguration`)
+  - JVM extras — process memory and thread metrics (via `JvmExtrasMetricsConfiguration`)
 - **Logs**: Logback → OTel LogRecord appender → OTLP/gRPC → Alloy
 - **Signal correlation**: Trace/span IDs are automatically correlated across logs via the OTel Logback appender
 
 All three signal pipelines share the same SDK instance, configured via `OTEL_*` environment variables.
 
-### Throughput Optimisations
+For OTLP/gRPC, the service explicitly pins OpenTelemetry's OkHttp gRPC sender provider and logs the discovered gRPC sender providers at startup. This makes transport intent visible and helps the surface classpath drift quickly after Helidon or OTel upgrades.
+
+### Throughput Optimizations
 
 The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 MB heap):
 
@@ -70,11 +72,11 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 - **Pre-interned status codes**: HTTP status code strings (100–599) are pre-interned in `HttpMetricsFilter` to avoid `String.valueOf()` per request.
 - **Metrics warm-up**: Micrometer counters are eagerly registered at startup for all known endpoint tags, eliminating first-request `computeIfAbsent` overhead.
 - **G1 tuning**: `G1HeapRegionSize=1m` and `G1ReservePercent=20` for stable GC on a 96 MB micro-heap. `UseStringDeduplication` removed (no benefit for this workload).
-- **Server tuning**: `max-concurrent-requests=512`, `idle-connection-timeout=PT15S` (optimised for 2 vCPU).
+- **Server tuning**: `max-concurrent-requests=512`, `idle-connection-timeout=PT15S` (optimized for 2 vCPU).
 
 ### Docker
 
-**Image**: `helidon-se-jvm:4.3.4_latest`
+**Image**: `helidon-se-jvm:4.4.1_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -84,16 +86,16 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 - Port mapping: `8094:8080`
 - Multi-stage build: Maven shade → jlink (strips unused JDK modules) → distroless
 - Service-specific Maven cache mount (`maven-m2-helidon-se-jvm-*`) avoids contention with native builds
-- `pom.xml` is copied before `dependency:go-offline`; checkstyle files and sources are deferred to later layers for optimal cache utilisation
+- `pom.xml` is copied before `dependency:go-offline`; checkstyle files and sources are deferred to later layers for optimal cache utilization
 
 ### Build Command
 
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/jvm/Dockerfile `
-  -t helidon-se-jvm:4.3.4_latest `
-  --build-arg HELIDON_VERSION=4.3.4 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.3.4_latest `
+  -t helidon-se-jvm:4.4.1_latest `
+  --build-arg HELIDON_VERSION=4.4.1 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.4.1_latest `
   --load `
   services/java
 ```
@@ -104,9 +106,10 @@ docker buildx build `
 2. **Helidon SE (functional routing)**: No CDI/annotation overhead. Pure functional `HttpRouting.Builder`.
 3. **Shared codebase for JVM and native**: The native module reuses JVM sources via `build-helper-maven-plugin`.
 4. **OTel SDK autoconfigure**: Minimal custom wiring — all configuration driven by `OTEL_*` env vars.
-5. **Micrometer bridge**: Metrics flow through Micrometer → OTel SDK → OTLP/gRPC for consistency with other services.
-6. **JUL → SLF4J bridge**: Helidon uses JUL internally; bridged to Logback for consistent log formatting and OTel integration.
-7. **Auto-registered routes (OCP)**: `HelloRouting.register()` iterates `HelloMode.values()` — adding a new mode variant requires no routing changes.
-8. **`ObservabilityFeatureFactory` (SRP)**: Health-check and observe-feature setup is extracted from the composition root into a reusable factory in the `infra/` layer.
-9. **`TimeUnit` enum owns conversion (OCP)**: Each `TimeUnit` constant implements `toMillis()` — adapters never need a switch/if for new units.
-10. **Unified request flow**: Every request — regardless of `sleep` — calls `helloService.hello()` which increments the metric, optionally sleeps, and reads the Caffeine cache. This ensures a realistic workload consistent with all other benchmark modules.
+5. **Explicit OTLP sender selection**: For `grpc`, `OtelConfig` pins `io.opentelemetry.exporter.sender.okhttp.internal.OkHttpGrpcSenderProvider` and logs discovered providers so upgrades do not silently switch transport implementations.
+6. **Micrometer bridge**: Metrics flow through Micrometer → OTel SDK → OTLP/gRPC for consistency with other services.
+7. **JUL → SLF4J bridge**: Helidon uses JUL internally; bridged to Logback for consistent log formatting and OTel integration.
+8. **Auto-registered routes (OCP)**: `HelloRouting.register()` iterates `HelloMode.values()` — adding a new mode variant requires no routing changes.
+9. **`ObservabilityFeatureFactory` (SRP)**: Health check and observe-feature setup is extracted from the composition root into a reusable factory in the `infra/` layer.
+10. **`TimeUnit` enum owns conversion (OCP)**: Each `TimeUnit` constant implements `toMillis()` — adapters never need a switch/if for new units.
+11. **Unified request flow**: Every request — regardless of `sleep` — calls `helloService.hello()` which increments the metric, optionally sleeps, and reads the Caffeine cache. This ensures a realistic workload consistent with all other benchmark modules.

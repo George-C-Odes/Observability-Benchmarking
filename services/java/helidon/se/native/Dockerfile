@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
-ARG JAVA_MINOR_RELEASE=.0.2
+ARG JAVA_MINOR_RELEASE=.0.3
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 
@@ -9,7 +9,7 @@ FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MI
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG HELIDON_VERSION=4.3.4
+ARG HELIDON_VERSION=4.4.1
 ENV HELIDON_VERSION=${HELIDON_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV HOME=/home/maven

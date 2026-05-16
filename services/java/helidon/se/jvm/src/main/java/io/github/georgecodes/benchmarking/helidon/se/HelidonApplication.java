@@ -10,6 +10,7 @@ import io.github.georgecodes.benchmarking.helidon.se.application.HelloService;
 import io.github.georgecodes.benchmarking.helidon.se.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.se.web.HelloRouting;
 import io.github.georgecodes.benchmarking.helidon.se.web.HttpMetricsFilter;
+import io.helidon.common.Version;
 import io.helidon.config.Config;
 import io.helidon.webserver.WebServer;
 import io.helidon.webserver.observe.ObserveFeature;
@@ -18,6 +19,8 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+
+import java.util.Map;
 
 /**
  * Helidon SE application entry point.
@@ -28,6 +31,11 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 @Slf4j
 public final class HelidonApplication {
 
+    /**
+     * Fallback service name when {@code OTEL_SERVICE_NAME} is not provided.
+     */
+    static final String DEFAULT_SERVICE_NAME = "helidon-se-jvm";
+
     private HelidonApplication() {
     }
 
@@ -36,8 +44,12 @@ public final class HelidonApplication {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
+        // Make OTEL_* env vars visible to OTel SDK autoconfigure and Helidon's tracing provider.
+        OtelConfig.configureSystemPropertiesFromEnvironment();
+
         // Load Helidon config (classpath application.yaml)
         Config config = Config.create();
+        String serviceName = resolveServiceName(System.getenv());
 
         int cacheSize = config.get("CACHE_SIZE").asInt()
                 .or(() -> config.get("benchmark.cache.size").asInt().asOptional())
@@ -63,7 +75,7 @@ public final class HelidonApplication {
         }
 
         // ── Health check & observability feature ──
-        ObserveFeature observe = ObservabilityFeatureFactory.create("helidon-se-jvm");
+        ObserveFeature observe = ObservabilityFeatureFactory.create(serviceName, config);
 
         // ── Micrometer HTTP metrics (http.server.requests Timer) ──
         // Enabled via HELIDON_MICROMETER_ENABLED env var (default: true).
@@ -87,12 +99,20 @@ public final class HelidonApplication {
                 .start();
 
         Runtime runtime = Runtime.getRuntime();
-        log.info("Helidon version: {}", io.helidon.common.Version.VERSION);
+        log.info("Helidon version: {}", Version.VERSION);
         log.info("Heap in MB = Max:{}, Total:{}, Free:{}",
                 runtime.maxMemory() / 1024 / 1024,
                 runtime.totalMemory() / 1024 / 1024,
                 runtime.freeMemory() / 1024 / 1024);
         log.info("Available Processors: {}", runtime.availableProcessors());
         log.info("Helidon WebServer started on http://localhost:{}", server.port());
+    }
+
+    static String resolveServiceName(Map<String, String> environment) {
+        String configuredServiceName = environment.get("OTEL_SERVICE_NAME");
+        if (configuredServiceName == null || configuredServiceName.isBlank()) {
+            return DEFAULT_SERVICE_NAME;
+        }
+        return configuredServiceName;
     }
 }

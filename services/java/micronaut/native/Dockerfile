@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
-ARG JAVA_MINOR_RELEASE=.0.2
+ARG JAVA_MINOR_RELEASE=.0.3
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 
@@ -9,7 +9,7 @@ FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MI
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG MICRONAUT_VERSION=4.10.21
+ARG MICRONAUT_VERSION=4.10.23
 ENV MICRONAUT_VERSION=${MICRONAUT_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV HOME=/home/maven
