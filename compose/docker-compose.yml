@@ -34,6 +34,7 @@ x-default-environment:
   spring_java_tool_options: &default_spring_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
+    -Dotel.javaagent.logging=application \
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
     -Dreactor.netty.ioWorkerCount=${CORES_LIMIT:-2} \
@@ -66,6 +67,7 @@ x-default-environment:
   netty_agent_java_tool_options: &default_netty_agent_java_tool_options "\
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
+    -Dotel.javaagent.logging=application \
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
     -Dio.netty.leakDetection.level=disabled \
