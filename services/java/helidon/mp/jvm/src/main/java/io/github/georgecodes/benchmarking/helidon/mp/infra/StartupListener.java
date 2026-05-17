@@ -1,5 +1,6 @@
 package io.github.georgecodes.benchmarking.helidon.mp.infra;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.github.georgecodes.benchmarking.helidon.mp.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter;
@@ -36,6 +37,20 @@ public class StartupListener {
     /** Logback appender name used by both XML-configured JVM logging and native programmatic logging. */
     private static final String OTEL_APPENDER_NAME = "OTEL";
 
+    /** Environment/system property used to tune intentionally noisy OTel span-drop warnings. */
+    private static final String OTEL_BSP_LOG_LEVEL = "OTEL_BSP_LOG_LEVEL";
+
+    /** System property name produced by the native bootstrap's OTEL_* environment promotion. */
+    private static final String OTEL_BSP_LOG_LEVEL_PROPERTY = "otel.bsp.log.level";
+
+    /** OTel SDK logger that emits queue-full span-drop warnings during sampled load tests. */
+    private static final String BATCH_SPAN_PROCESSOR_LOGGER =
+            "io.opentelemetry.sdk.trace.export.BatchSpanProcessor";
+
+    /** Defensive fallback for implementations that log from the nested worker class logger. */
+    private static final String BATCH_SPAN_PROCESSOR_WORKER_LOGGER =
+            BATCH_SPAN_PROCESSOR_LOGGER + "$Worker";
+
     /** Guard to bridge Micrometer exactly once if CDI startup events are replayed in tests. */
     private static final AtomicBoolean MICROMETER_BRIDGED = new AtomicBoolean(false);
 
@@ -48,6 +63,7 @@ public class StartupListener {
     private MicrometerMetricsAdapter metricsAdapter;
 
     void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
+        configureBatchSpanProcessorLogLevel();
         bridgeMicrometer();
         installOtelLogbackAppender();
         warmUpMetrics();
@@ -82,6 +98,28 @@ public class StartupListener {
             Metrics.globalRegistry.add(otelRegistry);
             log.info("Micrometer to OTel bridge registered");
         }
+    }
+
+    private void configureBatchSpanProcessorLogLevel() {
+        Level level = Level.toLevel(configuredBspLogLevel(), Level.WARN);
+        setLoggerLevel(BATCH_SPAN_PROCESSOR_LOGGER, level);
+        setLoggerLevel(BATCH_SPAN_PROCESSOR_WORKER_LOGGER, level);
+    }
+
+    private String configuredBspLogLevel() {
+        String value = System.getenv(OTEL_BSP_LOG_LEVEL);
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(OTEL_BSP_LOG_LEVEL);
+        }
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(OTEL_BSP_LOG_LEVEL_PROPERTY);
+        }
+        return value == null || value.isBlank() ? Level.WARN.levelStr : value;
+    }
+
+    private void setLoggerLevel(String loggerName, Level level) {
+        Logger logger = (Logger) LoggerFactory.getLogger(loggerName);
+        logger.setLevel(level);
     }
 
     private void installOtelLogbackAppender() {
