@@ -81,11 +81,11 @@ and standard JVM metrics (GC, memory, threads, classloader, processor).
 
 Export is handled by the OpenTelemetry Java agent in the benchmark stack.
 
-## Benchmark Results (06/03/2026)
+## Benchmark Results (17/05/2026)
 
 | Mode     | RPS | Peak Mem (MB) | Image Size (MB) |
 |----------|-----|---------------|-----------------|
-| Reactive | 26k | 336           | 220             |
+| Reactive | 52k | 541           | 222             |
 
 ## Testing
 

@@ -419,7 +419,7 @@ The repository includes pre-configured load generation scripts accessible via Do
 
 The numbers below are a curated summary of a representative run.
 
-#### Requests Per Second (RPS) — 06/03/2026 (to the closest thousand)
+#### Requests Per Second (RPS) — 17/05/2026 (to the closest thousand)
 
 | Framework  | Runtime | Mode       | RPS  | Peak Mem (MB) | Image Size (MB) |
 |------------|---------|------------|------|---------------|-----------------|
