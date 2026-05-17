@@ -1,5 +1,7 @@
 package io.github.georgecodes.benchmarking.pekko;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.georgecodes.benchmarking.pekko.config.ServiceConfig;
 import io.github.georgecodes.benchmarking.pekko.domain.HelloMode;
@@ -32,6 +34,12 @@ import java.util.concurrent.CompletionStage;
  */
 public final class PekkoApplication {
 
+    /** Logger emitted by the OpenTelemetry SDK when the span export queue overflows. */
+    private static final String OTEL_BSP_LOGGER_NAME = "io.opentelemetry.sdk.trace.export.BatchSpanProcessor";
+
+    /** Environment/system-property key controlling BatchSpanProcessor warning visibility. */
+    private static final String OTEL_BSP_LOG_LEVEL = "OTEL_BSP_LOG_LEVEL";
+
     /** Logger for application lifecycle and configuration output. */
     private static final Logger LOG = LoggerFactory.getLogger(PekkoApplication.class);
 
@@ -39,6 +47,8 @@ public final class PekkoApplication {
     }
 
     static void main() {
+        configureOpenTelemetryLogNoise();
+
         ServiceConfig config = ServiceConfig.fromEnvironment();
 
         // Wire infrastructure
@@ -101,5 +111,30 @@ public final class PekkoApplication {
         new JvmGcMetrics().bindTo(registry);
         new JvmThreadMetrics().bindTo(registry);
         new ProcessorMetrics().bindTo(registry);
+    }
+
+    private static void configureOpenTelemetryLogNoise() {
+        var loggerFactory = LoggerFactory.getILoggerFactory();
+        if (!(loggerFactory instanceof LoggerContext context)) {
+            return;
+        }
+
+        Level level = Level.toLevel(resolveOpenTelemetryBatchSpanProcessorLogLevel(), Level.WARN);
+        context.getLogger(OTEL_BSP_LOGGER_NAME).setLevel(level);
+        context.getLogger(OTEL_BSP_LOGGER_NAME + "$Worker").setLevel(level);
+    }
+
+    private static String resolveOpenTelemetryBatchSpanProcessorLogLevel() {
+        String environmentVariable = System.getenv(OTEL_BSP_LOG_LEVEL);
+        if (environmentVariable != null && !environmentVariable.isBlank()) {
+            return environmentVariable;
+        }
+
+        String systemProperty = System.getProperty(OTEL_BSP_LOG_LEVEL);
+        if (systemProperty != null && !systemProperty.isBlank()) {
+            return systemProperty;
+        }
+
+        return "WARN";
     }
 }

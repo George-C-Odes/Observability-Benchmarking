@@ -26,6 +26,7 @@ logging:
   level: ${LOGGING_LEVEL_ROOT:-INFO}
   loggers:
     io.opentelemetry.sdk.trace.export.BatchSpanProcessor: ${OTEL_BSP_LOG_LEVEL:-WARN}
+    io.opentelemetry.sdk.trace.export.BatchSpanProcessor$Worker: ${OTEL_BSP_LOG_LEVEL:-WARN}
   appenders:
     - type: console
       logFormat: "%d{yyyy-MM-dd HH:mm:ss} %-5level [traceId=%X{traceId:-}, spanId=%X{spanId:-}] [%thread] %logger{36} - %msg%n"

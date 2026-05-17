@@ -35,6 +35,7 @@ x-default-environment:
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
     -Dotel.javaagent.logging=application \
+    -DOTEL_BSP_LOG_LEVEL=${OTEL_BSP_LOG_LEVEL:-ERROR} \
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
     -Dreactor.netty.ioWorkerCount=${CORES_LIMIT:-2} \
@@ -68,6 +69,7 @@ x-default-environment:
     -javaagent:/work/opentelemetry-javaagent.jar \
     -Dotel.javaagent.extensions=/work/pyroscope-otel-extension.jar \
     -Dotel.javaagent.logging=application \
+    -DOTEL_BSP_LOG_LEVEL=${OTEL_BSP_LOG_LEVEL:-ERROR} \
     -Djava.security.egd=file:/dev/./urandom \
     -Djdk.tracePinnedThreads=full \
     -Dio.netty.leakDetection.level=disabled \

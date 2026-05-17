@@ -1,5 +1,7 @@
 package io.github.georgecodes.benchmarking.dropwizard;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.dropwizard.configuration.ResourceConfigurationSourceProvider;
 import io.dropwizard.core.Application;
@@ -27,6 +29,12 @@ import java.util.TreeSet;
  */
 public final class DropwizardApplication extends Application<DropwizardServiceConfiguration> {
 
+    /** Logger emitted by the OpenTelemetry SDK when the span export queue overflows. */
+    private static final String OTEL_BSP_LOGGER_NAME = "io.opentelemetry.sdk.trace.export.BatchSpanProcessor";
+
+    /** Environment/system-property key controlling BatchSpanProcessor warning visibility. */
+    private static final String OTEL_BSP_LOG_LEVEL = "OTEL_BSP_LOG_LEVEL";
+
     /** Logger for application lifecycle and configuration output. */
     private static final Logger LOG = LoggerFactory.getLogger(DropwizardApplication.class);
 
@@ -37,6 +45,8 @@ public final class DropwizardApplication extends Application<DropwizardServiceCo
     private boolean classpathConfig;
 
     static void main(String[] args) throws Exception {
+        configureOpenTelemetryLogNoise();
+
         var app = new DropwizardApplication();
         // When launched without arguments (e.g. from the IDE), default to
         // "server <classpath-config>" so the app starts immediately.
@@ -64,6 +74,8 @@ public final class DropwizardApplication extends Application<DropwizardServiceCo
 
     @Override
     public void run(DropwizardServiceConfiguration configuration, Environment environment) {
+        configureOpenTelemetryLogNoise();
+
         ServiceConfig config = ServiceConfig.fromEnvironment();
 
         LOG.info("Init thread: {}", Thread.currentThread());
@@ -141,5 +153,30 @@ public final class DropwizardApplication extends Application<DropwizardServiceCo
             serverFactory.setMinThreads(minThreads);
             LOG.info("Jetty QueuedThreadPool: maxThreads={}, minThreads={}", maxThreads, minThreads);
         }
+    }
+
+    private static void configureOpenTelemetryLogNoise() {
+        var loggerFactory = LoggerFactory.getILoggerFactory();
+        if (!(loggerFactory instanceof LoggerContext context)) {
+            return;
+        }
+
+        Level level = Level.toLevel(resolveOpenTelemetryBatchSpanProcessorLogLevel(), Level.WARN);
+        context.getLogger(OTEL_BSP_LOGGER_NAME).setLevel(level);
+        context.getLogger(OTEL_BSP_LOGGER_NAME + "$Worker").setLevel(level);
+    }
+
+    private static String resolveOpenTelemetryBatchSpanProcessorLogLevel() {
+        String environmentVariable = System.getenv(OTEL_BSP_LOG_LEVEL);
+        if (environmentVariable != null && !environmentVariable.isBlank()) {
+            return environmentVariable;
+        }
+
+        String systemProperty = System.getProperty(OTEL_BSP_LOG_LEVEL);
+        if (systemProperty != null && !systemProperty.isBlank()) {
+            return systemProperty;
+        }
+
+        return "WARN";
     }
 }

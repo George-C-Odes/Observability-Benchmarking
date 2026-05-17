@@ -18,6 +18,7 @@
     <!-- Keep span-drop warnings visible by default. Set OTEL_BSP_LOG_LEVEL=ERROR or OFF
          during intentionally sampled/load-test runs if you only want to suppress the noise. -->
     <logger name="io.opentelemetry.sdk.trace.export.BatchSpanProcessor" level="${OTEL_BSP_LOG_LEVEL:-WARN}"/>
+    <logger name="io.opentelemetry.sdk.trace.export.BatchSpanProcessor$Worker" level="${OTEL_BSP_LOG_LEVEL:-WARN}"/>
 
     <root level="${ROOT_LEVEL}">
         <appender-ref ref="STDOUT"/>
