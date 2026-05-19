@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 4.10.23
+### Micronaut 5.0.0
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 4.10.23** (latest stable)
+- **Micronaut 5.0.0** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -782,7 +782,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9.15-eclipse-temurin-25-noble AS builder
+FROM maven:3.9.16-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
@@ -970,7 +970,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Node.js                    | 26.1.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.0.6   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.35.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 4.10.23 | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 5.0.0   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.4.1   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.4.1   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -990,13 +990,13 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Profiling          | Pyroscope                  | 2.0.2   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.62.0  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.27.0  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.28.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.1  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.15  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.14.1 | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.13 | Python linting and code formatting                                   |

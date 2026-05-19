@@ -782,7 +782,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.9.15-eclipse-temurin-25-noble AS builder
+FROM maven:3.9.16-eclipse-temurin-25-noble AS builder
 COPY . .
 RUN mvn clean package
 
@@ -990,13 +990,13 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Profiling          | Pyroscope                  | 2.0.2                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.62.0                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.27.0                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.28.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.3.1                  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.15                  | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.14.1                 | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.13                 | Python linting and code formatting                                   |
