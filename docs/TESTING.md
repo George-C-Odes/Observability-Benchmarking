@@ -1577,7 +1577,7 @@ The repository-level `codecov.yml` (at the repo root) defines:
 #### How uploads work
 
 Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
-Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.0):
+Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.1):
 
 ```yaml
 - name: Upload to Codecov
