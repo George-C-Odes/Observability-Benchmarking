@@ -12,6 +12,8 @@ otel:
   traces:
     exporter: none
 micronaut:
+  server:
+    port: -1
   netty:
     event-loops:
       default:

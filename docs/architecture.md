@@ -49,7 +49,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 4.10.23 (JVM and Native)
+- Micronaut 5.0.0 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)

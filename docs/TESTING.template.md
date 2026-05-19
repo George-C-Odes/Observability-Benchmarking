@@ -1577,11 +1577,11 @@ The repository-level `codecov.yml` (at the repo root) defines:
 #### How uploads work
 
 Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
-Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.0):
+Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.1):
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+  uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
   with:
     files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
     flags: java-${{ matrix.name }}
@@ -1605,7 +1605,7 @@ the monorepo source tree:
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+  uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
   with:
     files: ${{ matrix.module_dir }}/coverage-codecov.out
     flags: ${{ matrix.name }}
@@ -1621,7 +1621,7 @@ the monorepo source tree:
 
     ```yaml
     - name: Upload to Codecov
-      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
       with:
         files: ${{ matrix.module_dir }}/coverage.xml
         flags: ${{ matrix.codecov_flag }}
@@ -1815,7 +1815,7 @@ jobs:
           go test ./... -v -cover -coverprofile=coverage.out
       
       - name: Upload Coverage
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         with:
           files: ./services/go/enhanced/coverage.out
           flags: go-service

@@ -198,7 +198,7 @@ jobs:
       # mappings and component definitions.
       - name: Upload to Codecov (Node)
         if: always() && !cancelled() && steps.coverage_node.outcome == 'success'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         with:
           files: utils/nextjs-dash/coverage/node/lcov.info
           flags: nextjs-dash-node
@@ -209,7 +209,7 @@ jobs:
 
       - name: Upload to Codecov (DOM)
         if: always() && !cancelled() && steps.coverage_dom.outcome == 'success'
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         with:
           files: utils/nextjs-dash/coverage/dom/lcov.info
           flags: nextjs-dash-dom
