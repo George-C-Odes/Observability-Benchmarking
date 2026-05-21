@@ -30,7 +30,7 @@ public interface ServiceHealthConfig {
    *   health:
    *     services:
    *       grafana:
-   *         base-url: http://grafana:3000
+   *         base-url: <a href="http://grafana:3000">...</a>
    *         health-path: /api/health
    * </pre>
    */

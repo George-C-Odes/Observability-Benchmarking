@@ -112,6 +112,14 @@ public final class IntelliJRunXmlParser {
       }
     }
 
+    Map<String, String> opts = getStringStringMap(optionScope);
+
+    List<EnvVar> buildArgs = deployment != null ? parseBuildArgs(optionScope) : List.of();
+
+    return new ParsedRunConfig(name, configType, deploymentType, opts, buildArgs);
+  }
+
+  private static Map<String, String> getStringStringMap(Element optionScope) {
     Map<String, String> opts = new LinkedHashMap<>();
     NodeList options = optionScope.getElementsByTagName("option");
     for (int i = 0; i < options.getLength(); i++) {
@@ -145,10 +153,7 @@ public final class IntelliJRunXmlParser {
         }
       }
     }
-
-    List<EnvVar> buildArgs = deployment != null ? parseBuildArgs(optionScope) : List.of();
-
-    return new ParsedRunConfig(name, configType, deploymentType, opts, buildArgs);
+    return opts;
   }
 
   public static String toDockerCommand(ParsedRunConfig cfg, String workspace) {

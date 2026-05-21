@@ -9,9 +9,72 @@
 #################################################################################
 version: "1.0"
 
+# Keep the analyzer image pinned in qodana.yaml so the action's `qodana pull`
+# phase and later `qodana scan --skip-pull` phase resolve the same image.
+image: jetbrains/qodana-jvm-community:2026.1
+
 #Specify inspection profile for code analysis
 profile:
-  name: qodana.starter
+  name: qodana.recommended
+  inspections:
+    - inspection: LocalVariableNamingConvention
+      options:
+        m_maxLength: 26
+    - inspection: ParameterNamingConvention
+      options:
+        m_maxLength: 34
+    - inspection: DuplicateStringLiteralInspection
+      options:
+        MIN_STRING_LENGTH: 24
+        IGNORE_PROPERTY_KEYS: true
+    - inspection: UnnecessaryFullyQualifiedName
+      enabled: true
+      severity: WEAK WARNING
+    - inspection: OnDemandImport
+      enabled: true
+      severity: WEAK WARNING
+    - inspection: unused
+      enabled: true
+      severity: WEAK WARNING
+      options:
+        LOCAL_VARIABLE: true
+        FIELD: true
+        METHOD: false
+        CLASS: true
+        PARAMETER: true
+        REPORT_PARAMETER_FOR_PUBLIC_METHODS: false
+        ADD_MAINS_TO_ENTRIES: true
+        ADD_APPLET_TO_ENTRIES: true
+        ADD_SERVLET_TO_ENTRIES: true
+        ADD_NONJAVA_TO_ENTRIES: true
+        field: private
+        klass: private
+        inner_class: private
+
+include:
+  - name: MissingJavadoc
+  - name: PackageNamingConvention
+  - name: ClassNamingConvention
+  - name: MethodNamingConvention
+  - name: FieldNamingConvention
+  - name: ParameterNamingConvention
+  - name: LocalVariableNamingConvention
+  - name: TypeParameterNamingConvention
+  - name: LoggingPlaceholderCountMatchesArgumentCount
+  - name: StringConcatenationArgumentToLogCall
+  - name: CallToPrintStackTrace
+  - name: UseOfSystemOutOrSystemErr
+  - name: OptionalGetWithoutIsPresent
+  - name: BigDecimalMethodWithoutRoundingCalled
+  - name: NullableProblems
+  - name: DuplicateStringLiteralInspection
+  - name: ClassCanBeRecord
+  - name: UnnecessaryFullyQualifiedName
+    paths:
+      - services/java
+  - name: OnDemandImport
+    paths:
+      - services/java
 
 #Enable inspections
 #include:
@@ -27,6 +90,7 @@ projectJDK: "25" #(Applied in CI/CD pipeline)
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh
+bootstrap: MAVEN_USER_HOME=/data/cache/maven-user-home sh ./mvnw -B -q -o -s .mvn/qodana-settings.xml -DskipTests -Dmaven.repo.local=/data/cache/m2/repository test-compile
 
 #Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
 #plugins:
