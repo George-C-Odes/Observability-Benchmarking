@@ -4,12 +4,17 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -49,6 +54,8 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class WeldProxyBuildTimeInitFeature implements Feature {
 
+    private static final String LOG_PREFIX = "[WeldProxyBuildTimeInitFeature]";
+
     /** Maximum time to wait for Helidon's CDI bootstrap to become observable. */
     private static final long CDI_WAIT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(120);
 
@@ -76,11 +83,11 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                     .asSubclass(Feature.class);
             return List.of(helidonFeature);
         } catch (ClassNotFoundException e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] HelidonMpFeature not found – "
+            System.out.println(LOG_PREFIX + " HelidonMpFeature not found – "
                     + "Feature ordering not guaranteed");
             return Collections.emptyList();
         } catch (ClassCastException e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] HelidonMpFeature does not "
+            System.out.println(LOG_PREFIX + " HelidonMpFeature does not "
                     + "implement Feature: " + e.getMessage());
             return Collections.emptyList();
         }
@@ -90,7 +97,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
     public void afterRegistration(AfterRegistrationAccess access) {
         System.setProperty("org.jboss.weld.executor.threadPoolType", "FIXED_TIMEOUT");
         System.setProperty("org.jboss.weld.executor.threadPoolSize", "1");
-        System.out.println("[WeldProxyBuildTimeInitFeature] Set Weld executor: FIXED_TIMEOUT/1");
+        System.out.println(LOG_PREFIX + " Set Weld executor: FIXED_TIMEOUT/1");
     }
 
     @Override
@@ -114,7 +121,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         // After CDI bootstrap, these classes are defined in the classloader.
         registerKnownProxiesByName(cl);
 
-        System.out.println("[WeldProxyBuildTimeInitFeature] beforeAnalysis registered "
+        System.out.println(LOG_PREFIX + " beforeAnalysis registered "
                            + registered.size() + " proxy class(es)");
     }
 
@@ -124,7 +131,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
      * We poll until it's non-null or timeout after 120 seconds.
      */
     private void waitForCdiBootstrap(ClassLoader cl) {
-        System.out.println("[WeldProxyBuildTimeInitFeature] Waiting for CDI bootstrap...");
+        System.out.println(LOG_PREFIX + " Waiting for CDI bootstrap...");
         try {
             // HelidonMpFeature stores CDI container in this static field
             Class<?> btiClass = Class.forName(
@@ -138,27 +145,27 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 if (ref != null) {
                     // ref is a CompletableFuture or similar — wait for its value
                     // Actually it's a GenericContainer — if non-null, bootstrap is done
-                    System.out.println("[WeldProxyBuildTimeInitFeature] CDI bootstrap complete: "
+                    System.out.println(LOG_PREFIX + " CDI bootstrap complete: "
                             + ref.getClass().getSimpleName());
                     return;
                 }
                 if (wasCdiPollInterrupted(deadlineNanos)) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature] CDI bootstrap wait interrupted");
+                    System.out.println(LOG_PREFIX + " CDI bootstrap wait interrupted");
                     Thread.currentThread().interrupt();
                     return;
                 }
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] CDI bootstrap timeout after 120s");
+            System.out.println(LOG_PREFIX + " CDI bootstrap timeout after 120s");
         } catch (ClassNotFoundException e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] BuildTimeInitializer not found, "
+            System.out.println(LOG_PREFIX + " BuildTimeInitializer not found, "
                     + "trying CDI.current() fallback");
             waitForCdiViaCurrentApi(cl);
         } catch (NoSuchFieldException e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] No 'container' field in "
+            System.out.println(LOG_PREFIX + " No 'container' field in "
                     + "BuildTimeInitializer, trying CDI.current() fallback");
             waitForCdiViaCurrentApi(cl);
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] CDI wait error: "
+            System.out.println(LOG_PREFIX + " CDI wait error: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -167,13 +174,13 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         try {
             // CDI.current() blocks until CDI is ready
             Class<?> cdiClass = Class.forName("jakarta.enterprise.inject.spi.CDI", false, cl);
-            java.lang.reflect.Method currentMethod = cdiClass.getMethod("current");
+            Method currentMethod = cdiClass.getMethod("current");
             long deadlineNanos = System.nanoTime() + CDI_WAIT_TIMEOUT_NANOS;
             while (System.nanoTime() < deadlineNanos) {
                 try {
                     Object cdi = currentMethod.invoke(null);
                     if (cdi != null) {
-                        System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() returned: "
+                        System.out.println(LOG_PREFIX + " CDI.current() returned: "
                                 + cdi.getClass().getSimpleName());
                         return;
                     }
@@ -181,14 +188,14 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                     // CDI not ready yet
                 }
                 if (wasCdiPollInterrupted(deadlineNanos)) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() wait interrupted");
+                    System.out.println(LOG_PREFIX + " CDI.current() wait interrupted");
                     Thread.currentThread().interrupt();
                     return;
                 }
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() timeout after 120s");
+            System.out.println(LOG_PREFIX + " CDI.current() timeout after 120s");
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] CDI.current() path failed: "
+            System.out.println(LOG_PREFIX + " CDI.current() path failed: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -227,7 +234,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         // Path C: CDI.current() → BeanManager → clientProxyProvider
         tryPathViaCdiCurrent(cl);
 
-        System.out.println("[WeldProxyBuildTimeInitFeature] Strategy 1 found "
+        System.out.println(LOG_PREFIX + " Strategy 1 found "
                 + (registered.size() - countBefore) + " proxy class(es) total from all paths");
     }
 
@@ -240,10 +247,10 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             for (Field f : providerClass.getDeclaredFields()) {
                 f.setAccessible(true);
                 Object fieldValue = f.get(null); // static fields
-                if (fieldValue instanceof java.util.concurrent.atomic.AtomicReference<?> ref) {
+                if (fieldValue instanceof AtomicReference<?> ref) {
                     Object helidonCdi = ref.get();
                     if (helidonCdi != null) {
-                        System.out.println("[WeldProxyBuildTimeInitFeature] Path A: HelidonCdi = "
+                        System.out.println(LOG_PREFIX + " Path A: HelidonCdi = "
                                 + helidonCdi.getClass().getName());
                         // HelidonCdi has 'bootstrap' field (WeldBootstrap)
                         Field bootstrapField = findFieldInHierarchy(helidonCdi.getClass(), "bootstrap");
@@ -251,14 +258,14 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                             bootstrapField.setAccessible(true);
                             Object weldBootstrap = bootstrapField.get(helidonCdi);
                             if (weldBootstrap != null) {
-                                System.out.println("[WeldProxyBuildTimeInitFeature] Path A: WeldBootstrap = "
+                                System.out.println(LOG_PREFIX + " Path A: WeldBootstrap = "
                                         + weldBootstrap.getClass().getName());
                                 Field runtimeField = findFieldInHierarchy(weldBootstrap.getClass(), "weldRuntime");
                                 if (runtimeField != null) {
                                     runtimeField.setAccessible(true);
                                     Object weldRuntime = runtimeField.get(weldBootstrap);
                                     if (weldRuntime != null) {
-                                        System.out.println("[WeldProxyBuildTimeInitFeature] Path A: WeldRuntime = "
+                                        System.out.println(LOG_PREFIX + " Path A: WeldRuntime = "
                                                 + weldRuntime.getClass().getName());
                                         // WeldRuntime has deploymentManager
                                         registerFromWeldRuntime(weldRuntime);
@@ -270,7 +277,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] Path A failed: "
+            System.out.println(LOG_PREFIX + " Path A failed: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -284,7 +291,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 dmField.setAccessible(true);
                 Object deploymentManager = dmField.get(weldRuntime);
                 if (deploymentManager != null) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                    System.out.println(LOG_PREFIX + " " + source
                             + ": deploymentManager = " + deploymentManager.getClass().getName());
                     registerProxiesFromBeanManager(deploymentManager, source + "-dm");
                 }
@@ -295,8 +302,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             if (bdaMapField != null) {
                 bdaMapField.setAccessible(true);
                 Object bdaMap = bdaMapField.get(weldRuntime);
-                if (bdaMap instanceof java.util.Map<?, ?> map) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                if (bdaMap instanceof Map<?, ?> map) {
+                    System.out.println(LOG_PREFIX + " " + source
                             + ": bdaToBeanManagerMap has " + map.size() + " entries");
                     for (Object bm : map.values()) {
                         registerProxiesFromBeanManager(bm, source + "-bdaMap");
@@ -304,7 +311,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source + " runtime walk: "
+            System.out.println(LOG_PREFIX + " " + source + " runtime walk: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -316,17 +323,17 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             instanceField.setAccessible(true);
             Object singleton = instanceField.get(null);
             if (singleton == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] Path B: Container.instance is null");
+                System.out.println(LOG_PREFIX + " Path B: Container.instance is null");
                 return;
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] Path B: singleton = "
+            System.out.println(LOG_PREFIX + " Path B: singleton = "
                     + singleton.getClass().getName());
 
             // Print all fields for debugging
             for (Field f : singleton.getClass().getDeclaredFields()) {
                 f.setAccessible(true);
                 Object val = f.get(singleton);
-                System.out.println("[WeldProxyBuildTimeInitFeature] Path B: singleton."
+                System.out.println(LOG_PREFIX + " Path B: singleton."
                         + f.getName() + " = " + (val == null ? "null" : val.getClass().getName()));
             }
 
@@ -337,9 +344,9 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 if (storeField != null) {
                     storeField.setAccessible(true);
                     Object store = storeField.get(singleton);
-                    System.out.println("[WeldProxyBuildTimeInitFeature] Path B: " + fieldName
+                    System.out.println(LOG_PREFIX + " Path B: " + fieldName
                             + " = " + (store == null ? "null" : store.getClass().getName()));
-                    if (store instanceof java.util.Map<?, ?> map) {
+                    if (store instanceof Map<?, ?> map) {
                         for (Object val : map.values()) {
                             if (val != null && val.getClass().getName().equals("org.jboss.weld.Container")) {
                                 container = val;
@@ -350,15 +357,15 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
             if (container == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] Path B: Container not found in store");
+                System.out.println(LOG_PREFIX + " Path B: Container not found in store");
                 return;
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] Path B: container = "
+            System.out.println(LOG_PREFIX + " Path B: container = "
                     + container.getClass().getName());
 
             // List all fields of Container for debugging
             for (Field f : container.getClass().getDeclaredFields()) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] Path B: container."
+                System.out.println(LOG_PREFIX + " Path B: container."
                         + f.getName() + " (" + f.getType().getSimpleName() + ")");
             }
 
@@ -367,8 +374,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             if (bdaField != null) {
                 bdaField.setAccessible(true);
                 Object bdaMap = bdaField.get(container);
-                if (bdaMap instanceof java.util.Map<?, ?> map) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature] Path B: beanDeploymentArchives has "
+                if (bdaMap instanceof Map<?, ?> map) {
+                    System.out.println(LOG_PREFIX + " Path B: beanDeploymentArchives has "
                             + map.size() + " entries");
                     for (Object bm : map.values()) {
                         registerProxiesFromBeanManager(bm, "PathB");
@@ -376,7 +383,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] Path B: "
+            System.out.println(LOG_PREFIX + " Path B: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -384,20 +391,20 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
     private void tryPathViaCdiCurrent(ClassLoader cl) {
         try {
             Class<?> cdiClass = Class.forName("jakarta.enterprise.inject.spi.CDI", false, cl);
-            java.lang.reflect.Method currentMethod = cdiClass.getMethod("current");
+            Method currentMethod = cdiClass.getMethod("current");
             Object cdi = currentMethod.invoke(null);
             if (cdi == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] Path C: CDI.current() = null");
+                System.out.println(LOG_PREFIX + " Path C: CDI.current() = null");
                 return;
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] Path C: CDI.current() = "
+            System.out.println(LOG_PREFIX + " Path C: CDI.current() = "
                     + cdi.getClass().getName());
 
             // CDI extends BeanManager provider: getBeanManager()
-            java.lang.reflect.Method bmMethod = cdi.getClass().getMethod("getBeanManager");
+            Method bmMethod = cdi.getClass().getMethod("getBeanManager");
             Object bm = bmMethod.invoke(cdi);
             if (bm != null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] Path C: BeanManager = "
+                System.out.println(LOG_PREFIX + " Path C: BeanManager = "
                         + bm.getClass().getName());
                 registerProxiesFromBeanManager(bm, "PathC");
 
@@ -409,7 +416,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                             f.setAccessible(true);
                             Object cpp = f.get(bm);
                             if (cpp != null) {
-                                System.out.println("[WeldProxyBuildTimeInitFeature] Path C: CPP = "
+                                System.out.println(LOG_PREFIX + " Path C: CPP = "
                                         + cpp.getClass().getName() + " → " + cpp);
                             }
                         }
@@ -417,7 +424,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] Path C: "
+            System.out.println(LOG_PREFIX + " Path C: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -427,7 +434,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             return;
         }
         try {
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + ": BM class = " + beanManager.getClass().getName());
 
             // Pre-populate the lazy proxy pools by requesting proxies for all beans
@@ -435,24 +442,24 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
 
             Field cppField = findFieldInHierarchy(beanManager.getClass(), "clientProxyProvider");
             if (cppField == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": no clientProxyProvider field");
                 return;
             }
             cppField.setAccessible(true);
             Object proxyProvider = cppField.get(beanManager);
             if (proxyProvider == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": clientProxyProvider is null");
                 return;
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + ": CPP = " + proxyProvider.getClass().getName()
                     + " → " + proxyProvider);
             scanProxyPool(proxyProvider, "beanTypeClosureProxyPool", source);
             scanProxyPool(proxyProvider, "requestedTypeClosureProxyPool", source);
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source + " BM walk: "
+            System.out.println(LOG_PREFIX + " " + source + " BM walk: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -465,10 +472,10 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
     private void prePopulateProxyPool(Object beanManager, String source) {
         try {
             // BeanManagerImpl.getBeans() returns all beans
-            java.lang.reflect.Method getBeansMethod = beanManager.getClass().getMethod("getBeans");
+            Method getBeansMethod = beanManager.getClass().getMethod("getBeans");
             Object beansObj = getBeansMethod.invoke(beanManager);
             if (!(beansObj instanceof Iterable<?> beans)) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": getBeans() did not return Iterable");
                 return;
             }
@@ -485,15 +492,15 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
 
             // ClientProxyProvider.getClientProxy(Bean, Set<Type>)
             // or ClientProxyProvider.getClientProxy(Bean)
-            java.lang.reflect.Method getClientProxyMethod = null;
-            for (java.lang.reflect.Method m : proxyProvider.getClass().getMethods()) {
+            Method getClientProxyMethod = null;
+            for (Method m : proxyProvider.getClass().getMethods()) {
                 if (m.getName().equals("getClientProxy") && m.getParameterCount() == 1) {
                     getClientProxyMethod = m;
                     break;
                 }
             }
             if (getClientProxyMethod == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": no getClientProxy(Bean) method found");
                 return;
             }
@@ -512,13 +519,13 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                     // Not all beans are proxyable — skip
                 }
             }
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + ": pre-populated " + triggered + " proxy(ies)");
         } catch (NoSuchMethodException e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + ": no getBeans() method");
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + " prePopulate: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -527,10 +534,10 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         try {
             Field poolField = findFieldInHierarchy(proxyProvider.getClass(), poolFieldName);
             if (poolField == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": no " + poolFieldName + " field. Fields: ");
                 for (Field f : proxyProvider.getClass().getDeclaredFields()) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature]   - " + f.getName()
+                    System.out.println(LOG_PREFIX + "   - " + f.getName()
                             + " (" + f.getType().getSimpleName() + ")");
                 }
                 return;
@@ -538,35 +545,35 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             poolField.setAccessible(true);
             Object pool = poolField.get(proxyProvider);
             if (pool == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": " + poolFieldName + " is null");
                 return;
             }
 
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + ": " + poolFieldName + " = " + pool.getClass().getName());
 
             // pool is ReentrantMapBackedComputingCache
             Field mapField = findFieldInHierarchy(pool.getClass(), "map");
             if (mapField == null) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+                System.out.println(LOG_PREFIX + " " + source
                         + ": no 'map' field in " + pool.getClass().getName()
                         + ". Fields:");
                 for (Field f : pool.getClass().getDeclaredFields()) {
-                    System.out.println("[WeldProxyBuildTimeInitFeature]   - " + f.getName()
+                    System.out.println(LOG_PREFIX + "   - " + f.getName()
                             + " (" + f.getType().getSimpleName() + ")");
                 }
                 return;
             }
             mapField.setAccessible(true);
             Object map = mapField.get(pool);
-            if (!(map instanceof java.util.Map<?, ?> chm)) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            if (!(map instanceof Map<?, ?> chm)) {
+                System.out.println(LOG_PREFIX + " " + source
                         + ": map is not a Map: " + (map == null ? "null" : map.getClass().getName()));
                 return;
             }
 
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source
+            System.out.println(LOG_PREFIX + " " + source
                     + ": " + poolFieldName + ".map has " + chm.size() + " entries");
 
             for (Object value : chm.values()) {
@@ -576,7 +583,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 extractAndRegisterProxy(value, source);
             }
         } catch (Exception e) {
-            System.out.println("[WeldProxyBuildTimeInitFeature] " + source + " pool: "
+            System.out.println(LOG_PREFIX + " " + source + " pool: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
@@ -619,7 +626,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
                 classesField.setAccessible(true);
                 Object value = classesField.get(current);
-                if (value instanceof java.util.Collection<?> coll) {
+                if (value instanceof Collection<?> coll) {
                     Object[] snapshot = coll.toArray();
                     for (Object item : snapshot) {
                         if (item instanceof Class<?> c && isWeldProxy(c.getName())) {
@@ -628,12 +635,12 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("[WeldProxyBuildTimeInitFeature] cl-field: "
+                System.out.println(LOG_PREFIX + " cl-field: "
                         + e.getClass().getSimpleName() + ": " + e.getMessage());
             }
             current = current.getParent();
         }
-        System.out.println("[WeldProxyBuildTimeInitFeature] Strategy 2 found "
+        System.out.println(LOG_PREFIX + " Strategy 2 found "
                 + (registered.size() - countBefore) + " proxy class(es) via ClassLoader.classes");
     }
 
@@ -659,7 +666,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
         }
-        System.out.println("[WeldProxyBuildTimeInitFeature] Strategy 3 found "
+        System.out.println(LOG_PREFIX + " Strategy 3 found "
                 + (registered.size() - countBefore) + " proxy class(es) via Class.forName()");
     }
 
@@ -691,10 +698,10 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
         try {
             RuntimeClassInitialization.initializeAtBuildTime(clazz);
             registered.add(name);
-            System.out.println("[WeldProxyBuildTimeInitFeature] - build-time init ("
+            System.out.println(LOG_PREFIX + " - build-time init ("
                                + source + "): " + name);
         } catch (Exception e) {
-            System.err.println("[WeldProxyBuildTimeInitFeature] FAILED ("
+            System.err.println(LOG_PREFIX + " FAILED ("
                                + source + "): " + name + " - " + e);
         }
     }

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -183,7 +184,7 @@ public final class OtelConfig {
         }
 
         try {
-            System.setProperty(propertyName, java.time.Duration.ofMillis(Long.parseLong(envValue.trim())).toString());
+            System.setProperty(propertyName, Duration.ofMillis(Long.parseLong(envValue.trim())).toString());
         } catch (NumberFormatException e) {
             log.warn("Ignoring invalid millisecond duration '{}' from {}", envValue, envName, e);
         }

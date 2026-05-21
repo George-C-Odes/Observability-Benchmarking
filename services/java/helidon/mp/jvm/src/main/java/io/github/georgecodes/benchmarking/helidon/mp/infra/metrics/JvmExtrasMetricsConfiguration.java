@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,7 +36,7 @@ public class JvmExtrasMetricsConfiguration {
 
     /** Test-friendly constructor accepting a specific registry. */
     public JvmExtrasMetricsConfiguration(MeterRegistry registry) {
-        this.registry = java.util.Objects.requireNonNull(registry, "registry");
+        this.registry = Objects.requireNonNull(registry, "registry");
     }
 
     void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {

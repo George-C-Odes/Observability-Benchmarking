@@ -63,6 +63,7 @@ public class HttpMetricsFilter implements ContainerRequestFilter, ContainerRespo
 
     @Inject
     public HttpMetricsFilter(
+            @SuppressWarnings("DuplicateStringLiteralInspection")
             @ConfigProperty(name = "HELIDON_MICROMETER_ENABLED", defaultValue = "true") boolean enabled) {
         this.enabled = enabled;
     }

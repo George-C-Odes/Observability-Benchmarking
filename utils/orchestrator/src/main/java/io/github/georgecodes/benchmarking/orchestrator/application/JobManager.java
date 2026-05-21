@@ -120,6 +120,7 @@ public class JobManager {
 
         heartbeat = scheduleHeartbeat(jobId);
 
+        @SuppressWarnings("DuplicateStringLiteralInspection")
         var result = commandRunner.run(
           cmd.argv(),
           cmd.workspace(),

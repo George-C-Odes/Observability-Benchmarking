@@ -8,6 +8,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,7 +90,7 @@ class HttpMetricsFilterTest {
                 });
     }
 
-    private static final class RequestContextHandler implements java.lang.reflect.InvocationHandler {
+    private static final class RequestContextHandler implements InvocationHandler {
         private final Map<String, Object> properties = new HashMap<>();
         private final String method;
 
@@ -108,7 +110,7 @@ class HttpMetricsFilterTest {
         }
 
         @Override
-        public Object invoke(Object proxy, java.lang.reflect.Method method, Object[] args) {
+        public Object invoke(Object proxy, Method method, Object[] args) {
             return switch (method.getName()) {
                 case "setProperty" -> {
                     properties.put((String) args[0], args[1]);

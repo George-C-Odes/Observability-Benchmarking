@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.helidon.se.web;
 
 import io.github.georgecodes.benchmarking.helidon.se.application.HelloService;
 import io.github.georgecodes.benchmarking.helidon.se.application.port.HelloMode;
+import io.helidon.http.Header;
 import io.helidon.http.HeaderNames;
 import io.helidon.http.HeaderValues;
 import io.helidon.webserver.http.HttpRouting;
@@ -27,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 public final class HelloRouting {
 
     /** Pre-computed Content-Type header to avoid per-request object creation. */
-    private static final io.helidon.http.Header CONTENT_TYPE_JSON =
+    private static final Header CONTENT_TYPE_JSON =
             HeaderValues.create(HeaderNames.CONTENT_TYPE, "application/json");
 
     private HelloRouting() {

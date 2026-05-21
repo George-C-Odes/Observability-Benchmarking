@@ -2,6 +2,9 @@ package io.github.georgecodes.benchmarking.helidon.mp.graalvm;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import jakarta.enterprise.inject.spi.ProcessBean;
+
+import java.lang.reflect.Type;
 
 /**
  * Native-image workaround for a Weld 5.1.x crash seen when Helidon MP boots in a native image.
@@ -32,23 +35,23 @@ public final class WeldEventPreloaderSubstitution {
 
     @Substitute
     @SuppressWarnings("unused")
-    public void preloadProcessBeanAttributes(java.lang.reflect.Type type) {
+    public void preloadProcessBeanAttributes(Type type) {
         // no-op: prevents Weld's event preloading from running in native images
         // (the service boots fine without this preloading, and it avoids the runtime NPE)
     }
 
     @Substitute
     @SuppressWarnings("unused")
-    public <T extends jakarta.enterprise.inject.spi.ProcessBean<?>> void preloadProcessBean(
+    public <T extends ProcessBean<?>> void preloadProcessBean(
             Class<T> eventRawType,
-            java.lang.reflect.Type... typeParameters
+            Type... typeParameters
     ) {
         // no-op
     }
 
     @Substitute
     @SuppressWarnings("unused")
-    public void preloadProcessProducer(java.lang.reflect.Type... typeParameters) {
+    public void preloadProcessProducer(Type... typeParameters) {
         // no-op
     }
 }

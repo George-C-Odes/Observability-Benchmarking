@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import org.jboss.logging.MDC;
 
 /**
  * Event emitted during job execution for real-time updates.
@@ -49,7 +50,7 @@ public record JobEvent(
 
   private static String currentRequestId() {
     try {
-      Object v = org.jboss.logging.MDC.get("requestId");
+      Object v = MDC.get("requestId");
       return v != null ? String.valueOf(v) : null;
     } catch (Exception ignored) {
       return null;

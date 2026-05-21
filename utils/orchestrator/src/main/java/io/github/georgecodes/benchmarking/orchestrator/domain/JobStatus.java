@@ -5,8 +5,10 @@ package io.github.georgecodes.benchmarking.orchestrator.domain;
  */
 public enum JobStatus {
   /** Job is queued for execution. */
+  @SuppressWarnings("unused")
   QUEUED,
   /** Job is currently running. */
+  @SuppressWarnings("unused")
   RUNNING,
   /** Job completed successfully. */
   SUCCEEDED,

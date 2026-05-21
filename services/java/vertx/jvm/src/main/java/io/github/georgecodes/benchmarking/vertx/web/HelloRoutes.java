@@ -9,6 +9,7 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -82,7 +83,7 @@ public final class HelloRoutes {
             .end(body);
     }
 
-    private static int parseIntParam(java.util.List<String> values) {
+    private static int parseIntParam(List<String> values) {
         if (values == null || values.isEmpty()) {
             return 0;
         }
@@ -93,7 +94,7 @@ public final class HelloRoutes {
         return Integer.parseInt(v.trim());
     }
 
-    private static boolean parseBoolParam(java.util.List<String> values) {
+    private static boolean parseBoolParam(List<String> values) {
         if (values == null || values.isEmpty()) {
             return false;
         }
