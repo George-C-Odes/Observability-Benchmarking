@@ -90,7 +90,98 @@ projectJDK: "25" #(Applied in CI/CD pipeline)
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh
-bootstrap: MAVEN_USER_HOME=/data/cache/maven-user-home sh ./services/java/quarkus/native/mvnw -B -q -o -s .qodana/baseline/qodana-settings.xml -DskipTests -Dmaven.repo.local=/data/cache/m2/repository test-compile
+bootstrap: |
+  set -eu
+
+  export MAVEN_USER_HOME=/data/cache/maven-user-home
+  MAVEN_REPO_LOCAL=/data/cache/m2/repository
+  MAVEN_SETTINGS=/data/project/.qodana/baseline/qodana-settings.xml
+  FALLBACK_MVNW=/data/project/services/java/quarkus/native/mvnw
+
+  if command -v mvn >/dev/null 2>&1; then
+    MVN_BIN=$(command -v mvn)
+  else
+    MVN_BIN=$FALLBACK_MVNW
+    if [ ! -x "$MVN_BIN" ]; then
+      chmod +x "$MVN_BIN"
+    fi
+  fi
+
+  detect_only_directory() {
+    if [ -n "${QODANA_ONLY_DIRECTORY:-}" ]; then
+      printf '%s\n' "$QODANA_ONLY_DIRECTORY"
+      return
+    fi
+
+    for cmdline in /proc/[0-9]*/cmdline; do
+      [ -r "$cmdline" ] || continue
+      args=$(tr '\000' ' ' < "$cmdline" || true)
+      case "$args" in
+        *detect_only_directory*|*run_test_compile*)
+          continue
+          ;;
+      esac
+      case "$args" in
+        *--only-directory=*)
+          value=${args#*--only-directory=}
+          printf '%s\n' "${value%% *}"
+          return
+          ;;
+        *"--only-directory "*)
+          value=${args#*--only-directory }
+          printf '%s\n' "${value%% *}"
+          return
+          ;;
+      esac
+    done
+  }
+
+  run_test_compile() {
+    pom=$1
+    label=${pom#/data/project/}
+
+    if [ ! -f "$pom" ]; then
+      echo "Qodana bootstrap: skipping missing Maven project $label"
+      return
+    fi
+
+    echo "Qodana bootstrap: compiling $label"
+    if [ -f "$MAVEN_SETTINGS" ]; then
+      "$MVN_BIN" -B -q -s "$MAVEN_SETTINGS" -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" test-compile
+    else
+      "$MVN_BIN" -B -q -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" test-compile
+    fi
+  }
+
+  run_services_java_test_compile() {
+    pom_list_file=$(mktemp)
+    trap 'rm -f "$pom_list_file"' EXIT HUP INT TERM
+    find /data/project/services/java -name pom.xml -print | LC_ALL=C sort > "$pom_list_file"
+
+    while IFS= read -r pom; do
+      [ -n "$pom" ] || continue
+      run_test_compile "$pom"
+    done < "$pom_list_file"
+
+    rm -f "$pom_list_file"
+    trap - EXIT HUP INT TERM
+  }
+
+  # Qodana executes this command from /data/project, and this repository has no
+  # root pom.xml. Always pass -f so Maven targets the scanned module explicitly.
+  only_directory=$(detect_only_directory)
+  case "$only_directory" in
+    utils/orchestrator|utils/orchestrator/*)
+      run_test_compile /data/project/utils/orchestrator/pom.xml
+      ;;
+    services/java|services/java/*)
+      run_services_java_test_compile
+      ;;
+    *)
+      run_test_compile /data/project/utils/orchestrator/pom.xml
+      run_services_java_test_compile
+      ;;
+  esac
 
 #Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
 #plugins:
