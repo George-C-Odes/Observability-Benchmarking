@@ -494,7 +494,7 @@ The numbers below are a curated summary of a representative run.
 - **CPU**: Intel i9-14900HX (24 cores, 32 threads)
 - **RAM**: 32 GB DDR5
 - **Storage**: NVMe SSD
-- **OS**: Windows 11 with WSL2 (kernel 6.6.87.2-microsoft-standard-WSL2)
+- **OS**: Windows 11 with WSL2 (kernel 6.6.114.1-microsoft-standard-wsl2)
 - **Container Runtime**: Docker Desktop
 
 #### Container Configuration
