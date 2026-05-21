@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV;
 import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTLP_ENDPOINT_ENV;
 import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTLP_PROTOCOL_ENV;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -109,7 +110,7 @@ class OtelConfigTest {
                 OTLP_PROTOCOL_ENV, "grpc",
                 "OTEL_SERVICE_NAME", "helidon-se-native",
                 "OTEL_BSP_MAX_QUEUE_SIZE", "65536",
-                "OTEL_BSP_MAX_EXPORT_BATCH_SIZE", "4096",
+                OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV, "4096",
                 "OTEL_BSP_SCHEDULE_DELAY", "1000",
                 "OTEL_BSP_EXPORT_TIMEOUT", "10000"));
 
