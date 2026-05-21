@@ -114,7 +114,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.15.0 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.13 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.14 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.7   | Frontend unit testing                                                |
@@ -441,7 +441,7 @@ The numbers below are a curated summary of a representative run.
 | Micronaut  | Native  | Platform   | 17k  | 165           | 343             |
 | Micronaut  | Native  | Virtual    | 17k  | 165           | 343             |
 | Micronaut  | Native  | Reactive   | 15k  | 165           | 343             |
-| Helidon SE | JVM     | Virtual    | 75k  | 430           | 178             |
+| Helidon SE | JVM     | Virtual    | 65k  | 430           | 178             |
 | Helidon SE | Native  | Virtual    | 37k  | 195           | 258             |
 | Helidon MP | JVM     | Virtual    | 15k  | 463           | 196             |
 | Helidon MP | Native  | Virtual    | 10k  | 202           | 362             |
