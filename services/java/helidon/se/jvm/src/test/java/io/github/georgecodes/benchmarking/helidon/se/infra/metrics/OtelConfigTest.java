@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTLP_ENDPOINT_ENV;
+import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTLP_PROTOCOL_ENV;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -89,8 +91,8 @@ class OtelConfigTest {
         System.setProperty(OTLP_PROTOCOL_PROPERTY, "http/protobuf");
 
         OtelConfig.configureAutoconfigureSystemProperties(Map.of(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4317",
-                "OTEL_EXPORTER_OTLP_PROTOCOL", "grpc"));
+                OTLP_ENDPOINT_ENV, "http://alloy:4317",
+                OTLP_PROTOCOL_ENV, "grpc"));
 
         Assertions.assertEquals(
                 "http://alloy:4317",
@@ -103,8 +105,8 @@ class OtelConfigTest {
     @Test
     void configureSystemPropertiesFromEnvironmentCopiesOtelEndpointToHelidonTracingProperties() {
         OtelConfig.configureSystemPropertiesFromEnvironment(Map.of(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4317",
-                "OTEL_EXPORTER_OTLP_PROTOCOL", "grpc",
+                OTLP_ENDPOINT_ENV, "http://alloy:4317",
+                OTLP_PROTOCOL_ENV, "grpc",
                 "OTEL_SERVICE_NAME", "helidon-se-native",
                 "OTEL_BSP_MAX_QUEUE_SIZE", "65536",
                 "OTEL_BSP_MAX_EXPORT_BATCH_SIZE", "4096",
@@ -129,7 +131,7 @@ class OtelConfigTest {
         System.setProperty(OtelConfig.TRACING_SERVICE_PROPERTY, "explicit-service");
 
         OtelConfig.configureSystemPropertiesFromEnvironment(Map.of(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4317",
+                OTLP_ENDPOINT_ENV, "http://alloy:4317",
                 "OTEL_SERVICE_NAME", "helidon-se-native"));
 
         Assertions.assertEquals("explicit-host", System.getProperty(OtelConfig.TRACING_HOST_PROPERTY));

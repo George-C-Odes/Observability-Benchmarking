@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -56,7 +57,7 @@ public final class HelloRoutes {
      * @param log          whether to emit a log line for the request
      */
     private record HelloParams(int sleepSeconds, boolean log) {
-        static HelloParams from(spark.Request req) {
+        static HelloParams from(Request req) {
             int sleepSeconds = parseInt(req.queryParams("sleep"));
             boolean log = Boolean.parseBoolean(req.queryParams("log"));
             return new HelloParams(sleepSeconds, log);
