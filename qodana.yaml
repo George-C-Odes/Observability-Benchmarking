@@ -90,7 +90,7 @@ projectJDK: "25" #(Applied in CI/CD pipeline)
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh
-bootstrap: MAVEN_USER_HOME=/data/cache/maven-user-home sh ./services/java/quarkus/native/mvnw -B -q -o -s config/qodana-settings.xml -DskipTests -Dmaven.repo.local=/data/cache/m2/repository test-compile
+bootstrap: MAVEN_USER_HOME=/data/cache/maven-user-home sh ./services/java/quarkus/native/mvnw -B -q -o -s .qodana/baseline/qodana-settings.xml -DskipTests -Dmaven.repo.local=/data/cache/m2/repository test-compile
 
 #Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
 #plugins:
