@@ -114,5 +114,5 @@ tzdata==2026.2
     # via django
 uvicorn==0.47.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-wrapt==2.1.2
+wrapt==2.2.0
     # via opentelemetry-instrumentation

@@ -100,7 +100,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 - CPU: Intel i9-14900HX (24 cores, 32 threads)
 - RAM: 32 GB DDR5
 - Storage: NVMe SSD
-- OS: Windows 11 with WSL2 (kernel 6.6.87.2-microsoft-standard)
+- OS: Windows 11 with WSL2 (kernel 6.6.114.1-microsoft-standard-wsl2)
 
 **Note**: Results vary significantly with hardware. Always benchmark on target hardware.
 
@@ -132,7 +132,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.6 (3.5.14 also supported)
-- Quarkus: 3.35.3
+- Quarkus: 3.35.4
 - Micronaut: 5.0.0
 - Helidon: 4.4.1
 - Spark: 3.0.4

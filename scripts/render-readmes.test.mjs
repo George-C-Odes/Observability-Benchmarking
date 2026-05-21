@@ -139,7 +139,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.0.6 / Quarkus 3.35.3');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.0.6 / Quarkus 3.35.4');
   } finally {
     try {
       unlinkSync(templatePath);
@@ -169,7 +169,7 @@ function testRealignMarkdownTables() {
     '|--------|-------------------------|--------------|',
     '| Spring | 4.0.6 | Main framework |',
     '| Go     | 1.26.3          | Alt runtime    |',
-    '| Node   | 26.1.0                  | Frontend       |',
+    '| Node   | 26.2.0                  | Frontend       |',
   ].join('\n');
 
   const aligned = realignMarkdownTables(ragged);
@@ -179,7 +179,7 @@ function testRealignMarkdownTables() {
     '|--------|---------|----------------|',
     '| Spring | 4.0.6   | Main framework |',
     '| Go     | 1.26.3  | Alt runtime    |',
-    '| Node   | 26.1.0  | Frontend       |',
+    '| Node   | 26.2.0  | Frontend       |',
   ].join('\n');
 
   assert.equal(aligned, expected);
