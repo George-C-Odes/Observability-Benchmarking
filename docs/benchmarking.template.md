@@ -37,7 +37,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 | Micronaut  | Native  | Platform   | 17k  | 165           | 343             |
 | Micronaut  | Native  | Virtual    | 17k  | 165           | 343             |
 | Micronaut  | Native  | Reactive   | 15k  | 165           | 343             |
-| Helidon SE | JVM     | Virtual    | 75k  | 430           | 178             |
+| Helidon SE | JVM     | Virtual    | 65k  | 430           | 178             |
 | Helidon SE | Native  | Virtual    | 37k  | 195           | 258             |
 | Helidon MP | JVM     | Virtual    | 15k  | 463           | 196             |
 | Helidon MP | Native  | Virtual    | 10k  | 202           | 362             |
