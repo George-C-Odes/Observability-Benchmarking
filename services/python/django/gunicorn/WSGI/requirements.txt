@@ -98,5 +98,5 @@ typing-extensions==4.15.0
     #   opentelemetry-semantic-conventions
 tzdata==2026.2
     # via django
-wrapt==2.1.2
+wrapt==2.2.0
     # via opentelemetry-instrumentation

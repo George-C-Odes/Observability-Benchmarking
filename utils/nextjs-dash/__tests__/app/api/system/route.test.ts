@@ -30,7 +30,7 @@ describe('/api/system route', () => {
     expect(body.nodejs).toBe(process.version);
     expect(body.platform).toBe(process.platform);
     expect(body.arch).toBe(process.arch);
-    expect(body.npm).toBe('11.14.1');
+    expect(body.npm).toBe('11.15.0');
     expect(body.nextjs).toBe('16.2.6');
     expect(body.react).toBe('19.2.6');
     expect(body.mui).toBe('9.0.1');
@@ -47,7 +47,7 @@ describe('/api/system route', () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.npm).toBe('11.14.1');
+    expect(body.npm).toBe('11.15.0');
   });
 });
 
