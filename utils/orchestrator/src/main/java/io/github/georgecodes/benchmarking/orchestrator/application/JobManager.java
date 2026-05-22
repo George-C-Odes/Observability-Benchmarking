@@ -55,6 +55,17 @@ public class JobManager {
   /** Event publisher port used to publish job events. */
   private final JobEventPublisher eventPublisher;
 
+  /**
+   * Creates a job manager with the collaborators needed to validate, execute, and publish jobs.
+   *
+   * @param maxBufferLines maximum number of buffered events per job
+   * @param heartbeatIntervalMs heartbeat interval in milliseconds
+   * @param heartbeatScheduler scheduler used to publish heartbeat events
+   * @param admissionPolicy policy controlling concurrent submissions
+   * @param commandRunner runner used to execute validated commands
+   * @param jobStore store used to persist job state and event streams
+   * @param eventPublisher publisher used to fan out job events
+   */
   @Inject
   public JobManager(
     @ConfigProperty(name = "orchestrator.max-buffer-lines") int maxBufferLines,
@@ -98,18 +109,43 @@ public class JobManager {
     }
   }
 
+  /**
+   * Validates that the provided run id is authorized to access the given job.
+   *
+   * @param jobId the job identifier to check
+   * @param runId the dashboard run identifier supplied by the caller
+   */
   public void validateRunId(UUID jobId, String runId) {
     jobStore.validateRunId(jobId, runId);
   }
 
+  /**
+   * Returns the current status snapshot for a job.
+   *
+   * @param id the job identifier
+   * @return the latest job status snapshot
+   */
   public JobStatusResponse status(UUID id) {
     return jobStore.status(id);
   }
 
+  /**
+   * Returns a replayable event stream for a job.
+   *
+   * @param id the job identifier
+   * @return the event stream for the job
+   */
   public Multi<JobEvent> events(UUID id) {
     return jobStore.events(id);
   }
 
+  /**
+   * Runs a submitted job, publishing lifecycle and heartbeat events until completion.
+   *
+   * @param jobId the job identifier
+   * @param cmd the validated command to execute
+   * @param admission the admission handle that reserves the execution slot
+   */
   private void runJob(UUID jobId, CommandPolicy.ValidatedCommand cmd, JobAdmissionPolicy.Admission admission) {
     try (admission) {
       MDC.put("jobId", jobId.toString());
@@ -148,6 +184,12 @@ public class JobManager {
     }
   }
 
+  /**
+   * Schedules periodic heartbeat events for a running job.
+   *
+   * @param jobId the job identifier
+   * @return the cancellable heartbeat handle
+   */
   private HeartbeatScheduler.Cancellable scheduleHeartbeat(UUID jobId) {
     final long jobStartNanos = System.nanoTime();
     final AtomicLong heartbeatCounter = new AtomicLong();
@@ -166,6 +208,9 @@ public class JobManager {
     });
   }
 
+  /**
+   * Stops the background executor during bean shutdown.
+   */
   @PreDestroy
   void shutdown() {
     executor.shutdownNow();

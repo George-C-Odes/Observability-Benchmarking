@@ -11,8 +11,15 @@ import java.util.List;
  * This avoids invoking a shell.
  */
 public final class CommandTokenizer {
+  /** Utility class. */
   private CommandTokenizer() { }
 
+  /**
+   * Splits a command string into shell-free argument tokens while honoring quotes.
+   *
+   * @param command the command string to tokenize
+   * @return the parsed argument tokens, or an empty list when the input is {@code null}
+   */
   public static List<String> tokenize(String command) {
     if (command == null) {
       return List.of();

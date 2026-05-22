@@ -55,6 +55,9 @@ public class ServiceHealthService {
    * <p>Notably, we disable keep-alive. A couple of upstream health endpoints (and/or
    * intermediaries) can occasionally cause "HTTP/1.1 header parser received no bytes".
    * Disabling keep-alive makes these probes more robust.</p>
+   *
+   * @param vertx Vert.x instance used to create the shared HTTP client
+   * @param config health-check configuration describing target services and timeouts
    */
   @Inject
   public ServiceHealthService(Vertx vertx, ServiceHealthConfig config) {
@@ -74,9 +77,21 @@ public class ServiceHealthService {
     this.client = WebClient.create(vertx, webClientOptions);
   }
 
+  /**
+   * Internal endpoint definition derived from service health configuration.
+   *
+   * @param name the service name
+   * @param baseUrl the base URL used for the probe
+   * @param healthPath the relative health-check path
+   */
   private record Endpoint(String name, String baseUrl, String healthPath) {
   }
 
+  /**
+   * Builds the list of configured service endpoints that should be health-checked.
+   *
+   * @return the enabled endpoint definitions derived from configuration
+   */
   private List<Endpoint> endpoints() {
     Map<String, ServiceHealthConfig.Service> cfgs = config.services();
     if (cfgs == null || cfgs.isEmpty()) {
@@ -105,6 +120,12 @@ public class ServiceHealthService {
     return result;
   }
 
+  /**
+   * Checks all configured services, optionally filtering to a single named service.
+   *
+   * @param onlyService optional service name filter; when blank, all services are checked
+   * @return an asynchronous aggregate response containing the health result set
+   */
   public Uni<HealthAggregateResponse> checkAll(String onlyService) {
     final List<Endpoint> selected = (onlyService != null && !onlyService.isBlank())
       ? endpoints().stream().filter(e -> e.name.equals(onlyService)).toList()
@@ -124,6 +145,12 @@ public class ServiceHealthService {
       });
   }
 
+  /**
+   * Checks a single configured endpoint and converts the result into a response model.
+   *
+   * @param endpoint the endpoint definition to probe
+   * @return the asynchronous health result for the endpoint
+   */
   private Uni<ServiceHealthResponse> checkOne(Endpoint endpoint) {
     long start = System.currentTimeMillis();
     long timeoutMs = config.timeoutMs() > 0 ? config.timeoutMs() : 10000;
@@ -203,6 +230,13 @@ public class ServiceHealthService {
       });
   }
 
+  /**
+   * Resolves the target host into a socket address before issuing the HTTP request.
+   *
+   * @param host the host name to resolve
+   * @param port the target port
+   * @return the asynchronous resolved socket address
+   */
   private Uni<SocketAddress> resolveServerAddress(String host, int port) {
     return Uni.createFrom().item(Unchecked.supplier(() -> {
       try {
@@ -214,6 +248,12 @@ public class ServiceHealthService {
     })).runSubscriptionOn(Infrastructure.getDefaultExecutor());
   }
 
+  /**
+   * Normalizes a request path so path fragments can be safely concatenated.
+   *
+   * @param path the path fragment to normalize
+   * @return the normalized path fragment, or an empty string when blank
+   */
   private static String normalizePath(String path) {
     if (path == null || path.isBlank()) {
       return "";

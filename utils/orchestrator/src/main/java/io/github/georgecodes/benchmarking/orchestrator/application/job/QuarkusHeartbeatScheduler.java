@@ -23,6 +23,13 @@ public class QuarkusHeartbeatScheduler implements HeartbeatScheduler {
     return t;
   });
 
+  /**
+   * Schedules the provided heartbeat task at a fixed interval.
+   *
+   * @param intervalMs the requested interval in milliseconds
+   * @param task the task to execute repeatedly
+   * @return a cancellable handle for the scheduled task
+   */
   @Override
   public Cancellable scheduleFixedRate(long intervalMs, Runnable task) {
     long heartbeatMs = Math.max(1000L, intervalMs);
@@ -30,6 +37,9 @@ public class QuarkusHeartbeatScheduler implements HeartbeatScheduler {
     return () -> future.cancel(true);
   }
 
+  /**
+   * Stops the scheduler during bean shutdown.
+   */
   @PreDestroy
   void shutdown() {
     scheduler.shutdownNow();

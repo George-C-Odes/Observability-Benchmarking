@@ -28,6 +28,12 @@ public class HealthResource {
   /** Service that aggregates health from upstream services. */
   private final ServiceHealthService health;
 
+  /**
+   * Returns aggregated health information for all configured services or a single named service.
+   *
+   * @param service optional service name filter
+   * @return the asynchronous aggregated health response
+   */
   @GET
   @Operation(summary = "Aggregate readiness/health of the whole stack")
   @APIResponse(responseCode = "200", description = "Aggregated health")

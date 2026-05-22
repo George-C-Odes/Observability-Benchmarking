@@ -17,25 +17,47 @@ public interface ProjectPathsConfig {
    * Host-side project directory (used when the orchestrator runs docker compose against a host Docker Engine).
    * When present, this path is treated as trusted (and does not need to be under the workspace root) to validate
    * compose-related paths.  It is not automatically injected as {@code --project-directory}.
+   *
+   * @return the optional host-side compose path override
    */
   Optional<String> hostCompose();
 
-  /** Workspace path settings. */
+  /**
+   * Returns workspace path settings for project-relative resources.
+   *
+   * @return the nested workspace path configuration
+   */
   Workspace workspace();
 
   /** Nested workspace configuration. */
   interface Workspace {
 
-    /** Workspace root directory. */
+    /**
+     * Returns the workspace root directory.
+     *
+     * @return the workspace root directory
+     */
     String root();
 
-    /** Compose directory (contains docker-compose.yml). */
+    /**
+     * Returns the compose directory containing {@code docker-compose.yml}.
+     *
+     * @return the compose directory path
+     */
     String compose();
 
-    /** Path to the compose {@code .env} file. */
+    /**
+     * Returns the path to the compose {@code .env} file.
+     *
+     * @return the compose environment file path
+     */
     String env();
 
-    /** Path to the benchmark targets file ({@code config/benchmark-targets.txt}). */
+    /**
+     * Returns the path to the benchmark targets file ({@code config/benchmark-targets.txt}).
+     *
+     * @return the benchmark targets file path
+     */
     String benchmarkTargets();
   }
 }

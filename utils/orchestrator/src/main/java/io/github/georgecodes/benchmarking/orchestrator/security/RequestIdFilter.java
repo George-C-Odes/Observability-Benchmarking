@@ -27,6 +27,11 @@ import java.util.UUID;
 @ApplicationScoped
 public class RequestIdFilter implements ContainerRequestFilter {
 
+  /**
+   * Ensures the current request has a request id stored in MDC.
+   *
+   * @param ctx the current request context
+   */
   @Override
   public void filter(ContainerRequestContext ctx) {
     String incoming = ctx.getHeaderString("X-Request-Id");

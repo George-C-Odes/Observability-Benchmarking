@@ -81,10 +81,15 @@ include:
 #  - name: <SomeEnabledInspectionId>
 
 #Disable inspections
-#exclude:
-#  - name: <SomeDisabledInspectionId>
-#    paths:
-#      - <path/where/not/run/inspection>
+exclude:
+  # The benchmark Java services already enforce their Javadoc policy via the
+  # shared Checkstyle rules in `services/java/checkstyle.xml`, including the
+  # project-specific test-source suppressions. Excluding the broader IDE-level
+  # inspection here avoids duplicate/high-noise findings that do not reflect
+  # the Java services' actual documentation contract.
+  - name: MissingJavadoc
+    paths:
+      - services/java
 
 projectJDK: "25" #(Applied in CI/CD pipeline)
 

@@ -16,6 +16,12 @@ public class SingleFlightJobAdmissionPolicy implements JobAdmissionPolicy {
    */
   private final AtomicBoolean busy = new AtomicBoolean(false);
 
+  /**
+   * Attempts to acquire the single available job-execution slot.
+   *
+   * @return an admission handle that releases the slot when closed
+   * @throws ServiceUnavailableException when another job is already running
+   */
   @Override
   public Admission acquire() {
     if (!busy.compareAndSet(false, true)) {

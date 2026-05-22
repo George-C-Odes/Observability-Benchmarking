@@ -65,8 +65,22 @@ public class CommandPolicy {
     Map.entry("--progress", true)
   );
 
+  /**
+   * Validated command metadata ready for execution.
+   *
+   * @param argv the tokenized command arguments
+   * @param workspace the workspace directory used as the process working directory
+   * @param projectDir the compose project directory associated with the command
+   */
   public record ValidatedCommand(List<String> argv, String workspace, String projectDir) { }
 
+  /**
+   * Validates a raw docker command string and converts it into an executable command model.
+   *
+   * @param raw the raw command string from the client
+   * @return the validated command metadata
+   * @throws IllegalArgumentException when the command is disallowed or malformed
+   */
   public ValidatedCommand validate(String raw) {
     List<String> t = CommandTokenizer.tokenize(raw);
 
@@ -112,6 +126,9 @@ public class CommandPolicy {
    * Supports: {@code docker compose [GLOBAL_OPTIONS...] <subcommand> [args...]}.
    * Where GLOBAL_OPTIONS can appear before the subcommand.
    * Fix B: supports both {@code --opt value} and {@code --opt=value} for global options.
+   *
+   * @param tokens the tokenized docker compose command
+   * @return the validated command with normalized compose defaults applied
    */
   private ValidatedCommand validateCompose(List<String> tokens) {
     if (tokens.size() < 3) {
@@ -239,6 +256,9 @@ public class CommandPolicy {
    * Supports: {@code docker buildx [options...] <subcommand> [args...]}.
    * We locate the first allowed subcommand token after "buildx".
    * Optional: validate {@code -f/--file} paths for buildx build.
+   *
+   * @param tokens the tokenized docker buildx command
+   * @return the validated command
    */
   private ValidatedCommand validateBuildx(List<String> tokens) {
     if (tokens.size() < 3) {
@@ -275,6 +295,9 @@ public class CommandPolicy {
   /**
    * Supports: docker builder prune -a --force
    * This is intentionally narrow because prune is destructive.
+   *
+   * @param tokens the tokenized docker builder command
+   * @return the validated command
    */
   private ValidatedCommand validateBuilder(List<String> tokens) {
     if (tokens.size() < 3) {
@@ -318,6 +341,8 @@ public class CommandPolicy {
    * Accepts absolute OR relative paths:
    * - absolute must be under workspace.
    * - relative is resolved against workspace.
+   *
+   * @param pathStr the path string to validate against the workspace root
    */
   private void ensureUnderWorkspace(String pathStr) {
     Path ws = Path.of(paths.workspace().root()).normalize().toAbsolutePath();
@@ -333,6 +358,9 @@ public class CommandPolicy {
    * Returns true if the provided path string looks like an absolute Windows path.
    * This is needed because the orchestrator runs on Linux inside a container, where Path.of("C:/x")
    * is treated as relative (and would otherwise be resolved under /workspace).
+   *
+   * @param path the path string to inspect
+   * @return {@code true} when the path appears to be an absolute Windows path; otherwise {@code false}
    */
   private static boolean isWindowsAbsolutePath(String path) {
     if (path == null || path.isBlank()) {

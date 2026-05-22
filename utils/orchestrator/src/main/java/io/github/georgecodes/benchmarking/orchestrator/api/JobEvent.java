@@ -48,6 +48,11 @@ public record JobEvent(
 
   // ── Factory methods ────────────────────────────────────────────
 
+  /**
+   * Reads the current request id from MDC when one is available.
+   *
+   * @return the current request id, or {@code null} when none is present
+   */
   private static String currentRequestId() {
     try {
       Object v = MDC.get("requestId");
@@ -82,6 +87,15 @@ public record JobEvent(
 
   /**
    * Creates a summary snapshot event (QUEUED / RUNNING / terminal).
+   *
+   * @param jobId      the job identifier
+   * @param jobStatus  the current job lifecycle status
+   * @param createdAt  the timestamp when the job was created
+   * @param startedAt  the timestamp when the job started executing
+   * @param finishedAt the timestamp when the job finished executing
+   * @param exitCode   the process exit code, if available
+   * @param lastLine   the last observed output line, if available
+   * @return a new summary JobEvent
    */
   public static JobEvent summary(UUID jobId, String jobStatus,
                                  Instant createdAt, Instant startedAt,
@@ -93,6 +107,15 @@ public record JobEvent(
 
   /**
    * Creates a terminal summary event (SUCCEEDED / FAILED / CANCELED).
+   *
+   * @param jobId      the job identifier
+   * @param jobStatus  the terminal job lifecycle status
+   * @param createdAt  the timestamp when the job was created
+   * @param startedAt  the timestamp when the job started executing
+   * @param finishedAt the timestamp when the job finished executing
+   * @param exitCode   the process exit code, if available
+   * @param lastLine   the last observed output line, if available
+   * @return a new terminal summary JobEvent
    */
   public static JobEvent terminalSummary(UUID jobId, String jobStatus,
                                          Instant createdAt, Instant startedAt,
@@ -102,6 +125,19 @@ public record JobEvent(
       finishedAt, exitCode, lastLine);
   }
 
+  /**
+   * Builds a snapshot-style event with shared metadata.
+   *
+   * @param type       the snapshot event type
+   * @param jobId      the job identifier
+   * @param jobStatus  the current job lifecycle status
+   * @param createdAt  the timestamp when the job was created
+   * @param startedAt  the timestamp when the job started executing
+   * @param finishedAt the timestamp when the job finished executing
+   * @param exitCode   the process exit code, if available
+   * @param lastLine   the last observed output line, if available
+   * @return a snapshot JobEvent
+   */
   private static JobEvent buildSnapshot(String type, UUID jobId, String jobStatus,
                                         Instant createdAt, Instant startedAt,
                                         Instant finishedAt, Integer exitCode,

@@ -16,6 +16,12 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class ServiceExceptionMapper implements ExceptionMapper<ServiceException> {
 
+  /**
+   * Converts a {@link ServiceException} into the corresponding HTTP error response.
+   *
+   * @param e the service exception to map
+   * @return the HTTP response derived from the exception type
+   */
   @Override
   public Response toResponse(ServiceException e) {
     Response.Status httpStatus = switch (e.getType()) {

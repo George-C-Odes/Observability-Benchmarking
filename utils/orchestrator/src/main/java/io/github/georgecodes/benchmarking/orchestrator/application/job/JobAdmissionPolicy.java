@@ -9,6 +9,9 @@ public interface JobAdmissionPolicy {
    * Admission handle that must be closed to release the slot.
    */
   interface Admission extends AutoCloseable {
+    /**
+     * Releases the acquired admission slot.
+     */
     @Override
     void close();
   }

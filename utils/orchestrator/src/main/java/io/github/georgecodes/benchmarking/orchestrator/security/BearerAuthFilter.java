@@ -25,6 +25,11 @@ public class BearerAuthFilter implements ContainerRequestFilter {
   @ConfigProperty(name = "orchestrator.api-key")
   String apiKey;
 
+  /**
+   * Validates the bearer token on protected orchestrator requests.
+   *
+   * @param ctx the current request context
+   */
   @Override
   public void filter(ContainerRequestContext ctx) {
     // If no API key configured, allow (local dev convenience)

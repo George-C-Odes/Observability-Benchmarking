@@ -59,7 +59,8 @@ public class BenchmarkTargetsResource {
      * Creates a backup before modifying.
      *
      * @param request the update request containing the new URL list
-     * @return update the result with a backup filename
+     * @return the update result with a backup filename
+     * @throws BadRequestException when the request body does not include a URL list
      */
     @POST
     @RequireOrchestratorAuth

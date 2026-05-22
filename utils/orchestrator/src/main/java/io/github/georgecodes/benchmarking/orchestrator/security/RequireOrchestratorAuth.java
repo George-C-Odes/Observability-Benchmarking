@@ -6,6 +6,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 
+/**
+ * Name-binding annotation that marks JAX-RS resources requiring orchestrator authentication.
+ */
 @NameBinding
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })

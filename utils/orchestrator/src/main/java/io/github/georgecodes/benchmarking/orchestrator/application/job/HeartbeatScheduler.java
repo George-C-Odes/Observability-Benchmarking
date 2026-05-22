@@ -9,6 +9,9 @@ public interface HeartbeatScheduler {
    * Handle for cancelling a scheduled task.
    */
   interface Cancellable {
+    /**
+     * Cancels the scheduled task.
+     */
     void cancel();
   }
 

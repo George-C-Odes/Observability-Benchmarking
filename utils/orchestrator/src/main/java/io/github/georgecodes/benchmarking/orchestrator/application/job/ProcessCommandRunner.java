@@ -28,6 +28,16 @@ public class ProcessCommandRunner implements CommandRunner {
   /** Seconds to wait for stream-reader threads to finish after {@code shutdownNow()}. */
   private static final int STREAM_DRAIN_TIMEOUT_SECONDS = 5;
 
+  /**
+   * Executes the provided command in the configured workspace and streams stdout/stderr events.
+   *
+   * @param argv the command arguments to execute
+   * @param workspace the working directory for the process
+   * @param envOverrides environment variables to apply when absent from the process environment
+   * @param sink sink that receives status and log events
+   * @return the process execution result
+   * @throws Exception if the process cannot be started or observed successfully
+   */
   @Override
   public ExecutionResult run(
     List<String> argv,
@@ -74,6 +84,13 @@ public class ProcessCommandRunner implements CommandRunner {
     }
   }
 
+  /**
+   * Reads all lines from a process stream and emits them as job log events.
+   *
+   * @param in the input stream to read
+   * @param stream the logical stream name ({@code stdout} or {@code stderr})
+   * @param sink the sink that receives log events
+   */
   private static void streamLines(InputStream in, String stream, EventSink sink) {
     try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
       String line;
@@ -87,6 +104,12 @@ public class ProcessCommandRunner implements CommandRunner {
     }
   }
 
+  /**
+   * Wraps an event sink so emissions are serialized across concurrent stream readers.
+   *
+   * @param sink the sink to wrap
+   * @return a synchronized sink wrapper
+   */
   private static EventSink serializing(EventSink sink) {
     Object monitor = new Object();
     return event -> {
@@ -109,10 +132,19 @@ public class ProcessCommandRunner implements CommandRunner {
    */
   private record InterruptingExecutor(ExecutorService delegate) implements AutoCloseable {
 
+    /**
+     * Submits a task to the wrapped executor.
+     *
+     * @param task the task to submit
+     * @return the future representing the submitted task
+     */
     Future<?> submit(Runnable task) {
       return delegate.submit(task);
     }
 
+    /**
+     * Interrupts the wrapped executor and waits briefly for stream tasks to stop.
+     */
     @Override
     public void close() {
       delegate.shutdownNow();
