@@ -110,7 +110,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.5.1                  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.5.2                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.15.0                 | Frontend dependency management                                       |
