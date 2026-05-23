@@ -14,8 +14,6 @@ on:
       - 'qodana.yaml'
       - '.qodana/baseline/**'
   push:
-    branches:
-      - main
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'

@@ -267,7 +267,10 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 
 ### Deployment Trigger
 - Automatic on push to `main` branch
-- Automatic after a successful quality workflow run on `main` for `Qodana`, `Next.js Dashboard Quality`, and `Django Python Quality`, and after either success or failure of `Go Quality` (to refresh the hosted quality reports under `/quality/`)
+- Automatic after quality workflow runs to refresh hosted reports:
+  - `main` workflow runs refresh the live reports under `/quality/`
+  - non-`main` branch workflow runs refresh the shared staging reports under `/stage/quality/`
+  - `Qodana`, `Next.js Dashboard Quality`, and `Django Python Quality` require success; `Go Quality` and `CodeQL` also publish on failure because they always upload their report artifacts
 - Manual via GitHub Actions workflow dispatch
 
 ### Build Process
@@ -275,7 +278,7 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 2. Set up Ruby from the workflow pin and restore/install Bundler dependencies
 3. Configure GitHub Pages
 4. Build the docs site with Bundler/Jekyll from `docs/Gemfile`
-5. Optionally merge the latest hosted quality reports into the built site
+5. Merge the latest live (`/quality/`) and shared staging (`/stage/quality/`) quality reports into the built site
 6. Upload the Pages artifact and deploy to the GitHub Pages environment
 
 ### Hosted Quality Report Pages URLs
@@ -283,6 +286,7 @@ The site is automatically built and deployed via GitHub Actions (`.github/workfl
 - `/quality/` - landing page for the latest hosted quality reports
 - `/quality/services-java/` - service-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
 - `/quality/orchestrator/` - orchestrator-scope report page; it redirects to the hosted report entrypoint when one exists, or shows an unavailable message otherwise
+- `/stage/quality/` - shared staging landing page for the latest hosted non-`main` branch quality reports
 
 For the detailed configuration and rollout strategy behind the hosted quality Pages setup, see `docs/LINTING_AND_CODE_QUALITY.md`.
 

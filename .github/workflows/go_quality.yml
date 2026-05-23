@@ -19,8 +19,6 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
   push:
-    branches:
-      - main
     paths:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
