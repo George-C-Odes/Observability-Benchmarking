@@ -30,6 +30,11 @@ on:
       - completed
 
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Optional Git ref (branch, tag, or commit SHA) to use for the source checkout. Run this workflow from main and set this to a non-main branch such as deps_05_26 when manually publishing shared staging.
+        required: false
+        type: string
 
 permissions:
   actions: read
@@ -68,10 +73,13 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          DISPATCH_SOURCE_REF: ${{ inputs.source_ref }}
           PUSH_SHA: ${{ github.sha }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_run" ]]; then
             echo "ref=$WR_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ -n "${DISPATCH_SOURCE_REF:-}" ]]; then
+            echo "ref=$DISPATCH_SOURCE_REF" >> "$GITHUB_OUTPUT"
           else
             echo "ref=$PUSH_SHA" >> "$GITHUB_OUTPUT"
           fi
