@@ -10,6 +10,7 @@
 #   EVENT_NAME          – github.event_name
 #   WR_ID               – github.event.workflow_run.id  (only for workflow_run)
 #   WR_NAME             – github.event.workflow_run.name (only for workflow_run)
+#   WR_CONCLUSION       – github.event.workflow_run.conclusion (only for workflow_run)
 #   WR_HEAD_SHA         – github.event.workflow_run.head_sha (only for workflow_run)
 #   WR_HEAD_BRANCH      – github.event.workflow_run.head_branch (only for workflow_run)
 #   GITHUB_REPOSITORY   – owner/repo
@@ -41,6 +42,21 @@ WORKFLOW_FILE="${RESOLVE_WORKFLOW_FILE:?RESOLVE_WORKFLOW_FILE is required}"
 ACCEPTED="${RESOLVE_ACCEPTED:-success}"
 BRANCH_MODE="${RESOLVE_BRANCH_MODE:-main}"
 
+conclusion_is_accepted() {
+  local conclusion="$1"
+  local accepted_entry
+  local -a accepted_values
+
+  IFS=',' read -ra accepted_values <<< "$ACCEPTED"
+  for accepted_entry in "${accepted_values[@]}"; do
+    if [[ "$conclusion" == "$accepted_entry" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 if [[ "$BRANCH_MODE" != 'main' && "$BRANCH_MODE" != 'non-main' ]]; then
   echo "Error: RESOLVE_BRANCH_MODE must be 'main' or 'non-main' (got: $BRANCH_MODE)" >&2
   exit 1
@@ -52,6 +68,8 @@ if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "$WORKFLOW_NAME" ]]; 
   if [[ "$BRANCH_MODE" == 'main' && "${WR_HEAD_BRANCH:-}" != 'main' ]]; then
     :
   elif [[ "$BRANCH_MODE" == 'non-main' && ( -z "${WR_HEAD_BRANCH:-}" || "${WR_HEAD_BRANCH:-}" == 'main' ) ]]; then
+    :
+  elif [[ -n "${WR_CONCLUSION:-}" ]] && ! conclusion_is_accepted "$WR_CONCLUSION"; then
     :
   else
     echo "run_id=$WR_ID"        >> "$GITHUB_OUTPUT"
