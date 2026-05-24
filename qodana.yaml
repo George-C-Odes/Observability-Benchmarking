@@ -27,6 +27,12 @@ profile:
       options:
         MIN_STRING_LENGTH: 24
         IGNORE_PROPERTY_KEYS: true
+    - inspection: PackageNamingConvention
+      enabled: true
+      options:
+        m_minLength: 2
+        m_maxLength: 16
+        m_regex: "[a-z]*"
     - inspection: UnnecessaryFullyQualifiedName
       enabled: true
       severity: WEAK WARNING
