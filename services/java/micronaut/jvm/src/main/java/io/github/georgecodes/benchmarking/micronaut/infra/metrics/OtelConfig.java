@@ -9,6 +9,7 @@ import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationStartupEvent;
 import jakarta.inject.Singleton;
 
+@SuppressWarnings("unused")
 @Factory
 public class OtelConfig {
 
