@@ -1,6 +1,7 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.ServiceUnavailableException;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -15,10 +16,16 @@ public class SingleFlightJobAdmissionPolicy implements JobAdmissionPolicy {
    */
   private final AtomicBoolean busy = new AtomicBoolean(false);
 
+  /**
+   * Attempts to acquire the single available job-execution slot.
+   *
+   * @return an admission handle that releases the slot when closed
+   * @throws ServiceUnavailableException when another job is already running
+   */
   @Override
   public Admission acquire() {
     if (!busy.compareAndSet(false, true)) {
-      throw new jakarta.ws.rs.ServiceUnavailableException("Orchestrator is busy running another job");
+      throw new ServiceUnavailableException("Orchestrator is busy running another job");
     }
     return () -> busy.set(false);
   }

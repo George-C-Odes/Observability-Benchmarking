@@ -7,11 +7,14 @@ import io.github.georgecodes.benchmarking.javalin.infra.CacheProvider;
 import io.github.georgecodes.benchmarking.javalin.infra.MetricsProvider;
 import io.github.georgecodes.benchmarking.javalin.web.HelloRoutes;
 import io.javalin.Javalin;
+import io.javalin.compression.CompressionStrategy;
 import io.javalin.config.JavalinConfig;
+import io.javalin.http.ContentType;
 import io.javalin.json.JavalinJackson;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,11 +81,11 @@ public final class JavalinApplication {
 
         // HTTP layer tuning for benchmarking: no ETag overhead, JSON responses by default.
         jc.http.generateEtags = false;
-        jc.http.defaultContentType = io.javalin.http.ContentType.APPLICATION_JSON.getMimeType();
+        jc.http.defaultContentType = ContentType.APPLICATION_JSON.getMimeType();
 
         // Disable response compression: short JSON payloads don't benefit from GZIP and the
         // per-request CPU cost is significant on a 2-vCPU container under high concurrency.
-        jc.http.compressionStrategy = io.javalin.compression.CompressionStrategy.NONE;
+        jc.http.compressionStrategy = CompressionStrategy.NONE;
 
         // Let Javalin run handlers on virtual threads when enabled.
         jc.concurrency.useVirtualThreads = config.threadMode() == ServiceConfig.ThreadMode.VIRTUAL;
@@ -98,7 +101,7 @@ public final class JavalinApplication {
                 ? config.jettyMinThreads()
                 : Math.max(2, Runtime.getRuntime().availableProcessors());
 
-            jc.jetty.threadPool = new org.eclipse.jetty.util.thread.QueuedThreadPool(maxThreads, minThreads);
+            jc.jetty.threadPool = new QueuedThreadPool(maxThreads, minThreads);
         }
 
         jc.jetty.modifyServer(server -> tuneJetty(server, config));

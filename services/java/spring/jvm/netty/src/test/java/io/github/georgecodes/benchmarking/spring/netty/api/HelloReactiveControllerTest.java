@@ -1,5 +1,6 @@
 package io.github.georgecodes.benchmarking.spring.netty.api;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,7 +33,7 @@ public class HelloReactiveControllerTest {
             .expectBody(String.class)
             .consumeWith(response -> {
                 String body = response.getResponseBody();
-                org.assertj.core.api.Assertions.assertThat(body).contains("Hello from Boot reactive REST");
+                Assertions.assertThat(body).contains("Hello from Boot reactive REST");
             });
     }
 
@@ -49,7 +50,7 @@ public class HelloReactiveControllerTest {
             .expectBody(String.class)
             .consumeWith(response -> {
                 String body = response.getResponseBody();
-                org.assertj.core.api.Assertions.assertThat(body).contains("Hello from Boot reactive REST");
+                Assertions.assertThat(body).contains("Hello from Boot reactive REST");
             });
     }
 
@@ -66,7 +67,7 @@ public class HelloReactiveControllerTest {
             .expectBody(String.class)
             .consumeWith(response -> {
                 String body = response.getResponseBody();
-                org.assertj.core.api.Assertions.assertThat(body).contains("Hello from Boot reactive REST");
+                Assertions.assertThat(body).contains("Hello from Boot reactive REST");
             });
     }
 }

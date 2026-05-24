@@ -1,17 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-const mocks = vi.hoisted(() => ({
-  clientLogger: {
-    createClientLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
-  },
-  inwardPulse: { InwardPulse: () => null },
-  timedPulse: { useTimedPulse: () => ({ on: false, fire: vi.fn() }) },
-}));
-
-vi.mock('@/lib/clientLogger', () => mocks.clientLogger);
-vi.mock('@/app/components/ui/InwardPulse', () => mocks.inwardPulse);
-vi.mock('@/app/hooks/useTimedPulse', () => mocks.timedPulse);
+vi.mock('@/lib/clientLogger', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK);
+vi.mock('@/app/components/ui/InwardPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK);
+vi.mock('@/app/hooks/useTimedPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK);
 vi.mock('@mui/material', async () => {
   const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
   return {

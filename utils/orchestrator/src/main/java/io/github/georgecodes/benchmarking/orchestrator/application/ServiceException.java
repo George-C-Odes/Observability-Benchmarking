@@ -25,17 +25,34 @@ public abstract class ServiceException extends RuntimeException {
     /** The coarse error category for this exception. */
     private final Type type;
 
+    /**
+     * Creates a typed service exception without an underlying cause.
+     *
+     * @param message the error message
+     * @param type the coarse error category
+     */
     protected ServiceException(String message, Type type) {
         super(message);
         this.type = type;
     }
 
+    /**
+     * Creates a typed service exception with an underlying cause.
+     *
+     * @param message the error message
+     * @param type the coarse error category
+     * @param cause the underlying cause
+     */
     protected ServiceException(String message, Type type, Throwable cause) {
         super(message, cause);
         this.type = type;
     }
 
-    /** Returns the coarse error category. */
+    /**
+     * Returns the coarse error category.
+     *
+     * @return the coarse error category
+     */
     public Type getType() {
         return type;
     }

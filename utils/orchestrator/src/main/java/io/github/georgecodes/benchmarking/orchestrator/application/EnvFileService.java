@@ -147,10 +147,23 @@ public class EnvFileService {
      */
     public static class EnvFileException extends ServiceException {
 
+        /**
+         * Creates an environment file exception without an underlying cause.
+         *
+         * @param message the error message
+         * @param type the service error type
+         */
         public EnvFileException(String message, Type type) {
             super(message, type);
         }
 
+        /**
+         * Creates an environment file exception with an underlying cause.
+         *
+         * @param message the error message
+         * @param type the service error type
+         * @param cause the underlying cause
+         */
         public EnvFileException(String message, Type type, Throwable cause) {
             super(message, type, cause);
         }

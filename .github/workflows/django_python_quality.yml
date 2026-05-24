@@ -11,8 +11,6 @@ on:
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
   push:
-    branches:
-      - main
     paths:
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'

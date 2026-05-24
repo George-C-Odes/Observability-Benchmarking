@@ -8,6 +8,7 @@ import io.github.georgecodes.benchmarking.quarkus.application.port.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -93,7 +94,7 @@ class HelloServiceTest {
         }
 
         @Override
-        public void preRegisterHelloRequestCounters(java.util.Collection<String> endpointTags) {
+        public void preRegisterHelloRequestCounters(Collection<String> endpointTags) {
             // Not needed in these tests.
         }
     }

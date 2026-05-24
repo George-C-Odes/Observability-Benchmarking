@@ -12,6 +12,7 @@ import org.apache.pekko.http.javadsl.server.Route;
 import org.apache.pekko.util.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.concurrent.duration.Duration;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -85,7 +86,7 @@ public final class HelloRoutes extends AllDirectives {
                 if (sleepSeconds > 0) {
                     CompletableFuture<HttpResponse> future = new CompletableFuture<>();
                     actorSystem.scheduler().scheduleOnce(
-                        scala.concurrent.duration.Duration.create(sleepSeconds, TimeUnit.SECONDS),
+                        Duration.create(sleepSeconds, TimeUnit.SECONDS),
                         () -> future.complete(buildJsonResponse()),
                         actorSystem.dispatcher()
                     );

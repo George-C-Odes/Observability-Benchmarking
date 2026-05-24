@@ -21,8 +21,6 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
   push:
-    branches:
-      - main
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
@@ -131,7 +129,7 @@ jobs:
 
       - name: Initialize CodeQL
         if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
-        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -242,33 +240,46 @@ jobs:
           echo "Building ${#build_modules[@]} JVM module(s):"
           printf '  • %s\n' "${build_modules[@]}"
 
-          # ── Phase 1: Compile (checkstyle skipped for reliable CodeQL extraction) ──
+          # ── Phase 1: Compile (module quality skipped for reliable CodeQL extraction) ──
           for mod_dir in "${build_modules[@]}"; do
             echo "::group::Compiling $mod_dir"
-            mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q \
-              -Dcheckstyle.skip=true
-            echo "::endgroup::"
-          done
-
-          # ── Phase 2: Checkstyle validation (non-blocking) ──
-          # Violations are logged as workflow warnings.  A JSON summary is
-          # written for the quality-report generator, and the aggregate
-          # result is captured so a later step can fail the job *after*
-          # SARIF upload.
-          checkstyle_failed=0
-          modules_failed=0
-          build_warnings=()
-          for mod_dir in "${build_modules[@]}"; do
-            echo "::group::Checkstyle $mod_dir"
-            if ! mvn -f "$mod_dir/pom.xml" checkstyle:check -B; then
-              echo "::warning::Checkstyle violations found in $mod_dir"
-              checkstyle_failed=1
-              modules_failed=$((modules_failed + 1))
-              build_warnings+=("Checkstyle violations found in $mod_dir")
+            if [[ "$mod_dir" == "utils/orchestrator" ]]; then
+              mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q -P!quality
+            else
+              mvn -f "$mod_dir/pom.xml" compile -DskipTests -B -q \
+                -Dcheckstyle.skip=true
             fi
             echo "::endgroup::"
           done
-          echo "checkstyle_failed=$checkstyle_failed" >> "$GITHUB_OUTPUT"
+
+          # ── Phase 2: Java quality validation (non-blocking) ──
+          # Violations are logged as workflow warnings. A JSON summary is
+          # written for the quality-report generator, and the aggregate
+          # result is captured so a later step can fail the job *after*
+          # SARIF upload.
+          java_quality_failed=0
+          modules_failed=0
+          build_warnings=()
+          for mod_dir in "${build_modules[@]}"; do
+            if [[ "$mod_dir" == "utils/orchestrator" ]]; then
+              echo "::group::Maven quality $mod_dir"
+              quality_cmd=(mvn -f "$mod_dir/pom.xml" -DskipTests verify -B)
+              warning_message="Maven quality checks failed in $mod_dir"
+            else
+              echo "::group::Checkstyle $mod_dir"
+              quality_cmd=(mvn -f "$mod_dir/pom.xml" checkstyle:check -B)
+              warning_message="Checkstyle violations found in $mod_dir"
+            fi
+
+            if ! "${quality_cmd[@]}"; then
+              echo "::warning::$warning_message"
+              java_quality_failed=1
+              modules_failed=$((modules_failed + 1))
+              build_warnings+=("$warning_message")
+            fi
+            echo "::endgroup::"
+          done
+          echo "java_quality_failed=$java_quality_failed" >> "$GITHUB_OUTPUT"
 
           # Write build-warnings JSON for the quality report generator.
           # jq is pre-installed on GitHub-hosted runners and handles all
@@ -295,7 +306,7 @@ jobs:
 
       - name: Perform CodeQL Analysis
         if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
-        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           category: "/language:${{ matrix.language }}"
           output: codeql-results
@@ -312,7 +323,7 @@ jobs:
           if-no-files-found: warn
 
       # Upload build-warning details so the report job can surface
-      # checkstyle violations in the hosted HTML quality page.
+      # Java quality violations in the hosted HTML quality page.
       - name: Upload build warnings
         if: always() && !cancelled() && matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -322,13 +333,13 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # ── Deferred checkstyle gate ──
-      # Placed after SARIF upload so checkstyle violations fail the job
+      # ── Deferred Java quality gate ──
+      # Placed after SARIF upload so Java quality violations fail the job
       # without preventing CodeQL report generation.
-      - name: Fail on checkstyle violations
-        if: always() && !cancelled() && steps.build-java.outputs.checkstyle_failed == '1'
+      - name: Fail on Java quality violations
+        if: always() && !cancelled() && steps.build-java.outputs.java_quality_failed == '1'
         run: |
-          echo "::error::Checkstyle violations were found in one or more Java modules (see the 'Build Java modules' step for details)."
+          echo "::error::Java quality violations were found in one or more Java modules (see the 'Build Java modules' step for details)."
           exit 1
 
   # ------------------------------------------------------------------

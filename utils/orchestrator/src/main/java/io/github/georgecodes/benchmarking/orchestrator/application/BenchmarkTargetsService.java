@@ -121,6 +121,12 @@ public class BenchmarkTargetsService {
     /** URL schemes accepted by the validator. */
     private static final List<String> ALLOWED_SCHEMES = List.of("http", "https");
 
+    /**
+     * Validates the submitted benchmark target URLs.
+     *
+     * @param urls the URLs to validate
+     * @throws BenchmarkTargetsException when the list is null, blank, or contains invalid URLs
+     */
     private void validateUrls(List<String> urls) {
         if (urls == null) {
             throw new BenchmarkTargetsException("URLs list cannot be null",
@@ -144,6 +150,13 @@ public class BenchmarkTargetsService {
         }
     }
 
+    /**
+     * Creates a timestamped backup copy of the benchmark targets file.
+     *
+     * @param originalPath the file to back up
+     * @return the backup filename
+     * @throws IOException if the backup cannot be created
+     */
     private String createBackup(Path originalPath) throws IOException {
         String timestamp = LocalDateTime.now().format(BACKUP_TIMESTAMP_FORMAT);
         Path backupPath = originalPath.resolveSibling(originalPath.getFileName() + ".backup." + timestamp);
@@ -179,10 +192,23 @@ public class BenchmarkTargetsService {
      */
     public static class BenchmarkTargetsException extends ServiceException {
 
+        /**
+         * Creates a benchmark targets exception without an underlying cause.
+         *
+         * @param message the error message
+         * @param type the service error type
+         */
         public BenchmarkTargetsException(String message, Type type) {
             super(message, type);
         }
 
+        /**
+         * Creates a benchmark targets exception with an underlying cause.
+         *
+         * @param message the error message
+         * @param type the service error type
+         * @param cause the underlying cause
+         */
         public BenchmarkTargetsException(String message, Type type, Throwable cause) {
             super(message, type, cause);
         }

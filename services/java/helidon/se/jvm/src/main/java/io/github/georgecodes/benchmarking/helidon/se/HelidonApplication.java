@@ -79,6 +79,7 @@ public final class HelidonApplication {
 
         // ── Micrometer HTTP metrics (http.server.requests Timer) ──
         // Enabled via HELIDON_MICROMETER_ENABLED env var (default: true).
+        @SuppressWarnings("DuplicateStringLiteralInspection")
         boolean micrometerEnabled = config.get("HELIDON_MICROMETER_ENABLED").asBoolean().orElse(true);
 
         if (micrometerEnabled) {

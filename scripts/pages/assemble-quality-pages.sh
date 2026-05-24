@@ -3,7 +3,8 @@
 #
 # Resolves quality-report statuses for every scope (Qodana JVM, Qodana
 # Python, Go, Next.js, CodeQL), generates human-readable messages, logs the
-# resolution, and assembles the HTML pages under _site/quality/.
+# resolution, and assembles the HTML pages under a configurable
+# _site/<quality-subdir>/ path.
 #
 # Required env:
 #   SERVICES_ARTIFACT_PRESENT    – true | false | unknown
@@ -14,6 +15,9 @@
 #   QODANA_HEAD_SHA              – resolved commit SHA (may be empty)
 #   QODANA_PAGES_DIR             – staging path, e.g. ./.qodana-pages
 #   SITE_DIR                     – built site root, e.g. ./_site
+#   QUALITY_SITE_SUBDIR          – site subdirectory for this publish,
+#                                  e.g. quality or stage/quality
+#   QUALITY_CONTEXT_DESCRIPTION  – HTML snippet describing this publish scope
 #
 # Next.js Dashboard quality report (optional):
 #   NEXTJS_QUALITY_RUN_ID        – resolved Next.js quality workflow run ID (may be empty)
@@ -54,6 +58,9 @@ DJANGO_PYTHON_QUALITY_PAGES_DIR="${DJANGO_PYTHON_QUALITY_PAGES_DIR:-./.django-py
 GO_QUALITY_PAGES_DIR="${GO_QUALITY_PAGES_DIR:-./.go-quality-pages}"
 GO_SIMPLE_QUALITY_PAGES_DIR="${GO_SIMPLE_QUALITY_PAGES_DIR:-./.go-simple-quality-pages}"
 CODEQL_QUALITY_PAGES_DIR="${CODEQL_QUALITY_PAGES_DIR:-./.codeql-quality-pages}"
+QUALITY_SITE_SUBDIR="${QUALITY_SITE_SUBDIR:-quality}"
+QUALITY_CONTEXT_DESCRIPTION="${QUALITY_CONTEXT_DESCRIPTION:-Latest published code-quality reports from GitHub Actions on <code>main</code>.}"
+QUALITY_SITE_DIR="$SITE_DIR/$QUALITY_SITE_SUBDIR"
 
 # ---------------------------------------------------------------------------
 # 1. Resolve per-scope statuses
@@ -449,7 +456,7 @@ fi
 # 4. Publish reports into the Pages site
 # ---------------------------------------------------------------------------
 
-mkdir -p "$SITE_DIR/quality/services-java" "$SITE_DIR/quality/orchestrator" "$SITE_DIR/quality/nextjs-dash" "$SITE_DIR/quality/django-python" "$SITE_DIR/quality/go" "$SITE_DIR/quality/go-simple" "$SITE_DIR/quality/codeql"
+mkdir -p "$QUALITY_SITE_DIR/services-java" "$QUALITY_SITE_DIR/orchestrator" "$QUALITY_SITE_DIR/nextjs-dash" "$QUALITY_SITE_DIR/django-python" "$QUALITY_SITE_DIR/go" "$QUALITY_SITE_DIR/go-simple" "$QUALITY_SITE_DIR/codeql"
 
 write_html_file() {
   local target_path="$1"
@@ -459,7 +466,7 @@ write_html_file() {
 
 create_scope_page() {
   local scope_name="$1"
-  local scope_dir="$SITE_DIR/quality/$scope_name"
+  local scope_dir="$QUALITY_SITE_DIR/$scope_name"
   local scope_message="$2"
 
   local nested_index
@@ -533,36 +540,36 @@ print(html.escape(sys.stdin.read().strip()))
 
 # Copy downloaded report directories into the site tree.
 if [[ -d "$QODANA_PAGES_DIR/services-java" ]]; then
-  cp -a "$QODANA_PAGES_DIR/services-java/." "$SITE_DIR/quality/services-java/"
+  cp -a "$QODANA_PAGES_DIR/services-java/." "$QUALITY_SITE_DIR/services-java/"
 fi
 
 if [[ -d "$QODANA_PAGES_DIR/orchestrator" ]]; then
-  cp -a "$QODANA_PAGES_DIR/orchestrator/." "$SITE_DIR/quality/orchestrator/"
+  cp -a "$QODANA_PAGES_DIR/orchestrator/." "$QUALITY_SITE_DIR/orchestrator/"
 fi
 
 # Copy the pre-generated Next.js quality report (index.html) into the site tree.
 if [[ -d "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash" ]]; then
-  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$SITE_DIR/quality/nextjs-dash/"
+  cp -a "$NEXTJS_QUALITY_PAGES_DIR/nextjs-dash/." "$QUALITY_SITE_DIR/nextjs-dash/"
 fi
 
 # Copy the Qodana Python Community report into the site tree.
 if [[ -d "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python" ]]; then
-  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$SITE_DIR/quality/django-python/"
+  cp -a "$DJANGO_PYTHON_QUALITY_PAGES_DIR/django-python/." "$QUALITY_SITE_DIR/django-python/"
 fi
 
 # Copy the Go golangci-lint quality report into the site tree.
 if [[ -d "$GO_QUALITY_PAGES_DIR/go" ]]; then
-  cp -a "$GO_QUALITY_PAGES_DIR/go/." "$SITE_DIR/quality/go/"
+  cp -a "$GO_QUALITY_PAGES_DIR/go/." "$QUALITY_SITE_DIR/go/"
 fi
 
 # Copy the Go Simple golangci-lint quality report into the site tree.
 if [[ -d "$GO_SIMPLE_QUALITY_PAGES_DIR/go-simple" ]]; then
-  cp -a "$GO_SIMPLE_QUALITY_PAGES_DIR/go-simple/." "$SITE_DIR/quality/go-simple/"
+  cp -a "$GO_SIMPLE_QUALITY_PAGES_DIR/go-simple/." "$QUALITY_SITE_DIR/go-simple/"
 fi
 
 # Copy the CodeQL security & quality report into the site tree.
 if [[ -d "$CODEQL_QUALITY_PAGES_DIR/codeql" ]]; then
-  cp -a "$CODEQL_QUALITY_PAGES_DIR/codeql/." "$SITE_DIR/quality/codeql/"
+  cp -a "$CODEQL_QUALITY_PAGES_DIR/codeql/." "$QUALITY_SITE_DIR/codeql/"
 fi
 
 create_scope_page 'services-java' "$services_item_text"
@@ -574,7 +581,7 @@ create_scope_page 'go-simple' "$go_simple_item_text"
 create_scope_page 'codeql' "$codeql_item_text"
 
 # Landing page
-write_html_file "$SITE_DIR/quality/index.html" \
+write_html_file "$QUALITY_SITE_DIR/index.html" \
   '<!doctype html>' \
   '<html lang="en">' \
   '<head>' \
@@ -591,7 +598,7 @@ write_html_file "$SITE_DIR/quality/index.html" \
   '</head>' \
   '<body>' \
   '  <h1>Quality reports</h1>' \
-  '  <p>Latest published code-quality reports from GitHub Actions on <code>main</code>.</p>' \
+  "  <p>${QUALITY_CONTEXT_DESCRIPTION}</p>" \
   '  <h2>Qodana</h2>' \
   '  <p>Static analysis powered by JetBrains Qodana.</p>' \
   '  <h3>JVM</h3>' \

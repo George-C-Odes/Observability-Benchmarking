@@ -20,6 +20,7 @@ management:
 otel:
   instrumentation:
     micrometer:
+      # noinspection SpringBootApplicationYaml
       enabled: true
 server:
   http2:

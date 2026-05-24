@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV;
+import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTLP_ENDPOINT_ENV;
+import static io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig.OTLP_PROTOCOL_ENV;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -68,18 +72,18 @@ class OtelConfigTest {
         System.setProperty(OTLP_PROTOCOL_PROPERTY, "http/protobuf");
         System.setProperty(METRICS_PROTOCOL_PROPERTY, "grpc");
 
-        org.junit.jupiter.api.Assertions.assertEquals("http/protobuf", OtelConfig.resolveProtocol("traces"));
-        org.junit.jupiter.api.Assertions.assertEquals("grpc", OtelConfig.resolveProtocol("metrics"));
+        Assertions.assertEquals("http/protobuf", OtelConfig.resolveProtocol("traces"));
+        Assertions.assertEquals("grpc", OtelConfig.resolveProtocol("metrics"));
     }
 
     @Test
     void configureGrpcSenderProviderPinsOkHttpProvider() {
         OtelConfig.configureGrpcSenderProvider();
 
-        org.junit.jupiter.api.Assertions.assertEquals(
+        Assertions.assertEquals(
                 OtelConfig.OKHTTP_GRPC_SENDER_PROVIDER,
                 System.getProperty(OtelConfig.GRPC_SENDER_PROVIDER_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertTrue(
+        Assertions.assertTrue(
                 OtelConfig.discoverGrpcSenderProviders().contains(OtelConfig.OKHTTP_GRPC_SENDER_PROVIDER));
     }
 
@@ -88,13 +92,13 @@ class OtelConfigTest {
         System.setProperty(OTLP_PROTOCOL_PROPERTY, "http/protobuf");
 
         OtelConfig.configureAutoconfigureSystemProperties(Map.of(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4317",
-                "OTEL_EXPORTER_OTLP_PROTOCOL", "grpc"));
+                OTLP_ENDPOINT_ENV, "http://alloy:4317",
+                OTLP_PROTOCOL_ENV, "grpc"));
 
-        org.junit.jupiter.api.Assertions.assertEquals(
+        Assertions.assertEquals(
                 "http://alloy:4317",
                 System.getProperty(OTLP_ENDPOINT_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals(
+        Assertions.assertEquals(
                 "http/protobuf",
                 System.getProperty(OTLP_PROTOCOL_PROPERTY));
     }
@@ -102,23 +106,23 @@ class OtelConfigTest {
     @Test
     void configureSystemPropertiesFromEnvironmentCopiesOtelEndpointToHelidonTracingProperties() {
         OtelConfig.configureSystemPropertiesFromEnvironment(Map.of(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4317",
-                "OTEL_EXPORTER_OTLP_PROTOCOL", "grpc",
+                OTLP_ENDPOINT_ENV, "http://alloy:4317",
+                OTLP_PROTOCOL_ENV, "grpc",
                 "OTEL_SERVICE_NAME", "helidon-se-native",
                 "OTEL_BSP_MAX_QUEUE_SIZE", "65536",
-                "OTEL_BSP_MAX_EXPORT_BATCH_SIZE", "4096",
+                OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV, "4096",
                 "OTEL_BSP_SCHEDULE_DELAY", "1000",
                 "OTEL_BSP_EXPORT_TIMEOUT", "10000"));
 
-        org.junit.jupiter.api.Assertions.assertEquals("http", System.getProperty(OtelConfig.TRACING_PROTOCOL_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("alloy", System.getProperty(OtelConfig.TRACING_HOST_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("4317", System.getProperty(OtelConfig.TRACING_PORT_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("helidon-se-native", System.getProperty(OtelConfig.TRACING_SERVICE_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("GRPC", System.getProperty(OtelConfig.TRACING_EXPORTER_TYPE_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("65536", System.getProperty(OtelConfig.TRACING_MAX_QUEUE_SIZE_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("4096", System.getProperty(OtelConfig.TRACING_MAX_EXPORT_BATCH_SIZE_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("PT1S", System.getProperty(OtelConfig.TRACING_SCHEDULE_DELAY_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("PT10S", System.getProperty(OtelConfig.TRACING_EXPORT_TIMEOUT_PROPERTY));
+        Assertions.assertEquals("http", System.getProperty(OtelConfig.TRACING_PROTOCOL_PROPERTY));
+        Assertions.assertEquals("alloy", System.getProperty(OtelConfig.TRACING_HOST_PROPERTY));
+        Assertions.assertEquals("4317", System.getProperty(OtelConfig.TRACING_PORT_PROPERTY));
+        Assertions.assertEquals("helidon-se-native", System.getProperty(OtelConfig.TRACING_SERVICE_PROPERTY));
+        Assertions.assertEquals("GRPC", System.getProperty(OtelConfig.TRACING_EXPORTER_TYPE_PROPERTY));
+        Assertions.assertEquals("65536", System.getProperty(OtelConfig.TRACING_MAX_QUEUE_SIZE_PROPERTY));
+        Assertions.assertEquals("4096", System.getProperty(OtelConfig.TRACING_MAX_EXPORT_BATCH_SIZE_PROPERTY));
+        Assertions.assertEquals("PT1S", System.getProperty(OtelConfig.TRACING_SCHEDULE_DELAY_PROPERTY));
+        Assertions.assertEquals("PT10S", System.getProperty(OtelConfig.TRACING_EXPORT_TIMEOUT_PROPERTY));
     }
 
     @Test
@@ -128,13 +132,13 @@ class OtelConfigTest {
         System.setProperty(OtelConfig.TRACING_SERVICE_PROPERTY, "explicit-service");
 
         OtelConfig.configureSystemPropertiesFromEnvironment(Map.of(
-                "OTEL_EXPORTER_OTLP_ENDPOINT", "http://alloy:4317",
+                OTLP_ENDPOINT_ENV, "http://alloy:4317",
                 "OTEL_SERVICE_NAME", "helidon-se-native"));
 
-        org.junit.jupiter.api.Assertions.assertEquals("explicit-host", System.getProperty(OtelConfig.TRACING_HOST_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("9999", System.getProperty(OtelConfig.TRACING_PORT_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("explicit-service", System.getProperty(OtelConfig.TRACING_SERVICE_PROPERTY));
-        org.junit.jupiter.api.Assertions.assertEquals("http", System.getProperty(OtelConfig.TRACING_PROTOCOL_PROPERTY));
+        Assertions.assertEquals("explicit-host", System.getProperty(OtelConfig.TRACING_HOST_PROPERTY));
+        Assertions.assertEquals("9999", System.getProperty(OtelConfig.TRACING_PORT_PROPERTY));
+        Assertions.assertEquals("explicit-service", System.getProperty(OtelConfig.TRACING_SERVICE_PROPERTY));
+        Assertions.assertEquals("http", System.getProperty(OtelConfig.TRACING_PROTOCOL_PROPERTY));
     }
 
     @Test

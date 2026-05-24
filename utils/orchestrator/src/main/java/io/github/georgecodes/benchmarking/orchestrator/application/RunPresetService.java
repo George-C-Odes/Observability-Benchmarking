@@ -36,6 +36,8 @@ public class RunPresetService {
   /**
    * Discovers presets from IntelliJ's .run directory located at:
    * {@code ${orchestrator.project-paths.workspace.root}/.run}.
+   *
+   * @return the discovered command presets
    */
   public List<CommandPreset> listPresets() {
     String workspace = paths.workspace().root();
@@ -85,6 +87,13 @@ public class RunPresetService {
     return out;
   }
 
+  /**
+   * Removes the category prefix from a preset title when present.
+   *
+   * @param category the preset category prefix
+   * @param raw the raw title from the run configuration
+   * @return the normalized title for display
+   */
   private static String normalizeTitle(String category, String raw) {
     if (raw == null) {
       return "";

@@ -28,8 +28,9 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -343,7 +344,7 @@ class HelloRoutesTest {
             () -> invokeSubmitAndJoin(routes)
         );
 
-        assertInstanceOf(java.util.concurrent.ExecutionException.class, thrown.getCause());
+        assertInstanceOf(ExecutionException.class, thrown.getCause());
     }
 
     private int startRoutes(

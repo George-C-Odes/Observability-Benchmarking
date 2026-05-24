@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.github.georgecodes.benchmarking.helidon.mp.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.mp.infra.metrics.MicrometerMetricsAdapter;
+import io.helidon.common.Version;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.opentelemetry.api.OpenTelemetry;
@@ -84,7 +85,7 @@ public class StartupListener {
         log.info("CDI OpenTelemetry bean: {}", openTelemetry.getClass().getName());
 
         Runtime runtime = Runtime.getRuntime();
-        log.info("Helidon MP version: {}", io.helidon.common.Version.VERSION);
+        log.info("Helidon MP version: {}", Version.VERSION);
         log.info("Heap in MB = Max:{}, Total:{}, Free:{}",
                 runtime.maxMemory() / 1024 / 1024,
                 runtime.totalMemory() / 1024 / 1024,

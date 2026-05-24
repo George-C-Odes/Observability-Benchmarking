@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.micronaut.web;
 
 import io.github.georgecodes.benchmarking.micronaut.application.HelloService;
 import io.github.georgecodes.benchmarking.micronaut.application.port.HelloMode;
+import io.github.georgecodes.benchmarking.micronaut.application.port.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,7 +83,7 @@ class HelloControllerUnitTest {
     private static void ignoreMetric(String endpointTag) {
     }
 
-    private static void ignoreSleep(long duration, io.github.georgecodes.benchmarking.micronaut.application.port.TimeUnit unit) {
+    private static void ignoreSleep(long duration, TimeUnit unit) {
     }
 }
 

@@ -29,7 +29,7 @@ export function extractNpmVersionFromUserAgent(npmUserAgent?: string): string | 
   const value = npmUserAgent?.trim();
   if (!value) return undefined;
 
-  const match = /^npm\/([^\s]+)/.exec(value);
+  const match = /^npm\/(\S+)/.exec(value);
   return match?.[1];
 }
 

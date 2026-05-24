@@ -36,6 +36,13 @@ public class InMemoryJobStore implements JobStore {
    */
   private final ConcurrentMap<UUID, String> jobRunIds = new ConcurrentHashMap<>();
 
+  /**
+   * Creates and registers a new queued job in memory.
+   *
+   * @param maxBufferLines the requested maximum number of buffered events
+   * @param runId the optional dashboard run identifier to bind to the job
+   * @return the generated job identifier
+   */
   @Override
   public UUID create(int maxBufferLines, String runId) {
     UUID id = UUID.randomUUID();
@@ -51,21 +58,45 @@ public class InMemoryJobStore implements JobStore {
     return id;
   }
 
+  /**
+   * Returns the current status snapshot for the given job.
+   *
+   * @param jobId the job identifier
+   * @return the current job status snapshot
+   */
   @Override
   public JobStatusResponse status(UUID jobId) {
     return get(jobId).toStatus();
   }
 
+  /**
+   * Returns a replayable event stream for the given job.
+   *
+   * @param jobId the job identifier
+   * @return the event stream associated with the job
+   */
   @Override
   public Multi<JobEvent> events(UUID jobId) {
     return get(jobId).multi();
   }
 
+  /**
+   * Emits and buffers a new event for the given job.
+   *
+   * @param jobId the job identifier
+   * @param event the event to publish
+   */
   @Override
   public void emit(UUID jobId, JobEvent event) {
     get(jobId).emit(event);
   }
 
+  /**
+   * Marks the job as started and emits an updated status snapshot.
+   *
+   * @param jobId the job identifier
+   * @param startedAt the timestamp when execution began
+   */
   @Override
   public void markStarted(UUID jobId, Instant startedAt) {
     Job job = get(jobId);
@@ -75,6 +106,14 @@ public class InMemoryJobStore implements JobStore {
     emitSnapshot(jobId);
   }
 
+  /**
+   * Marks the job as finished and emits terminal status snapshots.
+   *
+   * @param jobId the job identifier
+   * @param status the terminal status value
+   * @param finishedAt the timestamp when execution finished
+   * @param exitCode the process exit code, if available
+   */
   @Override
   public void markFinished(UUID jobId, String status, Instant finishedAt, Integer exitCode) {
     Job job = get(jobId);
@@ -90,6 +129,12 @@ public class InMemoryJobStore implements JobStore {
     job.complete();
   }
 
+  /**
+   * Validates that the provided run id matches the job binding when one exists.
+   *
+   * @param jobId the job identifier
+   * @param runId the run identifier supplied by the caller
+   */
   @Override
   public void validateRunId(UUID jobId, String runId) {
     if (runId == null || runId.isBlank()) {
@@ -115,6 +160,11 @@ public class InMemoryJobStore implements JobStore {
     }
   }
 
+  /**
+   * Emits a non-terminal summary snapshot for the given job.
+   *
+   * @param jobId the job identifier
+   */
   private void emitSnapshot(UUID jobId) {
     Job job = get(jobId);
     emit(jobId, JobEvent.summary(
@@ -128,6 +178,11 @@ public class InMemoryJobStore implements JobStore {
     ));
   }
 
+  /**
+   * Emits a terminal summary snapshot for the given job.
+   *
+   * @param jobId the job identifier
+   */
   private void emitTerminalSnapshot(UUID jobId) {
     Job job = get(jobId);
     emit(jobId, JobEvent.terminalSummary(
@@ -141,6 +196,13 @@ public class InMemoryJobStore implements JobStore {
     ));
   }
 
+  /**
+   * Returns the in-memory job model for the given identifier.
+   *
+   * @param id the job identifier
+   * @return the tracked in-memory job
+   * @throws IllegalArgumentException when the job id is unknown
+   */
   private Job get(UUID id) {
     Job j = jobs.get(id);
     if (j == null) {
@@ -184,12 +246,23 @@ public class InMemoryJobStore implements JobStore {
     /** Last log line observed (if any). */
     volatile String lastLine = null;
 
+    /**
+     * Creates an in-memory job with the requested replay buffer size.
+     *
+     * @param id the job identifier
+     * @param maxLines the requested buffer size
+     */
     Job(UUID id, int maxLines) {
       this.id = id;
       this.maxLines = Math.max(100, maxLines);
       this.buffer = new ArrayDeque<>(this.maxLines);
     }
 
+    /**
+     * Appends an event to the replay buffer and tracks the latest log line.
+     *
+     * @param e the event to buffer
+     */
     synchronized void addToBuffer(JobEvent e) {
       if ("log".equals(e.type()) && e.message() != null) {
         lastLine = e.message();
@@ -200,6 +273,11 @@ public class InMemoryJobStore implements JobStore {
       buffer.addLast(e);
     }
 
+    /**
+     * Emits an event to all current subscribers after buffering it for replay.
+     *
+     * @param e the event to emit
+     */
     void emit(JobEvent e) {
       addToBuffer(e);
       for (var em : emitters) {
@@ -212,6 +290,9 @@ public class InMemoryJobStore implements JobStore {
       }
     }
 
+    /**
+     * Marks the job as complete and terminates all active subscriber streams.
+     */
     void complete() {
       completed = true;
       for (var em : emitters) {
@@ -224,6 +305,11 @@ public class InMemoryJobStore implements JobStore {
       }
     }
 
+    /**
+     * Creates a replayable event stream for the buffered and live job events.
+     *
+     * @return the replayable event stream
+     */
     Multi<JobEvent> multi() {
       return Multi.createFrom().emitter(em -> {
         synchronized (this) {
@@ -239,6 +325,11 @@ public class InMemoryJobStore implements JobStore {
       });
     }
 
+    /**
+     * Converts the in-memory job state into the API response model.
+     *
+     * @return the status response snapshot
+     */
     JobStatusResponse toStatus() {
       return new JobStatusResponse(
         id,

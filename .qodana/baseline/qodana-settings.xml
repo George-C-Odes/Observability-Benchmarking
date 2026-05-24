@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <mirrors>
+    <!--
+      Qodana's Maven import tracks Maven Central through repository id `cache-central`.
+      Resolve through the same id during the runner warm-up so the shared local repo's
+      origin metadata remains compatible with Qodana's later offline bootstrap.
+      Keep the URL pointed at Maven Central itself to avoid cache-redirector lag for
+      newly published Quarkus artifacts.
+    -->
+    <mirror>
+      <id>cache-central</id>
+      <name>Qodana-compatible Maven Central mirror id</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>
+

@@ -48,7 +48,7 @@ public class EnvResource {
     /**
      * Request body for updating environment file.
      *
-     * @param content new content for the environment file
+     * @param content the new content for the environment file
      */
     public record EnvUpdateRequest(String content) {
     }
@@ -58,7 +58,8 @@ public class EnvResource {
      * Creates a backup before modifying.
      *
      * @param request the update request containing new content
-     * @return update result with backup filename
+     * @return the update result with backup filename
+     * @throws BadRequestException when the request body does not include content
      */
     @POST
     @RequireOrchestratorAuth

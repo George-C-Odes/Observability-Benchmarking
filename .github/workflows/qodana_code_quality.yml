@@ -14,8 +14,6 @@ on:
       - 'qodana.yaml'
       - '.qodana/baseline/**'
   push:
-    branches:
-      - main
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
@@ -36,6 +34,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # `services/java` is analyzed as one scoped Qodana job, but the shared
+          # bootstrap in `qodana.yaml` compiles every Maven module under that
+          # tree so symbol resolution works across all Java service variants.
           - name: services-java
             source_dir: services/java
             baseline_file: .qodana/baseline/services-java.sarif.json
@@ -67,10 +68,19 @@ jobs:
       - name: Qodana Scan
         uses: JetBrains/qodana-action@d7b5ec2fbec32197ef447c450e00589ed5f34fd5 # v2026.1.0
         env:
+          # Qodana's startup path loads JNA on JDK 25+, which emits a native
+          # access warning unless the JVM explicitly allows unnamed modules.
+          # Netty also touches sun.misc.Unsafe during startup on newer JDKs, so
+          # allow that compatibility mode as well to reduce JVM warning noise.
+          JAVA_TOOL_OPTIONS: --enable-native-access=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow
+          QODANA_ONLY_DIRECTORY: ${{ matrix.source_dir }}
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           pr-mode: false
           use-caches: true
+          # Prefer the default branch cache so PRs can reuse warm Qodana/Maven
+          # caches instead of creating mostly one-off branch-specific entries.
+          cache-default-branch-only: true
           post-pr-comment: false
           use-annotations: true
           # The Qodana action pre-zips results before uploading, which makes

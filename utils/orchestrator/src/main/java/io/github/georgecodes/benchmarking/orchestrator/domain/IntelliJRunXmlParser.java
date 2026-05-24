@@ -39,6 +39,7 @@ public final class IntelliJRunXmlParser {
   /** Error handler that rethrows parser diagnostics without writing them to stderr. */
   private static final ErrorHandler THROWING_ERROR_HANDLER = new ThrowingErrorHandler();
 
+  /** Utility class. */
   private IntelliJRunXmlParser() { }
 
   /**
@@ -66,6 +67,15 @@ public final class IntelliJRunXmlParser {
    */
   public record EnvVar(String name, String value) { }
 
+  /**
+   * Parses an IntelliJ run-configuration XML file into a normalized configuration model.
+   *
+   * @param file the IntelliJ {@code .run.xml} file to parse
+   * @return the parsed run-configuration model
+   * @throws ParserConfigurationException if the XML parser cannot be configured securely
+   * @throws IOException if the file cannot be read
+   * @throws SAXException if the XML is malformed
+   */
   public static ParsedRunConfig parse(Path file) throws ParserConfigurationException, IOException, SAXException {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     // Secure-by-default XML parsing (avoid XXE).
@@ -112,6 +122,20 @@ public final class IntelliJRunXmlParser {
       }
     }
 
+    Map<String, String> opts = parseOptionsMap(optionScope);
+
+    List<EnvVar> buildArgs = deployment != null ? parseBuildArgs(optionScope) : List.of();
+
+    return new ParsedRunConfig(name, configType, deploymentType, opts, buildArgs);
+  }
+
+  /**
+   * Flattens IntelliJ {@code <option>} elements into a map keyed by option name.
+   *
+   * @param optionScope the XML element containing the option nodes to read
+   * @return the parsed options map
+   */
+  private static Map<String, String> parseOptionsMap(Element optionScope) {
     Map<String, String> opts = new LinkedHashMap<>();
     NodeList options = optionScope.getElementsByTagName("option");
     for (int i = 0; i < options.getLength(); i++) {
@@ -145,12 +169,16 @@ public final class IntelliJRunXmlParser {
         }
       }
     }
-
-    List<EnvVar> buildArgs = deployment != null ? parseBuildArgs(optionScope) : List.of();
-
-    return new ParsedRunConfig(name, configType, deploymentType, opts, buildArgs);
+    return opts;
   }
 
+  /**
+   * Converts a parsed IntelliJ run configuration into a docker command string when supported.
+   *
+   * @param cfg the parsed run configuration
+   * @param workspace the workspace path used to expand IntelliJ placeholders
+   * @return the derived docker command, or {@code null} when the configuration is unsupported
+   */
   public static String toDockerCommand(ParsedRunConfig cfg, String workspace) {
     if (cfg == null) {
       return null;
@@ -196,6 +224,13 @@ public final class IntelliJRunXmlParser {
     return null;
   }
 
+  /**
+   * Extracts the first docker command line from a script-like configuration value.
+   *
+   * @param script the script text to inspect
+   * @param workspace the workspace path used to expand IntelliJ placeholders
+   * @return the extracted docker command, or {@code null} when none is found
+   */
   private static String extractFirstDockerCommand(String script, String workspace) {
     if (script == null) {
       return null;
@@ -221,6 +256,12 @@ public final class IntelliJRunXmlParser {
     return null;
   }
 
+  /**
+   * Converts a dockerfile deployment run configuration into a {@code docker buildx build} command.
+   *
+   * @param cfg the parsed run configuration
+   * @return the generated docker command string
+   */
   private static String dockerfileToBuildx(ParsedRunConfig cfg) {
     String tag = cfg.flatOptions.get("imageTag");
     String dockerfile = cfg.flatOptions.get("sourceFilePath");
@@ -261,6 +302,12 @@ public final class IntelliJRunXmlParser {
     return joinForClient(argv);
   }
 
+  /**
+   * Parses Docker build arguments from the IntelliJ deployment settings block.
+   *
+   * @param settings the deployment settings element
+   * @return the parsed build arguments
+   */
   private static List<EnvVar> parseBuildArgs(Element settings) {
     List<EnvVar> out = new ArrayList<>();
 
@@ -312,6 +359,12 @@ public final class IntelliJRunXmlParser {
     return out;
   }
 
+  /**
+   * Returns the first non-blank string from the provided candidates.
+   *
+   * @param candidates candidate values to inspect
+   * @return the first non-blank candidate, or {@code null} when none match
+   */
   private static String firstNonBlank(String... candidates) {
     if (candidates == null) {
       return null;
@@ -328,6 +381,13 @@ public final class IntelliJRunXmlParser {
     return null;
   }
 
+  /**
+   * Returns the first child element matching the requested tag.
+   *
+   * @param parent the parent document or element
+   * @param tag the tag name to search for
+   * @return the first matching element, or {@code null} when absent
+   */
   private static Element firstElement(Node parent, String tag) {
     if (parent instanceof Document d) {
       NodeList nl = d.getElementsByTagName(tag);
@@ -343,6 +403,9 @@ public final class IntelliJRunXmlParser {
   /**
    * Joins argv into a single string that can be sent back to /v1/run.
    * If an arg contains whitespace, it is wrapped in double-quotes.
+   *
+   * @param argv the command arguments to join
+   * @return the joined command string
    */
   private static String joinForClient(List<String> argv) {
     StringBuilder sb = new StringBuilder();
@@ -371,16 +434,34 @@ public final class IntelliJRunXmlParser {
   }
 
   private static final class ThrowingErrorHandler implements ErrorHandler {
+    /**
+     * Rethrows parser warnings instead of writing them to stderr.
+     *
+     * @param exception the warning raised by the SAX parser
+     * @throws SAXException always rethrows the provided exception
+     */
     @Override
     public void warning(SAXParseException exception) throws SAXException {
       throw exception;
     }
 
+    /**
+     * Rethrows parser errors instead of writing them to stderr.
+     *
+     * @param exception the error raised by the SAX parser
+     * @throws SAXException always rethrows the provided exception
+     */
     @Override
     public void error(SAXParseException exception) throws SAXException {
       throw exception;
     }
 
+    /**
+     * Rethrows fatal parser errors instead of writing them to stderr.
+     *
+     * @param exception the fatal error raised by the SAX parser
+     * @throws SAXException always rethrows the provided exception
+     */
     @Override
     public void fatalError(SAXParseException exception) throws SAXException {
       throw exception;

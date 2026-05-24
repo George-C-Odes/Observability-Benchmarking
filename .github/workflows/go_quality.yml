@@ -19,8 +19,6 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
   push:
-    branches:
-      - main
     paths:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
@@ -53,7 +51,7 @@ jobs:
           cache-dependency-path: services/go/enhanced/go.sum
 
       - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
         with:
           version: v2.11.4
           working-directory: services/go/enhanced
@@ -159,7 +157,7 @@ jobs:
           cache-dependency-path: services/go/simple/go.sum
 
       - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
         with:
           version: v2.11.4
           working-directory: services/go/simple

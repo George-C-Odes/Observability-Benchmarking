@@ -5,6 +5,7 @@ import io.github.georgecodes.benchmarking.quarkus.application.port.CachePort;
 import io.github.georgecodes.benchmarking.quarkus.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.quarkus.application.port.MetricsPort;
 import io.github.georgecodes.benchmarking.quarkus.application.port.SleepPort;
+import io.github.georgecodes.benchmarking.quarkus.application.port.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -70,7 +71,7 @@ class HelloResourceUnitTest {
 
     private static final class NoOpSleepPort implements SleepPort {
         @Override
-        public void sleep(long amount, io.github.georgecodes.benchmarking.quarkus.application.port.TimeUnit unit) {
+        public void sleep(long amount, TimeUnit unit) {
             // No-op.
         }
     }

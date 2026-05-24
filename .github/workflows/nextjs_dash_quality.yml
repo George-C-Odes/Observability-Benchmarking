@@ -13,8 +13,6 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
   push:
-    branches:
-      - main
     paths:
       - 'utils/nextjs-dash/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,6 +40,9 @@ public final class OtelConfig {
 
     /** Global environment variable for the OTLP endpoint. */
     static final String OTLP_ENDPOINT_ENV = "OTEL_EXPORTER_OTLP_ENDPOINT";
+
+    /** Environment variable for BatchSpanProcessor export batch size. */
+    static final String OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV = "OTEL_BSP_MAX_EXPORT_BATCH_SIZE";
 
     /** Helidon tracing system property for the collector protocol. */
     static final String TRACING_PROTOCOL_PROPERTY = "tracing.protocol";
@@ -83,7 +87,7 @@ public final class OtelConfig {
     /** Environment-to-system-property mappings consumed by OTel SDK autoconfigure. */
     private static final Map<String, String> OTEL_ENV_PROPERTY_MAPPINGS = Map.ofEntries(
             Map.entry(OTLP_ENDPOINT_ENV, OTLP_ENDPOINT_PROPERTY),
-            Map.entry("OTEL_EXPORTER_OTLP_PROTOCOL", OTLP_PROTOCOL_PROPERTY),
+            Map.entry(OTLP_PROTOCOL_ENV, OTLP_PROTOCOL_PROPERTY),
             Map.entry("OTEL_TRACES_EXPORTER", "otel.traces.exporter"),
             Map.entry("OTEL_METRICS_EXPORTER", "otel.metrics.exporter"),
             Map.entry("OTEL_LOGS_EXPORTER", "otel.logs.exporter"),
@@ -92,7 +96,7 @@ public final class OtelConfig {
             Map.entry("OTEL_SERVICE_NAME", "otel.service.name"),
             Map.entry("OTEL_RESOURCE_ATTRIBUTES", "otel.resource.attributes"),
             Map.entry("OTEL_BSP_MAX_QUEUE_SIZE", "otel.bsp.max.queue.size"),
-            Map.entry("OTEL_BSP_MAX_EXPORT_BATCH_SIZE", "otel.bsp.max.export.batch.size"),
+            Map.entry(OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV, "otel.bsp.max.export.batch.size"),
             Map.entry("OTEL_BSP_SCHEDULE_DELAY", "otel.bsp.schedule.delay"),
             Map.entry("OTEL_BSP_EXPORT_TIMEOUT", "otel.bsp.export.timeout"));
 
@@ -161,7 +165,7 @@ public final class OtelConfig {
         }
 
         copyIfPresent(environment, "OTEL_BSP_MAX_QUEUE_SIZE", TRACING_MAX_QUEUE_SIZE_PROPERTY);
-        copyIfPresent(environment, "OTEL_BSP_MAX_EXPORT_BATCH_SIZE", TRACING_MAX_EXPORT_BATCH_SIZE_PROPERTY);
+        copyIfPresent(environment, OTEL_BSP_MAX_EXPORT_BATCH_SIZE_ENV, TRACING_MAX_EXPORT_BATCH_SIZE_PROPERTY);
         copyMillisDurationIfPresent(environment, "OTEL_BSP_SCHEDULE_DELAY", TRACING_SCHEDULE_DELAY_PROPERTY);
         copyMillisDurationIfPresent(environment, "OTEL_BSP_EXPORT_TIMEOUT", TRACING_EXPORT_TIMEOUT_PROPERTY);
         copyIfPresent(environment, "OTEL_SERVICE_NAME", TRACING_SERVICE_PROPERTY);
@@ -183,7 +187,7 @@ public final class OtelConfig {
         }
 
         try {
-            System.setProperty(propertyName, java.time.Duration.ofMillis(Long.parseLong(envValue.trim())).toString());
+            System.setProperty(propertyName, Duration.ofMillis(Long.parseLong(envValue.trim())).toString());
         } catch (NumberFormatException e) {
             log.warn("Ignoring invalid millisecond duration '{}' from {}", envValue, envName, e);
         }

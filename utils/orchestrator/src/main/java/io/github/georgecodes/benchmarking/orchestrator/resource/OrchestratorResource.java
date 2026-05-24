@@ -84,6 +84,7 @@ public class OrchestratorResource {
    * Retrieves the status of a job.
    *
    * @param id the job ID
+   * @param runId the optional dashboard run identifier used for stale-run protection
    * @return job status response
    */
   @GET
@@ -97,6 +98,7 @@ public class OrchestratorResource {
    * Streams job events via Server-Sent Events.
    *
    * @param id the job ID
+   * @param runId the optional dashboard run identifier used for stale-run protection
    * @return multi stream of job events
    */
   @GET
