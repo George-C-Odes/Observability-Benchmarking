@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,6 +33,23 @@ class JobInfrastructureTest {
 
     JobAdmissionPolicy.Admission second = policy.acquire();
     second.close();
+  }
+
+  @Test
+  void quarkusHeartbeatSchedulerSchedulesAndCancelsHeartbeats() throws Exception {
+    QuarkusHeartbeatScheduler scheduler = new QuarkusHeartbeatScheduler();
+    CountDownLatch heartbeat = new CountDownLatch(1);
+
+    HeartbeatScheduler.Cancellable cancellable =
+        scheduler.scheduleFixedRate(1, heartbeat::countDown);
+
+    try {
+      assertTrue(
+          heartbeat.await(2, TimeUnit.SECONDS), "heartbeat should run within the minimum interval");
+      cancellable.cancel();
+    } finally {
+      scheduler.shutdown();
+    }
   }
 
   @Test
