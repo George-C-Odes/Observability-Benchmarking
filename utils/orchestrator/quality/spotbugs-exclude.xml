@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        Keep this file intentionally minimal.
+        Add reviewed exclusions only when an orchestrator finding is a proven false positive
+        or originates from generated code you do not want to gate the build on.
+    -->
+    <!--
+        ProcessCommandRunner only executes argv/workspace values that have already been validated by
+        CommandPolicy against the allowlisted docker subcommands and workspace path constraints. The
+        direct ProcessBuilder/File usage is intentional in this bounded orchestrator module.
+    -->
+    <Match>
+        <Bug pattern="COMMAND_INJECTION,PATH_TRAVERSAL_IN" />
+        <Class name="~io\.github\.georgecodes\.benchmarking\.orchestrator\.application\.job\.ProcessCommandRunner" />
+    </Match>
+    <!--
+        The benchmark-target update request record copies the incoming URL list to an immutable
+        List.copyOf instance. SpotBugs still reports EI_EXPOSE_REP on the accessor because the
+        component type is List, but the stored value is no longer mutable.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP" />
+        <Class name="~io\.github\.georgecodes\.benchmarking\.orchestrator\.resource\.BenchmarkTargetsResource\$BenchmarkTargetsUpdateRequest" />
+        <Method name="urls" />
+    </Match>
+</FindBugsFilter>

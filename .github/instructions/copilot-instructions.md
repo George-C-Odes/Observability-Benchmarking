@@ -36,6 +36,7 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 - `compose/docker-compose.yml` — main Compose file; includes `obs.yml` and `utils.yml`.
 - `compose/.env` — **must** set `HOST_REPO` to the repo root path on the host.
 - `services/java/checkstyle.xml` — shared Checkstyle config for all Java services.
+- `utils/orchestrator/quality/` — module-local Spotless / PMD / SpotBugs / custom-Javadoc quality config for the orchestrator.
 - `qodana.yaml` (root) — JVM Qodana config; `services/python/django/qodana.yaml` for Python.
 - `scripts/render-readmes.manifest.json` — lists all `*.template.md` → `*.md` pairs.
 
@@ -46,7 +47,9 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 ### 3.1 Java (JDK 25, Eclipse Temurin / GraalVM 25)
 
 - **Build tool**: Maven (wrapper via `.mvn/`).
-- **Style**: Google Java Style Guide with project relaxations — enforced by Checkstyle (`services/java/checkstyle.xml`).
+- **Style**:
+  - `services/java/**`: Google Java Style Guide with project relaxations — enforced by Checkstyle (`services/java/checkstyle.xml`).
+  - `utils/orchestrator`: module-local Spotless + PMD + SpotBugs + custom Javadoc checks under `utils/orchestrator/quality/`.
   - Max line length: **120 characters**.
   - Indentation: **4 spaces**, no tabs.
   - No wildcard imports. No unused imports.
@@ -135,7 +138,8 @@ Every benchmark target **must** export equivalent telemetry to be a fair compari
 
 ### Review-time checklist
 
-- [ ] Checkstyle passes (`mvn checkstyle:check`)
+- [ ] Java service Checkstyle passes (`mvn checkstyle:check`) when `services/java/**` changes
+- [ ] Orchestrator quality passes (`mvn -f utils/orchestrator/pom.xml verify`) when `utils/orchestrator/**` changes
 - [ ] Ruff passes (`ruff check` + `ruff format --check`) for Python changes
 - [ ] ESLint + `tsc --noEmit` clean for dashboard changes
 - [ ] Unit tests pass in the affected module

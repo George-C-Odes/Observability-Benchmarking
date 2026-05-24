@@ -1,8 +1,6 @@
 package io.github.georgecodes.benchmarking.orchestrator.domain;
 
-/**
- * Job execution lifecycle status.
- */
+/** Job execution lifecycle status. */
 public enum JobStatus {
   /** Job is queued for execution. */
   @SuppressWarnings("unused")

@@ -1,16 +1,20 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Port for executing a command and streaming events.
  *
- * <p>This abstraction allows testing {@link io.github.georgecodes.benchmarking.orchestrator.application.JobManager}
- * without running external processes.
+ * <p>This abstraction allows testing {@link
+ * io.github.georgecodes.benchmarking.orchestrator.application.JobManager} without running external
+ * processes.
  */
+@FunctionalInterface
 public interface CommandRunner {
 
   /**
@@ -19,12 +23,9 @@ public interface CommandRunner {
    * @param exitCode the process exit code
    * @param finishedAt the timestamp when execution completed
    */
-  record ExecutionResult(int exitCode, Instant finishedAt) {
-  }
+  record ExecutionResult(int exitCode, Instant finishedAt) {}
 
-  /**
-   * Sink for job events emitted while a command is executing.
-   */
+  /** Sink for job events emitted while a command is executing. */
   @FunctionalInterface
   interface EventSink {
     /**
@@ -43,12 +44,12 @@ public interface CommandRunner {
    * @param envOverrides environment values to merge into the process environment
    * @param sink the sink that receives emitted job events
    * @return the process execution result
-   * @throws Exception if the command cannot be executed successfully
+   * @throws IOException if the command process cannot be started
+   * @throws InterruptedException if the waiting thread is interrupted
+   * @throws ExecutionException if a stream reader fails while processing process output
+   * @throws TimeoutException if process stream readers do not finish promptly
    */
   ExecutionResult run(
-    List<String> argv,
-    String workspace,
-    Map<String, String> envOverrides,
-    EventSink sink
-  ) throws Exception;
+      List<String> argv, String workspace, Map<String, String> envOverrides, EventSink sink)
+      throws IOException, InterruptedException, ExecutionException, TimeoutException;
 }

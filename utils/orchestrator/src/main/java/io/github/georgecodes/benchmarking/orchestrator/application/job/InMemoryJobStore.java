@@ -1,39 +1,27 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.ErrorResponse;
-import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
-import io.github.georgecodes.benchmarking.orchestrator.api.JobStatusResponse;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.ClientErrorException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import lombok.extern.jbosslog.JBossLog;
-
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.extern.jbosslog.JBossLog;
 
-/**
- * In-memory adapter for {@link JobStore}.
- */
+/** In-memory adapter for {@link JobStore}. */
 @JBossLog
 @ApplicationScoped
 public class InMemoryJobStore implements JobStore {
 
-  /**
-   * In-memory job storage.
-   */
+  /** In-memory job storage. */
   private final ConcurrentMap<UUID, Job> jobs = new ConcurrentHashMap<>();
 
-  /**
-   * Associates job IDs with dashboard run IDs to prevent cross-run mixing.
-   */
+  /** Associates job IDs with dashboard run IDs to prevent cross-run mixing. */
   private final ConcurrentMap<UUID, String> jobRunIds = new ConcurrentHashMap<>();
 
   /**
@@ -65,7 +53,7 @@ public class InMemoryJobStore implements JobStore {
    * @return the current job status snapshot
    */
   @Override
-  public JobStatusResponse status(UUID jobId) {
+  public JobStatusSnapshot status(UUID jobId) {
     return get(jobId).toStatus();
   }
 
@@ -143,20 +131,10 @@ public class InMemoryJobStore implements JobStore {
 
     String expected = jobRunIds.get(jobId);
     if (expected == null) {
-      throw new ClientErrorException(
-        Response.status(409)
-          .entity(new ErrorResponse("stale_run", "Job is not bound to this run"))
-          .type(MediaType.APPLICATION_JSON)
-          .build()
-      );
+      throw new JobRunConflictException("stale_run", "Job is not bound to this run");
     }
     if (!expected.equals(runId)) {
-      throw new ClientErrorException(
-        Response.status(409)
-          .entity(new ErrorResponse("stale_run", "runId does not match job"))
-          .type(MediaType.APPLICATION_JSON)
-          .build()
-      );
+      throw new JobRunConflictException("stale_run", "runId does not match job");
     }
   }
 
@@ -167,15 +145,16 @@ public class InMemoryJobStore implements JobStore {
    */
   private void emitSnapshot(UUID jobId) {
     Job job = get(jobId);
-    emit(jobId, JobEvent.summary(
-      job.id,
-      job.status,
-      job.createdAt,
-      job.startedAt,
-      job.finishedAt,
-      job.exitCode,
-      job.lastLine
-    ));
+    emit(
+        jobId,
+        JobEvent.summary(
+            job.id,
+            job.status,
+            job.createdAt,
+            job.startedAt,
+            job.finishedAt,
+            job.exitCode,
+            job.lastLine));
   }
 
   /**
@@ -185,15 +164,16 @@ public class InMemoryJobStore implements JobStore {
    */
   private void emitTerminalSnapshot(UUID jobId) {
     Job job = get(jobId);
-    emit(jobId, JobEvent.terminalSummary(
-      job.id,
-      job.status,
-      job.createdAt,
-      job.startedAt,
-      job.finishedAt,
-      job.exitCode,
-      job.lastLine
-    ));
+    emit(
+        jobId,
+        JobEvent.terminalSummary(
+            job.id,
+            job.status,
+            job.createdAt,
+            job.startedAt,
+            job.finishedAt,
+            job.exitCode,
+            job.lastLine));
   }
 
   /**
@@ -211,6 +191,7 @@ public class InMemoryJobStore implements JobStore {
     return j;
   }
 
+  /** Mutable in-memory job state and SSE subscriber registry for a single running command. */
   static final class Job {
 
     /** Job identifier. */
@@ -238,13 +219,13 @@ public class InMemoryJobStore implements JobStore {
     final int maxLines;
 
     /** Active SSE subscribers. */
-    final CopyOnWriteArrayList<MultiEmitter<? super JobEvent>> emitters = new CopyOnWriteArrayList<>();
+    final List<MultiEmitter<? super JobEvent>> emitters = new CopyOnWriteArrayList<>();
 
     /** Whether the job has reached a terminal state and completed streaming. */
-    volatile boolean completed = false;
+    volatile boolean completed;
 
     /** Last log line observed (if any). */
-    volatile String lastLine = null;
+    volatile String lastLine;
 
     /**
      * Creates an in-memory job with the requested replay buffer size.
@@ -283,22 +264,20 @@ public class InMemoryJobStore implements JobStore {
       for (var em : emitters) {
         try {
           em.emit(e);
-        } catch (Exception ex) {
+        } catch (IllegalStateException ex) {
           emitters.remove(em);
           log.tracef("Removed dead emitter for job %s: %s", id, ex.getMessage());
         }
       }
     }
 
-    /**
-     * Marks the job as complete and terminates all active subscriber streams.
-     */
+    /** Marks the job as complete and terminates all active subscriber streams. */
     void complete() {
       completed = true;
       for (var em : emitters) {
         try {
           em.complete();
-        } catch (Exception ex) {
+        } catch (IllegalStateException ex) {
           emitters.remove(em);
           log.tracef("Removed dead emitter on complete for job %s: %s", id, ex.getMessage());
         }
@@ -311,18 +290,20 @@ public class InMemoryJobStore implements JobStore {
      * @return the replayable event stream
      */
     Multi<JobEvent> multi() {
-      return Multi.createFrom().emitter(em -> {
-        synchronized (this) {
-          for (JobEvent e : buffer) {
-            em.emit(e);
-          }
-        }
-        emitters.add(em);
-        em.onTermination(() -> emitters.remove(em));
-        if (completed) {
-          em.complete();
-        }
-      });
+      return Multi.createFrom()
+          .emitter(
+              em -> {
+                synchronized (this) {
+                  for (JobEvent e : buffer) {
+                    em.emit(e);
+                  }
+                }
+                emitters.add(em);
+                em.onTermination(() -> emitters.remove(em));
+                if (completed) {
+                  em.complete();
+                }
+              });
     }
 
     /**
@@ -330,16 +311,9 @@ public class InMemoryJobStore implements JobStore {
      *
      * @return the status response snapshot
      */
-    JobStatusResponse toStatus() {
-      return new JobStatusResponse(
-        id,
-        status,
-        createdAt,
-        startedAt,
-        finishedAt,
-        exitCode,
-        lastLine
-      );
+    JobStatusSnapshot toStatus() {
+      return new JobStatusSnapshot(
+          id, status, createdAt, startedAt, finishedAt, exitCode, lastLine);
     }
   }
 }

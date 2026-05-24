@@ -1,46 +1,67 @@
 package io.github.georgecodes.benchmarking.orchestrator.domain;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import lombok.extern.jbosslog.JBossLog;
 import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
- * Best-effort parser for IntelliJ .run/*.run.xml files that represent run configurations.
- * Supported conversions:
- * 1) Shell Script run configs (type=ShConfigurationType):
- *    - Reads SCRIPT_TEXT and returns the first line that starts with "docker "
- * 2) docker-deploy run configs with deployment type="dockerfile":
- *    - Converts to: docker buildx build --load -t <tag> -f <dockerfile> --build-arg ... <context>
+ * Best-effort parser for IntelliJ .run/*.run.xml files that represent run configurations. Supported
+ * conversions: 1) Shell Script run configs (type=ShConfigurationType): - Reads SCRIPT_TEXT and
+ * returns the first line that starts with "docker " 2) docker-deploy run configs with deployment
+ * type="dockerfile": - Converts to: docker buildx build --load -t <tag> -f <dockerfile> --build-arg
+ * ... <context>
  */
 @JBossLog
 public final class IntelliJRunXmlParser {
+
+  /** XML element name used by IntelliJ option entries. */
+  private static final String OPTION_ELEMENT = "option";
+
+  /** XML attribute name used by IntelliJ option names. */
+  private static final String NAME_ATTRIBUTE = "name";
+
+  /** XML attribute name used by IntelliJ option values. */
+  private static final String VALUE_ATTRIBUTE = "value";
+
+  /** IntelliJ option that contains Docker build arguments. */
+  private static final String BUILD_ARGS_OPTION = "buildArgs";
+
+  /** Docker command prefix accepted from script-like run configurations. */
+  private static final String DOCKER_COMMAND_PREFIX = "docker ";
+
+  /** IntelliJ Shell Script run configuration type. */
+  private static final String SHELL_SCRIPT_CONFIG_TYPE = "ShConfigurationType";
+
+  /** IntelliJ Docker deployment type for Dockerfile builds. */
+  private static final String DOCKERFILE_DEPLOYMENT_TYPE = "dockerfile";
+
+  /** Regex that collapses line separators when normalizing extracted commands. */
+  private static final String LINE_SEPARATOR_PATTERN = "[\r\n]+";
 
   /** Error handler that rethrows parser diagnostics without writing them to stderr. */
   private static final ErrorHandler THROWING_ERROR_HANDLER = new ThrowingErrorHandler();
 
   /** Utility class. */
-  private IntelliJRunXmlParser() { }
+  private IntelliJRunXmlParser() {}
 
   /**
    * Parsed IntelliJ run configuration containing configuration details.
@@ -56,8 +77,22 @@ public final class IntelliJRunXmlParser {
       String configType,
       String deploymentType,
       Map<String, String> flatOptions,
-      List<EnvVar> buildArgs
-  ) { }
+      List<EnvVar> buildArgs) {
+
+    /**
+     * Creates a parsed run configuration with immutable option and build-argument collections.
+     *
+     * @param name the name of the run configuration
+     * @param configType the IntelliJ configuration type
+     * @param deploymentType the deployment type, when present
+     * @param flatOptions the flattened IntelliJ option map
+     * @param buildArgs the parsed Docker build arguments
+     */
+    public ParsedRunConfig {
+      flatOptions = Map.copyOf(flatOptions);
+      buildArgs = List.copyOf(buildArgs);
+    }
+  }
 
   /**
    * Environment variable for Docker build arguments.
@@ -65,7 +100,7 @@ public final class IntelliJRunXmlParser {
    * @param name the variable name
    * @param value the variable value
    */
-  public record EnvVar(String name, String value) { }
+  public record EnvVar(String name, String value) {}
 
   /**
    * Parses an IntelliJ run-configuration XML file into a normalized configuration model.
@@ -76,7 +111,8 @@ public final class IntelliJRunXmlParser {
    * @throws IOException if the file cannot be read
    * @throws SAXException if the XML is malformed
    */
-  public static ParsedRunConfig parse(Path file) throws ParserConfigurationException, IOException, SAXException {
+  public static ParsedRunConfig parse(Path file)
+      throws ParserConfigurationException, IOException, SAXException {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     // Secure-by-default XML parsing (avoid XXE).
     dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -105,7 +141,7 @@ public final class IntelliJRunXmlParser {
       throw new IllegalArgumentException("Missing <configuration> element");
     }
 
-    String name = cfg.getAttribute("name");
+    String name = cfg.getAttribute(NAME_ATTRIBUTE);
     String configType = cfg.getAttribute("type");
 
     Element deployment = firstElement(cfg, "deployment");
@@ -137,24 +173,24 @@ public final class IntelliJRunXmlParser {
    */
   private static Map<String, String> parseOptionsMap(Element optionScope) {
     Map<String, String> opts = new LinkedHashMap<>();
-    NodeList options = optionScope.getElementsByTagName("option");
+    NodeList options = optionScope.getElementsByTagName(OPTION_ELEMENT);
     for (int i = 0; i < options.getLength(); i++) {
       Node n = options.item(i);
       if (n.getNodeType() != Node.ELEMENT_NODE) {
         continue;
       }
       Element e = (Element) n;
-      if (!e.hasAttribute("name")) {
+      if (!e.hasAttribute(NAME_ATTRIBUTE)) {
         continue;
       }
 
-      String on = e.getAttribute("name");
+      String on = e.getAttribute(NAME_ATTRIBUTE);
       // Skip nested list container; parsed separately
-      if ("buildArgs".equals(on)) {
+      if (BUILD_ARGS_OPTION.equals(on)) {
         continue;
       }
 
-      String ov = e.getAttribute("value");
+      String ov = e.getAttribute(VALUE_ATTRIBUTE);
       if (!ov.isBlank()) {
         opts.putIfAbsent(on, ov);
         continue;
@@ -185,13 +221,13 @@ public final class IntelliJRunXmlParser {
     }
 
     // 1) Shell Script run config: SCRIPT_TEXT is the canonical command source
-    if ("ShConfigurationType".equalsIgnoreCase(cfg.configType)) {
-      String script = firstNonBlank(
-          cfg.flatOptions.get("SCRIPT_TEXT"),
-          cfg.flatOptions.get("scriptText"),
-          cfg.flatOptions.get("COMMAND_LINE"),
-          cfg.flatOptions.get("commandLine")
-      );
+    if (SHELL_SCRIPT_CONFIG_TYPE.equalsIgnoreCase(cfg.configType)) {
+      String script =
+          firstNonBlank(
+              cfg.flatOptions.get("SCRIPT_TEXT"),
+              cfg.flatOptions.get("scriptText"),
+              cfg.flatOptions.get("COMMAND_LINE"),
+              cfg.flatOptions.get("commandLine"));
       String cmd = extractFirstDockerCommand(script, workspace);
       if (cmd != null) {
         return cmd;
@@ -199,19 +235,19 @@ public final class IntelliJRunXmlParser {
     }
 
     // 2) dockerfile deployment -> buildx build
-    if ("dockerfile".equalsIgnoreCase(cfg.deploymentType)) {
+    if (DOCKERFILE_DEPLOYMENT_TYPE.equalsIgnoreCase(cfg.deploymentType)) {
       return dockerfileToBuildx(cfg);
     }
 
     // 3) Fallback: some configs store a literal docker command under common keys
-    String explicit = firstNonBlank(
-        cfg.flatOptions.get("command"),
-        cfg.flatOptions.get("commandLine"),
-        cfg.flatOptions.get("COMMAND_LINE"),
-        cfg.flatOptions.get("SCRIPT_TEXT"),
-        cfg.flatOptions.get("scriptText"),
-        cfg.flatOptions.get("programParameters")
-    );
+    String explicit =
+        firstNonBlank(
+            cfg.flatOptions.get("command"),
+            cfg.flatOptions.get("commandLine"),
+            cfg.flatOptions.get("COMMAND_LINE"),
+            cfg.flatOptions.get("SCRIPT_TEXT"),
+            cfg.flatOptions.get("scriptText"),
+            cfg.flatOptions.get("programParameters"));
     if (explicit != null) {
       String cmd = extractFirstDockerCommand(explicit, workspace);
       if (cmd != null) {
@@ -219,7 +255,8 @@ public final class IntelliJRunXmlParser {
       }
     }
 
-    log.debugf("Unsupported run config (type=%s deploymentType=%s) name=%s",
+    log.debugf(
+        "Unsupported run config (type=%s deploymentType=%s) name=%s",
         cfg.configType, cfg.deploymentType, cfg.name);
     return null;
   }
@@ -243,13 +280,13 @@ public final class IntelliJRunXmlParser {
 
     for (String line : expanded.split("\\R")) {
       String t = line.trim();
-      if (t.startsWith("docker ")) {
-        return t.replaceAll("[\r\n]+", " ").trim();
+      if (t.startsWith(DOCKER_COMMAND_PREFIX)) {
+        return t.replaceAll(LINE_SEPARATOR_PATTERN, " ").trim();
       }
     }
 
-    String oneLine = expanded.strip().replaceAll("[\r\n]+", " ").trim();
-    if (oneLine.startsWith("docker ")) {
+    String oneLine = expanded.strip().replaceAll(LINE_SEPARATOR_PATTERN, " ").trim();
+    if (oneLine.startsWith(DOCKER_COMMAND_PREFIX)) {
       return oneLine;
     }
 
@@ -266,7 +303,8 @@ public final class IntelliJRunXmlParser {
     String tag = cfg.flatOptions.get("imageTag");
     String dockerfile = cfg.flatOptions.get("sourceFilePath");
     if (StringUtils.isBlank(tag) || StringUtils.isBlank(dockerfile)) {
-      throw new IllegalArgumentException("dockerfile deployment missing required options (imageTag/sourceFilePath)");
+      throw new IllegalArgumentException(
+          "dockerfile deployment missing required options (imageTag/sourceFilePath)");
     }
     String context = cfg.flatOptions.get("contextFolderPath");
     if (StringUtils.isBlank(context)) {
@@ -312,51 +350,71 @@ public final class IntelliJRunXmlParser {
     List<EnvVar> out = new ArrayList<>();
 
     // <option name="buildArgs"><list><DockerEnvVarImpl>...</DockerEnvVarImpl></list></option>
-    NodeList opts = settings.getElementsByTagName("option");
+    NodeList opts = settings.getElementsByTagName(OPTION_ELEMENT);
     for (int i = 0; i < opts.getLength(); i++) {
       Node n = opts.item(i);
       if (n.getNodeType() != Node.ELEMENT_NODE) {
         continue;
       }
       Element e = (Element) n;
-      if (!"buildArgs".equals(e.getAttribute("name"))) {
+      if (!BUILD_ARGS_OPTION.equals(e.getAttribute(NAME_ATTRIBUTE))) {
         continue;
       }
 
-      NodeList envNodes = e.getElementsByTagName("DockerEnvVarImpl");
-      for (int j = 0; j < envNodes.getLength(); j++) {
-        Node en = envNodes.item(j);
-        if (en.getNodeType() != Node.ELEMENT_NODE) {
-          continue;
-        }
-        Element env = (Element) en;
-
-        String name = null;
-        String value = null;
-        NodeList envOpts = env.getElementsByTagName("option");
-        for (int k = 0; k < envOpts.getLength(); k++) {
-          Node o = envOpts.item(k);
-          if (o.getNodeType() != Node.ELEMENT_NODE) {
-            continue;
-          }
-          Element oe = (Element) o;
-          String on = oe.getAttribute("name");
-          String ov = oe.getAttribute("value");
-          if ("name".equals(on)) {
-            name = ov;
-          }
-          if ("value".equals(on)) {
-            value = ov;
-          }
-        }
-
-        if (name != null && !name.isBlank()) {
-          out.add(new EnvVar(name, value));
-        }
-      }
+      out.addAll(parseBuildArgOption(e));
     }
 
     return out;
+  }
+
+  /**
+   * Parses one IntelliJ {@code buildArgs} option element into Docker build arguments.
+   *
+   * @param buildArgsOption the {@code buildArgs} option element
+   * @return the parsed build arguments
+   */
+  private static List<EnvVar> parseBuildArgOption(Element buildArgsOption) {
+    List<EnvVar> out = new ArrayList<>();
+    NodeList envNodes = buildArgsOption.getElementsByTagName("DockerEnvVarImpl");
+    for (int j = 0; j < envNodes.getLength(); j++) {
+      Node en = envNodes.item(j);
+      if (en.getNodeType() != Node.ELEMENT_NODE) {
+        continue;
+      }
+      EnvVar envVar = parseEnvVar((Element) en);
+      if (envVar.name() != null && !envVar.name().isBlank()) {
+        out.add(envVar);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Parses one IntelliJ {@code DockerEnvVarImpl} element.
+   *
+   * @param env the environment-variable element
+   * @return the parsed build argument
+   */
+  private static EnvVar parseEnvVar(Element env) {
+    String name = null;
+    String value = null;
+    NodeList envOpts = env.getElementsByTagName(OPTION_ELEMENT);
+    for (int k = 0; k < envOpts.getLength(); k++) {
+      Node o = envOpts.item(k);
+      if (o.getNodeType() != Node.ELEMENT_NODE) {
+        continue;
+      }
+      Element oe = (Element) o;
+      String on = oe.getAttribute(NAME_ATTRIBUTE);
+      String ov = oe.getAttribute(VALUE_ATTRIBUTE);
+      if (NAME_ATTRIBUTE.equals(on)) {
+        name = ov;
+      }
+      if (VALUE_ATTRIBUTE.equals(on)) {
+        value = ov;
+      }
+    }
+    return new EnvVar(name, value);
   }
 
   /**
@@ -401,8 +459,8 @@ public final class IntelliJRunXmlParser {
   }
 
   /**
-   * Joins argv into a single string that can be sent back to /v1/run.
-   * If an arg contains whitespace, it is wrapped in double-quotes.
+   * Joins argv into a single string that can be sent back to /v1/run. If an arg contains
+   * whitespace, it is wrapped in double-quotes.
    *
    * @param argv the command arguments to join
    * @return the joined command string
@@ -433,6 +491,7 @@ public final class IntelliJRunXmlParser {
     return sb.toString();
   }
 
+  /** SAX error handler that rethrows every parser diagnostic instead of writing to stderr. */
   private static final class ThrowingErrorHandler implements ErrorHandler {
     /**
      * Rethrows parser warnings instead of writing them to stderr.

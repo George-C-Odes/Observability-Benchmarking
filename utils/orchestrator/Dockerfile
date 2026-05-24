@@ -29,8 +29,7 @@ WORKDIR /workspace
 
 # Keep cache-friendly layering
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} pom.xml pom.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle.xml checkstyle.xml
-COPY --link --chown=${BUILD_UID}:${BUILD_GID} checkstyle-suppressions.xml checkstyle-suppressions.xml
+COPY --link --chown=${BUILD_UID}:${BUILD_GID} quality ./quality
 
 RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
   mvn -B -ntp dependency:go-offline

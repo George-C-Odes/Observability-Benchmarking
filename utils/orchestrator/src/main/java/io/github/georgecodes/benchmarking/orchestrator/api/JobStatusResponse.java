@@ -1,5 +1,6 @@
 package io.github.georgecodes.benchmarking.orchestrator.api;
 
+import io.github.georgecodes.benchmarking.orchestrator.application.job.JobStatusSnapshot;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -15,12 +16,28 @@ import java.util.UUID;
  * @param lastLine last output line from the job (may be null)
  */
 public record JobStatusResponse(
-  UUID jobId,
-  String status,
-  Instant createdAt,
-  Instant startedAt,
-  Instant finishedAt,
-  Integer exitCode,
-  String lastLine
-) {
+    UUID jobId,
+    String status,
+    Instant createdAt,
+    Instant startedAt,
+    Instant finishedAt,
+    Integer exitCode,
+    String lastLine) {
+
+  /**
+   * Maps an application-layer job snapshot to the API representation.
+   *
+   * @param snapshot application-layer job snapshot
+   * @return API status response
+   */
+  public static JobStatusResponse from(JobStatusSnapshot snapshot) {
+    return new JobStatusResponse(
+        snapshot.jobId(),
+        snapshot.status(),
+        snapshot.createdAt(),
+        snapshot.startedAt(),
+        snapshot.finishedAt(),
+        snapshot.exitCode(),
+        snapshot.lastLine());
+  }
 }

@@ -1,7 +1,5 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
-
 import java.util.UUID;
 
 /**
@@ -9,6 +7,7 @@ import java.util.UUID;
  *
  * <p>Default implementations can fan-out to {@link JobStore} and/or external sinks.
  */
+@FunctionalInterface
 public interface JobEventPublisher {
   /**
    * Publishes an event for the specified job.

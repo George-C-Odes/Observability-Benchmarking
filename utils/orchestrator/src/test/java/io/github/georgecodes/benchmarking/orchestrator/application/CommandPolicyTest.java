@@ -1,21 +1,18 @@
 package io.github.georgecodes.benchmarking.orchestrator.application;
 
-import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for {@link CommandPolicy} focusing on compose rewriting.
- */
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+/** Unit tests for {@link CommandPolicy} focusing on compose rewriting. */
 @QuarkusTest
 public class CommandPolicyTest {
 
-  @Inject
-  CommandPolicy policy;
+  @Inject CommandPolicy policy;
 
   @Test
   void compose_injects_file_under_workspace_projectDir() {
@@ -26,10 +23,10 @@ public class CommandPolicyTest {
     assertEquals("docker", argv.get(0));
     assertEquals("compose", argv.get(1));
 
-    String expectedFile = java.nio.file.Path.of(cmd.projectDir()).resolve("docker-compose.yml").toString();
+    String expectedFile = Path.of(cmd.projectDir()).resolve("docker-compose.yml").toString();
     assertContainsSubsequence(argv, List.of("-f", expectedFile));
 
-    String expectedEnv = java.nio.file.Path.of(cmd.projectDir()).resolve(".env").toString();
+    String expectedEnv = Path.of(cmd.projectDir()).resolve(".env").toString();
     assertContainsSubsequence(argv, List.of("--env-file", expectedEnv));
 
     // project directory should be injected and should be container-visible
@@ -46,7 +43,9 @@ public class CommandPolicyTest {
 
   @Test
   void compose_rejects_disallowed_global_options() {
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose --context foo version"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker compose --context foo version"));
   }
 
   @Test
@@ -62,7 +61,8 @@ public class CommandPolicyTest {
 
     assertContainsSubsequence(cmd.argv(), List.of("--profile=OBS", "version"));
 
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose --project-name"));
+    assertThrows(
+        IllegalArgumentException.class, () -> policy.validate("docker compose --project-name"));
     assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose exec sh"));
   }
 
@@ -70,7 +70,8 @@ public class CommandPolicyTest {
   void buildx_accepts_workspace_relative_file_and_rejects_missing_or_unknown_subcommands() {
     var cmd = policy.validate("docker buildx build -f compose/docker-compose.yml .");
 
-    assertEquals(List.of("docker", "buildx", "build", "-f", "compose/docker-compose.yml", "."), cmd.argv());
+    assertEquals(
+        List.of("docker", "buildx", "build", "-f", "compose/docker-compose.yml", "."), cmd.argv());
 
     assertThrows(IllegalArgumentException.class, () -> policy.validate("docker buildx"));
     assertThrows(IllegalArgumentException.class, () -> policy.validate("docker buildx imaginary"));
@@ -95,7 +96,9 @@ public class CommandPolicyTest {
 
   @Test
   void builder_prune_rejects_extra_options() {
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder prune -a --force --filter foo"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker builder prune -a --force --filter foo"));
   }
 
   @Test

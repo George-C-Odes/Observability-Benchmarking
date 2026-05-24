@@ -1,19 +1,20 @@
 package io.github.georgecodes.benchmarking.orchestrator.application;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.HealthAggregateResponse;
-import io.github.georgecodes.benchmarking.orchestrator.api.ServiceHealthResponse;
+import static org.junit.jupiter.api.Assertions.*;
+
+import io.github.georgecodes.benchmarking.orchestrator.application.health.HealthAggregate;
+import io.github.georgecodes.benchmarking.orchestrator.application.health.ServiceHealth;
+import io.github.georgecodes.benchmarking.orchestrator.application.health.VertxHealthProbeClient;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.Optional;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 class ServiceHealthServiceTest {
 
@@ -27,8 +28,8 @@ class ServiceHealthServiceTest {
     return configFor(2000, 4, services);
   }
 
-  private static ServiceHealthConfig configFor(long timeoutMs, int concurrency,
-                                               Map<String, ServiceHealthConfig.Service> services) {
+  private static ServiceHealthConfig configFor(
+      long timeoutMs, int concurrency, Map<String, ServiceHealthConfig.Service> services) {
     return new ServiceHealthConfig() {
       @Override
       public long timeoutMs() {
@@ -50,8 +51,8 @@ class ServiceHealthServiceTest {
   private static ServiceHealthConfig.Service svc(String baseUrl, String healthPath) {
     return new ServiceHealthConfig.Service() {
       @Override
-      public java.util.Optional<String> baseUrl() {
-        return java.util.Optional.ofNullable(baseUrl);
+      public Optional<String> baseUrl() {
+        return Optional.ofNullable(baseUrl);
       }
 
       @Override
@@ -73,11 +74,7 @@ class ServiceHealthServiceTest {
     downRouter.get("/*").handler(ctx -> ctx.response().setStatusCode(500).end("FAIL"));
     downPort = listen(downRouter);
 
-    // Create the service with a Mutiny Vertx wrapper + a test config mapping.
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of())
-    );
+    service = newService(configFor(Map.of()));
   }
 
   private static int listen(Router router) {
@@ -95,19 +92,20 @@ class ServiceHealthServiceTest {
 
   @Test
   void checkAll_returnsUpAndDownAndBaseUrl() {
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of(
-        "grafana", svc("http://localhost:" + downPort, "/api/health"),
-        "loki", svc("http://localhost:" + okPort, "/ready"),
-        "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready")
-      ))
-    );
+    service =
+        newService(
+            configFor(
+                Map.of(
+                    "grafana", svc("http://localhost:" + downPort, "/api/health"),
+                    "loki", svc("http://localhost:" + okPort, "/ready"),
+                    "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready"))));
 
-    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+    HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
-    ServiceHealthResponse grafanaResp = resp.services().stream().filter(s -> s.name().equals("grafana")).findFirst().orElseThrow();
-    ServiceHealthResponse lokiResp = resp.services().stream().filter(s -> s.name().equals("loki")).findFirst().orElseThrow();
+    ServiceHealth grafanaResp =
+        resp.services().stream().filter(s -> s.name().equals("grafana")).findFirst().orElseThrow();
+    ServiceHealth lokiResp =
+        resp.services().stream().filter(s -> s.name().equals("loki")).findFirst().orElseThrow();
 
     assertEquals("down", grafanaResp.status());
     assertEquals("http://localhost:" + downPort, grafanaResp.baseUrl());
@@ -118,16 +116,15 @@ class ServiceHealthServiceTest {
 
   @Test
   void checkAll_onlyServiceFilters() {
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of(
-        "grafana", svc("http://localhost:" + downPort, "/api/health"),
-        "loki", svc("http://localhost:" + okPort, "/ready"),
-        "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready")
-      ))
-    );
+    service =
+        newService(
+            configFor(
+                Map.of(
+                    "grafana", svc("http://localhost:" + downPort, "/api/health"),
+                    "loki", svc("http://localhost:" + okPort, "/ready"),
+                    "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready"))));
 
-    HealthAggregateResponse resp = service.checkAll("grafana").await().indefinitely();
+    HealthAggregate resp = service.checkAll("grafana").await().indefinitely();
     assertEquals(1, resp.services().size());
     assertEquals("grafana", resp.services().getFirst().name());
     assertEquals("down", resp.services().getFirst().status());
@@ -135,18 +132,17 @@ class ServiceHealthServiceTest {
 
   @Test
   void invalidBaseUrl_marksDownWithError() {
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of(
-        "go", svc("::not-a-url::", "/readyz"),
-        "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready")
-      ))
-    );
+    service =
+        newService(
+            configFor(
+                Map.of(
+                    "go", svc("::not-a-url::", "/readyz"),
+                    "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready"))));
 
-    HealthAggregateResponse resp = service.checkAll("go").await().indefinitely();
+    HealthAggregate resp = service.checkAll("go").await().indefinitely();
     assertEquals(1, resp.services().size());
 
-    ServiceHealthResponse g = resp.services().getFirst();
+    ServiceHealth g = resp.services().getFirst();
     assertEquals("down", g.status());
     assertEquals("::not-a-url::", g.baseUrl());
     assertNotNull(g.error());
@@ -154,15 +150,14 @@ class ServiceHealthServiceTest {
 
   @Test
   void baseUrlFalse_skipsService() {
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of(
-        "grafana", svc("false", "/api/health"),
-        "loki", svc("http://localhost:" + okPort, "/ready")
-      ))
-    );
+    service =
+        newService(
+            configFor(
+                Map.of(
+                    "grafana", svc("false", "/api/health"),
+                    "loki", svc("http://localhost:" + okPort, "/ready"))));
 
-    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+    HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
     assertTrue(resp.services().stream().noneMatch(s -> s.name().equals("grafana")));
     assertTrue(resp.services().stream().anyMatch(s -> s.name().equals("loki")));
@@ -176,12 +171,9 @@ class ServiceHealthServiceTest {
     services.put("disabled", svc("FALSE", "/health"));
     services.put("ok", svc("http://localhost:" + okPort, "/ready"));
 
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(services)
-    );
+    service = newService(configFor(services));
 
-    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+    HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
     assertEquals(1, resp.services().size());
     assertEquals("ok", resp.services().getFirst().name());
@@ -190,14 +182,12 @@ class ServiceHealthServiceTest {
 
   @Test
   void nonPositiveTimeoutAndConcurrencyFallbackStillWorkAndNormalizePaths() {
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(0, 0, Map.of(
-        "loki", svc("http://localhost:" + okPort + "/base/", "ready/")
-      ))
-    );
+    service =
+        newService(
+            configFor(
+                0, 0, Map.of("loki", svc("http://localhost:" + okPort + "/base/", "ready/"))));
 
-    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
+    HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
     assertEquals(1, resp.services().size());
     assertEquals("loki", resp.services().getFirst().name());
@@ -212,15 +202,11 @@ class ServiceHealthServiceTest {
       unusedPort = socket.getLocalPort();
     }
 
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of(
-        "orphan", svc("http://localhost:" + unusedPort, "/ready")
-      ))
-    );
+    service =
+        newService(configFor(Map.of("orphan", svc("http://localhost:" + unusedPort, "/ready"))));
 
-    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
-    ServiceHealthResponse orphan = resp.services().getFirst();
+    HealthAggregate resp = service.checkAll(null).await().indefinitely();
+    ServiceHealth orphan = resp.services().getFirst();
 
     assertEquals("orphan", orphan.name());
     assertEquals("down", orphan.status());
@@ -230,19 +216,21 @@ class ServiceHealthServiceTest {
 
   @Test
   void unresolvableHostname_marksServiceDownWithRecoveredError() {
-    service = new ServiceHealthService(
-      new io.vertx.mutiny.core.Vertx(serverVertx),
-      configFor(Map.of(
-        "missing-dns", svc("http://missing-host.invalid:18080", "/ready")
-      ))
-    );
+    service =
+        newService(
+            configFor(Map.of("missing-dns", svc("http://missing-host.invalid:18080", "/ready"))));
 
-    HealthAggregateResponse resp = service.checkAll(null).await().indefinitely();
-    ServiceHealthResponse missingDns = resp.services().getFirst();
+    HealthAggregate resp = service.checkAll(null).await().indefinitely();
+    ServiceHealth missingDns = resp.services().getFirst();
 
     assertEquals("missing-dns", missingDns.name());
     assertEquals("down", missingDns.status());
     assertNull(missingDns.statusCode());
     assertNotNull(missingDns.error());
+  }
+
+  private static ServiceHealthService newService(ServiceHealthConfig config) {
+    var mutinyVertx = new io.vertx.mutiny.core.Vertx(serverVertx);
+    return new ServiceHealthService(config, new VertxHealthProbeClient(mutinyVertx));
   }
 }

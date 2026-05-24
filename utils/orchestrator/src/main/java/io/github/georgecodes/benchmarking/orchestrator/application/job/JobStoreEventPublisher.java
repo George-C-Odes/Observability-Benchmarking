@@ -1,14 +1,10 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 
-import java.util.UUID;
-
-/**
- * Default event publisher that persists/buffers events through the configured {@link JobStore}.
- */
+/** Default event publisher that persists/buffers events through the configured {@link JobStore}. */
 @ApplicationScoped
 @RequiredArgsConstructor
 public class JobStoreEventPublisher implements JobEventPublisher {

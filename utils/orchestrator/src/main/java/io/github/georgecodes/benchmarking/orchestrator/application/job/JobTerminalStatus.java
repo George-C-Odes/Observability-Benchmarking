@@ -2,12 +2,10 @@ package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
 import io.github.georgecodes.benchmarking.orchestrator.domain.JobStatus;
 
-/**
- * Helper to map process exit/cancel state to a terminal {@link JobStatus}.
- */
+/** Helper to map process exit/cancel state to a terminal {@link JobStatus}. */
 public final class JobTerminalStatus {
   /** Utility class. */
-  private JobTerminalStatus() { }
+  private JobTerminalStatus() {}
 
   /**
    * Resolves the terminal {@link JobStatus} from cancellation and exit-code state.

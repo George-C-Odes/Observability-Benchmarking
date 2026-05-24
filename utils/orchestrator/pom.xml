@@ -10,16 +10,32 @@
   <properties>
     <argLine/>
     <compiler-plugin.version>3.15.0</compiler-plugin.version>
+    <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+    <findsecbugs.version>1.14.0</findsecbugs.version>
+    <google-java-format.version>1.35.0</google-java-format.version>
+    <jacoco.skip>false</jacoco.skip>
+    <jacoco.version>0.8.14</jacoco.version>
     <maven.compiler.release>25</maven.compiler.release>
+    <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+    <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <pmd.cpd.minimumTokens>120</pmd.cpd.minimumTokens>
+    <pmd.failure.priority>3</pmd.failure.priority>
+    <pmd.include.tests>false</pmd.include.tests>
+    <pmd.ruleset.path>quality/pmd-rules.xml</pmd.ruleset.path>
+    <pmd.version>7.24.0</pmd.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.35.4</quarkus.platform.version>
+    <quality.profile.id>quality</quality.profile.id>
+    <spotbugs.exclude.filter.file>quality/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
+    <spotbugs-maven-plugin.version>4.9.8.3</spotbugs-maven-plugin.version>
+    <spotbugs.max.heap>1024</spotbugs.max.heap>
+    <spotless-maven-plugin.version>3.5.1</spotless-maven-plugin.version>
     <surefire-plugin.version>3.5.5</surefire-plugin.version>
+    <test.jvm.additionalArgs>--add-opens java.base/java.lang=ALL-UNNAMED</test.jvm.additionalArgs>
     <lombok.version>1.18.46</lombok.version>
-    <checkstyle.config.location>checkstyle.xml</checkstyle.config.location>
-    <checkstyle.suppressions.location>checkstyle-suppressions.xml</checkstyle.suppressions.location>
   </properties>
 
   <dependencyManagement>
@@ -127,6 +143,12 @@
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
+        <configuration>
+          <argLine>@{argLine} ${test.jvm.additionalArgs}</argLine>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          </systemPropertyVariables>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -135,19 +157,16 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <argLine>@{argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
-        </configuration>
       </plugin>
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
         <configuration>
+          <argLine>@{argLine} ${test.jvm.additionalArgs}</argLine>
           <systemPropertyVariables>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
           </systemPropertyVariables>
-          <argLine>@{argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
         </configuration>
       </plugin>
 
@@ -158,28 +177,40 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.14</version>
+        <version>${jacoco.version}</version>
+        <configuration>
+          <skip>${jacoco.skip}</skip>
+        </configuration>
         <executions>
           <execution>
-            <id>prepare-agent</id>
+            <id>default-prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
+            <configuration>
+              <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+              <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
+              <append>true</append>
+            </configuration>
           </execution>
           <execution>
             <id>report</id>
-            <phase>verify</phase>
             <goals>
               <goal>report</goal>
             </goals>
+            <phase>verify</phase>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
+            </configuration>
           </execution>
           <execution>
             <id>check</id>
-            <phase>verify</phase>
             <goals>
               <goal>check</goal>
             </goals>
+            <phase>verify</phase>
             <configuration>
+              <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
               <haltOnFailure>false</haltOnFailure>
               <rules>
                 <rule>
@@ -188,12 +219,12 @@
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.15</minimum>
+                      <minimum>0.70</minimum>
                     </limit>
                     <limit>
                       <counter>BRANCH</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.10</minimum>
+                      <minimum>0.70</minimum>
                     </limit>
                   </limits>
                 </rule>
@@ -202,31 +233,243 @@
           </execution>
         </executions>
       </plugin>
-
-      <!-- Checkstyle plugin for code style checking -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.6.0</version>
-        <configuration>
-          <configLocation>${checkstyle.config.location}</configLocation>
-          <suppressionsLocation>${checkstyle.suppressions.location}</suppressionsLocation>
-          <includeTestSourceDirectory>false</includeTestSourceDirectory>
-          <consoleOutput>true</consoleOutput>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
-          <violationSeverity>warning</violationSeverity>
-        </configuration>
-        <executions>
-          <execution>
-            <id>validate</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>${quality.profile.id}</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven-javadoc-plugin.version}</version>
+            <configuration>
+              <source>${maven.compiler.release}</source>
+              <encoding>${project.build.sourceEncoding}</encoding>
+              <docencoding>${project.reporting.outputEncoding}</docencoding>
+              <charset>${project.build.sourceEncoding}</charset>
+              <notimestamp>true</notimestamp>
+              <quiet>true</quiet>
+              <doclint>none</doclint>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>${exec-maven-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>compact-constructor-javadoc-param-check</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
+                  <executable>${java.home}${file.separator}bin${file.separator}java</executable>
+                  <arguments>
+                    <argument>${project.basedir}${file.separator}quality${file.separator}CompactConstructorJavadocParamCheck.java</argument>
+                    <argument>${project.basedir}${file.separator}src${file.separator}main${file.separator}java</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <version>${spotless-maven-plugin.version}</version>
+            <configuration>
+              <lineEndings>GIT_ATTRIBUTES</lineEndings>
+              <java>
+                <includes>
+                  <include>quality/**/*.java</include>
+                  <include>src/main/java/**/*.java</include>
+                  <include>src/test/java/**/*.java</include>
+                </includes>
+                <importOrder/>
+                <removeUnusedImports/>
+                <formatAnnotations/>
+                <googleJavaFormat>
+                  <version>${google-java-format.version}</version>
+                  <style>GOOGLE</style>
+                </googleJavaFormat>
+                <trimTrailingWhitespace/>
+                <endWithNewline/>
+              </java>
+              <pom>
+                <sortPom/>
+              </pom>
+              <formats>
+                <format>
+                  <includes>
+                    <include>.gitattributes</include>
+                    <include>.dockerignore</include>
+                    <include>Dockerfile</include>
+                    <include>README.md</include>
+                    <include>quality/*.properties</include>
+                    <include>quality/*.xml</include>
+                    <include>src/main/resources/**/*.properties</include>
+                    <include>src/main/resources/**/*.yaml</include>
+                    <include>src/main/resources/**/*.yml</include>
+                    <include>src/test/resources/**/*.properties</include>
+                    <include>src/test/resources/**/*.yaml</include>
+                    <include>src/test/resources/**/*.yml</include>
+                  </includes>
+                  <trimTrailingWhitespace/>
+                  <endWithNewline/>
+                </format>
+              </formats>
+            </configuration>
+            <executions>
+              <execution>
+                <id>spotless-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-pmd-plugin</artifactId>
+            <version>${maven-pmd-plugin.version}</version>
+            <configuration>
+              <targetJdk>${maven.compiler.release}</targetJdk>
+              <includeTests>${pmd.include.tests}</includeTests>
+              <failOnViolation>true</failOnViolation>
+              <failurePriority>${pmd.failure.priority}</failurePriority>
+              <maxAllowedViolations>0</maxAllowedViolations>
+              <verbose>true</verbose>
+              <printFailingErrors>true</printFailingErrors>
+              <linkXRef>false</linkXRef>
+              <minimumTokens>${pmd.cpd.minimumTokens}</minimumTokens>
+              <rulesets>
+                <ruleset>${pmd.ruleset.path}</ruleset>
+              </rulesets>
+              <excludeRoots>
+                <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+                <excludeRoot>${project.build.directory}/generated-test-sources</excludeRoot>
+              </excludeRoots>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>net.sourceforge.pmd</groupId>
+                <artifactId>pmd-core</artifactId>
+                <version>${pmd.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>net.sourceforge.pmd</groupId>
+                <artifactId>pmd-java</artifactId>
+                <version>${pmd.version}</version>
+              </dependency>
+            </dependencies>
+            <executions>
+              <execution>
+                <id>pmd-check</id>
+                <goals>
+                  <goal>check</goal>
+                  <goal>cpd-check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+              <execution>
+                <id>pmd-fqcn-check-tests</id>
+                <goals>
+                  <goal>pmd</goal>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
+                  <targetJdk>${maven.compiler.release}</targetJdk>
+                  <includeTests>true</includeTests>
+                  <targetDirectory>${project.build.directory}/pmd-fqcn-tests</targetDirectory>
+                  <failOnViolation>true</failOnViolation>
+                  <failurePriority>${pmd.failure.priority}</failurePriority>
+                  <maxAllowedViolations>0</maxAllowedViolations>
+                  <verbose>true</verbose>
+                  <printFailingErrors>true</printFailingErrors>
+                  <linkXRef>false</linkXRef>
+                  <rulesets>
+                    <ruleset>quality/pmd-fqcn-rules.xml</ruleset>
+                  </rulesets>
+                  <excludeRoots>
+                    <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+                    <excludeRoot>${project.build.directory}/generated-test-sources</excludeRoot>
+                  </excludeRoots>
+                </configuration>
+              </execution>
+              <execution>
+                <id>pmd-test-maintainability-check</id>
+                <goals>
+                  <goal>pmd</goal>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+                <configuration>
+                  <targetJdk>${maven.compiler.release}</targetJdk>
+                  <includeTests>true</includeTests>
+                  <targetDirectory>${project.build.directory}/pmd-test-maintainability</targetDirectory>
+                  <failOnViolation>true</failOnViolation>
+                  <failurePriority>${pmd.failure.priority}</failurePriority>
+                  <maxAllowedViolations>0</maxAllowedViolations>
+                  <verbose>true</verbose>
+                  <printFailingErrors>true</printFailingErrors>
+                  <linkXRef>false</linkXRef>
+                  <rulesets>
+                    <ruleset>quality/pmd-test-rules.xml</ruleset>
+                  </rulesets>
+                  <excludeRoots>
+                    <excludeRoot>${project.build.directory}/generated-sources</excludeRoot>
+                    <excludeRoot>${project.build.directory}/generated-test-sources</excludeRoot>
+                  </excludeRoots>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            <version>${spotbugs-maven-plugin.version}</version>
+            <configuration>
+              <effort>Max</effort>
+              <threshold>Medium</threshold>
+              <failOnError>true</failOnError>
+              <includeTests>false</includeTests>
+              <fork>true</fork>
+              <maxHeap>${spotbugs.max.heap}</maxHeap>
+              <xmlOutput>true</xmlOutput>
+              <outputEncoding>${project.reporting.outputEncoding}</outputEncoding>
+              <excludeFilterFile>${spotbugs.exclude.filter.file}</excludeFilterFile>
+              <plugins>
+                <plugin>
+                  <groupId>com.h3xstream.findsecbugs</groupId>
+                  <artifactId>findsecbugs-plugin</artifactId>
+                  <version>${findsecbugs.version}</version>
+                </plugin>
+              </plugins>
+            </configuration>
+            <executions>
+              <execution>
+                <id>spotbugs-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

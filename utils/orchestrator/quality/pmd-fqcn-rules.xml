@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="orchestrator-pmd-fqcn"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+
+    <description>
+        Dedicated PMD guardrail for preventing unnecessary fully qualified type references
+        in Java code when a normal import should be used instead.
+    </description>
+
+    <rule ref="category/java/codestyle.xml/UnnecessaryFullyQualifiedName">
+        <priority>3</priority>
+    </rule>
+</ruleset>

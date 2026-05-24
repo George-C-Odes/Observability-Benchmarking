@@ -1,11 +1,11 @@
 package io.github.georgecodes.benchmarking.orchestrator.application;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
-import io.github.georgecodes.benchmarking.orchestrator.api.JobStatusResponse;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.CommandRunner;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.HeartbeatScheduler;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobAdmissionPolicy;
+import io.github.georgecodes.benchmarking.orchestrator.application.job.JobEvent;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobEventPublisher;
+import io.github.georgecodes.benchmarking.orchestrator.application.job.JobStatusSnapshot;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobStore;
 import io.github.georgecodes.benchmarking.orchestrator.application.job.JobTerminalStatus;
 import io.github.georgecodes.benchmarking.orchestrator.domain.JobStatus;
@@ -13,23 +13,31 @@ import io.smallrye.mutiny.Multi;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.MDC;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
-
-/**
- * Manages asynchronous job execution, heartbeat scheduling, and event publishing.
- */
+/** Manages asynchronous job execution, heartbeat scheduling, and event publishing. */
 @JBossLog
 @ApplicationScoped
 public class JobManager {
+
+  /** Compose CLI environment variable that enables Docker-based builds. */
+  static final String COMPOSE_DOCKER_CLI_BUILD_ENV = "COMPOSE_DOCKER_CLI_BUILD";
+
+  /** Environment defaults that enable Docker BuildKit for build jobs. */
+  private static final Map<String, String> DOCKER_ENV_OVERRIDES =
+      Map.of("DOCKER_BUILDKIT", "1", COMPOSE_DOCKER_CLI_BUILD_ENV, "1");
 
   /** Maximum number of lines to buffer per job. */
   private final int maxBufferLines;
@@ -68,14 +76,13 @@ public class JobManager {
    */
   @Inject
   public JobManager(
-    @ConfigProperty(name = "orchestrator.max-buffer-lines") int maxBufferLines,
-    @ConfigProperty(name = "orchestrator.heartbeat.interval-ms") long heartbeatIntervalMs,
-    HeartbeatScheduler heartbeatScheduler,
-    JobAdmissionPolicy admissionPolicy,
-    CommandRunner commandRunner,
-    JobStore jobStore,
-    JobEventPublisher eventPublisher
-  ) {
+      @ConfigProperty(name = "orchestrator.max-buffer-lines") int maxBufferLines,
+      @ConfigProperty(name = "orchestrator.heartbeat.interval-ms") long heartbeatIntervalMs,
+      HeartbeatScheduler heartbeatScheduler,
+      JobAdmissionPolicy admissionPolicy,
+      CommandRunner commandRunner,
+      JobStore jobStore,
+      JobEventPublisher eventPublisher) {
     this.maxBufferLines = maxBufferLines;
     this.heartbeatIntervalMs = heartbeatIntervalMs;
     this.heartbeatScheduler = heartbeatScheduler;
@@ -83,11 +90,13 @@ public class JobManager {
     this.commandRunner = commandRunner;
     this.jobStore = jobStore;
     this.eventPublisher = eventPublisher;
-    this.executor = Executors.newSingleThreadExecutor(r -> {
-      Thread t = new Thread(r, "orchestrator-job-runner");
-      t.setDaemon(true);
-      return t;
-    });
+    this.executor =
+        Executors.newSingleThreadExecutor(
+            r -> {
+              Thread t = new Thread(r, "orchestrator-job-runner");
+              t.setDaemon(true);
+              return t;
+            });
   }
 
   /**
@@ -99,11 +108,12 @@ public class JobManager {
    */
   public UUID submit(CommandPolicy.ValidatedCommand cmd, String runId) {
     JobAdmissionPolicy.Admission admission = admissionPolicy.acquire();
+    UUID id = jobStore.create(maxBufferLines, runId);
+    String requestId = currentRequestId();
     try {
-      UUID id = jobStore.create(maxBufferLines, runId);
-      executor.submit(() -> runJob(id, cmd, admission));
+      executor.submit(() -> runJob(id, cmd, admission, requestId));
       return id;
-    } catch (RuntimeException | Error ex) {
+    } catch (RejectedExecutionException ex) {
       admission.close();
       throw ex;
     }
@@ -125,7 +135,7 @@ public class JobManager {
    * @param id the job identifier
    * @return the latest job status snapshot
    */
-  public JobStatusResponse status(UUID id) {
+  public JobStatusSnapshot status(UUID id) {
     return jobStore.status(id);
   }
 
@@ -145,10 +155,18 @@ public class JobManager {
    * @param jobId the job identifier
    * @param cmd the validated command to execute
    * @param admission the admission handle that reserves the execution slot
+   * @param requestId the request id captured from the submission request
    */
-  private void runJob(UUID jobId, CommandPolicy.ValidatedCommand cmd, JobAdmissionPolicy.Admission admission) {
+  private void runJob(
+      UUID jobId,
+      CommandPolicy.ValidatedCommand cmd,
+      JobAdmissionPolicy.Admission admission,
+      String requestId) {
     try (admission) {
       MDC.put("jobId", jobId.toString());
+      if (requestId != null) {
+        MDC.put("requestId", requestId);
+      }
 
       HeartbeatScheduler.Cancellable heartbeat = null;
       try {
@@ -156,23 +174,32 @@ public class JobManager {
 
         heartbeat = scheduleHeartbeat(jobId);
 
-        @SuppressWarnings("DuplicateStringLiteralInspection")
-        var result = commandRunner.run(
-          cmd.argv(),
-          cmd.workspace(),
-          Map.of(
-            "DOCKER_BUILDKIT", "1",
-            "COMPOSE_DOCKER_CLI_BUILD", "1"
-          ),
-          event -> eventPublisher.publish(jobId, event)
-        );
+        var result =
+            commandRunner.run(
+                cmd.argv(),
+                cmd.workspace(),
+                DOCKER_ENV_OVERRIDES,
+                event -> eventPublisher.publish(jobId, event));
 
         JobStatus terminal = JobTerminalStatus.from(false, result.exitCode());
         jobStore.markFinished(jobId, terminal.name(), result.finishedAt(), result.exitCode());
-      } catch (Exception e) {
-        eventPublisher.publish(jobId, JobEvent.status(
-          "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()
-        ));
+      } catch (IOException
+          | ExecutionException
+          | TimeoutException
+          | SecurityException
+          | IllegalStateException e) {
+        eventPublisher.publish(
+            jobId,
+            JobEvent.status(
+                "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()));
+        jobStore.markFinished(jobId, JobStatus.FAILED.name(), Instant.now(), null);
+        log.errorf(e, "Job failed jobId=%s", jobId);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        eventPublisher.publish(
+            jobId,
+            JobEvent.status(
+                "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()));
         jobStore.markFinished(jobId, JobStatus.FAILED.name(), Instant.now(), null);
         log.errorf(e, "Job failed jobId=%s", jobId);
       } finally {
@@ -180,8 +207,19 @@ public class JobManager {
           heartbeat.cancel();
         }
         MDC.remove("jobId");
+        MDC.remove("requestId");
       }
     }
+  }
+
+  /**
+   * Reads the current request id from MDC for propagation to asynchronous job execution.
+   *
+   * @return the request id, or {@code null} when the submission did not originate from HTTP
+   */
+  private static String currentRequestId() {
+    Object requestId = MDC.get("requestId");
+    return requestId == null ? null : String.valueOf(requestId);
   }
 
   /**
@@ -194,23 +232,22 @@ public class JobManager {
     final long jobStartNanos = System.nanoTime();
     final AtomicLong heartbeatCounter = new AtomicLong();
 
-    return heartbeatScheduler.scheduleFixedRate(heartbeatIntervalMs, () -> {
-      try {
-        long count = heartbeatCounter.incrementAndGet();
-        long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
+    return heartbeatScheduler.scheduleFixedRate(
+        heartbeatIntervalMs,
+        () -> {
+          try {
+            long count = heartbeatCounter.incrementAndGet();
+            long uptimeMs = (System.nanoTime() - jobStartNanos) / 1_000_000L;
 
-        eventPublisher.publish(jobId, JobEvent.status(
-          ": heartbeat #" + count + " uptimeMs=" + uptimeMs
-        ));
-      } catch (Exception ex) {
-        log.tracef("Heartbeat publish failed for jobId=%s: %s", jobId, ex.getMessage());
-      }
-    });
+            eventPublisher.publish(
+                jobId, JobEvent.status(": heartbeat #" + count + " uptimeMs=" + uptimeMs));
+          } catch (IllegalStateException ex) {
+            log.tracef("Heartbeat publish failed for jobId=%s: %s", jobId, ex.getMessage());
+          }
+        });
   }
 
-  /**
-   * Stops the background executor during bean shutdown.
-   */
+  /** Stops the background executor during bean shutdown. */
   @PreDestroy
   void shutdown() {
     executor.shutdownNow();

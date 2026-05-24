@@ -33,6 +33,11 @@ profile:
         m_minLength: 2
         m_maxLength: 16
         m_regex: "[a-z]*"
+    - inspection: ExtractMethodRecommender
+      enabled: true
+      options:
+        minLength: 400
+        maxParameters: 3
     - inspection: UnnecessaryFullyQualifiedName
       enabled: true
       severity: WEAK WARNING
@@ -75,12 +80,18 @@ include:
   - name: NullableProblems
   - name: DuplicateStringLiteralInspection
   - name: ClassCanBeRecord
+  - name: ExtractMethodRecommender
+    paths:
+      - services/java
+      - utils/orchestrator
   - name: UnnecessaryFullyQualifiedName
     paths:
       - services/java
+      - utils/orchestrator
   - name: OnDemandImport
     paths:
       - services/java
+      - utils/orchestrator
 
 #Enable inspections
 #include:

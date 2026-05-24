@@ -2,7 +2,6 @@ package io.github.georgecodes.benchmarking.orchestrator.application;
 
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,6 +34,7 @@ public interface ServiceHealthConfig {
    * Pluggable health checks.
    *
    * <p>YAML shape:
+   *
    * <pre>
    * orchestrator:
    *   health:
@@ -49,9 +49,7 @@ public interface ServiceHealthConfig {
   @WithDefault("{}")
   Map<String, Service> services();
 
-  /**
-   * Nested configuration for an individual service health check.
-   */
+  /** Nested configuration for an individual service health check. */
   interface Service {
     /**
      * Returns the base URL for the service health probe.
