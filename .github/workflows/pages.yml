@@ -328,7 +328,7 @@ jobs:
           SITE_DIR: ./_site
           QUALITY_SITE_SUBDIR: quality
           QUALITY_CONTEXT_DESCRIPTION: Latest published code-quality reports from GitHub Actions on <code>main</code>.
-        run: bash scripts/pages/assemble-quality-pages.sh
+        run: bash ./.pages-main/scripts/pages/assemble-quality-pages.sh
 
       # ----------------------------------------------------------------
       # Staging /stage/quality (latest non-main branch reports)
