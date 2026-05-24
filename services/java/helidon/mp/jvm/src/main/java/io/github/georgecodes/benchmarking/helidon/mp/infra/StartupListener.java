@@ -56,12 +56,16 @@ public class StartupListener {
     private static final AtomicBoolean MICROMETER_BRIDGED = new AtomicBoolean(false);
 
     /** CDI-managed OpenTelemetry instance initialized by Helidon MP Telemetry. */
-    @Inject
-    private OpenTelemetry openTelemetry;
+    private final OpenTelemetry openTelemetry;
 
     /** CDI-managed Micrometer metrics adapter for pre-warming counters. */
+    private final MicrometerMetricsAdapter metricsAdapter;
+
     @Inject
-    private MicrometerMetricsAdapter metricsAdapter;
+    public StartupListener(OpenTelemetry openTelemetry, MicrometerMetricsAdapter metricsAdapter) {
+        this.openTelemetry = openTelemetry;
+        this.metricsAdapter = metricsAdapter;
+    }
 
     void onStartup(@Observes @Initialized(ApplicationScoped.class) Object event) {
         configureBatchSpanProcessorLogLevel();
