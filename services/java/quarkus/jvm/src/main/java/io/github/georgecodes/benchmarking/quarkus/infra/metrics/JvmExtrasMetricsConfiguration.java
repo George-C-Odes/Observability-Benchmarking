@@ -13,6 +13,7 @@ import jakarta.enterprise.inject.Produces;
  * the application layer depends only on ports ({@code MetricsPort}), while metrics implementation and
  * binder wiring live in infra.
  */
+@SuppressWarnings("unused")
 public final class JvmExtrasMetricsConfiguration {
 
     /**
