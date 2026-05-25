@@ -8,9 +8,4 @@ import jakarta.validation.constraints.NotBlank;
  * @param command the command to execute
  * @param runId optional client-provided run identifier used to correlate dashboard sessions
  */
-public record RunRequest(
-  @NotBlank
-  String command,
-  String runId
-) {
-}
+public record RunRequest(@NotBlank String command, String runId) {}

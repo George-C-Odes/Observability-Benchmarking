@@ -15,8 +15,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
  * Aggregated service health endpoint.
- * <p>
- * This is intentionally in the orchestrator so UI clients (web/mobile) don't need to know
+ *
+ * <p>This is intentionally in the orchestrator so UI clients (web/mobile) don't need to know
  * internal docker-compose DNS names.
  */
 @Path("/v1/health")
@@ -38,6 +38,6 @@ public class HealthResource {
   @Operation(summary = "Aggregate readiness/health of the whole stack")
   @APIResponse(responseCode = "200", description = "Aggregated health")
   public Uni<HealthAggregateResponse> get(@QueryParam("service") String service) {
-    return health.checkAll(service);
+    return health.checkAll(service).map(HealthAggregateResponse::from);
   }
 }

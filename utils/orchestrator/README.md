@@ -144,12 +144,22 @@ Common keys:
 - `orchestrator.project-paths.*` (workspace root, compose dir, env file, host-compose)
 - `orchestrator.health.*` (service health aggregation)
 
+## Quality checks
+
+The orchestrator now uses a module-local Maven quality stack under `quality/` instead of its old
+Checkstyle-only setup.
+
+- `mvn validate` runs the custom public-API Javadoc checker, Spotless, PMD, and CPD.
+- `mvn verify` additionally runs the test suite, JaCoCo reporting/checks, and SpotBugs.
+- The rest of the Java service modules under `services/java/**` still use their shared Checkstyle
+  setup for now.
+
 ## Quick start (Docker)
 
-Build the orchestrator image:
+Build the orchestrator image from the repository root:
 
 ```bash
-docker build -t local/orchestrator-quarkus:dev .
+docker buildx build --load -t orchestrator:latest -f utils/orchestrator/Dockerfile utils/orchestrator
 ```
 
 Start the orchestrator container (from the repository root):

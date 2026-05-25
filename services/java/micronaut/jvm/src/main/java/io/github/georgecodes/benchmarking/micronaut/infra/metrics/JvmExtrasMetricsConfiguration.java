@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * the application layer depends only on ports ({@code MetricsPort}), while metrics implementation and
  * binder wiring live in infra.
  */
+@SuppressWarnings("unused")
 @Factory
 public final class JvmExtrasMetricsConfiguration {
 

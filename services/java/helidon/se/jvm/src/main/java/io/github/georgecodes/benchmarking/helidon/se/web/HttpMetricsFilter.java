@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentMap;
  *   <li>{@code status}  – HTTP response status code</li>
  * </ul>
  * <p>
- * <b>Throughput optimisation:</b> Common HTTP status codes are pre-interned
+ * <b>Throughput optimization:</b> Common HTTP status codes are pre-interned
  * to avoid {@code String.valueOf()} per request. Timers are lazily cached by
  * a {@link TimerKey} record so only the first request per method+uri+status
  * pays the registration cost.
@@ -40,11 +40,17 @@ public final class HttpMetricsFilter implements Filter {
     /**
      * Type-safe composite key for the timer cache.
      *
-     * @param method HTTP method (GET, POST, …)
-     * @param uri    request path
-     * @param status HTTP response status code
+     * @param method HTTP method tag value.
+     * @param uri request path tag value.
+     * @param status HTTP response status tag value.
      */
-    private record TimerKey(String method, String uri, String status) { }
+    private record TimerKey(String method, String uri, String status) {
+        private TimerKey {
+            if (method == null || uri == null || status == null) {
+                throw new IllegalArgumentException("TimerKey values must not be null");
+            }
+        }
+    }
 
     /** Cache of pre-registered Timers keyed by method+uri+status. */
     private final ConcurrentMap<TimerKey, Timer> timers = new ConcurrentHashMap<>(16);

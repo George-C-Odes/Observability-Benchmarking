@@ -13,6 +13,7 @@ import java.time.Duration;
 /**
  * Infrastructure adapter for a simple in-memory cache.
  */
+@SuppressWarnings("unused")
 @ApplicationScoped
 public class CaffeineCacheAdapter implements CachePort {
 

@@ -1,15 +1,10 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import io.github.georgecodes.benchmarking.orchestrator.api.JobEvent;
-import io.github.georgecodes.benchmarking.orchestrator.api.JobStatusResponse;
 import io.smallrye.mutiny.Multi;
-
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Port for storing and querying job state and events.
- */
+/** Port for storing and querying job state and events. */
 public interface JobStore {
 
   /**
@@ -27,7 +22,7 @@ public interface JobStore {
    * @param jobId the job identifier
    * @return the current job status snapshot
    */
-  JobStatusResponse status(UUID jobId);
+  JobStatusSnapshot status(UUID jobId);
 
   /**
    * Returns a replayable event stream for the job.
@@ -68,7 +63,7 @@ public interface JobStore {
    *
    * @param jobId the job identifier
    * @param runId the run identifier supplied by the caller
-   * @throws jakarta.ws.rs.ClientErrorException with 409 on mismatch
+   * @throws JobRunConflictException on mismatch
    */
   void validateRunId(UUID jobId, String runId);
 }

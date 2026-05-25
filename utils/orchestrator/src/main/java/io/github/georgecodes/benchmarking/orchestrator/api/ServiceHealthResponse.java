@@ -1,5 +1,6 @@
 package io.github.georgecodes.benchmarking.orchestrator.api;
 
+import io.github.georgecodes.benchmarking.orchestrator.application.health.ServiceHealth;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -15,25 +16,28 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @Schema(name = "ServiceHealthResponse")
 public record ServiceHealthResponse(
-  @Schema(description = "Service name")
-  String name,
+    @Schema(description = "Service name") String name,
+    @Schema(description = "up|down|pending") String status,
+    @Schema(description = "HTTP status code if available") Integer statusCode,
+    @Schema(description = "Response time in milliseconds") Long responseTime,
+    @Schema(description = "Error or problem details") String error,
+    @Schema(description = "Base URL") String baseUrl,
+    @Schema(description = "(Optional) response body") String body) {
 
-  @Schema(description = "up|down|pending")
-  String status,
-
-  @Schema(description = "HTTP status code if available")
-  Integer statusCode,
-
-  @Schema(description = "Response time in milliseconds")
-  Long responseTime,
-
-  @Schema(description = "Error or problem details")
-  String error,
-
-  @Schema(description = "Base URL")
-  String baseUrl,
-
-  @Schema(description = "(Optional) response body")
-  String body
-) {
+  /**
+   * Maps application-layer service health to the API representation.
+   *
+   * @param health application-layer service health
+   * @return API service health response
+   */
+  public static ServiceHealthResponse from(ServiceHealth health) {
+    return new ServiceHealthResponse(
+        health.name(),
+        health.status(),
+        health.statusCode(),
+        health.responseTime(),
+        health.error(),
+        health.baseUrl(),
+        health.body());
+  }
 }

@@ -514,7 +514,7 @@ The numbers below are a curated summary of a representative run.
 - **Dropwizard**: {{DROPWIZARD_VERSION}}
 - **Vert.x**: {{VERTX_VERSION}}
 - **Pekko**: {{PEKKO_VERSION}} (Pekko Core 1.4.0)
-- **Go**: {{GO_VERSION}} (Fiber v3.2.0)
+- **Go**: {{GO_VERSION}} (Fiber v3.3.0)
 - **Python**: {{PYTHON_VERSION}} (CPython)
 - **Django**: {{DJANGO_VERSION}} (Gunicorn 26.0.0)
 - **Garbage Collector**: G1GC (all Java implementations)
@@ -626,20 +626,19 @@ This project implements comprehensive code quality and security practices to ens
 
 ### Code Quality
 
-#### Checkstyle Linting
-- **Configuration**: Enforces Google Java Style Guide with customizations
-- **Version**: maven-checkstyle-plugin 3.6.0 with Checkstyle 12.2.0
-- **Coverage**: All Java modules (Spring, Quarkus, Micronaut, Helidon SE, Helidon MP, Spark, Javalin, Dropwizard, Vert.x, Pekko) and the orchestrator
-- **Integration**: Runs automatically during Maven `validate` phase; enforced as fatal (`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`)
-- **Results**: zero violations across all projects
+#### JVM Quality Tooling
+- **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.5.1, PMD 7.24.0, SpotBugs 4.9.8.3 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
+- **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 
-**Running Checkstyle**:
+**Running JVM quality checks**:
 ```bash
-# For any module
+# Java service modules (Checkstyle)
 cd services/java/spring/jvm/tomcat
 mvn checkstyle:check
 
-# Or across all modules
+# Or across the Java service modules
 cd services/java/spring/jvm/netty && mvn checkstyle:check
 cd services/java/spring/jvm/tomcat && mvn checkstyle:check
 cd services/java/quarkus/jvm && mvn checkstyle:check
@@ -651,6 +650,12 @@ cd services/java/javalin/jvm && mvn checkstyle:check
 cd services/java/dropwizard/jvm && mvn checkstyle:check
 cd services/java/vertx/jvm && mvn checkstyle:check
 cd services/java/pekko/jvm && mvn checkstyle:check
+
+# Orchestrator validate lane
+mvn -f utils/orchestrator/pom.xml validate
+
+# Orchestrator full quality lane
+mvn -f utils/orchestrator/pom.xml verify
 ```
 
 #### Code Standards Enforced
@@ -1107,7 +1112,7 @@ Before submitting:
 - Verify observability data flows to Grafana
 - Run a benchmark to confirm functionality
 - Check that no credentials or secrets are committed
-- Run Checkstyle on Java code: `mvn checkstyle:check`
+- Run the appropriate Java quality lane (`mvn checkstyle:check` for `services/java/**`, `mvn -f utils/orchestrator/pom.xml verify` for the orchestrator)
 
 ### Reporting Bugs
 

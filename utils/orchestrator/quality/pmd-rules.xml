@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="orchestrator-pmd"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+
+    <description>
+        Production PMD baseline for the observability benchmarking orchestrator.
+        Formatting is handled by Spotless/google-java-format.
+        Security bug patterns are handled by SpotBugs + FindSecBugs.
+        This ruleset focuses on maintainability, correctness, duplication, naming conventions,
+        and the public API Javadoc baseline.
+
+        Exact Javadoc-tag completeness for documented public methods, documented public records,
+        record canonical constructors, and public constants is checked separately by
+        quality/CompactConstructorJavadocParamCheck.java during validate because PMD 7's
+        built-in XML-configurable documentation rules do not expose Javadoc tag completeness.
+    </description>
+
+    <!-- General maintainability and source-quality baseline -->
+    <rule ref="category/java/bestpractices.xml" />
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions" />
+    <rule ref="category/java/codestyle.xml/FieldNamingConventions" />
+    <rule ref="category/java/codestyle.xml/FormalParameterNamingConventions" />
+    <rule ref="category/java/codestyle.xml/LocalVariableNamingConventions" />
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions" />
+    <rule ref="category/java/codestyle.xml/PackageCase" />
+    <rule ref="category/java/codestyle.xml/TypeParameterNamingConventions" />
+    <rule ref="category/java/codestyle.xml/UnnecessaryFullyQualifiedName">
+        <priority>3</priority>
+    </rule>
+    <rule name="UnusedInjectedField"
+          language="java"
+          message="Injected field is never used; remove the field or use constructor injection only for collaborators that the class actually uses."
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            PMD's built-in UnusedPrivateField rule intentionally ignores package-private fields.
+            CDI-managed production classes sometimes declare package-private @Inject fields, so this
+            rule catches injected collaborators that are declared but never referenced by the class.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//VariableId[
+  @Field = true()
+  and ancestor::FieldDeclaration[.//Annotation[@SimpleName = 'Inject']]
+  and (
+    let $fieldName := string(@Name)
+    return empty(ancestor::ClassDeclaration//*[self::VariableAccess or self::FieldAccess][@Name = $fieldName])
+  )
+]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+    <rule name="AvoidOnDemandImports"
+          language="java"
+          message="Avoid wildcard imports; import the required types or members explicitly."
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Avoid on-demand imports in production code because they hide direct dependencies and can
+            mask unused imports during maintenance.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ImportDeclaration[@ImportOnDemand = true()]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="CloseResource" />
+    </rule>
+    <rule ref="category/java/performance.xml" />
+    <!--
+        PMD owns baseline Javadoc presence for public APIs.
+        A validate-time source checker complements this for documented public methods, documented
+        public records, record canonical constructors, and public constants whose Javadocs omit
+        required @param / @return tags or are absent where Qodana surfaces them.
+    -->
+    <rule ref="category/java/documentation.xml/CommentRequired">
+        <properties>
+            <property name="classCommentRequirement" value="required" />
+            <property name="publicMethodCommentRequirement" value="required" />
+            <property name="protectedMethodCommentRequirement" value="ignored" />
+            <property name="fieldCommentRequirement" value="ignored" />
+            <property name="enumCommentRequirement" value="ignored" />
+            <property name="accessorCommentRequirement" value="ignored" />
+            <property name="methodWithOverrideCommentRequirement" value="ignored" />
+            <property name="serialVersionUIDCommentRequired" value="ignored" />
+        </properties>
+    </rule>
+
+    <!-- Calibrated design rules to keep the signal useful -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="12" />
+            <property name="classReportLevel" value="80" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="200" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
+        <properties>
+            <property name="problemDepth" value="4" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/CollapsibleIfStatements" />
+</ruleset>

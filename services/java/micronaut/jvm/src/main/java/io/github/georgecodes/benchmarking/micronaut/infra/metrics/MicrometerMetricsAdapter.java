@@ -8,6 +8,7 @@ import jakarta.inject.Singleton;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@SuppressWarnings("unused")
 @Singleton
 public final class MicrometerMetricsAdapter implements MetricsPort {
 

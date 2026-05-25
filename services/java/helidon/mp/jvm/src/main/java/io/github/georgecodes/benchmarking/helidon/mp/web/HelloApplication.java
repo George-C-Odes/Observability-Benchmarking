@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.Application;
 /**
  * JAX-RS application root. Maps all resources under {@code /}.
  */
+@SuppressWarnings("unused")
 @ApplicationScoped
 @ApplicationPath("/")
 public class HelloApplication extends Application {

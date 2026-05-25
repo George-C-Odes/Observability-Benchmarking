@@ -2,27 +2,40 @@
 
 This document describes the code quality and linting setup for the Observability-Benchmarking project.
 
-## Checkstyle Configuration
+## JVM Quality Configuration
 
 ### Overview
-This project uses [Checkstyle](https://checkstyle.org/) to enforce consistent coding standards across all Java code. The configuration is based on the Google Java Style Guide with some customizations for this project.
+This repository currently uses two scoped JVM quality setups:
+
+- **Java service modules under `services/java/**`** continue to use [Checkstyle](https://checkstyle.org/) to enforce consistent coding standards based on the Google Java Style Guide plus project-specific adjustments.
+- **`utils/orchestrator`** now uses a module-local quality stack made up of Spotless, PMD/CPD, SpotBugs + FindSecBugs, and a custom public-API Javadoc checker.
 
 ### Versions
-- **maven-checkstyle-plugin**: 3.6.0
-- **checkstyle**: 12.2.0
+- **Java services (`services/java/**`)**
+  - **maven-checkstyle-plugin**: 3.6.0
+  - **checkstyle**: 12.2.0
+- **Orchestrator (`utils/orchestrator`)**
+  - **spotless-maven-plugin**: 3.5.1
+  - **google-java-format**: 1.35.0
+  - **maven-pmd-plugin**: 3.28.0 with PMD 7.24.0
+  - **spotbugs-maven-plugin**: 4.9.8.3 with FindSecBugs 1.14.0
+  - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
 ### Configuration Files
-The Java codebases currently covered by the repository's quality tooling use shared Checkstyle files per scoped area:
+The JVM codebases currently covered by the repository's quality tooling use scoped configuration files per area:
 - **`services/java/checkstyle.xml`**: Main Checkstyle configuration for Java services under `services/java/**`
 - **`services/java/checkstyle-suppressions.xml`**: Suppressions for the Java services tree
-- **`utils/orchestrator/checkstyle.xml`**: Main Checkstyle configuration for the orchestrator
-- **`utils/orchestrator/checkstyle-suppressions.xml`**: Suppressions for the orchestrator
+- **`utils/orchestrator/quality/CompactConstructorJavadocParamCheck.java`**: Validates public-API Javadoc tag completeness that PMD does not express declaratively
+- **`utils/orchestrator/quality/pmd-rules.xml`**: Main PMD ruleset for orchestrator production code
+- **`utils/orchestrator/quality/pmd-fqcn-rules.xml`**: Additional PMD pass for unnecessary fully-qualified names in test code
+- **`utils/orchestrator/quality/pmd-test-rules.xml`**: Test-source PMD maintainability rules
+- **`utils/orchestrator/quality/spotbugs-exclude.xml`**: Reviewed SpotBugs false-positive exclusions
 
-Individual Maven modules reference these shared files via relative paths in their `pom.xml` files.
+Individual Maven modules reference these scoped files via relative paths in their `pom.xml` files.
 
-### Running Checkstyle
+### Running the JVM quality checks
 
-To run Checkstyle on a specific module from the repository root:
+To run the relevant quality checks on a specific module from the repository root:
 
 ```bash
 # For Quarkus JVM module
@@ -31,18 +44,21 @@ mvn -f services/java/quarkus/jvm/pom.xml checkstyle:check
 # For Spring JVM Netty module
 mvn -f services/java/spring/jvm/netty/pom.xml checkstyle:check
 
-# For the orchestrator
-mvn -f utils/orchestrator/pom.xml checkstyle:check
+# For the orchestrator validate lane (custom Javadoc checker + Spotless + PMD/CPD)
+mvn -f utils/orchestrator/pom.xml validate
+
+# For the orchestrator full quality lane (tests + JaCoCo + SpotBugs too)
+mvn -f utils/orchestrator/pom.xml verify
 ```
 
-Checkstyle is also automatically executed during the Maven `validate` phase, so it runs as part of the build:
+The Java-service Checkstyle plugin and the orchestrator quality stack are both wired into the Maven lifecycle, so they run as part of normal builds:
 
 ```bash
 mvn -f services/java/quarkus/jvm/pom.xml validate
 mvn -f utils/orchestrator/pom.xml validate
 ```
 
-The Checkstyle plugin is configured with `failsOnError=true`, `failOnViolation=true`, and `violationSeverity=warning` across all JVM modules and the orchestrator, so any checkstyle violation will fail the build.
+For `services/java/**`, any Checkstyle violation still fails the build. For `utils/orchestrator`, any Spotless, PMD/CPD, custom Javadoc-check, or SpotBugs violation fails the build.
 
 ### Key Rules Enforced
 
@@ -61,19 +77,17 @@ The Checkstyle plugin is configured with `failsOnError=true`, `failOnViolation=t
 #### Javadoc Requirements
 - Public classes must have Javadoc comments
 - Public methods must have Javadoc comments
-- Javadoc must include descriptions for parameters and return values (where applicable)
+- For the orchestrator, documented public methods, records, compact constructors, and public constants are additionally checked for required `@param` / `@return` tags by `utils/orchestrator/quality/CompactConstructorJavadocParamCheck.java`
 
 #### Import Organization
-- No wildcard imports (*)
+- No wildcard imports (*) in production JVM code
 - No unused imports
 - No illegal imports (e.g., sun.* packages)
 
-### Suppressions
+### Suppressions / reviewed carve-outs
 
-The following items are suppressed from Checkstyle checks:
-- Generated code in `target/` directories
-- Test files (for certain Javadoc requirements)
-- Spring Boot Application main classes (utility class constructor check)
+- Java services continue to use their Checkstyle suppressions file for reviewed exceptions.
+- The orchestrator quality setup keeps reviewed PMD suppressions narrow and code-local, while reviewed SpotBugs false positives live in `utils/orchestrator/quality/spotbugs-exclude.xml`.
 
 ## Qodana Configuration (JVM Static Analysis)
 
@@ -93,9 +107,10 @@ Each occurrence is annotated with `# TODO(node24-migration)` so they can be foun
 If GitHub still prints a warning saying an action targets Node 20 but is being forced to run on Node 24, that confirms the opt-in is active. The warning should disappear only after the action publisher updates the action metadata to native Node 24 support.
 
 ### Overview
-This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setup for deeper JVM static analysis based on IntelliJ inspections. Qodana complements Checkstyle rather than replacing it:
+This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setup for deeper JVM static analysis based on IntelliJ inspections. Qodana complements the repository's Maven-side JVM quality gates rather than replacing them:
 
-- **Checkstyle** focuses on formatting, conventions, and structural style rules.
+- **Checkstyle** focuses on formatting, conventions, and structural style rules for `services/java/**`.
+- **Spotless / PMD / SpotBugs** provide the equivalent Maven-side style, maintainability, and bug-finding checks for `utils/orchestrator`.
 - **Qodana** adds semantic inspections such as probable bugs, API misuse, dead code, and framework-specific warnings.
 
 The current GitHub Actions workflow intentionally limits Qodana to these paths only:
@@ -846,7 +861,7 @@ All public classes and methods should include:
 
 ## Integration with CI/CD
 
-Checkstyle is enforced as fatal across all JVM modules and the orchestrator (`failsOnError=true`, `failOnViolation=true`, `violationSeverity=warning`). Any checkstyle violation at warning severity or above will fail the Maven build.
+Checkstyle remains fatal for the Java service modules, and the orchestrator's Spotless / PMD / SpotBugs / custom-Javadoc stack is also enforced as fatal during Maven builds.
 
 Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
 
@@ -864,11 +879,11 @@ When a reviewed per-scope SARIF baseline is committed under `.qodana/baseline/`,
 
 ## Customizing Rules
 
-To customize Checkstyle or Qodana rules for your needs:
+To customize the JVM quality rules or Qodana for your needs:
 
-1. Edit `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the scoped JVM codebase you want to tune
-2. Add suppressions to the matching `checkstyle-suppressions.xml` file for specific exceptions
-3. Update the plugin version in `pom.xml` if newer Checkstyle features are needed
+1. Edit `services/java/checkstyle.xml` for service-module Checkstyle changes, or the relevant files under `utils/orchestrator/quality/` for orchestrator quality changes
+2. Add reviewed suppressions to `services/java/checkstyle-suppressions.xml` for service modules, or to `utils/orchestrator/quality/spotbugs-exclude.xml` / narrow code-local PMD suppressions for orchestrator exceptions
+3. Update the relevant plugin versions in `pom.xml` if newer Checkstyle, Spotless, PMD, or SpotBugs features are needed
 4. Adjust `qodana.yaml` if you want to change the inspection profile or quality gate thresholds
 5. Update `.github/workflows/qodana_code_quality.yml` if you want Qodana to cover more paths
 
@@ -877,35 +892,30 @@ To customize Checkstyle or Qodana rules for your needs:
 ### IDE Integration
 
 #### IntelliJ IDEA
-1. Install the Checkstyle-IDEA plugin
-2. Go to Settings → Tools → Checkstyle
-3. Add `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
-4. Enable real-time scanning
+1. For Java service modules, install the Checkstyle-IDEA plugin and point it at `services/java/checkstyle.xml`
+2. For the orchestrator, rely on Maven goals (`validate`, `verify`) plus IntelliJ's built-in inspections / Qodana preview rather than a Checkstyle file
 
 #### Eclipse
-1. Install the Checkstyle Plug-in
-2. Right-click the project → Properties → Checkstyle
-3. Select `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
-4. Enable Checkstyle for the project
+1. For Java service modules, install the Checkstyle Plug-in and select `services/java/checkstyle.xml`
+2. For the orchestrator, use Maven run configurations for `validate` / `verify` and your IDE's built-in Java inspection support
 
 #### VS Code
-1. Install the Checkstyle for Java extension
-2. Configure the extension to use `services/java/checkstyle.xml` or `utils/orchestrator/checkstyle.xml`, depending on the codebase you are editing
+1. For Java service modules, install the Checkstyle for Java extension and configure `services/java/checkstyle.xml`
+2. For the orchestrator, run `mvn -f utils/orchestrator/pom.xml validate` / `verify` from the integrated terminal or tasks
 
 ## Metrics
 
-The Checkstyle plugin generates reports that can be found at:
-- `target/checkstyle-result.xml` (XML format)
-- Maven console output (human-readable format)
+Representative JVM quality reports can be found at:
+- `target/checkstyle-result.xml` for the Checkstyle-based Java service modules
+- `utils/orchestrator/target/pmd.xml`, `utils/orchestrator/target/pmd-test-maintainability/pmd.xml`, and `utils/orchestrator/target/spotbugsXml.xml` for orchestrator PMD / SpotBugs runs
+- Maven console output for all scoped quality lanes
 
 ## Future Improvements
 
 Potential enhancements to the code quality setup:
-- Add PMD for additional static analysis
-- Integrate SpotBugs for bug detection
+- Expand the orchestrator-style Spotless / PMD / SpotBugs stack to additional JVM modules when ready
 - Add SonarQube for comprehensive code quality metrics
-- Implement code coverage requirements with JaCoCo
-- Add automated code formatting with Spotless or Google Java Format
+- Tighten the orchestrator PMD / SpotBugs reviewed suppressions over time as code is refactored
 - Tighten the Qodana gate further once the current thresholds are reliably green (for example, add `info` or `low` severity thresholds)
 
 ## References

@@ -11,6 +11,7 @@ import lombok.extern.jbosslog.JBossLog;
  * <p>Keeps environment/runtime diagnostics out of REST adapters to preserve clean architecture
  * boundaries. This runs once on startup.
  */
+@SuppressWarnings("unused")
 @JBossLog
 @ApplicationScoped
 public class StartupDiagnosticsLogger {

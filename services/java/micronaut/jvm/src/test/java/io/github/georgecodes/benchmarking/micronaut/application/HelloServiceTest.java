@@ -91,4 +91,3 @@ class HelloServiceTest {
         throw new InterruptedException("expected in test");
     }
 }
-

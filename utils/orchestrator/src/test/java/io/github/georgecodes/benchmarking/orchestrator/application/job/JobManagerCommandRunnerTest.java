@@ -1,25 +1,23 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.georgecodes.benchmarking.orchestrator.application.CommandPolicy;
 import io.github.georgecodes.benchmarking.orchestrator.application.JobManager;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.junit.jupiter.api.Test;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class JobManagerCommandRunnerTest {
 
-  @Inject
-  JobManager jobManager;
+  @Inject JobManager jobManager;
 
-  @Inject
-  CommandPolicy policy;
+  @Inject CommandPolicy policy;
 
   @Test
   void submit_usesCommandRunner_andJobReachesTerminalState() throws Exception {
@@ -30,14 +28,18 @@ class JobManagerCommandRunnerTest {
     AtomicReference<String> terminalStatus = new AtomicReference<>();
     AtomicReference<Integer> terminalExitCode = new AtomicReference<>();
 
-    var subscription = jobManager.events(jobId)
-      .subscribe().with(e -> {
-        if ("terminalSummary".equals(e.type())) {
-          terminalStatus.set(e.jobStatus());
-          terminalExitCode.set(e.exitCode());
-          terminal.countDown();
-        }
-      });
+    var subscription =
+        jobManager
+            .events(jobId)
+            .subscribe()
+            .with(
+                e -> {
+                  if ("terminalSummary".equals(e.type())) {
+                    terminalStatus.set(e.jobStatus());
+                    terminalExitCode.set(e.exitCode());
+                    terminal.countDown();
+                  }
+                });
 
     try {
       assertTrue(terminal.await(2, TimeUnit.SECONDS), "Job did not finish in time");

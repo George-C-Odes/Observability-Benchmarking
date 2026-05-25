@@ -31,7 +31,10 @@ public class HelloService {
     private final SleepPort sleepPort;
 
     @Inject
-    public HelloService(CachePort cachePort, MetricsPort metricsPort, SleepPort sleepPort) {
+    public HelloService(
+            CachePort cachePort,
+            MetricsPort metricsPort,
+            SleepPort sleepPort) {
         this.cachePort = Objects.requireNonNull(cachePort, "cachePort");
         this.metricsPort = Objects.requireNonNull(metricsPort, "metricsPort");
         this.sleepPort = Objects.requireNonNull(sleepPort, "sleepPort");

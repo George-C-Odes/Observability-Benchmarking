@@ -1,47 +1,49 @@
 package io.github.georgecodes.benchmarking.orchestrator.resource;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.nullValue;
+
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
-
 /**
- * Unit tests for PresetCommandsResource.
- * Tests the endpoint that lists available command presets from IntelliJ .run XML files.
+ * Unit tests for PresetCommandsResource. Tests the endpoint that lists available command presets
+ * from IntelliJ .run XML files.
  */
 @QuarkusTest
 public class PresetCommandsResourceTest {
 
-    /**
-     * Test that the /v1/commands endpoint returns a list of commands.
-     */
-    @Test
-    public void testListCommands() {
-        given()
-            .when().get("/v1/commands")
-            .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            .body("$", is(instanceOf(java.util.List.class)));
-    }
+  /** Test that the /v1/commands endpoint returns a list of commands. */
+  @Test
+  public void testListCommands() {
+    given()
+        .when()
+        .get("/v1/commands")
+        .then()
+        .statusCode(200)
+        .contentType(ContentType.JSON)
+        .body("$", is(instanceOf(List.class)));
+  }
 
-    /**
-     * Test that returned commands have required fields.
-     */
-    @Test
-    public void testCommandStructure() {
-        given()
-            .when().get("/v1/commands")
-            .then()
-            .statusCode(200)
-            .contentType(ContentType.JSON)
-            // If there are any commands, they should have these fields
-            .body(
-                "[0].category", anyOf(nullValue(), isA(String.class)),
-                "[0].command", anyOf(nullValue(), isA(String.class)),
-                "[0].title", anyOf(nullValue(), isA(String.class))
-            );
-    }
+  /** Test that returned commands have required fields. */
+  @Test
+  public void testCommandStructure() {
+    given()
+        .when()
+        .get("/v1/commands")
+        .then()
+        .statusCode(200)
+        .contentType(ContentType.JSON)
+        // If there are any commands, they should have these fields
+        .body(
+            "[0].category", anyOf(nullValue(), isA(String.class)),
+            "[0].command", anyOf(nullValue(), isA(String.class)),
+            "[0].title", anyOf(nullValue(), isA(String.class)));
+  }
 }

@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.orchestrator.security;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -10,8 +11,8 @@ import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * JAX-RS request filter that enforces bearer token authentication
- * on endpoints annotated with {@link RequireOrchestratorAuth}.
+ * JAX-RS request filter that enforces bearer token authentication on endpoints annotated with
+ * {@link RequireOrchestratorAuth}.
  */
 @Provider
 @RequireOrchestratorAuth
@@ -19,11 +20,18 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class BearerAuthFilter implements ContainerRequestFilter {
 
+  /** API key for bearer token authentication. */
+  private final String apiKey;
+
   /**
-   * API key for bearer token authentication.
+   * Creates a bearer auth filter.
+   *
+   * @param apiKey configured API key; blank disables authentication for local development
    */
-  @ConfigProperty(name = "orchestrator.api-key")
-  String apiKey;
+  @Inject
+  public BearerAuthFilter(@ConfigProperty(name = "orchestrator.api-key") String apiKey) {
+    this.apiKey = apiKey;
+  }
 
   /**
    * Validates the bearer token on protected orchestrator requests.
@@ -39,7 +47,8 @@ public class BearerAuthFilter implements ContainerRequestFilter {
 
     String auth = ctx.getHeaderString("Authorization");
     if (auth == null || !auth.startsWith("Bearer ")) {
-      ctx.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Missing bearer token").build());
+      ctx.abortWith(
+          Response.status(Response.Status.UNAUTHORIZED).entity("Missing bearer token").build());
       return;
     }
     String token = auth.substring("Bearer ".length()).trim();

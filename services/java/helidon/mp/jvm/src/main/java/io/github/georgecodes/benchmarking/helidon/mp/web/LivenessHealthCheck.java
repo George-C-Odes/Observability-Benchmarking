@@ -9,6 +9,7 @@ import org.eclipse.microprofile.health.Liveness;
  * MicroProfile Health liveness check.
  * Endpoint: /health/live
  */
+@SuppressWarnings("unused")
 @Liveness
 @ApplicationScoped
 public class LivenessHealthCheck implements HealthCheck {

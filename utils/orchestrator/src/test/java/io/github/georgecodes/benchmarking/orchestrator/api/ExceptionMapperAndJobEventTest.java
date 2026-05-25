@@ -1,18 +1,19 @@
 package io.github.georgecodes.benchmarking.orchestrator.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import io.github.georgecodes.benchmarking.orchestrator.application.BenchmarkTargetsService;
 import io.github.georgecodes.benchmarking.orchestrator.application.EnvFileService;
 import io.github.georgecodes.benchmarking.orchestrator.application.ServiceException;
+import io.github.georgecodes.benchmarking.orchestrator.application.job.JobAdmissionRejectedException;
+import io.github.georgecodes.benchmarking.orchestrator.application.job.JobRunConflictException;
+import jakarta.ws.rs.core.Response;
+import java.time.Instant;
+import java.util.UUID;
 import org.jboss.logging.MDC;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-import java.util.UUID;
-
-import jakarta.ws.rs.core.Response;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ExceptionMapperAndJobEventTest {
 
@@ -25,19 +26,17 @@ class ExceptionMapperAndJobEventTest {
   void serviceExceptionMapperMapsEachExceptionTypeToExpectedHttpStatus() {
     ServiceExceptionMapper mapper = new ServiceExceptionMapper();
 
-    try (Response notFound = mapper.toResponse(new EnvFileService.EnvFileException(
-      "missing",
-      ServiceException.Type.NOT_FOUND
-    ));
-         Response validation = mapper.toResponse(new BenchmarkTargetsService.BenchmarkTargetsException(
-           "invalid",
-           ServiceException.Type.VALIDATION_ERROR
-         ));
-         Response io = mapper.toResponse(new EnvFileService.EnvFileException(
-           "io",
-           ServiceException.Type.IO_ERROR,
-           new IllegalStateException("boom")
-         ))) {
+    try (Response notFound =
+            mapper.toResponse(
+                new EnvFileService.EnvFileException("missing", ServiceException.Type.NOT_FOUND));
+        Response validation =
+            mapper.toResponse(
+                new BenchmarkTargetsService.BenchmarkTargetsException(
+                    "invalid", ServiceException.Type.VALIDATION_ERROR));
+        Response io =
+            mapper.toResponse(
+                new EnvFileService.EnvFileException(
+                    "io", ServiceException.Type.IO_ERROR, new IllegalStateException("boom")))) {
       assertEquals(404, notFound.getStatus());
       assertEquals(400, validation.getStatus());
       assertEquals(500, io.getStatus());
@@ -58,6 +57,26 @@ class ExceptionMapperAndJobEventTest {
   }
 
   @Test
+  void jobExceptionMappersCreateTransportResponsesAtApiBoundary() {
+    JobRunConflictExceptionMapper conflictMapper = new JobRunConflictExceptionMapper();
+    JobAdmissionRejectedExceptionMapper admissionMapper = new JobAdmissionRejectedExceptionMapper();
+
+    try (Response conflict =
+            conflictMapper.toResponse(
+                new JobRunConflictException("stale_run", "runId does not match job"));
+        Response unavailable =
+            admissionMapper.toResponse(new JobAdmissionRejectedException("busy"))) {
+      ErrorResponse conflictError = (ErrorResponse) conflict.getEntity();
+      ErrorResponse unavailableError = (ErrorResponse) unavailable.getEntity();
+
+      assertEquals(409, conflict.getStatus());
+      assertEquals("stale_run", conflictError.error());
+      assertEquals(503, unavailable.getStatus());
+      assertEquals("orchestrator_busy", unavailableError.error());
+    }
+  }
+
+  @Test
   void jobEventFactoryMethodsPopulateTypePayloadAndRequestId() {
     MDC.put("requestId", "req-123");
     UUID jobId = UUID.randomUUID();
@@ -67,8 +86,10 @@ class ExceptionMapperAndJobEventTest {
 
     JobEvent log = JobEvent.log("stdout", "hello");
     JobEvent status = JobEvent.status("RUNNING");
-    JobEvent summary = JobEvent.summary(jobId, "RUNNING", createdAt, startedAt, null, null, "last line");
-    JobEvent terminal = JobEvent.terminalSummary(jobId, "SUCCEEDED", createdAt, startedAt, finishedAt, 0, "done");
+    JobEvent summary =
+        JobEvent.summary(jobId, "RUNNING", createdAt, startedAt, null, null, "last line");
+    JobEvent terminal =
+        JobEvent.terminalSummary(jobId, "SUCCEEDED", createdAt, startedAt, finishedAt, 0, "done");
 
     assertEquals("log", log.type());
     assertEquals("stdout", log.stream());
@@ -95,4 +116,3 @@ class ExceptionMapperAndJobEventTest {
     assertEquals("req-123", terminal.requestId());
   }
 }
-

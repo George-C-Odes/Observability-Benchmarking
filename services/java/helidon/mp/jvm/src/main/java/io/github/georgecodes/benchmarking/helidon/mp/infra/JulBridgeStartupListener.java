@@ -12,6 +12,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
  * Separated from {@link StartupListener} so that logging-bridge
  * configuration has a single, focused reason to change.
  */
+@SuppressWarnings("unused")
 @Slf4j
 @ApplicationScoped
 public class JulBridgeStartupListener {

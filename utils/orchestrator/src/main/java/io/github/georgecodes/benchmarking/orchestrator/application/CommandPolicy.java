@@ -3,67 +3,72 @@ package io.github.georgecodes.benchmarking.orchestrator.application;
 import io.github.georgecodes.benchmarking.orchestrator.domain.CommandTokenizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-/**
- * Policy for validating docker commands.
- */
+/** Policy for validating docker commands. */
 @ApplicationScoped
 public class CommandPolicy {
 
   /** Strongly typed project-path configuration. */
+  private final ProjectPathsConfig paths;
+
+  /** Registry of supported Docker command-group validators. */
+  private final CommandGroupValidatorRegistry commandGroupValidators;
+
+  /**
+   * Creates a command policy using configured project paths.
+   *
+   * @param paths strongly typed project-path configuration
+   * @param commandGroupValidators registry of CDI-provided command-group validators
+   */
   @Inject
-  ProjectPathsConfig paths;
+  public CommandPolicy(
+      ProjectPathsConfig paths, CommandGroupValidatorRegistry commandGroupValidators) {
+    this.paths = paths;
+    this.commandGroupValidators = commandGroupValidators;
+  }
 
-  /**
-   * "Read-only-ish" docker commands (includes your requested docker ps).
-   */
-  private static final Set<String> ALLOWED_DOCKER_COMMANDS = Set.of(
-    "ps", "version", "info", "images"
-  );
+  /** Minimum token count for {@code docker <command>}. */
+  private static final int MIN_DOCKER_TOKENS = 2;
 
-  /**
-   * docker compose subcommands allowed.
-   */
-  private static final Set<String> ALLOWED_COMPOSE_SUBCOMMANDS = Set.of(
-    "up", "down", "ps", "logs", "pull", "build", "restart", "start", "stop", "top", "config", "version", "rm"
-  );
+  /** Index of the Docker executable token. */
+  private static final int DOCKER_EXECUTABLE_INDEX = 0;
 
-  /**
-   * docker buildx subcommands allowed.
-   */
-  private static final Set<String> ALLOWED_BUILDX_SUBCOMMANDS = Set.of(
-    "build", "bake", "ls", "inspect", "create", "use", "rm", "stop", "version", "prune"
-  );
+  /** Index of the Docker command-group token. */
+  private static final int DOCKER_COMMAND_INDEX = 1;
 
-  /**
-   * Prevent redirecting the daemon target / messing with TLS daemon settings.
-   */
-  private static final Set<String> DISALLOWED_TOKENS = Set.of(
-    "-H", "--host", "--context", "--config", "--tls", "--tlscacert", "--tlscert", "--tlskey", "--tlsverify"
-  );
+  /** Docker CLI executable expected as the first token. */
+  private static final String DOCKER_COMMAND = "docker";
 
-  /**
-   * Compose global options (allowed before the subcommand) + whether they take a value.
-   */
-  private static final Map<String, Boolean> COMPOSE_GLOBAL_OPTS = Map.ofEntries(
-    Map.entry("--project-directory", true),
-    Map.entry("--profile", true),
-    Map.entry("--file", true),
-    Map.entry("-f", true),
-    Map.entry("--env-file", true),
-    Map.entry("--project-name", true),
-    Map.entry("-p", true),
-    Map.entry("--ansi", true),
-    Map.entry("--parallel", true),
-    Map.entry("--compatibility", false),
-    Map.entry("--progress", true)
-  );
+  /** Shell command separator token rejected by the policy. */
+  private static final String SHELL_SEQUENCE_SEPARATOR = ";";
+
+  /** Shell logical-and token rejected by the policy. */
+  private static final String SHELL_AND_OPERATOR = "&&";
+
+  /** Shell pipe token rejected by the policy. */
+  private static final String SHELL_PIPE_OPERATOR = "|";
+
+  /** Shell command-substitution token rejected by the policy. */
+  private static final String SHELL_COMMAND_SUBSTITUTION = "`";
+
+  /** "Read-only-ish" docker commands (includes your requested docker ps). */
+  private static final Set<String> ALLOWED_DOCKER_COMMANDS =
+      Set.of("ps", "version", "info", "images");
+
+  /** Prevent redirecting the daemon target / messing with TLS daemon settings. */
+  private static final Set<String> DISALLOWED_TOKENS =
+      Set.of(
+          "-H",
+          "--host",
+          "--context",
+          "--config",
+          "--tls",
+          "--tlscacert",
+          "--tlscert",
+          "--tlskey",
+          "--tlsverify");
 
   /**
    * Validated command metadata ready for execution.
@@ -72,7 +77,19 @@ public class CommandPolicy {
    * @param workspace the workspace directory used as the process working directory
    * @param projectDir the compose project directory associated with the command
    */
-  public record ValidatedCommand(List<String> argv, String workspace, String projectDir) { }
+  public record ValidatedCommand(List<String> argv, String workspace, String projectDir) {
+
+    /**
+     * Creates validated command metadata with an immutable argument list.
+     *
+     * @param argv the tokenized command arguments
+     * @param workspace the workspace directory used as the process working directory
+     * @param projectDir the compose project directory associated with the command
+     */
+    public ValidatedCommand {
+      argv = List.copyOf(argv);
+    }
+  }
 
   /**
    * Validates a raw docker command string and converts it into an executable command model.
@@ -82,298 +99,89 @@ public class CommandPolicy {
    * @throws IllegalArgumentException when the command is disallowed or malformed
    */
   public ValidatedCommand validate(String raw) {
-    List<String> t = CommandTokenizer.tokenize(raw);
+    List<String> tokens = CommandTokenizer.tokenize(raw);
+    requireDockerCommand(tokens);
+    validateSafeTokens(tokens);
+    return validateCommandGroup(tokens);
+  }
 
-    if (t.size() < 2) {
+  /**
+   * Ensures the command starts with {@code docker} and contains a command group.
+   *
+   * @param tokens the tokenized command
+   */
+  private static void requireDockerCommand(List<String> tokens) {
+    if (tokens.size() < MIN_DOCKER_TOKENS) {
       throw new IllegalArgumentException("Command too short; expected 'docker <command> ...'");
     }
-    if (!"docker".equals(t.get(0))) {
+    if (!DOCKER_COMMAND.equals(tokens.get(DOCKER_EXECUTABLE_INDEX))) {
       throw new IllegalArgumentException("Only 'docker' commands are allowed");
     }
-
-    // Basic safety checks (no shell operators, no daemon retargeting flags)
-    for (String s : t) {
-      if (DISALLOWED_TOKENS.contains(s)) {
-        throw new IllegalArgumentException("Disallowed docker option: " + s);
-      }
-      if (s.contains(";") || s.contains("&&") || s.contains("|") || s.contains("`")) {
-        throw new IllegalArgumentException("Disallowed token content");
-      }
-    }
-
-    String cmd = t.get(1);
-
-    if ("compose".equals(cmd)) {
-      return validateCompose(t);
-    }
-
-    if ("buildx".equals(cmd)) {
-      return validateBuildx(t);
-    }
-
-    if ("builder".equals(cmd)) {
-      return validateBuilder(t);
-    }
-
-    if (!ALLOWED_DOCKER_COMMANDS.contains(cmd)) {
-      throw new IllegalArgumentException("Docker command not allowed: " + cmd);
-    }
-
-    return new ValidatedCommand(t, paths.workspace().root(), paths.workspace().compose());
   }
 
   /**
-   * Supports: {@code docker compose [GLOBAL_OPTIONS...] <subcommand> [args...]}.
-   * Where GLOBAL_OPTIONS can appear before the subcommand.
-   * Fix B: supports both {@code --opt value} and {@code --opt=value} for global options.
+   * Applies baseline safety checks common to all accepted Docker commands.
    *
-   * @param tokens the tokenized docker compose command
-   * @return the validated command with normalized compose defaults applied
+   * @param tokens the tokenized command
    */
-  private ValidatedCommand validateCompose(List<String> tokens) {
-    if (tokens.size() < 3) {
-      throw new IllegalArgumentException("Command too short; expected 'docker compose <subcommand> ...'");
+  private static void validateSafeTokens(List<String> tokens) {
+    for (String token : tokens) {
+      validateSafeToken(token);
     }
-
-    int i = 2; // start after: docker compose
-    boolean hasProjectDir = false;
-    boolean hasFile = false;
-    boolean hasEnvFile = false;
-
-    // Consume compose global options (which come before the subcommand)
-    while (i < tokens.size()) {
-      String tok = tokens.get(i);
-
-      // subcommand is first non-option token
-      if (!tok.startsWith("-")) {
-        break;
-      }
-
-      String opt = tok;
-      String inlineVal = null;
-
-      // Support --opt=value form (only for long options)
-      int eq = tok.indexOf('=');
-      if (eq > 0 && tok.startsWith("--")) {
-        opt = tok.substring(0, eq);
-        inlineVal = tok.substring(eq + 1);
-        if (inlineVal.isEmpty()) {
-          inlineVal = null;
-        }
-      }
-
-
-      Boolean takesValue = COMPOSE_GLOBAL_OPTS.get(opt);
-      if (takesValue == null) {
-        throw new IllegalArgumentException("Compose global option not allowed: " + tok);
-      }
-
-      if (opt.equals("--project-directory")) {
-        hasProjectDir = true;
-      }
-      if (opt.equals("--file") || opt.equals("-f")) {
-        hasFile = true;
-      }
-      if (opt.equals("--env-file")) {
-        hasEnvFile = true;
-      }
-
-      if (takesValue) {
-        String val;
-
-        if (inlineVal != null) {
-          val = inlineVal;
-          i += 1;
-        } else {
-          if (i + 1 >= tokens.size()) {
-            throw new IllegalArgumentException("Missing value for option: " + opt);
-          }
-          val = tokens.get(i + 1);
-          i += 2;
-        }
-
-        // validate path-like opts
-        if (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f") || opt.equals("--env-file")) {
-          boolean isHostMode = paths.hostCompose().isPresent();
-          boolean isWindowsAbs = isWindowsAbsolutePath(val);
-          if (!(isHostMode && (opt.equals("--project-directory") || opt.equals("--file") || opt.equals("-f")))) {
-            if (!isWindowsAbs) {
-              ensureUnderWorkspace(val);
-            }
-          }
-        }
-
-      } else {
-        if (inlineVal != null) {
-          throw new IllegalArgumentException("Option does not take a value: " + opt);
-        }
-        i += 1;
-      }
-    }
-
-    if (i >= tokens.size()) {
-      throw new IllegalArgumentException("Missing compose subcommand (e.g., up/down/ps/logs)");
-    }
-
-    String sub = tokens.get(i);
-    if (!ALLOWED_COMPOSE_SUBCOMMANDS.contains(sub)) {
-      throw new IllegalArgumentException("Compose subcommand not allowed: " + sub);
-    }
-
-    // Ensure --project-directory defaults to the container-visible compose dir when the caller omits it.
-    // This is needed because:
-    // - compose include paths (include: ./obs.yml, ./utils.yml) are resolved relative to the project directory.
-    // - when a Windows path is passed (C:/...), compose running in Linux treats it as relative and prefixes /workspace.
-    // Using composeDir ensures includes and other relative references are readable inside the container.
-    List<String> argv = new ArrayList<>(tokens);
-    String composeDir = paths.workspace().compose();
-    Path composePath = Path.of(composeDir);
-
-    if (!hasProjectDir) {
-      argv.add(2, "--project-directory");
-      argv.add(3, composeDir);
-    }
-
-    // Ensure a compose file is provided (container-visible).
-    if (!hasFile) {
-      String file = composePath.resolve("docker-compose.yml").toString();
-      argv.add(2, "-f");
-      argv.add(3, file);
-    }
-
-    // Ensure the compose env file is loaded so variables from compose/.env (e.g., SPRING_BOOT_VERSION) are set,
-    // regardless of the host process environment.
-    if (!hasEnvFile) {
-      String envFile = composePath.resolve(".env").toString();
-      argv.add(2, "--env-file");
-      argv.add(3, envFile);
-    }
-
-    return new ValidatedCommand(argv, paths.workspace().root(), composeDir);
   }
 
   /**
-   * Supports: {@code docker buildx [options...] <subcommand> [args...]}.
-   * We locate the first allowed subcommand token after "buildx".
-   * Optional: validate {@code -f/--file} paths for buildx build.
+   * Applies baseline safety checks to one token.
    *
-   * @param tokens the tokenized docker buildx command
-   * @return the validated command
+   * @param token the token to inspect
    */
-  private ValidatedCommand validateBuildx(List<String> tokens) {
-    if (tokens.size() < 3) {
-      throw new IllegalArgumentException("Command too short; expected 'docker buildx <subcommand> ...'");
+  private static void validateSafeToken(String token) {
+    if (DISALLOWED_TOKENS.contains(token)) {
+      throw new IllegalArgumentException("Disallowed docker option: " + token);
     }
-
-    int subIdx = -1;
-    for (int i = 2; i < tokens.size(); i++) {
-      if (ALLOWED_BUILDX_SUBCOMMANDS.contains(tokens.get(i))) {
-        subIdx = i;
-        break;
-      }
+    if (containsShellOperator(token)) {
+      throw new IllegalArgumentException("Disallowed token content");
     }
+  }
 
-    if (subIdx == -1) {
-      throw new IllegalArgumentException("Buildx subcommand not allowed or missing");
+  /**
+   * Dispatches to the validator for the requested Docker command group.
+   *
+   * @param tokens the tokenized command
+   * @return the validated command metadata
+   */
+  private ValidatedCommand validateCommandGroup(List<String> tokens) {
+    String command = tokens.get(DOCKER_COMMAND_INDEX);
+    return commandGroupValidators
+        .find(command)
+        .map(validator -> validator.validate(tokens))
+        .orElseGet(() -> validateDockerCommand(tokens, command));
+  }
+
+  /**
+   * Validates a simple top-level Docker command.
+   *
+   * @param tokens the tokenized command
+   * @param command the top-level Docker command
+   * @return the validated command metadata
+   */
+  private ValidatedCommand validateDockerCommand(List<String> tokens, String command) {
+    if (!ALLOWED_DOCKER_COMMANDS.contains(command)) {
+      throw new IllegalArgumentException("Docker command not allowed: " + command);
     }
-
-    String sub = tokens.get(subIdx);
-
-    if ("build".equals(sub)) {
-      for (int i = subIdx + 1; i < tokens.size(); i++) {
-        String tok = tokens.get(i);
-        if (("-f".equals(tok) || "--file".equals(tok)) && i + 1 < tokens.size()) {
-          ensureUnderWorkspace(tokens.get(i + 1));
-          i++; // skip value
-        }
-      }
-    }
-
     return new ValidatedCommand(tokens, paths.workspace().root(), paths.workspace().compose());
   }
 
   /**
-   * Supports: docker builder prune -a --force
-   * This is intentionally narrow because prune is destructive.
+   * Checks whether a token contains shell operators rejected by this policy.
    *
-   * @param tokens the tokenized docker builder command
-   * @return the validated command
+   * @param token the token to inspect
+   * @return {@code true} when the token contains a disallowed shell operator
    */
-  private ValidatedCommand validateBuilder(List<String> tokens) {
-    if (tokens.size() < 3) {
-      throw new IllegalArgumentException("Command too short; expected 'docker builder <subcommand> ...'");
-    }
-
-    String sub = tokens.get(2);
-    if (!"prune".equals(sub)) {
-      throw new IllegalArgumentException("Builder subcommand not allowed: " + sub);
-    }
-
-    boolean hasAll = false;
-    boolean hasForce = false;
-
-    for (int i = 3; i < tokens.size(); i++) {
-      String tok = tokens.get(i);
-      if ("-a".equals(tok) || "--all".equals(tok)) {
-        hasAll = true;
-        continue;
-      }
-      if ("--force".equals(tok) || "-f".equals(tok)) {
-        hasForce = true;
-        continue;
-      }
-
-      // Keep this strict: no filters/labels/etc until explicitly requested.
-      throw new IllegalArgumentException("Builder prune option not allowed: " + tok);
-    }
-
-    if (!hasAll) {
-      throw new IllegalArgumentException("Builder prune requires -a/--all");
-    }
-    if (!hasForce) {
-      throw new IllegalArgumentException("Builder prune requires --force");
-    }
-
-    return new ValidatedCommand(tokens, paths.workspace().root(), paths.workspace().compose());
-  }
-
-  /**
-   * Accepts absolute OR relative paths:
-   * - absolute must be under workspace.
-   * - relative is resolved against workspace.
-   *
-   * @param pathStr the path string to validate against the workspace root
-   */
-  private void ensureUnderWorkspace(String pathStr) {
-    Path ws = Path.of(paths.workspace().root()).normalize().toAbsolutePath();
-    Path p = Path.of(pathStr);
-    Path abs = p.isAbsolute() ? p.normalize().toAbsolutePath() : ws.resolve(p).normalize().toAbsolutePath();
-
-    if (!abs.startsWith(ws)) {
-      throw new IllegalArgumentException("Path must be under workspace: " + abs);
-    }
-  }
-
-  /**
-   * Returns true if the provided path string looks like an absolute Windows path.
-   * This is needed because the orchestrator runs on Linux inside a container, where Path.of("C:/x")
-   * is treated as relative (and would otherwise be resolved under /workspace).
-   *
-   * @param path the path string to inspect
-   * @return {@code true} when the path appears to be an absolute Windows path; otherwise {@code false}
-   */
-  private static boolean isWindowsAbsolutePath(String path) {
-    if (path == null || path.isBlank()) {
-      return false;
-    }
-    // C:\... or C:/...
-    if (path.length() >= 3
-      && Character.isLetter(path.charAt(0))
-      && path.charAt(1) == ':'
-      && (path.charAt(2) == '\\' || path.charAt(2) == '/')) {
-      return true;
-    }
-    // UNC paths: \\server\share\...
-    return path.startsWith("\\\\") || path.startsWith("//");
+  private static boolean containsShellOperator(String token) {
+    return token.contains(SHELL_SEQUENCE_SEPARATOR)
+        || token.contains(SHELL_AND_OPERATOR)
+        || token.contains(SHELL_PIPE_OPERATOR)
+        || token.contains(SHELL_COMMAND_SUBSTITUTION);
   }
 }

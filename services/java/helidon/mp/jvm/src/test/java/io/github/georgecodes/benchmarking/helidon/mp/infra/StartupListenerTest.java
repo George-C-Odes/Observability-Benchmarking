@@ -28,10 +28,10 @@ class StartupListenerTest {
     }
 
     @Test
-    void onStartupWarmsKnownEndpointMetrics() throws Exception {
-        StartupListener listener = new StartupListener();
-        setField(listener, "openTelemetry", GlobalOpenTelemetry.get());
-        setField(listener, "metricsAdapter", new MicrometerMetricsAdapter());
+    void onStartupWarmsKnownEndpointMetrics() {
+        StartupListener listener = new StartupListener(
+                GlobalOpenTelemetry.get(),
+                new MicrometerMetricsAdapter());
 
         listener.onStartup(new Object());
 
@@ -42,10 +42,10 @@ class StartupListenerTest {
     }
 
     @Test
-    void onStartupBridgesMicrometerRegistry() throws Exception {
-        StartupListener listener = new StartupListener();
-        setField(listener, "openTelemetry", GlobalOpenTelemetry.get());
-        setField(listener, "metricsAdapter", new MicrometerMetricsAdapter());
+    void onStartupBridgesMicrometerRegistry() {
+        StartupListener listener = new StartupListener(
+                GlobalOpenTelemetry.get(),
+                new MicrometerMetricsAdapter());
 
         listener.onStartup(new Object());
 
@@ -53,12 +53,6 @@ class StartupListenerTest {
                 .map(MeterRegistry::getClass)
                 .map(Class::getName)
                 .anyMatch(name -> name.contains("OpenTelemetryMeterRegistry")));
-    }
-
-    private static void setField(Object target, String fieldName, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
     }
 
     private static AtomicBoolean bridgedFlag() throws Exception {

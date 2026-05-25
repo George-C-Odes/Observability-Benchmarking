@@ -37,4 +37,3 @@ class CacheProviderTest {
         assertNull(cache.getIfPresent("6"));
     }
 }
-

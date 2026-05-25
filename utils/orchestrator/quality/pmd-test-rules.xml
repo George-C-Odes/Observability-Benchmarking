@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="orchestrator-pmd-tests"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+
+    <description>
+        Test-source PMD guardrails that keep test fixtures maintainable without applying the full
+        production ruleset to tests. Production code is already checked by quality/pmd-rules.xml.
+    </description>
+
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField">
+        <priority>3</priority>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
+        <priority>3</priority>
+    </rule>
+
+    <rule name="UnusedInjectedTestField"
+          language="java"
+          message="Injected test field is never used; remove the field or assert the injected collaborator explicitly."
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            PMD's built-in UnusedPrivateField rule intentionally ignores package-private fields.
+            Quarkus tests often use package-private @Inject fields, so this test-only guardrail
+            catches injected fixtures that are declared but never referenced by the test class.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//VariableId[
+  @Field = true()
+  and ancestor::FieldDeclaration[.//Annotation[@SimpleName = 'Inject']]
+  and (
+    let $fieldName := string(@Name)
+    return empty(ancestor::ClassDeclaration//*[self::VariableAccess or self::FieldAccess][@Name = $fieldName])
+  )
+]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+</ruleset>

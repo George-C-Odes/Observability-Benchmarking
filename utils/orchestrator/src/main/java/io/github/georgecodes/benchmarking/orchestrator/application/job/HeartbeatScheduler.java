@@ -1,17 +1,13 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-/**
- * Port for scheduling periodic heartbeats.
- */
+/** Port for scheduling periodic heartbeats. */
+@FunctionalInterface
 public interface HeartbeatScheduler {
 
-  /**
-   * Handle for cancelling a scheduled task.
-   */
+  /** Handle for cancelling a scheduled task. */
+  @FunctionalInterface
   interface Cancellable {
-    /**
-     * Cancels the scheduled task.
-     */
+    /** Cancels the scheduled task. */
     void cancel();
   }
 

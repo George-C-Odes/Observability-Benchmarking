@@ -2,9 +2,9 @@ package io.github.georgecodes.benchmarking.helidon.mp.web;
 
 import io.github.georgecodes.benchmarking.helidon.mp.application.HelloService;
 import io.github.georgecodes.benchmarking.helidon.mp.application.port.HelloMode;
-import jakarta.json.Json;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.json.Json;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

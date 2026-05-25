@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+@SuppressWarnings("unused")
 @Configuration
 @EnableConfigurationProperties(ModuleConfig.CacheProperties.class)
 public class ModuleConfig {
@@ -51,6 +52,7 @@ public class ModuleConfig {
         return new ProcessThreadMetrics();
     }
 
+    @SuppressWarnings("unused")
     @Configuration
     @Slf4j
     static class StartupLogging {
