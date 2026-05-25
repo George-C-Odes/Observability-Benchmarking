@@ -23,10 +23,11 @@ public class CommandPolicyTest {
     assertEquals("docker", argv.get(0));
     assertEquals("compose", argv.get(1));
 
-    String expectedFile = Path.of(cmd.projectDir()).resolve("docker-compose.yml").toString();
+    Path path = Path.of(cmd.projectDir());
+    String expectedFile = path.resolve("docker-compose.yml").toString();
     assertContainsSubsequence(argv, List.of("-f", expectedFile));
 
-    String expectedEnv = Path.of(cmd.projectDir()).resolve(".env").toString();
+    String expectedEnv = path.resolve(".env").toString();
     assertContainsSubsequence(argv, List.of("--env-file", expectedEnv));
 
     // project directory should be injected and should be container-visible
