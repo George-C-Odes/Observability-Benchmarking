@@ -1,6 +1,7 @@
 package io.github.georgecodes.benchmarking.orchestrator.application.job;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.georgecodes.benchmarking.orchestrator.application.CommandPolicy;
 import io.github.georgecodes.benchmarking.orchestrator.application.JobManager;

@@ -1,8 +1,9 @@
 package io.github.georgecodes.benchmarking.helidon.mp;
 
 // Force-link Helidon mapper SPI into the native image (prevents ServiceRegistry CNFE)
-import io.helidon.common.mapper.spi.MapperProvider;
+
 import io.helidon.common.mapper.Mappers;
+import io.helidon.common.mapper.spi.MapperProvider;
 
 import java.util.ArrayList;
 import java.util.List;

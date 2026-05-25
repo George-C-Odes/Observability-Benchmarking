@@ -3,10 +3,10 @@ package io.github.georgecodes.benchmarking.helidon.se.infra.metrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.sdk.common.export.GrpcSenderProvider;
 import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.common.export.GrpcSenderProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;

@@ -1,13 +1,13 @@
 package io.github.georgecodes.benchmarking.helidon.se;
 
+import io.github.georgecodes.benchmarking.helidon.se.application.HelloService;
+import io.github.georgecodes.benchmarking.helidon.se.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.se.infra.ObservabilityFeatureFactory;
 import io.github.georgecodes.benchmarking.helidon.se.infra.cache.CaffeineCacheAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.JvmExtrasMetricsConfiguration;
 import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.MicrometerMetricsAdapter;
 import io.github.georgecodes.benchmarking.helidon.se.infra.metrics.OtelConfig;
 import io.github.georgecodes.benchmarking.helidon.se.infra.time.ThreadSleepAdapter;
-import io.github.georgecodes.benchmarking.helidon.se.application.HelloService;
-import io.github.georgecodes.benchmarking.helidon.se.application.port.HelloMode;
 import io.github.georgecodes.benchmarking.helidon.se.web.HelloRouting;
 import io.github.georgecodes.benchmarking.helidon.se.web.HttpMetricsFilter;
 import io.helidon.common.Version;

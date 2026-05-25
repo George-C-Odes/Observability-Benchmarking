@@ -1,6 +1,9 @@
 package io.github.georgecodes.benchmarking.orchestrator.application;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.georgecodes.benchmarking.orchestrator.application.health.HealthAggregate;
 import io.github.georgecodes.benchmarking.orchestrator.application.health.HealthEndpoint;

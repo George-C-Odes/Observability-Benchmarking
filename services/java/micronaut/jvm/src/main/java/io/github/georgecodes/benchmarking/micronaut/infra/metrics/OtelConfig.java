@@ -1,12 +1,12 @@
 package io.github.georgecodes.benchmarking.micronaut.infra.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
-import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationStartupEvent;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
+import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
 import jakarta.inject.Singleton;
 
 @SuppressWarnings("unused")

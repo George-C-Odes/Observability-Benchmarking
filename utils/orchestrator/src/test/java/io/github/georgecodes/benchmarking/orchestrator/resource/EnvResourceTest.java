@@ -1,7 +1,8 @@
 package io.github.georgecodes.benchmarking.orchestrator.resource;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
