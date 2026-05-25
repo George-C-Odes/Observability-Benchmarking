@@ -30,7 +30,6 @@ public class HelloService {
     /** Sleep abstraction used to simulate work with minimal allocation overhead. */
     private final SleepPort sleepPort;
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     public HelloService(
             CachePort cachePort,

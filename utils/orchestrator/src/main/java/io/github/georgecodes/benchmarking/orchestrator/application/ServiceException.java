@@ -9,7 +9,6 @@ import lombok.Getter;
  * <p>Provides a shared {@link Type} enum so all domain services use the same error categories and a
  * single JAX-RS {@code ExceptionMapper} can translate every subclass to the correct HTTP status.
  */
-@Getter
 public abstract class ServiceException extends RuntimeException {
 
   @Serial private static final long serialVersionUID = 1L;
@@ -24,10 +23,8 @@ public abstract class ServiceException extends RuntimeException {
     VALIDATION_ERROR
   }
 
-  /**
-   * The coarse error category for this exception. -- GETTER -- Returns the coarse error category.
-   */
-  private final Type type;
+  /** Coarse error category for this exception. */
+  @Getter private final Type type;
 
   /**
    * Creates a typed service exception without an underlying cause.
