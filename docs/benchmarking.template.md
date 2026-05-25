@@ -140,7 +140,7 @@ memory: 2GB        # Maximum memory
 - Dropwizard: {{DROPWIZARD_VERSION}}
 - Vert.x: {{VERTX_VERSION}}
 - Pekko: {{PEKKO_VERSION}} (Pekko Core 1.4.0)
-- Go: {{GO_VERSION}} with Fiber v3.2.0
+- Go: {{GO_VERSION}} with Fiber v3.3.0
 - Python: {{PYTHON_VERSION}} (CPython)
 - Django: {{DJANGO_VERSION}} (Gunicorn 26.0.0)
 
