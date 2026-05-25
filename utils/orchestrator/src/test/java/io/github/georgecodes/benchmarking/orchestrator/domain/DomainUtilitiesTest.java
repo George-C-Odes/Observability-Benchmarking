@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -165,20 +166,7 @@ class DomainUtilitiesTest {
 
   @Test
   void dockerfileConversionHandlesExplicitContextNullBuildArgValueAndRequiredOptionFailures() {
-    Map<String, String> options = new HashMap<>();
-    options.put("imageTag", "local/explicit:dev");
-    options.put("sourceFilePath", "/workspace/Dockerfile");
-    options.put("contextFolderPath", "/workspace/context dir");
-    IntelliJRunXmlParser.ParsedRunConfig cfg =
-        new IntelliJRunXmlParser.ParsedRunConfig(
-            "Explicit Context",
-            "docker-deploy",
-            "dockerfile",
-            options,
-            List.of(
-                new IntelliJRunXmlParser.EnvVar("EMPTY", null),
-                new IntelliJRunXmlParser.EnvVar(null, "ignored"),
-                new IntelliJRunXmlParser.EnvVar(" ", "ignored")));
+    IntelliJRunXmlParser.ParsedRunConfig cfg = getParsedRunConfig();
 
     String command = IntelliJRunXmlParser.toDockerCommand(cfg, "/workspace");
 
@@ -207,6 +195,22 @@ class DomainUtilitiesTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> IntelliJRunXmlParser.toDockerCommand(missingDockerfile, null));
+  }
+
+  private static IntelliJRunXmlParser.@NonNull ParsedRunConfig getParsedRunConfig() {
+    Map<String, String> options = new HashMap<>();
+    options.put("imageTag", "local/explicit:dev");
+    options.put("sourceFilePath", "/workspace/Dockerfile");
+    options.put("contextFolderPath", "/workspace/context dir");
+    return new IntelliJRunXmlParser.ParsedRunConfig(
+        "Explicit Context",
+        "docker-deploy",
+        "dockerfile",
+        options,
+        List.of(
+            new IntelliJRunXmlParser.EnvVar("EMPTY", null),
+            new IntelliJRunXmlParser.EnvVar(null, "ignored"),
+            new IntelliJRunXmlParser.EnvVar(" ", "ignored")));
   }
 
   @Test

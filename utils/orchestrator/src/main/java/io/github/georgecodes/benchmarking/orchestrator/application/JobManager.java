@@ -256,7 +256,7 @@ public class JobManager {
         });
   }
 
-  /** Tracks whether a newly acquired admission slot should be closed by the submitter. */
+  /** Tracks whether the submitter should close a newly acquired admission slot. */
   private static final class SubmissionAdmission implements AutoCloseable {
 
     /** Admission slot acquired for the pending submission. */
