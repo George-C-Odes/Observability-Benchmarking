@@ -30,10 +30,11 @@ public class HelloService {
     /** Sleep abstraction used to simulate work with minimal allocation overhead. */
     private final SleepPort sleepPort;
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     public HelloService(
             CachePort cachePort,
-            @SuppressWarnings("CdiInjectionPointsInspection") MetricsPort metricsPort,
+            MetricsPort metricsPort,
             SleepPort sleepPort) {
         this.cachePort = Objects.requireNonNull(cachePort, "cachePort");
         this.metricsPort = Objects.requireNonNull(metricsPort, "metricsPort");
