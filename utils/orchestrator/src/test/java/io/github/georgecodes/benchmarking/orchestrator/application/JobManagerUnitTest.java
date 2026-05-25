@@ -112,10 +112,10 @@ class JobManagerUnitTest {
     assertTrue(events.stream().anyMatch(e -> "req-42".equals(e.requestId())));
     assertEquals("SUCCEEDED", manager.status(jobId).status());
     manager.validateRunId(jobId, "run-42");
-    assertTrue(admissionClosed.get());
-    assertTrue(heartbeatCanceled.get());
     assertTrue(admissionClosedSignal.await(1, TimeUnit.SECONDS));
     assertTrue(heartbeatCanceledSignal.await(1, TimeUnit.SECONDS));
+    assertTrue(admissionClosed.get());
+    assertTrue(heartbeatCanceled.get());
   }
 
   @Test
