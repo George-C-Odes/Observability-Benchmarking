@@ -107,15 +107,12 @@ public class JobManager {
    * @return job id
    */
   public UUID submit(CommandPolicy.ValidatedCommand cmd, String runId) {
-    JobAdmissionPolicy.Admission admission = admissionPolicy.acquire();
-    UUID id = jobStore.create(maxBufferLines, runId);
-    String requestId = currentRequestId();
-    try {
-      executor.submit(() -> runJob(id, cmd, admission, requestId));
+    try (SubmissionAdmission admission = new SubmissionAdmission(admissionPolicy.acquire())) {
+      UUID id = jobStore.create(maxBufferLines, runId);
+      String requestId = currentRequestId();
+      executor.submit(() -> runJob(id, cmd, admission.forExecution(), requestId));
+      admission.transferOwnership();
       return id;
-    } catch (RejectedExecutionException ex) {
-      admission.close();
-      throw ex;
     }
   }
 
@@ -186,22 +183,12 @@ public class JobManager {
       } catch (IOException
           | ExecutionException
           | TimeoutException
-          | SecurityException
+          | RejectedExecutionException
           | IllegalStateException e) {
-        eventPublisher.publish(
-            jobId,
-            JobEvent.status(
-                "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()));
-        jobStore.markFinished(jobId, JobStatus.FAILED.name(), Instant.now(), null);
-        log.errorf(e, "Job failed jobId=%s", jobId);
+        failJob(jobId, e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        eventPublisher.publish(
-            jobId,
-            JobEvent.status(
-                "FAILED exception=" + e.getClass().getSimpleName() + " " + e.getMessage()));
-        jobStore.markFinished(jobId, JobStatus.FAILED.name(), Instant.now(), null);
-        log.errorf(e, "Job failed jobId=%s", jobId);
+        failJob(jobId, e);
       } finally {
         if (heartbeat != null) {
           heartbeat.cancel();
@@ -210,6 +197,28 @@ public class JobManager {
         MDC.remove("requestId");
       }
     }
+  }
+
+  /**
+   * Publishes and persists a terminal failure for a job.
+   *
+   * @param jobId the job identifier
+   * @param failure the failure that ended job execution
+   */
+  private void failJob(UUID jobId, Exception failure) {
+    eventPublisher.publish(jobId, JobEvent.status(failureStatus(failure)));
+    jobStore.markFinished(jobId, JobStatus.FAILED.name(), Instant.now(), null);
+    log.errorf(failure, "Job failed jobId=%s", jobId);
+  }
+
+  /**
+   * Formats a failure status event message.
+   *
+   * @param failure the failure that ended job execution
+   * @return status message for job event consumers
+   */
+  private static String failureStatus(Exception failure) {
+    return "FAILED exception=" + failure.getClass().getSimpleName() + " " + failure.getMessage();
   }
 
   /**
@@ -241,10 +250,51 @@ public class JobManager {
 
             eventPublisher.publish(
                 jobId, JobEvent.status(": heartbeat #" + count + " uptimeMs=" + uptimeMs));
-          } catch (IllegalStateException ex) {
+          } catch (RuntimeException ex) { // NOPMD - heartbeat keepalive must not stop scheduling
             log.tracef("Heartbeat publish failed for jobId=%s: %s", jobId, ex.getMessage());
           }
         });
+  }
+
+  /** Tracks whether a newly acquired admission slot should be closed by the submitter. */
+  private static final class SubmissionAdmission implements AutoCloseable {
+
+    /** Admission slot acquired for the pending submission. */
+    private final JobAdmissionPolicy.Admission admission;
+
+    /** Whether submit still owns the slot and must release it on close. */
+    private boolean releaseOnClose = true;
+
+    /**
+     * Wraps a newly acquired admission slot until ownership is transferred to the worker thread.
+     *
+     * @param admission the acquired admission slot
+     */
+    private SubmissionAdmission(JobAdmissionPolicy.Admission admission) {
+      this.admission = admission;
+    }
+
+    /**
+     * Returns the wrapped admission slot for use by the executing job.
+     *
+     * @return the wrapped admission slot
+     */
+    private JobAdmissionPolicy.Admission forExecution() {
+      return admission;
+    }
+
+    /** Marks the admission slot as transferred to the job execution thread. */
+    private void transferOwnership() {
+      releaseOnClose = false;
+    }
+
+    /** Releases the admission slot when submission fails before ownership transfer. */
+    @Override
+    public void close() {
+      if (releaseOnClose) {
+        admission.close();
+      }
+    }
   }
 
   /** Stops the background executor during bean shutdown. */

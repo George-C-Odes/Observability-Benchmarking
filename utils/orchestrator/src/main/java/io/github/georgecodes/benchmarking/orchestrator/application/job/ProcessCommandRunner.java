@@ -24,6 +24,9 @@ import lombok.extern.jbosslog.JBossLog;
 @ApplicationScoped
 public class ProcessCommandRunner implements CommandRunner {
 
+  /** Seconds to wait for a forcibly destroyed child process to terminate. */
+  private static final int PROCESS_DESTROY_TIMEOUT_SECONDS = 5;
+
   /** Seconds to wait for stream-reader threads to finish after {@code shutdownNow()}. */
   private static final int STREAM_DRAIN_TIMEOUT_SECONDS = 5;
 
@@ -62,7 +65,7 @@ public class ProcessCommandRunner implements CommandRunner {
     log.infof("Executing: %s", String.join(" ", argv));
     serialSink.emit(JobEvent.status("EXEC " + String.join(" ", argv)));
 
-    Process p = pb.start();
+    Process p = startProcess(pb);
 
     try (var streams =
         new InterruptingExecutor(
@@ -83,11 +86,41 @@ public class ProcessCommandRunner implements CommandRunner {
       return new ExecutionResult(exit, Instant.now());
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
-      p.destroyForcibly();
+      destroyAndAwaitTermination(p);
       throw ex;
     } catch (ExecutionException | TimeoutException ex) {
-      p.destroyForcibly();
+      destroyAndAwaitTermination(p);
       throw ex;
+    }
+  }
+
+  /**
+   * Starts the configured process.
+   *
+   * @param processBuilder builder configured with the desired command and environment
+   * @return the started process
+   * @throws IOException if the process cannot be started
+   */
+  Process startProcess(ProcessBuilder processBuilder) throws IOException {
+    return processBuilder.start();
+  }
+
+  /**
+   * Forcibly destroys a child process and waits briefly for it to terminate.
+   *
+   * @param process the child process to terminate
+   */
+  private static void destroyAndAwaitTermination(Process process) {
+    process.destroyForcibly();
+    try {
+      if (!process.waitFor(PROCESS_DESTROY_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+        log.warnf(
+            "Process did not terminate within %d s after destroyForcibly()",
+            PROCESS_DESTROY_TIMEOUT_SECONDS);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.trace("Interrupted while waiting for destroyed process to terminate");
     }
   }
 

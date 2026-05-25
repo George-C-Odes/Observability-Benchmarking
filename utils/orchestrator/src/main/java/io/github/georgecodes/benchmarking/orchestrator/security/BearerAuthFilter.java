@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.orchestrator.security;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -27,6 +28,7 @@ public class BearerAuthFilter implements ContainerRequestFilter {
    *
    * @param apiKey configured API key; blank disables authentication for local development
    */
+  @Inject
   public BearerAuthFilter(@ConfigProperty(name = "orchestrator.api-key") String apiKey) {
     this.apiKey = apiKey;
   }

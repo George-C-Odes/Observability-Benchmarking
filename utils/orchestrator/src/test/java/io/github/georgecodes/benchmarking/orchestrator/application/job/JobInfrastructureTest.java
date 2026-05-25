@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.github.georgecodes.benchmarking.orchestrator.domain.JobStatus;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -14,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -238,7 +241,89 @@ class JobInfrastructureTest {
                 () -> runner.run(List.of("cmd"), tempDir.toString(), Map.of(), null)));
   }
 
+  @Test
+  void processCommandRunnerWaitsForDestroyedProcessAfterInterrupt() {
+    FakeInterruptibleProcess process = new FakeInterruptibleProcess();
+    ProcessCommandRunner runner =
+        new ProcessCommandRunner() {
+          @Override
+          Process startProcess(ProcessBuilder processBuilder) {
+            return process;
+          }
+        };
+
+    InterruptedException ex =
+        assertThrows(
+            InterruptedException.class,
+            () ->
+                runner.run(
+                    List.of("fake-command"),
+                    tempDir.toString(),
+                    Map.of("ORCH_TEST_ENV", "VALUE"),
+                    JobInfrastructureTest::ignoreEvent));
+
+    assertEquals("wait interrupted", ex.getMessage());
+    assertTrue(process.destroyed.get(), "child process should be forcibly destroyed");
+    assertTrue(
+        process.timedWaitCalled.get(),
+        "runner should wait briefly for the destroyed process to terminate");
+    assertTrue(Thread.interrupted(), "interrupt status should be restored for the caller");
+  }
+
   private static void ignoreEvent(JobEvent ignored) {}
+
+  private static final class FakeInterruptibleProcess extends Process {
+
+    private final AtomicBoolean destroyed = new AtomicBoolean(false);
+    private final AtomicBoolean timedWaitCalled = new AtomicBoolean(false);
+
+    @Override
+    public OutputStream getOutputStream() {
+      return OutputStream.nullOutputStream();
+    }
+
+    @Override
+    public InputStream getInputStream() {
+      return InputStream.nullInputStream();
+    }
+
+    @Override
+    public InputStream getErrorStream() {
+      return InputStream.nullInputStream();
+    }
+
+    @Override
+    public int waitFor() throws InterruptedException {
+      throw new InterruptedException("wait interrupted");
+    }
+
+    @Override
+    public boolean waitFor(long timeout, TimeUnit unit) {
+      timedWaitCalled.set(true);
+      return true;
+    }
+
+    @Override
+    public int exitValue() {
+      throw new IllegalThreadStateException("process still running");
+    }
+
+    @Override
+    public Process destroyForcibly() {
+      destroyed.set(true);
+      return this;
+    }
+
+    @Override
+    public void destroy() {
+      destroyed.set(true);
+    }
+
+    @Override
+    public boolean isAlive() {
+      return !destroyed.get();
+    }
+  }
 
   private static Path javaExecutable() {
     String executable =
