@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,9 @@ class DomainUtilitiesTest {
     assertEquals(
         List.of("docker", "compose", "-f", "C:\\repo\\docker-compose.yml", "version"),
         CommandTokenizer.tokenize("docker compose -f C:\\repo\\docker-compose.yml version"));
+    assertEquals(
+        List.of("cmd", "a b", "single \" double", "double ' single"),
+        CommandTokenizer.tokenize("cmd 'a\\ b' 'single \" double' \"double ' single\""));
   }
 
   @Test
@@ -123,6 +127,114 @@ class DomainUtilitiesTest {
     assertTrue(command.contains("--build-arg HTTP_PORT=8080"));
     assertTrue(command.contains("--build-arg \"GREETING=hello world\""));
     assertTrue(command.endsWith("\"" + expectedContext + "\""));
+  }
+
+  @Test
+  void parseDockerfileConfigWithoutSettingsSkipsMalformedOptionsAndEmptyBuildArgs()
+      throws Exception {
+    Path xml = tempDir.resolve("dockerfile-no-settings.run.xml");
+    Files.writeString(
+        xml,
+        """
+      <component name="ProjectRunConfigurationManager">
+        <configuration default="false" name="No Settings" type="docker-deploy">
+          <deployment type="dockerfile"/>
+          <option value="ignored-without-name"/>
+          <option name="imageTag" value="local/no-settings:dev"/>
+          <option name="sourceFilePath" value="Dockerfile"/>
+          <option name="description">
+            Uses option text when the value attribute is blank.
+          </option>
+          <option name="buildArgs"><list/></option>
+        </configuration>
+      </component>
+      """);
+
+    IntelliJRunXmlParser.ParsedRunConfig cfg = IntelliJRunXmlParser.parse(xml);
+
+    assertEquals("dockerfile", cfg.deploymentType());
+    assertEquals("local/no-settings:dev", cfg.flatOptions().get("imageTag"));
+    assertEquals(
+        "Uses option text when the value attribute is blank.",
+        cfg.flatOptions().get("description"));
+    assertEquals(List.of(), cfg.buildArgs());
+    assertEquals(
+        "docker buildx build --load -t local/no-settings:dev -f Dockerfile .",
+        IntelliJRunXmlParser.toDockerCommand(cfg, null));
+  }
+
+  @Test
+  void dockerfileConversionHandlesExplicitContextNullBuildArgValueAndRequiredOptionFailures() {
+    Map<String, String> options = new HashMap<>();
+    options.put("imageTag", "local/explicit:dev");
+    options.put("sourceFilePath", "/workspace/Dockerfile");
+    options.put("contextFolderPath", "/workspace/context dir");
+    IntelliJRunXmlParser.ParsedRunConfig cfg =
+        new IntelliJRunXmlParser.ParsedRunConfig(
+            "Explicit Context",
+            "docker-deploy",
+            "dockerfile",
+            options,
+            List.of(
+                new IntelliJRunXmlParser.EnvVar("EMPTY", null),
+                new IntelliJRunXmlParser.EnvVar(null, "ignored"),
+                new IntelliJRunXmlParser.EnvVar(" ", "ignored")));
+
+    String command = IntelliJRunXmlParser.toDockerCommand(cfg, "/workspace");
+
+    assertTrue(command.contains("--build-arg EMPTY="));
+    assertTrue(command.endsWith("\"/workspace/context dir\""));
+    assertFalse(command.contains("ignored"));
+
+    IntelliJRunXmlParser.ParsedRunConfig missingTag =
+        new IntelliJRunXmlParser.ParsedRunConfig(
+            "Missing Tag",
+            "docker-deploy",
+            "dockerfile",
+            Map.of("sourceFilePath", "Dockerfile"),
+            List.of());
+    IntelliJRunXmlParser.ParsedRunConfig missingDockerfile =
+        new IntelliJRunXmlParser.ParsedRunConfig(
+            "Missing Dockerfile",
+            "docker-deploy",
+            "dockerfile",
+            Map.of("imageTag", "local/missing:dev"),
+            List.of());
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> IntelliJRunXmlParser.toDockerCommand(missingTag, null));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> IntelliJRunXmlParser.toDockerCommand(missingDockerfile, null));
+  }
+
+  @Test
+  void shellExtractionCoversBlankWorkspaceFallbackAndNoDockerCommandBranches() {
+    IntelliJRunXmlParser.ParsedRunConfig shellWithBlankWorkspace =
+        new IntelliJRunXmlParser.ParsedRunConfig(
+            "Blank Workspace",
+            "ShConfigurationType",
+            null,
+            Map.of("SCRIPT_TEXT", "docker compose --project-directory $PROJECT_DIR$/compose ps"),
+            List.of());
+    IntelliJRunXmlParser.ParsedRunConfig shellWithoutDocker =
+        new IntelliJRunXmlParser.ParsedRunConfig(
+            "No Docker",
+            "ShConfigurationType",
+            null,
+            Map.of("SCRIPT_TEXT", "echo preparing\necho done"),
+            List.of());
+    IntelliJRunXmlParser.ParsedRunConfig fallbackProgramParameters =
+        new IntelliJRunXmlParser.ParsedRunConfig(
+            "Fallback", "unknown", null, Map.of("programParameters", "docker images"), List.of());
+
+    assertEquals(
+        "docker compose --project-directory $PROJECT_DIR$/compose ps",
+        IntelliJRunXmlParser.toDockerCommand(shellWithBlankWorkspace, " "));
+    assertNull(IntelliJRunXmlParser.toDockerCommand(shellWithoutDocker, "/workspace"));
+    assertEquals(
+        "docker images", IntelliJRunXmlParser.toDockerCommand(fallbackProgramParameters, null));
   }
 
   @Test

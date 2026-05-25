@@ -3,6 +3,7 @@ package io.github.georgecodes.benchmarking.orchestrator.application;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.georgecodes.benchmarking.orchestrator.application.health.HealthAggregate;
+import io.github.georgecodes.benchmarking.orchestrator.application.health.HealthEndpoint;
 import io.github.georgecodes.benchmarking.orchestrator.application.health.ServiceHealth;
 import io.github.georgecodes.benchmarking.orchestrator.application.health.VertxHealthProbeClient;
 import io.vertx.core.Vertx;
@@ -10,6 +11,7 @@ import io.vertx.ext.web.Router;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
@@ -112,6 +114,15 @@ class ServiceHealthServiceTest {
 
     assertEquals("up", lokiResp.status());
     assertEquals("http://localhost:" + okPort, lokiResp.baseUrl());
+  }
+
+  @Test
+  void checkAll_handlesNullServiceMapAndBlankFilterAsEmptySelection() {
+    service = newService(configFor(null));
+
+    HealthAggregate resp = service.checkAll(" ").await().indefinitely();
+
+    assertEquals(List.of(), resp.services());
   }
 
   @Test
@@ -227,6 +238,33 @@ class ServiceHealthServiceTest {
     assertEquals("down", missingDns.status());
     assertNull(missingDns.statusCode());
     assertNotNull(missingDns.error());
+  }
+
+  @Test
+  void probeClientCoversInvalidHostAndDefaultHttpAndHttpsPorts() {
+    var mutinyVertx = new io.vertx.mutiny.core.Vertx(serverVertx);
+    VertxHealthProbeClient probeClient = new VertxHealthProbeClient(mutinyVertx);
+
+    ServiceHealth noHost =
+        probeClient
+            .probe(new HealthEndpoint("no-host", "http:///ready", "/health"), 100)
+            .await()
+            .indefinitely();
+    ServiceHealth httpDefaultPort =
+        probeClient
+            .probe(new HealthEndpoint("http-default", "http://localhost", "ready"), 100)
+            .await()
+            .indefinitely();
+    ServiceHealth httpsDefaultPort =
+        probeClient
+            .probe(new HealthEndpoint("https-default", "https://localhost", "ready"), 100)
+            .await()
+            .indefinitely();
+
+    assertEquals("down", noHost.status());
+    assertTrue(noHost.error().startsWith("Invalid base URL host"));
+    assertEquals("http-default", httpDefaultPort.name());
+    assertEquals("https-default", httpsDefaultPort.name());
   }
 
   private static ServiceHealthService newService(ServiceHealthConfig config) {
