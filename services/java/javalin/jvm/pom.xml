@@ -15,12 +15,12 @@
         <javalin.version>7.2.2</javalin.version>
         <caffeine.version>3.2.4</caffeine.version>
         <micrometer.version>1.16.5</micrometer.version>
-        <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
+        <micrometer-jvm-extras.version>0.3.0</micrometer-jvm-extras.version>
 
         <logback.version>1.5.32</logback.version>
 
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
-        <surefire-plugin.version>3.5.5</surefire-plugin.version>
+        <surefire-plugin.version>3.5.6</surefire-plugin.version>
 
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
