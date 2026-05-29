@@ -99,7 +99,7 @@ To apply updates:
 ```bash
 cd docs
 # Update all gems within current Gemfile constraints
-bundle update
+bundle update --all
 
 # — or update a specific gem —
 bundle update <gem-name>

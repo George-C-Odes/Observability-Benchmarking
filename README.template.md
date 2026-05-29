@@ -114,7 +114,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.16.0                 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.14                 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.15                 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.7                   | Frontend unit testing                                                |
@@ -628,7 +628,7 @@ This project implements comprehensive code quality and security practices to ens
 
 #### JVM Quality Tooling
 - **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
-- **Orchestrator (`utils/orchestrator`)**: Spotless 3.6.0, PMD 7.24.0, SpotBugs 4.9.8.3 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.6.0, PMD 7.25.0, SpotBugs 4.9.8.3 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
 - **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
 - **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 

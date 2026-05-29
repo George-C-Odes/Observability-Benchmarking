@@ -24,7 +24,7 @@
     <pmd.failure.priority>3</pmd.failure.priority>
     <pmd.include.tests>false</pmd.include.tests>
     <pmd.ruleset.path>quality/pmd-rules.xml</pmd.ruleset.path>
-    <pmd.version>7.24.0</pmd.version>
+    <pmd.version>7.25.0</pmd.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.36.0</quarkus.platform.version>
