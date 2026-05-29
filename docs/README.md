@@ -119,7 +119,7 @@ where.exe make
 make --version
 bundle update --all --jobs 4
 bundle lock --add-platform ruby x86_64-linux x64-mingw-ucrt
-bundle exec jekyll build --destination ../_site-test
+bundle exec jekyll build --destination _site
 ```
 
 If native gem compilation fails with `No such file or directory - make`, `ridk enable` was not active in the current shell. If it fails with `cc1.exe: fatal error: ... Permission denied` or a compiler test cannot read Ruby headers such as `ruby/config.h`, retry serially and check antivirus/Controlled Folder Access exclusions:
