@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.0.0_latest `
-  --build-arg MICRONAUT_VERSION=5.0.0 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.0.0_latest `
+  -t micronaut-jvm:5.0.1_latest `
+  --build-arg MICRONAUT_VERSION=5.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.0.1_latest `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:5.0.0_latest `
-  --build-arg MICRONAUT_VERSION=5.0.0 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.0.0_latest `
+  -t micronaut-native:5.0.1_latest `
+  --build-arg MICRONAUT_VERSION=5.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.0.1_latest `
   --load `
   services/java
 ```
@@ -220,9 +220,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/dropwizard/jvm/Dockerfile `
-  -t dropwizard-jvm-platform:5.0.1_latest `
-  --build-arg DROPWIZARD_VERSION=5.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.1_latest `
+  -t dropwizard-jvm-platform:5.0.2_latest `
+  --build-arg DROPWIZARD_VERSION=5.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.2_latest `
   --load `
   services/java
 ```
@@ -230,9 +230,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/dropwizard/jvm/Dockerfile `
-  -t dropwizard-jvm-virtual:5.0.1_latest `
-  --build-arg DROPWIZARD_VERSION=5.0.1 `
-  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.1_latest `
+  -t dropwizard-jvm-virtual:5.0.2_latest `
+  --build-arg DROPWIZARD_VERSION=5.0.2 `
+  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.2_latest `
   --load `
   services/java
 ```

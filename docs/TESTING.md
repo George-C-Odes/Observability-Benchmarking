@@ -571,8 +571,8 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.6
-React: 19.2.6
+Next.js: 16.2.7
+React: 19.2.7
 TypeScript: 6.0.3
 Vitest: 4.x
 ```
@@ -870,11 +870,11 @@ Integration Test Suite
 Testing Framework Versions:
 - Spring Boot: 4.0.6
 - Quarkus: 3.36.0
-- Micronaut: 5.0.0
+- Micronaut: 5.0.1
 - Helidon: 4.4.1
 - Spark: 3.0.4
 - Javalin: 7.2.2
-- Dropwizard: 5.0.1
+- Dropwizard: 5.0.2
 - Vert.x: 5.0.12
 - Pekko: 1.3.0
 - Go: 1.26.3

@@ -1,7 +1,7 @@
 # Micronaut JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 5.0.0 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
+A high-performance REST service implementation built with Micronaut 5.0.1 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
 
 ## Purpose
 - Benchmark Micronaut's compile-time DI/AOP performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Micronaut 5.0.0 runnin
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 5.0.0
+- **Framework**: Micronaut 5.0.1
 - **Java Version**: Eclipse Temurin 25.0.3
 - **HTTP Server**: Netty (Micronaut HTTP Server Netty)
 - **JVM GC**: G1 Garbage Collector
@@ -249,7 +249,7 @@ Tracks request count per endpoint.
 
 ### Docker
 
-**Image**: `micronaut-jvm:5.0.0_latest`
+**Image**: `micronaut-jvm:5.0.1_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -264,9 +264,9 @@ Tracks request count per endpoint.
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.0.0_latest `
-  --build-arg MICRONAUT_VERSION=5.0.0 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.0.0_latest `
+  -t micronaut-jvm:5.0.1_latest `
+  --build-arg MICRONAUT_VERSION=5.0.1 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.0.1_latest `
   --load `
   services/java
 ```

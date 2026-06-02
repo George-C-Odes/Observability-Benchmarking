@@ -24,10 +24,10 @@
     "@mui/icons-material": "9.0.1",
     "@mui/material": "9.0.1",
     "@mui/material-nextjs": "9.0.1",
-    "date-fns": "4.3.0",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
+    "date-fns": "4.4.0",
+    "next": "16.2.7",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "xml2js": "0.6.2"
   },
   "devDependencies": {
@@ -35,14 +35,14 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "25.9.1",
-    "@types/react": "19.2.15",
+    "@types/react": "19.2.16",
     "@types/react-dom": "19.2.3",
     "@types/xml2js": "0.4.14",
-    "@vitest/coverage-v8": "^4.1.7",
-    "eslint-config-next": "^16.2.6",
+    "@vitest/coverage-v8": "^4.1.8",
+    "eslint-config-next": "^16.2.7",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.8"
   }
 }
