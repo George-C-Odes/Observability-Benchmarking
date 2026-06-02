@@ -188,7 +188,7 @@ cd docs
 ridk enable
 bundle check
 if ($LASTEXITCODE -ne 0) { bundle install --jobs 4 }
-bundle exec jekyll build --destination ../_site-test
+bundle exec jekyll build --destination _site
 ```
 
 > **Tip:** `ridk enable` is the preferred per-session setup command. If you still prefer a permanent PATH-based setup, make sure both MSYS2 directories are present in your **User** `PATH`:
