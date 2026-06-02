@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Dropwizard JVM Platform" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="dropwizard-jvm-platform:5.0.1_latest" />
+        <option name="imageTag" value="dropwizard-jvm-platform:5.0.2_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="DROPWIZARD_VERSION" />
-              <option name="value" value="5.0.1" />
+              <option name="value" value="5.0.2" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="dropwizard-jvm:5.0.1_latest" />
+              <option name="value" value="dropwizard-jvm:5.0.2_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

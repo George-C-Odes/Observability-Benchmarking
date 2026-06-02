@@ -132,12 +132,12 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.0.6 (3.5.14 also supported)
-- Quarkus: 3.35.4
-- Micronaut: 5.0.0
+- Quarkus: 3.36.0
+- Micronaut: 5.0.1
 - Helidon: 4.4.1
 - Spark: 3.0.4
 - Javalin: 7.2.2
-- Dropwizard: 5.0.1
+- Dropwizard: 5.0.2
 - Vert.x: 5.0.12
 - Pekko: 1.3.0 (Pekko Core 1.4.0)
 - Go: 1.26.3 with Fiber v3.3.0

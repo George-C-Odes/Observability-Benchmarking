@@ -46,6 +46,8 @@ RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUI
 # We collect all JARs into the classpath so jdeps can resolve cross-jar references.
 # java.net.http  – OTel OTLP exporter resolves HTTP sender via SPI (invisible to jdeps)
 # java.management – Micrometer JVM metrics + MBeans
+# jdk.zipfs      – Quarkus/SmallRye Config reads application.yml from classpath jar: URLs;
+#                   the ZIP filesystem provider is service-loaded and not detected by jdeps
 RUN set -eux; \
     CLASSPATH=$(find /workspace/target/quarkus-app/lib -name '*.jar' -printf '%p:' 2>/dev/null) && \
     APP_JARS="$(find /workspace/target/quarkus-app/app /workspace/target/quarkus-app/quarkus -maxdepth 1 -type f -name '*.jar' 2>/dev/null)" && \
@@ -56,7 +58,7 @@ RUN set -eux; \
       --class-path "$CLASSPATH" \
       /workspace/target/quarkus-app/quarkus-run.jar \
       $APP_JARS 2>/dev/null || echo "java.base") && \
-    DEPS="${DEPS},java.net.http,java.management" && \
+    DEPS="${DEPS},java.net.http,java.management,jdk.zipfs" && \
     echo "jlink modules: $DEPS" && \
     jlink \
       --add-modules "$DEPS" \
