@@ -10,11 +10,11 @@ cachetools==7.1.4
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 cffi==2.0.0
     # via pyroscope-io
-django==6.0.5
+django==6.0.6
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 googleapis-common-protos==1.75.0
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.81.0
+grpcio==1.81.1
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
