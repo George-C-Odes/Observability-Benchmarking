@@ -5,6 +5,7 @@ import io.opentelemetry.context.Context;
 /**
  * Compatibility bridge for libraries that still reference the pre-1.63.0 package name.
  */
+@SuppressWarnings("unused")
 public final class InstrumentationUtil {
 
     private InstrumentationUtil() {
