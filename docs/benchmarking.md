@@ -63,7 +63,7 @@ The table below is a curated summary (RPS rounded to the closest thousand) for C
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Django 6.0.5 runs on CPython 3.13.13 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Django 6.0.6 runs on CPython 3.13.14 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop + backpressure), not “blocking code wrapped in reactive types.”
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -131,18 +131,18 @@ memory: 2GB        # Maximum memory
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: 4.0.6 (3.5.14 also supported)
-- Quarkus: 3.36.0
-- Micronaut: 5.0.1
+- Spring Boot: 4.1.0 (3.5.15 also supported)
+- Quarkus: 3.36.2
+- Micronaut: 5.0.3
 - Helidon: 4.4.1
 - Spark: 3.0.4
 - Javalin: 7.2.2
 - Dropwizard: 5.0.2
 - Vert.x: 5.0.12
 - Pekko: 1.3.0 (Pekko Core 1.4.0)
-- Go: 1.26.3 with Fiber v3.3.0
-- Python: 3.13.13 (CPython)
-- Django: 6.0.5 (Gunicorn 26.0.0)
+- Go: 1.26.4 with Fiber v3.3.0
+- Python: 3.13.14 (CPython)
+- Django: 6.0.6 (Gunicorn 26.0.0)
 
 ### Third-party license note (native-image)
 

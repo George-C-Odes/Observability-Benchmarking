@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG IMAGE_BUILDER=maven:3.9.16-eclipse-temurin-25-noble
-ARG IMAGE_DOCKER_CLI=docker:29.5.2-cli-alpine3.23
+ARG IMAGE_DOCKER_CLI=docker:29.5.3-cli-alpine3.23
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 ARG JAVA_RELEASE=25
 #ARG IMAGE_RUNTIME=amazoncorretto:25.0.3

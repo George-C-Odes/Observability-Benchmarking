@@ -19,6 +19,13 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export const sharedResolve = {
   alias: {
     '@': dirname,
+    // MUI 9 imports this subpath without a file extension. Node's ESM loader no
+    // longer resolves the package's directory entry during Vitest runs, so point
+    // directly at the shipped ESM module.
+    'react-transition-group/TransitionGroupContext': path.resolve(
+      dirname,
+      'node_modules/react-transition-group/esm/TransitionGroupContext.js',
+    ),
   },
 } as const;
 

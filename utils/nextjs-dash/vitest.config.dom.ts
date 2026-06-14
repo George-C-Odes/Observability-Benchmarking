@@ -8,6 +8,11 @@ export default defineConfig({
     ...sharedTestOptions,
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    server: {
+      deps: {
+        inline: ['@mui/material', 'react-transition-group'],
+      },
+    },
 
     // Only DOM-requiring tests (all tests live under __tests__/).
     include: [
