@@ -11,6 +11,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    server: {
+      deps: {
+        inline: ['@mui/material', 'react-transition-group'],
+      },
+    },
     include: ['__tests__/**/*.{test,spec}.{ts,tsx}'],
   },
 });
