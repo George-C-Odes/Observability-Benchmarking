@@ -136,8 +136,8 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
 Maven: 3.9+
-Spring Boot: 4.0.6 (3.5.14 also supported)
-Quarkus: 3.36.0
+Spring Boot: 4.1.0 (3.5.15 also supported)
+Quarkus: 3.36.2
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -239,7 +239,7 @@ public void testPlatformEndpoint() throws Exception {
 ```
 
 **Key Features Tested**:
-- Spring Boot 4.0.6 with OpenTelemetry Java Agent
+- Spring Boot 4.1.0 with OpenTelemetry Java Agent
 - Micrometer metrics integration
 - Platform vs. Virtual thread behavior
 - POM refactoring (no parent dependency)
@@ -304,7 +304,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.26.3+
+Go: 1.26.4+
 Fiber: v3.3.0
 OpenTelemetry: Latest stable
 ```
@@ -571,7 +571,7 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.7
+Next.js: 16.2.9
 React: 19.2.7
 TypeScript: 6.0.3
 Vitest: 4.x
@@ -868,17 +868,17 @@ Integration Test Suite
 ==========================================
 
 Testing Framework Versions:
-- Spring Boot: 4.0.6
-- Quarkus: 3.36.0
-- Micronaut: 5.0.1
+- Spring Boot: 4.1.0
+- Quarkus: 3.36.2
+- Micronaut: 5.0.3
 - Helidon: 4.4.1
 - Spark: 3.0.4
 - Javalin: 7.2.2
 - Dropwizard: 5.0.2
 - Vert.x: 5.0.12
 - Pekko: 1.3.0
-- Go: 1.26.3
-- Django: 6.0.5
+- Go: 1.26.4
+- Django: 6.0.6
 
 ==========================================
 JVM Services - Deployment Tests
@@ -1287,7 +1287,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.26.3 | Build version: go1.26.3
+2025-12-16T10:30:00.123Z Runtime version: go1.26.4 | Build version: go1.26.4
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1347,7 +1347,7 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 
 All 12 Java/Maven JVM modules are instrumented with the
 [JaCoCo Maven plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
-(version 0.8.14). Coverage reports are generated automatically during the
+(version 0.8.15). Coverage reports are generated automatically during the
 Maven `verify` phase — no extra flags are needed.
 
 #### Running locally
@@ -1577,11 +1577,11 @@ The repository-level `codecov.yml` (at the repo root) defines:
 #### How uploads work
 
 Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
-Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.1):
+Codecov via `codecov/codecov-action` (SHA-pinned to v7.0.0):
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+  uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
   with:
     files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
     flags: java-${{ matrix.name }}
@@ -1605,7 +1605,7 @@ the monorepo source tree:
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+  uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
   with:
     files: ${{ matrix.module_dir }}/coverage-codecov.out
     flags: ${{ matrix.name }}
@@ -1621,7 +1621,7 @@ the monorepo source tree:
 
     ```yaml
     - name: Upload to Codecov
-      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         files: ${{ matrix.module_dir }}/coverage.xml
         flags: ${{ matrix.codecov_flag }}
@@ -1768,7 +1768,7 @@ jobs:
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Set up Java 25
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -1801,12 +1801,12 @@ jobs:
   unit-tests-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
-      - name: Set up Go 1.26.3
+      - name: Set up Go 1.26.4
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: '1.26.3'
+          go-version: '1.26.4'
       
       - name: Test Go Service
         run: |
@@ -1815,7 +1815,7 @@ jobs:
           go test ./... -v -cover -coverprofile=coverage.out
       
       - name: Upload Coverage
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: ./services/go/enhanced/coverage.out
           flags: go-service
@@ -1824,7 +1824,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Start Services
         run: |
@@ -1855,13 +1855,13 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.36.0" }
-          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.0.6" }
-          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.0.6" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.3" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.36.2" }
+          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.0" }
+          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.0" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.4" }
     
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Build ${{ matrix.service.name }}
         run: |
@@ -1930,7 +1930,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.26.3
+  image: golang:1.26.4
   script:
     - cd services/go/enhanced
     - go mod download

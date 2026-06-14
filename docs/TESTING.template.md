@@ -136,7 +136,7 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
 Maven: 3.9+
-Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.14 also supported)
+Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.15 also supported)
 Quarkus: {{QUARKUS_VERSION}}
 ```
 
@@ -571,7 +571,7 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.7
+Next.js: 16.2.9
 React: 19.2.7
 TypeScript: 6.0.3
 Vitest: 4.x
@@ -1347,7 +1347,7 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 
 All 12 Java/Maven JVM modules are instrumented with the
 [JaCoCo Maven plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
-(version 0.8.14). Coverage reports are generated automatically during the
+(version 0.8.15). Coverage reports are generated automatically during the
 Maven `verify` phase — no extra flags are needed.
 
 #### Running locally
@@ -1577,11 +1577,11 @@ The repository-level `codecov.yml` (at the repo root) defines:
 #### How uploads work
 
 Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
-Codecov via `codecov/codecov-action` (SHA-pinned to v6.0.1):
+Codecov via `codecov/codecov-action` (SHA-pinned to v7.0.0):
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+  uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
   with:
     files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
     flags: java-${{ matrix.name }}
@@ -1605,7 +1605,7 @@ the monorepo source tree:
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+  uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
   with:
     files: ${{ matrix.module_dir }}/coverage-codecov.out
     flags: ${{ matrix.name }}
@@ -1621,7 +1621,7 @@ the monorepo source tree:
 
     ```yaml
     - name: Upload to Codecov
-      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         files: ${{ matrix.module_dir }}/coverage.xml
         flags: ${{ matrix.codecov_flag }}
@@ -1768,7 +1768,7 @@ jobs:
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Set up Java 25
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -1801,7 +1801,7 @@ jobs:
   unit-tests-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Set up Go {{GO_VERSION}}
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -1815,7 +1815,7 @@ jobs:
           go test ./... -v -cover -coverprofile=coverage.out
       
       - name: Upload Coverage
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: ./services/go/enhanced/coverage.out
           flags: go-service
@@ -1824,7 +1824,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Start Services
         run: |
@@ -1861,7 +1861,7 @@ jobs:
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "{{GO_VERSION}}" }
     
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       
       - name: Build ${{ matrix.service.name }}
         run: |

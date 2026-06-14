@@ -14,7 +14,7 @@
     <findsecbugs.version>1.14.0</findsecbugs.version>
     <google-java-format.version>1.35.0</google-java-format.version>
     <jacoco.skip>false</jacoco.skip>
-    <jacoco.version>0.8.14</jacoco.version>
+    <jacoco.version>0.8.15</jacoco.version>
     <maven.compiler.release>25</maven.compiler.release>
     <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
     <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
@@ -27,10 +27,10 @@
     <pmd.version>7.25.0</pmd.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.36.0</quarkus.platform.version>
+    <quarkus.platform.version>3.36.2</quarkus.platform.version>
     <quality.profile.id>quality</quality.profile.id>
     <spotbugs.exclude.filter.file>quality/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
-    <spotbugs-maven-plugin.version>4.9.8.3</spotbugs-maven-plugin.version>
+    <spotbugs-maven-plugin.version>4.10.2.0</spotbugs-maven-plugin.version>
     <spotbugs.max.heap>1024</spotbugs.max.heap>
     <spotless-maven-plugin.version>3.6.0</spotless-maven-plugin.version>
     <surefire-plugin.version>3.5.6</surefire-plugin.version>

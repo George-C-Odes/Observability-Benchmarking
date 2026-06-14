@@ -131,7 +131,7 @@ memory: 2GB        # Maximum memory
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.14 also supported)
+- Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.15 also supported)
 - Quarkus: {{QUARKUS_VERSION}}
 - Micronaut: {{MICRONAUT_VERSION}}
 - Helidon: {{HELIDON_VERSION}}

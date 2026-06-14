@@ -41,15 +41,15 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 ### Service Layer
 
 **REST Services** - Multiple implementations for comparison
-- Spring Boot 4.0.6 (JVM and Native)
+- Spring Boot 4.1.0 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (WebFlux - Reactor)
-- Quarkus 3.36.0 (JVM and Native)
+- Quarkus 3.36.2 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 5.0.1 (JVM and Native)
+- Micronaut 5.0.3 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)
@@ -70,9 +70,9 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Reactive (event-loop)
 - Pekko 1.3.0 (JVM)
   - Reactive (Pekko dispatcher)
-- Go 1.26.3
+- Go 1.26.4
   - Fiber framework (v3.3.0)
-- Django 6.0.5 (CPython)
+- Django 6.0.6 (CPython)
   - Platform threads (Gunicorn gthread)
   - Reactive (Gunicorn + UvicornWorker ASGI)
 

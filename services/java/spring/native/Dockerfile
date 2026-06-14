@@ -15,7 +15,7 @@ ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ARG PROFILE=tomcat
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
-ARG SPRING_BOOT_VERSION=4.0.6
+ARG SPRING_BOOT_VERSION=4.1.0
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -24,7 +24,7 @@ ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artif
 ARG NATIVE_IMAGE_MAX_HEAP=8g
 ENV NATIVE_IMAGE_OPTS="-J-Xmx${NATIVE_IMAGE_MAX_HEAP}"
 
-ARG YQ_VERSION=4.53.2
+ARG YQ_VERSION=4.53.3
 RUN microdnf install -y curl && microdnf clean all && \
     curl -L "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
       -o /usr/local/bin/yq && \
@@ -57,20 +57,26 @@ RUN --mount=type=cache,id=maven-m2-${JAVA_RELEASE},target=/home/maven/.m2,uid=10
 
 COPY --link --chown=1000:1000 spring/jvm/tomcat/src ./tomcat/src
 COPY --link --chown=1000:1000 spring/jvm/netty/src ./netty/src
+COPY --link --chown=1000:1000 spring/native/tomcat/src ./tomcat-native/src
+COPY --link --chown=1000:1000 spring/native/netty/src ./netty-native/src
 
 # Conditionally select the correct POM and src files
 RUN if [ "$PROFILE" = "netty" ]; then \
         echo "Preparing NETTY sources with PROFILE:$PROFILE and SPRING_BOOT_VERSION:$SPRING_BOOT_VERSION"; \
         cp ./netty/pom.xml pom.xml; \
         cp -r ./netty/src ./src; \
+        cp -r ./netty-native/src/. ./src/; \
         rm -f ./tomcat/pom.xml; \
         rm -rf ./tomcat/src; \
+        rm -rf ./tomcat-native ./netty-native; \
     else \
         echo "Preparing TOMCAT sources with PROFILE:$PROFILE and SPRING_BOOT_VERSION:$SPRING_BOOT_VERSION"; \
         cp ./tomcat/pom.xml pom.xml; \
         cp -r ./tomcat/src ./src; \
+        cp -r ./tomcat-native/src/. ./src/; \
         rm -f ./netty/pom.xml; \
         rm -rf ./netty/src; \
+        rm -rf ./tomcat-native ./netty-native; \
     fi
 
 COPY --link --chown=1000:1000 spring/native/logback.xml ./src/main/resources/logback.xml

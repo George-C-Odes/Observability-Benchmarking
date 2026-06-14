@@ -14,10 +14,10 @@
 
         <javalin.version>7.2.2</javalin.version>
         <caffeine.version>3.2.4</caffeine.version>
-        <micrometer.version>1.16.5</micrometer.version>
+        <micrometer.version>1.17.0</micrometer.version>
         <micrometer-jvm-extras.version>0.3.0</micrometer-jvm-extras.version>
 
-        <logback.version>1.5.32</logback.version>
+        <logback.version>1.5.34</logback.version>
 
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
@@ -119,7 +119,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>0.8.15</version>
                 <configuration>
                     <excludes>
                         <exclude>io/github/georgecodes/benchmarking/javalin/JavalinApplication*</exclude>
