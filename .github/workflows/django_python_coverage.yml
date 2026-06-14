@@ -47,7 +47,7 @@ jobs:
             module_dir: services/python/django/gunicorn/ASGI
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -222,7 +222,7 @@ jobs:
 
       - name: Upload to Codecov
         if: always() && !cancelled() && steps.test.outcome == 'success'
-        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: ${{ github.workspace }}/${{ matrix.module_dir }}/coverage.xml
           flags: ${{ matrix.codecov_flag }}
