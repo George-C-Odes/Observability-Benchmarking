@@ -7,7 +7,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/gofiber/contrib/v3/otel v1.2.0
 	github.com/gofiber/fiber/v3 v3.3.0
-	github.com/grafana/otel-profiling-go v0.5.3
+	github.com/grafana/otel-profiling-go v0.6.0
 	github.com/grafana/pyroscope-go v1.3.1
 	github.com/maypok86/otter/v2 v2.3.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.19.0
