@@ -170,7 +170,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Spark           | 3.0.4   |
 | Javalin         | 7.2.2   |
 | Dropwizard      | 5.0.2   |
-| Vert.x          | 5.0.12  |
+| Vert.x          | 5.1.2   |
 | Pekko           | 1.3.0   |
 | Go              | 1.26.4  |
 | Django          | 6.0.6   |

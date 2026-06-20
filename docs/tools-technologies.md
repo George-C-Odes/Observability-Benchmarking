@@ -338,7 +338,7 @@ mvn package -Pnative
 - Heavier baseline than Spark or Javalin due to bundled subsystems
 - Smaller community momentum compared to Spring or Quarkus
 
-### Vert.x 5.0.12
+### Vert.x 5.1.2
 
 **Official Site**: [https://vertx.io/](https://vertx.io/) | [GitHub](https://github.com/eclipse-vertx/vert.x)
 
@@ -349,7 +349,7 @@ mvn package -Pnative
 - Lightweight — no CDI, no annotation scanning, no classpath magic; explicit wiring
 
 **Implementation Details**:
-- **Vert.x 5.0.12** (latest stable release)
+- **Vert.x 5.1.2** (latest stable release)
 - Fully reactive HTTP server on Netty event loops
 - JVM build only (no native image support at this time)
 - jlink-optimised runtime image with distroless base
@@ -976,7 +976,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.2   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | 5.0.12  | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.6   | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.2.9  | SSR frontend and control dashboard                                   |
