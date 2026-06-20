@@ -5,9 +5,9 @@ go 1.26.4
 require (
 	github.com/Yiling-J/theine-go v0.6.2
 	github.com/dgraph-io/ristretto/v2 v2.4.0
-	github.com/gofiber/contrib/v3/otel v1.2.0
+	github.com/gofiber/contrib/v3/otel v1.2.1
 	github.com/gofiber/fiber/v3 v3.3.0
-	github.com/grafana/otel-profiling-go v0.5.3
+	github.com/grafana/otel-profiling-go v0.6.0
 	github.com/grafana/pyroscope-go v1.3.1
 	github.com/maypok86/otter/v2 v2.3.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.19.0
@@ -57,8 +57,8 @@ require (
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260610212136-7ab31c22f7ad // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260610212136-7ab31c22f7ad // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260618152121-87f3d3e198d3 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260618152121-87f3d3e198d3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
