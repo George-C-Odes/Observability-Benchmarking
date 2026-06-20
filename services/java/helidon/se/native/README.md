@@ -1,7 +1,7 @@
 # Helidon SE Native Image Service
 
 ## Overview
-A GraalVM native-image build of the Helidon 4.4.1 SE benchmarking service. Produces an ahead-of-time compiled binary with near-instant startup and a minimal memory footprint, running on a distroless container with no JVM.
+A GraalVM native-image build of the Helidon 4.5.0 SE benchmarking service. Produces an ahead-of-time compiled binary with near-instant startup and a minimal memory footprint, running on a distroless container with no JVM.
 
 This module **shares the exact same Java sources** as [`helidon-se-jvm`](../jvm/README.md) via `build-helper-maven-plugin`. The only differences are the build toolchain (GraalVM `native-image` instead of `javac` + jlink) and the runtime container.
 
@@ -14,7 +14,7 @@ This module **shares the exact same Java sources** as [`helidon-se-jvm`](../jvm/
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Helidon 4.4.1 SE (Níma)
+- **Framework**: Helidon 4.5.0 SE (Níma)
 - **Compiler**: GraalVM `native-image` 25.0.3 (`-O2`, `-march=native`)
 - **GC**: G1 Garbage Collector (`--gc=G1`)
 - **Thread Model**: Virtual threads only (Helidon 4 default)
@@ -102,7 +102,7 @@ Key `native-image` flags configured in `pom.xml`:
 
 ### Docker
 
-**Image**: `helidon-se-native:4.4.1_latest`
+**Image**: `helidon-se-native:4.5.0_latest`
 
 | Stage   | Image                                                           |
 |---------|-----------------------------------------------------------------|
@@ -121,9 +121,9 @@ Key `native-image` flags configured in `pom.xml`:
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/native/Dockerfile `
-  -t helidon-se-native:4.4.1_latest `
-  --build-arg HELIDON_VERSION=4.4.1 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.4.1_latest `
+  -t helidon-se-native:4.5.0_latest `
+  --build-arg HELIDON_VERSION=4.5.0 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.5.0_latest `
   --load `
   services/java
 ```

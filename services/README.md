@@ -100,9 +100,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.36.2_latest `
-  --build-arg QUARKUS_VERSION=3.36.2 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.36.2_latest `
+  -t quarkus-jvm:3.36.3_latest `
+  --build-arg QUARKUS_VERSION=3.36.3 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.36.3_latest `
   --load `
   services/java
 ```
@@ -110,9 +110,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.36.2_latest `
-    --build-arg QUARKUS_VERSION=3.36.2 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.36.2_latest `
+    -t quarkus-native:3.36.3_latest `
+    --build-arg QUARKUS_VERSION=3.36.3 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.36.3_latest `
     --load `
     services/java
 ```
@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.0.3_latest `
-  --build-arg MICRONAUT_VERSION=5.0.3 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.0.3_latest `
+  -t micronaut-jvm:5.1.2_latest `
+  --build-arg MICRONAUT_VERSION=5.1.2 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.1.2_latest `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:5.0.3_latest `
-  --build-arg MICRONAUT_VERSION=5.0.3 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.0.3_latest `
+  -t micronaut-native:5.1.2_latest `
+  --build-arg MICRONAUT_VERSION=5.1.2 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.1.2_latest `
   --load `
   services/java
 ```
@@ -140,9 +140,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/jvm/Dockerfile `
-  -t helidon-se-jvm:4.4.1_latest `
-  --build-arg HELIDON_VERSION=4.4.1 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.4.1_latest `
+  -t helidon-se-jvm:4.5.0_latest `
+  --build-arg HELIDON_VERSION=4.5.0 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.5.0_latest `
   --load `
   services/java
 ```
@@ -150,9 +150,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/native/Dockerfile `
-  -t helidon-se-native:4.4.1_latest `
-  --build-arg HELIDON_VERSION=4.4.1 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.4.1_latest `
+  -t helidon-se-native:4.5.0_latest `
+  --build-arg HELIDON_VERSION=4.5.0 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.5.0_latest `
   --load `
   services/java
 ```
@@ -160,9 +160,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/jvm/Dockerfile `
-  -t helidon-mp-jvm:4.4.1_latest `
-  --build-arg HELIDON_VERSION=4.4.1 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.4.1_latest `
+  -t helidon-mp-jvm:4.5.0_latest `
+  --build-arg HELIDON_VERSION=4.5.0 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.0_latest `
   --load `
   services/java
 ```
@@ -170,9 +170,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/native/Dockerfile `
-  -t helidon-mp-native:4.4.1_latest `
-  --build-arg HELIDON_VERSION=4.4.1 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.4.1_latest `
+  -t helidon-mp-native:4.5.0_latest `
+  --build-arg HELIDON_VERSION=4.5.0 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.0_latest `
   --load `
   services/java
 ```

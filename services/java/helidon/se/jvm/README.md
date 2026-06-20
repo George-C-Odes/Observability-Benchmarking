@@ -1,7 +1,7 @@
 # Helidon SE JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Helidon 4.4.1 (SE/Níma) running on the Java Virtual Machine (JVM 25). Helidon 4 is virtual-thread–first and dropped the reactive programming model, making it ideal for benchmarking virtual thread performance with minimal framework overhead.
+A high-performance REST service implementation built with Helidon 4.5.0 (SE/Níma) running on the Java Virtual Machine (JVM 25). Helidon 4 is virtual-thread–first and dropped the reactive programming model, making it ideal for benchmarking virtual thread performance with minimal framework overhead.
 
 ## Purpose
 - Benchmark Helidon 4 SE performance with virtual threads (the only thread model in Helidon 4)
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Helidon 4.4.1 (SE/Ním
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Helidon 4.4.1 SE (Níma)
+- **Framework**: Helidon 4.5.0 SE (Níma)
 - **Java Version**: Eclipse Temurin 25
 - **JVM GC**: G1 Garbage Collector
 - **Thread Model**: Virtual threads only (Helidon 4 default — every request runs on a virtual thread)
@@ -76,7 +76,7 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 
 ### Docker
 
-**Image**: `helidon-se-jvm:4.4.1_latest`
+**Image**: `helidon-se-jvm:4.5.0_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -93,9 +93,9 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/jvm/Dockerfile `
-  -t helidon-se-jvm:4.4.1_latest `
-  --build-arg HELIDON_VERSION=4.4.1 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.4.1_latest `
+  -t helidon-se-jvm:4.5.0_latest `
+  --build-arg HELIDON_VERSION=4.5.0 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.5.0_latest `
   --load `
   services/java
 ```

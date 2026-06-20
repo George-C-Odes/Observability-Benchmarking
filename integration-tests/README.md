@@ -164,9 +164,9 @@ The runner prints the versions it is designed against (these values are embedded
 | Framework       | Version |
 |-----------------|---------|
 | Spring Boot     | 4.1.0   |
-| Quarkus         | 3.36.2  |
-| Micronaut       | 5.0.3   |
-| Helidon SE & MP | 4.4.1   |
+| Quarkus         | 3.36.3  |
+| Micronaut       | 5.1.2   |
+| Helidon SE & MP | 4.5.0   |
 | Spark           | 3.0.4   |
 | Javalin         | 7.2.2   |
 | Dropwizard      | 5.0.2   |

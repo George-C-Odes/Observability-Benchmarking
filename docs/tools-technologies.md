@@ -82,7 +82,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.36.2
+### Quarkus 3.36.3
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -93,7 +93,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.36.2** (latest stable)
+- **Quarkus 3.36.3** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 5.0.3
+### Micronaut 5.1.2
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 5.0.3** (latest stable)
+- **Micronaut 5.1.2** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -187,7 +187,7 @@ mvn package -Pnative
 - Compile-time DI can be harder to debug
 - Some libraries require Micronaut-specific adapters
 
-### Helidon 4.4.1
+### Helidon 4.5.0
 
 **Official Site**: [https://helidon.io/](https://helidon.io/)
 
@@ -198,7 +198,7 @@ mvn package -Pnative
 - `jlink`-optimised JVM builds produce notably small Docker images
 
 **Implementation Details**:
-- **Helidon 4.4.1** (latest stable, virtual-thread–first architecture)
+- **Helidon 4.5.0** (latest stable, virtual-thread–first architecture)
 - **Helidon SE**: Programmatic, functional-style routing with minimal overhead (Níma)
 - **Helidon MP**: MicroProfile-compliant layer on top of SE (CDI + JAX-RS)
 - Both flavours support JVM and GraalVM native builds
@@ -967,12 +967,12 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Go                         | 1.26.4  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.14 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.3.0  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.3.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.36.2  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.0.3   | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.4.1   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.4.1   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Quarkus                    | 3.36.3  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 5.1.2   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.2   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
@@ -990,19 +990,19 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Profiling          | Pyroscope                  | 2.0.3   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.63.0  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.28.1  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.29.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.5.3  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.6.0  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.17.0 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.17 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.18 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.8   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.9   | Frontend unit testing                                                |
 
 ---
 

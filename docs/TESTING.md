@@ -137,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
 Maven: 3.9+
 Spring Boot: 4.1.0 (3.5.15 also supported)
-Quarkus: 3.36.2
+Quarkus: 3.36.3
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -869,9 +869,9 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.1.0
-- Quarkus: 3.36.2
-- Micronaut: 5.0.3
-- Helidon: 4.4.1
+- Quarkus: 3.36.3
+- Micronaut: 5.1.2
+- Helidon: 4.5.0
 - Spark: 3.0.4
 - Javalin: 7.2.2
 - Dropwizard: 5.0.2
@@ -1768,10 +1768,10 @@ jobs:
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Set up Java 25
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
         with:
           java-version: '25'
           distribution: 'corretto'
@@ -1801,7 +1801,7 @@ jobs:
   unit-tests-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Set up Go 1.26.4
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -1824,7 +1824,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Start Services
         run: |
@@ -1855,13 +1855,13 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.36.2" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.36.3" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.0" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.0" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.4" }
     
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Build ${{ matrix.service.name }}
         run: |

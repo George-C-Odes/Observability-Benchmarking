@@ -45,17 +45,17 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (WebFlux - Reactor)
-- Quarkus 3.36.2 (JVM and Native)
+- Quarkus 3.36.3 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 5.0.3 (JVM and Native)
+- Micronaut 5.1.2 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)
-- Helidon SE 4.4.1 (JVM and Native)
+- Helidon SE 4.5.0 (JVM and Native)
   - Virtual threads (Helidon 4 is virtual-thread–first)
-- Helidon MP 4.4.1 (JVM and Native)
+- Helidon MP 4.5.0 (JVM and Native)
   - Virtual threads (MicroProfile / CDI / JAX-RS)
 - Spark 3.0.4 (JVM)
   - Platform threads
