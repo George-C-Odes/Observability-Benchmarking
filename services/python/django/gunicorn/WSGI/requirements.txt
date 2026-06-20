@@ -81,7 +81,7 @@ protobuf==6.33.6
     #   opentelemetry-proto
 pycparser==3.0
     # via cffi
-pyroscope-io==1.0.11
+pyroscope-io==1.0.12
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   pyroscope-otel

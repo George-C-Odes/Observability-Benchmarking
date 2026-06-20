@@ -967,7 +967,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.3.0                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.3.1                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -987,22 +987,22 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Logs               | Loki                       | 3.7.2                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.1                   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 2.0.3                   | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 2.1.0                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.63.0                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.28.1                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.29.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.5.3                  | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.6.0                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.17.0                 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.17                 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.18                 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.8                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.9                   | Frontend unit testing                                                |
 
 ---
 

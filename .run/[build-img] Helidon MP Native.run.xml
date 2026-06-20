@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Helidon MP Native" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="helidon-mp-native:4.4.1_latest" />
+        <option name="imageTag" value="helidon-mp-native:4.5.0_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="HELIDON_VERSION" />
-              <option name="value" value="4.4.1" />
+              <option name="value" value="4.5.0" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="helidon-mp-native:4.4.1_latest" />
+              <option name="value" value="helidon-mp-native:4.5.0_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

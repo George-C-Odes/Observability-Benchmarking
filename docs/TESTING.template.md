@@ -1768,10 +1768,10 @@ jobs:
   unit-tests-java:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Set up Java 25
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
         with:
           java-version: '25'
           distribution: 'corretto'
@@ -1801,7 +1801,7 @@ jobs:
   unit-tests-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Set up Go {{GO_VERSION}}
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -1824,7 +1824,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests-java, unit-tests-go]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Start Services
         run: |
@@ -1861,7 +1861,7 @@ jobs:
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "{{GO_VERSION}}" }
     
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Build ${{ matrix.service.name }}
         run: |

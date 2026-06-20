@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7-labs
 ARG GO_VERSION=1.26.4
-ARG BASE_BUILDER=alpine3.23
+ARG BASE_BUILDER=alpine3.24
 
 # ------------ BUILD STAGE -----------------------
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-${BASE_BUILDER} AS builder

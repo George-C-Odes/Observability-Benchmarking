@@ -9,7 +9,7 @@ FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MI
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow -Dorg.jboss.weld.executor.threadPoolType=FIXED_TIMEOUT -Dorg.jboss.weld.executor.threadPoolSize=1"
-ARG HELIDON_VERSION=4.4.1
+ARG HELIDON_VERSION=4.5.0
 ENV HELIDON_VERSION=${HELIDON_VERSION}
 
 ENV LANGUAGE='en_US:en'
