@@ -987,7 +987,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Logs               | Loki                       | 3.7.2                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.1                   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 2.0.3                   | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 2.1.0                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.63.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.29.0                  | Auto-instrumentation and exporters                                   |
