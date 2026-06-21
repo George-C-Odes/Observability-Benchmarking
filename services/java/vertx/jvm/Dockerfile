@@ -56,7 +56,7 @@ RUN --mount=type=cache,id=maven-m2-vertx-jvm-${JAVA_RELEASE},target=/home/maven/
 
 # ── jlink: create a stripped-down custom JRE ──
 # Analyse the shaded uber-jar for required JDK modules and build a minimal runtime.
-# java.instrument & jdk.management are added explicitly — they are required at
+# java.instrument, jdk.management & jdk.jfr are added explicitly — they are required at
 # runtime by the -javaagent flag (OpenTelemetry) and profiling extensions but
 # are invisible to jdeps static analysis.
 RUN set -eux; \
@@ -65,7 +65,7 @@ RUN set -eux; \
       --print-module-deps \
       --multi-release ${JAVA_RELEASE} \
       /workspace/out/app.jar 2>/dev/null || echo "java.base") && \
-    DEPS="$DEPS,java.instrument,jdk.management" && \
+    DEPS="$DEPS,java.instrument,jdk.management,jdk.jfr" && \
     echo "jlink modules: $DEPS" && \
     jlink \
       --add-modules "$DEPS" \
@@ -78,7 +78,7 @@ RUN set -eux; \
 # ------------ OTEL/PROFILING DEPS STAGE -----------------------
 FROM alpine:3.24.1 AS otel_deps
 
-ARG OTEL_PYROSCOPE_VERSION=1.1.0
+ARG OTEL_PYROSCOPE_VERSION=2.0.6
 ARG OTEL_JAVA_AGENT_VERSION=2.29.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
@@ -88,8 +88,12 @@ WORKDIR /out
 
 RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
     set -e; \
-    PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/pyroscope-otel.jar"; \
-    PYRO_CACHE="/cache/pyroscope-otel-${OTEL_PYROSCOPE_VERSION}.jar"; \
+    case "${OTEL_PYROSCOPE_VERSION}" in \
+      0.*|1.*) PYRO_ASSET="pyroscope-otel.jar" ;; \
+      *)       PYRO_ASSET="pyroscope-otel-javaagent-extension.jar" ;; \
+    esac; \
+    PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/${PYRO_ASSET}"; \
+    PYRO_CACHE="/cache/${PYRO_ASSET%.jar}-${OTEL_PYROSCOPE_VERSION}.jar"; \
     if [ ! -f "$PYRO_CACHE" ]; then \
       curl -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
     fi; \
