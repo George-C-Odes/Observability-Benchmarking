@@ -27,7 +27,7 @@
     <pmd.version>7.25.0</pmd.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.36.3</quarkus.platform.version>
+    <quarkus.platform.version>3.37.0</quarkus.platform.version>
     <quality.profile.id>quality</quality.profile.id>
     <spotbugs.exclude.filter.file>quality/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <spotbugs-maven-plugin.version>4.10.2.0</spotbugs-maven-plugin.version>

@@ -43,7 +43,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:13.0.2
+    image: grafana/grafana:13.0.3
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -76,7 +76,7 @@ services:
 
   loki:
     profiles: ["${DOCKER_PROF_LOKI:-skip}"]
-    image: grafana/loki:3.7.2
+    image: grafana/loki:3.7.3
     container_name: loki
     volumes:
       - ${HOST_REPO}/data/loki:/loki
@@ -90,7 +90,7 @@ services:
 
   mimir:
     profiles: ["${DOCKER_PROF_MIMIR:-skip}"]
-    image: grafana/mimir:3.1.1
+    image: grafana/mimir:3.1.2
     container_name: mimir
     volumes:
       - ${HOST_REPO}/config/mimir:/etc/mimir-config

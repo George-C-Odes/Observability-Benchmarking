@@ -100,9 +100,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.36.3_latest `
-  --build-arg QUARKUS_VERSION=3.36.3 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.36.3_latest `
+  -t quarkus-jvm:3.37.0_latest `
+  --build-arg QUARKUS_VERSION=3.37.0 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.37.0_latest `
   --load `
   services/java
 ```
@@ -110,9 +110,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.36.3_latest `
-    --build-arg QUARKUS_VERSION=3.36.3 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.36.3_latest `
+    -t quarkus-native:3.37.0_latest `
+    --build-arg QUARKUS_VERSION=3.37.0 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.37.0_latest `
     --load `
     services/java
 ```
