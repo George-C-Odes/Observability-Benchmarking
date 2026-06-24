@@ -82,7 +82,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.36.3
+### Quarkus 3.37.0
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -93,7 +93,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.36.3** (latest stable)
+- **Quarkus 3.37.0** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -969,7 +969,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.3.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.36.3  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.37.0  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.1.2   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
@@ -982,11 +982,11 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Frontend**      | Framework          | Next.js                    | 16.2.9  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.7  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.1.1   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.0.2  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.2   | Log aggregation                                                      |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.1.2   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 13.0.3  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.7.3   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.1.1   | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.1.2   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.1.0   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.63.0  | Manual metrics, logs, and traces instrumentation                     |
@@ -999,7 +999,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.17.0 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.18 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.19 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.9   | Frontend unit testing                                                |

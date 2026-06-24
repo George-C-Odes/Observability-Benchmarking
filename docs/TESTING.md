@@ -137,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
 Maven: 3.9+
 Spring Boot: 4.1.0 (3.5.15 also supported)
-Quarkus: 3.36.3
+Quarkus: 3.37.0
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -475,7 +475,7 @@ The quality workflow does more than execute tests:
 2. Installs the shared package into each runtime module environment.
 3. Prints the Ruff version, runs module syntax checks, Ruff lint and format checks, `python manage.py check`, and the shared test suite.
 
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v6.2.0` is exercised on Node 24 ahead of GitHub's runtime migration.
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v6.3.0` is exercised on Node 24 ahead of GitHub's runtime migration.
 
 Use the following sequence when you want to reproduce the CI gates locally:
 
@@ -869,7 +869,7 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.1.0
-- Quarkus: 3.36.3
+- Quarkus: 3.37.0
 - Micronaut: 5.1.2
 - Helidon: 4.5.0
 - Spark: 3.0.4
@@ -1804,7 +1804,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       
       - name: Set up Go 1.26.4
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '1.26.4'
       
@@ -1855,7 +1855,7 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.36.3" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.37.0" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.0" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.0" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.26.4" }
