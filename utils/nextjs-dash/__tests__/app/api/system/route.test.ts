@@ -33,7 +33,7 @@ describe('/api/system route', () => {
     expect(body.npm).toBe('11.17.0');
     expect(body.nextjs).toBe('16.2.9');
     expect(body.react).toBe('19.2.7');
-    expect(body.mui).toBe('9.1.1');
+    expect(body.mui).toBe('9.1.2');
     expect(body.typescript).toBe('6.0.3');
   });
 

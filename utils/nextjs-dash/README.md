@@ -161,7 +161,7 @@ Some environments terminate long-lived HTTP connections.
 
 - **Next.js**: v16.2.9
 - **React**: v19.2.7
-- **Material-UI (MUI)**: v9.1.1
+- **Material-UI (MUI)**: v9.1.2
 - **TypeScript**: v6.0.3
 - **Node.js**: v26.3.1
 

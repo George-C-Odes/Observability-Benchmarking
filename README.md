@@ -97,7 +97,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Framework          | Next.js                    | 16.2.9  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.7  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.1.1   | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.1.2   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.0.2  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.2   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7  | Distributed tracing backend                                          |
@@ -114,7 +114,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.17.0 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.18 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.19 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.9   | Frontend unit testing                                                |
@@ -162,7 +162,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.9 and Material-UI 9.1.1
+  - Built with Next.js 16.2.9 and Material-UI 9.1.2
 
 ### 🚀 REST Service Implementations
 
