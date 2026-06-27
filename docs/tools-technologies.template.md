@@ -967,7 +967,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.3.1                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.4.0                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -999,7 +999,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 11.17.0                 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.19                 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.20                 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.9                   | Frontend unit testing                                                |

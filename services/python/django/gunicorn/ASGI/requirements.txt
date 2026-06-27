@@ -12,7 +12,7 @@ cachetools==7.1.4
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 cffi==2.0.0
     # via pyroscope-io
-click==8.4.1
+click==8.4.2
     # via uvicorn
 colorama==0.4.6
     # via click
