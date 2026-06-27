@@ -18,7 +18,7 @@
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <lombok.version>1.18.46</lombok.version>
-        <logback.version>1.5.35</logback.version>
+        <logback.version>1.5.37</logback.version>
 
         <micronaut.version>5.1.2</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>

@@ -16,7 +16,7 @@
         <caffeine.version>3.2.4</caffeine.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <lombok.version>1.18.46</lombok.version>
-        <logback.version>1.5.35</logback.version>
+        <logback.version>1.5.37</logback.version>
         <checkstyle.config.location>../../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
 
