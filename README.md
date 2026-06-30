@@ -9,7 +9,7 @@
 [![Java](https://img.shields.io/badge/Java-25.0.3-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.37.0-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-5.1.2-1A1A2E.svg)](https://micronaut.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-5.1.3-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.0-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.2-00AFCF.svg)](https://javalin.io/)
@@ -85,7 +85,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Node.js                    | 26.4.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.37.0  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.1.2   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 5.1.3   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -179,7 +179,7 @@ If you’re searching for projects like this, these are the topics it covers:
 - **Quarkus 3.37.0**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 5.1.2
+- **Micronaut**: 5.1.3
   - JVM build (all three thread modes)
   - Native (all three thread modes)
 - **Helidon**: 4.5.0
@@ -507,7 +507,7 @@ The numbers below are a curated summary of a representative run.
 - **Java Native**: GraalVM Enterprise 25.0.3-ol9
 - **Spring Boot**: 4.1.0 (3.5.15 also supported)
 - **Quarkus**: 3.37.0
-- **Micronaut**: 5.1.2
+- **Micronaut**: 5.1.3
 - **Helidon**: 4.5.0
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.2

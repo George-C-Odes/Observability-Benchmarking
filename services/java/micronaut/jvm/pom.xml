@@ -20,7 +20,7 @@
         <lombok.version>1.18.46</lombok.version>
         <logback.version>1.5.37</logback.version>
 
-        <micronaut.version>5.1.2</micronaut.version>
+        <micronaut.version>5.1.3</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.2</micronaut.micrometer.version>
         <micronaut.test.version>4.10.3</micronaut.test.version>

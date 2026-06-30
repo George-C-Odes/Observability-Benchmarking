@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 5.1.2
+### Micronaut 5.1.3
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 5.1.2** (latest stable)
+- **Micronaut 5.1.3** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -970,7 +970,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Node.js                    | 26.4.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.37.0  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.1.2   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 5.1.3   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
