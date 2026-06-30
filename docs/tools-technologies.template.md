@@ -998,7 +998,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Platform**      | Tooling            | Docker CLI                 | 29.6.0                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.17.0                 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.18.0                 | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.20                 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
