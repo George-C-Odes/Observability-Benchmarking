@@ -85,7 +85,7 @@ pyroscope-io==1.0.12
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   pyroscope-otel
-pyroscope-otel==1.0.1
+pyroscope-otel==1.1.0
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 sqlparse==0.5.5
     # via django
