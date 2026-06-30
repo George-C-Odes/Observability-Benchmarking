@@ -15,9 +15,9 @@ This repository currently uses two scoped JVM quality setups:
   - **maven-checkstyle-plugin**: 3.6.0
   - **checkstyle**: 12.2.0
 - **Orchestrator (`utils/orchestrator`)**
-  - **spotless-maven-plugin**: 3.7.0
+  - **spotless-maven-plugin**: 3.8.0
   - **google-java-format**: 1.35.0
-  - **maven-pmd-plugin**: 3.28.0 with PMD 7.25.0
+  - **maven-pmd-plugin**: 3.28.0 with PMD 7.26.0
   - **spotbugs-maven-plugin**: 4.10.2.0 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
