@@ -35,7 +35,7 @@ opentelemetry-instrumentation-logging>=0.56b0
 pyroscope-io>=1.0.0
 # Official OTel span-profile integration (Traces → Profiles correlation)
 # https://github.com/grafana/otel-profiling-python
-pyroscope-otel>=1.0.0
+pyroscope-otel>=1.1.0
 
 # --- Cache (TTL/LRU, pure-Python, fork-safe) ---
 cachetools>=6.0.0
