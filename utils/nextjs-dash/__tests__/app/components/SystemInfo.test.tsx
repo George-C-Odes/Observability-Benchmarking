@@ -13,10 +13,10 @@ describe('SystemInfo', () => {
     window.__OBS_DASH_CONFIG__ = {
       systemInfo: {
         nodejs: 'v26.4.0',
-        npm: '11.17.0',
-        nextjs: '16.2.9',
+        npm: '11.18.0',
+        nextjs: '16.2.10',
         react: '19.2.7',
-        mui: '9.1.2',
+        mui: '9.2.0',
         typescript: '6.0.3',
         platform: 'linux',
         arch: 'x64',
@@ -29,7 +29,7 @@ describe('SystemInfo', () => {
     const npmCard = npmLabel.closest('.MuiCard-root');
 
     expect(npmCard).toBeTruthy();
-    expect(within(npmCard as HTMLElement).getByText('11.17.0')).toBeInTheDocument();
+    expect(within(npmCard as HTMLElement).getByText('11.18.0')).toBeInTheDocument();
     expect(screen.queryByText('Server system information is not available.')).not.toBeInTheDocument();
   });
 });

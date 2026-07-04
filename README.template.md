@@ -94,11 +94,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.9                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.10                 | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.7                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.1.2                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.0.3                  | Metrics, logs, traces dashboards                                     |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.2.0                   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 13.1.0                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.3                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.2                   | Long-term metrics storage                                            |
@@ -113,7 +113,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Tooling            | Docker CLI                 | 29.6.0                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.17.0                 | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 11.18.0                 | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.15.20                 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
@@ -162,7 +162,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.9 and Material-UI 9.1.2
+  - Built with Next.js 16.2.10 and Material-UI 9.2.0
 
 ### 🚀 REST Service Implementations
 
@@ -514,7 +514,7 @@ The numbers below are a curated summary of a representative run.
 - **Dropwizard**: {{DROPWIZARD_VERSION}}
 - **Vert.x**: {{VERTX_VERSION}}
 - **Pekko**: {{PEKKO_VERSION}} (Pekko Core 1.4.0)
-- **Go**: {{GO_VERSION}} (Fiber v3.3.0)
+- **Go**: {{GO_VERSION}} (Fiber v3.4.0)
 - **Python**: {{PYTHON_VERSION}} (CPython)
 - **Django**: {{DJANGO_VERSION}} (Gunicorn 26.0.0)
 - **Garbage Collector**: G1GC (all Java implementations)
@@ -628,7 +628,7 @@ This project implements comprehensive code quality and security practices to ens
 
 #### JVM Quality Tooling
 - **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
-- **Orchestrator (`utils/orchestrator`)**: Spotless 3.7.0, PMD 7.25.0, SpotBugs 4.10.2.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.8.0, PMD 7.26.0, SpotBugs 4.10.2.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
 - **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
 - **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 
