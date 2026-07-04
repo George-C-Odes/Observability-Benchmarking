@@ -17,9 +17,9 @@ describe('runtimeConfig', () => {
         systemInfo: {
           nodejs: 'v26.4.0',
           npm: '11.18.0',
-          nextjs: '16.2.9',
+          nextjs: '16.2.10',
           react: '19.2.7',
-          mui: '9.1.2',
+          mui: '9.2.0',
           typescript: '6.0.3',
           platform: 'win32',
           arch: 'x64',
@@ -31,9 +31,9 @@ describe('runtimeConfig', () => {
       systemInfo: {
         nodejs: 'v26.4.0',
         npm: '11.18.0',
-        nextjs: '16.2.9',
+        nextjs: '16.2.10',
         react: '19.2.7',
-        mui: '9.1.2',
+        mui: '9.2.0',
         typescript: '6.0.3',
         platform: 'win32',
         arch: 'x64',
