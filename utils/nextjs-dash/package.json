@@ -38,7 +38,7 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/xml2js": "0.4.14",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint-config-next": "^16.2.10",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
