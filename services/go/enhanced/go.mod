@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/Yiling-J/theine-go v0.6.2
-	github.com/dgraph-io/ristretto/v2 v2.4.0
+	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/gofiber/contrib/v3/otel v1.2.1
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/grafana/otel-profiling-go v0.6.0
