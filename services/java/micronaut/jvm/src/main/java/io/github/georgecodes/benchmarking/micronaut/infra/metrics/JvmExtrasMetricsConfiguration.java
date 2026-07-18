@@ -62,7 +62,6 @@ public final class JvmExtrasMetricsConfiguration {
 
             if (Files.isReadable(PROCFS_STATUS_PATH)) {
                 new ProcessThreadMetrics().bindTo(registry);
-                return;
             }
 
             bindProcessThreadsFallback(registry);
