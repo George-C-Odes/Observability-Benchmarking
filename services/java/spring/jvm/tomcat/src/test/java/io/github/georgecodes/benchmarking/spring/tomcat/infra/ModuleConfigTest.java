@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +23,7 @@ class ModuleConfigTest {
     void caffeineCacheIsInitializedWithConfiguredEntries() {
         Cache<String, String> cache = moduleConfig.caffeineCache(new ModuleConfig.CacheProperties(3));
 
-        assertThat(cache.asMap()).containsExactlyInAnyOrderEntriesOf(java.util.Map.of(
+        assertThat(cache.asMap()).containsExactlyInAnyOrderEntriesOf(Map.of(
             "1", "value-1",
             "2", "value-2",
             "3", "value-3"
