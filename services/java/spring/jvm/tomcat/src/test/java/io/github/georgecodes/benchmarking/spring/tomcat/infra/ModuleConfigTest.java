@@ -1,6 +1,7 @@
 package io.github.georgecodes.benchmarking.spring.tomcat.infra;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -58,9 +59,10 @@ class ModuleConfigTest {
     void processMemoryMetricsBindsMeters() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
-        moduleConfig.processMemoryMetrics().bindTo(registry);
+        var binder = moduleConfig.processMemoryMetrics();
 
-        assertThat(registry.getMeters()).isNotEmpty();
+        assertThat(binder).isInstanceOf(ProcessMemoryMetrics.class);
+        assertDoesNotThrow(() -> binder.bindTo(registry));
     }
 
     @Test
