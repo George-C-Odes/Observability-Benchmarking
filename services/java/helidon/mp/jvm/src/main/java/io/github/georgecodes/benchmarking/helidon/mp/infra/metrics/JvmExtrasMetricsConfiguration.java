@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.helidon.mp.infra.metrics;
 
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.MeterBinder;
@@ -9,6 +10,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +52,7 @@ public class JvmExtrasMetricsConfiguration {
     public void register() {
         bindOnce(new ProcessMemoryMetrics());
         bindOnce(new ProcessThreadMetrics());
+        bindProcessThreadsFallback();
     }
 
     private void bindOnce(MeterBinder binder) {
@@ -57,5 +61,16 @@ public class JvmExtrasMetricsConfiguration {
             return;
         }
         binder.bindTo(registry);
+    }
+
+    private void bindProcessThreadsFallback() {
+        if (registry.find("process.threads").gauge() != null) {
+            return;
+        }
+
+        ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
+        Gauge.builder("process.threads", threadMxBean, ThreadMXBean::getThreadCount)
+            .description("The number of process threads")
+            .register(registry);
     }
 }

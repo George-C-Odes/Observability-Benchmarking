@@ -2,9 +2,14 @@ package io.github.georgecodes.benchmarking.quarkus.infra.metrics;
 
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 
 /**
  * Infrastructure configuration that wires Micrometer JVM extras meter binders.
@@ -35,6 +40,20 @@ public final class JvmExtrasMetricsConfiguration {
     @Produces
     @ApplicationScoped
     MeterBinder processThreadMetrics() {
-        return new ProcessThreadMetrics();
+        return registry -> {
+            new ProcessThreadMetrics().bindTo(registry);
+            bindProcessThreadsFallback(registry);
+        };
+    }
+
+    private static void bindProcessThreadsFallback(MeterRegistry registry) {
+        if (registry.find("process.threads").gauge() != null) {
+            return;
+        }
+
+        ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
+        Gauge.builder("process.threads", threadMxBean, ThreadMXBean::getThreadCount)
+            .description("The number of process threads")
+            .register(registry);
     }
 }

@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.time.Duration;
 
 @SuppressWarnings("unused")
@@ -49,7 +52,21 @@ public class ModuleConfig {
 
     @Bean
     MeterBinder processThreadMetrics() {
-        return new ProcessThreadMetrics();
+        return registry -> {
+            new ProcessThreadMetrics().bindTo(registry);
+            bindProcessThreadsFallback(registry);
+        };
+    }
+
+    private static void bindProcessThreadsFallback(MeterRegistry registry) {
+        if (registry.find("process.threads").gauge() != null) {
+            return;
+        }
+
+        ThreadMXBean threadMxBean = ManagementFactory.getThreadMXBean();
+        Gauge.builder("process.threads", threadMxBean, ThreadMXBean::getThreadCount)
+            .description("The number of process threads")
+            .register(registry);
     }
 
     @SuppressWarnings("unused")
