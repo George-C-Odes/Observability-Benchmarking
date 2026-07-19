@@ -217,6 +217,62 @@ class ApplicationServicesTest {
   }
 
   @Test
+  void runPresetServiceMatchesCategoriesCaseInsensitivelySortsNormalizesAndSkipsBlankCommands()
+      throws Exception {
+    Path workspace = tempDir.resolve("workspace");
+    Path runDir = workspace.resolve(".run");
+    Files.createDirectories(runDir);
+
+    Files.writeString(
+        runDir.resolve("[MULTI-CONT] z-last.run.xml"),
+        """
+      <component name="ProjectRunConfigurationManager">
+        <configuration default="false" name="[MULTI-CONT] z-last" type="ShConfigurationType">
+          <option name="SCRIPT_TEXT" value="docker ps"/>
+        </configuration>
+      </component>
+      """);
+    Files.writeString(
+        runDir.resolve("[single-cont] A-first.run.xml"),
+        """
+      <component name="ProjectRunConfigurationManager">
+        <configuration default="false" name="[single-cont] A-first" type="ShConfigurationType">
+          <option name="SCRIPT_TEXT" value="docker images"/>
+        </configuration>
+      </component>
+      """);
+    Files.writeString(
+        runDir.resolve("[build-img] Blank.run.xml"),
+        """
+      <component name="ProjectRunConfigurationManager">
+        <configuration default="false" name="Blank" type="ShConfigurationType">
+          <option name="SCRIPT_TEXT" value="   " />
+        </configuration>
+      </component>
+      """);
+    Files.writeString(runDir.resolve("not-a-preset.run.xml"), "ignored");
+
+    RunPresetService service =
+        new RunPresetService(
+            pathsConfig(
+                workspace,
+                workspace.resolve("compose.env"),
+                workspace.resolve("targets.txt"),
+                null));
+
+    List<RunPreset> presets = service.listPresets();
+
+    assertEquals(2, presets.size());
+    assertEquals("MULTI-CONT", presets.getFirst().category());
+    assertEquals("z-last", presets.getFirst().title());
+    assertEquals("docker ps", presets.getFirst().command());
+    assertEquals("single-cont", presets.get(1).category());
+    assertEquals("A-first", presets.get(1).title());
+    assertEquals("docker images", presets.get(1).command());
+    assertEquals(".run/[single-cont] A-first.run.xml", presets.get(1).sourceFile());
+  }
+
+  @Test
   void commandPolicyCoversAdditionalComposeBuildxAndDockerBranches() throws Exception {
     Path workspace = tempDir.resolve("workspace-root");
     Files.createDirectories(workspace.resolve("compose"));

@@ -23,22 +23,22 @@ IMAGE_TAG: ghcr.io/acme/app:1.2.3
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
     SPRING_BOOT_VERSION: '4.1.0',
-    GO_VERSION: '1.26.4',
+    GO_VERSION: '1.26.5',
   });
 
-  assert.equal(rendered, 'Spring 4.1.0 / Go 1.26.4');
+  assert.equal(rendered, 'Spring 4.1.0 / Go 1.26.5');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
-    GO_VERSION: '1.26.4',
+    GO_VERSION: '1.26.5',
   });
 
-  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.26.4');
+  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.26.5');
 
   const jekyllSnippet = renderTemplate("Image {{ '/images/foo.png' | relative_url }} with {{GO_VERSION}}", {
-    GO_VERSION: '1.26.4',
+    GO_VERSION: '1.26.5',
   });
 
-  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.26.4");
+  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.26.5");
 
   assert.throws(
     () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.1.0' }),
@@ -139,7 +139,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.0 / Quarkus 3.37.1');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.0 / Quarkus 3.37.3');
   } finally {
     try {
       unlinkSync(templatePath);
@@ -168,8 +168,8 @@ function testRealignMarkdownTables() {
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
     '| Spring | 4.1.0 | Main framework |',
-    '| Go     | 1.26.4          | Alt runtime    |',
-    '| Node   | 26.4.0                  | Frontend       |',
+    '| Go     | 1.26.5          | Alt runtime    |',
+    '| Node   | 26.5.0                  | Frontend       |',
   ].join('\n');
 
   const aligned = realignMarkdownTables(ragged);
@@ -178,8 +178,8 @@ function testRealignMarkdownTables() {
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
     '| Spring | 4.1.0   | Main framework |',
-    '| Go     | 1.26.4  | Alt runtime    |',
-    '| Node   | 26.4.0  | Frontend       |',
+    '| Go     | 1.26.5  | Alt runtime    |',
+    '| Node   | 26.5.0  | Frontend       |',
   ].join('\n');
 
   assert.equal(aligned, expected);

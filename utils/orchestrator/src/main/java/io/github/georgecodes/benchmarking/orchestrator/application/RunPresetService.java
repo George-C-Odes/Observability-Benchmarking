@@ -56,10 +56,10 @@ public class RunPresetService {
 
     try (var s = Files.list(runDir)) {
       s.filter(Files::isRegularFile)
-          .sorted(Comparator.comparing(p -> p.getFileName().toString().toLowerCase()))
+          .sorted(Comparator.comparing(p -> fileName(p).toLowerCase()))
           .forEach(
               p -> {
-                String fn = p.getFileName().toString();
+                String fn = fileName(p);
                 Matcher m = RUN_FILE.matcher(fn);
                 if (!m.matches()) {
                   return;
@@ -96,6 +96,17 @@ public class RunPresetService {
     }
 
     return out;
+  }
+
+  /**
+   * Returns a path's file name, using an empty string when the path has no file-name component.
+   *
+   * @param path the path to inspect
+   * @return the file-name component, or an empty string
+   */
+  private static String fileName(Path path) {
+    Path fileName = path.getFileName();
+    return fileName == null ? "" : fileName.toString();
   }
 
   /**

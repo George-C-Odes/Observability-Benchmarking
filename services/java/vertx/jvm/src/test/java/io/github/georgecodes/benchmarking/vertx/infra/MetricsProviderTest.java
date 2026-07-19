@@ -52,6 +52,14 @@ class MetricsProviderTest {
     }
 
     @Test
+    void createRegistersProcessThreadsGauge() {
+        MetricsProvider.create("/hello/reactive");
+
+        assertNotNull(testRegistry.find("process.threads").gauge(),
+            "process.threads gauge should be registered by ProcessThreadMetrics or the JVM fallback");
+    }
+
+    @Test
     void incrementReactiveIncreasesCounter() {
         MetricsProvider provider = MetricsProvider.create("/hello/reactive");
         Counter counter = testRegistry.find("hello.request.count")

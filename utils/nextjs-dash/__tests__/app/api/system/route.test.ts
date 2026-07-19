@@ -11,6 +11,10 @@ vi.mock('@/lib/scopedServerLogger', () => ({
 import { exec } from 'child_process';
 import { GET } from '@/app/api/system/route';
 
+const packageJson = require('../../../../package.json') as {
+  devDependencies?: Record<string, string>;
+};
+
 describe('/api/system route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -30,11 +34,11 @@ describe('/api/system route', () => {
     expect(body.nodejs).toBe(process.version);
     expect(body.platform).toBe(process.platform);
     expect(body.arch).toBe(process.arch);
-    expect(body.npm).toBe('11.18.0');
+    expect(body.npm).toBe('12.0.1');
     expect(body.nextjs).toBe('16.2.10');
     expect(body.react).toBe('19.2.7');
     expect(body.mui).toBe('9.2.0');
-    expect(body.typescript).toBe('6.0.3');
+    expect(body.typescript).toBe(packageJson.devDependencies?.typescript);
   });
 
   it('falls back to N/A when npm version lookup fails', async () => {
@@ -47,7 +51,7 @@ describe('/api/system route', () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.npm).toBe('11.18.0');
+    expect(body.npm).toBe('12.0.1');
   });
 });
 

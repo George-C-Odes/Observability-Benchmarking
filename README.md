@@ -8,17 +8,17 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.3-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.37.1-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-5.1.3-1A1A2E.svg)](https://micronaut.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.37.3-6C63FF.svg)](https://quarkus.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-5.1.7-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.0-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.2-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.1.2-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
-[![Go](https://img.shields.io/badge/Go-1.26.4-38BDF8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.5-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.14-2F5D8C.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-6.0.6-8B2C3D.svg)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/Django-6.0.7-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
 [![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
@@ -79,13 +79,13 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.3  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.3  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.4  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.26.5  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.14 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.4.0  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.5.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.37.1  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.1.3   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Quarkus                    | 3.37.3  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 5.1.7   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -93,7 +93,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.0.6   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Backend**       | Framework          | Django                     | 6.0.7   | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.2.10 | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.7  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
@@ -101,10 +101,10 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Visualization      | Grafana                    | 13.1.0  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.3   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.1.2   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 2.1.0   | Continuous CPU and memory profiling                                  |
+| **Observability** | Metrics            | Mimir                      | 3.1.3   | Long-term metrics storage                                            |
+| **Observability** | Profiling          | Pyroscope                  | 2.1.1   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.63.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.64.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.29.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
@@ -113,11 +113,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Tooling            | Docker CLI                 | 29.6.0  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 11.18.0 | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.20 | Python linting and code formatting                                   |
+| **Build**         | Package Manager    | npm                        | 12.0.1  | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.15.22 | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.9   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.10  | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -176,10 +176,10 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.37.1**
+- **Quarkus 3.37.3**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 5.1.3
+- **Micronaut**: 5.1.7
   - JVM build (all three thread modes)
   - Native (all three thread modes)
 - **Helidon**: 4.5.0
@@ -210,12 +210,12 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM build
     - Reactive (Pekko dispatcher)
 
-#### Go (1.26.4)
+#### Go (1.26.5)
 - Fiber framework integration
 - Full observability setup
 
 #### Python (3.13.14)
-- **Django**: 6.0.6
+- **Django**: 6.0.7
   - Platform (WSGI — Gunicorn gthread workers)
   - Reactive (ASGI — Gunicorn + UvicornWorker)
 
@@ -473,7 +473,7 @@ The numbers below are a curated summary of a representative run.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Django 6.0.6 runs on CPython 3.13.14 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Django 6.0.7 runs on CPython 3.13.14 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -506,17 +506,17 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.3
 - **Java Native**: GraalVM Enterprise 25.0.3-ol9
 - **Spring Boot**: 4.1.0 (3.5.15 also supported)
-- **Quarkus**: 3.37.1
-- **Micronaut**: 5.1.3
+- **Quarkus**: 3.37.3
+- **Micronaut**: 5.1.7
 - **Helidon**: 4.5.0
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.2
 - **Dropwizard**: 5.0.2
 - **Vert.x**: 5.1.2
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
-- **Go**: 1.26.4 (Fiber v3.4.0)
+- **Go**: 1.26.5 (Fiber v3.4.0)
 - **Python**: 3.13.14 (CPython)
-- **Django**: 6.0.6 (Gunicorn 26.0.0)
+- **Django**: 6.0.7 (Gunicorn 26.0.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
@@ -628,7 +628,7 @@ This project implements comprehensive code quality and security practices to ens
 
 #### JVM Quality Tooling
 - **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
-- **Orchestrator (`utils/orchestrator`)**: Spotless 3.8.0, PMD 7.26.0, SpotBugs 4.10.2.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.8.0, PMD 7.26.0, SpotBugs 4.10.3.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
 - **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
 - **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 

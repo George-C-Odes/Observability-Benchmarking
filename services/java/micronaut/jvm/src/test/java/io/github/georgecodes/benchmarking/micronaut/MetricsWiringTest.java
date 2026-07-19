@@ -21,4 +21,10 @@ class MetricsWiringTest {
         assertTrue(Metrics.globalRegistry.getRegistries().contains(meterRegistry),
             "Expected Micronaut MeterRegistry to be added to Metrics.globalRegistry");
     }
+
+    @Test
+    void processThreadsGaugeIsRegistered() {
+        assertNotNull(meterRegistry.find("process.threads").gauge(),
+            "process.threads gauge should be registered by ProcessThreadMetrics or the JVM fallback");
+    }
 }

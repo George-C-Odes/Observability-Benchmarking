@@ -40,10 +40,8 @@ class MetricsProviderTest {
     @Test
     void bindToGlobalRegistersProcessMetrics() {
         MetricsProvider.bindToGlobal();
-        // ProcessThreadMetrics uses ManagementFactory.getThreadMXBean() which works on all
-        // platforms, so the process.threads gauge should always be present after binding.
         assertNotNull(testRegistry.find("process.threads").gauge(),
-            "process.threads gauge should be registered by ProcessThreadMetrics");
+            "process.threads gauge should be registered by ProcessThreadMetrics or the JVM fallback");
     }
 
     @Test
