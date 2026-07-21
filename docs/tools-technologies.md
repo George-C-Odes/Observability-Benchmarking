@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 5.1.7
+### Micronaut 5.1.9
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 5.1.7** (latest stable)
+- **Micronaut 5.1.9** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -970,7 +970,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Node.js                    | 26.5.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.37.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.1.7   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 5.1.9   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -979,11 +979,11 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.7   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.10 | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.7  | UI rendering layer                                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.11 | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.8  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.2.0   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.1.0  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.1.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.3   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.3   | Long-term metrics storage                                            |

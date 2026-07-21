@@ -979,11 +979,11 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.10                 | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.7                  | UI rendering layer                                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.11                 | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.8                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.2.0                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.1.0                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.1.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.3                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.3                   | Long-term metrics storage                                            |
