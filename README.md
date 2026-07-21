@@ -9,7 +9,7 @@
 [![Java](https://img.shields.io/badge/Java-25.0.3-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.37.3-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-5.1.7-1A1A2E.svg)](https://micronaut.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-5.1.9-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.0-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.2-00AFCF.svg)](https://javalin.io/)
@@ -85,7 +85,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Node.js                    | 26.5.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.37.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.1.7   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 5.1.9   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.0   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.0   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -94,11 +94,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.7   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.10 | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.2.7  | UI rendering layer                                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.2.11 | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | 19.2.8  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.2.0   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.1.0  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.1.1  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.3   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.3   | Long-term metrics storage                                            |
@@ -162,7 +162,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.2.10 and Material-UI 9.2.0
+  - Built with Next.js 16.2.11 and Material-UI 9.2.0
 
 ### 🚀 REST Service Implementations
 
@@ -179,7 +179,7 @@ If you’re searching for projects like this, these are the topics it covers:
 - **Quarkus 3.37.3**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 5.1.7
+- **Micronaut**: 5.1.9
   - JVM build (all three thread modes)
   - Native (all three thread modes)
 - **Helidon**: 4.5.0
@@ -507,7 +507,7 @@ The numbers below are a curated summary of a representative run.
 - **Java Native**: GraalVM Enterprise 25.0.3-ol9
 - **Spring Boot**: 4.1.0 (3.5.15 also supported)
 - **Quarkus**: 3.37.3
-- **Micronaut**: 5.1.7
+- **Micronaut**: 5.1.9
 - **Helidon**: 4.5.0
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.2
