@@ -79,7 +79,7 @@ RUN set -eux; \
 FROM alpine:3.24.1 AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=2.1.0
-ARG OTEL_JAVA_AGENT_VERSION=2.29.0
+ARG OTEL_JAVA_AGENT_VERSION=2.30.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 
