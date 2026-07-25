@@ -99,22 +99,22 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.2.0                   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.1.1                  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.3                   | Log aggregation                                                      |
+| **Observability** | Logs               | Loki                       | 3.7.4                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.7                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.4                   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.2.0                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.64.0                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.29.0                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.30.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.0.5                   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.1.6                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.6.0                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.1                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.15.22                 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.0                  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.10                  | Frontend unit testing                                                |

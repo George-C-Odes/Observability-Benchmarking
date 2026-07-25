@@ -8,10 +8,8 @@ asgiref==3.12.1
     # via
     #   django
     #   opentelemetry-instrumentation-asgi
-cachetools==7.1.4
+cachetools==7.1.6
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-cffi==2.1.0
-    # via pyroscope-io
 click==8.4.2
     # via uvicorn
 colorama==0.4.6
@@ -20,7 +18,7 @@ django==6.0.7
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 googleapis-common-protos==1.75.0
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.82.1
+grpcio==1.83.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
@@ -93,9 +91,7 @@ protobuf==7.35.1
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
-pycparser==3.0
-    # via cffi
-pyroscope-io==1.1.0
+pyroscope-io==1.2.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   pyroscope-otel
