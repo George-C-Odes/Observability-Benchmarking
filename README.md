@@ -82,7 +82,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Go                         | 1.26.5  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.14 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.5.0  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.5.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.37.4  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.1.10  | Compile-time optimized JVM microservices framework                   |
@@ -113,7 +113,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Tooling            | Docker CLI                 | 29.6.0  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.0.1  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 12.0.2  | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.16.0  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |

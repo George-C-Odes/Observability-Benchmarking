@@ -12,8 +12,8 @@ describe('SystemInfo', () => {
   it('renders the injected server npm version in the npm card', () => {
     window.__OBS_DASH_CONFIG__ = {
       systemInfo: {
-        nodejs: 'v26.5.0',
-        npm: '12.0.1',
+        nodejs: 'v26.5.1',
+        npm: '12.0.2',
         nextjs: '16.2.12',
         react: '19.2.8',
         mui: '9.2.0',
@@ -29,7 +29,7 @@ describe('SystemInfo', () => {
     const npmCard = npmLabel.closest('.MuiCard-root');
 
     expect(npmCard).toBeTruthy();
-    expect(within(npmCard as HTMLElement).getByText('12.0.1')).toBeInTheDocument();
+    expect(within(npmCard as HTMLElement).getByText('12.0.2')).toBeInTheDocument();
     expect(screen.queryByText('Server system information is not available.')).not.toBeInTheDocument();
   });
 });
