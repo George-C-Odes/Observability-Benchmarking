@@ -8,7 +8,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.3-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.37.4-6C63FF.svg)](https://quarkus.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.38.0-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-5.1.10-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.1-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
@@ -84,7 +84,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.5.1  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.37.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.38.0  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.1.10  | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.1   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.1   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
@@ -107,14 +107,14 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.64.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.30.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.0.5   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.1.6   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.6.0  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.0  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.1  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.10  | Frontend unit testing                                                |
@@ -176,7 +176,7 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.37.4**
+- **Quarkus 3.38.0**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
 - **Micronaut**: 5.1.10
@@ -506,7 +506,7 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.3
 - **Java Native**: GraalVM Enterprise 25.0.3-ol9
 - **Spring Boot**: 4.1.0 (3.5.15 also supported)
-- **Quarkus**: 3.37.4
+- **Quarkus**: 3.38.0
 - **Micronaut**: 5.1.10
 - **Helidon**: 4.5.1
 - **Spark**: 3.0.4
@@ -628,7 +628,7 @@ This project implements comprehensive code quality and security practices to ens
 
 #### JVM Quality Tooling
 - **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
-- **Orchestrator (`utils/orchestrator`)**: Spotless 3.8.0, PMD 7.26.0, SpotBugs 4.10.3.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.9.0, PMD 7.26.0, SpotBugs 4.10.3.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
 - **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
 - **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 
