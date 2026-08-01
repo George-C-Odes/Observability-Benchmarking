@@ -15,8 +15,8 @@ This repository currently uses two scoped JVM quality setups:
   - **maven-checkstyle-plugin**: 3.6.0
   - **checkstyle**: 12.2.0
 - **Orchestrator (`utils/orchestrator`)**
-  - **spotless-maven-plugin**: 3.8.0
-  - **google-java-format**: 1.35.0
+  - **spotless-maven-plugin**: 3.9.0
+  - **google-java-format**: 1.36.1
   - **maven-pmd-plugin**: 3.28.0 with PMD 7.26.0
   - **spotbugs-maven-plugin**: 4.10.3.0 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
@@ -136,7 +136,7 @@ The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow sco
 
 GitHub will print an informational warning in the **Complete job** phase similar to:
 
-> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.1.3.
+> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.2.0.
 
 This warning **confirms the opt-in is working** — the action targets Node 20 in its published metadata, but our `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` setting successfully forces it to run on Node 24. The warning is purely informational and will disappear only after JetBrains republishes the action with native Node 24 support in its action metadata. No action is required on our side.
 
@@ -715,7 +715,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81` (# v4.37.3, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@f205ea1c3313d32999d8d6a48b4f6530d4437b38` (# v4.37.4, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
