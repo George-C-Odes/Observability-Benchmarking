@@ -9,8 +9,8 @@ metrics and traces, making it a useful baseline beside the richer
 
 ## Runtime
 
-- **Language**: Go 1.26.5
-- **HTTP framework**: Fiber v3.4.0
+- **Language**: Go 1.26.6
+- **HTTP framework**: Fiber v3.5.0
 - **Telemetry**: OpenTelemetry OTLP/gRPC for metrics and traces
 - **Cache model**: in-memory `map[int]int`, pre-populated at startup
 

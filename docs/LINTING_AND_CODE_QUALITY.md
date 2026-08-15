@@ -715,7 +715,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@f205ea1c3313d32999d8d6a48b4f6530d4437b38` (# v4.37.4, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd` (# v4.37.7, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards

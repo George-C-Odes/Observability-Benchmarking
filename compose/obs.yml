@@ -43,7 +43,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:13.1.1
+    image: grafana/grafana:13.1.3
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:
@@ -76,7 +76,7 @@ services:
 
   loki:
     profiles: ["${DOCKER_PROF_LOKI:-skip}"]
-    image: grafana/loki:3.7.4
+    image: grafana/loki:3.7.6
     container_name: loki
     volumes:
       - ${HOST_REPO}/data/loki:/loki
@@ -103,7 +103,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:2.2.0
+    image: grafana/pyroscope:2.2.1
     container_name: pyroscope
     ports:
       - "4040:4040"
@@ -117,7 +117,7 @@ services:
 
   tempo:
     profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
-    image: grafana/tempo:2.10.7
+    image: grafana/tempo:2.10.8
     container_name: tempo
     command:
       - "-config.file=/etc/tempo-config/config.yaml"

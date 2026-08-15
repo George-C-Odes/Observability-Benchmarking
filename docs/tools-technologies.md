@@ -82,7 +82,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.38.0
+### Quarkus 3.38.2
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -93,7 +93,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.38.0** (latest stable)
+- **Quarkus 3.38.2** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -187,7 +187,7 @@ mvn package -Pnative
 - Compile-time DI can be harder to debug
 - Some libraries require Micronaut-specific adapters
 
-### Helidon 4.5.1
+### Helidon 4.5.2
 
 **Official Site**: [https://helidon.io/](https://helidon.io/)
 
@@ -198,7 +198,7 @@ mvn package -Pnative
 - `jlink`-optimised JVM builds produce notably small Docker images
 
 **Implementation Details**:
-- **Helidon 4.5.1** (latest stable, virtual-thread–first architecture)
+- **Helidon 4.5.2** (latest stable, virtual-thread–first architecture)
 - **Helidon SE**: Programmatic, functional-style routing with minimal overhead (Níma)
 - **Helidon MP**: MicroProfile-compliant layer on top of SE (CDI + JAX-RS)
 - Both flavours support JVM and GraalVM native builds
@@ -266,7 +266,7 @@ mvn package -Pnative
 - No native image support
 - Official project is largely unmaintained; the Zoomba fork keeps it viable
 
-### Javalin 7.2.2
+### Javalin 7.2.3
 
 **Official Site**: [https://javalin.io/](https://javalin.io/)
 
@@ -277,7 +277,7 @@ mvn package -Pnative
 - Good middle ground between Spark's minimalism and Spring's richness
 
 **Implementation Details**:
-- **Javalin 7.2.2** (latest major release)
+- **Javalin 7.2.3** (latest major release)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -964,32 +964,32 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 |-------------------|--------------------|----------------------------|---------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.3  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.3  | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.26.5  | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.26.6  | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.14 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.5.1  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.7.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.38.0  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Quarkus                    | 3.38.2  | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.1.10  | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.5.1   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.5.1   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.2   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.2   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.2.2   | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.2.3   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.0.7   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.2.12 | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.3.1  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.8  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.2.0   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.1.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.4   | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.7  | Distributed tracing backend                                          |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.3.1   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 13.1.3  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.7.6   | Log aggregation                                                      |
+| **Observability** | Tracing            | Tempo                      | 2.10.8  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.1.4   | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 2.2.0   | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 2.2.1   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.64.0  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.65.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.30.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.1.6   | In-memory caching (Python)                                           |
@@ -999,7 +999,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.1  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.3  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 4.1.10  | Frontend unit testing                                                |

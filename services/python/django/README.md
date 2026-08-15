@@ -63,10 +63,13 @@ Select either configuration from the IntelliJ **Run** dropdown and click ▶ to 
 
 ## Upgrade dependencies
 
-Re-compile lock files with the latest compatible versions for **all** Django modules (run from the repository root):
+First update `pip-tools` in the active Python environment. This is required with newer `pip` releases because older `pip-tools` versions call a removed pip API. Then re-compile lock files with the latest compatible versions for **all** Django modules (run from the repository root):
 
 ```powershell
-pip-compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt; pip-compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt
+python -m pip install --upgrade pip-tools
+python -m piptools compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt
+if ($LASTEXITCODE -ne 0) { throw 'WSGI dependency compilation failed.' }
+python -m piptools compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt
 ```
 
 Then re-install into the local virtualenv (filtering out `pyroscope-io` which only builds on Linux):

@@ -305,7 +305,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 
 ```
 Go: {{GO_VERSION}}+
-Fiber: v3.4.0
+Fiber: v3.5.0
 OpenTelemetry: Latest stable
 ```
 
@@ -571,7 +571,7 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.2.12
+Next.js: 16.3.1
 React: 19.2.8
 TypeScript: 6.0.3
 Vitest: 4.x
