@@ -70,6 +70,7 @@ python -m pip install --upgrade pip-tools
 python -m piptools compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'WSGI dependency compilation failed.' }
 python -m piptools compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt
+if ($LASTEXITCODE -ne 0) { throw 'ASGI dependency compilation failed.' }
 ```
 
 Then re-install into the local virtualenv (filtering out `pyroscope-io` which only builds on Linux):
