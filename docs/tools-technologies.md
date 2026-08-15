@@ -439,7 +439,7 @@ mvn package -Pnative
 
 **Fairness note**: An additional `go-simple` variant can reach ~60,000 RPS, but it is excluded from headline comparisons because it does not use an equivalent observability setup to the Java services.
 
-### Django 6.0.7
+### Django 6.1
 
 **Official Site**: [https://www.djangoproject.com/](https://www.djangoproject.com/) | [GitHub](https://github.com/django/django)
 
@@ -450,7 +450,7 @@ mvn package -Pnative
 - Demonstrates the impact of Python's GIL on throughput under high concurrency
 
 **Implementation Details**:
-- **Django 6.0.7** (latest major release)
+- **Django 6.1** (latest major release)
 - **Gunicorn 26.0.0** as the production WSGI/ASGI server
 - **Python 3.13.14** (CPython)
 - Two modules sharing a common application package (`gunicorn/common`):
@@ -978,7 +978,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.0.7   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Backend**       | Framework          | Django                     | 6.1     | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.3.1  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.8  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3   | Type-safe frontend development                                       |
