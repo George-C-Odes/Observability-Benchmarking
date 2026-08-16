@@ -2,7 +2,7 @@
 Django settings for the benchmarking hello service.
 
 Django 6.1 — WSGI mode, tuned for throughput benchmarks.
-https://docs.djangoproject.com/en/6.0/ref/settings/
+https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
