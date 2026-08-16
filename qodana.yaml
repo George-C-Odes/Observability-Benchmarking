@@ -116,7 +116,10 @@ bootstrap: |
   set -eu
 
   export MAVEN_USER_HOME=/data/cache/maven-user-home
-  MAVEN_REPO_LOCAL=/data/cache/m2/repository
+  # Qodana's Maven importer resolves libraries from /data/cache/.m2. Keep the
+  # bootstrap compile on that exact repository so cold-cache scans populate the
+  # same location that project configuration later reads.
+  MAVEN_REPO_LOCAL=/data/cache/.m2/repository
   MAVEN_SETTINGS=/data/project/.qodana/baseline/qodana-settings.xml
   FALLBACK_MVNW=/data/project/services/java/quarkus/native/mvnw
 
@@ -167,7 +170,7 @@ bootstrap: |
       return
     fi
 
-    echo "Qodana bootstrap: compiling $label"
+    echo "Qodana bootstrap: compiling $label (local repository: $MAVEN_REPO_LOCAL)"
     if [ -f "$MAVEN_SETTINGS" ]; then
       "$MVN_BIN" -B -q -s "$MAVEN_SETTINGS" -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" test-compile
     else
