@@ -11,10 +11,9 @@ version: "1.0"
 
 # Python-specific Qodana configuration for Django services.
 #
-# This file lives under services/python/django/ because the root qodana.yaml
-# pins the JVM linter (jetbrains/qodana-jvm-community:2026.2).  The Django CI
-# workflow passes --config pointing here so the Python community linter and its
-# quality gate are self-contained.
+# This file is self-contained so the Django directory can be mounted as the
+# Qodana project root. This keeps unrelated repository data out of the Python
+# project-opening/indexing stage.
 
 profile:
   name: qodana.recommended
@@ -35,17 +34,17 @@ linter: jetbrains/qodana-python-community:2026.2
 # handles their absence gracefully at runtime).
 #
 # --ignore-requires-python is required because the Qodana Python Community
-# 2026.1 container ships Python 3.12.4, while the project declares
+# container may use an older Python version than the project declares
 # requires-python >= 3.13.  The packages are only needed for import
 # resolution and type stubs, not for execution.
 # ---------------------------------------------------------------------------
 bootstrap: |
   set -e
   pip install --quiet --disable-pip-version-check --ignore-requires-python \
-    /data/project/services/python/django/gunicorn/common
-  rm -rf /data/project/services/python/django/gunicorn/common/build \
-    /data/project/services/python/django/gunicorn/common/*.egg-info
-  if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/WSGI/requirements.txt \
+    /data/project/gunicorn/common
+  rm -rf /data/project/gunicorn/common/build \
+    /data/project/gunicorn/common/*.egg-info
+  if ! grep -v -i pyroscope /data/project/gunicorn/WSGI/requirements.txt \
     > /tmp/wsgi-reqs.txt; then
     status=$?
     if [ "$status" -eq 1 ]; then
@@ -54,7 +53,7 @@ bootstrap: |
       exit "$status"
     fi
   fi
-  if ! grep -v -i pyroscope /data/project/services/python/django/gunicorn/ASGI/requirements.txt \
+  if ! grep -v -i pyroscope /data/project/gunicorn/ASGI/requirements.txt \
     > /tmp/asgi-reqs.txt; then
     status=$?
     if [ "$status" -eq 1 ]; then
@@ -69,19 +68,19 @@ bootstrap: |
 # ---------------------------------------------------------------------------
 # Exclude paths that are not application source code.
 #
-# Paths are relative to the project root (--project-dir), not the
-# --only-directory scope.  Specific non-Python config/build files
+# Paths are relative to this isolated project root (--project-dir).
+# Specific non-Python config/build files
 # (Dockerfiles, .dockerignore) are excluded from general inspections
 # (spelling, encoding) that could produce noise outside the IDE's scope.
 # ---------------------------------------------------------------------------
 exclude:
   - name: All
     paths:
-      - services/python/django/gunicorn/WSGI/Dockerfile
-      - services/python/django/gunicorn/ASGI/Dockerfile
-      - services/python/django/.dockerignore
-      - services/python/django/gunicorn/common/build
-      - services/python/django/gunicorn/common/*.egg-info
+      - gunicorn/WSGI/Dockerfile
+      - gunicorn/ASGI/Dockerfile
+      - .dockerignore
+      - gunicorn/common/build
+      - gunicorn/common/*.egg-info
 
 # Quality gate — matches the JVM config in the root qodana.yaml so the
 # Python codebase is held to the same standard.
