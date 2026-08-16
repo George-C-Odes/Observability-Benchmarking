@@ -11,7 +11,7 @@
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="go:1.26.6_latest" />
+              <option name="value" value="go-simple:1.26.6_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>
