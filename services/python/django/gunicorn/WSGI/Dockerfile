@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG PYTHON_VERSION=3.13.14
+ARG PYTHON_VERSION=3.13.15
 ARG BASE_BUILDER=slim-bookworm
 ARG VENV_PATH=/opt/venv
 

@@ -17,7 +17,7 @@
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.1.2-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-1.26.6-38BDF8.svg)](https://golang.org/)
-[![Python](https://img.shields.io/badge/Python-3.13.14-2F5D8C.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.13.15-2F5D8C.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-6.1-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
@@ -80,7 +80,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.3  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.3  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.26.6  | High-performance baseline services for comparison                    |
-| **Execution**     | Runtime            | Python (CPython)           | 3.13.14 | Interpreted runtime for Django benchmark services                    |
+| **Execution**     | Runtime            | Python (CPython)           | 3.13.15 | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.7.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.0   | Enterprise Java baseline framework                                   |
@@ -214,7 +214,7 @@ If you’re searching for projects like this, these are the topics it covers:
 - Fiber framework integration
 - Full observability setup
 
-#### Python (3.13.14)
+#### Python (3.13.15)
 - **Django**: 6.1
   - Platform (WSGI — Gunicorn gthread workers)
   - Reactive (ASGI — Gunicorn + UvicornWorker)
@@ -473,7 +473,7 @@ The numbers below are a curated summary of a representative run.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Django 6.1 runs on CPython 3.13.14 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Django 6.1 runs on CPython 3.13.15 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -515,7 +515,7 @@ The numbers below are a curated summary of a representative run.
 - **Vert.x**: 5.1.2
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
 - **Go**: 1.26.6 (Fiber v3.5.0)
-- **Python**: 3.13.14 (CPython)
+- **Python**: 3.13.15 (CPython)
 - **Django**: 6.1 (Gunicorn 26.0.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 

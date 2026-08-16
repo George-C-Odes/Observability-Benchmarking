@@ -7,7 +7,7 @@
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="PYTHON_VERSION" />
-              <option name="value" value="3.13.14" />
+              <option name="value" value="3.13.15" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />

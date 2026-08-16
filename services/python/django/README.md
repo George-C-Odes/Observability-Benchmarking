@@ -230,7 +230,7 @@ python -m ruff format services/python/django/gunicorn/common services/python/dja
 docker buildx build `
     -f services/python/django/gunicorn/WSGI/Dockerfile `
     -t django-platform:6.1_latest `
-    --build-arg PYTHON_VERSION=3.13.14 `
+    --build-arg PYTHON_VERSION=3.13.15 `
     --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1_latest `
     --load `
     services/python/django
@@ -238,7 +238,7 @@ docker buildx build `
 docker buildx build `
     -f services/python/django/gunicorn/ASGI/Dockerfile `
     -t django-reactive:6.1_latest `
-    --build-arg PYTHON_VERSION=3.13.14 `
+    --build-arg PYTHON_VERSION=3.13.15 `
     --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.1_latest `
     --load `
     services/python/django
