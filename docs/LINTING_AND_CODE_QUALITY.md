@@ -127,7 +127,7 @@ The workflow in `.github/workflows/qodana_code_quality.yml` runs Qodana in a sma
 
 It keeps the repository root as the Qodana project so the shared root `qodana.yaml` is applied, then limits each job with `--only-directory`.
 
-The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2026.1`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
+The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2026.2`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
 
 - **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
 - **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7` step. This is what the Pages workflow downloads to host the report.
@@ -250,7 +250,7 @@ mkdir -p .qodana/services-java .qodana/orchestrator
 docker run --rm \
   -v "$PWD":/data/project \
   -v "$PWD/.qodana/services-java":/data/results \
-  jetbrains/qodana-jvm-community:2026.1 \
+  jetbrains/qodana-jvm-community:2026.2 \
   --project-dir=/data/project \
   --only-directory=services/java \
   --results-dir=/data/results
@@ -258,7 +258,7 @@ docker run --rm \
 docker run --rm \
   -v "$PWD":/data/project \
   -v "$PWD/.qodana/orchestrator":/data/results \
-  jetbrains/qodana-jvm-community:2026.1 \
+  jetbrains/qodana-jvm-community:2026.2 \
   --project-dir=/data/project \
   --only-directory=utils/orchestrator \
   --results-dir=/data/results
@@ -272,7 +272,7 @@ New-Item -ItemType Directory -Force .qodana/services-java, .qodana/orchestrator 
 docker run --rm `
   -v "${PWD}:/data/project" `
   -v "${PWD}/.qodana/services-java:/data/results" `
-  jetbrains/qodana-jvm-community:2026.1 `
+  jetbrains/qodana-jvm-community:2026.2 `
   --project-dir=/data/project `
   --only-directory=services/java `
   --results-dir=/data/results
@@ -280,7 +280,7 @@ docker run --rm `
 docker run --rm `
   -v "${PWD}:/data/project" `
   -v "${PWD}/.qodana/orchestrator:/data/results" `
-  jetbrains/qodana-jvm-community:2026.1 `
+  jetbrains/qodana-jvm-community:2026.2 `
   --project-dir=/data/project `
   --only-directory=utils/orchestrator `
   --results-dir=/data/results
@@ -304,7 +304,7 @@ mkdir -p .qodana/baseline-candidates/services-java
 docker run --rm \
   -v "$PWD":/data/project \
   -v "$PWD/.qodana/baseline-candidates/services-java":/data/results \
-  jetbrains/qodana-jvm-community:2026.1 \
+  jetbrains/qodana-jvm-community:2026.2 \
   --project-dir=/data/project \
   --only-directory=services/java \
   --results-dir=/data/results
@@ -314,7 +314,7 @@ mkdir -p .qodana/baseline-candidates/orchestrator
 docker run --rm \
   -v "$PWD":/data/project \
   -v "$PWD/.qodana/baseline-candidates/orchestrator":/data/results \
-  jetbrains/qodana-jvm-community:2026.1 \
+  jetbrains/qodana-jvm-community:2026.2 \
   --project-dir=/data/project \
   --only-directory=utils/orchestrator \
   --results-dir=/data/results
@@ -360,19 +360,19 @@ The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatt
 
 ### Qodana Python Community (Django Static Analysis)
 
-In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2026.1`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
+In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2026.2`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
 
 - **Ruff** focuses on PEP 8, import ordering, and formatting.
 - **Qodana Python Community** adds semantic inspections such as type mismatches, unreachable code, unused variables, and general Python best-practice warnings.
 
-The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2026.1`). The Python config is self-contained with its own linter pin and quality gate.
+The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2026.2`). The Python config is self-contained with its own linter pin and quality gate.
 
 #### How the Qodana Python Scan Works
 
 The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the `common` checks pass:
 
 1. Checks out the repository.
-2. Runs `docker run jetbrains/qodana-python-community:2026.1` with:
+2. Runs `docker run jetbrains/qodana-python-community:2026.2` with:
    - `--project-dir=/data/project` — repository root
    - `--config=/data/project/services/python/django/qodana.yaml` — Python-specific config
    - `--only-directory=services/python/django` — scopes analysis to Django code only
@@ -383,7 +383,7 @@ The workflow uses `docker run` directly instead of the `JetBrains/qodana-action`
 
 **Why the bootstrap is critical:** Qodana runs in an isolated Docker container with no pre-installed project dependencies. The IDE resolves imports via the configured Python interpreter and virtualenv. Without matching dependencies in the Qodana container, the linter cannot resolve `from django.http import ...`, `from opentelemetry.trace import ...`, etc., and reports them as errors — these are false positives. The `bootstrap` section in `services/python/django/qodana.yaml` installs the same packages the IDE sees, bringing CI findings in line with local IDE inspections. Any requirement line containing `pyroscope` is filtered out (so both `pyroscope-io` and `pyroscope-otel` are skipped) because these agents require a Rust build toolchain not available in the Qodana container; the application handles their absence gracefully at runtime.
 
-**Python version mismatch:** The Qodana Python Community 2026.1 container ships Python 3.12.4, while the project declares `requires-python >= 3.13`. The bootstrap uses `--ignore-requires-python` so pip installs the packages despite the version mismatch. The packages are only needed for Qodana's import resolution and type inference, not for execution.
+**Python version mismatch:** The Qodana Python Community 2026.2 container ships Python 3.12.4, while the project declares `requires-python >= 3.13`. The bootstrap uses `--ignore-requires-python` so pip installs the packages despite the version mismatch. The packages are only needed for Qodana's import resolution and type inference, not for execution.
 
 #### Quality Gate
 
@@ -427,7 +427,7 @@ mkdir -p .qodana/django-python
 docker run --rm \
   -v "$PWD":/data/project \
   -v "$PWD/.qodana/django-python":/data/results \
-  jetbrains/qodana-python-community:2026.1 \
+  jetbrains/qodana-python-community:2026.2 \
   --project-dir=/data/project \
   --config=/data/project/services/python/django/qodana.yaml \
   --only-directory=services/python/django \
@@ -442,7 +442,7 @@ New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
 docker run --rm `
   -v "${PWD}:/data/project" `
   -v "${PWD}/.qodana/django-python:/data/results" `
-  jetbrains/qodana-python-community:2026.1 `
+  jetbrains/qodana-python-community:2026.2 `
   --project-dir=/data/project `
   --config=/data/project/services/python/django/qodana.yaml `
   --only-directory=services/python/django `
@@ -775,9 +775,9 @@ npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 
 #### Qodana JS — Not Currently Active (Licensing)
 
-A module-local Qodana configuration exists at `utils/nextjs-dash/qodana.yaml` pinning `jetbrains/qodana-js:2026.1`. However, unlike the JVM scopes which use the free `jetbrains/qodana-jvm-community` image, JetBrains does **not** publish a community edition of the JavaScript/TypeScript linter. The `jetbrains/qodana-js` image requires a paid [Qodana Cloud](https://www.jetbrains.com/qodana/) subscription and a valid `QODANA_TOKEN`.
+A module-local Qodana configuration exists at `utils/nextjs-dash/qodana.yaml` pinning `jetbrains/qodana-js:2026.2`. However, unlike the JVM scopes which use the free `jetbrains/qodana-jvm-community` image, JetBrains does **not** publish a community edition of the JavaScript/TypeScript linter. The `jetbrains/qodana-js` image requires a paid [Qodana Cloud](https://www.jetbrains.com/qodana/) subscription and a valid `QODANA_TOKEN`.
 
-Because this repository currently uses the free community JVM linter, the JS scope is **not** included in the Qodana CI workflow. The configuration file is kept in the repository so it can be activated by adding a `nextjs-dash` matrix entry to `.github/workflows/qodana_code_quality.yml` once a Qodana Cloud license covering JavaScript analysis is available. When re-enabling, the Qodana action does not support a `linter` input — you must add a `docker pull jetbrains/qodana-js:2026.1` step before the scan to ensure the image is available (the action's internal pull phase only reads the root `qodana.yaml`).
+Because this repository currently uses the free community JVM linter, the JS scope is **not** included in the Qodana CI workflow. The configuration file is kept in the repository so it can be activated by adding a `nextjs-dash` matrix entry to `.github/workflows/qodana_code_quality.yml` once a Qodana Cloud license covering JavaScript analysis is available. When re-enabling, the Qodana action does not support a `linter` input — you must add a `docker pull jetbrains/qodana-js:2026.2` step before the scan to ensure the image is available (the action's internal pull phase only reads the root `qodana.yaml`).
 
 #### Free Alternative — Hosted ESLint + TypeScript Quality Report
 

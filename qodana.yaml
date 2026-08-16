@@ -11,7 +11,7 @@ version: "1.0"
 
 # Keep the analyzer image pinned in qodana.yaml so the action's `qodana pull`
 # phase and later `qodana scan --skip-pull` phase resolve the same image.
-image: jetbrains/qodana-jvm-community:2026.1
+image: jetbrains/qodana-jvm-community:2026.2
 
 #Specify inspection profile for code analysis
 profile:
@@ -231,4 +231,4 @@ failureConditions:
 # Keep the JVM linter pinned here so both the action's `pull` step and
 # the later scoped `scan` step resolve the same image in this mixed-language
 # repository.
-linter: jetbrains/qodana-jvm-community:2026.1
+linter: jetbrains/qodana-jvm-community:2026.2

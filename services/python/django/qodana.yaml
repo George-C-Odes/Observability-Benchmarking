@@ -12,14 +12,14 @@ version: "1.0"
 # Python-specific Qodana configuration for Django services.
 #
 # This file lives under services/python/django/ because the root qodana.yaml
-# pins the JVM linter (jetbrains/qodana-jvm-community:2026.1).  The Django CI
+# pins the JVM linter (jetbrains/qodana-jvm-community:2026.2).  The Django CI
 # workflow passes --config pointing here so the Python community linter and its
 # quality gate are self-contained.
 
 profile:
   name: qodana.recommended
 
-linter: jetbrains/qodana-python-community:2026.1
+linter: jetbrains/qodana-python-community:2026.2
 
 # ---------------------------------------------------------------------------
 # Bootstrap: install dependencies so Qodana can resolve imports.
