@@ -2,16 +2,16 @@
   <configuration default="false" name="[build-img] Django Reactive" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="django-reactive:6.0.7_latest" />
+        <option name="imageTag" value="django-reactive:6.1_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="PYTHON_VERSION" />
-              <option name="value" value="3.13.14" />
+              <option name="value" value="3.13.15" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="django-reactive:6.0.7_latest" />
+              <option name="value" value="django-reactive:6.1_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

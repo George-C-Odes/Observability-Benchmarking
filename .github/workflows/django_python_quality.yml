@@ -139,12 +139,11 @@ jobs:
         run: |
           mkdir -p "$RESULTS_DIR"
           docker run --rm \
-            -v "$GITHUB_WORKSPACE:/data/project" \
+            -v "$GITHUB_WORKSPACE/services/python/django:/data/project" \
             -v "$RESULTS_DIR:/data/results" \
-            jetbrains/qodana-python-community:2026.1 \
+            jetbrains/qodana-python-community:2026.2 \
             --project-dir=/data/project \
-            --config=/data/project/services/python/django/qodana.yaml \
-            --only-directory=services/python/django \
+            --config=/data/project/qodana.yaml \
             --results-dir=/data/results
 
       # Explicit upload of the HTML report directory so the Pages workflow
