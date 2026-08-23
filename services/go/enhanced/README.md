@@ -35,7 +35,7 @@ Example:
 ## Quick start (local)
 
 ### Prerequisites
-- Go **1.26.x** (tested with Go 1.27.0)
+- Go **1.27.x** (tested with Go 1.27.0)
 - Docker (optional)
 
 ### Run
