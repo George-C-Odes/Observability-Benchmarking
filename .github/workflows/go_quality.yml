@@ -53,7 +53,7 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.11.4
+          version: v2.13.1
           working-directory: services/go/enhanced
           # The action runs `golangci-lint run` by default after install.
           # We only want to install the binary here — the actual lint run
@@ -159,7 +159,7 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.11.4
+          version: v2.13.1
           working-directory: services/go/simple
           args: --help
 
