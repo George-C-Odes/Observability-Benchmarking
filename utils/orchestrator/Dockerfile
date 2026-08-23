@@ -3,7 +3,7 @@ ARG IMAGE_BUILDER=maven:3.9.16-eclipse-temurin-25-noble
 ARG IMAGE_DOCKER_CLI=docker:29.6.0-cli-alpine3.24
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 ARG JAVA_RELEASE=25
-#ARG IMAGE_RUNTIME=amazoncorretto:25.0.3
+#ARG IMAGE_RUNTIME=amazoncorretto:25.0.4
 ## amazoncorretto includes curl for troubleshooting
 # ------------ BUILD STAGE -----------------------
 FROM ${IMAGE_BUILDER} AS builder

@@ -121,17 +121,17 @@ memory: 2GB        # Maximum memory
 ### Software Versions
 
 **Java**:
-- JDK: Eclipse Temurin 25.0.3
+- JDK: Eclipse Temurin 25.0.4
 - JVM Options: `-XX:+UseG1GC -XX:MaxGCPauseMillis=100`
 - Heap: 512MB-1GB depending on implementation
 
 **Native**:
-- GraalVM: 25.0.3 (Oracle Enterprise edition)
+- GraalVM: 25.0.4 (Oracle Enterprise edition)
 - GC: G1 (only available in Enterprise edition)
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.15 also supported)
+- Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.16 also supported)
 - Quarkus: {{QUARKUS_VERSION}}
 - Micronaut: {{MICRONAUT_VERSION}}
 - Helidon: {{HELIDON_VERSION}}
@@ -142,13 +142,13 @@ memory: 2GB        # Maximum memory
 - Pekko: {{PEKKO_VERSION}} (Pekko Core 1.4.0)
 - Go: {{GO_VERSION}} with Fiber v3.5.0
 - Python: {{PYTHON_VERSION}} (CPython)
-- Django: {{DJANGO_VERSION}} (Gunicorn 26.0.0)
+- Django: {{DJANGO_VERSION}} (Gunicorn 26.1.0)
 
 ### Third-party license note (native-image)
 
 This repository is Apache-2.0 licensed.
 
-However, native builds may use Oracle GraalVM container images (for example: `container-registry.oracle.com/graalvm/native-image:25.0.3-ol9`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
+However, native builds may use Oracle GraalVM container images (for example: `container-registry.oracle.com/graalvm/native-image:25.0.4-ol9`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
 
 ## Workload Design
 

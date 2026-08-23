@@ -1,7 +1,7 @@
 # Helidon MP Native Image Service
 
 ## Overview
-A GraalVM native-image build of the Helidon 4.5.2 MicroProfile benchmarking service. Produces an ahead-of-time compiled binary with near-instant startup and a minimal memory footprint, running on a distroless container with no JVM.
+A GraalVM native-image build of the Helidon 4.5.3 MicroProfile benchmarking service. Produces an ahead-of-time compiled binary with near-instant startup and a minimal memory footprint, running on a distroless container with no JVM.
 
 This module **shares the Java sources** from [`helidon-mp-jvm`](../jvm/README.md) via `build-helper-maven-plugin` and overlays native-specific classes: a custom `Bootstrap` entrypoint, GraalVM substitutions for Weld threading, and a `WeldProxyBuildTimeInitFeature` for proxy class registration.
 
@@ -14,9 +14,9 @@ This module **shares the Java sources** from [`helidon-mp-jvm`](../jvm/README.md
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Helidon 4.5.2 MP (CDI + JAX-RS)
+- **Framework**: Helidon 4.5.3 MP (CDI + JAX-RS)
 - **CDI**: Weld (Jakarta CDI 4.0)
-- **Compiler**: GraalVM `native-image` 25.0.3 (`-O2`, `-march=native`)
+- **Compiler**: GraalVM `native-image` 25.0.4 (`-O2`, `-march=native`)
 - **GC**: G1 Garbage Collector (`--gc=G1`)
 - **Thread Model**: Virtual threads only (Helidon 4 default)
 
@@ -120,11 +120,11 @@ Key `native-image` flags configured in `pom.xml`:
 
 ### Docker
 
-**Image**: `helidon-mp-native:4.5.2_latest`
+**Image**: `helidon-mp-native:4.5.3_latest`
 
 | Stage   | Image                                                           |
 |---------|-----------------------------------------------------------------|
-| Build   | `container-registry.oracle.com/graalvm/native-image:25.0.3-ol9` |
+| Build   | `container-registry.oracle.com/graalvm/native-image:25.0.4-ol9` |
 | Runtime | `gcr.io/distroless/cc-debian13:nonroot`                         |
 
 - Port mapping: `8097:8080`
@@ -139,10 +139,10 @@ Key `native-image` flags configured in `pom.xml`:
 
 ```powershell
 docker buildx build --load `
-  -t helidon-mp-native:4.5.2_latest `
+  -t helidon-mp-native:4.5.3_latest `
   -f services/java/helidon/mp/native/Dockerfile `
-  --build-arg HELIDON_VERSION=4.5.2 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.2_latest `
+  --build-arg HELIDON_VERSION=4.5.3 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.3_latest `
   services/java
 ```
 

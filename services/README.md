@@ -15,11 +15,11 @@ This directory contains the REST service implementations used for benchmarking.
 ### Base Image Builders
 Native builder image pull from Oracle Enterprise:
   ```bash
-docker pull container-registry.oracle.com/graalvm/native-image:25.0.3-ol9
+docker pull container-registry.oracle.com/graalvm/native-image:25.0.4-ol9
   ```
 Native builder image pull from GraalVM community:
   ```bash
-docker pull ghcr.io/graalvm/native-image-community:25.0.3-ol9
+docker pull ghcr.io/graalvm/native-image-community:25.0.4-ol9
   ```
 
 ### Service Image Builders
@@ -31,10 +31,10 @@ Run from the project root directory.
 ```powershell
 docker buildx build `
   -f services/java/spring/jvm/Dockerfile `
-  -t spring-jvm-tomcat-platform:4.1.0_latest `
+  -t spring-jvm-tomcat-platform:4.1.1_latest `
   --build-arg PROFILE=tomcat `
-  --build-arg SPRING_BOOT_VERSION=4.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-platform:4.1.0_latest `
+  --build-arg SPRING_BOOT_VERSION=4.1.1 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-platform:4.1.1_latest `
   --load `
   services/java
 ```
@@ -42,10 +42,10 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/spring/jvm/Dockerfile `
-    -t spring-jvm-tomcat-virtual:4.1.0_latest `
+    -t spring-jvm-tomcat-virtual:4.1.1_latest `
     --build-arg PROFILE=tomcat `
-    --build-arg SPRING_BOOT_VERSION=4.1.0 `
-    --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-virtual:4.1.0_latest `
+    --build-arg SPRING_BOOT_VERSION=4.1.1 `
+    --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-virtual:4.1.1_latest `
     --load `
     services/java
 ```
@@ -53,10 +53,10 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/jvm/Dockerfile `
-  -t spring-jvm-netty:4.1.0_latest `
+  -t spring-jvm-netty:4.1.1_latest `
   --build-arg PROFILE=netty `
-  --build-arg SPRING_BOOT_VERSION=4.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-netty:4.1.0_latest `
+  --build-arg SPRING_BOOT_VERSION=4.1.1 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-netty:4.1.1_latest `
   --load `
   services/java
 ```
@@ -64,11 +64,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-tomcat-platform:4.1.0_latest `
+  -t spring-native-tomcat-platform:4.1.1_latest `
   --build-arg PROFILE=tomcat `
   --build-arg VIRTUAL_ENABLED=false `
-  --build-arg SPRING_BOOT_VERSION=4.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-platform:4.1.0_latest `
+  --build-arg SPRING_BOOT_VERSION=4.1.1 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-platform:4.1.1_latest `
   --load `
   services/java
 ```
@@ -76,11 +76,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-tomcat-virtual:4.1.0_latest `
+  -t spring-native-tomcat-virtual:4.1.1_latest `
   --build-arg PROFILE=tomcat `
   --build-arg VIRTUAL_ENABLED=true `
-  --build-arg SPRING_BOOT_VERSION=4.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-virtual:4.1.0_latest `
+  --build-arg SPRING_BOOT_VERSION=4.1.1 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-virtual:4.1.1_latest `
   --load `
   services/java
 ```
@@ -88,11 +88,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-netty:4.1.0_latest `
+  -t spring-native-netty:4.1.1_latest `
   --build-arg PROFILE=netty `
   --build-arg VIRTUAL_ENABLED=false `
-  --build-arg SPRING_BOOT_VERSION=4.1.0 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-netty:4.1.0_latest `
+  --build-arg SPRING_BOOT_VERSION=4.1.1 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-netty:4.1.1_latest `
   --load `
   services/java
 ```
@@ -100,9 +100,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.38.2_latest `
-  --build-arg QUARKUS_VERSION=3.38.2 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.38.2_latest `
+  -t quarkus-jvm:3.38.3_latest `
+  --build-arg QUARKUS_VERSION=3.38.3 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.38.3_latest `
   --load `
   services/java
 ```
@@ -110,9 +110,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.38.2_latest `
-    --build-arg QUARKUS_VERSION=3.38.2 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.38.2_latest `
+    -t quarkus-native:3.38.3_latest `
+    --build-arg QUARKUS_VERSION=3.38.3 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.38.3_latest `
     --load `
     services/java
 ```
@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.1.11_latest `
-  --build-arg MICRONAUT_VERSION=5.1.11 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.1.11_latest `
+  -t micronaut-jvm:5.1.12_latest `
+  --build-arg MICRONAUT_VERSION=5.1.12 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.1.12_latest `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:5.1.11_latest `
-  --build-arg MICRONAUT_VERSION=5.1.11 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.1.11_latest `
+  -t micronaut-native:5.1.12_latest `
+  --build-arg MICRONAUT_VERSION=5.1.12 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.1.12_latest `
   --load `
   services/java
 ```
@@ -140,9 +140,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/jvm/Dockerfile `
-  -t helidon-se-jvm:4.5.2_latest `
-  --build-arg HELIDON_VERSION=4.5.2 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.5.2_latest `
+  -t helidon-se-jvm:4.5.3_latest `
+  --build-arg HELIDON_VERSION=4.5.3 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.5.3_latest `
   --load `
   services/java
 ```
@@ -150,9 +150,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/native/Dockerfile `
-  -t helidon-se-native:4.5.2_latest `
-  --build-arg HELIDON_VERSION=4.5.2 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.5.2_latest `
+  -t helidon-se-native:4.5.3_latest `
+  --build-arg HELIDON_VERSION=4.5.3 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.5.3_latest `
   --load `
   services/java
 ```
@@ -160,9 +160,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/jvm/Dockerfile `
-  -t helidon-mp-jvm:4.5.2_latest `
-  --build-arg HELIDON_VERSION=4.5.2 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.2_latest `
+  -t helidon-mp-jvm:4.5.3_latest `
+  --build-arg HELIDON_VERSION=4.5.3 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.3_latest `
   --load `
   services/java
 ```
@@ -170,9 +170,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/native/Dockerfile `
-  -t helidon-mp-native:4.5.2_latest `
-  --build-arg HELIDON_VERSION=4.5.2 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.2_latest `
+  -t helidon-mp-native:4.5.3_latest `
+  --build-arg HELIDON_VERSION=4.5.3 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.3_latest `
   --load `
   services/java
 ```
@@ -260,9 +260,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/go/enhanced/Dockerfile `
-    -t go:1.26.6_latest `
-    --build-arg GO_VERSION=1.26.6 `
-    --build-arg BUILDKIT_BUILD_NAME=go:1.26.6_latest `
+    -t go:1.27.0_latest `
+    --build-arg GO_VERSION=1.27.0 `
+    --build-arg BUILDKIT_BUILD_NAME=go:1.27.0_latest `
     --load `
     services/go/enhanced
 ```

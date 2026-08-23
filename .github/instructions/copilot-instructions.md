@@ -60,7 +60,7 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 - **OpenTelemetry**: Auto-instrumentation via `-javaagent` (OTel Java agent and Pyroscope extension). `service.name` must be set and stable for every service.
 - **Native images**: GraalVM Native Image with framework-recommended settings. Builds are extremely slow — `COMPOSE_PARALLEL_LIMIT=1` is intentional; never suggest parallelizing native builds.
 
-### 3.2 Go (1.26)
+### 3.2 Go (1.27)
 
 - Fiber v3 framework.
 - Full OTel instrumentation matching the Java pipeline.

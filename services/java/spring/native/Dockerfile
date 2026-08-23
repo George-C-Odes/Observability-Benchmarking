@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
-ARG JAVA_MINOR_RELEASE=.0.3
+ARG JAVA_MINOR_RELEASE=.0.4
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
 #ARG IMAGE_RUNTIME=debian:13.2-slim
@@ -15,7 +15,7 @@ ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
 ARG PROFILE=tomcat
 ARG VIRTUAL_ENABLED=false
 ENV VIRTUAL_ENABLED=${VIRTUAL_ENABLED}
-ARG SPRING_BOOT_VERSION=4.1.0
+ARG SPRING_BOOT_VERSION=4.1.1
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -24,7 +24,7 @@ ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artif
 ARG NATIVE_IMAGE_MAX_HEAP=8g
 ENV NATIVE_IMAGE_OPTS="-J-Xmx${NATIVE_IMAGE_MAX_HEAP}"
 
-ARG YQ_VERSION=4.53.3
+ARG YQ_VERSION=4.53.6
 RUN microdnf install -y curl && microdnf clean all && \
     curl -L "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
       -o /usr/local/bin/yq && \
