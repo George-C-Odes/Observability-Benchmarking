@@ -163,16 +163,16 @@ The runner prints the versions it is designed against (these values are embedded
 
 | Framework       | Version |
 |-----------------|---------|
-| Spring Boot     | 4.1.0   |
-| Quarkus         | 3.38.2  |
-| Micronaut       | 5.1.11  |
-| Helidon SE & MP | 4.5.2   |
+| Spring Boot     | 4.1.1   |
+| Quarkus         | 3.38.3  |
+| Micronaut       | 5.1.12  |
+| Helidon SE & MP | 4.5.3   |
 | Spark           | 3.0.4   |
 | Javalin         | 7.2.3   |
 | Dropwizard      | 5.0.2   |
 | Vert.x          | 5.1.2   |
 | Pekko           | 1.3.0   |
-| Go              | 1.26.6  |
+| Go              | 1.27.0  |
 | Django          | 6.1     |
 
 ## Service Port Mappings

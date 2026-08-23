@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
-[![Java](https://img.shields.io/badge/Java-25.0.3-ED8B00.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-25.0.4-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-{{SPRING_BOOT_VERSION}}-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-{{QUARKUS_VERSION}}-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-{{MICRONAUT_VERSION}}-1A1A2E.svg)](https://micronaut.io/)
@@ -77,8 +77,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 
 | Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.3                  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.3                  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.4                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.4                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
@@ -94,18 +94,18 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.3.1                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.3.2                  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.8                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.3.1                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.1.3                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.2.0                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.6                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8                  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.1.4                   | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.2.0                   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.2.1                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.65.0                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.30.0                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.1.7                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
@@ -114,10 +114,10 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.3                  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.4                  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.10                  | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.11                  | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -162,12 +162,12 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.3.1 and Material-UI 9.3.1
+  - Built with Next.js 16.3.2 and Material-UI 9.3.1
 
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 – Eclipse Temurin)
-- **Spring Boot {{SPRING_BOOT_VERSION}} (3.5.15 also supported)**
+- **Spring Boot {{SPRING_BOOT_VERSION}} (3.5.16 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -503,9 +503,9 @@ The numbers below are a curated summary of a representative run.
 - **Network**: Docker bridge network
 
 #### Software Versions
-- **Java JDK**: Eclipse Temurin 25.0.3
-- **Java Native**: GraalVM Enterprise 25.0.3-ol9
-- **Spring Boot**: {{SPRING_BOOT_VERSION}} (3.5.15 also supported)
+- **Java JDK**: Eclipse Temurin 25.0.4
+- **Java Native**: GraalVM Enterprise 25.0.4-ol9
+- **Spring Boot**: {{SPRING_BOOT_VERSION}} (3.5.16 also supported)
 - **Quarkus**: {{QUARKUS_VERSION}}
 - **Micronaut**: {{MICRONAUT_VERSION}}
 - **Helidon**: {{HELIDON_VERSION}}
@@ -527,7 +527,7 @@ However, the environment pulls and builds **third-party container images and dep
 
 In particular:
 
-- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.3-ol9`.
+- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.4-ol9`.
 - If you build/run those images, **you are responsible** for reviewing and complying with Oracle’s applicable license terms.
 
 Nothing in this repository’s Apache-2.0 license changes the license terms of third-party dependencies or container base images.
@@ -628,7 +628,7 @@ This project implements comprehensive code quality and security practices to ens
 
 #### JVM Quality Tooling
 - **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
-- **Orchestrator (`utils/orchestrator`)**: Spotless 3.10.0, PMD 7.26.0, SpotBugs 4.10.3.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.10.0, PMD 7.26.0, SpotBugs 4.10.4.0 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
 - **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
 - **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 

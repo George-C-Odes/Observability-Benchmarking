@@ -134,9 +134,9 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto 25.0.3 or Eclipse Temurin 25.0.3)
+Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
 Maven: 3.9+
-Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.15 also supported)
+Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.16 also supported)
 Quarkus: {{QUARKUS_VERSION}}
 ```
 
@@ -571,7 +571,7 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.1
+Next.js: 16.3.2
 React: 19.2.8
 TypeScript: 6.0.3
 Vitest: 4.x

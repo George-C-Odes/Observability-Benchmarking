@@ -7,7 +7,7 @@ ARG BASE_BUILDER=noble
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
 #ARG DISTRIBUTION=amazoncorretto
 #ARG BASE_BUILDER=debian
-#ARG IMAGE_RUNTIME=amazoncorretto:25.0.3-al2023-headless
+#ARG IMAGE_RUNTIME=amazoncorretto:25.0.4-al2023-headless
 #alpine, al2023-headless
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 #Option N/A for J21 set to "", for J25 set "--sun-misc-unsafe-memory-access=allow" for suppressing warnings
@@ -20,7 +20,7 @@ ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
 ARG PROFILE=default
-ARG SPRING_BOOT_VERSION=4.1.0
+ARG SPRING_BOOT_VERSION=4.1.1
 ENV SPRING_BOOT_VERSION=${SPRING_BOOT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
@@ -114,7 +114,7 @@ RUN set -eux; \
 FROM alpine:3.24.1 AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=2.1.2
-ARG OTEL_JAVA_AGENT_VERSION=2.30.0
+ARG OTEL_JAVA_AGENT_VERSION=2.31.0
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 ### Snapshots - prereleased:

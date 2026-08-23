@@ -962,8 +962,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 
 | Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.3                  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.3                  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.4                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | 25.0.4                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.0.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
@@ -979,18 +979,18 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.3.1                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.3.2                  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.2.8                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.3.1                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.1.3                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.2.0                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.6                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8                  | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.1.4                   | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.2.0                   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.2.1                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.65.0                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.30.0                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.1.7                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
@@ -999,10 +999,10 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.3                  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.4                  | Python linting and code formatting                                   |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.10                  | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 4.1.11                  | Frontend unit testing                                                |
 
 ---
 
