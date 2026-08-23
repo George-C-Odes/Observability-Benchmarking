@@ -148,7 +148,7 @@ public class StartupListener {
         appender.setName(OTEL_APPENDER_NAME);
         appender.setContext(rootLogger.getLoggerContext());
         appender.setCaptureExperimentalAttributes(true);
-        appender.setCaptureMdcAttributes("*");
+        appender.setMdcAttributesIncluded("*");
         appender.setOpenTelemetry(openTelemetry);
         appender.start();
         rootLogger.addAppender(appender);
