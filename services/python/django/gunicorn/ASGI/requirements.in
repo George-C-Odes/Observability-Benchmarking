@@ -14,7 +14,7 @@
 Django>=6.1,<7
 
 # Process manager / master-worker lifecycle hooks
-gunicorn>=26.1.0,<27
+gunicorn>=26.2.0,<27
 
 # ASGI server implementation used by Gunicorn workers
 uvicorn>=0.52.3,<1
