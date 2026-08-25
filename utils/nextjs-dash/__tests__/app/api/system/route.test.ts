@@ -35,7 +35,7 @@ describe('/api/system route', () => {
     expect(body.platform).toBe(process.platform);
     expect(body.arch).toBe(process.arch);
     expect(body.npm).toBe('12.0.2');
-    expect(body.nextjs).toBe('16.3.2');
+    expect(body.nextjs).toBe('16.3.3');
     expect(body.react).toBe('19.2.8');
     expect(body.mui).toBe('9.3.1');
     expect(body.typescript).toBe(packageJson.devDependencies?.typescript);
