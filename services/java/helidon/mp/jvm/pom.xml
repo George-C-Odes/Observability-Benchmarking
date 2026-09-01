@@ -12,7 +12,7 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <helidon.version>4.5.3</helidon.version>
+        <helidon.version>4.5.4</helidon.version>
         <caffeine.version>3.2.4</caffeine.version>
         <jakarta-activation.version>2.1.4</jakarta-activation.version>
         <junit-jupiter.version>5.12.2</junit-jupiter.version>

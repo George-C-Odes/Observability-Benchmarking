@@ -1,7 +1,7 @@
 # Helidon MP JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Helidon 4.5.3 MicroProfile running on the Java Virtual Machine (JVM 25). Helidon 4 MP uses CDI (Weld) for dependency injection, JAX-RS (Jersey) for routing, and virtual threads by default for every request handler.
+A high-performance REST service implementation built with Helidon 4.5.4 MicroProfile running on the Java Virtual Machine (JVM 25). Helidon 4 MP uses CDI (Weld) for dependency injection, JAX-RS (Jersey) for routing, and virtual threads by default for every request handler.
 
 ## Purpose
 - Benchmark Helidon 4 MP performance with virtual threads against the SE variant and other frameworks
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Helidon 4.5.3 MicroPro
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Helidon 4.5.3 MP (CDI + JAX-RS)
+- **Framework**: Helidon 4.5.4 MP (CDI + JAX-RS)
 - **CDI**: Weld (Jakarta CDI 4.0)
 - **JAX-RS**: Jersey (Jakarta REST 3.1)
 - **Java Version**: Eclipse Temurin 25
@@ -78,7 +78,7 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 
 ### Docker
 
-**Image**: `helidon-mp-jvm:4.5.3_latest`
+**Image**: `helidon-mp-jvm:4.5.4_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -95,9 +95,9 @@ The service is tuned for maximum throughput on constrained hardware (2 vCPU, 96 
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/jvm/Dockerfile `
-  -t helidon-mp-jvm:4.5.3_latest `
-  --build-arg HELIDON_VERSION=4.5.3 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.3_latest `
+  -t helidon-mp-jvm:4.5.4_latest `
+  --build-arg HELIDON_VERSION=4.5.4 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.4_latest `
   --load `
   services/java
 ```

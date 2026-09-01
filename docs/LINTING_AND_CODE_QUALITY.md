@@ -15,9 +15,9 @@ This repository currently uses two scoped JVM quality setups:
   - **maven-checkstyle-plugin**: 3.6.0
   - **checkstyle**: 12.2.0
 - **Orchestrator (`utils/orchestrator`)**
-  - **spotless-maven-plugin**: 3.10.0
+  - **spotless-maven-plugin**: 3.10.1
   - **google-java-format**: 1.36.1
-  - **maven-pmd-plugin**: 3.28.0 with PMD 7.26.0
+  - **maven-pmd-plugin**: 3.28.0 with PMD 7.27.0
   - **spotbugs-maven-plugin**: 4.10.4.0 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
@@ -715,7 +715,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28` (# v4.37.8, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@cdf488f595d80d6e07e03d4674febd5ab45fa938` (# v4.37.9, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
