@@ -992,7 +992,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.65.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.1  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.1.7   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.1.8   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.7.2  | Image build and lifecycle management                                 |
