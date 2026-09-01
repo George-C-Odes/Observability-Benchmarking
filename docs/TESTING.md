@@ -870,7 +870,7 @@ Integration Test Suite
 Testing Framework Versions:
 - Spring Boot: 4.1.1
 - Quarkus: 3.39.1
-- Micronaut: 5.1.12
+- Micronaut: 5.1.13
 - Helidon: 4.5.4
 - Spark: 3.0.4
 - Javalin: 7.2.3
