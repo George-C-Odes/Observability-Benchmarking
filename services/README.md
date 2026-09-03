@@ -100,9 +100,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.39.1_latest `
-  --build-arg QUARKUS_VERSION=3.39.1 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.39.1_latest `
+  -t quarkus-jvm:3.39.2_latest `
+  --build-arg QUARKUS_VERSION=3.39.2 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.39.2_latest `
   --load `
   services/java
 ```
@@ -110,9 +110,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.39.1_latest `
-    --build-arg QUARKUS_VERSION=3.39.1 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.39.1_latest `
+    -t quarkus-native:3.39.2_latest `
+    --build-arg QUARKUS_VERSION=3.39.2 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.39.2_latest `
     --load `
     services/java
 ```
@@ -260,9 +260,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/go/enhanced/Dockerfile `
-    -t go:1.27.0_latest `
-    --build-arg GO_VERSION=1.27.0 `
-    --build-arg BUILDKIT_BUILD_NAME=go:1.27.0_latest `
+    -t go:1.27.1_latest `
+    --build-arg GO_VERSION=1.27.1 `
+    --build-arg BUILDKIT_BUILD_NAME=go:1.27.1_latest `
     --load `
     services/go/enhanced
 ```
@@ -270,9 +270,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/python/django/gunicorn/WSGI/Dockerfile `
-    -t django-platform:6.1_latest `
+    -t django-platform:6.1.1_latest `
     --build-arg PYTHON_VERSION=3.13.15 `
-    --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1_latest `
+    --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1.1_latest `
     --load `
     services/python/django
 ```
@@ -280,9 +280,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/python/django/gunicorn/ASGI/Dockerfile `
-    -t django-reactive:6.1_latest `
+    -t django-reactive:6.1.1_latest `
     --build-arg PYTHON_VERSION=3.13.15 `
-    --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.1_latest `
+    --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.1.1_latest `
     --load `
     services/python/django
 ```

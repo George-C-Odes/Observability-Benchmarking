@@ -983,7 +983,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Frontend**      | Library            | React                      | 19.2.8                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.2.0                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.2.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.7                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.0                   | Long-term metrics storage                                            |

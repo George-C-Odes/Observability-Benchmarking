@@ -43,7 +43,7 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:13.2.0
+    image: grafana/grafana:13.2.1
     container_name: grafana
     entrypoint: ["/bin/bash","-lc"]
     command:

@@ -9,7 +9,7 @@
 
   <properties>
     <argLine/>
-    <compiler-plugin.version>3.15.0</compiler-plugin.version>
+    <compiler-plugin.version>3.16.0</compiler-plugin.version>
     <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <findsecbugs.version>1.14.0</findsecbugs.version>
     <google-java-format.version>1.36.1</google-java-format.version>
@@ -27,7 +27,7 @@
     <pmd.version>7.27.0</pmd.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.39.1</quarkus.platform.version>
+    <quarkus.platform.version>3.39.2</quarkus.platform.version>
     <quality.profile.id>quality</quality.profile.id>
     <spotbugs.exclude.filter.file>quality/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <spotbugs-maven-plugin.version>4.10.4.0</spotbugs-maven-plugin.version>

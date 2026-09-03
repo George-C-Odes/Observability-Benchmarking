@@ -12,7 +12,7 @@ cachetools==7.1.8
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 click==8.5.0
     # via uvicorn
-django==6.1
+django==6.1.1
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 googleapis-common-protos==1.75.2
     # via opentelemetry-exporter-otlp-proto-grpc

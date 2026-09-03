@@ -36,6 +36,8 @@ buildNumber.properties
 quarkus-app/
 /native-image-output/
 /build/native/
+/services/java/quarkus/jvm/target/
+.quarkus/cli/plugins/quarkus-cli-catalog.json
 
 # Node / frontend (if present)
 node_modules/
@@ -165,7 +167,6 @@ output-*.txt
 # Vitest / test report artifacts
 vitest-*.json
 /.profileconfig.json
-/services/java/quarkus/jvm/target/
 
 # Jekyll / GitHub Pages (generated output + caches)
 /docs/.jekyll-cache/
