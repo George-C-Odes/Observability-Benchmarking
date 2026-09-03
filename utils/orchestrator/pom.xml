@@ -9,7 +9,7 @@
 
   <properties>
     <argLine/>
-    <compiler-plugin.version>3.15.0</compiler-plugin.version>
+    <compiler-plugin.version>3.16.0</compiler-plugin.version>
     <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <findsecbugs.version>1.14.0</findsecbugs.version>
     <google-java-format.version>1.36.1</google-java-format.version>
