@@ -23,22 +23,22 @@ IMAGE_TAG: ghcr.io/acme/app:1.2.3
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
     SPRING_BOOT_VERSION: '4.1.1',
-    GO_VERSION: '1.27.0',
+    GO_VERSION: '1.27.1',
   });
 
-  assert.equal(rendered, 'Spring 4.1.1 / Go 1.27.0');
+  assert.equal(rendered, 'Spring 4.1.1 / Go 1.27.1');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
-    GO_VERSION: '1.27.0',
+    GO_VERSION: '1.27.1',
   });
 
-  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.0');
+  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.1');
 
   const jekyllSnippet = renderTemplate("Image {{ '/images/foo.png' | relative_url }} with {{GO_VERSION}}", {
-    GO_VERSION: '1.27.0',
+    GO_VERSION: '1.27.1',
   });
 
-  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.0");
+  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.1");
 
   assert.throws(
     () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.1.1' }),
@@ -139,7 +139,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.39.1');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.39.2');
   } finally {
     try {
       unlinkSync(templatePath);
@@ -168,7 +168,7 @@ function testRealignMarkdownTables() {
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
     '| Spring | 4.1.1 | Main framework |',
-    '| Go     | 1.27.0          | Alt runtime    |',
+    '| Go     | 1.27.1          | Alt runtime    |',
     '| Node   | 26.8.1                  | Frontend       |',
   ].join('\n');
 
@@ -178,7 +178,7 @@ function testRealignMarkdownTables() {
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
     '| Spring | 4.1.1   | Main framework |',
-    '| Go     | 1.27.0  | Alt runtime    |',
+    '| Go     | 1.27.1  | Alt runtime    |',
     '| Node   | 26.8.1  | Frontend       |',
   ].join('\n');
 

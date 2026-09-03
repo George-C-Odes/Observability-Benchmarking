@@ -8,7 +8,7 @@ asgiref==3.12.1
     # via django
 cachetools==7.1.8
     # via -r services/python/django/gunicorn/WSGI/requirements.in
-django==6.1
+django==6.1.1
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 googleapis-common-protos==1.75.2
     # via opentelemetry-exporter-otlp-proto-grpc

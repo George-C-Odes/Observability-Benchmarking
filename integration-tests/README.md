@@ -164,7 +164,7 @@ The runner prints the versions it is designed against (these values are embedded
 | Framework       | Version |
 |-----------------|---------|
 | Spring Boot     | 4.1.1   |
-| Quarkus         | 3.39.1  |
+| Quarkus         | 3.39.2  |
 | Micronaut       | 5.1.13  |
 | Helidon SE & MP | 4.5.4   |
 | Spark           | 3.0.4   |
@@ -172,8 +172,8 @@ The runner prints the versions it is designed against (these values are embedded
 | Dropwizard      | 5.0.2   |
 | Vert.x          | 5.1.2   |
 | Pekko           | 1.3.0   |
-| Go              | 1.27.0  |
-| Django          | 6.1     |
+| Go              | 1.27.1  |
+| Django          | 6.1.1   |
 
 ## Service Port Mappings
 
