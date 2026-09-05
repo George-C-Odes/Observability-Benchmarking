@@ -1,7 +1,6 @@
 name: observability-benchmarking-agent-kit
 version: 1.0.0
-description: Portable agent guidance for maintaining the Observability 
-  Benchmarking repository.
+description: Portable agent guidance for maintaining the Observability Benchmarking repository.
 author: George C
 license: Apache-2.0
 targets:

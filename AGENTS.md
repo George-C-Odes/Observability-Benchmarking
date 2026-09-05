@@ -50,7 +50,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | `services/python/django/gunicorn/common/**`          | `python -m compileall src`, `python -m ruff check .`, `python -m ruff format --check .` from `common`                       |
 | Django `WSGI` or `ASGI` runtime                      | Install common package, then `python manage.py check` and `python manage.py test obbench_django_common.tests --verbosity=2` |
 | Template docs                                        | `node scripts/render-readmes.mjs` and inspect the generated diff                                                            |
-| `my-agent/**`                                        | `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`                            |
+| `my-agent/**`                                        | `apm install --frozen`, `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`    |
 
 Use broader CI reasoning only after the focused path is clean or when shared contracts are changed.
 
