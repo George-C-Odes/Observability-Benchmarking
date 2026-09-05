@@ -1,0 +1,15 @@
+# APM-generated dependencies and package output
+apm_modules/
+build/
+
+# Runtime deployment output; portable sources live under .apm/.
+/.agents/
+/.claude/
+/.codex/
+/.cursor/
+/.gemini/
+/.github/
+/.opencode/
+/.windsurf/
+/AGENTS.md
+/CLAUDE.md

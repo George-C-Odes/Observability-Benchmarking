@@ -4,6 +4,16 @@
 
 ---
 
+## 0 · Operating Model
+
+- Start with `AGENTS.md`; open `docs/AGENT_IMPLEMENTATION_MAP.md` only when its task recipe applies.
+- Check the working tree before editing. Preserve unrelated user changes and generated-file boundaries.
+- Load the changed module, its nearest test, and at most one representative sibling before broadening the search.
+- Prefer focused validation for the touched subsystem. Report only checks that actually ran.
+- If instructions overlap, follow the user's request, then the nearest path-specific guidance, then repository-wide guidance.
+
+---
+
 ## 1 · Project Identity
 
 This is a **Docker Compose-based observability benchmarking environment** that compares REST service implementations across multiple JVM frameworks (Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko), Go (Fiber), and Python (Django) 
@@ -30,6 +40,7 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 | `scripts/`                   | Build utilities — `render-readmes.mjs` generates `README.md` from `*.template.md` |
 | `docs/`                      | GitHub Pages site (Jekyll) — architecture, benchmarking methodology, etc.         |
 | `.github/workflows/`         | CI: CodeQL, Qodana, Ruff, Go quality, Next.js quality, Pages deploy               |
+| `my-agent/`                  | Microsoft APM source package for portable repository-specific agent primitives    |
 
 ### Key files to know
 
@@ -39,6 +50,7 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 - `utils/orchestrator/quality/` — module-local Spotless / PMD / SpotBugs / custom-Javadoc quality config for the orchestrator.
 - `qodana.yaml` (root) — JVM Qodana config; `services/python/django/qodana.yaml` for Python.
 - `scripts/render-readmes.manifest.json` — lists all `*.template.md` → `*.md` pairs.
+- `my-agent/.apm/` — authoritative APM primitive sources; `apm_modules/` and deployed copies are generated.
 
 ---
 
@@ -240,8 +252,8 @@ This is a **benchmarking and observability environment**, not a domain-driven en
 
 ### Twelve-Factor App (mostly followed — reinforce, don't duplicate)
 
-| Factor                 | Status     | How it manifests                                                                                                        |
-|------------------------|------------|-------------------------------------------------------------------------------------------------------------------------|
+| Factor                 | Status      | How it manifests                                                                                                        |
+|------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------|
 | I. Codebase            | ✅ Followed | Single repo, one Compose project, many services                                                                         |
 | II. Dependencies       | ✅ Followed | Maven BOMs, `pip-compile`, `package-lock.json` — all pinned explicitly                                                  |
 | III. Config            | ✅ Followed | `compose/.env` + env var injection everywhere. Never suggest hardcoding config values that currently come from env vars |
@@ -249,11 +261,11 @@ This is a **benchmarking and observability environment**, not a domain-driven en
 | V. Build, release, run | ✅ Followed | Multi-stage Docker builds separate build from runtime. IntelliJ run configs and Compose profiles separate concerns      |
 | VI. Processes          | ✅ Followed | Containers are stateless; benchmark state lives in `results/` on the host                                               |
 | VII. Port binding      | ✅ Followed | Each service self-contains its HTTP server and exports a port                                                           |
-| VIII. Concurrency      | Partially  | Scaling is not the goal — fair single-instance comparison is. Do not suggest horizontal scaling patterns                |
+| VIII. Concurrency      | Partially   | Scaling is not the goal — fair single-instance comparison is. Do not suggest horizontal scaling patterns                |
 | IX. Disposability      | ✅ Followed | Containers are ephemeral; `--force-recreate` is a normal workflow                                                       |
 | X. Dev/prod parity     | ✅ Followed | Same Docker images locally and in CI                                                                                    |
 | XI. Logs               | ✅ Followed | Logs as streams → OTel → Alloy → Loki. Never suggest writing logs to local files inside containers                      |
-| XII. Admin processes   | N/A        | No one-off admin tasks — the orchestrator handles operational actions                                                   |
+| XII. Admin processes   | N/A         | No one-off admin tasks — the orchestrator handles operational actions                                                   |
 
 **Key takeaway for Copilot:** If a suggestion would move config out of env vars into hardcoded values, write logs to files instead of stdout/stderr, or add state inside containers — flag it as a Twelve-Factor violation.
 
@@ -280,13 +292,13 @@ This environment is optimized for **local benchmarking**, not internet-facing pr
 |--------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | A01: Broken Access Control     | ⚠️ Limited  | Grafana creds are `a/a` for local dev — fine here, flag if real creds appear                                                                       |
 | A02: Cryptographic Failures    | ⚠️ Limited  | No TLS by design (local Docker network). Flag if secrets are logged or stored in plain text                                                        |
-| A03: Injection                 | ✅ Yes       | The orchestrator executes shell commands — validate that user input from the dashboard is sanitized before reaching `ProcessBuilder` or equivalent |
-| A04: Insecure Design           | ✅ Yes       | Non-root containers, multi-stage builds, minimal images — already enforced in Section 4                                                            |
-| A05: Security Misconfiguration | ✅ Yes       | Default ports, debug flags, verbose logging in prod-like images — flag unnecessary exposure                                                        |
-| A06: Vulnerable Components     | ✅ Yes       | Dependabot + CodeQL + Qodana already scan. Flag outdated dependencies in reviews                                                                   |
-| A07: Auth Failures             | ❌ N/A       | No user authentication system exists                                                                                                               |
+| A03: Injection                 | ✅ Yes      | The orchestrator executes shell commands — validate that user input from the dashboard is sanitized before reaching `ProcessBuilder` or equivalent |
+| A04: Insecure Design           | ✅ Yes      | Non-root containers, multi-stage builds, minimal images — already enforced in Section 4                                                            |
+| A05: Security Misconfiguration | ✅ Yes      | Default ports, debug flags, verbose logging in prod-like images — flag unnecessary exposure                                                        |
+| A06: Vulnerable Components     | ✅ Yes      | Dependabot + CodeQL + Qodana already scan. Flag outdated dependencies in reviews                                                                   |
+| A07: Auth Failures             | ❌ N/A      | No user authentication system exists                                                                                                               |
 | A08: Data Integrity Failures   | ⚠️ Limited  | GitHub Actions pinned to SHAs (supply-chain). Flag unsigned or unverified dependencies                                                             |
-| A09: Logging Failures          | ✅ Yes       | The full LGTM stack exists for this. Ensure services don't log sensitive data (Section 9)                                                          |
+| A09: Logging Failures          | ✅ Yes      | The full LGTM stack exists for this. Ensure services don't log sensitive data (Section 9)                                                          |
 | A10: SSRF                      | ⚠️ Limited  | The orchestrator proxies requests — ensure it doesn't blindly forward user-supplied URLs to internal services                                      |
 
 **Key takeaway for Copilot:** Focus OWASP vigilance on the **orchestrator** (it runs shell commands and proxies requests) and the **dashboard** (it accepts user input). Benchmark services have negligible attack surface.

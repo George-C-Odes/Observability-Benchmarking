@@ -4,11 +4,13 @@ Purpose: help coding agents build context quickly, make precise edits, and avoid
 
 ## Start here
 
-1. Identify the touched path, then open only the matching section below.
-2. Prefer existing module patterns over new abstractions.
-3. For generated Markdown, edit the `*.template.md` source and run the renderer.
-4. Preserve benchmark fairness: same endpoint behavior, telemetry shape, resource limits, and service naming across comparable targets.
-5. Run the cheapest relevant validation for the changed area before broad checks.
+1. Follow the user's request first, then the nearest path-specific instructions, then this guide.
+2. Check the working tree before editing and preserve unrelated user changes.
+3. Identify the touched path, then open only the matching section below.
+4. Prefer existing module patterns over new abstractions.
+5. For generated Markdown, edit the `*.template.md` source and run the renderer.
+6. Preserve benchmark fairness: same endpoint behavior, telemetry shape, resource limits, and service naming across comparable targets.
+7. Run the cheapest relevant validation for the changed area before broad checks.
 
 For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP.md`.
 
@@ -25,6 +27,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | Next.js dashboard                  | `utils/nextjs-dash/README.md`, `package.json`                                        | `app/components`, `app/api`, `lib`, matching `__tests__`          |
 | CI and quality reports             | Matching `.github/workflows/*.yml`                                                   | `scripts/pages/*` if report output changes                        |
 | Docs site                          | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
+| Agent guidance or APM package      | `AGENTS.md`, relevant `.github/instructions/*`, `my-agent/README.md`                 | `docs/AGENT_IMPLEMENTATION_MAP.md`, then affected `.apm/*` files  |
 
 ## Non-negotiable contracts
 
@@ -47,6 +50,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | `services/python/django/gunicorn/common/**`          | `python -m compileall src`, `python -m ruff check .`, `python -m ruff format --check .` from `common`                       |
 | Django `WSGI` or `ASGI` runtime                      | Install common package, then `python manage.py check` and `python manage.py test obbench_django_common.tests --verbosity=2` |
 | Template docs                                        | `node scripts/render-readmes.mjs` and inspect the generated diff                                                            |
+| `my-agent/**`                                        | `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`                            |
 
 Use broader CI reasoning only after the focused path is clean or when shared contracts are changed.
 
@@ -64,3 +68,4 @@ Use broader CI reasoning only after the focused path is clean or when shared con
 - Reserve deeper architecture changes for the dashboard and orchestrator, where user input, command execution, and state coordination live.
 - Prefer path-specific tests and existing fixtures. Add tests near the changed behavior.
 - Document behavioral changes in template docs when user-facing behavior or supported versions change.
+- Report commands actually run and any checks skipped; do not claim validation from inspection alone.

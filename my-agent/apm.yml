@@ -1,0 +1,21 @@
+name: observability-benchmarking-agent-kit
+version: 1.0.0
+description: Portable agent guidance for maintaining the Observability 
+  Benchmarking repository.
+author: George C
+license: Apache-2.0
+targets:
+  - claude
+  - codex
+  - copilot
+  - cursor
+  - gemini
+  - opencode
+  - windsurf
+dependencies:
+  apm:
+    - github/awesome-copilot/skills/github-actions-hardening#7b1ebe6333397841ca918dec904d24d4695fe953
+    - github/awesome-copilot/skills/security-review#7b1ebe6333397841ca918dec904d24d4695fe953
+  mcp: []
+includes: auto
+scripts: {}

@@ -1,0 +1,694 @@
+lockfile_version: '1'
+generated_at: '2026-09-04T21:27:46.695862+00:00'
+apm_version: 0.29.0
+dependencies:
+- repo_url: github/awesome-copilot
+  name: github-actions-hardening
+  host: github.com
+  resolved_commit: 7b1ebe6333397841ca918dec904d24d4695fe953
+  resolved_ref: 7b1ebe6333397841ca918dec904d24d4695fe953
+  version: unknown
+  virtual_path: skills/github-actions-hardening
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/github-actions-hardening
+  - .agents/skills/github-actions-hardening/SKILL.md
+  - .agents/skills/github-actions-hardening/references/injection.md
+  - .agents/skills/github-actions-hardening/references/permissions-and-tokens.md
+  - .agents/skills/github-actions-hardening/references/report-format.md
+  - .agents/skills/github-actions-hardening/references/supply-chain.md
+  - .agents/skills/github-actions-hardening/references/triggers-and-privilege.md
+  - .claude/skills/github-actions-hardening
+  - .claude/skills/github-actions-hardening/SKILL.md
+  - .claude/skills/github-actions-hardening/references/injection.md
+  - .claude/skills/github-actions-hardening/references/permissions-and-tokens.md
+  - .claude/skills/github-actions-hardening/references/report-format.md
+  - .claude/skills/github-actions-hardening/references/supply-chain.md
+  - .claude/skills/github-actions-hardening/references/triggers-and-privilege.md
+  deployed_file_hashes:
+    .agents/skills/github-actions-hardening/SKILL.md: sha256:31a8e7483d978e6267941edefebbe42aaa946bb3d43c9095aa3db343d4a8ff06
+    .agents/skills/github-actions-hardening/references/injection.md: sha256:ebd6ef8d39ba6f1cd3dc13051e6ed4163d1d2ba36518cf0f7393836a211e58ff
+    .agents/skills/github-actions-hardening/references/permissions-and-tokens.md: sha256:7272d00b20cf99c6fcbf34346f76730907c00701aef44bb9cfb7ab3eecac336b
+    .agents/skills/github-actions-hardening/references/report-format.md: sha256:3ecd2442e173bc001f858747873349be7c6c77050470b87ae516647908b1e86e
+    .agents/skills/github-actions-hardening/references/supply-chain.md: sha256:f66f613dbd732ce87c1e76b88208efde8feae3ffe5a3ab405cde4ce3df66f605
+    .agents/skills/github-actions-hardening/references/triggers-and-privilege.md: sha256:465f3f76517e9f5374a73e30f46cb47e1fe62ce9fd81f782808a3abbb2df2756
+    .claude/skills/github-actions-hardening/SKILL.md: sha256:31a8e7483d978e6267941edefebbe42aaa946bb3d43c9095aa3db343d4a8ff06
+    .claude/skills/github-actions-hardening/references/injection.md: sha256:ebd6ef8d39ba6f1cd3dc13051e6ed4163d1d2ba36518cf0f7393836a211e58ff
+    .claude/skills/github-actions-hardening/references/permissions-and-tokens.md: sha256:7272d00b20cf99c6fcbf34346f76730907c00701aef44bb9cfb7ab3eecac336b
+    .claude/skills/github-actions-hardening/references/report-format.md: sha256:3ecd2442e173bc001f858747873349be7c6c77050470b87ae516647908b1e86e
+    .claude/skills/github-actions-hardening/references/supply-chain.md: sha256:f66f613dbd732ce87c1e76b88208efde8feae3ffe5a3ab405cde4ce3df66f605
+    .claude/skills/github-actions-hardening/references/triggers-and-privilege.md: sha256:465f3f76517e9f5374a73e30f46cb47e1fe62ce9fd81f782808a3abbb2df2756
+  content_hash: sha256:d826005e7e1f7792531836c747c78df9e9caac534dd027b8ad872725340e5df2
+- repo_url: github/awesome-copilot
+  name: security-review
+  host: github.com
+  resolved_commit: 7b1ebe6333397841ca918dec904d24d4695fe953
+  resolved_ref: 7b1ebe6333397841ca918dec904d24d4695fe953
+  version: unknown
+  virtual_path: skills/security-review
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/security-review
+  - .agents/skills/security-review/SKILL.md
+  - .agents/skills/security-review/references/language-patterns.md
+  - .agents/skills/security-review/references/report-format.md
+  - .agents/skills/security-review/references/secret-patterns.md
+  - .agents/skills/security-review/references/vuln-categories.md
+  - .agents/skills/security-review/references/vulnerable-packages.md
+  - .claude/skills/security-review
+  - .claude/skills/security-review/SKILL.md
+  - .claude/skills/security-review/references/language-patterns.md
+  - .claude/skills/security-review/references/report-format.md
+  - .claude/skills/security-review/references/secret-patterns.md
+  - .claude/skills/security-review/references/vuln-categories.md
+  - .claude/skills/security-review/references/vulnerable-packages.md
+  deployed_file_hashes:
+    .agents/skills/security-review/SKILL.md: sha256:002392d88637b89e4cbc409a0531834970937f3b57c0b448a17e04b5ca6d356c
+    .agents/skills/security-review/references/language-patterns.md: sha256:ddfbcbb68b9d605789c85a168a274219f0ad86f5fc76b46b5332eb42f0c042b3
+    .agents/skills/security-review/references/report-format.md: sha256:688ef9f2862303527314eb17a090a72d512b907a685f5d1f122d6ebd5ae66db1
+    .agents/skills/security-review/references/secret-patterns.md: sha256:38f84f60021490d785f33fc70f2ce784888d2a751781a881372e6862e7e11288
+    .agents/skills/security-review/references/vuln-categories.md: sha256:d06159479bd92b9dcf3a2842e09f7712f1fd297c0bc9792fe20bc3cb69188df5
+    .agents/skills/security-review/references/vulnerable-packages.md: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
+    .claude/skills/security-review/SKILL.md: sha256:002392d88637b89e4cbc409a0531834970937f3b57c0b448a17e04b5ca6d356c
+    .claude/skills/security-review/references/language-patterns.md: sha256:ddfbcbb68b9d605789c85a168a274219f0ad86f5fc76b46b5332eb42f0c042b3
+    .claude/skills/security-review/references/report-format.md: sha256:688ef9f2862303527314eb17a090a72d512b907a685f5d1f122d6ebd5ae66db1
+    .claude/skills/security-review/references/secret-patterns.md: sha256:38f84f60021490d785f33fc70f2ce784888d2a751781a881372e6862e7e11288
+    .claude/skills/security-review/references/vuln-categories.md: sha256:d06159479bd92b9dcf3a2842e09f7712f1fd297c0bc9792fe20bc3cb69188df5
+    .claude/skills/security-review/references/vulnerable-packages.md: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
+  content_hash: sha256:a0fc25587c016178c9cf6238ac8702695fa761694965192472487f92093db571
+deployments:
+- kind: project-relative
+  target: agents
+  value: .agents/skills/benchmark-integrity
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: agents
+  value: .agents/skills/benchmark-integrity/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
+- kind: project-relative
+  target: agents
+  value: .agents/skills/focused-validation
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: agents
+  value: .agents/skills/focused-validation/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
+- kind: project-relative
+  target: claude
+  value: .claude/agents/repository-reviewer.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+- kind: project-relative
+  target: claude
+  value: .claude/commands/review-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+- kind: project-relative
+  target: claude
+  value: .claude/commands/validate-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+- kind: project-relative
+  target: claude
+  value: .claude/rules/dashboard-ui.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:0ce868af6af70b1d716a4cba602d0a93a0c534ae475f2ba3c0c9eda809211cb6
+- kind: project-relative
+  target: claude
+  value: .claude/rules/repository-contract.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:8de5bd879d2fc69143bb80254b25e6480f4acd33487c4858c41bab0579c9b076
+- kind: project-relative
+  target: claude
+  value: .claude/skills/benchmark-integrity
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/benchmark-integrity/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
+- kind: project-relative
+  target: claude
+  value: .claude/skills/focused-validation
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/focused-validation/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:31a8e7483d978e6267941edefebbe42aaa946bb3d43c9095aa3db343d4a8ff06
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening/references/injection.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:ebd6ef8d39ba6f1cd3dc13051e6ed4163d1d2ba36518cf0f7393836a211e58ff
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening/references/permissions-and-tokens.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:7272d00b20cf99c6fcbf34346f76730907c00701aef44bb9cfb7ab3eecac336b
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening/references/report-format.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:3ecd2442e173bc001f858747873349be7c6c77050470b87ae516647908b1e86e
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening/references/supply-chain.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:f66f613dbd732ce87c1e76b88208efde8feae3ffe5a3ab405cde4ce3df66f605
+- kind: project-relative
+  target: claude
+  value: .claude/skills/github-actions-hardening/references/triggers-and-privilege.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:465f3f76517e9f5374a73e30f46cb47e1fe62ce9fd81f782808a3abbb2df2756
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:002392d88637b89e4cbc409a0531834970937f3b57c0b448a17e04b5ca6d356c
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review/references/language-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:ddfbcbb68b9d605789c85a168a274219f0ad86f5fc76b46b5332eb42f0c042b3
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review/references/report-format.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:688ef9f2862303527314eb17a090a72d512b907a685f5d1f122d6ebd5ae66db1
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review/references/secret-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:38f84f60021490d785f33fc70f2ce784888d2a751781a881372e6862e7e11288
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review/references/vuln-categories.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:d06159479bd92b9dcf3a2842e09f7712f1fd297c0bc9792fe20bc3cb69188df5
+- kind: project-relative
+  target: claude
+  value: .claude/skills/security-review/references/vulnerable-packages.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:31a8e7483d978e6267941edefebbe42aaa946bb3d43c9095aa3db343d4a8ff06
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening/references/injection.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:ebd6ef8d39ba6f1cd3dc13051e6ed4163d1d2ba36518cf0f7393836a211e58ff
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening/references/permissions-and-tokens.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:7272d00b20cf99c6fcbf34346f76730907c00701aef44bb9cfb7ab3eecac336b
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening/references/report-format.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:3ecd2442e173bc001f858747873349be7c6c77050470b87ae516647908b1e86e
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening/references/supply-chain.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:f66f613dbd732ce87c1e76b88208efde8feae3ffe5a3ab405cde4ce3df66f605
+- kind: project-relative
+  target: codex
+  value: .agents/skills/github-actions-hardening/references/triggers-and-privilege.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/github-actions-hardening
+  active_owner: github/awesome-copilot/skills/github-actions-hardening
+  content_hash: sha256:465f3f76517e9f5374a73e30f46cb47e1fe62ce9fd81f782808a3abbb2df2756
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:002392d88637b89e4cbc409a0531834970937f3b57c0b448a17e04b5ca6d356c
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review/references/language-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:ddfbcbb68b9d605789c85a168a274219f0ad86f5fc76b46b5332eb42f0c042b3
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review/references/report-format.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:688ef9f2862303527314eb17a090a72d512b907a685f5d1f122d6ebd5ae66db1
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review/references/secret-patterns.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:38f84f60021490d785f33fc70f2ce784888d2a751781a881372e6862e7e11288
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review/references/vuln-categories.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:d06159479bd92b9dcf3a2842e09f7712f1fd297c0bc9792fe20bc3cb69188df5
+- kind: project-relative
+  target: codex
+  value: .agents/skills/security-review/references/vulnerable-packages.md
+  runtime: null
+  scope: project
+  owners:
+  - github/awesome-copilot/skills/security-review
+  active_owner: github/awesome-copilot/skills/security-review
+  content_hash: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
+- kind: project-relative
+  target: codex
+  value: .codex/agents/repository-reviewer.toml
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:093b7abc16191542901ea5054c3fd9702a181984315e4cae68c9140a33a0aaac
+- kind: project-relative
+  target: copilot
+  value: .github/agents/repository-reviewer.agent.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+- kind: project-relative
+  target: copilot
+  value: .github/instructions/dashboard-ui.instructions.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:e1299220f159e7d87cf2b3969fd35a18abbf96a84cd49d4ecbad01544a264f0a
+- kind: project-relative
+  target: copilot
+  value: .github/instructions/repository-contract.instructions.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:cd4c268d61ce287b6b1b72f099fcd47fd2dceea4da6eab469e927a22de4286f6
+- kind: project-relative
+  target: copilot
+  value: .github/prompts/review-change.prompt.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:2126fca5894e46c1f905486408ef8c903c51d7c9b8d6466beb1d114001222b10
+- kind: project-relative
+  target: copilot
+  value: .github/prompts/validate-change.prompt.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:4996ebdfd0c6d32167c7ac2e3faf29bb841a99aec64672820f6578e1d609191b
+- kind: project-relative
+  target: cursor
+  value: .cursor/agents/repository-reviewer.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+- kind: project-relative
+  target: cursor
+  value: .cursor/commands/review-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+- kind: project-relative
+  target: cursor
+  value: .cursor/commands/validate-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+- kind: project-relative
+  target: cursor
+  value: .cursor/rules/dashboard-ui.mdc
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:0d05c6ab2b715d59bd6fcfa914f8543fe25f02d705d087becec61c717d589217
+- kind: project-relative
+  target: cursor
+  value: .cursor/rules/repository-contract.mdc
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:a29769474421c8bca05051f1a59b73f4266038694ab8905e549922d9ef58aec7
+- kind: project-relative
+  target: gemini
+  value: .gemini/commands/review-change.toml
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:93be42ed6ec71f53ef8b27a08887403a92fe1117bd11d05c59f94f55712929fa
+- kind: project-relative
+  target: gemini
+  value: .gemini/commands/validate-change.toml
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
+- kind: project-relative
+  target: opencode
+  value: .opencode/agents/repository-reviewer.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+- kind: project-relative
+  target: opencode
+  value: .opencode/commands/review-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+- kind: project-relative
+  target: opencode
+  value: .opencode/commands/validate-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+- kind: project-relative
+  target: windsurf
+  value: .windsurf/rules/dashboard-ui.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:203196409e446f26a3f08cbbf78ee03f6692864dc850526e184ec225177beeff
+- kind: project-relative
+  target: windsurf
+  value: .windsurf/rules/repository-contract.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:8531d4287f6e6303c5f60cc61678e069cfde27fc42c4352f479b40344965094c
+- kind: project-relative
+  target: windsurf
+  value: .windsurf/workflows/review-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+- kind: project-relative
+  target: windsurf
+  value: .windsurf/workflows/validate-change.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+local_deployed_files:
+- .agents/skills/benchmark-integrity
+- .agents/skills/benchmark-integrity/SKILL.md
+- .agents/skills/focused-validation
+- .agents/skills/focused-validation/SKILL.md
+- .claude/agents/repository-reviewer.md
+- .claude/commands/review-change.md
+- .claude/commands/validate-change.md
+- .claude/rules/dashboard-ui.md
+- .claude/rules/repository-contract.md
+- .claude/skills/benchmark-integrity
+- .claude/skills/benchmark-integrity/SKILL.md
+- .claude/skills/focused-validation
+- .claude/skills/focused-validation/SKILL.md
+- .codex/agents/repository-reviewer.toml
+- .cursor/agents/repository-reviewer.md
+- .cursor/commands/review-change.md
+- .cursor/commands/validate-change.md
+- .cursor/rules/dashboard-ui.mdc
+- .cursor/rules/repository-contract.mdc
+- .gemini/commands/review-change.toml
+- .gemini/commands/validate-change.toml
+- .github/agents/repository-reviewer.agent.md
+- .github/instructions/dashboard-ui.instructions.md
+- .github/instructions/repository-contract.instructions.md
+- .github/prompts/review-change.prompt.md
+- .github/prompts/validate-change.prompt.md
+- .opencode/agents/repository-reviewer.md
+- .opencode/commands/review-change.md
+- .opencode/commands/validate-change.md
+- .windsurf/rules/dashboard-ui.md
+- .windsurf/rules/repository-contract.md
+- .windsurf/workflows/review-change.md
+- .windsurf/workflows/validate-change.md
+local_deployed_file_hashes:
+  .agents/skills/benchmark-integrity/SKILL.md: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
+  .agents/skills/focused-validation/SKILL.md: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
+  .claude/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+  .claude/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+  .claude/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+  .claude/rules/dashboard-ui.md: sha256:0ce868af6af70b1d716a4cba602d0a93a0c534ae475f2ba3c0c9eda809211cb6
+  .claude/rules/repository-contract.md: sha256:8de5bd879d2fc69143bb80254b25e6480f4acd33487c4858c41bab0579c9b076
+  .claude/skills/benchmark-integrity/SKILL.md: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
+  .claude/skills/focused-validation/SKILL.md: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
+  .codex/agents/repository-reviewer.toml: sha256:093b7abc16191542901ea5054c3fd9702a181984315e4cae68c9140a33a0aaac
+  .cursor/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+  .cursor/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+  .cursor/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+  .cursor/rules/dashboard-ui.mdc: sha256:0d05c6ab2b715d59bd6fcfa914f8543fe25f02d705d087becec61c717d589217
+  .cursor/rules/repository-contract.mdc: sha256:a29769474421c8bca05051f1a59b73f4266038694ab8905e549922d9ef58aec7
+  .gemini/commands/review-change.toml: sha256:93be42ed6ec71f53ef8b27a08887403a92fe1117bd11d05c59f94f55712929fa
+  .gemini/commands/validate-change.toml: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
+  .github/agents/repository-reviewer.agent.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+  .github/instructions/dashboard-ui.instructions.md: sha256:e1299220f159e7d87cf2b3969fd35a18abbf96a84cd49d4ecbad01544a264f0a
+  .github/instructions/repository-contract.instructions.md: sha256:cd4c268d61ce287b6b1b72f099fcd47fd2dceea4da6eab469e927a22de4286f6
+  .github/prompts/review-change.prompt.md: sha256:2126fca5894e46c1f905486408ef8c903c51d7c9b8d6466beb1d114001222b10
+  .github/prompts/validate-change.prompt.md: sha256:4996ebdfd0c6d32167c7ac2e3faf29bb841a99aec64672820f6578e1d609191b
+  .opencode/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
+  .opencode/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+  .opencode/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
+  .windsurf/rules/dashboard-ui.md: sha256:203196409e446f26a3f08cbbf78ee03f6692864dc850526e184ec225177beeff
+  .windsurf/rules/repository-contract.md: sha256:8531d4287f6e6303c5f60cc61678e069cfde27fc42c4352f479b40344965094c
+  .windsurf/workflows/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
+  .windsurf/workflows/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
