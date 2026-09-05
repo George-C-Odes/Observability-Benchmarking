@@ -6,23 +6,24 @@ This document is for coding agents that need more context than `AGENTS.md` provi
 
 This repository is a local Docker Compose benchmarking lab for comparing REST implementations under equivalent observability load. The important implementation surfaces are:
 
-| Surface | Role | Main paths |
-| --- | --- | --- |
-| Benchmark services | Thin comparable REST targets across JVM, Go, and Django | `services/java`, `services/go`, `services/python/django` |
-| Control plane | Browser UI plus backend command/orchestration API | `utils/nextjs-dash`, `utils/orchestrator` |
-| Load and observability | wrk2 plus Grafana LGTM, Pyroscope, Alloy | `utils/wrk2`, `compose`, `config` |
-| Docs and reports | Generated README set, Jekyll site, quality reports | `README.template.md`, `docs`, `scripts`, `.github/workflows` |
+| Surface                | Role                                                    | Main paths                                                   |
+|------------------------|---------------------------------------------------------|--------------------------------------------------------------|
+| Benchmark services     | Thin comparable REST targets across JVM, Go, and Django | `services/java`, `services/go`, `services/python/django`     |
+| Control plane          | Browser UI plus backend command/orchestration API       | `utils/nextjs-dash`, `utils/orchestrator`                    |
+| Load and observability | wrk2 plus Grafana LGTM, Pyroscope, Alloy                | `utils/wrk2`, `compose`, `config`                            |
+| Docs and reports       | Generated README set, Jekyll site, quality reports      | `README.template.md`, `docs`, `scripts`, `.github/workflows` |
+| Agent configuration    | Repository guidance and portable APM primitives         | `AGENTS.md`, `.github/instructions`, `my-agent/.apm`         |
 
 The highest-cost mistake for an agent is loading many framework modules when the task only touches one implementation. Use sibling modules as patterns, but inspect only the closest sibling needed.
 
 ## Context budget strategy
 
-| Phase | Budget target | What to load |
-| --- | --- | --- |
-| Triage | 1-3 files | `AGENTS.md`, task file, nearest README or manifest |
-| Local pattern match | 3-8 files | Changed file, matching test, one sibling implementation, build config |
-| Contract check | 2-5 files | Compose/env/workflow/template files that define cross-module behavior |
-| Broad reasoning | On demand | `docs/TESTING.template.md`, `.github/instructions/copilot-instructions.md`, workflow matrix |
+| Phase               | Budget target | What to load                                                                                |
+|---------------------|---------------|---------------------------------------------------------------------------------------------|
+| Triage              | 1-3 files     | `AGENTS.md`, task file, nearest README or manifest                                          |
+| Local pattern match | 3-8 files     | Changed file, matching test, one sibling implementation, build config                       |
+| Contract check      | 2-5 files     | Compose/env/workflow/template files that define cross-module behavior                       |
+| Broad reasoning     | On demand     | `docs/TESTING.template.md`, `.github/instructions/copilot-instructions.md`, workflow matrix |
 
 Avoid opening every service module unless the change explicitly modifies benchmark parity across all frameworks.
 
@@ -190,30 +191,58 @@ Contracts:
 - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` appears at workflow-level `env:` with the existing TODO comment.
 - Report upload artifact names are consumed by Pages/report assembly; rename with care.
 
+### Work on agent guidance or the APM package
+
+Read:
+
+- `AGENTS.md` for the compact repository-wide contract.
+- The affected `.github/instructions/*.md` file for Copilot-specific detail.
+- `my-agent/README.md` and `my-agent/apm.yml` before changing portable agent primitives.
+
+Ownership rules:
+
+- Author portable primitives under `my-agent/.apm/`; do not edit `my-agent/apm_modules/`.
+- Treat `my-agent/apm.lock.yaml` as generated dependency state. Regenerate it with APM commands.
+- Keep `AGENTS.md` concise. Put task recipes and rationale in this map, and detailed platform rules in scoped instructions.
+- Avoid restating the same rule in prompts and skills; link to the repository contract and specialize the workflow instead.
+
+Validation:
+
+```bash
+cd my-agent
+apm install --frozen
+apm compile --validate
+apm audit --ci --no-policy
+apm pack --dry-run
+```
+
+Use `apm lock` after intentional dependency changes, then rerun the full validation sequence.
+
 ## Cross-cutting invariants
 
-| Invariant | Why agents should care |
-| --- | --- |
-| Endpoint parity | Benchmark results are only meaningful when services do equivalent work. |
-| Telemetry parity | Missing metrics, logs, traces, or profiles can make a service look faster unfairly. |
-| Resource parity | CPU, memory, ulimit, and Compose profile changes alter benchmark conditions. |
-| Generated docs discipline | Direct generated-file edits create drift and waste reviewer time. |
-| Pinned supply chain | Mutable GitHub Action tags weaken the repository's security posture. |
-| Thin benchmark services | Extra abstractions change code paths and distort framework comparisons. |
-| Orchestrator input validation | It bridges UI actions to local commands and file operations. |
+| Invariant                     | Why agents should care                                                              |
+|-------------------------------|-------------------------------------------------------------------------------------|
+| Endpoint parity               | Benchmark results are only meaningful when services do equivalent work.             |
+| Telemetry parity              | Missing metrics, logs, traces, or profiles can make a service look faster unfairly. |
+| Resource parity               | CPU, memory, ulimit, and Compose profile changes alter benchmark conditions.        |
+| Generated docs discipline     | Direct generated-file edits create drift and waste reviewer time.                   |
+| Pinned supply chain           | Mutable GitHub Action tags weaken the repository's security posture.                |
+| Thin benchmark services       | Extra abstractions change code paths and distort framework comparisons.             |
+| Orchestrator input validation | It bridges UI actions to local commands and file operations.                        |
 
 ## File selection heuristics
 
 Use these before broad search:
 
-| Need | Start with |
-| --- | --- |
-| Runtime version | `compose/.env`, root `README.template.md`, module `pom.xml`/`package.json`/`go.mod`/requirements |
-| Service naming | `compose/docker-compose.yml`, module config, OTel resource attributes |
-| Dashboard API behavior | `utils/nextjs-dash/app/api/**/route.ts`, then `lib/*`, then tests |
-| Orchestrator API behavior | `utils/orchestrator/.../resource`, then `application`, then `domain` |
-| Quality failure | Matching workflow, then module build config, then report script if artifact generation failed |
-| Docs drift | `scripts/render-readmes.manifest.json`, template source, generated file header |
+| Need                      | Start with                                                                                       |
+|---------------------------|--------------------------------------------------------------------------------------------------|
+| Runtime version           | `compose/.env`, root `README.template.md`, module `pom.xml`/`package.json`/`go.mod`/requirements |
+| Service naming            | `compose/docker-compose.yml`, module config, OTel resource attributes                            |
+| Dashboard API behavior    | `utils/nextjs-dash/app/api/**/route.ts`, then `lib/*`, then tests                                |
+| Orchestrator API behavior | `utils/orchestrator/.../resource`, then `application`, then `domain`                             |
+| Quality failure           | Matching workflow, then module build config, then report script if artifact generation failed    |
+| Docs drift                | `scripts/render-readmes.manifest.json`, template source, generated file header                   |
+| Agent/APM drift           | `my-agent/apm.yml`, `my-agent/.apm`, then generated `my-agent/apm.lock.yaml`                     |
 
 ## Recommended PR notes for agents
 
