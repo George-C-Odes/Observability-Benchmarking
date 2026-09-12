@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check SNYK_TOKEN secret
-        if: "${{ secrets.SNYK_TOKEN == '' }}"
+        if: env.SNYK_TOKEN == ''
         run: |
           echo "::warning::SNYK_TOKEN secret is not configured in GitHub repository secrets. Snyk scans will be skipped."
           echo "To enable Snyk scans:"
@@ -39,25 +39,25 @@ jobs:
           echo "  4. Add the secret to GitHub: Settings -> Secrets and variables -> Actions -> 'SNYK_TOKEN'"
 
       - name: Set up Snyk CLI
-        if: "${{ secrets.SNYK_TOKEN != '' }}"
+        if: env.SNYK_TOKEN != ''
         uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
 
       # Runs Snyk Code (SAST) analysis and exports SARIF for GitHub Code Scanning.
       # continue-on-error ensures SARIF upload still runs even if vulnerabilities are flagged.
       - name: Snyk Code test
-        if: "${{ secrets.SNYK_TOKEN != '' }}"
+        if: env.SNYK_TOKEN != ''
         continue-on-error: true
         run: snyk code test --sarif-file-output=snyk-code.sarif
 
       # Runs Snyk Open Source (SCA) analysis and uploads snapshot to Snyk dashboard
       - name: Snyk Open Source monitor
-        if: "${{ secrets.SNYK_TOKEN != '' }}"
+        if: env.SNYK_TOKEN != ''
         continue-on-error: true
         run: snyk monitor --all-projects
 
       # Runs Snyk Infrastructure as Code (IaC) analysis and reports to Snyk dashboard
       - name: Snyk IaC test and report
-        if: "${{ secrets.SNYK_TOKEN != '' }}"
+        if: env.SNYK_TOKEN != ''
         continue-on-error: true
         run: snyk iac test --report
 
