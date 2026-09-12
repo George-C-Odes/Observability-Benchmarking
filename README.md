@@ -14,7 +14,7 @@
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.3-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
-[![Vert.x](https://img.shields.io/badge/Vert.x-5.1.2-782A90.svg)](https://vertx.io/)
+[![Vert.x](https://img.shields.io/badge/Vert.x-5.1.7-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-1.27.1-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.15-2F5D8C.svg)](https://www.python.org/)
@@ -91,7 +91,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.3   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | 5.1.2   | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Vert.x                     | 5.1.7   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.1   | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.3.4  | SSR frontend and control dashboard                                   |
@@ -203,7 +203,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Vert.x**: 5.1.2
+- **Vert.x**: 5.1.7
   - JVM build
     - Reactive (event-loop)
 - **Pekko**: 1.3.0
@@ -512,7 +512,7 @@ The numbers below are a curated summary of a representative run.
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.3
 - **Dropwizard**: 5.0.2
-- **Vert.x**: 5.1.2
+- **Vert.x**: 5.1.7
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
 - **Go**: 1.27.1 (Fiber v3.5.0)
 - **Python**: 3.13.15 (CPython)
