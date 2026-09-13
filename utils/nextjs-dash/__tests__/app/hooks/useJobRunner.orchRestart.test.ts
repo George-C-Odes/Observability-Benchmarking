@@ -26,7 +26,11 @@ afterEach(() => {
 });
 
 describe('useJobRunner (orchestrator restart simulation)', () => {
-  it('marks job as FAILED and stops reconnecting when events meta returns 404 after SSE error', async () => {
+  it.each([
+    [404, 'not found', /no longer available/],
+    [409, 'stale run', /rejected as stale run/],
+    [422, 'invalid metadata', /validation failed/],
+  ])('marks the job as FAILED and stops reconnecting when events metadata returns %i', async (status, body, reason) => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL): Promise<Response> => {
       const url = String(input);
 
@@ -35,7 +39,7 @@ describe('useJobRunner (orchestrator restart simulation)', () => {
       }
 
       if (url.startsWith('/api/orchestrator/events/meta')) {
-        return new Response('not found', { status: 404 });
+        return new Response(body, { status });
       }
 
       return new Response('not found', { status: 404 });
@@ -62,6 +66,7 @@ describe('useJobRunner (orchestrator restart simulation)', () => {
     expect(MockEventSource.instances.length).toBe(1);
 
     // Should log a helpful message.
-    expect(result.current.eventLogs.join('\n')).toMatch(/404/);
+    expect(result.current.lastJobStatus?.lastLine).toMatch(reason);
+    expect(result.current.eventLogs.join('\n')).toContain(String(status));
   });
 });
