@@ -171,6 +171,7 @@ Environment variables (provided to the **Next.js container** via docker-compose)
 
 - `ORCH_URL` (server-to-server URL, e.g. `http://orchestrator:3002`)
 - `ORCH_API_KEY`
+- `PROBE_ALLOWED_HOSTS` (comma-separated hostnames permitted by the future-use `/api/probe` endpoint; empty by default)
 
 ## Runtime endpoints
 
