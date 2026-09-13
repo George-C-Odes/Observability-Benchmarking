@@ -6,25 +6,37 @@ const DEFAULT_TIMEOUT_MS = 2000;
 
 type ProbeMethod = 'HEAD' | 'GET';
 
-function allowedProbeHosts(): Set<string> {
-  return new Set(
-    (process.env.PROBE_ALLOWED_HOSTS ?? '')
-      .split(',')
-      .map((host) => host.trim().toLowerCase())
-      .filter(Boolean),
-  );
-}
+function normalizeProbeTarget(value: string): string | null {
+  try {
+    const target = new URL(value);
+    if (
+      (target.protocol !== 'http:' && target.protocol !== 'https:') ||
+      target.username !== '' ||
+      target.password !== ''
+    ) {
+      return null;
+    }
 
-function isAllowedProbeUrl(url: URL): boolean {
-  return allowedProbeHosts().has(url.hostname.toLowerCase());
-}
-
-function fetchAllowedProbeUrl(url: URL, method: ProbeMethod, signal: AbortSignal): Promise<Response> {
-  if (!isAllowedProbeUrl(url)) {
-    throw new Error('Refusing to probe a host that is not allowed');
+    target.hash = '';
+    return target.toString();
+  } catch {
+    return null;
   }
+}
 
-  return fetch(url.toString(), {
+function lookupAllowedProbeTarget(url: URL): string | null {
+  const requestedTarget = normalizeProbeTarget(url.toString());
+  for (const configuredTarget of (process.env.PROBE_ALLOWED_URLS ?? '').split(',')) {
+    const allowedTarget = normalizeProbeTarget(configuredTarget.trim());
+    if (allowedTarget !== null && allowedTarget === requestedTarget) {
+      return allowedTarget;
+    }
+  }
+  return null;
+}
+
+function fetchAllowedProbeUrl(safeTarget: string, method: ProbeMethod, signal: AbortSignal): Promise<Response> {
+  return fetch(safeTarget, {
     method,
     cache: 'no-store',
     redirect: 'error',
@@ -83,8 +95,9 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
       return errorJson(400, { error: 'Only http/https URLs are allowed' });
     }
 
-    if (!isAllowedProbeUrl(parsed)) {
-      return errorJson(403, { error: 'The requested probe host is not allowed' });
+    const safeTarget = lookupAllowedProbeTarget(parsed);
+    if (safeTarget === null) {
+      return errorJson(403, { error: 'The requested probe URL is not allowed' });
     }
 
     const started = Date.now();
@@ -95,7 +108,7 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
     try {
       // Prefer HEAD so we don't fetch the payload.
       serverLogger.debug('Probing upstream (HEAD)', { url: parsed.toString(), timeoutMs });
-      let upstream = await fetchAllowedProbeUrl(parsed, 'HEAD', controller.signal);
+      let upstream = await fetchAllowedProbeUrl(safeTarget, 'HEAD', controller.signal);
 
       // Some servers don't implement HEAD; fall back to a minimal GET.
       if (upstream.status === 405 || upstream.status === 501) {
@@ -104,7 +117,7 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
           status: upstream.status,
         });
 
-        upstream = await fetchAllowedProbeUrl(parsed, 'GET', controller.signal);
+        upstream = await fetchAllowedProbeUrl(safeTarget, 'GET', controller.signal);
       }
 
       const durationMs = Date.now() - started;
