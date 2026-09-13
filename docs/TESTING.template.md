@@ -571,8 +571,8 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.4
-React: 19.2.8
+Next.js: 16.3.5
+React: 19.3.0
 TypeScript: 6.0.3
 Vitest: 4.x
 ```
