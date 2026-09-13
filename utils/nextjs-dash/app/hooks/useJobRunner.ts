@@ -370,8 +370,8 @@ async function submitJobCommand(
   const json = (await res.json().catch(() => null)) as null | { jobId?: string; requestId?: string };
   const normalizedJobId = normalizeJobId(json?.jobId);
   if (!normalizedJobId) {
-    const invalidMsg = `Invalid jobId from orchestrator: ${String(json?.jobId)}`;
-    return { success: false, status: 200, message: invalidMsg, isBusy: false };
+    const invalidMsg = 'Invalid submit response from orchestrator: expected a non-empty jobId.';
+    return { success: false, status: 502, message: invalidMsg, isBusy: false };
   }
 
   return {

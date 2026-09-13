@@ -101,6 +101,67 @@ describe('useJobRunner', () => {
     expect(res!.output).toContain('Job ID: job-1');
   });
 
+  it.each([
+    ['missing jobId', JSON.stringify({ requestId: 'request-1' })],
+    ['blank jobId', JSON.stringify({ jobId: '   ' })],
+    ['invalid JSON', 'not-json'],
+  ])('classifies a 2xx submit response with %s as HTTP 502', async (_case, responseBody) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(responseBody, { status: 200 }));
+
+    const { result } = renderHook(() => useJobRunner());
+
+    let runResult: import('@/app/hooks/useJobRunner').RunResult | undefined;
+    await act(async () => {
+      runResult = await result.current.runCommand('echo hi', 'Test');
+    });
+
+    expect(runResult).toEqual({
+      ok: false,
+      job: null,
+      output: 'HTTP 502 - Invalid submit response from orchestrator: expected a non-empty jobId.',
+    });
+    expect(result.current.lastJobStatus).toMatchObject({
+      jobId: 'N/A',
+      status: 'FAILED',
+      lastLine: 'Submit failed (HTTP 502).',
+      title: 'Test',
+    });
+    expect(result.current.eventLogs.join('\n')).toContain('[client] Submit failed: HTTP 502');
+    expect(result.current.eventLogs.join('\n')).not.toContain('HTTP 200');
+    expect(MockEventSource.instances).toHaveLength(0);
+  });
+
+  it('reports an upstream submit rejection with its HTTP status and response body', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('invalid command', { status: 422 }));
+
+    const { result } = renderHook(() => useJobRunner());
+
+    let runResult: import('@/app/hooks/useJobRunner').RunResult | undefined;
+    await act(async () => {
+      runResult = await result.current.runCommand('bad command', 'Invalid command');
+    });
+
+    expect(runResult?.output).toBe('HTTP 422 - invalid command');
+    expect(result.current.lastJobStatus?.lastLine).toBe('Submit failed (HTTP 422).');
+    expect(result.current.eventLogs.join('\n')).toContain(
+      '[client] Submit failed: HTTP 422 - invalid command'
+    );
+  });
+
+  it('reports a busy orchestrator with retry guidance', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 503 }));
+
+    const { result } = renderHook(() => useJobRunner());
+
+    await act(async () => {
+      await result.current.runCommand('echo hi', 'Test');
+    });
+
+    expect(result.current.lastJobStatus?.lastLine).toBe('Orchestrator busy (HTTP 503).');
+    expect(result.current.eventLogs).toContain('[client] Orchestrator rejected job submit as busy (503).');
+    expect(result.current.eventLogs).toContain('[client] Try again once the active job completes.');
+  });
+
   it('keeps only the last N event logs (configurable)', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
