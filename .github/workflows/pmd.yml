@@ -51,6 +51,16 @@ jobs:
           sourcePath: 'services/java'
           analyzeModifiedFilesOnly: false
 
+      - name: Fail if PMD violations are found
+        if: always()
+        shell: bash
+        run: |
+          violations='${{ steps.pmd.outputs.violations }}'
+          if [[ "$violations" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::PMD found $violations violation(s)."
+            exit 1
+          fi
+
       - name: Upload SARIF file
         if: always() && hashFiles('pmd-report.sarif') != ''
         uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0

@@ -46,18 +46,21 @@ jobs:
       # continue-on-error ensures SARIF upload still runs even if vulnerabilities are flagged.
       - name: Snyk Code test
         if: env.SNYK_TOKEN != ''
+        id: snyk-code
         continue-on-error: true
         run: snyk code test --sarif-file-output=snyk-code.sarif
 
       # Runs Snyk Open Source (SCA) analysis and uploads snapshot to Snyk dashboard
       - name: Snyk Open Source monitor
         if: env.SNYK_TOKEN != ''
+        id: snyk-open-source
         continue-on-error: true
         run: snyk monitor --all-projects
 
       # Runs Snyk Infrastructure as Code (IaC) analysis and reports to Snyk dashboard
       - name: Snyk IaC test and report
         if: env.SNYK_TOKEN != ''
+        id: snyk-iac
         continue-on-error: true
         run: snyk iac test --report
 
@@ -67,3 +70,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           sarif_file: snyk-code.sarif
+
+      - name: Fail if Snyk findings are reported
+        if: always()
+        shell: bash
+        run: |
+          if [[ "${{ steps.snyk-code.outcome }}" == "failure" || \
+                "${{ steps.snyk-open-source.outcome }}" == "failure" || \
+                "${{ steps.snyk-iac.outcome }}" == "failure" ]]; then
+            echo "::error::One or more Snyk scans reported findings or failed."
+            exit 1
+          fi
