@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -7,7 +8,10 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
 export function resolveRepoPath(targetPath) {
-  return path.isAbsolute(targetPath) ? targetPath : path.resolve(repoRoot, targetPath);
+  if (typeof targetPath !== 'string') {
+    throw new TypeError('Path must be a string');
+  }
+  return path.isAbsolute(targetPath) ? path.resolve(targetPath) : path.resolve(repoRoot, targetPath);
 }
 
 export function parseColonEnv(content) {
@@ -60,9 +64,13 @@ function looksLikeTableRow(line) {
 function looksLikeSeparatorRow(line) {
   if (!looksLikeTableRow(line)) return false;
   const cells = splitTableRow(line);
-  return cells.length > 0 && cells.every((c) => /^:?-+:?$/.test(c));
+  return cells.length > 0 && cells.every((c) => typeof c === 'string' && /^:?-+:?$/.test(c));
 }
 
+/**
+ * @param {string} line
+ * @returns {string[]}
+ */
 function splitTableRow(line) {
   let inner = line.trim();
   if (inner.startsWith('|')) inner = inner.slice(1);
@@ -89,52 +97,54 @@ function padCell(text, width, align) {
   return ' ' + text.padEnd(width) + ' ';
 }
 
-function alignTable(lines) {
-  const rows = lines.map(splitTableRow);
-  const colCount = Math.max(...rows.map((r) => r.length));
-
-  // Derive alignment per column from the separator row (index 1).
-  const separatorRow = rows.length > 1 ? rows[1] : [];
+function getColumnAlignments(separatorRow, colCount) {
   const aligns = [];
   for (let c = 0; c < colCount; c++) {
     aligns.push(c < separatorRow.length ? columnAlignment(separatorRow[c]) : 'left');
   }
+  return aligns;
+}
 
-  // Determine max content width per column (skip separator row at index 1).
-  const widths = new Array(colCount).fill(0);
+function getColumnWidths(rows, colCount) {
+  const widths = new Array(colCount).fill(1);
   for (let r = 0; r < rows.length; r++) {
     if (r === 1) continue;
     for (let c = 0; c < rows[r].length; c++) {
       widths[c] = Math.max(widths[c], rows[r][c].length);
     }
   }
+  return widths;
+}
 
-  // Minimum content width of 1 (separator will be at least 3 chars: w + 2 = 3).
+function formatSeparatorCell(cell, width) {
+  const hasLeft = cell.startsWith(':');
+  const hasRight = cell.endsWith(':') && cell.length > 1;
+  const dashCount = width + 2 - (hasLeft ? 1 : 0) - (hasRight ? 1 : 0);
+  return (hasLeft ? ':' : '') + '-'.repeat(dashCount) + (hasRight ? ':' : '');
+}
+
+function formatRow(cells, rowIndex, colCount, widths, aligns) {
+  const formatted = [];
   for (let c = 0; c < colCount; c++) {
-    widths[c] = Math.max(widths[c], 1);
-  }
-
-  return rows.map((cells, r) => {
-    const formatted = [];
-
-    for (let c = 0; c < colCount; c++) {
-      const cell = c < cells.length ? cells[c] : '';
-      const w = widths[c];
-
-      if (r === 1) {
-        // Separator: dashes span the full column slot (content width + 2 for
-        // the spaces that surround data cells), matching `|------|` convention.
-        const hasLeft = cell.startsWith(':');
-        const hasRight = cell.endsWith(':') && cell.length > 1;
-        const dashCount = w + 2 - (hasLeft ? 1 : 0) - (hasRight ? 1 : 0);
-        formatted.push((hasLeft ? ':' : '') + '-'.repeat(dashCount) + (hasRight ? ':' : ''));
-      } else {
-        formatted.push(padCell(cell, w, aligns[c]));
-      }
+    const cell = c < cells.length ? cells[c] : '';
+    const width = widths[c];
+    if (rowIndex === 1) {
+      formatted.push(formatSeparatorCell(cell, width));
+    } else {
+      formatted.push(padCell(cell, width, aligns[c]));
     }
+  }
+  return '|' + formatted.join('|') + '|';
+}
 
-    return '|' + formatted.join('|') + '|';
-  });
+function alignTable(lines) {
+  const rows = lines.map(splitTableRow);
+  const colCount = Math.max(...rows.map((r) => r.length));
+  const separatorRow = rows.length > 1 ? rows[1] : [];
+  const aligns = getColumnAlignments(separatorRow, colCount);
+  const widths = getColumnWidths(rows, colCount);
+
+  return rows.map((cells, r) => formatRow(cells, r, colCount, widths, aligns));
 }
 
 export function realignMarkdownTables(content) {
@@ -180,7 +190,7 @@ export function loadManifestTemplatePaths(manifestPath) {
   const defaultTemplatePaths = manifest?.defaultTemplatePaths;
 
   if (!Array.isArray(defaultTemplatePaths)) {
-    throw new Error(`Manifest must contain a 'defaultTemplatePaths' array: ${absoluteManifestPath}`);
+    throw new TypeError(`Manifest must contain a 'defaultTemplatePaths' array: ${absoluteManifestPath}`);
   }
 
   const invalidEntry = defaultTemplatePaths.find((entry) => typeof entry !== 'string' || entry.trim() === '');
