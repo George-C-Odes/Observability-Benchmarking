@@ -46,24 +46,48 @@ jobs:
       # continue-on-error ensures SARIF upload still runs even if vulnerabilities are flagged.
       - name: Snyk Code test
         if: env.SNYK_TOKEN != ''
+        id: snyk-code
         continue-on-error: true
         run: snyk code test --sarif-file-output=snyk-code.sarif
 
-      # Runs Snyk Open Source (SCA) analysis and uploads snapshot to Snyk dashboard
+      # Runs Snyk Open Source (SCA) analysis. The test command reports findings
+      # through its exit code so the final step can enforce the security gate.
+      - name: Snyk Open Source test
+        if: env.SNYK_TOKEN != ''
+        id: snyk-open-source-test
+        continue-on-error: true
+        run: snyk test --all-projects
+
+      # Uploads the Snyk Open Source dependency snapshot to the Snyk dashboard.
+      # Monitor's exit code only indicates whether the snapshot upload succeeded.
       - name: Snyk Open Source monitor
         if: env.SNYK_TOKEN != ''
+        id: snyk-open-source-monitor
         continue-on-error: true
         run: snyk monitor --all-projects
 
       # Runs Snyk Infrastructure as Code (IaC) analysis and reports to Snyk dashboard
       - name: Snyk IaC test and report
         if: env.SNYK_TOKEN != ''
+        id: snyk-iac
         continue-on-error: true
         run: snyk iac test --report
 
       # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
         if: always() && hashFiles('snyk-code.sarif') != ''
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           sarif_file: snyk-code.sarif
+
+      - name: Fail if Snyk findings are reported
+        if: always()
+        shell: bash
+        run: |
+          if [[ "${{ steps.snyk-code.outcome }}" == "failure" || \
+                "${{ steps.snyk-open-source-test.outcome }}" == "failure" || \
+                "${{ steps.snyk-open-source-monitor.outcome }}" == "failure" || \
+                "${{ steps.snyk-iac.outcome }}" == "failure" ]]; then
+            echo "::error::One or more Snyk scans reported findings or failed."
+            exit 1
+          fi

@@ -1,6 +1,6 @@
 lockfile_version: '1'
-generated_at: '2026-09-04T21:27:46.695862+00:00'
-apm_version: 0.29.0
+generated_at: '2026-09-13T09:11:47.615290+00:00'
+apm_version: 0.30.0
 dependencies:
 - repo_url: github/awesome-copilot
   name: github-actions-hardening
@@ -79,42 +79,6 @@ dependencies:
     .claude/skills/security-review/references/vulnerable-packages.md: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
   content_hash: sha256:a0fc25587c016178c9cf6238ac8702695fa761694965192472487f92093db571
 deployments:
-- kind: project-relative
-  target: agents
-  value: .agents/skills/benchmark-integrity
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: null
-- kind: project-relative
-  target: agents
-  value: .agents/skills/benchmark-integrity/SKILL.md
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
-- kind: project-relative
-  target: agents
-  value: .agents/skills/focused-validation
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: null
-- kind: project-relative
-  target: agents
-  value: .agents/skills/focused-validation/SKILL.md
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
 - kind: project-relative
   target: claude
   value: .claude/agents/repository-reviewer.md
@@ -537,7 +501,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:0d05c6ab2b715d59bd6fcfa914f8543fe25f02d705d087becec61c717d589217
+  content_hash: sha256:d68f2e851965bf238737e826636314a103402295f3ed4f900f47033d0b8e5476
 - kind: project-relative
   target: cursor
   value: .cursor/rules/repository-contract.mdc
@@ -546,7 +510,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:a29769474421c8bca05051f1a59b73f4266038694ab8905e549922d9ef58aec7
+  content_hash: sha256:84edb598b70067599c01a24c9083beb9abea4ffd91d938b80c6d3a0cc763d88f
 - kind: project-relative
   target: gemini
   value: .gemini/commands/review-change.toml
@@ -565,6 +529,42 @@ deployments:
   - .
   active_owner: .
   content_hash: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/benchmark-integrity
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/benchmark-integrity/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/focused-validation
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: legacy
+  value: .agents/skills/focused-validation/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
 - kind: project-relative
   target: opencode
   value: .opencode/agents/repository-reviewer.md
@@ -676,8 +676,8 @@ local_deployed_file_hashes:
   .cursor/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .cursor/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
   .cursor/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
-  .cursor/rules/dashboard-ui.mdc: sha256:0d05c6ab2b715d59bd6fcfa914f8543fe25f02d705d087becec61c717d589217
-  .cursor/rules/repository-contract.mdc: sha256:a29769474421c8bca05051f1a59b73f4266038694ab8905e549922d9ef58aec7
+  .cursor/rules/dashboard-ui.mdc: sha256:d68f2e851965bf238737e826636314a103402295f3ed4f900f47033d0b8e5476
+  .cursor/rules/repository-contract.mdc: sha256:84edb598b70067599c01a24c9083beb9abea4ffd91d938b80c6d3a0cc763d88f
   .gemini/commands/review-change.toml: sha256:93be42ed6ec71f53ef8b27a08887403a92fe1117bd11d05c59f94f55712929fa
   .gemini/commands/validate-change.toml: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
   .github/agents/repository-reviewer.agent.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798

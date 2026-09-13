@@ -571,8 +571,8 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.4
-React: 19.2.8
+Next.js: 16.3.5
+React: 19.3.0
 TypeScript: 6.0.3
 Vitest: 4.x
 ```
@@ -1771,7 +1771,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
       - name: Set up Java 25
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           java-version: '25'
           distribution: 'corretto'

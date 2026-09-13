@@ -4,17 +4,53 @@ import { createScopedServerLogger } from '@/lib/scopedServerLogger';
 
 const DEFAULT_TIMEOUT_MS = 2000;
 
+type ProbeMethod = 'HEAD' | 'GET';
+
+function normalizeProbeTarget(value: string): string | null {
+  try {
+    const target = new URL(value);
+    if (
+      (target.protocol !== 'http:' && target.protocol !== 'https:') ||
+      target.username !== '' ||
+      target.password !== ''
+    ) {
+      return null;
+    }
+
+    target.hash = '';
+    return target.toString();
+  } catch {
+    return null;
+  }
+}
+
+function lookupAllowedProbeTarget(url: URL): string | null {
+  const requestedTarget = normalizeProbeTarget(url.toString());
+  for (const configuredTarget of (process.env.PROBE_ALLOWED_URLS ?? '').split(',')) {
+    const allowedTarget = normalizeProbeTarget(configuredTarget.trim());
+    if (allowedTarget !== null && allowedTarget === requestedTarget) {
+      return allowedTarget;
+    }
+  }
+  return null;
+}
+
+function fetchAllowedProbeUrl(safeTarget: string, method: ProbeMethod, signal: AbortSignal): Promise<Response> {
+  return fetch(safeTarget, {
+    method,
+    cache: 'no-store',
+    redirect: 'error',
+    signal,
+    ...(method === 'GET' && { headers: { Range: 'bytes=0-0' } }),
+  });
+}
+
 function hasName(value: unknown): value is { name: unknown } {
   return typeof value === 'object' && value !== null && 'name' in value;
 }
 
 function isAbortError(e: unknown) {
-  const name =
-    e instanceof Error
-      ? e.name
-      : hasName(e) && typeof e.name === 'string'
-        ? e.name
-        : undefined;
+  const name = hasName(e) && typeof e.name === 'string' ? e.name : undefined;
 
   return (
     name === 'AbortError' ||
@@ -59,6 +95,11 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
       return errorJson(400, { error: 'Only http/https URLs are allowed' });
     }
 
+    const safeTarget = lookupAllowedProbeTarget(parsed);
+    if (safeTarget === null) {
+      return errorJson(403, { error: 'The requested probe URL is not allowed' });
+    }
+
     const started = Date.now();
 
     const controller = new AbortController();
@@ -67,12 +108,7 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
     try {
       // Prefer HEAD so we don't fetch the payload.
       serverLogger.debug('Probing upstream (HEAD)', { url: parsed.toString(), timeoutMs });
-      let upstream = await fetch(parsed.toString(), {
-        method: 'HEAD',
-        cache: 'no-store',
-        redirect: 'follow',
-        signal: controller.signal,
-      });
+      let upstream = await fetchAllowedProbeUrl(safeTarget, 'HEAD', controller.signal);
 
       // Some servers don't implement HEAD; fall back to a minimal GET.
       if (upstream.status === 405 || upstream.status === 501) {
@@ -81,16 +117,7 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
           status: upstream.status,
         });
 
-        upstream = await fetch(parsed.toString(), {
-          method: 'GET',
-          cache: 'no-store',
-          redirect: 'follow',
-          signal: controller.signal,
-          headers: {
-            // Hint we only need a tiny response; many servers support Range.
-            Range: 'bytes=0-0',
-          },
-        });
+        upstream = await fetchAllowedProbeUrl(safeTarget, 'GET', controller.signal);
       }
 
       const durationMs = Date.now() - started;
