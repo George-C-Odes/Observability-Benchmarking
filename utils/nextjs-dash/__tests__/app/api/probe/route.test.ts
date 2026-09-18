@@ -1,14 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-}));
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 import { GET } from '@/app/api/probe/route';
 

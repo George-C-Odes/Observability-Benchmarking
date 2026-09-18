@@ -1,21 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('@/lib/config', () => ({
-  orchestratorConfig: {
-    url: 'http://orchestrator:3002',
-    apiKey: 'x',
-    timeout: 60000,
-  },
-}));
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-}));
+import '@/__tests__/_helpers/mockOrchestratorConfig';
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 import { GET } from '@/app/api/app-health/route';
 

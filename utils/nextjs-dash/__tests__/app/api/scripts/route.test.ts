@@ -1,16 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 vi.mock('@/lib/orchestratorClient', () => ({
   getCommandPresets: vi.fn(),
-}));
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
 }));
 
 import * as orch from '@/lib/orchestratorClient';

@@ -362,6 +362,8 @@ restores them.
 | Helper                         | Purpose                                                                                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | `mocks.ts`                     | Reusable `vi.mock()` factory objects (`CLIENT_LOGGER_MOCK`, `SERVER_LOGGER_MOCK`, `INWARD_PULSE_MOCK`, `TIMED_PULSE_MOCK`) |
+| `mockOrchestratorConfig.ts`    | Shared deterministic orchestrator configuration mock for API route tests                                                   |
+| `mockScopedServerLogger.ts`    | Shared no-op scoped logger mock for API route tests                                                                        |
 | `consoleSpy.ts`                | `silenceConsole()` — spies on all four `console.*` methods with no-op implementations                                      |
 | `storage.ts`                   | `createMockStorage()` — in-memory `Storage` stub for `localStorage` / `sessionStorage`                                     |
 | `useJobRunner.test-helpers.ts` | `MockEventSource`, `MockBroadcastChannel`, `installMockGlobals` / `restoreMockGlobals`                                     |

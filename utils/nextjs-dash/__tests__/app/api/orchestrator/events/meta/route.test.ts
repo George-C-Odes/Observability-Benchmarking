@@ -1,17 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 vi.mock('@/lib/scriptRunnerRunState', () => ({
   getActiveRunId: vi.fn(),
-}));
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
 }));
 
 import * as runState from '@/lib/scriptRunnerRunState';

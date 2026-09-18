@@ -1,12 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('@/lib/config', () => ({
-  orchestratorConfig: {
-    url: 'http://orchestrator:3002',
-    apiKey: 'x',
-    timeout: 60000,
-  },
-}));
+import '@/__tests__/_helpers/mockOrchestratorConfig';
 
 const mod = (await import('@/app/api/orchestrator/events/route')) as unknown as {
   GET: (req: Request) => Promise<Response>;
