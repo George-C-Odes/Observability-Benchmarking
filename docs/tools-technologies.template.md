@@ -1005,7 +1005,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Quality**       | Formatter          | Oxfmt                      | 0.68.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 5.0.0                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 5.0.1                   | Frontend unit testing                                                |
 
 ---
 
