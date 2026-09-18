@@ -24,11 +24,7 @@ type ScriptCardProps = {
   executing: boolean;
   executeDisabled?: boolean;
   executeDisabledReason?: string;
-  accentColor:
-    | 'primary.main'
-    | 'secondary.main'
-    | 'info.main'
-    | 'success.main';
+  accentColor: 'primary.main' | 'secondary.main' | 'info.main' | 'success.main';
   chipColor: 'primary' | 'secondary' | 'info' | 'success';
   copySuccess: boolean;
   onCopyAction: () => void;
@@ -80,7 +76,9 @@ export const ScriptCard = React.memo(function ScriptCard({
             <Button
               size="small"
               variant="contained"
-              startIcon={executing ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />}
+              startIcon={
+                executing ? <CircularProgress size={16} color="inherit" /> : <PlayArrowIcon />
+              }
               onClick={onExecuteAction}
               disabled={executing || Boolean(executeDisabled)}
               fullWidth

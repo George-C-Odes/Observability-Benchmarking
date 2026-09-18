@@ -70,4 +70,3 @@ describe('ScriptSection', () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
-

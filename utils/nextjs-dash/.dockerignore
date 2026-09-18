@@ -21,7 +21,7 @@ yarn-error.log*
 Dockerfile
 .dockerignore
 
-# TypeScript incremental build info (not needed; tsc runs fresh in Docker)
+# TypeScript incremental build info (the native checker runs fresh in Docker)
 tsconfig.tsbuildinfo
 
 # Vitest report artifacts
@@ -29,8 +29,9 @@ vitest-*-report.json
 
 # CI quality report (generated in GitHub Actions, not part of the app)
 quality-report
-eslint-report.json
-tsc-output.txt
+oxlint-report.json
+oxfmt-output.txt
+typescript-output.txt
 
 # Temp / scratch
 .tmp

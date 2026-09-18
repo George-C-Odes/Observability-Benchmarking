@@ -38,19 +38,19 @@ The project implements a comprehensive testing strategy covering:
 
 | Component      | Unit Tests    | Integration Tests  | Observability Tests |
 |----------------|---------------|--------------------|---------------------|
-| Quarkus JVM    | ✅ 18 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Spring Tomcat  | ✅ 30 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Spring Netty   | ✅ 16 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Micronaut JVM  | ✅ 15 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Helidon SE JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
-| Helidon MP JVM | ✅ 6 tests     | ✅ Covered          | ✅ Metrics/Traces    |
-| Spark JVM      | ✅ 61 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Javalin JVM    | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Dropwizard JVM | ✅ 50 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Vert.x JVM     | ✅ 42 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Pekko JVM      | ✅ 32 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Go Fiber       | ✅ 12 tests    | ✅ Covered          | ✅ Metrics/Traces    |
-| Django (Py)    | ✅ 39 tests    | ✅ Covered          | ✅ Metrics/Traces    |
+| Quarkus JVM    | ✅ 18 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Spring Tomcat  | ✅ 30 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Spring Netty   | ✅ 16 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Micronaut JVM  | ✅ 15 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Helidon SE JVM | ✅ 6 tests    | ✅ Covered         | ✅ Metrics/Traces   |
+| Helidon MP JVM | ✅ 6 tests    | ✅ Covered         | ✅ Metrics/Traces   |
+| Spark JVM      | ✅ 61 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Javalin JVM    | ✅ 50 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Dropwizard JVM | ✅ 50 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Vert.x JVM     | ✅ 42 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Pekko JVM      | ✅ 32 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Go Fiber       | ✅ 12 tests   | ✅ Covered         | ✅ Metrics/Traces   |
+| Django (Py)    | ✅ 39 tests   | ✅ Covered         | ✅ Metrics/Traces   |
 | **Total**      | **377 tests** | **100+ scenarios** | **Full stack**      |
 
 ## Test Architecture
@@ -573,8 +573,11 @@ python -m coverage report -m
 Node.js: 22.12+
 Next.js: 16.3.5
 React: 19.3.0
-TypeScript: 6.0.3
-Vitest: 4.x
+TypeScript: 7.0.2
+Vitest: 5.0.0
+@vitest/coverage-v8: 5.0.0
+Oxlint: 1.83.0
+Oxfmt: 0.68.0
 ```
 
 #### Test Structure
@@ -589,6 +592,11 @@ The dashboard uses a dual-environment Vitest configuration:
 
 The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom and React Testing Library.
 
+Vitest 5 clears mock call history before each test by default. The shared
+configuration keeps `clearMocks: true` explicit: tests must establish their own
+call expectations and cannot depend on calls from module setup or earlier tests.
+This clears call history without resetting mock implementations.
+
 #### Shared Test Helpers (`__tests__/_helpers/`)
 
 | Helper                         | Purpose                                                                           |
@@ -602,7 +610,7 @@ The split keeps Node-only tests fast (no jsdom overhead) while React component a
 
 ```bash
 cd utils/nextjs-dash
-npm install
+npm ci
 
 # Run all tests (node + dom)
 npm test
@@ -618,6 +626,9 @@ npm run test:watch
 
 # With coverage
 npm run test:coverage
+
+# Run the fail-fast Node + DOM sequence
+npm run test:fast
 ```
 
 #### Full Quality Gate (matching CI)
@@ -625,17 +636,13 @@ npm run test:coverage
 The CI workflow (`.github/workflows/nextjs_dash_quality.yml`) runs the full quality gate sequence:
 
 ```bash
-npm run lint          # ESLint --max-warnings=0
-npm run typecheck     # tsc --noEmit (strict mode)
+npm run format:check  # Oxfmt non-mutating format gate
+npm run lint          # Oxlint with warnings denied
+npm run typecheck     # TypeScript 7 native checker: tsc --noEmit
 npm run test:node     # Vitest node environment
 npm run test:dom      # Vitest jsdom environment
+node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
 npm run build         # Next.js production build smoke test
-```
-
-Quick one-liner:
-
-```bash
-npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
 ```
 
 **Test Coverage**:
@@ -1412,8 +1419,8 @@ collapsible per-module breakdown shows line and branch coverage for each module.
 Two **Coverage Gate** jobs (same display name for branch
 protection) then act on the verdict:
 
-| Verdict           | Trigger                                                  | Gate behaviour                                      |
-|-------------------|----------------------------------------------------------|-----------------------------------------------------|
+| Verdict           | Trigger                                                  | Gate behaviour                                       |
+|-------------------|----------------------------------------------------------|------------------------------------------------------|
 | **pass**          | All builds passed, all reports exist, all thresholds met | Auto-passes ✅                                       |
 | **review_needed** | Builds passed but ≥ 1 module is below threshold          | Requires `coverage-review` environment approval ⏳   |
 | **hard_fail**     | ≥ 1 build/test failure **or** missing JaCoCo report      | Hard-fails ❌ — **cannot** be overridden by reviewer |
@@ -1436,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest](https://vitest.dev/) with the
+[Vitest 5.0.0](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
@@ -1455,7 +1462,7 @@ Each environment produces four report formats: **text** (console summary),
 
 ```bash
 cd utils/nextjs-dash
-npm install
+npm ci
 
 # Run both environments with coverage
 npm run test:coverage

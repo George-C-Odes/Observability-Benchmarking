@@ -16,14 +16,16 @@ describe('systemInfo npm version helpers', () => {
   });
 
   it('extracts npm version from npm user agent', () => {
-    expect(extractNpmVersionFromUserAgent('npm/12.0.2 node/v26.8.2 linux x64')).toBe('12.0.2');
+    expect(extractNpmVersionFromUserAgent('npm/12.0.2 node/v26.9.0 linux x64')).toBe('12.0.2');
   });
 
   it('prefers packageManager over npm user agent for the displayed version', () => {
-    expect(resolveServerNpmVersion({
-      packageManager: 'npm@12.0.2',
-      npmUserAgent: 'npm/10.9.3 node/v26.8.2 linux x64',
-    })).toBe('12.0.2');
+    expect(
+      resolveServerNpmVersion({
+        packageManager: 'npm@12.0.2',
+        npmUserAgent: 'npm/10.9.3 node/v26.9.0 linux x64',
+      }),
+    ).toBe('12.0.2');
   });
 
   it('falls back to N/A when neither source is available', () => {

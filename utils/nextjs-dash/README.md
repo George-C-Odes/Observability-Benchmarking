@@ -11,7 +11,7 @@ Benchmarking workflows are repetitive:
 - rerun load generation
 - watch logs and verify the stack is healthy
 
-You *can* do all of this from a terminal, but the dashboard provides a faster “control plane” loop:
+You _can_ do all of this from a terminal, but the dashboard provides a faster “control plane” loop:
 
 - A UI for editing the env file safely
 - A UI for running curated command presets
@@ -28,7 +28,7 @@ Browser UI (Next.js / MUI) → Next.js API proxy (`/api/*`) → Orchestrator ser
 
 - UI components live under `app/components/*`, with domain sub-directories (e.g. `service-health/`, `scripts/`, `ui/`).
 - Reusable hooks live under `app/hooks/*`.
-- Next.js should remain a *presentation layer*.
+- Next.js should remain a _presentation layer_.
   - It exposes `/api/*` routes for accessing the orchestrator and avoids CORS complexity.
   - These routes should be **thin proxies** and avoid business rules.
 - The orchestration / business logic belongs in the **Quarkus orchestrator**.
@@ -118,7 +118,7 @@ Some environments terminate long-lived HTTP connections.
   - Tab content components are lazy-loaded (`React.lazy`) and mounted on first visit to keep initial load fast.
 - Reusable hooks live under `app/hooks/*`.
   - Runtime-config hooks are created via a generic factory (`useRuntimeConfig.ts`) to avoid boilerplate duplication.
-- Next.js should remain a *presentation layer*.
+- Next.js should remain a _presentation layer_.
   - It exposes `/api/*` routes for accessing the orchestrator and avoids CORS complexity.
   - These routes should be **thin proxies** and avoid business rules.
 - The orchestration / business logic belongs in the **Quarkus orchestrator**.
@@ -162,8 +162,11 @@ Some environments terminate long-lived HTTP connections.
 - **Next.js**: v16.3.5
 - **React**: v19.3.0
 - **Material-UI (MUI)**: v9.4.0
-- **TypeScript**: v6.0.3
-- **Node.js**: v26.8.2
+- **TypeScript**: v7.0.2
+- **Vitest / coverage-v8**: v5.0.0
+- **Oxlint**: v1.83.0
+- **Oxfmt**: v0.68.0
+- **Node.js**: v26.9.0
 
 ## Configuration
 
@@ -204,6 +207,7 @@ Some UI behaviors are configured at runtime via Next.js API routes (so changing 
 Runtime config endpoint: `GET /api/script-runner/config`
 
 Environment variables (passed into the `nextjs-dash` container):
+
 - `SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS` (default: `1800000` = 30 minutes)
 - `SCRIPT_RUNNER_EXEC_LOG_MAX_LINES` (default: `500`)
 
@@ -211,7 +215,7 @@ Environment variables (passed into the `nextjs-dash` container):
 
 Runtime log verbosity is configurable independently for browser/client logs and server/container logs:
 
-- `NEXTJS_DASH_CLIENT_LOG_LEVEL` (default: `info`) 
+- `NEXTJS_DASH_CLIENT_LOG_LEVEL` (default: `info`)
   - one of: `debug | info | warn | error | silent`
   - controls what the client logger emits (still goes through `console.*` so it is captured in the Logs page)
 
@@ -224,6 +228,7 @@ Runtime log verbosity is configurable independently for browser/client logs and 
 Runtime config endpoint: `GET /api/app-logs/config`
 
 Environment variables:
+
 - `APP_LOGS_CLIENT_MAX_ENTRIES` (default: `400`)
 - `APP_LOGS_SERVER_MAX_ENTRIES` (default: `500`)
 
@@ -233,17 +238,19 @@ Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift bet
 
 ### Prerequisites
 
-- Node.js 22 or higher
-- npm or yarn
+- Node.js 22.12 or higher
+- npm 12.0.2
 
 ### Local Development
 
 1. Install dependencies:
+
    ```bash
-   npm install
+   npm ci
    ```
 
 2. Run the development server:
+
    ```bash
    npm run dev
    ```
@@ -253,15 +260,19 @@ Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift bet
 ### Quality gates
 
 ```bash
-npm run lint
-npm run typecheck
-npm test
+npm run format        # rewrite supported files with Oxfmt
+npm run format:check  # verify formatting without changing files
+npm run lint          # Oxlint; warnings are fatal
+npm run typecheck     # TypeScript 7 native checker in strict no-emit mode
+npm run test:fast     # Node and DOM suites, stopping at the first failure
+npm test              # complete Node and DOM suites
+npm run test:coverage # both suites with v8 coverage reports
+npm run build         # production build smoke test
 ```
 
-Quick One liner:
-```bash
-npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
-```
+TypeScript 7 uses the stable native checker formerly called `tsgo`. The supported
+stable command is `tsc`, so `npm run typecheck` invokes `tsc --noEmit`; no preview
+compiler package or command shim is required.
 
 ### Building for Production
 
@@ -278,12 +289,12 @@ The dashboard is designed to run in a Docker container alongside the observabili
 
 The Dockerfile uses a four-stage multi-stage build optimized for 16-core build machines:
 
-| Stage       | Purpose                                     | Cache strategy                                                                 |
-|-------------|---------------------------------------------|--------------------------------------------------------------------------------|
-| **deps**    | `npm ci` (prod + dev)                       | npm tarball cache mount (`/root/.npm`)                                         |
-| **quality** | ESLint → tsc → vitest (node) → vitest (dom) | Runs on every build; `--maxWorkers=12`                                         |
-| **builder** | `next build` (standalone output)            | `.next/cache` mount; `typescript.ignoreBuildErrors` avoids redundant typecheck |
-| **runner**  | Minimal Alpine image with standalone output | Layer cache (static assets rarely change)                                      |
+| Stage       | Purpose                                                            | Cache strategy                                                                 |
+| ----------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| **deps**    | `npm ci` (prod + dev)                                              | npm tarball cache mount (`/root/.npm`)                                         |
+| **quality** | Oxfmt check → Oxlint → TypeScript 7 → Vitest (Node) → Vitest (DOM) | Runs module scripts on every build; tests use `--maxWorkers=12`                |
+| **builder** | `next build` (standalone output)                                   | `.next/cache` mount; `typescript.ignoreBuildErrors` avoids redundant typecheck |
+| **runner**  | Minimal Alpine image with standalone output                        | Layer cache (static assets rarely change)                                      |
 
 Key design decisions:
 
@@ -334,17 +345,22 @@ Tests are split into two Vitest configurations to avoid running JSDOM for
 pure-Node tests:
 
 | Config                  | Environment | Scope                                                                             |
-|-------------------------|-------------|-----------------------------------------------------------------------------------|
+| ----------------------- | ----------- | --------------------------------------------------------------------------------- |
 | `vitest.config.node.ts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        |
 | `vitest.config.dom.ts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` |
 
 Both configs extend `vitest.config.shared.ts` for common resolve aliases,
 pool settings, and coverage excludes.
 
+Vitest 5 clears mock call history before every test. The shared configuration
+sets `clearMocks: true` explicitly so tests cannot depend on calls made by an
+earlier test; mock implementations remain available unless a test replaces or
+restores them.
+
 ### Shared test helpers (`__tests__/_helpers/`)
 
 | Helper                         | Purpose                                                                                                                    |
-|--------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | `mocks.ts`                     | Reusable `vi.mock()` factory objects (`CLIENT_LOGGER_MOCK`, `SERVER_LOGGER_MOCK`, `INWARD_PULSE_MOCK`, `TIMED_PULSE_MOCK`) |
 | `consoleSpy.ts`                | `silenceConsole()` — spies on all four `console.*` methods with no-op implementations                                      |
 | `storage.ts`                   | `createMockStorage()` — in-memory `Storage` stub for `localStorage` / `sessionStorage`                                     |
@@ -359,6 +375,8 @@ npm run test:dom      # DOM tests only
 npm run test:fast     # all tests with --bail=1 (fail fast)
 npm run test:watch    # watch mode (DOM config)
 npm run test:coverage # all tests with coverage
+npm run test:coverage:node # node coverage only
+npm run test:coverage:dom  # DOM coverage only
 ```
 
 ### Orchestrator restart simulation (unit/integration-ish)

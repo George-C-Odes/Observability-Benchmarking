@@ -15,9 +15,17 @@ describe('ProjectHub', () => {
 
     expect(document.querySelector('a[href="http://localhost:3002/q/swagger-ui/"]')).toBeTruthy();
     expect(document.querySelector('a[href="http://localhost:3000"]')).toBeTruthy();
-    expect(document.querySelector('a[href="https://george-c-odes.github.io/Observability-Benchmarking/"]')).toBeTruthy();
+    expect(
+      document.querySelector(
+        'a[href="https://george-c-odes.github.io/Observability-Benchmarking/"]',
+      ),
+    ).toBeTruthy();
     expect(document.querySelector('a[href="mailto:georgecha@gmail.com"]')).toBeTruthy();
-    expect(document.querySelector('a[href="https://www.linkedin.com/in/george-charalambous-114648203/"]')).toBeTruthy();
+    expect(
+      document.querySelector(
+        'a[href="https://www.linkedin.com/in/george-charalambous-114648203/"]',
+      ),
+    ).toBeTruthy();
     expect(document.querySelector('a[href="https://github.com/George-C-Odes"]')).toBeTruthy();
 
     expect(screen.getByText('George Charalambous')).toBeInTheDocument();
@@ -25,4 +33,3 @@ describe('ProjectHub', () => {
     expect(screen.getByAltText('Author')).toBeInTheDocument();
   });
 });
-

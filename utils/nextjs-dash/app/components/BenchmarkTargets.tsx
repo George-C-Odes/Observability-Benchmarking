@@ -70,19 +70,19 @@ const ALL_ENDPOINTS: readonly string[] = [
  * endpoint chips so the dashboard matches the README badges exactly.
  */
 const BADGE_COLORS = {
-  java:       '#ED8B00',
-  spring:     '#6DB33F',
-  quarkus:    '#6C63FF',
-  micronaut:  '#1A1A2E',
-  helidon:    '#008F6B',
-  spark:      '#FF7043',
-  javalin:    '#00AFCF',
+  java: '#ED8B00',
+  spring: '#6DB33F',
+  quarkus: '#6C63FF',
+  micronaut: '#1A1A2E',
+  helidon: '#008F6B',
+  spark: '#FF7043',
+  javalin: '#00AFCF',
   dropwizard: '#C9A200',
-  vertx:      '#782A90',
-  pekko:      '#DB2777',
-  go:         '#38BDF8',
-  python:     '#2F5D8C',
-  django:     '#8B2C3D',
+  vertx: '#782A90',
+  pekko: '#DB2777',
+  go: '#38BDF8',
+  python: '#2F5D8C',
+  django: '#8B2C3D',
 } as const;
 
 /** Quick-filter group definitions */
@@ -120,41 +120,53 @@ const FILTER_ROWS: readonly FilterRow[] = [
   {
     label: 'Language',
     groups: [
-      { label: 'All',    match: () => true,  color: 'primary' },
-      { label: 'None',   match: () => false, color: 'default' },
-      { label: 'Java',   match: (u) => !u.includes('go:') && !u.includes('django'), badgeHex: BADGE_COLORS.java },
-      { label: 'Go',     match: (u) => u.includes('go:'),    badgeHex: BADGE_COLORS.go },
+      { label: 'All', match: () => true, color: 'primary' },
+      { label: 'None', match: () => false, color: 'default' },
+      {
+        label: 'Java',
+        match: (u) => !u.includes('go:') && !u.includes('django'),
+        badgeHex: BADGE_COLORS.java,
+      },
+      { label: 'Go', match: (u) => u.includes('go:'), badgeHex: BADGE_COLORS.go },
       { label: 'Python', match: (u) => u.includes('django'), badgeHex: BADGE_COLORS.python },
     ],
   },
   {
     label: 'Framework',
     groups: [
-      { label: 'Spring',     match: (u) => u.includes('spring'),     badgeHex: BADGE_COLORS.spring },
-      { label: 'Quarkus',    match: (u) => u.includes('quarkus'),    badgeHex: BADGE_COLORS.quarkus },
-      { label: 'Micronaut',  match: (u) => u.includes('micronaut'),  badgeHex: BADGE_COLORS.micronaut },
-      { label: 'Helidon',    match: (u) => u.includes('helidon'),    badgeHex: BADGE_COLORS.helidon },
-      { label: 'Spark',      match: (u) => u.includes('spark'),      badgeHex: BADGE_COLORS.spark },
-      { label: 'Javalin',    match: (u) => u.includes('javalin'),    badgeHex: BADGE_COLORS.javalin },
-      { label: 'Dropwizard', match: (u) => u.includes('dropwizard'), badgeHex: BADGE_COLORS.dropwizard },
-      { label: 'Vert.x',     match: (u) => u.includes('vertx'),     badgeHex: BADGE_COLORS.vertx },
-      { label: 'Pekko',      match: (u) => u.includes('pekko'),     badgeHex: BADGE_COLORS.pekko },
-      { label: 'Django',     match: (u) => u.includes('django'),     badgeHex: BADGE_COLORS.django },
+      { label: 'Spring', match: (u) => u.includes('spring'), badgeHex: BADGE_COLORS.spring },
+      { label: 'Quarkus', match: (u) => u.includes('quarkus'), badgeHex: BADGE_COLORS.quarkus },
+      {
+        label: 'Micronaut',
+        match: (u) => u.includes('micronaut'),
+        badgeHex: BADGE_COLORS.micronaut,
+      },
+      { label: 'Helidon', match: (u) => u.includes('helidon'), badgeHex: BADGE_COLORS.helidon },
+      { label: 'Spark', match: (u) => u.includes('spark'), badgeHex: BADGE_COLORS.spark },
+      { label: 'Javalin', match: (u) => u.includes('javalin'), badgeHex: BADGE_COLORS.javalin },
+      {
+        label: 'Dropwizard',
+        match: (u) => u.includes('dropwizard'),
+        badgeHex: BADGE_COLORS.dropwizard,
+      },
+      { label: 'Vert.x', match: (u) => u.includes('vertx'), badgeHex: BADGE_COLORS.vertx },
+      { label: 'Pekko', match: (u) => u.includes('pekko'), badgeHex: BADGE_COLORS.pekko },
+      { label: 'Django', match: (u) => u.includes('django'), badgeHex: BADGE_COLORS.django },
     ],
   },
   {
     label: 'Runtime',
     groups: [
-      { label: 'JVM',     match: (u) => u.includes('-jvm'),    color: 'info' },
-      { label: 'Native',  match: (u) => u.includes('-native'), color: 'warning' },
-      { label: 'CPython', match: (u) => u.includes('django'),  badgeHex: BADGE_COLORS.python },
+      { label: 'JVM', match: (u) => u.includes('-jvm'), color: 'info' },
+      { label: 'Native', match: (u) => u.includes('-native'), color: 'warning' },
+      { label: 'CPython', match: (u) => u.includes('django'), badgeHex: BADGE_COLORS.python },
     ],
   },
   {
     label: 'Endpoint',
     groups: [
       { label: 'Platform', match: (u) => u.endsWith('/platform'), color: 'info' },
-      { label: 'Virtual',  match: (u) => u.endsWith('/virtual'),  color: 'info' },
+      { label: 'Virtual', match: (u) => u.endsWith('/virtual'), color: 'info' },
       { label: 'Reactive', match: (u) => u.endsWith('/reactive'), color: 'info' },
     ],
   },
@@ -192,17 +204,17 @@ function urlToHost(url: string): string {
  * Resolve the README badge hex color for an endpoint URL.
  */
 function endpointBadgeHex(url: string): string | undefined {
-  if (url.includes('spring'))     return BADGE_COLORS.spring;
-  if (url.includes('quarkus'))    return BADGE_COLORS.quarkus;
-  if (url.includes('micronaut'))  return BADGE_COLORS.micronaut;
-  if (url.includes('helidon'))    return BADGE_COLORS.helidon;
-  if (url.includes('spark'))      return BADGE_COLORS.spark;
-  if (url.includes('javalin'))    return BADGE_COLORS.javalin;
+  if (url.includes('spring')) return BADGE_COLORS.spring;
+  if (url.includes('quarkus')) return BADGE_COLORS.quarkus;
+  if (url.includes('micronaut')) return BADGE_COLORS.micronaut;
+  if (url.includes('helidon')) return BADGE_COLORS.helidon;
+  if (url.includes('spark')) return BADGE_COLORS.spark;
+  if (url.includes('javalin')) return BADGE_COLORS.javalin;
   if (url.includes('dropwizard')) return BADGE_COLORS.dropwizard;
-  if (url.includes('vertx'))      return BADGE_COLORS.vertx;
-  if (url.includes('pekko'))      return BADGE_COLORS.pekko;
-  if (url.includes('go:'))        return BADGE_COLORS.go;
-  if (url.includes('django'))     return BADGE_COLORS.django;
+  if (url.includes('vertx')) return BADGE_COLORS.vertx;
+  if (url.includes('pekko')) return BADGE_COLORS.pekko;
+  if (url.includes('go:')) return BADGE_COLORS.go;
+  if (url.includes('django')) return BADGE_COLORS.django;
   return undefined;
 }
 
@@ -421,7 +433,9 @@ export default function BenchmarkTargets() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -436,7 +450,7 @@ export default function BenchmarkTargets() {
         <Chip
           label={urlToLabel(url)}
           size="medium"
-          color={hex ? 'default' : (isSelected ? 'primary' : 'default')}
+          color={hex ? 'default' : isSelected ? 'primary' : 'default'}
           variant={isSelected ? 'filled' : 'outlined'}
           onClick={() => handleToggle(url)}
           sx={{
@@ -444,7 +458,9 @@ export default function BenchmarkTargets() {
             opacity: isSelected ? 1 : 0.65,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
-            ...badgeChipSx(hex, isSelected, { '&:hover': { opacity: 1, transform: 'scale(1.04)' } }),
+            ...badgeChipSx(hex, isSelected, {
+              '&:hover': { opacity: 1, transform: 'scale(1.04)' },
+            }),
           }}
         />
       </Tooltip>
@@ -488,7 +504,13 @@ export default function BenchmarkTargets() {
         </Typography>
         <Stack spacing={0.75}>
           {FILTER_ROWS.map((row) => (
-            <Stack key={row.label} direction="row" spacing={0.75} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+            <Stack
+              key={row.label}
+              direction="row"
+              spacing={0.75}
+              useFlexGap
+              sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+            >
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -504,14 +526,22 @@ export default function BenchmarkTargets() {
                     key={group.label}
                     label={group.label}
                     size="small"
-                    color={group.badgeHex ? 'default' : (allSelected ? (group.color ?? 'default') : 'default')}
+                    color={
+                      group.badgeHex
+                        ? 'default'
+                        : allSelected
+                          ? (group.color ?? 'default')
+                          : 'default'
+                    }
                     variant={allSelected ? 'filled' : 'outlined'}
                     onClick={() => handleGroupFilter(group)}
                     sx={{
                       fontWeight: 500,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      ...badgeChipSx(group.badgeHex, allSelected, { '&:hover': { transform: 'scale(1.05)' } }),
+                      ...badgeChipSx(group.badgeHex, allSelected, {
+                        '&:hover': { transform: 'scale(1.05)' },
+                      }),
                     }}
                   />
                 );
@@ -533,7 +563,10 @@ export default function BenchmarkTargets() {
               {group.label}
             </Typography>
             {group.subgroups ? (
-              <Stack spacing={1.25} sx={{ pl: 1.5, borderLeft: '2px solid', borderColor: 'divider' }}>
+              <Stack
+                spacing={1.25}
+                sx={{ pl: 1.5, borderLeft: '2px solid', borderColor: 'divider' }}
+              >
                 {group.subgroups.map((sub) => (
                   <Box key={sub.label}>
                     <Typography
@@ -563,7 +596,13 @@ export default function BenchmarkTargets() {
       {/* Action buttons */}
       <Stack direction="row" spacing={2}>
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-          <InwardPulse active={savePulseOn} color="#1976d2" inset={8} borderRadius={8} durationMs={800} />
+          <InwardPulse
+            active={savePulseOn}
+            color="#1976d2"
+            inset={8}
+            borderRadius={8}
+            durationMs={800}
+          />
           <Button
             variant="contained"
             startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}

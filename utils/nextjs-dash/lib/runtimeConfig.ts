@@ -7,9 +7,10 @@ export type RuntimeClientConfig = {
 export function getRuntimeConfig(): RuntimeClientConfig {
   const fromWindow = typeof window !== 'undefined' ? window.__OBS_DASH_CONFIG__ : undefined;
 
-  const systemInfo = typeof fromWindow?.systemInfo === 'object' && fromWindow?.systemInfo
-    ? (fromWindow.systemInfo as RuntimeClientConfig['systemInfo'])
-    : undefined;
+  const systemInfo =
+    typeof fromWindow?.systemInfo === 'object' && fromWindow?.systemInfo
+      ? (fromWindow.systemInfo as RuntimeClientConfig['systemInfo'])
+      : undefined;
 
   return { systemInfo };
 }

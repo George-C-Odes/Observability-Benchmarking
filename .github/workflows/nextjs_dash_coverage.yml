@@ -37,9 +37,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '26.9.0'
           cache: npm
           cache-dependency-path: utils/nextjs-dash/package-lock.json
+
+      - name: Set up npm 12.0.2
+        run: npm install --global npm@12.0.2
 
       - name: Install dependencies
         run: npm ci
@@ -47,12 +50,12 @@ jobs:
       # ── Node-environment coverage (lib, API routes) ──────────────────
       - name: Coverage – Node environment
         id: coverage_node
-        run: npx vitest run -c vitest.config.node.ts --coverage
+        run: npm run test:coverage:node
 
       # ── DOM-environment coverage (components, hooks) ─────────────────
       - name: Coverage – DOM environment
         id: coverage_dom
-        run: npx vitest run -c vitest.config.dom.ts --coverage
+        run: npm run test:coverage:dom
 
       # ── Generate GitHub Step Summary ─────────────────────────────────
       - name: Generate coverage summary
@@ -217,4 +220,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
           disable_search: true
-

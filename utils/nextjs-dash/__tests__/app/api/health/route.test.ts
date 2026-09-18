@@ -9,7 +9,12 @@ vi.mock('@/lib/config', () => ({
 }));
 
 vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+  createScopedServerLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
 }));
 
 import { GET } from '@/app/api/health/route';
@@ -45,4 +50,3 @@ describe('/api/health route', () => {
     expect(body.error).toBe('Failed to fetch service health');
   });
 });
-

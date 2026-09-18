@@ -10,7 +10,12 @@ vi.mock('@/lib/scriptRunnerRunState', () => ({
 }));
 
 vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+  createScopedServerLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
 }));
 
 import * as orch from '@/lib/orchestratorClient';
@@ -30,7 +35,9 @@ describe('/api/orchestrator/status route', () => {
   });
 
   it('rejects stale run requests before calling orchestrator', async () => {
-    const res = await GET(new NextRequest('http://localhost/api/orchestrator/status?jobId=job-1&runId=run-stale'));
+    const res = await GET(
+      new NextRequest('http://localhost/api/orchestrator/status?jobId=job-1&runId=run-stale'),
+    );
 
     expect(orch.getJobStatusWithRunId).not.toHaveBeenCalled();
     expect(res.status).toBe(409);
@@ -46,9 +53,12 @@ describe('/api/orchestrator/status route', () => {
       status: 'RUNNING',
     });
 
-    const req = new NextRequest('http://localhost/api/orchestrator/status?jobId=job-1&runId=run-active', {
-      headers: { 'x-request-id': 'rid-123' },
-    });
+    const req = new NextRequest(
+      'http://localhost/api/orchestrator/status?jobId=job-1&runId=run-active',
+      {
+        headers: { 'x-request-id': 'rid-123' },
+      },
+    );
     const res = await GET(req);
 
     expect(orch.getJobStatusWithRunId).toHaveBeenCalledWith('job-1', 'run-active', 'rid-123');
@@ -67,4 +77,3 @@ describe('/api/orchestrator/status route', () => {
     });
   });
 });
-

@@ -3,4 +3,3 @@ export function getErrorMessage(error: unknown, fallback = 'Unknown error'): str
   if (typeof error === 'string') return error;
   return fallback;
 }
-

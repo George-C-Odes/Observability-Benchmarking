@@ -104,7 +104,7 @@ export class MockBroadcastChannel {
 /** Captured prior globals so we can restore them after tests. */
 let savedEventSource: typeof globalThis.EventSource | undefined;
 let savedBroadcastChannel: typeof globalThis.BroadcastChannel | undefined;
-let savedSessionStorage: typeof globalThis.sessionStorage | undefined;
+let savedSessionStorageDescriptor: PropertyDescriptor | undefined;
 
 /**
  * Installs MockEventSource, MockBroadcastChannel, and a stub
@@ -117,7 +117,7 @@ export function installMockGlobals(): void {
   // Preserve current globals so they can be restored later.
   savedEventSource = globalThis.EventSource;
   savedBroadcastChannel = globalThis.BroadcastChannel;
-  savedSessionStorage = globalThis.sessionStorage;
+  savedSessionStorageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
 
   // Reset static state that can leak across tests.
   MockEventSource.instances = [];
@@ -125,7 +125,10 @@ export function installMockGlobals(): void {
 
   globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
   globalThis.BroadcastChannel = MockBroadcastChannel as unknown as typeof BroadcastChannel;
-  globalThis.sessionStorage = createMockStorage();
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    value: createMockStorage(),
+  });
 }
 
 /**
@@ -147,11 +150,13 @@ export function restoreMockGlobals(): void {
   if (savedBroadcastChannel !== undefined) {
     globalThis.BroadcastChannel = savedBroadcastChannel;
   }
-  if (savedSessionStorage !== undefined) {
-    globalThis.sessionStorage = savedSessionStorage;
+  if (savedSessionStorageDescriptor !== undefined) {
+    Object.defineProperty(globalThis, 'sessionStorage', savedSessionStorageDescriptor);
+  } else {
+    delete (globalThis as { sessionStorage?: Storage }).sessionStorage;
   }
 
   savedEventSource = undefined;
   savedBroadcastChannel = undefined;
-  savedSessionStorage = undefined;
+  savedSessionStorageDescriptor = undefined;
 }

@@ -82,7 +82,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.8.2                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.9.0                  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -96,7 +96,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.3.5                  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.0                  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 6.0.3                   | Type-safe frontend development                                       |
+| **Frontend**      | Language           | TypeScript                 | 7.0.2                   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0                   | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.2.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.7                   | Log aggregation                                                      |
@@ -115,9 +115,11 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2                  | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.16.7                  | Python linting and code formatting                                   |
+| **Quality**       | Linter             | Oxlint                     | 1.83.0                  | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.68.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 4.1.11                  | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 5.0.0                   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -728,8 +730,8 @@ For comprehensive security guidelines, configuration recommendations, and incide
 
 ### Security Summary
 
-| Aspect              | Status        | Details                                                                                                             |
-|---------------------|---------------|---------------------------------------------------------------------------------------------------------------------|
+| Aspect              | Status         | Details                                                                                                             |
+|---------------------|----------------|---------------------------------------------------------------------------------------------------------------------|
 | Non-root containers | ✅ Implemented | All JVM services run as UID 1001                                                                                    |
 | File permissions    | ✅ Configured  | Restrictive permissions on all artifacts                                                                            |
 | Hardcoded secrets   | ✅ Clean       | Zero secrets found in code/config                                                                                   |

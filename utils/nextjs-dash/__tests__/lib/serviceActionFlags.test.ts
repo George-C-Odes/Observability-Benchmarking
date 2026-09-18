@@ -18,7 +18,12 @@ function restoreEnv(snap: EnvSnapshot) {
 }
 
 describe('serviceActionFlags', () => {
-  const keys = ['SERVICE_ACTIONS_ENABLE_ALL', 'ALLOY_ACTIONS_ENABLE', 'GRAFANA_ACTIONS_ENABLE', 'GO_ACTIONS_ENABLE'];
+  const keys = [
+    'SERVICE_ACTIONS_ENABLE_ALL',
+    'ALLOY_ACTIONS_ENABLE',
+    'GRAFANA_ACTIONS_ENABLE',
+    'GO_ACTIONS_ENABLE',
+  ];
 
   const original = snapshotEnv(keys);
 

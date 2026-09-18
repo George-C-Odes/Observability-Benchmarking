@@ -12,7 +12,10 @@ export const useServiceActionsConfig = createRuntimeConfigHook<ServiceActionsRun
   (json) => {
     const j = json as Partial<ServiceActionsRuntimeConfig>;
     return {
-      enabled: (j.enabled ?? DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG.enabled) as Record<string, boolean>,
+      enabled: (j.enabled ?? DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG.enabled) as Record<
+        string,
+        boolean
+      >,
     };
   },
   'ServiceActions',

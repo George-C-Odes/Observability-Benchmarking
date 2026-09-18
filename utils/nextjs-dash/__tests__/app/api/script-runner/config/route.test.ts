@@ -20,9 +20,17 @@ describe('/api/script-runner/config route', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toContain('no-store');
 
-    const json = (await res.json()) as { maxExecutionLogLines: number; eventStreamTimeoutMs: number; debug: boolean };
-    expect(json.maxExecutionLogLines).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines);
-    expect(json.eventStreamTimeoutMs).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs);
+    const json = (await res.json()) as {
+      maxExecutionLogLines: number;
+      eventStreamTimeoutMs: number;
+      debug: boolean;
+    };
+    expect(json.maxExecutionLogLines).toBe(
+      DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines,
+    );
+    expect(json.eventStreamTimeoutMs).toBe(
+      DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs,
+    );
     expect(json.debug).toBe(DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.debug);
   });
 
@@ -32,7 +40,11 @@ describe('/api/script-runner/config route', () => {
 
     const req = new NextRequest('http://localhost/api/script-runner/config', { method: 'GET' });
     const res = await GET(req);
-    const json = (await res.json()) as { maxExecutionLogLines: number; eventStreamTimeoutMs: number; debug: boolean };
+    const json = (await res.json()) as {
+      maxExecutionLogLines: number;
+      eventStreamTimeoutMs: number;
+      debug: boolean;
+    };
 
     expect(json.maxExecutionLogLines).toBe(123);
     expect(json.eventStreamTimeoutMs).toBe(456);

@@ -1,5 +1,6 @@
 # Sensible default: let Git auto-detect text and normalize it
 * text=auto
+.gitattributes text eol=lf
 
 # Maven wrapper
 mvnw     text eol=lf
@@ -27,6 +28,7 @@ Makefile text eol=lf
 *.ts         text eol=lf
 *.tsx        text eol=lf
 *.js         text eol=lf
+*.mjs        text eol=lf
 *.jsx        text eol=lf
 *.md         text eol=lf
 Dockerfile   text eol=lf

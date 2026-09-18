@@ -28,15 +28,15 @@ export const GET = withApiRoute({ name: 'LOGGING_CONFIG_API' }, async function G
   const payload: LoggingRuntimeConfig = {
     clientLogLevel: normalizeLevel(
       envString('NEXTJS_DASH_CLIENT_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel),
-      DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel
+      DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel,
     ),
     serverLogLevel: normalizeLevel(
       envString('NEXTJS_DASH_SERVER_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel),
-      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel
+      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel,
     ),
     serverLogOutput: normalizeOutput(
       envString('NEXTJS_DASH_SERVER_LOG_OUTPUT', DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput),
-      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput
+      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput,
     ),
   };
 

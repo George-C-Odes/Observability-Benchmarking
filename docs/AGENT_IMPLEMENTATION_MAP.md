@@ -92,6 +92,7 @@ mvn verify -B
 Read:
 
 - `utils/nextjs-dash/package.json`.
+- `.oxlintrc.json` and `.oxfmtrc.json` when linting, formatting, or quality wiring changes.
 - The specific component, hook, API route, or lib file.
 - Matching test in `utils/nextjs-dash/__tests__`.
 - `utils/nextjs-dash/lib/orchestratorClient.ts` when orchestration API calls change.
@@ -106,6 +107,7 @@ Validation:
 
 ```bash
 cd utils/nextjs-dash
+npm run format:check
 npm run lint
 npm run typecheck
 npm run test:fast

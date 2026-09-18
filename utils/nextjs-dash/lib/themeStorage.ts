@@ -25,4 +25,3 @@ export function writeStoredTheme(themeId: ThemeId) {
     // ignore
   }
 }
-

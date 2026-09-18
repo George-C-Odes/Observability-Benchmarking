@@ -13,7 +13,6 @@ vi.mock('@/app/hooks/useAppLogsConfig', () => ({
 
 import AppLogs from '@/app/components/AppLogs';
 
-
 describe('AppLogs', () => {
   it('renders RID chip for server logs with requestId meta', async () => {
     globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
@@ -31,8 +30,8 @@ describe('AppLogs', () => {
             },
           ],
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
     );
 
     render(<AppLogs />);

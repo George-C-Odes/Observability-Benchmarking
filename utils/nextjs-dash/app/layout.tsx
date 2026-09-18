@@ -18,8 +18,12 @@ function getPackageVersions() {
   return {
     nextjs: (packageJson as { dependencies?: Record<string, string> }).dependencies?.next || 'N/A',
     react: (packageJson as { dependencies?: Record<string, string> }).dependencies?.react || 'N/A',
-    mui: (packageJson as { dependencies?: Record<string, string> }).dependencies?.['@mui/material'] || 'N/A',
-    typescript: (packageJson as { devDependencies?: Record<string, string> }).devDependencies?.typescript || 'N/A',
+    mui:
+      (packageJson as { dependencies?: Record<string, string> }).dependencies?.['@mui/material'] ||
+      'N/A',
+    typescript:
+      (packageJson as { devDependencies?: Record<string, string> }).devDependencies?.typescript ||
+      'N/A',
   };
 }
 
@@ -27,11 +31,7 @@ function getPackageManager() {
   return (packageJson as { packageManager?: string }).packageManager;
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   // Orchestrator config remains server-only (see lib/config.ts).
 
   const pkgs = getPackageVersions();

@@ -10,8 +10,12 @@ export const useScriptRunnerConfig = createRuntimeConfigHook<ScriptRunnerRuntime
   (json) => {
     const j = json as Partial<ScriptRunnerRuntimeConfig>;
     return {
-      maxExecutionLogLines: Number(j.maxExecutionLogLines ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines),
-      eventStreamTimeoutMs: Number(j.eventStreamTimeoutMs ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs),
+      maxExecutionLogLines: Number(
+        j.maxExecutionLogLines ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines,
+      ),
+      eventStreamTimeoutMs: Number(
+        j.eventStreamTimeoutMs ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs,
+      ),
       debug: Boolean(j.debug ?? DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.debug),
     };
   },

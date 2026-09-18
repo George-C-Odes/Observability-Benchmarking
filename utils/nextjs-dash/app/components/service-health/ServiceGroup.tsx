@@ -24,7 +24,11 @@ const SERVICE_GRID_SX = {
  * category (Observability, Spring, Quarkus, etc.), reducing duplication and
  * making it trivial to add new groups in the future (Open-Closed Principle).
  */
-export const ServiceGroup = React.memo(function ServiceGroup({ title, children, visible = true }: ServiceGroupProps) {
+export const ServiceGroup = React.memo(function ServiceGroup({
+  title,
+  children,
+  visible = true,
+}: ServiceGroupProps) {
   if (!visible) return null;
 
   return (

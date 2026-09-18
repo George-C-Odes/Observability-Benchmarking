@@ -36,7 +36,12 @@ vi.mock('@mui/material', async () => {
     delete domProps.variant;
     delete domProps.sx;
 
-    return <div {...domProps}>{icon}{label ?? children}</div>;
+    return (
+      <div {...domProps}>
+        {icon}
+        {label ?? children}
+      </div>
+    );
   }
 
   return {
@@ -49,17 +54,41 @@ vi.mock('@mui/material', async () => {
 
 // ── Module mocks ──────────────────────────────────────────────────────
 
-vi.mock('@/lib/clientLogger', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK);
-vi.mock('@/app/components/ui/InwardPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK);
-vi.mock('@/app/hooks/useTimedPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK);
+vi.mock(
+  '@/lib/clientLogger',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/components/ui/InwardPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/hooks/useTimedPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK,
+);
 
 // Mock useScripts
 const mockRefresh = vi.fn();
 const defaultScriptsReturn = {
   scripts: [
-    { name: 'Build All', description: 'Build all images', command: 'docker compose build', category: 'build-img' as const },
-    { name: 'Start OBS', description: 'Start observability stack', command: 'docker compose up -d', category: 'multi-cont' as const },
-    { name: 'Run Tests', description: 'Execute test suite', command: 'npm test', category: 'test' as const },
+    {
+      name: 'Build All',
+      description: 'Build all images',
+      command: 'docker compose build',
+      category: 'build-img' as const,
+    },
+    {
+      name: 'Start OBS',
+      description: 'Start observability stack',
+      command: 'docker compose up -d',
+      category: 'multi-cont' as const,
+    },
+    {
+      name: 'Run Tests',
+      description: 'Execute test suite',
+      command: 'npm test',
+      category: 'test' as const,
+    },
   ],
   loading: false,
   error: null,
@@ -96,7 +125,12 @@ vi.mock('@/app/hooks/useJobRunner', () => ({
 
 // Mock ScriptSection to simplify rendering
 vi.mock('@/app/components/scripts/ScriptSection', () => ({
-  ScriptSection: ({ title, scripts, onExecuteAction, executeDisabled }: {
+  ScriptSection: ({
+    title,
+    scripts,
+    onExecuteAction,
+    executeDisabled,
+  }: {
     title: string;
     scripts: Array<{ name: string; command: string }>;
     onExecuteAction: (s: { name: string; command: string }) => void;
@@ -150,10 +184,10 @@ function mockEnvValidation(validation?: EnvValidationState) {
         return new Promise(() => {});
       }
 
-      return new Response(
-        JSON.stringify({ validation }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      );
+      return new Response(JSON.stringify({ validation }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response('Not found', { status: 404 });
@@ -168,7 +202,10 @@ function renderScriptRunner() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('setInterval', vi.fn(() => 0));
+  vi.stubGlobal(
+    'setInterval',
+    vi.fn(() => 0),
+  );
   vi.stubGlobal('clearInterval', vi.fn());
 
   // Reset mocks to default return values

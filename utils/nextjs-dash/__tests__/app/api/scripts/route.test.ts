@@ -5,7 +5,12 @@ vi.mock('@/lib/orchestratorClient', () => ({
 }));
 
 vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+  createScopedServerLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
 }));
 
 import * as orch from '@/lib/orchestratorClient';
@@ -52,4 +57,3 @@ describe('/api/scripts route', () => {
     });
   });
 });
-

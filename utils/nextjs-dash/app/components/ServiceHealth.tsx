@@ -111,7 +111,12 @@ function byName(a: ServiceHealth, b: ServiceHealth) {
   return a.name.localeCompare(b.name);
 }
 
-function countByStatus(services: ServiceHealth[]): { up: number; down: number; pending: number; total: number } {
+function countByStatus(services: ServiceHealth[]): {
+  up: number;
+  down: number;
+  pending: number;
+  total: number;
+} {
   let up = 0;
   let down = 0;
   let pending = 0;
@@ -163,14 +168,22 @@ export default function ServiceHealth() {
   const statusCounts = useMemo(() => countByStatus(services), [services]);
   const countsPulseKey = useMemo(
     () => `${statusCounts.up}-${statusCounts.down}-${statusCounts.pending}-${statusCounts.total}`,
-    [statusCounts.up, statusCounts.down, statusCounts.pending, statusCounts.total]
+    [statusCounts.up, statusCounts.down, statusCounts.pending, statusCounts.total],
   );
-  const { on: countsPulseOn } = useTimedPulse({ durationMs: 700, trigger: countsPulseKey, allowFalsy: true });
+  const { on: countsPulseOn } = useTimedPulse({
+    durationMs: 700,
+    trigger: countsPulseKey,
+    allowFalsy: true,
+  });
 
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [nowMs, setNowMs] = useState<number | null>(null);
   const updatedFlashTrigger = lastUpdatedAt?.toISOString() ?? null;
-  const { on: updatedFlashOn } = useTimedPulse({ durationMs: 900, trigger: updatedFlashTrigger, allowFalsy: true });
+  const { on: updatedFlashOn } = useTimedPulse({
+    durationMs: 900,
+    trigger: updatedFlashTrigger,
+    allowFalsy: true,
+  });
 
   useEffect(() => {
     if (!lastUpdatedAt) return;
@@ -209,29 +222,39 @@ export default function ServiceHealth() {
       setServices(await readAllServices());
       markUpdated();
     } catch {
-      setMessage({ type: 'error', text: 'Failed to check service health (dashboard backend unreachable)' });
+      setMessage({
+        type: 'error',
+        text: 'Failed to check service health (dashboard backend unreachable)',
+      });
     } finally {
       setLoading(false);
     }
   }, [markUpdated]);
 
-  const refreshService = useCallback(async (serviceName: string) => {
-    setRefreshing(serviceName);
-    try {
-      const data = await fetchJson<{ services?: HealthApiService[] }>(`/api/health?service=${encodeURIComponent(serviceName)}`);
-      const raw = Array.isArray(data?.services) && data.services.length ? data.services[0] : null;
-      const single = raw ? normalizeServiceFromApi(raw) : null;
+  const refreshService = useCallback(
+    async (serviceName: string) => {
+      setRefreshing(serviceName);
+      try {
+        const data = await fetchJson<{ services?: HealthApiService[] }>(
+          `/api/health?service=${encodeURIComponent(serviceName)}`,
+        );
+        const raw = Array.isArray(data?.services) && data.services.length ? data.services[0] : null;
+        const single = raw ? normalizeServiceFromApi(raw) : null;
 
-      if (single) {
-        setServices((prev) => prev.map((s) => (s.name === serviceName ? single : s)).sort(byName));
-        markUpdated();
+        if (single) {
+          setServices((prev) =>
+            prev.map((s) => (s.name === serviceName ? single : s)).sort(byName),
+          );
+          markUpdated();
+        }
+      } catch {
+        // ignore
+      } finally {
+        setRefreshing(null);
       }
-    } catch {
-      // ignore
-    } finally {
-      setRefreshing(null);
-    }
-  }, [markUpdated]);
+    },
+    [markUpdated],
+  );
 
   const submitDockerControl = useCallback(
     async (
@@ -240,7 +263,7 @@ export default function ServiceHealth() {
         service: string;
         action: 'start' | 'stop' | 'restart' | 'recreate' | 'delete';
       },
-      optimisticActionLabel: string
+      optimisticActionLabel: string,
     ) => {
       setSubmitting(serviceName);
       setServices((prev) => prev.map((s) => (s.name === serviceName ? toPending(s) : s)));
@@ -269,7 +292,7 @@ export default function ServiceHealth() {
         setSubmitting(null);
       }
     },
-    [markUpdated, refreshService]
+    [markUpdated, refreshService],
   );
 
   useEffect(() => {
@@ -284,7 +307,10 @@ export default function ServiceHealth() {
         markUpdated();
       } catch {
         if (cancelled) return;
-        setMessage({ type: 'error', text: 'Failed to check service health (dashboard backend unreachable)' });
+        setMessage({
+          type: 'error',
+          text: 'Failed to check service health (dashboard backend unreachable)',
+        });
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -314,7 +340,9 @@ export default function ServiceHealth() {
     const pekko = services.filter((s) => s.name.startsWith('pekko-')).sort(byName);
     const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
     const django = services.filter((s) => s.name.startsWith('django-')).sort(byName);
-    const utils = services.filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name)).sort(byName);
+    const utils = services
+      .filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name))
+      .sort(byName);
 
     return {
       observability,
@@ -335,7 +363,9 @@ export default function ServiceHealth() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -401,7 +431,6 @@ export default function ServiceHealth() {
       action: 'delete',
     });
 
-
     return (
       <Card
         key={service.name}
@@ -441,7 +470,9 @@ export default function ServiceHealth() {
                   overflow: 'hidden',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', flex: '0 0 auto' }}>{statusUI.icon}</Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', flex: '0 0 auto' }}>
+                  {statusUI.icon}
+                </Box>
                 <Typography
                   variant="subtitle1"
                   component="div"
@@ -460,7 +491,9 @@ export default function ServiceHealth() {
               </Box>
 
               {/* Status row */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}
+              >
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
                   Status
                 </Typography>
@@ -475,7 +508,6 @@ export default function ServiceHealth() {
                   <DataRow label="Response" value={`${service.responseTime}ms`} />
                 )}
 
-
                 {service.error && <DataRow label="Error" value={service.error} color="error" />}
 
                 {service.body !== undefined && (
@@ -486,7 +518,9 @@ export default function ServiceHealth() {
                       <Tooltip
                         title={
                           <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', maxWidth: 500 }}>
-                            {typeof service.body === 'string' ? service.body : JSON.stringify(service.body, null, 2)}
+                            {typeof service.body === 'string'
+                              ? service.body
+                              : JSON.stringify(service.body, null, 2)}
                           </Box>
                         }
                         placement="bottom-start"
@@ -526,7 +560,13 @@ export default function ServiceHealth() {
                 tooltipCommand={upstreamHealthUrl}
                 onClick={() => refreshService(service.name)}
                 disabled={isBusy}
-                icon={refreshing === service.name ? <CircularProgress size={18} /> : <RefreshIcon fontSize="small" />}
+                icon={
+                  refreshing === service.name ? (
+                    <CircularProgress size={18} />
+                  ) : (
+                    <RefreshIcon fontSize="small" />
+                  )
+                }
                 kind="refresh"
               />
 
@@ -535,7 +575,13 @@ export default function ServiceHealth() {
                   label="Start"
                   ariaLabel="Start"
                   tooltipCommand={startCommand}
-                  onClick={() => submitDockerControl(service.name, { service: service.name, action: 'start' }, 'start')}
+                  onClick={() =>
+                    submitDockerControl(
+                      service.name,
+                      { service: service.name, action: 'start' },
+                      'start',
+                    )
+                  }
                   disabled={isBusy || !canStartAction}
                   disabledReason={!actionFlags.start ? featureDisabledReason : undefined}
                   icon={<PlayArrowIcon fontSize="small" color="primary" />}
@@ -548,7 +594,13 @@ export default function ServiceHealth() {
                     label="Restart"
                     ariaLabel="Restart"
                     tooltipCommand={restartCommand}
-                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'restart' }, 'restart')}
+                    onClick={() =>
+                      submitDockerControl(
+                        service.name,
+                        { service: service.name, action: 'restart' },
+                        'restart',
+                      )
+                    }
                     disabled={isBusy || !canRestartAction}
                     disabledReason={!actionFlags.restart ? featureDisabledReason : undefined}
                     icon={<RestartAltIcon fontSize="small" color="primary" />}
@@ -558,7 +610,13 @@ export default function ServiceHealth() {
                     label="Stop"
                     ariaLabel="Stop"
                     tooltipCommand={stopCommand}
-                    onClick={() => submitDockerControl(service.name, { service: service.name, action: 'stop' }, 'stop')}
+                    onClick={() =>
+                      submitDockerControl(
+                        service.name,
+                        { service: service.name, action: 'stop' },
+                        'stop',
+                      )
+                    }
                     disabled={isBusy || !canStopAction}
                     disabledReason={!actionFlags.stop ? featureDisabledReason : undefined}
                     icon={<StopCircleIcon fontSize="small" color="error" />}
@@ -573,7 +631,7 @@ export default function ServiceHealth() {
                         submitDockerControl(
                           service.name,
                           { service: service.name, action: 'recreate' },
-                          'recreate'
+                          'recreate',
                         )
                       }
                       disabled={isBusy || !canRecreateAction}
@@ -587,7 +645,11 @@ export default function ServiceHealth() {
                     ariaLabel="Delete"
                     tooltipCommand={deleteCommand}
                     onClick={() =>
-                      submitDockerControl(service.name, { service: service.name, action: 'delete' }, 'delete')
+                      submitDockerControl(
+                        service.name,
+                        { service: service.name, action: 'delete' },
+                        'delete',
+                      )
                     }
                     disabled={isBusy || !canDeleteAction}
                     disabledReason={!actionFlags.delete ? featureDisabledReason : undefined}
@@ -606,7 +668,11 @@ export default function ServiceHealth() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <HealthAndSafetyIcon /> Service Health Status
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -624,7 +690,12 @@ export default function ServiceHealth() {
           }
         >
           <span>
-            <Button variant="contained" startIcon={<RefreshIcon />} onClick={fetchAllServices} disabled={loading}>
+            <Button
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={fetchAllServices}
+              disabled={loading}
+            >
               Refresh All
             </Button>
           </span>
@@ -657,7 +728,15 @@ export default function ServiceHealth() {
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <AppsIcon color="primary" />
               <Typography variant="h6">Overview</Typography>
@@ -701,7 +780,11 @@ export default function ServiceHealth() {
             key={countsPulseKey}
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, max-content)', md: 'repeat(4, max-content)' },
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, max-content)',
+                md: 'repeat(4, max-content)',
+              },
               gap: { xs: 1, sm: 1.25, md: 1.5 },
               alignItems: 'center',
               animation: countsPulseOn ? 'overviewPulse 650ms ease-in-out' : 'none',
@@ -719,10 +802,18 @@ export default function ServiceHealth() {
                     columnGap: 0.75,
                   }}
                 >
-                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ fontWeight: 900, letterSpacing: 0.7 }}
+                  >
                     UP
                   </Typography>
-                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ opacity: 0.9, textAlign: 'center' }}
+                  >
                     :
                   </Typography>
                   <Box
@@ -743,7 +834,8 @@ export default function ServiceHealth() {
                       variant="body2"
                       sx={{
                         fontWeight: 900,
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                       }}
                     >
                       {statusCounts.up}
@@ -772,10 +864,18 @@ export default function ServiceHealth() {
                     columnGap: 0.75,
                   }}
                 >
-                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ fontWeight: 900, letterSpacing: 0.7 }}
+                  >
                     DOWN
                   </Typography>
-                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ opacity: 0.9, textAlign: 'center' }}
+                  >
                     :
                   </Typography>
                   <Box
@@ -795,7 +895,8 @@ export default function ServiceHealth() {
                       variant="body2"
                       sx={{
                         fontWeight: 900,
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                       }}
                     >
                       {statusCounts.down}
@@ -824,10 +925,18 @@ export default function ServiceHealth() {
                     columnGap: 0.75,
                   }}
                 >
-                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ fontWeight: 900, letterSpacing: 0.7 }}
+                  >
                     PENDING
                   </Typography>
-                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ opacity: 0.9, textAlign: 'center' }}
+                  >
                     :
                   </Typography>
                   <Box
@@ -847,7 +956,8 @@ export default function ServiceHealth() {
                       variant="body2"
                       sx={{
                         fontWeight: 900,
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                       }}
                     >
                       {statusCounts.pending}
@@ -876,10 +986,18 @@ export default function ServiceHealth() {
                     columnGap: 0.75,
                   }}
                 >
-                  <Typography component="span" variant="caption" sx={{ fontWeight: 900, letterSpacing: 0.7 }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ fontWeight: 900, letterSpacing: 0.7 }}
+                  >
                     TOTAL
                   </Typography>
-                  <Typography component="span" variant="caption" sx={{ opacity: 0.9, textAlign: 'center' }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{ opacity: 0.9, textAlign: 'center' }}
+                  >
                     :
                   </Typography>
                   <Box
@@ -899,7 +1017,8 @@ export default function ServiceHealth() {
                       variant="body2"
                       sx={{
                         fontWeight: 900,
-                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                       }}
                     >
                       {statusCounts.total}
@@ -982,4 +1101,3 @@ export default function ServiceHealth() {
     </Box>
   );
 }
-

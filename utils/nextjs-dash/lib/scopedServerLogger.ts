@@ -20,4 +20,3 @@ export function createScopedServerLogger(scope: string): ScopedServerLogger {
     error: (...args: unknown[]) => serverLogger.error(prefix, ...args),
   } as const;
 }
-

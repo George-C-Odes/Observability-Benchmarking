@@ -46,7 +46,8 @@ describe('orchestratorClient HTTP helpers', () => {
   });
 
   it('performs authenticated POST requests and throws on upstream errors', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ jobId: 'job-1' }), {
           status: 200,
@@ -55,7 +56,9 @@ describe('orchestratorClient HTTP helpers', () => {
       )
       .mockResolvedValueOnce(new Response('busy', { status: 503 }));
 
-    await expect(orchestratorPost('/v1/run', { command: 'echo hi' }, true, 'rid-456')).resolves.toEqual({
+    await expect(
+      orchestratorPost('/v1/run', { command: 'echo hi' }, true, 'rid-456'),
+    ).resolves.toEqual({
       jobId: 'job-1',
     });
     expect(fetchSpy).toHaveBeenNthCalledWith(1, 'http://orchestrator:3002/v1/run', {
@@ -75,7 +78,8 @@ describe('orchestratorClient HTTP helpers', () => {
   });
 
   it('uses helper wrappers for submit and job-status requests', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ jobId: 'job-submit' }), {
           status: 200,
@@ -105,9 +109,13 @@ describe('orchestratorClient HTTP helpers', () => {
       status: 'RUNNING',
     });
 
-    expect(fetchSpy).toHaveBeenNthCalledWith(2, 'http://orchestrator:3002/v1/run', expect.objectContaining({
-      body: JSON.stringify({ command: 'docker compose up', runId: 'run-1' }),
-    }));
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      'http://orchestrator:3002/v1/run',
+      expect.objectContaining({
+        body: JSON.stringify({ command: 'docker compose up', runId: 'run-1' }),
+      }),
+    );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       3,
       'http://orchestrator:3002/v1/jobs/job-1?runId=run%2Fvalue',
@@ -121,10 +129,13 @@ describe('orchestratorClient HTTP helpers', () => {
   it('uses helper wrappers for env and benchmark-target endpoints', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
-        new Response(JSON.stringify([{ title: 'OBS', command: 'docker compose up', category: 'multi-cont' }]), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
+        new Response(
+          JSON.stringify([{ title: 'OBS', command: 'docker compose up', category: 'multi-cont' }]),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ content: 'HOST_REPO: /repo' }), {
@@ -132,26 +143,31 @@ describe('orchestratorClient HTTP helpers', () => {
           headers: { 'Content-Type': 'application/json' },
         }),
       )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ urls: ['http://go:8080/hello/virtual'] }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         }),
       )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }));
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
 
     await expect(getCommandPresets()).resolves.toHaveLength(1);
     await expect(getEnvFile()).resolves.toEqual({ content: 'HOST_REPO: /repo' });
     await expect(updateEnvFile('HOST_REPO: /changed')).resolves.toBeUndefined();
-    await expect(getBenchmarkTargets()).resolves.toEqual({ urls: ['http://go:8080/hello/virtual'] });
+    await expect(getBenchmarkTargets()).resolves.toEqual({
+      urls: ['http://go:8080/hello/virtual'],
+    });
     await expect(updateBenchmarkTargets(['http://go:8080/hello/virtual'])).resolves.toBeUndefined();
   });
 });
-

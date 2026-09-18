@@ -1,0 +1,3 @@
+C:\repo\utils\nextjs-dash\app\page.tsx(12,4): error TS2322: Type '{ value: string; }' is not assignable to type 'Props'.
+  Property 'enabled' is missing in type '{ value: string; }' but required in type 'Props'.
+/workspace/utils/nextjs-dash/lib/config.ts(7,11): warning TS9999: Seeded warning for parser coverage.

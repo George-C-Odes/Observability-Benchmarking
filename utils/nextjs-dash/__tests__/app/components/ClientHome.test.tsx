@@ -36,20 +36,39 @@ vi.mock('@mui/material', async () => {
       </div>
     ),
     Tab: ({ label, selected, onSelect }: MockTabProps) => (
-      <button type="button" role="tab" aria-selected={selected ? 'true' : 'false'} onClick={onSelect}>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={selected ? 'true' : 'false'}
+        onClick={onSelect}
+      >
         {label}
       </button>
     ),
   };
 });
 
-vi.mock('@/app/components/ServiceHealth', () => ({ default: () => <div data-testid="mock-service-health">ServiceHealth</div> }));
-vi.mock('@/app/components/ScriptRunner', () => ({ default: () => <div data-testid="mock-script-runner">ScriptRunner</div> }));
-vi.mock('@/app/components/EnvEditor', () => ({ default: () => <div data-testid="mock-env-editor">EnvEditor</div> }));
-vi.mock('@/app/components/BenchmarkTargets', () => ({ default: () => <div data-testid="mock-benchmark-targets">BenchmarkTargets</div> }));
-vi.mock('@/app/components/AppLogs', () => ({ default: () => <div data-testid="mock-app-logs">AppLogs</div> }));
-vi.mock('@/app/components/SystemInfo', () => ({ default: () => <div data-testid="mock-system-info">SystemInfo</div> }));
-vi.mock('@/app/components/ProjectHub', () => ({ default: () => <div data-testid="mock-project-hub">ProjectHub</div> }));
+vi.mock('@/app/components/ServiceHealth', () => ({
+  default: () => <div data-testid="mock-service-health">ServiceHealth</div>,
+}));
+vi.mock('@/app/components/ScriptRunner', () => ({
+  default: () => <div data-testid="mock-script-runner">ScriptRunner</div>,
+}));
+vi.mock('@/app/components/EnvEditor', () => ({
+  default: () => <div data-testid="mock-env-editor">EnvEditor</div>,
+}));
+vi.mock('@/app/components/BenchmarkTargets', () => ({
+  default: () => <div data-testid="mock-benchmark-targets">BenchmarkTargets</div>,
+}));
+vi.mock('@/app/components/AppLogs', () => ({
+  default: () => <div data-testid="mock-app-logs">AppLogs</div>,
+}));
+vi.mock('@/app/components/SystemInfo', () => ({
+  default: () => <div data-testid="mock-system-info">SystemInfo</div>,
+}));
+vi.mock('@/app/components/ProjectHub', () => ({
+  default: () => <div data-testid="mock-project-hub">ProjectHub</div>,
+}));
 
 const mockSetCurrentTheme = vi.fn();
 vi.mock('@/app/Providers', () => ({
@@ -118,8 +137,13 @@ describe('ClientHome', () => {
   it('renders all seven tab labels', async () => {
     await renderClientHomeAndWaitForActiveTab();
     const tabLabels = [
-      'Service Health', 'Script Runner', 'Environment Config',
-      'Benchmark Targets', 'Logs', 'System Info', 'Project Hub',
+      'Service Health',
+      'Script Runner',
+      'Environment Config',
+      'Benchmark Targets',
+      'Logs',
+      'System Info',
+      'Project Hub',
     ];
     for (const label of tabLabels) {
       expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
@@ -183,14 +207,20 @@ describe('ClientHome', () => {
     localStorage.setItem('dashboardTab', 'not-a-number');
     await renderClientHomeAndWaitForActiveTab();
 
-    expect(screen.getByRole('tab', { name: 'Service Health' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Service Health' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('defaults to tab 0 for invalid data attribute', async () => {
     document.documentElement.dataset.dashboardTab = 'abc';
     await renderClientHomeAndWaitForActiveTab();
 
-    expect(screen.getByRole('tab', { name: 'Service Health' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Service Health' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('renders the theme selector', async () => {

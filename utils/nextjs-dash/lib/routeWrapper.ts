@@ -11,7 +11,10 @@ export type ApiRouteContext = {
   requestId: string;
 };
 
-type Handler<TResponse> = (req: NextRequest, ctx: ApiRouteContext) => Promise<TResponse> | TResponse;
+type Handler<TResponse> = (
+  req: NextRequest,
+  ctx: ApiRouteContext,
+) => Promise<TResponse> | TResponse;
 
 type WrapOpts = {
   name: string;
@@ -27,9 +30,18 @@ type WrapOpts = {
  */
 function applyServerLoggingFromEnv() {
   {
-    const raw = envString('NEXTJS_DASH_SERVER_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel);
+    const raw = envString(
+      'NEXTJS_DASH_SERVER_LOG_LEVEL',
+      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel,
+    );
     const lvl = raw.trim().toLowerCase();
-    if (lvl === 'debug' || lvl === 'info' || lvl === 'warn' || lvl === 'error' || lvl === 'silent') {
+    if (
+      lvl === 'debug' ||
+      lvl === 'info' ||
+      lvl === 'warn' ||
+      lvl === 'error' ||
+      lvl === 'silent'
+    ) {
       globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ = lvl;
     }
   }
@@ -37,7 +49,7 @@ function applyServerLoggingFromEnv() {
   {
     const raw = envString(
       'NEXTJS_DASH_SERVER_LOG_OUTPUT',
-      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput
+      DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput,
     );
     const mode = raw.trim().toLowerCase();
     if (mode === 'plain' || mode === 'json') {

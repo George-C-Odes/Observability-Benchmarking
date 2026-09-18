@@ -76,11 +76,15 @@ describe('createCustomTheme', () => {
 
   it('sets dark hover shadow for dark themes and light shadow for light themes', () => {
     const darkTheme = createCustomTheme('cyberpunk');
-    const darkHover = (darkTheme.components?.MuiCard?.styleOverrides?.root as Record<string, unknown>)?.['&:hover'] as Record<string, string>;
+    const darkHover = (
+      darkTheme.components?.MuiCard?.styleOverrides?.root as Record<string, unknown>
+    )?.['&:hover'] as Record<string, string>;
     expect(darkHover.boxShadow).toContain('0.4');
 
     const lightTheme = createCustomTheme('light');
-    const lightHover = (lightTheme.components?.MuiCard?.styleOverrides?.root as Record<string, unknown>)?.['&:hover'] as Record<string, string>;
+    const lightHover = (
+      lightTheme.components?.MuiCard?.styleOverrides?.root as Record<string, unknown>
+    )?.['&:hover'] as Record<string, string>;
     expect(lightHover.boxShadow).toContain('0.15');
   });
 });

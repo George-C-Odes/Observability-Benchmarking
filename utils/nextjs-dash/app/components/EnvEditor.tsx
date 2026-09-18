@@ -93,7 +93,9 @@ export default function EnvEditor() {
   }, []);
 
   const handleVariableChange = (index: number, newValue: string) => {
-    setEnvVariables((prev) => prev.map((variable, i) => (i === index ? { ...variable, value: newValue } : variable)));
+    setEnvVariables((prev) =>
+      prev.map((variable, i) => (i === index ? { ...variable, value: newValue } : variable)),
+    );
   };
 
   const handleSave = async () => {
@@ -182,7 +184,9 @@ export default function EnvEditor() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -205,14 +209,19 @@ export default function EnvEditor() {
 
       <Stack spacing={2} sx={{ mb: 3 }}>
         {envVariables.map((variable, index) => {
-          const isReadOnly = typeof variable.comment === 'string' && variable.comment.includes('FYI');
+          const isReadOnly =
+            typeof variable.comment === 'string' && variable.comment.includes('FYI');
           const isHostRepo = variable.key === 'HOST_REPO';
           const shouldWarn = isHostRepo && hostRepoExists && hostRepoEmpty;
 
           return (
             <Box key={index} sx={isHostRepo ? { position: 'relative' } : undefined}>
               {variable.comment && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mb: 0.5 }}
+                >
                   {variable.comment}
                 </Typography>
               )}

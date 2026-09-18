@@ -4,9 +4,18 @@ import userEvent from '@testing-library/user-event';
 
 // ── Module mocks ──────────────────────────────────────────────────────
 
-vi.mock('@/lib/clientLogger', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK);
-vi.mock('@/app/components/ui/InwardPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK);
-vi.mock('@/app/hooks/useTimedPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK);
+vi.mock(
+  '@/lib/clientLogger',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/components/ui/InwardPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/hooks/useTimedPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK,
+);
 
 import EnvEditor from '@/app/components/EnvEditor';
 
@@ -21,32 +30,32 @@ RATE: 100
 DURATION: 30s`;
 
 function mockFetchEnv(content = SAMPLE_ENV) {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
+  vi.spyOn(globalThis, 'fetch').mockImplementation(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
 
-    if (url === '/api/env' && method === 'GET') {
-      return new Response(JSON.stringify({ content }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+      if (url === '/api/env' && method === 'GET') {
+        return new Response(JSON.stringify({ content }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
 
-    if (url === '/api/env' && method === 'POST') {
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+      if (url === '/api/env' && method === 'POST') {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
 
-    return new Response('Not found', { status: 404 });
-  });
+      return new Response('Not found', { status: 404 });
+    },
+  );
 }
 
 function mockFetchEnvError() {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    new Response('Server error', { status: 500 }),
-  );
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('Server error', { status: 500 }));
 }
 
 // ── Setup / teardown ──────────────────────────────────────────────────
@@ -152,23 +161,25 @@ describe('EnvEditor', () => {
   });
 
   it('shows error when save fails', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      const method = (init?.method ?? 'GET').toUpperCase();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = (init?.method ?? 'GET').toUpperCase();
 
-      if (url === '/api/env' && method === 'GET') {
-        return new Response(JSON.stringify({ content: SAMPLE_ENV }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
+        if (url === '/api/env' && method === 'GET') {
+          return new Response(JSON.stringify({ content: SAMPLE_ENV }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
 
-      if (url === '/api/env' && method === 'POST') {
-        return new Response('Error', { status: 500 });
-      }
+        if (url === '/api/env' && method === 'POST') {
+          return new Response('Error', { status: 500 });
+        }
 
-      return new Response('Not found', { status: 404 });
-    });
+        return new Response('Not found', { status: 404 });
+      },
+    );
 
     const user = userEvent.setup();
     render(<EnvEditor />);

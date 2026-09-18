@@ -1,14 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-vi.mock('@/lib/clientLogger', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK);
-vi.mock('@/app/components/ui/InwardPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK);
-vi.mock('@/app/hooks/useTimedPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK);
+vi.mock(
+  '@/lib/clientLogger',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/components/ui/InwardPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/hooks/useTimedPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK,
+);
 vi.mock('@mui/material', async () => {
   const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
   return {
     ...actual,
-    Chip: ({ label, onClick, disabled, children, ...props }: {
+    Chip: ({
+      label,
+      onClick,
+      disabled,
+      children,
+      ...props
+    }: {
       label?: React.ReactNode;
       onClick?: () => void;
       disabled?: boolean;
@@ -55,40 +70,39 @@ const fetchState: FetchState = {
 };
 
 function installFetchMock() {
-  return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
+  return vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
 
-    if (url === '/api/benchmark-targets' && method === 'GET') {
-      return fetchState.getStatus === 200
-        ? new Response(JSON.stringify({ urls: fetchState.urls }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        : new Response('load failed', { status: fetchState.getStatus });
-    }
+      if (url === '/api/benchmark-targets' && method === 'GET') {
+        return fetchState.getStatus === 200
+          ? new Response(JSON.stringify({ urls: fetchState.urls }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          : new Response('load failed', { status: fetchState.getStatus });
+      }
 
-    if (url === '/api/benchmark-targets' && method === 'POST') {
-      fetchState.lastPostBody = init?.body ? JSON.parse(String(init.body)) : null;
-      return fetchState.postStatus === 200
-        ? new Response(JSON.stringify({ ok: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        : new Response('save failed', { status: fetchState.postStatus });
-    }
+      if (url === '/api/benchmark-targets' && method === 'POST') {
+        fetchState.lastPostBody = init?.body ? JSON.parse(String(init.body)) : null;
+        return fetchState.postStatus === 200
+          ? new Response(JSON.stringify({ ok: true }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          : new Response('save failed', { status: fetchState.postStatus });
+      }
 
-    return new Response('not found', { status: 404 });
-  });
+      return new Response('not found', { status: 404 });
+    });
 }
 
 describe('BenchmarkTargets', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchState.urls = [
-      'http://quarkus-jvm:8080/hello/platform',
-      'http://go:8080/hello/virtual',
-    ];
+    fetchState.urls = ['http://quarkus-jvm:8080/hello/platform', 'http://go:8080/hello/virtual'];
     fetchState.getStatus = 200;
     fetchState.postStatus = 200;
     fetchState.lastPostBody = null;
@@ -165,4 +179,3 @@ describe('BenchmarkTargets', () => {
     });
   }, 10000);
 });
-

@@ -19,4 +19,3 @@ export function getRequestContext(): RequestContext | undefined {
 export function getRequestId(): string | undefined {
   return als.getStore()?.requestId;
 }
-

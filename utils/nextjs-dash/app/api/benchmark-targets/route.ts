@@ -22,24 +22,27 @@ export const GET = withApiRoute({ name: 'BENCHMARK_TARGETS_API' }, async functio
   }
 });
 
-export const POST = withApiRoute({ name: 'BENCHMARK_TARGETS_API' }, async function POST(request: NextRequest) {
-  const serverLogger = createScopedServerLogger('BENCHMARK_TARGETS_API');
-  try {
-    const body = (await request.json()) as { urls?: unknown };
-    if (!Array.isArray(body.urls)) {
-      return errorJson(400, { error: 'urls must be an array of strings' });
-    }
+export const POST = withApiRoute(
+  { name: 'BENCHMARK_TARGETS_API' },
+  async function POST(request: NextRequest) {
+    const serverLogger = createScopedServerLogger('BENCHMARK_TARGETS_API');
+    try {
+      const body = (await request.json()) as { urls?: unknown };
+      if (!Array.isArray(body.urls)) {
+        return errorJson(400, { error: 'urls must be an array of strings' });
+      }
 
-    const urls = body.urls;
-    if (!urls.every((url) => typeof url === 'string' && url.length > 0)) {
-      return errorJson(400, { error: 'urls must be an array of non-empty strings' });
-    }
+      const urls = body.urls;
+      if (!urls.every((url) => typeof url === 'string' && url.length > 0)) {
+        return errorJson(400, { error: 'urls must be an array of non-empty strings' });
+      }
 
-    await updateBenchmarkTargets(urls as string[]);
-    serverLogger.debug('Successfully updated benchmark targets');
-    return okJson({ success: true });
-  } catch (error) {
-    serverLogger.error('Error updating benchmark targets', error);
-    return errorFromUnknown(500, error, 'Failed to update benchmark targets');
-  }
-});
+      await updateBenchmarkTargets(urls as string[]);
+      serverLogger.debug('Successfully updated benchmark targets');
+      return okJson({ success: true });
+    } catch (error) {
+      serverLogger.error('Error updating benchmark targets', error);
+      return errorFromUnknown(500, error, 'Failed to update benchmark targets');
+    }
+  },
+);

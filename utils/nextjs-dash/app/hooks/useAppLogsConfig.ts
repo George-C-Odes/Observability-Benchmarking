@@ -10,8 +10,12 @@ export const useAppLogsConfig = createRuntimeConfigHook<AppLogsRuntimeConfig>(
   (json) => {
     const j = json as Partial<AppLogsRuntimeConfig>;
     return {
-      clientMaxEntries: Number(j.clientMaxEntries ?? DEFAULT_APP_LOGS_RUNTIME_CONFIG.clientMaxEntries),
-      serverMaxEntries: Number(j.serverMaxEntries ?? DEFAULT_APP_LOGS_RUNTIME_CONFIG.serverMaxEntries),
+      clientMaxEntries: Number(
+        j.clientMaxEntries ?? DEFAULT_APP_LOGS_RUNTIME_CONFIG.clientMaxEntries,
+      ),
+      serverMaxEntries: Number(
+        j.serverMaxEntries ?? DEFAULT_APP_LOGS_RUNTIME_CONFIG.serverMaxEntries,
+      ),
     };
   },
   'AppLogs',

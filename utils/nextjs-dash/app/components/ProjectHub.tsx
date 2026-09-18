@@ -1,16 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Link,
-  Grid,
-  Divider,
-  Chip,
-} from '@mui/material';
+import { Box, Card, CardContent, Typography, Link, Grid, Divider, Chip } from '@mui/material';
 import LaunchIcon from '@mui/icons-material/Launch';
 import ApiIcon from '@mui/icons-material/Api';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
@@ -99,7 +90,13 @@ const ResourceCard = React.memo(function ResourceCard({ resource }: { resource: 
   );
 });
 
-const Section = React.memo(function Section({ title, resources }: { title: string; resources: HubResource[] }) {
+const Section = React.memo(function Section({
+  title,
+  resources,
+}: {
+  title: string;
+  resources: HubResource[];
+}) {
   return (
     <Box sx={{ mt: 2 }}>
       <Typography
@@ -130,7 +127,6 @@ const Section = React.memo(function Section({ title, resources }: { title: strin
  * Project Hub component displaying useful links grouped by domain.
  */
 export default function ProjectHub() {
-
   const author = {
     name: 'George Charalambous',
     email: 'georgecha@gmail.com',
@@ -155,7 +151,7 @@ export default function ProjectHub() {
         icon: <HealthAndSafetyIcon fontSize="large" color="success" />,
       },
     ],
-    []
+    [],
   );
 
   const grafanaResources = useMemo<HubResource[]>(
@@ -185,30 +181,27 @@ export default function ProjectHub() {
         icon: <MemoryIcon fontSize="large" color="error" />,
       },
     ],
-    []
+    [],
   );
 
-  const projectResources = useMemo<HubResource[]>(
-    () => {
-      const base: HubResource[] = [
-        {
-          title: 'GitHub Repository',
-          description: 'Complete project source code and documentation',
-          url: 'https://github.com/George-C-Odes/Observability-Benchmarking',
-          icon: <GitHubIcon fontSize="large" color="inherit" />,
-        },
-        {
-          title: 'Supplementary Documentation',
-          description: 'Supplementary docs site',
-          url: SUPPLEMENTARY_DOCS_URL,
-          icon: <MenuBookIcon fontSize="large" color="primary" />,
-        },
-      ];
+  const projectResources = useMemo<HubResource[]>(() => {
+    const base: HubResource[] = [
+      {
+        title: 'GitHub Repository',
+        description: 'Complete project source code and documentation',
+        url: 'https://github.com/George-C-Odes/Observability-Benchmarking',
+        icon: <GitHubIcon fontSize="large" color="inherit" />,
+      },
+      {
+        title: 'Supplementary Documentation',
+        description: 'Supplementary docs site',
+        url: SUPPLEMENTARY_DOCS_URL,
+        icon: <MenuBookIcon fontSize="large" color="primary" />,
+      },
+    ];
 
-      return base;
-    },
-    []
-  );
+    return base;
+  }, []);
 
   return (
     <Box>
@@ -365,12 +358,25 @@ export default function ProjectHub() {
                     </Box>
                   </Box>
 
-                  <Chip size="small" label="Maintainer" variant="outlined" sx={{ position: 'relative' }} />
+                  <Chip
+                    size="small"
+                    label="Maintainer"
+                    variant="outlined"
+                    sx={{ position: 'relative' }}
+                  />
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', position: 'relative' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                    alignItems: 'center',
+                    position: 'relative',
+                  }}
+                >
                   <Box
                     sx={{
                       display: 'flex',
@@ -395,7 +401,8 @@ export default function ProjectHub() {
                         borderColor: 'divider',
                         color: 'text.secondary',
                         backgroundColor: 'rgba(255,255,255,0.02)',
-                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
+                        transition:
+                          'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
                         '&:hover': {
                           transform: 'translateY(-2px)',
                           backgroundColor: 'rgba(255,255,255,0.05)',
@@ -429,7 +436,8 @@ export default function ProjectHub() {
                         borderColor: 'divider',
                         color: 'text.secondary',
                         backgroundColor: 'rgba(255,255,255,0.02)',
-                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
+                        transition:
+                          'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
                         '&:hover': {
                           transform: 'translateY(-2px)',
                           backgroundColor: 'rgba(255,255,255,0.05)',
@@ -463,7 +471,8 @@ export default function ProjectHub() {
                         borderColor: 'divider',
                         color: 'text.secondary',
                         backgroundColor: 'rgba(255,255,255,0.02)',
-                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
+                        transition:
+                          'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease',
                         '&:hover': {
                           transform: 'translateY(-2px)',
                           backgroundColor: 'rgba(255,255,255,0.05)',
@@ -483,9 +492,11 @@ export default function ProjectHub() {
                   </Box>
 
                   <Typography variant="caption" color="text.secondary">
-                    This dashboard provides a unified interface for managing and monitoring observability
-                    benchmarking workloads across Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko, Go and Python services with comprehensive
-                    telemetry integration (Grafana, Alloy, Loki, Mimir, Tempo, Pyroscope).
+                    This dashboard provides a unified interface for managing and monitoring
+                    observability benchmarking workloads across Spring Boot, Quarkus, Micronaut,
+                    Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko, Go and Python services with
+                    comprehensive telemetry integration (Grafana, Alloy, Loki, Mimir, Tempo,
+                    Pyroscope).
                   </Typography>
                 </Box>
               </CardContent>

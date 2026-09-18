@@ -18,4 +18,3 @@ export async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit)
   }
   return res.json() as Promise<T>;
 }
-

@@ -21,7 +21,11 @@ describe('/api/logging/config route', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toContain('no-store');
 
-    const json = (await res.json()) as { clientLogLevel: string; serverLogLevel: string; serverLogOutput: string };
+    const json = (await res.json()) as {
+      clientLogLevel: string;
+      serverLogLevel: string;
+      serverLogOutput: string;
+    };
     expect(json.clientLogLevel).toBe(DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel);
     expect(json.serverLogLevel).toBe(DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel);
     expect(json.serverLogOutput).toBe(DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput);
@@ -35,7 +39,11 @@ describe('/api/logging/config route', () => {
     const req = new NextRequest('http://localhost/api/logging/config', { method: 'GET' });
     const res = await GET(req);
 
-    const json = (await res.json()) as { clientLogLevel: string; serverLogLevel: string; serverLogOutput: string };
+    const json = (await res.json()) as {
+      clientLogLevel: string;
+      serverLogLevel: string;
+      serverLogOutput: string;
+    };
     expect(json.clientLogLevel).toBe('debug');
     expect(json.serverLogLevel).toBe('warn');
     expect(json.serverLogOutput).toBe('plain');

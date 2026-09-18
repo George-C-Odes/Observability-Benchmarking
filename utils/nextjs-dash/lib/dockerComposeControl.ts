@@ -10,7 +10,8 @@ export interface DockerControlCommandParams {
  * This helper centralizes that profile selection so UI and API don't drift.
  */
 export function needsServicesProfiles(serviceName: string): boolean {
-  return serviceName.startsWith('spring-') ||
+  return (
+    serviceName.startsWith('spring-') ||
     serviceName.startsWith('quarkus-') ||
     serviceName.startsWith('micronaut-') ||
     serviceName.startsWith('helidon-') ||
@@ -20,7 +21,8 @@ export function needsServicesProfiles(serviceName: string): boolean {
     serviceName.startsWith('vertx-') ||
     serviceName.startsWith('pekko-') ||
     serviceName.startsWith('go') ||
-    serviceName.startsWith('django-');
+    serviceName.startsWith('django-')
+  );
 }
 
 export function composePrefixForService(serviceName: string): string {

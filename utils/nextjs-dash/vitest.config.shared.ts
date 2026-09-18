@@ -39,6 +39,7 @@ export const sharedCoverageExclude: string[] = [
 /** Common test options shared across node and DOM configs. */
 export const sharedTestOptions = {
   globals: true as const,
+  clearMocks: true,
   pool: 'threads' as const,
   fileParallelism: true,
   maxWorkers: 4,

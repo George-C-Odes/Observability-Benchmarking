@@ -24,13 +24,11 @@ vi.mock('@/lib/loggingTypes', () => ({
 }));
 
 vi.mock('@/lib/apiResponses', () => ({
-  errorFromUnknown: vi.fn(
-    (status: number, _error: unknown, fallbackMessage: string) => ({
-      __mocked: true,
-      status,
-      fallbackMessage,
-    }),
-  ),
+  errorFromUnknown: vi.fn((status: number, _error: unknown, fallbackMessage: string) => ({
+    __mocked: true,
+    status,
+    fallbackMessage,
+  })),
 }));
 
 // ── Imports (resolved to mocked modules) ──────────────────────────────
@@ -119,7 +117,9 @@ describe('withApiRoute', () => {
 
   it('logs at info level for non-noisy endpoints', async () => {
     const mockLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-    vi.mocked(createScopedServerLogger).mockReturnValue(mockLogger as unknown as ReturnType<typeof createScopedServerLogger>);
+    vi.mocked(createScopedServerLogger).mockReturnValue(
+      mockLogger as unknown as ReturnType<typeof createScopedServerLogger>,
+    );
 
     const handler = vi.fn().mockResolvedValue({ ok: true });
     const wrapped = withApiRoute({ name: 'CUSTOM_API' }, handler);
@@ -139,14 +139,18 @@ describe('withApiRoute', () => {
 
   it('logs at debug level for noisy endpoints', async () => {
     const mockLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-    vi.mocked(createScopedServerLogger).mockReturnValue(mockLogger as unknown as ReturnType<typeof createScopedServerLogger>);
+    vi.mocked(createScopedServerLogger).mockReturnValue(
+      mockLogger as unknown as ReturnType<typeof createScopedServerLogger>,
+    );
 
     const handler = vi.fn().mockResolvedValue({ ok: true });
 
     const noisyNames = ['LOGGING_CONFIG_API', 'HEALTH_API', 'ENV_API', 'APP_HEALTH_API'];
     for (const name of noisyNames) {
       vi.clearAllMocks();
-      vi.mocked(createScopedServerLogger).mockReturnValue(mockLogger as unknown as ReturnType<typeof createScopedServerLogger>);
+      vi.mocked(createScopedServerLogger).mockReturnValue(
+        mockLogger as unknown as ReturnType<typeof createScopedServerLogger>,
+      );
 
       const wrapped = withApiRoute({ name }, handler);
       await wrapped(fakeRequest('GET', `/api/${name}`));
@@ -162,18 +166,16 @@ describe('withApiRoute', () => {
 
     const result = await wrapped(fakeRequest('POST', '/api/error'));
 
-    expect(errorFromUnknown).toHaveBeenCalledWith(
-      500,
-      expect.any(Error),
-      'Internal Server Error',
-    );
+    expect(errorFromUnknown).toHaveBeenCalledWith(500, expect.any(Error), 'Internal Server Error');
     // The mock returns a structured object
     expect(result).toEqual(expect.objectContaining({ __mocked: true, status: 500 }));
   });
 
   it('logs the error when the handler throws', async () => {
     const mockLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-    vi.mocked(createScopedServerLogger).mockReturnValue(mockLogger as unknown as ReturnType<typeof createScopedServerLogger>);
+    vi.mocked(createScopedServerLogger).mockReturnValue(
+      mockLogger as unknown as ReturnType<typeof createScopedServerLogger>,
+    );
 
     const err = new Error('kaboom');
     const handler = vi.fn().mockRejectedValue(err);
@@ -231,7 +233,9 @@ describe('withApiRoute', () => {
 
   it('includes tookMs in the success log', async () => {
     const mockLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
-    vi.mocked(createScopedServerLogger).mockReturnValue(mockLogger as unknown as ReturnType<typeof createScopedServerLogger>);
+    vi.mocked(createScopedServerLogger).mockReturnValue(
+      mockLogger as unknown as ReturnType<typeof createScopedServerLogger>,
+    );
 
     const handler = vi.fn().mockResolvedValue({ ok: true });
     const wrapped = withApiRoute({ name: 'TIMER_API' }, handler);

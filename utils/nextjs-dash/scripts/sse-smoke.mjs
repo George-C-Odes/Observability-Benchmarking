@@ -140,7 +140,14 @@ async function main() {
           console.log('status', ev.message, 'rid', ev.requestId ?? null);
         } else if (ev?.type === 'terminalSummary') {
           terminal = ev.jobStatus || ev.message;
-          console.log('terminalSummary', terminal, 'exitCode', ev.exitCode ?? null, 'rid', ev.requestId ?? null);
+          console.log(
+            'terminalSummary',
+            terminal,
+            'exitCode',
+            ev.exitCode ?? null,
+            'rid',
+            ev.requestId ?? null,
+          );
           break;
         }
       }

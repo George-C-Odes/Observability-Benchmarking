@@ -8,14 +8,17 @@ afterEach(() => {
 
 describe('useScripts', () => {
   it('loads scripts from /api/scripts', async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ scripts: [{ name: 'A', description: 'd', command: 'c', category: 'test' }] }), {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          scripts: [{ name: 'A', description: 'd', command: 'c', category: 'test' }],
+        }),
+        {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
-        })
-      );
+        },
+      ),
+    );
 
     const { result } = renderHook(() => useScripts());
 
