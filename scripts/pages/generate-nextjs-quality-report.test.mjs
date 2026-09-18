@@ -56,6 +56,22 @@ test('retains multiline TypeScript diagnostics', () => {
   assert.equal(result.diagnostics[1].code, 'TS9999');
 });
 
+test('parses TypeScript diagnostics with parentheses in the filename', () => {
+  const result = parseTypeScriptDiagnostics(
+    'C:\\repo\\feature(test)\\page.tsx(3,9): error TS1234: Example message.',
+  );
+
+  assert.equal(result.pass, false);
+  assert.deepEqual(result.diagnostics[0], {
+    filename: 'C:\\repo\\feature(test)\\page.tsx',
+    line: 3,
+    column: 9,
+    severity: 'error',
+    code: 'TS1234',
+    message: 'Example message.',
+  });
+});
+
 test('marks missing and malformed inputs as report-generation warnings', () => {
   assert.equal(parseOxlintReport(null).pass, false);
   assert.match(parseOxlintReport('{nope').reportWarnings[0], /malformed/);

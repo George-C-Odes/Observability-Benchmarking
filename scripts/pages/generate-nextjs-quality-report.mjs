@@ -15,7 +15,62 @@ import {
 } from './report-helpers.mjs';
 
 const OXFMT_EXIT_CODE = /(?:^|\n)OXFMT_EXIT_CODE=(\d+)\s*$/;
-const TYPESCRIPT_DIAGNOSTIC = /^(.+?)\((\d+),(\d+)\):\s*(error|warning)\s+TS(\d+):\s*(.*)$/i;
+const TYPESCRIPT_DIAGNOSTIC_MARKERS = [
+  { token: '): error ts', severity: 'error' },
+  { token: '): warning ts', severity: 'warning' },
+];
+
+function isDecimal(value) {
+  if (value.length === 0) return false;
+  for (const character of value) {
+    if (character < '0' || character > '9') return false;
+  }
+  return true;
+}
+
+/** Parse TypeScript's stable file(line,column): severity TScode: message format in linear time. */
+function parseTypeScriptDiagnosticLine(line) {
+  const normalized = line.toLowerCase();
+  let marker = null;
+  let markerIndex = -1;
+
+  for (const candidate of TYPESCRIPT_DIAGNOSTIC_MARKERS) {
+    const candidateIndex = normalized.indexOf(candidate.token);
+    if (candidateIndex >= 0 && (markerIndex < 0 || candidateIndex < markerIndex)) {
+      marker = candidate;
+      markerIndex = candidateIndex;
+    }
+  }
+
+  if (!marker || markerIndex === 0) return null;
+
+  const locationStart = line.lastIndexOf('(', markerIndex);
+  if (locationStart <= 0) return null;
+
+  const coordinates = line.slice(locationStart + 1, markerIndex);
+  const comma = coordinates.indexOf(',');
+  if (comma <= 0 || coordinates.indexOf(',', comma + 1) >= 0) return null;
+
+  const lineNumber = coordinates.slice(0, comma);
+  const columnNumber = coordinates.slice(comma + 1);
+  if (!isDecimal(lineNumber) || !isDecimal(columnNumber)) return null;
+
+  const codeStart = markerIndex + marker.token.length;
+  const codeEnd = line.indexOf(':', codeStart);
+  if (codeEnd < 0) return null;
+
+  const code = line.slice(codeStart, codeEnd);
+  if (!isDecimal(code)) return null;
+
+  return {
+    filename: line.slice(0, locationStart),
+    line: Number(lineNumber),
+    column: Number(columnNumber),
+    severity: marker.severity,
+    code: `TS${code}`,
+    message: line.slice(codeEnd + 1).trimStart(),
+  };
+}
 
 function normalizedPath(value) {
   return String(value || '').replaceAll('\\', '/');
@@ -131,15 +186,12 @@ export function parseTypeScriptDiagnostics(raw) {
   const diagnostics = [];
   let current = null;
   for (const line of raw.replaceAll('\r\n', '\n').split('\n')) {
-    const match = TYPESCRIPT_DIAGNOSTIC.exec(line);
-    if (match) {
+    const diagnostic = parseTypeScriptDiagnosticLine(line);
+    if (diagnostic) {
+      const { message, ...metadata } = diagnostic;
       current = {
-        filename: match[1],
-        line: Number(match[2]),
-        column: Number(match[3]),
-        severity: match[4].toLowerCase(),
-        code: `TS${match[5]}`,
-        messageLines: [match[6]],
+        ...metadata,
+        messageLines: [message],
       };
       diagnostics.push(current);
     } else if (current && /^\s+\S/.test(line)) {
