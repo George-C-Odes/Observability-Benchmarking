@@ -1,9 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["nextjs", "react", "typescript", "import", "jsx-a11y"],
-  "categories": {
-    "correctness": "off"
-  },
   "env": {
     "builtin": true
   },
