@@ -6,13 +6,13 @@
 #
 asgiref==3.12.1
     # via django
-cachetools==7.1.8
+cachetools==7.2.0
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 django==6.1.1
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 googleapis-common-protos==1.75.3
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.83.1
+grpcio==1.84.0
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
@@ -71,7 +71,7 @@ opentelemetry-util-http==0.65b0
     #   opentelemetry-instrumentation-wsgi
 packaging==26.3
     # via opentelemetry-instrumentation
-protobuf==7.36.1
+protobuf==7.36.2
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
