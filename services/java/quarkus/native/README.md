@@ -332,13 +332,13 @@ process_memory_rss_bytes{service_name="QuarkusNative"}
 
 ### Enterprise vs Community
 
-| Feature     | Enterprise     | Community                  |
-|-------------|----------------|----------------------------|
-| G1 GC       | ✅ Yes          | ❌ No (serial/epsilon only) |
-| Performance | ~10% better    | Baseline                   |
-| Build Time  | Faster         | Slower                     |
-| Image       | Oracle         | GraalVM                    |
-| License     | Oracle License | GPL v2 + CPE               |
+| Feature     | Enterprise     | Community                   |
+|-------------|----------------|-----------------------------|
+| G1 GC       | ✅ Yes         | ❌ No (serial/epsilon only) |
+| Performance | ~10% better    | Baseline                    |
+| Build Time  | Faster         | Slower                      |
+| Image       | Oracle         | GraalVM                     |
+| License     | Oracle License | GPL v2 + CPE                |
 
 **Recommendation**: Use Enterprise for production benchmarks. The repository defaults to Enterprise.
 

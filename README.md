@@ -731,8 +731,8 @@ For comprehensive security guidelines, configuration recommendations, and incide
 
 ### Security Summary
 
-| Aspect              | Status        | Details                                                                                                             |
-|---------------------|---------------|---------------------------------------------------------------------------------------------------------------------|
+| Aspect              | Status         | Details                                                                                                             |
+|---------------------|----------------|---------------------------------------------------------------------------------------------------------------------|
 | Non-root containers | ✅ Implemented | All JVM services run as UID 1001                                                                                    |
 | File permissions    | ✅ Configured  | Restrictive permissions on all artifacts                                                                            |
 | Hardcoded secrets   | ✅ Clean       | Zero secrets found in code/config                                                                                   |

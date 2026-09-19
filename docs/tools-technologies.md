@@ -708,12 +708,12 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 
 **Comparison to Alternatives**:
 
-| Tool    | Type         | Coordinated Omission | Scripting |
-|---------|--------------|----------------------|-----------|
-| wrk2    | ✅ Fixed rate | ✅ Yes                | ✅ Lua     |
-| wrk     | ❌ Open loop  | ❌ No                 | ✅ Lua     |
-| ab      | ❌ Open loop  | ❌ No                 | ❌ No      |
-| Gatling | ✅ Fixed rate | ✅ Yes                | ✅ Scala   |
+| Tool    | Type          | Coordinated Omission | Scripting |
+|---------|---------------|----------------------|-----------|
+| wrk2    | ✅ Fixed rate | ✅ Yes               | ✅ Lua    |
+| wrk     | ❌ Open loop  | ❌ No                | ✅ Lua    |
+| ab      | ❌ Open loop  | ❌ No                | ❌ No     |
+| Gatling | ✅ Fixed rate | ✅ Yes               | ✅ Scala  |
 
 ### OpenTelemetry
 
