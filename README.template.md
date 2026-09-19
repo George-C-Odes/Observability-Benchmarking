@@ -21,6 +21,7 @@
 [![Django](https://img.shields.io/badge/Django-{{DJANGO_VERSION}}-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
+[![Dependency review](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/dependency-review.yml)
 [![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
 [![Go Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_quality.yml)
 [![Django Python Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml)
