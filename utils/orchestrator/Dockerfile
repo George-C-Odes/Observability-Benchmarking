@@ -32,8 +32,7 @@ COPY --link --chown=${BUILD_UID}:${BUILD_GID} pom.xml pom.xml
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} quality ./quality
 
 RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
-  mvn -B -ntp org.apache.maven.plugins:maven-dependency-plugin:3.11.0:go-offline \
-    -DexcludeArtifactIds=jrt-fs
+  mvn -B -ntp dependency:go-offline
 
 COPY --link --chown=${BUILD_UID}:${BUILD_GID} src ./src
 RUN --mount=type=cache,id=maven-repo,target=/home/maven/.m2/repository,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \

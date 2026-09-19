@@ -28,7 +28,6 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.39.4</quarkus.platform.version>
-    <quarkus.class-loading.removed-artifacts>jdk:jrt-fs</quarkus.class-loading.removed-artifacts>
     <quality.profile.id>quality</quality.profile.id>
     <spotbugs.exclude.filter.file>quality/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
@@ -102,14 +101,6 @@
       <artifactId>lombok</artifactId>
       <version>${lombok.version}</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- Remove when apache/maven-pmd-plugin#726 is available in a released plugin. -->
-      <groupId>jdk</groupId>
-      <artifactId>jrt-fs</artifactId>
-      <version>${maven.compiler.release}</version>
-      <scope>system</scope>
-      <systemPath>${java.home}/lib/jrt-fs.jar</systemPath>
     </dependency>
   </dependencies>
 
