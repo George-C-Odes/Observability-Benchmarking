@@ -379,7 +379,7 @@
                   <goal>check</goal>
                   <goal>cpd-check</goal>
                 </goals>
-                <phase>process-test-classes</phase>
+                <phase>validate</phase>
               </execution>
               <execution>
                 <id>pmd-fqcn-check-tests</id>
@@ -387,7 +387,7 @@
                   <goal>pmd</goal>
                   <goal>check</goal>
                 </goals>
-                <phase>process-test-classes</phase>
+                <phase>validate</phase>
                 <configuration>
                   <targetJdk>${maven.compiler.release}</targetJdk>
                   <includeTests>true</includeTests>
@@ -413,7 +413,7 @@
                   <goal>pmd</goal>
                   <goal>check</goal>
                 </goals>
-                <phase>process-test-classes</phase>
+                <phase>validate</phase>
                 <configuration>
                   <targetJdk>${maven.compiler.release}</targetJdk>
                   <includeTests>true</includeTests>
