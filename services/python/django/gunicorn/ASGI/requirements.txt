@@ -8,7 +8,7 @@ asgiref==3.12.1
     # via
     #   django
     #   opentelemetry-instrumentation-asgi
-cachetools==7.1.8
+cachetools==7.2.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 click==8.5.0
     # via uvicorn
@@ -16,7 +16,7 @@ django==6.1.1
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 googleapis-common-protos==1.75.3
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.83.1
+grpcio==1.84.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
@@ -83,7 +83,7 @@ opentelemetry-util-http==0.65b0
     #   opentelemetry-instrumentation-wsgi
 packaging==26.3
     # via opentelemetry-instrumentation
-protobuf==7.36.1
+protobuf==7.36.2
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
@@ -104,7 +104,7 @@ typing-extensions==4.16.0
     #   opentelemetry-semantic-conventions
 tzdata==2026.4
     # via django
-uvicorn==0.52.4
+uvicorn==0.53.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 wrapt==2.4.1
     # via opentelemetry-instrumentation

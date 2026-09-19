@@ -137,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
 Maven: 3.9+
 Spring Boot: 4.1.1 (3.5.16 also supported)
-Quarkus: 3.39.3
+Quarkus: 3.39.4
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -876,9 +876,9 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.1.1
-- Quarkus: 3.39.3
-- Micronaut: 5.2.1
-- Helidon: 4.5.4
+- Quarkus: 3.39.4
+- Micronaut: 5.2.2
+- Helidon: 4.5.5
 - Spark: 3.0.4
 - Javalin: 7.2.3
 - Dropwizard: 5.0.2
@@ -1584,11 +1584,11 @@ The repository-level `codecov.yml` (at the repo root) defines:
 #### How uploads work
 
 Each matrix leg in the **Java Coverage** workflow uploads its `jacoco.xml` to
-Codecov via `codecov/codecov-action` (SHA-pinned to v7.0.0):
+Codecov via `codecov/codecov-action` (SHA-pinned to v7.1.1):
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+  uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
   with:
     files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
     flags: java-${{ matrix.name }}
@@ -1612,7 +1612,7 @@ the monorepo source tree:
 
 ```yaml
 - name: Upload to Codecov
-  uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+  uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
   with:
     files: ${{ matrix.module_dir }}/coverage-codecov.out
     flags: ${{ matrix.name }}
@@ -1628,7 +1628,7 @@ the monorepo source tree:
 
     ```yaml
     - name: Upload to Codecov
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       with:
         files: ${{ matrix.module_dir }}/coverage.xml
         flags: ${{ matrix.codecov_flag }}
@@ -1822,7 +1822,7 @@ jobs:
           go test ./... -v -cover -coverprofile=coverage.out
       
       - name: Upload Coverage
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: ./services/go/enhanced/coverage.out
           flags: go-service
@@ -1862,7 +1862,7 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.39.3" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.39.4" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.1" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.1" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.1" }

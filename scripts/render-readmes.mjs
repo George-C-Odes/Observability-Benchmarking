@@ -86,15 +86,59 @@ function columnAlignment(separatorCell) {
   return 'left';
 }
 
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+function isFullWidthCodePoint(codePoint) {
+  return codePoint >= 0x1100 && (
+    codePoint <= 0x115f
+    || codePoint === 0x2329
+    || codePoint === 0x232a
+    || (codePoint >= 0x2e80 && codePoint <= 0xa4cf && codePoint !== 0x303f)
+    || (codePoint >= 0xac00 && codePoint <= 0xd7a3)
+    || (codePoint >= 0xf900 && codePoint <= 0xfaff)
+    || (codePoint >= 0xfe10 && codePoint <= 0xfe19)
+    || (codePoint >= 0xfe30 && codePoint <= 0xfe6f)
+    || (codePoint >= 0xff00 && codePoint <= 0xff60)
+    || (codePoint >= 0xffe0 && codePoint <= 0xffe6)
+    || (codePoint >= 0x1b000 && codePoint <= 0x1b001)
+    || (codePoint >= 0x1f200 && codePoint <= 0x1f251)
+    || (codePoint >= 0x20000 && codePoint <= 0x3fffd)
+  );
+}
+
+function displayWidth(text) {
+  let width = 0;
+
+  for (const { segment } of graphemeSegmenter.segment(text)) {
+    if (/\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(segment)) {
+      width += 2;
+      continue;
+    }
+
+    const baseCharacter = [...segment].find(
+      (character) => !/[\p{Mark}\p{Default_Ignorable_Code_Point}]/u.test(character),
+    );
+
+    if (!baseCharacter) continue;
+
+    const codePoint = baseCharacter.codePointAt(0);
+    if (codePoint < 0x20 || (codePoint >= 0x7f && codePoint < 0xa0)) continue;
+    width += isFullWidthCodePoint(codePoint) ? 2 : 1;
+  }
+
+  return width;
+}
+
 function padCell(text, width, align) {
-  if (align === 'right') return ' ' + text.padStart(width) + ' ';
+  const padding = Math.max(0, width - displayWidth(text));
+
+  if (align === 'right') return ' ' + ' '.repeat(padding) + text + ' ';
   if (align === 'center') {
-    const total = width - text.length;
-    const left = Math.floor(total / 2);
-    const right = total - left;
+    const left = Math.floor(padding / 2);
+    const right = padding - left;
     return ' ' + ' '.repeat(left) + text + ' '.repeat(right) + ' ';
   }
-  return ' ' + text.padEnd(width) + ' ';
+  return ' ' + text + ' '.repeat(padding) + ' ';
 }
 
 function getColumnAlignments(separatorRow, colCount) {
@@ -110,7 +154,7 @@ function getColumnWidths(rows, colCount) {
   for (let r = 0; r < rows.length; r++) {
     if (r === 1) continue;
     for (let c = 0; c < rows[r].length; c++) {
-      widths[c] = Math.max(widths[c], rows[r][c].length);
+      widths[c] = Math.max(widths[c], displayWidth(rows[r][c]));
     }
   }
   return widths;

@@ -82,7 +82,7 @@ management:
 - Slower startup compared to Quarkus
 - More complex configuration for optimal performance
 
-### Quarkus 3.39.3
+### Quarkus 3.39.4
 
 **Official Site**: [https://quarkus.io/](https://quarkus.io/)
 
@@ -93,7 +93,7 @@ management:
 - Native compilation support
 
 **Implementation Details**:
-- **Quarkus 3.39.3** (latest stable)
+- **Quarkus 3.39.4** (latest stable)
 - **RESTEasy Reactive** for REST endpoints
 - **SmallRye** for reactive programming
 - **GraalVM** for native compilation
@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 5.2.1
+### Micronaut 5.2.2
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 5.2.1** (latest stable)
+- **Micronaut 5.2.2** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -187,7 +187,7 @@ mvn package -Pnative
 - Compile-time DI can be harder to debug
 - Some libraries require Micronaut-specific adapters
 
-### Helidon 4.5.4
+### Helidon 4.5.5
 
 **Official Site**: [https://helidon.io/](https://helidon.io/)
 
@@ -198,7 +198,7 @@ mvn package -Pnative
 - `jlink`-optimised JVM builds produce notably small Docker images
 
 **Implementation Details**:
-- **Helidon 4.5.4** (latest stable, virtual-thread–first architecture)
+- **Helidon 4.5.5** (latest stable, virtual-thread–first architecture)
 - **Helidon SE**: Programmatic, functional-style routing with minimal overhead (Níma)
 - **Helidon MP**: MicroProfile-compliant layer on top of SE (CDI + JAX-RS)
 - Both flavours support JVM and GraalVM native builds
@@ -708,12 +708,12 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 
 **Comparison to Alternatives**:
 
-| Tool    | Type         | Coordinated Omission | Scripting |
-|---------|--------------|----------------------|-----------|
-| wrk2    | ✅ Fixed rate | ✅ Yes                | ✅ Lua     |
-| wrk     | ❌ Open loop  | ❌ No                 | ✅ Lua     |
-| ab      | ❌ Open loop  | ❌ No                 | ❌ No      |
-| Gatling | ✅ Fixed rate | ✅ Yes                | ✅ Scala   |
+| Tool    | Type          | Coordinated Omission | Scripting |
+|---------|---------------|----------------------|-----------|
+| wrk2    | ✅ Fixed rate | ✅ Yes               | ✅ Lua    |
+| wrk     | ❌ Open loop  | ❌ No                | ✅ Lua    |
+| ab      | ❌ Open loop  | ❌ No                | ❌ No     |
+| Gatling | ✅ Fixed rate | ✅ Yes               | ✅ Scala  |
 
 ### OpenTelemetry
 
@@ -970,10 +970,10 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Server             | Gunicorn                   | 26.2.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.9.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.1   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.39.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.2.1   | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.5.4   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.5.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Quarkus                    | 3.39.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 5.2.2   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.5   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.5   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.3   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
@@ -984,8 +984,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Frontend**      | Library            | React                      | 19.3.0  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.2.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.7   | Log aggregation                                                      |
+| **Observability** | Visualization      | Grafana                    | 13.2.2  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.7.8   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.1   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.3.1   | Continuous CPU and memory profiling                                  |
@@ -993,14 +993,14 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.1  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.1.8   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.2.0   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.7.2  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.7  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.8  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.83.0  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.68.0  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |

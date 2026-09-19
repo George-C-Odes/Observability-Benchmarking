@@ -8,9 +8,9 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.4-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.39.3-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-5.2.1-1A1A2E.svg)](https://micronaut.io/)
-[![Helidon](https://img.shields.io/badge/Helidon-4.5.4-008F6B.svg)](https://helidon.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.39.4-6C63FF.svg)](https://quarkus.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-5.2.2-1A1A2E.svg)](https://micronaut.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.5.5-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.3-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
@@ -85,10 +85,10 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Server             | Gunicorn                   | 26.2.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.9.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.1   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.39.3  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.2.1   | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.5.4   | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.5.4   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Quarkus                    | 3.39.4  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 5.2.2   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.5   | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.5   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.3   | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
@@ -99,8 +99,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Library            | React                      | 19.3.0  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.2.1  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.7   | Log aggregation                                                      |
+| **Observability** | Visualization      | Grafana                    | 13.2.2  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.7.8   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.1   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.3.1   | Continuous CPU and memory profiling                                  |
@@ -108,14 +108,14 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.1  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.1.8   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.2.0   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.7.2  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.7  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.8  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.83.0  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.68.0  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
@@ -179,13 +179,13 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.39.3**
+- **Quarkus 3.39.4**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 5.2.1
+- **Micronaut**: 5.2.2
   - JVM build (all three thread modes)
   - Native (all three thread modes)
-- **Helidon**: 4.5.4
+- **Helidon**: 4.5.5
   - SE JVM build
     - Virtual threads
   - SE Native build
@@ -509,9 +509,9 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.4
 - **Java Native**: GraalVM Enterprise 25.0.4-ol9
 - **Spring Boot**: 4.1.1 (3.5.16 also supported)
-- **Quarkus**: 3.39.3
-- **Micronaut**: 5.2.1
-- **Helidon**: 4.5.4
+- **Quarkus**: 3.39.4
+- **Micronaut**: 5.2.2
+- **Helidon**: 4.5.5
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.3
 - **Dropwizard**: 5.0.2

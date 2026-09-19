@@ -139,7 +139,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.39.3');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.39.4');
   } finally {
     try {
       unlinkSync(templatePath);
@@ -221,6 +221,27 @@ function testRealignMarkdownTables() {
   ].join('\n');
 
   assert.equal(rightAlignedResult, rightAlignedExpected);
+
+  // Emoji occupy two display columns even though JavaScript string length
+  // counts each of these symbols as one UTF-16 code unit.
+  const emoji = [
+    '| Component | Result          |',
+    '|-----------|-----------------|',
+    '| Quarkus   | ✅ 18 tests     |',
+    '| Gate      | Hard-fails ❌   |',
+    '| **Total** | **377 tests**   |',
+  ].join('\n');
+
+  const emojiAligned = realignMarkdownTables(emoji);
+  const emojiExpected = [
+    '| Component | Result        |',
+    '|-----------|---------------|',
+    '| Quarkus   | ✅ 18 tests   |',
+    '| Gate      | Hard-fails ❌ |',
+    '| **Total** | **377 tests** |',
+  ].join('\n');
+
+  assert.equal(emojiAligned, emojiExpected);
 }
 
 function main() {

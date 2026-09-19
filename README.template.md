@@ -99,8 +99,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Library            | React                      | 19.3.0                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2                   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.2.1                  | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.7                   | Log aggregation                                                      |
+| **Observability** | Visualization      | Grafana                    | 13.2.2                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Logs               | Loki                       | 3.7.8                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8                  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.1                   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.3.1                   | Continuous CPU and memory profiling                                  |
@@ -108,14 +108,14 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.1                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.1.8                   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.2.0                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.7.2                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.0.2                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.7                  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.8                  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.83.0                  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.68.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |

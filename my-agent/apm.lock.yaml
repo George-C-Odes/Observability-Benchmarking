@@ -1,6 +1,6 @@
 lockfile_version: '1'
 generated_at: '2026-09-13T09:11:47.615290+00:00'
-apm_version: 0.30.0
+apm_version: 0.31.0
 dependencies:
 - repo_url: github/awesome-copilot
   name: github-actions-hardening
