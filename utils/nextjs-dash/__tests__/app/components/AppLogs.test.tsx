@@ -114,6 +114,13 @@ describe('AppLogs', () => {
   });
 
   it('falls back to another snapshot when the SSE connection fails', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(snapshotResponse())
+      .mockResolvedValueOnce(
+        snapshotResponse([
+          { ts: 200, level: 'warn', source: 'server', message: 'fallback log' },
+        ]),
+      );
     render(<AppLogs />);
     await waitFor(() => expect(MockEventSource.instances).toHaveLength(1));
 
@@ -121,7 +128,7 @@ describe('AppLogs', () => {
       MockEventSource.instances[0].emitError();
     });
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('fallback log')).toBeInTheDocument();
     expect(MockEventSource.instances[0].close).toHaveBeenCalledOnce();
   });
 
