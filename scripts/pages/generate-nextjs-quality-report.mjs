@@ -1,218 +1,398 @@
 #!/usr/bin/env node
-// scripts/pages/generate-nextjs-quality-report.mjs
-//
-// Generates a self-contained HTML quality report for the Next.js dashboard
-// from ESLint JSON output and TypeScript compiler diagnostics.
-//
-// Designed as the free alternative to Qodana-JS for CI quality reporting.
-//
-// Usage (from utils/nextjs-dash working directory):
-//   node ../../scripts/pages/generate-nextjs-quality-report.mjs
-//
-// Expected input files (in cwd):
-//   eslint-report.json   – ESLint output (--format json)
-//   tsc-output.txt       – TypeScript compiler output (tsc --noEmit 2>&1)
-//
-// Output:
-//   quality-report/index.html
-//
-// Environment variables (optional, auto-detected in GitHub Actions):
-//   GITHUB_SHA, GITHUB_RUN_ID, GITHUB_REPOSITORY,
-//   ESLINT_VERSION, TSC_VERSION, NODE_VERSION
+// Generates a self-contained quality report for the Next.js dashboard from
+// Oxfmt, Oxlint, and TypeScript 7 native-checker output.
 
+import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import {
-  esc, statusIcon, shortPath, readOptionalFile,
-  buildMetaParts, renderMeta, htmlPage, writeReport,
+  esc,
+  statusIcon,
+  readOptionalFile,
+  buildMetaParts,
+  renderMeta,
+  htmlPage,
+  writeReport,
 } from './report-helpers.mjs';
 
-// ---------------------------------------------------------------------------
-// 1. Read inputs
-// ---------------------------------------------------------------------------
+const OXFMT_EXIT_CODE = /(?:^|\n)OXFMT_EXIT_CODE=(\d+)\s*$/;
+const TYPESCRIPT_DIAGNOSTIC_MARKERS = [
+  { token: '): error ts', severity: 'error' },
+  { token: '): warning ts', severity: 'warning' },
+];
 
-const cwd = process.cwd();
-
-const eslintRaw = readOptionalFile(cwd, 'eslint-report.json');
-const tscRaw = readOptionalFile(cwd, 'tsc-output.txt');
-
-/** @type {Array<{filePath:string, messages:Array<{ruleId:string|null, severity:number, message:string, line:number, column:number}>, errorCount:number, warningCount:number}>} */
-let eslintResults = [];
-try {
-  if (eslintRaw) eslintResults = JSON.parse(eslintRaw);
-} catch {
-  console.warn('Warning: could not parse eslint-report.json; ESLint section will be empty.');
-}
-
-const tscLines = tscRaw
-  ? tscRaw.split('\n').filter((l) => l.trim().length > 0)
-  : [];
-
-// ---------------------------------------------------------------------------
-// 2. Compute summaries
-// ---------------------------------------------------------------------------
-
-const eslintTotalErrors = eslintResults.reduce((s, f) => s + f.errorCount, 0);
-const eslintTotalWarnings = eslintResults.reduce((s, f) => s + f.warningCount, 0);
-const eslintFilesWithIssues = eslintResults.filter(
-  (f) => f.errorCount > 0 || f.warningCount > 0,
-).length;
-const eslintTotalFiles = eslintResults.length;
-const eslintPass = eslintTotalErrors === 0 && eslintTotalWarnings === 0;
-
-// TypeScript diagnostics: lines that match the pattern "file(line,col): error TSxxxx: ..."
-const tscDiagnostics = tscLines.filter((l) => /:\s*(error|warning)\s+TS\d+/.test(l));
-const tscErrorCount = tscLines.filter((l) => /:\s*error\s+TS\d+/.test(l)).length;
-const tscWarningCount = tscLines.filter((l) => /:\s*warning\s+TS\d+/.test(l)).length;
-const tscPass = tscErrorCount === 0;
-
-const overallPass = eslintPass && tscPass;
-
-// ---------------------------------------------------------------------------
-// 3. Severity badge (Next.js-specific: numeric severity from ESLint)
-// ---------------------------------------------------------------------------
-
-function severityBadge(sev) {
-  if (sev === 2) return '<span class="badge badge-error">error</span>';
-  if (sev === 1) return '<span class="badge badge-warn">warning</span>';
-  return '<span class="badge">info</span>';
-}
-
-// ---------------------------------------------------------------------------
-// 4. Build ESLint findings table
-// ---------------------------------------------------------------------------
-
-let eslintTableRows = '';
-for (const file of eslintResults) {
-  if (file.messages.length === 0) continue;
-  const fp = esc(shortPath(cwd, file.filePath));
-  for (const msg of file.messages) {
-    eslintTableRows += '<tr>'
-      + `<td class="cell-file" title="${esc(file.filePath)}">${fp}</td>`
-      + `<td class="cell-loc">${msg.line}:${msg.column}</td>`
-      + `<td>${severityBadge(msg.severity)}</td>`
-      + `<td class="cell-rule">${esc(msg.ruleId || '\u2014')}</td>`
-      + `<td>${esc(msg.message)}</td>`
-      + '</tr>\n';
+function isDecimal(value) {
+  if (value.length === 0) return false;
+  for (const character of value) {
+    if (character < '0' || character > '9') return false;
   }
+  return true;
 }
 
-// ---------------------------------------------------------------------------
-// 5. Build TypeScript diagnostics block
-// ---------------------------------------------------------------------------
+/** Parse TypeScript's stable file(line,column): severity TScode: message format in linear time. */
+function parseTypeScriptDiagnosticLine(line) {
+  const normalized = line.toLowerCase();
+  let marker = null;
+  let markerIndex = -1;
 
-let tscBlock;
-if (tscDiagnostics.length > 0) {
-  tscBlock = `<pre class="tsc-output">${tscDiagnostics.map((l) => esc(l)).join('\n')}</pre>`;
-} else if (tscRaw === null) {
-  tscBlock = '<p class="muted">TypeScript diagnostics file was not found.</p>';
-} else {
-  tscBlock = '<p class="muted">No TypeScript diagnostics \u2014 all checks passed.</p>';
+  for (const candidate of TYPESCRIPT_DIAGNOSTIC_MARKERS) {
+    const candidateIndex = normalized.indexOf(candidate.token);
+    if (candidateIndex >= 0 && (markerIndex < 0 || candidateIndex < markerIndex)) {
+      marker = candidate;
+      markerIndex = candidateIndex;
+    }
+  }
+
+  if (!marker || markerIndex === 0) return null;
+
+  const locationStart = line.lastIndexOf('(', markerIndex);
+  if (locationStart <= 0) return null;
+
+  const coordinates = line.slice(locationStart + 1, markerIndex);
+  const comma = coordinates.indexOf(',');
+  if (comma <= 0 || coordinates.indexOf(',', comma + 1) >= 0) return null;
+
+  const lineNumber = coordinates.slice(0, comma);
+  const columnNumber = coordinates.slice(comma + 1);
+  if (!isDecimal(lineNumber) || !isDecimal(columnNumber)) return null;
+
+  const codeStart = markerIndex + marker.token.length;
+  const codeEnd = line.indexOf(':', codeStart);
+  if (codeEnd < 0) return null;
+
+  const code = line.slice(codeStart, codeEnd);
+  if (!isDecimal(code)) return null;
+
+  return {
+    filename: line.slice(0, locationStart),
+    line: Number(lineNumber),
+    column: Number(columnNumber),
+    severity: marker.severity,
+    code: `TS${code}`,
+    message: line.slice(codeEnd + 1).trimStart(),
+  };
 }
 
-// ---------------------------------------------------------------------------
-// 6. Metadata
-// ---------------------------------------------------------------------------
+function normalizedPath(value) {
+  return String(value || '').replaceAll('\\', '/');
+}
 
-const commitSha = process.env.GITHUB_SHA || 'local';
-const runId = process.env.GITHUB_RUN_ID || '';
-const repo = process.env.GITHUB_REPOSITORY || '';
-const nodeVersion = process.env.NODE_VERSION || process.version;
-const eslintVersion = process.env.ESLINT_VERSION || '';
-const tscVersion = process.env.TSC_VERSION || '';
-const timestamp = new Date().toISOString();
+/** Make either Windows or POSIX absolute diagnostic paths project-relative. */
+export function displayPath(cwd, filename) {
+  const path = normalizedPath(filename);
+  const root = normalizedPath(cwd).replace(/\/$/, '');
+  if (root && path.toLowerCase().startsWith(`${root.toLowerCase()}/`)) {
+    return path.slice(root.length + 1);
+  }
+  return path.replace(/^\.\//, '');
+}
 
-const metaExtras = [];
-if (nodeVersion) metaExtras.push(`Node ${esc(nodeVersion)}`);
-if (eslintVersion) metaExtras.push(`ESLint ${esc(eslintVersion)}`);
-if (tscVersion) metaExtras.push(`tsc ${esc(tscVersion)}`);
+/** Parse the object emitted by Oxlint 1.82's JSON formatter. */
+export function parseOxlintReport(raw) {
+  const reportWarnings = [];
+  if (raw === null) {
+    return {
+      diagnostics: [],
+      errorCount: 0,
+      warningCount: 0,
+      numberOfFiles: 0,
+      pass: false,
+      reportWarnings: ['Oxlint report file was not found.'],
+    };
+  }
 
-const metaParts = buildMetaParts({ repo, commitSha, runId, timestamp, extras: metaExtras });
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {
+      diagnostics: [],
+      errorCount: 0,
+      warningCount: 0,
+      numberOfFiles: 0,
+      pass: false,
+      reportWarnings: ['Oxlint report is malformed and could not be parsed.'],
+    };
+  }
 
-// ---------------------------------------------------------------------------
-// 7. ESLint findings section
-// ---------------------------------------------------------------------------
+  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.diagnostics)) {
+    return {
+      diagnostics: [],
+      errorCount: 0,
+      warningCount: 0,
+      numberOfFiles: 0,
+      pass: false,
+      reportWarnings: ['Oxlint report does not contain a diagnostics array.'],
+    };
+  }
 
-let eslintSection;
-if (eslintTableRows) {
-  eslintSection = '<div style="overflow-x:auto">'
-    + '<table>'
+  const diagnostics = [];
+  for (const [index, item] of parsed.diagnostics.entries()) {
+    if (!item || typeof item !== 'object') {
+      reportWarnings.push(`Oxlint diagnostic ${index + 1} is malformed and was skipped.`);
+      continue;
+    }
+    const label = Array.isArray(item.labels)
+      ? item.labels.find((candidate) => candidate?.span && typeof candidate.span === 'object')
+      : undefined;
+    const span = label?.span || {};
+    if (typeof item.message !== 'string' || typeof item.filename !== 'string') {
+      reportWarnings.push(`Oxlint diagnostic ${index + 1} is missing required fields.`);
+    }
+    if (item.severity !== 'error' && item.severity !== 'warning') {
+      reportWarnings.push(`Oxlint diagnostic ${index + 1} has an unknown severity.`);
+    }
+    diagnostics.push({
+      filename: typeof item.filename === 'string' ? item.filename : '(unknown file)',
+      message: typeof item.message === 'string' ? item.message : '(missing message)',
+      ruleId: typeof item.code === 'string' ? item.code : null,
+      severity: item.severity === 'error' || item.severity === 'warning' ? item.severity : 'info',
+      line: Number.isInteger(span.line) ? span.line : null,
+      column: Number.isInteger(span.column) ? span.column : null,
+      length: Number.isInteger(span.length) ? span.length : null,
+    });
+  }
+
+  const errorCount = diagnostics.filter((item) => item.severity === 'error').length;
+  const warningCount = diagnostics.filter((item) => item.severity === 'warning').length;
+  const numberOfFiles = Number.isInteger(parsed.number_of_files)
+    ? parsed.number_of_files
+    : new Set(diagnostics.map((item) => item.filename)).size;
+
+  return {
+    diagnostics,
+    errorCount,
+    warningCount,
+    numberOfFiles,
+    pass: errorCount === 0 && warningCount === 0 && reportWarnings.length === 0,
+    reportWarnings,
+  };
+}
+
+/** Parse TypeScript's file(line,column) diagnostics, retaining continuation lines. */
+export function parseTypeScriptDiagnostics(raw) {
+  if (raw === null) {
+    return {
+      diagnostics: [],
+      errorCount: 0,
+      warningCount: 0,
+      pass: false,
+      reportWarnings: ['TypeScript diagnostics file was not found.'],
+    };
+  }
+  if (raw.trim() === '') {
+    return { diagnostics: [], errorCount: 0, warningCount: 0, pass: true, reportWarnings: [] };
+  }
+
+  const diagnostics = [];
+  let current = null;
+  for (const line of raw.replaceAll('\r\n', '\n').split('\n')) {
+    const diagnostic = parseTypeScriptDiagnosticLine(line);
+    if (diagnostic) {
+      const { message, ...metadata } = diagnostic;
+      current = {
+        ...metadata,
+        messageLines: [message],
+      };
+      diagnostics.push(current);
+    } else if (current && /^\s+\S/.test(line)) {
+      current.messageLines.push(line.trimEnd());
+    }
+  }
+
+  if (diagnostics.length === 0) {
+    return {
+      diagnostics: [],
+      errorCount: 0,
+      warningCount: 0,
+      pass: false,
+      reportWarnings: ['TypeScript output was non-empty but contained no recognized diagnostics.'],
+    };
+  }
+
+  const finalized = diagnostics.map(({ messageLines, ...item }) => ({
+    ...item,
+    message: messageLines.join('\n'),
+  }));
+  const errorCount = finalized.filter((item) => item.severity === 'error').length;
+  const warningCount = finalized.filter((item) => item.severity === 'warning').length;
+  return {
+    diagnostics: finalized,
+    errorCount,
+    warningCount,
+    pass: errorCount === 0 && warningCount === 0,
+    reportWarnings: [],
+  };
+}
+
+/** Parse Oxfmt output with the explicit exit-code marker written by CI. */
+export function parseOxfmtOutput(raw) {
+  if (raw === null) {
+    return {
+      output: '',
+      exitCode: null,
+      pass: false,
+      reportWarnings: ['Oxfmt output file was not found.'],
+    };
+  }
+  const normalized = raw.replaceAll('\r\n', '\n');
+  const match = OXFMT_EXIT_CODE.exec(normalized);
+  if (!match) {
+    return {
+      output: raw.trim(),
+      exitCode: null,
+      pass: false,
+      reportWarnings: ['Oxfmt output is missing its exit-code marker.'],
+    };
+  }
+  const exitCode = Number(match[1]);
+  return {
+    output: normalized.replace(OXFMT_EXIT_CODE, '').trim(),
+    exitCode,
+    pass: exitCode === 0,
+    reportWarnings: [],
+  };
+}
+
+function severityBadge(severity) {
+  if (severity === 'error') return '<span class="badge badge-error">error</span>';
+  if (severity === 'warning') return '<span class="badge badge-warn">warning</span>';
+  return '<span class="badge badge-note">info</span>';
+}
+
+function locationText(item) {
+  if (item.line === null || item.column === null) return '\u2014';
+  const length = item.length === null ? '' : ` (+${item.length})`;
+  return `${item.line}:${item.column}${length}`;
+}
+
+function diagnosticsTable(cwd, diagnostics, type) {
+  if (diagnostics.length === 0) return '';
+  const rows = diagnostics.map((item) => {
+    const rule = type === 'oxlint' ? item.ruleId || '\u2014' : item.code;
+    return '<tr>'
+      + `<td class="cell-file" title="${esc(item.filename)}">${esc(displayPath(cwd, item.filename))}</td>`
+      + `<td class="cell-loc">${esc(locationText(item))}</td>`
+      + `<td>${severityBadge(item.severity)}</td>`
+      + `<td class="cell-rule">${esc(rule)}</td>`
+      + `<td><pre class="diagnostic-message">${esc(item.message)}</pre></td>`
+      + '</tr>';
+  }).join('\n');
+  return '<div class="table-scroll"><table>'
     + '<thead><tr><th>File</th><th>Location</th><th>Severity</th><th>Rule</th><th>Message</th></tr></thead>'
-    + `<tbody>${eslintTableRows}</tbody>`
-    + '</table></div>';
-} else {
-  eslintSection = '<p class="empty-state">No ESLint findings \u2014 all checks passed.</p>';
+    + `<tbody>${rows}</tbody></table></div>`;
 }
 
-// ---------------------------------------------------------------------------
-// 8. Report-specific CSS
-// ---------------------------------------------------------------------------
+/** Build report HTML without file-system side effects so fixtures can test it. */
+export function buildQualityReport({
+  cwd,
+  oxlintRaw,
+  oxfmtRaw,
+  typescriptRaw,
+  env = process.env,
+  timestamp = new Date().toISOString(),
+}) {
+  const oxlint = parseOxlintReport(oxlintRaw);
+  const oxfmt = parseOxfmtOutput(oxfmtRaw);
+  const typescript = parseTypeScriptDiagnostics(typescriptRaw);
+  const reportWarnings = [
+    ...oxfmt.reportWarnings,
+    ...oxlint.reportWarnings,
+    ...typescript.reportWarnings,
+  ];
+  const overallPass = oxfmt.pass && oxlint.pass && typescript.pass && reportWarnings.length === 0;
 
-const extraCSS = [
-  '    pre.tsc-output {',
-  '      background: var(--pre-bg); border: 1px solid var(--card-border);',
-  '      border-radius: 0.5rem; padding: 1rem; overflow-x: auto;',
-  '      font-size: 0.82rem; line-height: 1.6;',
-  '    }',
-  '    .collapse-toggle { cursor: pointer; user-select: none; }',
-  '    .collapse-toggle::before { content: \'\\25b8 \'; font-size: 0.85em; }',
-  '    .collapse-toggle[open]::before { content: \'\\25be \'; }',
-].join('\n');
+  const oxlintSection = diagnosticsTable(cwd, oxlint.diagnostics, 'oxlint')
+    || '<p class="empty-state">No Oxlint findings \u2014 all checks passed.</p>';
+  const typescriptSection = diagnosticsTable(cwd, typescript.diagnostics, 'typescript')
+    || (typescriptRaw === null
+      ? '<p class="muted">TypeScript diagnostics file was not found.</p>'
+      : '<p class="empty-state">No TypeScript diagnostics \u2014 all checks passed.</p>');
+  const oxfmtSection = oxfmt.output
+    ? `<pre class="tool-output">${esc(oxfmt.output)}</pre>`
+    : (oxfmtRaw === null
+      ? '<p class="muted">Oxfmt output file was not found.</p>'
+      : '<p class="empty-state">No formatting differences \u2014 all checks passed.</p>');
+  const warningSection = reportWarnings.length > 0
+    ? '<section class="report-warnings"><h2>Report-generation warnings</h2><ul>'
+      + reportWarnings.map((warning) => `<li>${esc(warning)}</li>`).join('')
+      + '</ul></section>'
+    : '';
 
-// ---------------------------------------------------------------------------
-// 9. Assemble HTML
-// ---------------------------------------------------------------------------
+  const metaExtras = [];
+  if (env.NODE_VERSION || process.version) metaExtras.push(`Node ${esc(env.NODE_VERSION || process.version)}`);
+  if (env.NPM_VERSION) metaExtras.push(`npm ${esc(env.NPM_VERSION)}`);
+  if (env.OXFMT_VERSION) metaExtras.push(`Oxfmt ${esc(env.OXFMT_VERSION)}`);
+  if (env.OXLINT_VERSION) metaExtras.push(`Oxlint ${esc(env.OXLINT_VERSION)}`);
+  if (env.TYPESCRIPT_VERSION) metaExtras.push(`TypeScript ${esc(env.TYPESCRIPT_VERSION)}`);
+  if (env.VITEST_VERSION) metaExtras.push(`Vitest ${esc(env.VITEST_VERSION)}`);
+  const metaParts = buildMetaParts({
+    repo: env.GITHUB_REPOSITORY || '',
+    commitSha: env.GITHUB_SHA || 'local',
+    runId: env.GITHUB_RUN_ID || '',
+    timestamp,
+    extras: metaExtras,
+  });
 
-const eslintPassClass = eslintPass ? 'status-pass' : 'status-fail';
-const tscPassClass = tscPass ? 'status-pass' : 'status-fail';
-const overallPassClass = overallPass ? 'status-pass' : 'status-fail';
+  const body = [
+    '  <h1>Next.js Dashboard \u2014 Quality Report</h1>',
+    '  <p class="subtitle">Oxlint static analysis, Oxfmt formatting, and TypeScript 7 native strict-mode checking.</p>',
+    warningSection,
+    '  <div class="summary-grid">',
+    `    <div class="card"><div class="card-title">Overall</div><div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div></div>`,
+    `    <div class="card"><div class="card-title">Oxfmt</div><div class="card-value ${oxfmt.pass ? 'status-pass' : 'status-fail'}">${statusIcon(oxfmt.pass)} ${oxfmt.pass ? 'Pass' : 'Fail'}</div><div class="card-detail">Deterministic formatting check</div></div>`,
+    `    <div class="card"><div class="card-title">Oxlint</div><div class="card-value ${oxlint.pass ? 'status-pass' : 'status-fail'}">${statusIcon(oxlint.pass)} ${oxlint.errorCount} errors, ${oxlint.warningCount} warnings</div><div class="card-detail">${oxlint.numberOfFiles} files analyzed</div></div>`,
+    `    <div class="card"><div class="card-title">TypeScript 7</div><div class="card-value ${typescript.pass ? 'status-pass' : 'status-fail'}">${statusIcon(typescript.pass)} ${typescript.errorCount} errors${typescript.warningCount ? `, ${typescript.warningCount} warnings` : ''}</div><div class="card-detail">Native strict checker (tsc --noEmit)</div></div>`,
+    '  </div>',
+    '  <h2>Oxfmt Check</h2>',
+    `  ${oxfmtSection}`,
+    '  <h2>Oxlint Findings</h2>',
+    `  ${oxlintSection}`,
+    '  <h2>TypeScript 7 Diagnostics</h2>',
+    `  ${typescriptSection}`,
+    `  ${renderMeta(metaParts)}`,
+  ].join('\n');
 
-const body = [
-  '  <h1>Next.js Dashboard \u2014 Quality Report</h1>',
-  '  <p class="subtitle">',
-  '    Static analysis results from ESLint and TypeScript \u2014 the free, open-source',
-  '    equivalent of JetBrains IDE inspections for JavaScript and TypeScript.',
-  '  </p>',
-  '',
-  '  <div class="summary-grid">',
-  '    <div class="card">',
-  '      <div class="card-title">Overall</div>',
-  `      <div class="card-value ${overallPassClass}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div>`,
-  '    </div>',
-  '    <div class="card">',
-  '      <div class="card-title">ESLint</div>',
-  `      <div class="card-value ${eslintPassClass}">${statusIcon(eslintPass)} ${eslintTotalErrors} errors, ${eslintTotalWarnings} warnings</div>`,
-  `      <div class="card-detail">${eslintTotalFiles} files analyzed${eslintFilesWithIssues > 0 ? `, ${eslintFilesWithIssues} with issues` : ''}</div>`,
-  '    </div>',
-  '    <div class="card">',
-  '      <div class="card-title">TypeScript</div>',
-  `      <div class="card-value ${tscPassClass}">${statusIcon(tscPass)} ${tscErrorCount} errors${tscWarningCount > 0 ? `, ${tscWarningCount} warnings` : ''}</div>`,
-  '      <div class="card-detail">Strict mode (tsc --noEmit)</div>',
-  '    </div>',
-  '  </div>',
-  '',
-  '  <h2>ESLint Findings</h2>',
-  `  ${eslintSection}`,
-  '',
-  '  <h2>TypeScript Diagnostics</h2>',
-  `  ${tscBlock}`,
-  '',
-  `  ${renderMeta(metaParts)}`,
-].join('\n');
+  const extraCSS = [
+    '    .table-scroll { overflow-x: auto; }',
+    '    pre.tool-output, pre.diagnostic-message { margin: 0; white-space: pre-wrap; }',
+    '    pre.tool-output { background: var(--pre-bg); border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 1rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; }',
+    '    pre.diagnostic-message { font: inherit; }',
+    '    .report-warnings { border: 1px solid var(--warn); border-radius: 0.5rem; padding: 0 1rem; margin-bottom: 1rem; }',
+    '    .report-warnings h2 { color: var(--warn); border: 0; margin-top: 1rem; }',
+  ].join('\n');
 
-const html = htmlPage({
-  title: 'Next.js Dashboard \u2014 Quality Report',
-  extraCSS,
-  body,
-});
+  return {
+    html: htmlPage({ title: 'Next.js Dashboard \u2014 Quality Report', extraCSS, body }),
+    summary: {
+      overallPass,
+      issueCount:
+        oxlint.errorCount
+        + oxlint.warningCount
+        + typescript.errorCount
+        + typescript.warningCount
+        + (oxfmt.pass ? 0 : 1),
+      reportWarnings,
+    },
+  };
+}
 
-// ---------------------------------------------------------------------------
-// 10. Write output
-// ---------------------------------------------------------------------------
+export function generateQualityReport(cwd = process.cwd(), env = process.env) {
+  const { html, summary } = buildQualityReport({
+    cwd,
+    oxlintRaw: readOptionalFile(cwd, 'oxlint-report.json'),
+    oxfmtRaw: readOptionalFile(cwd, 'oxfmt-output.txt'),
+    typescriptRaw: readOptionalFile(cwd, 'typescript-output.txt'),
+    env,
+  });
+  for (const warning of summary.reportWarnings) console.warn(`Warning: ${warning}`);
+  const outFile = writeReport(resolve(cwd, 'quality-report'), html);
+  console.log(
+    `Quality report generated: ${outFile}  (${summary.issueCount} total finding${summary.issueCount === 1 ? '' : 's'})`,
+  );
+  return { outFile, ...summary };
+}
 
-const outFile = writeReport(resolve(cwd, 'quality-report'), html);
-
-const issueCount = eslintTotalErrors + eslintTotalWarnings + tscErrorCount + tscWarningCount;
-console.log(
-  `Quality report generated: ${outFile}  (${issueCount} total finding${issueCount !== 1 ? 's' : ''})`,
-);
-
+const entryPoint = process.argv[1] ? resolve(process.argv[1]) : '';
+if (entryPoint && fileURLToPath(import.meta.url) === entryPoint) {
+  generateQualityReport();
+}

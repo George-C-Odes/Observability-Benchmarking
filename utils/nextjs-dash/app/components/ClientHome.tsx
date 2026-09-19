@@ -65,7 +65,14 @@ function LazyTabPanel({ children, value, index, visited }: LazyTabPanelProps) {
     >
       <Suspense
         fallback={
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '200px',
+            }}
+          >
             <CircularProgress />
           </Box>
         }
@@ -75,7 +82,6 @@ function LazyTabPanel({ children, value, index, visited }: LazyTabPanelProps) {
     </Box>
   );
 }
-
 
 function getInitialTab(): number {
   if (typeof window === 'undefined') return 0;
@@ -103,7 +109,7 @@ function useHasMounted(): boolean {
       // No-op subscription: we only care about SSR vs client.
     },
     () => true,
-    () => false
+    () => false,
   );
 }
 

@@ -1,0 +1,42 @@
+{
+  "diagnostics": [
+    {
+      "message": "'MissingComponent' is not defined.",
+      "code": "react(jsx-no-undef)",
+      "severity": "error",
+      "url": "https://oxc.rs/docs/guide/usage/linter/rules/react/jsx-no-undef.html",
+      "filename": "C:\\repo\\utils\\nextjs-dash\\app\\page.tsx",
+      "labels": [
+        {
+          "span": {
+            "offset": 29,
+            "length": 16,
+            "line": 1,
+            "column": 30
+          }
+        }
+      ]
+    },
+    {
+      "message": "Assign object to a variable before exporting as module default",
+      "code": "import(no-anonymous-default-export)",
+      "severity": "warning",
+      "url": "https://oxc.rs/docs/guide/usage/linter/rules/import/no-anonymous-default-export.html",
+      "filename": "/workspace/utils/nextjs-dash/next.config.ts",
+      "labels": [
+        {
+          "span": {
+            "offset": 51,
+            "length": 18,
+            "line": 3,
+            "column": 1
+          }
+        }
+      ]
+    }
+  ],
+  "number_of_files": 2,
+  "number_of_rules": 56,
+  "threads_count": 32,
+  "start_time": 0.0191588
+}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type UseTimedPulseOptions = {
+type UseTimedPulseOptions = {
   /** Turn the pulse on for this many ms. */
   durationMs: number;
   /** Optional dependency key; pulse triggers when this value changes (and is truthy unless allowFalsy=true). */

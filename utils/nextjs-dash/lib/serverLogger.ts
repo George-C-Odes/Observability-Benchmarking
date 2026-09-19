@@ -16,11 +16,11 @@ declare global {
   var __NEXTJS_DASH_SERVER_LOG_OUTPUT__: ServerLogOutput | undefined;
 }
 
-export function getServerLogLevel(): RuntimeLogLevel {
+function getServerLogLevel(): RuntimeLogLevel {
   return globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__ ?? 'info';
 }
 
-export function getServerLogOutput(): ServerLogOutput {
+function getServerLogOutput(): ServerLogOutput {
   return globalThis.__NEXTJS_DASH_SERVER_LOG_OUTPUT__ ?? 'json';
 }
 

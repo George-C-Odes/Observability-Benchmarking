@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 import { useJobRunner } from '@/app/hooks/useJobRunner';
-import { MockEventSource, installMockGlobals, restoreMockGlobals } from '@/__tests__/_helpers/useJobRunner.test-helpers';
+import {
+  MockEventSource,
+  installMockGlobals,
+  restoreMockGlobals,
+} from '@/__tests__/_helpers/useJobRunner.test-helpers';
 
 // Mock the runtime config hook so tests are deterministic and fast.
 vi.mock('@/app/hooks/useScriptRunnerConfig', () => ({
@@ -65,7 +69,7 @@ describe('useJobRunner', () => {
           jobId: 'job-1',
           jobStatus: 'RUNNING',
           createdAt: new Date().toISOString(),
-        })
+        }),
       );
     });
 
@@ -82,7 +86,7 @@ describe('useJobRunner', () => {
           jobStatus: 'SUCCEEDED',
           exitCode: 0,
           finishedAt: new Date().toISOString(),
-        })
+        }),
       );
     });
 
@@ -102,7 +106,7 @@ describe('useJobRunner', () => {
           type: 'summary',
           jobId: 'job-1',
           jobStatus: 'RUNNING',
-        })
+        }),
       );
     });
 
@@ -144,7 +148,9 @@ describe('useJobRunner', () => {
   });
 
   it('reports an upstream submit rejection with its HTTP status and response body', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('invalid command', { status: 422 }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('invalid command', { status: 422 }),
+    );
 
     const { result } = renderHook(() => useJobRunner());
 
@@ -156,7 +162,7 @@ describe('useJobRunner', () => {
     expect(runResult?.output).toBe('HTTP 422 - invalid command');
     expect(result.current.lastJobStatus?.lastLine).toBe('Submit failed (HTTP 422).');
     expect(result.current.eventLogs.join('\n')).toContain(
-      '[client] Submit failed: HTTP 422 - invalid command'
+      '[client] Submit failed: HTTP 422 - invalid command',
     );
   });
 
@@ -170,7 +176,9 @@ describe('useJobRunner', () => {
     });
 
     expect(result.current.lastJobStatus?.lastLine).toBe('Orchestrator busy (HTTP 503).');
-    expect(result.current.eventLogs).toContain('[client] Orchestrator rejected job submit as busy (503).');
+    expect(result.current.eventLogs).toContain(
+      '[client] Orchestrator rejected job submit as busy (503).',
+    );
     expect(result.current.eventLogs).toContain('[client] Try again once the active job completes.');
   });
 
@@ -206,7 +214,7 @@ describe('useJobRunner', () => {
 
   it('formats SSE messages and ignores events belonging to another job', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ jobId: 'job-events' }), { status: 200 })
+      new Response(JSON.stringify({ jobId: 'job-events' }), { status: 200 }),
     );
 
     const { result } = renderHook(() => useJobRunner());
@@ -222,7 +230,7 @@ describe('useJobRunner', () => {
       es.emitMessage(JSON.stringify({ type: 'status', message: ': heartbeat' }));
       es.emitMessage('unstructured output');
       es.emitMessage(
-        JSON.stringify({ type: 'log', jobId: 'different-job', message: 'must be ignored' })
+        JSON.stringify({ type: 'log', jobId: 'different-job', message: 'must be ignored' }),
       );
     });
 
@@ -236,56 +244,58 @@ describe('useJobRunner', () => {
   it.each(['available', 'server error', 'network error'] as const)(
     'reconnects after a transient event-stream failure when metadata is %s',
     async (metaState) => {
-    vi.useFakeTimers();
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.endsWith('/api/orchestrator/submit')) {
-        return new Response(JSON.stringify({ jobId: 'job-reconnect' }), { status: 200 });
-      }
-      if (metaState === 'network error') {
-        throw new Error('metadata unavailable');
-      }
-      if (metaState === 'server error') {
-        return new Response('temporarily unavailable', { status: 500 });
-      }
-      return new Response(null, { status: 200 });
-    });
+      vi.useFakeTimers();
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async (input: RequestInfo | URL) => {
+          const url = String(input);
+          if (url.endsWith('/api/orchestrator/submit')) {
+            return new Response(JSON.stringify({ jobId: 'job-reconnect' }), { status: 200 });
+          }
+          if (metaState === 'network error') {
+            throw new Error('metadata unavailable');
+          }
+          if (metaState === 'server error') {
+            return new Response('temporarily unavailable', { status: 500 });
+          }
+          return new Response(null, { status: 200 });
+        });
 
-    const { result } = renderHook(() => useJobRunner());
+      const { result } = renderHook(() => useJobRunner());
 
-    await act(async () => {
-      await result.current.runCommand('echo hi', 'Test');
-    });
+      await act(async () => {
+        await result.current.runCommand('echo hi', 'Test');
+      });
 
-    await act(async () => {
-      MockEventSource.instances[0].emitMessage(
-        JSON.stringify({ type: 'status', message: ': heartbeat', requestId: 'request-9' })
+      await act(async () => {
+        MockEventSource.instances[0].emitMessage(
+          JSON.stringify({ type: 'status', message: ': heartbeat', requestId: 'request-9' }),
+        );
+        MockEventSource.instances[0].emitError();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/api/orchestrator/events/meta?jobId=job-reconnect'),
+        { cache: 'no-store' },
       );
-      MockEventSource.instances[0].emitError();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+      expect(result.current.sseLastError).toBe('SSE connection error');
+      expect(result.current.reconnectCount).toBe(1);
+      expect(result.current.eventLogs.join('\n')).toContain('Reconnecting... rid=request-9');
 
-    expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining('/api/orchestrator/events/meta?jobId=job-reconnect'),
-      { cache: 'no-store' }
-    );
-    expect(result.current.sseLastError).toBe('SSE connection error');
-    expect(result.current.reconnectCount).toBe(1);
-    expect(result.current.eventLogs.join('\n')).toContain('Reconnecting... rid=request-9');
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
 
-    await act(async () => {
-      vi.advanceTimersByTime(500);
-    });
-
-    expect(MockEventSource.instances).toHaveLength(2);
-    expect(MockEventSource.instances[1].url).toContain('jobId=job-reconnect');
-    }
+      expect(MockEventSource.instances).toHaveLength(2);
+      expect(MockEventSource.instances[1].url).toContain('jobId=job-reconnect');
+    },
   );
 
   it('reset clears persisted state and closes the active event stream', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ jobId: 'job-reset' }), { status: 200 })
+      new Response(JSON.stringify({ jobId: 'job-reset' }), { status: 200 }),
     );
 
     const { result } = renderHook(() => useJobRunner());
@@ -323,7 +333,7 @@ describe('useJobRunner', () => {
       }
     } as unknown as typeof EventSource;
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ jobId: 'job-no-stream' }), { status: 200 })
+      new Response(JSON.stringify({ jobId: 'job-no-stream' }), { status: 200 }),
     );
 
     const { result } = renderHook(() => useJobRunner());
@@ -335,7 +345,9 @@ describe('useJobRunner', () => {
 
     expect(runResult?.ok).toBe(true);
     expect(result.current.sseLastError).toBe('Failed to open SSE');
-    expect(result.current.eventLogs).toContain('[client] Failed to open orchestrator event stream.');
+    expect(result.current.eventLogs).toContain(
+      '[client] Failed to open orchestrator event stream.',
+    );
   });
 
   it('returns a failed result and restores executing state after a submit network error', async () => {
@@ -407,7 +419,7 @@ describe('useJobRunner', () => {
         lastJobStatus: { jobId: 'stale-job', status: 'RUNNING' },
         eventLogsTail: ['first', 'second', 'third'],
         savedAtMs: Date.now(),
-      })
+      }),
     );
 
     const { result } = renderHook(() => useJobRunner());
@@ -440,7 +452,7 @@ describe('useJobRunner', () => {
         lastJobStatus: { jobId: 'completed-job', status: 'SUCCEEDED', exitCode: 0 },
         eventLogsTail: ['one', 'two', 'three', 'four'],
         savedAtMs: Date.now(),
-      })
+      }),
     );
 
     const { result } = renderHook(() => useJobRunner());

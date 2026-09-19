@@ -1,11 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 vi.mock('child_process', () => ({
   exec: vi.fn(),
-}));
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 
 import { exec } from 'child_process';
@@ -21,7 +18,10 @@ describe('/api/system route', () => {
   });
 
   it('returns server and package metadata when npm version lookup succeeds', async () => {
-    vi.mocked(exec).mockImplementation(((command: string, callback: (error: Error | null, result: { stdout: string; stderr: string }) => void) => {
+    vi.mocked(exec).mockImplementation(((
+      command: string,
+      callback: (error: Error | null, result: { stdout: string; stderr: string }) => void,
+    ) => {
       expect(command).toBe('npm --version');
       callback(null, { stdout: '10.9.3\n', stderr: '' });
       return {} as never;
@@ -42,7 +42,10 @@ describe('/api/system route', () => {
   });
 
   it('falls back to N/A when npm version lookup fails', async () => {
-    vi.mocked(exec).mockImplementation(((command: string, callback: (error: Error | null, result: { stdout: string; stderr: string }) => void) => {
+    vi.mocked(exec).mockImplementation(((
+      _command: string,
+      callback: (error: Error | null, result: { stdout: string; stderr: string }) => void,
+    ) => {
       callback(new Error('npm missing'), { stdout: '', stderr: 'no npm' });
       return {} as never;
     }) as never);
@@ -54,4 +57,3 @@ describe('/api/system route', () => {
     expect(body.npm).toBe('12.0.2');
   });
 });
-

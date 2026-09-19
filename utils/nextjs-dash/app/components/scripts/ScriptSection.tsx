@@ -13,11 +13,7 @@ type ScriptSectionProps = {
   copySuccessFor: string | null;
   executeDisabled?: boolean;
   executeDisabledReason?: string;
-  accentColor:
-    | 'primary.main'
-    | 'secondary.main'
-    | 'info.main'
-    | 'success.main';
+  accentColor: 'primary.main' | 'secondary.main' | 'info.main' | 'success.main';
   chipColor: 'primary' | 'secondary' | 'info' | 'success';
   onCopyAction: (script: Script) => void;
   onExecuteAction: (script: Script) => void;

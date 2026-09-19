@@ -1,6 +1,6 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-export interface BufferedLogEntry {
+interface BufferedLogEntry {
   ts: number; // epoch millis
   level: LogLevel;
   source: 'server' | 'client';
@@ -58,9 +58,4 @@ export function getServerLogBuffer(opts?: { maxEntries?: number }) {
     globalThis.__NEXTJS_DASH_LOG_BUFFER__ = new LogBuffer(max);
   }
   return globalThis.__NEXTJS_DASH_LOG_BUFFER__;
-}
-
-export function resetServerLogBufferForTests() {
-  // Useful in unit tests to ensure a fresh buffer when env changes.
-  globalThis.__NEXTJS_DASH_LOG_BUFFER__ = undefined;
 }

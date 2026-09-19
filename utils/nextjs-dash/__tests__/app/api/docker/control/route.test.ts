@@ -22,26 +22,22 @@ describe('/api/docker/control', () => {
     vi.clearAllMocks();
   });
 
-  it('prepends compose profile flags for quarkus services (delete)', async () => {
-    const res = await POST(makeRequest({ service: 'quarkus-jvm', action: 'delete' }) as unknown as never);
+  it.each([
+    ['Quarkus', 'quarkus-jvm'],
+    ['Go', 'go'],
+  ])('prepends compose profile flags for %s services (delete)', async (_kind, service) => {
+    const expectedCommand = `docker compose --profile=OBS --profile=SERVICES rm -f -s ${service}`;
+    const res = await POST(makeRequest({ service, action: 'delete' }) as unknown as never);
 
-    expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
-
+    expect(submitCommand).toHaveBeenCalledWith(expectedCommand);
     const json = (await res.json()) as { command?: string };
-    expect(json.command).toBe('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm');
-  });
-
-  it('prepends compose profile flags for go services (delete)', async () => {
-    const res = await POST(makeRequest({ service: 'go', action: 'delete' }) as unknown as never);
-
-    expect(submitCommand).toHaveBeenCalledWith('docker compose --profile=OBS --profile=SERVICES rm -f -s go');
-
-    const json = (await res.json()) as { command?: string };
-    expect(json.command).toBe('docker compose --profile=OBS --profile=SERVICES rm -f -s go');
+    expect(json.command).toBe(expectedCommand);
   });
 
   it('builds start command', async () => {
-    const res = await POST(makeRequest({ service: 'grafana', action: 'start' }) as unknown as never);
+    const res = await POST(
+      makeRequest({ service: 'grafana', action: 'start' }) as unknown as never,
+    );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose up -d grafana');
     const json = (await res.json()) as { command?: string };
@@ -49,7 +45,9 @@ describe('/api/docker/control', () => {
   });
 
   it('builds restart command', async () => {
-    const res = await POST(makeRequest({ service: 'tempo', action: 'restart' }) as unknown as never);
+    const res = await POST(
+      makeRequest({ service: 'tempo', action: 'restart' }) as unknown as never,
+    );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose restart tempo');
     const json = (await res.json()) as { command?: string };
@@ -57,7 +55,9 @@ describe('/api/docker/control', () => {
   });
 
   it('builds recreate command (explicit action)', async () => {
-    const res = await POST(makeRequest({ service: 'tempo', action: 'recreate' }) as unknown as never);
+    const res = await POST(
+      makeRequest({ service: 'tempo', action: 'recreate' }) as unknown as never,
+    );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose up -d --force-recreate tempo');
     const json = (await res.json()) as { command?: string };
@@ -65,7 +65,9 @@ describe('/api/docker/control', () => {
   });
 
   it('builds delete command (explicit action)', async () => {
-    const res = await POST(makeRequest({ service: 'orchestrator', action: 'delete' }) as unknown as never);
+    const res = await POST(
+      makeRequest({ service: 'orchestrator', action: 'delete' }) as unknown as never,
+    );
 
     expect(submitCommand).toHaveBeenCalledWith('docker compose rm -f -s orchestrator');
 

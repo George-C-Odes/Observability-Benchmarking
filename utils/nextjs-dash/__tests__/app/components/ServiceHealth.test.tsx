@@ -21,7 +21,14 @@ vi.mock('@mui/material', async () => {
     const [open, setOpen] = React.useState(false);
 
     if (!React.isValidElement(children)) {
-      return open ? <>{children}<div>{title}</div></> : <>{children}</>;
+      return open ? (
+        <>
+          {children}
+          <div>{title}</div>
+        </>
+      ) : (
+        <>{children}</>
+      );
     }
 
     const child = children as React.ReactElement<{
@@ -63,7 +70,12 @@ vi.mock('@mui/material', async () => {
     delete domProps.variant;
     delete domProps.sx;
 
-    return <div {...domProps}>{icon}{label ?? children}</div>;
+    return (
+      <div {...domProps}>
+        {icon}
+        {label ?? children}
+      </div>
+    );
   }
 
   return {
@@ -126,7 +138,10 @@ const SERVICE_ACTIONS_ENABLED_DEFAULT: Record<string, boolean> = {
   wrk2: false,
 };
 
-function mockHealthResponse(services: MockService[], opts?: { serviceActionsEnabled?: Record<string, boolean> }) {
+function mockHealthResponse(
+  services: MockService[],
+  opts?: { serviceActionsEnabled?: Record<string, boolean> },
+) {
   setServiceActionsConfig(opts?.serviceActionsEnabled);
 
   vi.mocked(fetchJson).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -185,7 +200,10 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('setInterval', vi.fn(() => 0));
+  vi.stubGlobal(
+    'setInterval',
+    vi.fn(() => 0),
+  );
   vi.stubGlobal('clearInterval', vi.fn());
   setServiceActionsConfig();
   useTimedPulseMock.mockImplementation(() => ({ on: false, fire: vi.fn() }));
@@ -276,7 +294,7 @@ describe('ServiceHealth', () => {
         { name: 'wrk2', status: 'down', baseUrl: 'http://wrk2:3000' },
         { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },
       ],
-      { serviceActionsEnabled: { wrk2: true } }
+      { serviceActionsEnabled: { wrk2: true } },
     );
 
     await renderServiceHealth();
@@ -299,9 +317,12 @@ describe('ServiceHealth', () => {
   });
 
   it('shows profile-prefixed command in Delete tooltip for quarkus services', async () => {
-    mockHealthResponse([{ name: 'quarkus-jvm', status: 'up', baseUrl: 'http://quarkus-jvm:8080' }], {
-      serviceActionsEnabled: { 'quarkus-jvm': true },
-    });
+    mockHealthResponse(
+      [{ name: 'quarkus-jvm', status: 'up', baseUrl: 'http://quarkus-jvm:8080' }],
+      {
+        serviceActionsEnabled: { 'quarkus-jvm': true },
+      },
+    );
 
     await renderServiceHealth();
 
@@ -313,7 +334,9 @@ describe('ServiceHealth', () => {
     fireEvent.mouseEnter(deleteBtn.closest('span') ?? deleteBtn);
 
     expect(
-      await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm')
+      await screen.findByText(
+        'docker compose --profile=OBS --profile=SERVICES rm -f -s quarkus-jvm',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -332,7 +355,7 @@ describe('ServiceHealth', () => {
     fireEvent.mouseEnter(deleteBtn.closest('span') ?? deleteBtn);
 
     expect(
-      await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s go')
+      await screen.findByText('docker compose --profile=OBS --profile=SERVICES rm -f -s go'),
     ).toBeInTheDocument();
   });
 
@@ -383,7 +406,7 @@ describe('ServiceHealth', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ service: 'wrk2', action: 'start' }),
-      })
+      }),
     );
 
     expect(await within(wrk2Card).findByText('PENDING')).toBeInTheDocument();
@@ -391,16 +414,25 @@ describe('ServiceHealth', () => {
 
   it('submits Restart, Stop and Delete via /api/docker/control with correct intent', async () => {
     const actions: Array<{ label: 'Restart' | 'Stop' | 'Delete'; expectedBody: string }> = [
-      { label: 'Restart', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart' }) },
+      {
+        label: 'Restart',
+        expectedBody: JSON.stringify({ service: 'orchestrator', action: 'restart' }),
+      },
       { label: 'Stop', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'stop' }) },
-      { label: 'Delete', expectedBody: JSON.stringify({ service: 'orchestrator', action: 'delete' }) },
+      {
+        label: 'Delete',
+        expectedBody: JSON.stringify({ service: 'orchestrator', action: 'delete' }),
+      },
     ];
 
     for (const a of actions) {
       vi.mocked(fetchJson).mockClear();
-      mockHealthResponse([{ name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' }], {
-        serviceActionsEnabled: { orchestrator: true },
-      });
+      mockHealthResponse(
+        [{ name: 'orchestrator', status: 'up', baseUrl: 'http://orchestrator:3000' }],
+        {
+          serviceActionsEnabled: { orchestrator: true },
+        },
+      );
 
       const { unmount } = render(<ServiceHealth />);
 
@@ -417,7 +449,7 @@ describe('ServiceHealth', () => {
         expect.objectContaining({
           method: 'POST',
           body: a.expectedBody,
-        })
+        }),
       );
 
       unmount();

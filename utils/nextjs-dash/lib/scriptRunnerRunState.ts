@@ -22,4 +22,3 @@ export function setActiveRunId(runId: string | null) {
 export function getActiveRunId(): string | null {
   return activeRunId;
 }
-

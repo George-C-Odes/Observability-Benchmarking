@@ -38,10 +38,12 @@ export function resolveServerNpmVersion(options: {
   npmUserAgent?: string;
   fallback?: string;
 }): string {
-  return extractNpmVersionFromPackageManager(options.packageManager)
-    ?? extractNpmVersionFromUserAgent(options.npmUserAgent)
-    ?? options.fallback
-    ?? 'N/A';
+  return (
+    extractNpmVersionFromPackageManager(options.packageManager) ??
+    extractNpmVersionFromUserAgent(options.npmUserAgent) ??
+    options.fallback ??
+    'N/A'
+  );
 }
 
 export function collectClientSystemInfo(): ClientSystemInfo {
@@ -51,7 +53,8 @@ export function collectClientSystemInfo(): ClientSystemInfo {
 
   // navigator.platform is deprecated. Prefer UA-CH where available.
   // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform
-  const uaPlatform = (navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData?.platform;
+  const uaPlatform = (navigator as unknown as { userAgentData?: { platform?: string } })
+    .userAgentData?.platform;
   const plat = uaPlatform || 'N/A';
 
   const scr = `${window.screen.width}x${window.screen.height} @${window.devicePixelRatio || 1}x`;

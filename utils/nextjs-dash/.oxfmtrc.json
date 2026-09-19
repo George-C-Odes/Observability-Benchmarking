@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "insertFinalNewline": true,
+  "proseWrap": "preserve",
+  "sortImports": false,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    ".next/**",
+    "node_modules/**",
+    "coverage/**",
+    "quality-report/**",
+    ".output/**",
+    "build/**",
+    "dist/**",
+    "out/**",
+    ".tmp/**",
+    "next-env.d.ts",
+    "tsconfig.tsbuildinfo",
+    "oxlint-report.json",
+    "vitest-*-report.json",
+    "typescript-output.txt",
+    "oxfmt-output.txt"
+  ]
+}

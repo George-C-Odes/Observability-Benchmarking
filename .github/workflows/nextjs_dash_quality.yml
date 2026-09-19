@@ -10,12 +10,16 @@ on:
     paths:
       - 'utils/nextjs-dash/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
+      - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
+      - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
   push:
     paths:
       - 'utils/nextjs-dash/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
+      - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
+      - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
   schedule:
@@ -27,7 +31,7 @@ permissions:
 
 jobs:
   quality:
-    name: Lint, typecheck & test
+    name: Format, lint, typecheck & test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -40,9 +44,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
+          node-version: '26.9.0'
           cache: npm
           cache-dependency-path: utils/nextjs-dash/package-lock.json
+
+      - name: Set up npm 12.0.2
+        run: npm install --global --ignore-scripts npm@12.0.2
 
       - name: Install dependencies
         run: npm ci
@@ -52,20 +59,30 @@ jobs:
         run: |
           node_ver="$(node --version)"
           npm_ver="$(npm --version)"
-          eslint_ver="$(npx eslint --version)"
-          tsc_ver="$(npx tsc --version)"
+          oxlint_ver="$(node -p "require('./node_modules/oxlint/package.json').version")"
+          oxfmt_ver="$(node -p "require('./node_modules/oxfmt/package.json').version")"
+          typescript_ver="$(node -p "require('./node_modules/typescript/package.json').version")"
+          vitest_ver="$(node -p "require('./node_modules/vitest/package.json').version")"
           echo "Node $node_ver"
-          echo "npm  $npm_ver"
-          echo "$eslint_ver"
-          echo "$tsc_ver"
-          echo "node=$node_ver"       >> "$GITHUB_OUTPUT"
-          echo "eslint=$eslint_ver"   >> "$GITHUB_OUTPUT"
-          echo "tsc=$tsc_ver"         >> "$GITHUB_OUTPUT"
+          echo "npm $npm_ver"
+          echo "Oxlint $oxlint_ver"
+          echo "Oxfmt $oxfmt_ver"
+          echo "TypeScript $typescript_ver"
+          echo "Vitest $vitest_ver"
+          echo "node=$node_ver"               >> "$GITHUB_OUTPUT"
+          echo "npm=$npm_ver"                 >> "$GITHUB_OUTPUT"
+          echo "oxlint=$oxlint_ver"           >> "$GITHUB_OUTPUT"
+          echo "oxfmt=$oxfmt_ver"             >> "$GITHUB_OUTPUT"
+          echo "typescript=$typescript_ver"   >> "$GITHUB_OUTPUT"
+          echo "vitest=$vitest_ver"           >> "$GITHUB_OUTPUT"
 
-      - name: Lint (ESLint)
+      - name: Check formatting (Oxfmt)
+        run: npm run format:check
+
+      - name: Lint (Oxlint)
         run: npm run lint
 
-      - name: Typecheck (tsc --noEmit)
+      - name: Typecheck (TypeScript 7 native checker)
         run: npm run typecheck
 
       - name: Unit tests – Node environment
@@ -74,30 +91,45 @@ jobs:
       - name: Unit tests – DOM environment (jsdom)
         run: npm run test:dom
 
+      - name: Quality report tests
+        run: node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
+
       - name: Production build smoke test
         run: npm run build
 
       # ------------------------------------------------------------------
-      # Quality report: generate an HTML report from ESLint + TypeScript
-      # diagnostics so the Pages workflow can host it alongside the Qodana
-      # JVM reports.  Steps run with `if: always()` so that a failing lint
-      # or typecheck still produces a downloadable report artifact.
+      # Quality report: generate HTML from Oxfmt, Oxlint, and TypeScript 7
+      # diagnostics so Pages can host it alongside the Qodana JVM reports.
+      # These steps run with `if: always()` so an earlier gate failure still
+      # produces a downloadable report artifact.
       # ------------------------------------------------------------------
 
-      - name: Generate ESLint JSON report
+      - name: Capture Oxfmt diagnostics
         if: always() && !cancelled()
-        run: npx eslint . --format json --output-file eslint-report.json || true
+        run: |
+          set +e
+          ./node_modules/.bin/oxfmt --check . > oxfmt-output.txt 2>&1
+          status=$?
+          printf '\nOXFMT_EXIT_CODE=%s\n' "$status" >> oxfmt-output.txt
+          exit 0
+
+      - name: Generate Oxlint JSON report
+        if: always() && !cancelled()
+        run: ./node_modules/.bin/oxlint --format json . > oxlint-report.json || true
 
       - name: Capture TypeScript diagnostics
         if: always() && !cancelled()
-        run: npx tsc --noEmit > tsc-output.txt 2>&1 || true
+        run: ./node_modules/.bin/tsc --noEmit > typescript-output.txt 2>&1 || true
 
       - name: Generate quality report
         if: always() && !cancelled()
         env:
-          ESLINT_VERSION: ${{ steps.versions.outputs.eslint }}
-          TSC_VERSION: ${{ steps.versions.outputs.tsc }}
+          OXLINT_VERSION: ${{ steps.versions.outputs.oxlint }}
+          OXFMT_VERSION: ${{ steps.versions.outputs.oxfmt }}
+          TYPESCRIPT_VERSION: ${{ steps.versions.outputs.typescript }}
+          VITEST_VERSION: ${{ steps.versions.outputs.vitest }}
           NODE_VERSION: ${{ steps.versions.outputs.node }}
+          NPM_VERSION: ${{ steps.versions.outputs.npm }}
         run: node ../../scripts/pages/generate-nextjs-quality-report.mjs
 
       - name: Upload quality report
@@ -108,4 +140,3 @@ jobs:
           path: utils/nextjs-dash/quality-report/
           retention-days: 30
           if-no-files-found: warn
-

@@ -23,7 +23,7 @@ export type RunResult = {
   output: string;
 };
 
-export type UseJobRunnerState = {
+type UseJobRunnerState = {
   executing: boolean;
   eventLogs: string[];
   clearEventLogs: () => void;
@@ -165,7 +165,7 @@ function computeRestoredLogs(
   persistedTail: unknown,
   shouldReconnect: boolean,
   jobId: string,
-  maxExecutionLogLines: number
+  maxExecutionLogLines: number,
 ): string[] {
   const tail = Array.isArray(persistedTail) ? persistedTail : [];
   if (!shouldReconnect) {
@@ -184,7 +184,12 @@ function getRestoredJobState(maxExecutionLogLines: number): RestoredJobState | n
 
   const lastJobStatus = persisted.lastJobStatus || null;
   const shouldReconnect = !isTerminalStatus(lastJobStatus?.status);
-  const eventLogs = computeRestoredLogs(persisted.eventLogsTail, shouldReconnect, jobId, maxExecutionLogLines);
+  const eventLogs = computeRestoredLogs(
+    persisted.eventLogsTail,
+    shouldReconnect,
+    jobId,
+    maxExecutionLogLines,
+  );
 
   return {
     jobId,
@@ -260,7 +265,11 @@ function parseSsePayload(raw: string, callbacks: SseEventCallbacks): SseMessageD
   }
 }
 
-function handleSseTypedMessage(parsed: SseMessageData, jobId: string, callbacks: SseEventCallbacks): void {
+function handleSseTypedMessage(
+  parsed: SseMessageData,
+  jobId: string,
+  callbacks: SseEventCallbacks,
+): void {
   const type = parsed.type;
   if (type === 'summary' || type === 'terminalSummary') {
     const snapshot = buildJobSnapshot(jobId, parsed);
@@ -299,7 +308,7 @@ function getNextJobStatus(
   jobId: string,
   isTerminal: boolean,
   runningJobIdRef: { current: string | null },
-  terminalAppliedByJobRef: { current: Set<string> }
+  terminalAppliedByJobRef: { current: Set<string> },
 ): JobStatus | null {
   if (runningJobIdRef.current !== jobId) return previous;
   if (!isTerminal && terminalAppliedByJobRef.current.has(jobId)) return previous;
@@ -312,16 +321,23 @@ function updateLastJobStatus(
   jobId: string,
   isTerminal: boolean,
   runningJobIdRef: { current: string | null },
-  terminalAppliedByJobRef: { current: Set<string> }
+  terminalAppliedByJobRef: { current: Set<string> },
 ): void {
   setLastJobStatus((previous) =>
-    getNextJobStatus(previous, effectiveSnapshot, jobId, isTerminal, runningJobIdRef, terminalAppliedByJobRef)
+    getNextJobStatus(
+      previous,
+      effectiveSnapshot,
+      jobId,
+      isTerminal,
+      runningJobIdRef,
+      terminalAppliedByJobRef,
+    ),
   );
 }
 
 async function checkStreamMeta(
   jobId: string,
-  runId: string | null
+  runId: string | null,
 ): Promise<{ ok: boolean; status: number; txt: string }> {
   const runIdQuery = runId ? `&runId=${encodeURIComponent(runId)}` : '';
   const metaUrl = `/api/orchestrator/events/meta?jobId=${encodeURIComponent(jobId)}${runIdQuery}`;
@@ -342,7 +358,9 @@ function classifyMetaFailure(status: number, txt: string): { reason: string } | 
     return { reason: `Stream rejected as stale run (409). ${txt}` };
   }
   if (status === 404) {
-    return { reason: `Job is no longer available (404). Orchestrator/Next.js may have restarted. ${txt}` };
+    return {
+      reason: `Job is no longer available (404). Orchestrator/Next.js may have restarted. ${txt}`,
+    };
   }
   if (status >= 400 && status < 500) {
     return { reason: `Stream validation failed (HTTP ${status}). ${txt}` };
@@ -354,7 +372,7 @@ async function submitJobCommand(
   command: string,
   label: string,
   tabId: string,
-  runId: string
+  runId: string,
 ): Promise<SubmitOutcome> {
   const res = await fetch('/api/orchestrator/submit', {
     method: 'POST',
@@ -367,7 +385,10 @@ async function submitJobCommand(
     return { success: false, status: res.status, message: bodyText, isBusy: res.status === 503 };
   }
 
-  const json = (await res.json().catch(() => null)) as null | { jobId?: string; requestId?: string };
+  const json = (await res.json().catch(() => null)) as null | {
+    jobId?: string;
+    requestId?: string;
+  };
   const normalizedJobId = normalizeJobId(json?.jobId);
   if (!normalizedJobId) {
     const invalidMsg = 'Invalid submit response from orchestrator: expected a non-empty jobId.';
@@ -385,15 +406,21 @@ export function useJobRunner(): UseJobRunnerState {
   const { config: scriptRunnerConfig } = useScriptRunnerConfig();
 
   const [restoredState] = useState<RestoredJobState | null>(() =>
-    getRestoredJobState(scriptRunnerConfig.maxExecutionLogLines)
+    getRestoredJobState(scriptRunnerConfig.maxExecutionLogLines),
   );
 
   const [executing, setExecuting] = useState(false);
   const [eventLogs, setEventLogs] = useState<string[]>(() => restoredState?.eventLogs || []);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(() => restoredState?.jobId || null);
-  const [lastJobStatus, setLastJobStatus] = useState<JobStatus | null>(() => restoredState?.lastJobStatus || null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(
+    () => restoredState?.jobId || null,
+  );
+  const [lastJobStatus, setLastJobStatus] = useState<JobStatus | null>(
+    () => restoredState?.lastJobStatus || null,
+  );
   const [reconnectCount, setReconnectCount] = useState(() => restoredState?.reconnectCount || 0);
-  const [lastCommand, setLastCommand] = useState<string | null>(() => restoredState?.lastCommand || null);
+  const [lastCommand, setLastCommand] = useState<string | null>(
+    () => restoredState?.lastCommand || null,
+  );
   const [lastLabel, setLastLabel] = useState<string | null>(() => restoredState?.lastLabel || null);
   const [sseConnected, setSseConnected] = useState(false);
   const sseConnectedRef = useRef(false);
@@ -480,7 +507,7 @@ export function useJobRunner(): UseJobRunnerState {
         return updated.slice(-scriptRunnerConfig.maxExecutionLogLines);
       });
     },
-    [scriptRunnerConfig.maxExecutionLogLines]
+    [scriptRunnerConfig.maxExecutionLogLines],
   );
 
   const markTerminalFailed = useCallback(
@@ -507,7 +534,7 @@ export function useJobRunner(): UseJobRunnerState {
       writePersistedState(null);
       closeEventSource();
     },
-    [appendLog, closeEventSource, lastLabel]
+    [appendLog, closeEventSource, lastLabel],
   );
 
   const handleStreamError = useCallback(
@@ -529,7 +556,7 @@ export function useJobRunner(): UseJobRunnerState {
       appendLog(`[client] Connection to orchestrator event stream lost. Reconnecting...${ridMeta}`);
       scheduleReconnectRef.current?.();
     },
-    [appendLog, markTerminalFailed]
+    [appendLog, markTerminalFailed],
   );
 
   const streamJobEvents = useCallback(
@@ -591,7 +618,8 @@ export function useJobRunner(): UseJobRunnerState {
             setSseLastError(null);
 
             const startedAt = sseConnectStartedAtRef.current;
-            const tookMs = typeof startedAt === 'number' ? Math.max(0, Date.now() - startedAt) : null;
+            const tookMs =
+              typeof startedAt === 'number' ? Math.max(0, Date.now() - startedAt) : null;
             const rid = sseLastRequestIdRef.current;
 
             const tookSuffix = typeof tookMs === 'number' ? ` (took ${tookMs}ms)` : '';
@@ -614,7 +642,7 @@ export function useJobRunner(): UseJobRunnerState {
               onSummary: (snapshot, isTerminal) => {
                 const effectiveSnapshot: JobStatus = {
                   ...snapshot,
-                  title: snapshot.title || (lastLabel || undefined),
+                  title: snapshot.title || lastLabel || undefined,
                 };
 
                 updateLastJobStatus(
@@ -623,13 +651,15 @@ export function useJobRunner(): UseJobRunnerState {
                   jobId,
                   isTerminal,
                   runningJobIdRef,
-                  terminalAppliedByJobRef
+                  terminalAppliedByJobRef,
                 );
 
                 if (isTerminal) {
                   terminalAppliedByJobRef.current.add(jobId);
                   expectedSseCloseRef.current = true;
-                  appendLog(`[client] Terminal event received (${effectiveSnapshot.status}). Closing event stream.`);
+                  appendLog(
+                    `[client] Terminal event received (${effectiveSnapshot.status}). Closing event stream.`,
+                  );
                   clearTimers();
                   eventSourceRef.current?.close();
                   eventSourceRef.current = null;
@@ -675,7 +705,7 @@ export function useJobRunner(): UseJobRunnerState {
           if (!sseConnectedRef.current) {
             setSseLastError('SSE did not connect before timeout');
             appendLog(
-              `[client] Event stream timed out after ${scriptRunnerConfig.eventStreamTimeoutMs}ms (no connection established)`
+              `[client] Event stream timed out after ${scriptRunnerConfig.eventStreamTimeoutMs}ms (no connection established)`,
             );
             closeEventSource();
           }
@@ -693,7 +723,7 @@ export function useJobRunner(): UseJobRunnerState {
       clientLogger,
       handleStreamError,
       scriptRunnerConfig.eventStreamTimeoutMs,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -738,11 +768,16 @@ export function useJobRunner(): UseJobRunnerState {
   ]);
 
   const handleFailedSubmit = useCallback(
-    (outcome: { status: number; message: string; isBusy: boolean }, effectiveLabel: string): RunResult => {
+    (
+      outcome: { status: number; message: string; isBusy: boolean },
+      effectiveLabel: string,
+    ): RunResult => {
       const { status, message, isBusy } = outcome;
       if (isBusy) {
         appendLog('[client] Orchestrator rejected job submit as busy (503).');
-        appendLog(message ? `[client] ${message}` : '[client] Try again once the active job completes.');
+        appendLog(
+          message ? `[client] ${message}` : '[client] Try again once the active job completes.',
+        );
       } else {
         const msgSuffix = message ? ` - ${message}` : '';
         appendLog(`[client] Submit failed: HTTP ${status}${msgSuffix}`);
@@ -759,7 +794,7 @@ export function useJobRunner(): UseJobRunnerState {
 
       return { ok: false, job: null, output: `HTTP ${status} - ${message}` };
     },
-    [appendLog]
+    [appendLog],
   );
 
   const handleSuccessfulSubmit = useCallback(
@@ -768,7 +803,7 @@ export function useJobRunner(): UseJobRunnerState {
       command: string,
       effectiveLabel: string,
       generation: number,
-      runId: string
+      runId: string,
     ): RunResult => {
       const { jobId, requestId } = outcome;
       runningJobIdRef.current = jobId;
@@ -797,7 +832,7 @@ export function useJobRunner(): UseJobRunnerState {
         output: `Job ID: ${jobId}${ridTxt}`,
       };
     },
-    [streamJobEvents]
+    [streamJobEvents],
   );
 
   const runCommand = useCallback(
@@ -835,7 +870,7 @@ export function useJobRunner(): UseJobRunnerState {
         setExecuting(false);
       }
     },
-    [appendLog, clearEventLogs, handleFailedSubmit, handleSuccessfulSubmit]
+    [appendLog, clearEventLogs, handleFailedSubmit, handleSuccessfulSubmit],
   );
 
   return {

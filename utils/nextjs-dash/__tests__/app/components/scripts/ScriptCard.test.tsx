@@ -59,4 +59,3 @@ describe('ScriptCard', () => {
     expect(screen.getByRole('button', { name: /copied!/i })).toBeInTheDocument();
   });
 });
-

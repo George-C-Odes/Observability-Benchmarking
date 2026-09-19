@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 vi.mock('@/lib/orchestratorClient', () => ({
   submitCommandWithRunId: vi.fn(),
@@ -7,10 +8,6 @@ vi.mock('@/lib/orchestratorClient', () => ({
 
 vi.mock('@/lib/scriptRunnerRunState', () => ({
   setActiveRunId: vi.fn(),
-}));
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 
 import * as orch from '@/lib/orchestratorClient';
@@ -45,13 +42,19 @@ describe('/api/orchestrator/submit route', () => {
 
     const res = await POST(req);
     expect(runState.setActiveRunId).toHaveBeenCalledWith('run-1');
-    expect(orch.submitCommandWithRunId).toHaveBeenCalledWith('docker compose up', 'run-1', expect.any(String));
+    expect(orch.submitCommandWithRunId).toHaveBeenCalledWith(
+      'docker compose up',
+      'run-1',
+      expect.any(String),
+    );
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ jobId: 'job-123', requestId: expect.any(String) });
   });
 
   it('maps orchestrator busy responses to 503', async () => {
-    vi.mocked(orch.submitCommandWithRunId).mockRejectedValue(new Error('Orchestrator POST /v1/run failed (503): busy'));
+    vi.mocked(orch.submitCommandWithRunId).mockRejectedValue(
+      new Error('Orchestrator POST /v1/run failed (503): busy'),
+    );
 
     const req = new NextRequest('http://localhost/api/orchestrator/submit', {
       method: 'POST',
@@ -84,4 +87,3 @@ describe('/api/orchestrator/submit route', () => {
     });
   });
 });
-

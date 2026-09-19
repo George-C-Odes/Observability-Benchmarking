@@ -132,14 +132,20 @@ export default function AppLogs() {
         return deduped.slice(-appLogsConfig.serverMaxEntries);
       });
     },
-    [appLogsConfig.serverMaxEntries]
+    [appLogsConfig.serverMaxEntries],
   );
 
   const fallbackSnapshot = useCallback(async () => {
     try {
       const res = await fetch('/api/logs');
       const data = (await res.json()) as {
-        entries?: Array<{ ts: number; level: UiLevel; source: UiSource; message: string; meta?: unknown }>;
+        entries?: Array<{
+          ts: number;
+          level: UiLevel;
+          source: UiSource;
+          message: string;
+          meta?: unknown;
+        }>;
       };
       const incoming = Array.isArray(data?.entries) ? data.entries : [];
       appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
@@ -148,13 +154,10 @@ export default function AppLogs() {
     }
   }, [appendServerEntries]);
 
-  const connectSse = useCallback(
-    (sinceTs?: number) => {
-      const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
-      return new EventSource(url);
-    },
-    []
-  );
+  const connectSse = useCallback((sinceTs?: number) => {
+    const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
+    return new EventSource(url);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,7 +186,12 @@ export default function AppLogs() {
         es.onmessage = (evt) => {
           if (cancelled) return;
           try {
-            const parsed = JSON.parse(evt.data) as { ts: number; level: UiLevel; message: string; meta?: unknown };
+            const parsed = JSON.parse(evt.data) as {
+              ts: number;
+              level: UiLevel;
+              message: string;
+              meta?: unknown;
+            };
             if (!parsed?.ts || !parsed?.level || typeof parsed?.message !== 'string') return;
             appendServerEntries([
               {
@@ -225,7 +233,6 @@ export default function AppLogs() {
       es = null;
     };
   }, [appendServerEntries, connectSse, fallbackSnapshot, pulse]);
-
 
   const clearLogs = async () => {
     clearClientLogs();
@@ -292,7 +299,7 @@ export default function AppLogs() {
   }, [filteredLogs.length]);
 
   const getLevelColor = (
-    level: string
+    level: string,
   ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (level) {
       case 'error':
@@ -307,7 +314,7 @@ export default function AppLogs() {
   };
 
   const getSourceColor = (
-    source: UiSource
+    source: UiSource,
   ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     return source === 'server' ? 'secondary' : 'default';
   };
@@ -328,7 +335,11 @@ export default function AppLogs() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <ArticleIcon /> Application Logs
           </Typography>
           <Typography variant="body2" color="text.secondary">

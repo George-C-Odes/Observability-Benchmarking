@@ -24,7 +24,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | Java orchestrator                  | `utils/orchestrator/README.md`, `utils/orchestrator/pom.xml`                         | `application/`, `resource/`, `domain/`, and matching tests        |
 | Go services                        | `services/go/<simple\| enhanced>/README.md`, `go.mod`, `Makefile`                    | `internal/*` for enhanced, `cmd/server` for simple                |
 | Django services                    | `services/python/django/README.md`                                                   | `gunicorn/common`, then `WSGI` or `ASGI` runtime wrapper          |
-| Next.js dashboard                  | `utils/nextjs-dash/README.md`, `package.json`                                        | `app/components`, `app/api`, `lib`, matching `__tests__`          |
+| Next.js dashboard                  | `utils/nextjs-dash/README.md`, `package.json`, `.oxlintrc.json`, `.oxfmtrc.json`     | `app/components`, `app/api`, `lib`, matching `__tests__`          |
 | CI and quality reports             | Matching `.github/workflows/*.yml`                                                   | `scripts/pages/*` if report output changes                        |
 | Docs site                          | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
 | Agent guidance or APM package      | `AGENTS.md`, relevant `.github/instructions/*`, `my-agent/README.md`                 | `docs/AGENT_IMPLEMENTATION_MAP.md`, then affected `.apm/*` files  |
@@ -43,7 +43,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 
 | Area                                                 | Focused checks                                                                                                              |
 |------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `utils/nextjs-dash/**`                               | `npm run lint`, `npm run typecheck`, `npm run test:fast` from `utils/nextjs-dash`                                           |
+| `utils/nextjs-dash/**`                               | `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test:fast` from `utils/nextjs-dash`                   |
 | `utils/orchestrator/**`                              | `mvn verify -B` from `utils/orchestrator`                                                                                   |
 | `services/java/<module>/**`                          | `mvn verify -B` from the changed Maven module; add Checkstyle if style-sensitive                                            |
 | `services/go/enhanced/**` or `services/go/simple/**` | `go test ./... -race`, `go vet ./...`, `golangci-lint run` from the changed module                                          |

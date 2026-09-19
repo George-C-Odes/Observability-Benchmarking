@@ -77,7 +77,6 @@ export default function ScriptRunner() {
   // Snapshot what the user *submitted* so the UI doesn't lag behind asynchronous SSE title updates.
   const [submittedRun, setSubmittedRun] = useState<{ label: string; command: string } | null>(null);
 
-
   const [executingName, setExecutingName] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
@@ -91,10 +90,17 @@ export default function ScriptRunner() {
   const executionLogRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
 
-  const { on: statusPulseOn } = useTimedPulse({ durationMs: 650, trigger: lastJobStatus?.status, allowFalsy: false });
+  const { on: statusPulseOn } = useTimedPulse({
+    durationMs: 650,
+    trigger: lastJobStatus?.status,
+    allowFalsy: false,
+  });
 
   const isRunning = lastJobStatus?.status === 'RUNNING' || lastJobStatus?.status === 'QUEUED';
-  const isTerminal = lastJobStatus?.status === 'SUCCEEDED' || lastJobStatus?.status === 'FAILED' || lastJobStatus?.status === 'CANCELED';
+  const isTerminal =
+    lastJobStatus?.status === 'SUCCEEDED' ||
+    lastJobStatus?.status === 'FAILED' ||
+    lastJobStatus?.status === 'CANCELED';
 
   const { on: terminalPulseOn } = useTimedPulse({
     durationMs: 1600,
@@ -103,20 +109,30 @@ export default function ScriptRunner() {
   });
 
   const executeBlocked = Boolean(currentJobId) && isRunning;
-  const executeBlockedReason = executeBlocked ? 'Another job is still running. Wait for it to finish before starting a new one.' : '';
+  const executeBlockedReason = executeBlocked
+    ? 'Another job is still running. Wait for it to finish before starting a new one.'
+    : '';
 
-  const [envValidation, setEnvValidation] = useState<{ loaded: boolean; hostRepoSet: boolean } | null>(null);
+  const [envValidation, setEnvValidation] = useState<{
+    loaded: boolean;
+    hostRepoSet: boolean;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/env', { method: 'GET', headers: { Accept: 'application/json' } });
+        const res = await fetch('/api/env', {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
         if (!res.ok) {
           if (!cancelled) setEnvValidation({ loaded: false, hostRepoSet: false });
           return;
         }
-        const body = (await res.json()) as { validation?: { loaded?: unknown; hostRepoSet?: unknown } };
+        const body = (await res.json()) as {
+          validation?: { loaded?: unknown; hostRepoSet?: unknown };
+        };
         const loaded = Boolean(body.validation?.loaded);
         const hostRepoSet = Boolean(body.validation?.hostRepoSet);
         if (!cancelled) setEnvValidation({ loaded, hostRepoSet });
@@ -130,7 +146,8 @@ export default function ScriptRunner() {
     };
   }, []);
 
-  const envBlocked = envValidation !== null && (!envValidation.loaded || !envValidation.hostRepoSet);
+  const envBlocked =
+    envValidation !== null && (!envValidation.loaded || !envValidation.hostRepoSet);
   const envBlockedReason = 'HOST_REPO not set in .env';
 
   useEffect(() => {
@@ -200,7 +217,9 @@ export default function ScriptRunner() {
       const maybeBusy = details.includes('HTTP 503');
       setMessage({
         type: 'error',
-        text: maybeBusy ? `Orchestrator is busy. Try again shortly.` : `Failed to start "${scriptName}"`,
+        text: maybeBusy
+          ? `Orchestrator is busy. Try again shortly.`
+          : `Failed to start "${scriptName}"`,
       });
     }
 
@@ -262,7 +281,10 @@ export default function ScriptRunner() {
     }
 
     if (st === 'SUCCEEDED') {
-      return { type: 'success' as const, text: `"${lastLabel ?? 'Free Text Command'}" completed successfully.` };
+      return {
+        type: 'success' as const,
+        text: `"${lastLabel ?? 'Free Text Command'}" completed successfully.`,
+      };
     }
 
     if (st === 'FAILED') {
@@ -273,7 +295,10 @@ export default function ScriptRunner() {
     }
 
     if (st === 'CANCELED') {
-      return { type: 'error' as const, text: `"${lastLabel ?? 'Free Text Command'}" was canceled.` };
+      return {
+        type: 'error' as const,
+        text: `"${lastLabel ?? 'Free Text Command'}" was canceled.`,
+      };
     }
 
     return null;
@@ -288,11 +313,14 @@ export default function ScriptRunner() {
   const isBannerDismissed = Boolean(bannerKey) && dismissedBannerKey === bannerKey;
   const visibleBannerMessage = bannerMessage && !isBannerDismissed ? bannerMessage : null;
 
-  const hasAnyExecutionState = Boolean(currentJobId) || eventLogs.length > 0 || Boolean(lastJobStatus);
+  const hasAnyExecutionState =
+    Boolean(currentJobId) || eventLogs.length > 0 || Boolean(lastJobStatus);
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -303,12 +331,26 @@ export default function ScriptRunner() {
   const pageJob = lastJobStatus;
   const pageStatusUi = (() => {
     const st = pageJob?.status;
-    if (!st) return { label: '—', color: 'default' as const, icon: <PendingIcon fontSize="small" /> };
-    if (st === 'SUCCEEDED') return { label: 'SUCCEEDED', color: 'success' as const, icon: <CheckCircleIcon fontSize="small" /> };
-    if (st === 'FAILED') return { label: 'FAILED', color: 'error' as const, icon: <ErrorOutlineIcon fontSize="small" /> };
-    if (st === 'CANCELED') return { label: 'CANCELED', color: 'error' as const, icon: <CancelIcon fontSize="small" /> };
-    if (st === 'RUNNING') return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={14} /> };
-    if (st === 'QUEUED') return { label: 'QUEUED', color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
+    if (!st)
+      return { label: '—', color: 'default' as const, icon: <PendingIcon fontSize="small" /> };
+    if (st === 'SUCCEEDED')
+      return {
+        label: 'SUCCEEDED',
+        color: 'success' as const,
+        icon: <CheckCircleIcon fontSize="small" />,
+      };
+    if (st === 'FAILED')
+      return {
+        label: 'FAILED',
+        color: 'error' as const,
+        icon: <ErrorOutlineIcon fontSize="small" />,
+      };
+    if (st === 'CANCELED')
+      return { label: 'CANCELED', color: 'error' as const, icon: <CancelIcon fontSize="small" /> };
+    if (st === 'RUNNING')
+      return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={14} /> };
+    if (st === 'QUEUED')
+      return { label: 'QUEUED', color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
     return { label: st, color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
   })();
 
@@ -335,7 +377,8 @@ export default function ScriptRunner() {
     return `${s}s`;
   })();
 
-  const pageLastLine = pageJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
+  const pageLastLine =
+    pageJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
 
   // Use the job runner's canonical title/label (matches banner). Avoid falling back to submittedRun here,
   // because it can be stale relative to restored job state.
@@ -352,7 +395,11 @@ export default function ScriptRunner() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <TerminalIcon /> Script Runner
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -360,10 +407,19 @@ export default function ScriptRunner() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={loading}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={loading}
+          >
             Refresh
           </Button>
-          <Tooltip title={envBlocked ? envBlockedReason : ''} arrow disableHoverListener={!envBlocked}>
+          <Tooltip
+            title={envBlocked ? envBlockedReason : ''}
+            arrow
+            disableHoverListener={!envBlocked}
+          >
             <span>
               <Button
                 variant="contained"
@@ -380,13 +436,27 @@ export default function ScriptRunner() {
       </Box>
 
       {error && !message && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => { setMessage(null); setDismissedBannerKey(bannerKey); }}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => {
+            setMessage(null);
+            setDismissedBannerKey(bannerKey);
+          }}
+        >
           {error}
         </Alert>
       )}
 
       {showFreeTextInput && (
-        <Card sx={{ mb: 3, bgcolor: 'background.paper', border: '2px solid', borderColor: 'secondary.main' }}>
+        <Card
+          sx={{
+            mb: 3,
+            bgcolor: 'background.paper',
+            border: '2px solid',
+            borderColor: 'secondary.main',
+          }}
+        >
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Execute Custom Command
@@ -453,7 +523,15 @@ export default function ScriptRunner() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 260 }}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TerminalIcon fontSize="small" /> Current Execution
@@ -471,7 +549,13 @@ export default function ScriptRunner() {
                     borderRadius: 16,
                   }}
                 >
-                  <InwardPulse active={terminalPulseOn} color={statusPulseColor} inset={12} borderRadius={22} durationMs={1000} />
+                  <InwardPulse
+                    active={terminalPulseOn}
+                    color={statusPulseColor}
+                    inset={12}
+                    borderRadius={22}
+                    durationMs={1000}
+                  />
 
                   <Chip
                     size="small"
@@ -492,7 +576,13 @@ export default function ScriptRunner() {
 
                 {!sseConnected && Boolean(currentJobId) && !isTerminal && (
                   <Tooltip title={sseLastError ?? 'Disconnected'}>
-                    <Chip size="small" icon={<LinkOffIcon fontSize="small" />} color="warning" variant="outlined" label="stream" />
+                    <Chip
+                      size="small"
+                      icon={<LinkOffIcon fontSize="small" />}
+                      color="warning"
+                      variant="outlined"
+                      label="stream"
+                    />
                   </Tooltip>
                 )}
 
@@ -519,7 +609,16 @@ export default function ScriptRunner() {
                   title={
                     jobCommandText ? (
                       <Box sx={{ maxWidth: 720 }}>
-                        <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: 12 }}>
+                        <Box
+                          component="pre"
+                          sx={{
+                            m: 0,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                          }}
+                        >
                           {jobCommandText}
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.75 }}>
@@ -559,10 +658,19 @@ export default function ScriptRunner() {
                 <Typography variant="caption" color="text.secondary">
                   Job id:
                 </Typography>
-                <Chip size="small" variant="outlined" label={currentJobId ?? '—'} sx={{ fontFamily: 'monospace', maxWidth: 420 }} />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={currentJobId ?? '—'}
+                  sx={{ fontFamily: 'monospace', maxWidth: 420 }}
+                />
                 <Tooltip title={currentJobId ? 'Copy job id' : 'No job id'}>
                   <span>
-                    <IconButton size="small" onClick={() => currentJobId && void copyText(currentJobId)} disabled={!currentJobId}>
+                    <IconButton
+                      size="small"
+                      onClick={() => currentJobId && void copyText(currentJobId)}
+                      disabled={!currentJobId}
+                    >
                       <ContentCopyIcon fontSize="inherit" />
                     </IconButton>
                   </span>
@@ -579,7 +687,13 @@ export default function ScriptRunner() {
                   size="small"
                   variant="outlined"
                   icon={<AccessTimeIcon fontSize="small" />}
-                  label={pageJob?.finishedAt ? pageRuntimeText : (isRunning ? `running… ${pageRuntimeText}` : '—')}
+                  label={
+                    pageJob?.finishedAt
+                      ? pageRuntimeText
+                      : isRunning
+                        ? `running… ${pageRuntimeText}`
+                        : '—'
+                  }
                 />
 
                 <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
@@ -589,7 +703,13 @@ export default function ScriptRunner() {
                   size="small"
                   variant="outlined"
                   label={typeof pageJob?.exitCode === 'number' ? String(pageJob.exitCode) : '—'}
-                  color={pageJob?.status === 'SUCCEEDED' ? 'success' : pageJob?.status === 'FAILED' ? 'error' : 'default'}
+                  color={
+                    pageJob?.status === 'SUCCEEDED'
+                      ? 'success'
+                      : pageJob?.status === 'FAILED'
+                        ? 'error'
+                        : 'default'
+                  }
                 />
               </Box>
 
@@ -597,12 +717,20 @@ export default function ScriptRunner() {
                 <Typography variant="caption" color="text.secondary">
                   Started:
                 </Typography>
-                <Chip size="small" variant="outlined" label={formatTimestampHuman(pageJob?.startedAt ?? pageJob?.createdAt)} />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={formatTimestampHuman(pageJob?.startedAt ?? pageJob?.createdAt)}
+                />
 
                 <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                   Finished:
                 </Typography>
-                <Chip size="small" variant="outlined" label={formatTimestampHuman(pageJob?.finishedAt)} />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={formatTimestampHuman(pageJob?.finishedAt)}
+                />
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
@@ -635,7 +763,9 @@ export default function ScriptRunner() {
       {hasAnyExecutionState && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <ListAltIcon />
                 <Typography variant="h6">Execution Logs</Typography>
@@ -643,7 +773,13 @@ export default function ScriptRunner() {
                   size="small"
                   label={sseConnected ? 'SSE Connected' : 'SSE Disconnected'}
                   color={sseConnected ? 'success' : 'default'}
-                  icon={sseConnected ? <CheckCircleIcon fontSize="small" /> : <LinkOffIcon fontSize="small" />}
+                  icon={
+                    sseConnected ? (
+                      <CheckCircleIcon fontSize="small" />
+                    ) : (
+                      <LinkOffIcon fontSize="small" />
+                    )
+                  }
                   variant="outlined"
                 />
                 {showStreamIssueChip && (
@@ -789,11 +925,11 @@ export default function ScriptRunner() {
       {scripts.length === 0 && !loading && (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="text.secondary">
-            No scripts found with required prefixes ([build-img], [multi-cont], [single-cont], [test])
+            No scripts found with required prefixes ([build-img], [multi-cont], [single-cont],
+            [test])
           </Typography>
         </Box>
       )}
     </Box>
   );
 }
-

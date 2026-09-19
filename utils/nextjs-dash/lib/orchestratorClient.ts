@@ -18,18 +18,18 @@ export interface JobStatus {
   lastLine?: string;
 }
 
-export interface CommandPreset {
+interface CommandPreset {
   title: string;
   command: string;
   category: string;
   sourceFile: string;
 }
 
-export interface EnvFileContent {
+interface EnvFileContent {
   content: string;
 }
 
-export interface BenchmarkTargetsContent {
+interface BenchmarkTargetsContent {
   urls: string[];
   path?: string;
 }
@@ -60,7 +60,7 @@ const getHeaders = (includeAuth: boolean = false, requestId?: string): HeadersIn
 export async function orchestratorGet<T = unknown>(
   endpoint: string,
   requireAuth: boolean = false,
-  requestId?: string
+  requestId?: string,
 ): Promise<T> {
   const url = `${orchestratorConfig.url}${endpoint}`;
 
@@ -84,7 +84,7 @@ export async function orchestratorPost<T = unknown>(
   endpoint: string,
   body: unknown,
   requireAuth: boolean = true,
-  requestId?: string
+  requestId?: string,
 ): Promise<T> {
   const url = `${orchestratorConfig.url}${endpoint}`;
 
@@ -115,7 +115,7 @@ export async function submitCommand(command: string): Promise<{ jobId: string }>
 export async function submitCommandWithRunId(
   command: string,
   runId: string | null,
-  requestId?: string
+  requestId?: string,
 ): Promise<{ jobId: string; runId?: string | null }> {
   const body: { command: string; runId?: string } = { command };
   if (runId) body.runId = runId;
@@ -125,7 +125,11 @@ export async function submitCommandWithRunId(
 /**
  * Get job status by jobId and runId.
  */
-export async function getJobStatusWithRunId(jobId: string, runId: string | null, requestId?: string | null): Promise<JobStatus> {
+export async function getJobStatusWithRunId(
+  jobId: string,
+  runId: string | null,
+  requestId?: string | null,
+): Promise<JobStatus> {
   const suffix = runId ? `?runId=${encodeURIComponent(runId)}` : '';
   return orchestratorGet<JobStatus>(`/v1/jobs/${jobId}${suffix}`, false, requestId ?? undefined);
 }

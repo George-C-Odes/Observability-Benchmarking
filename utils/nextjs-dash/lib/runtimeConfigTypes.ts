@@ -65,13 +65,13 @@ export const DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG: ServiceActionsRuntimeConfig
     'dropwizard-jvm-virtual': false,
     'vertx-jvm': false,
     'pekko-jvm': false,
-    'go': false,
+    go: false,
     'django-platform': false,
     'django-reactive': false,
 
     // UTILS
     'nextjs-dash': false,
-    'orchestrator': false,
-    'wrk2': false,
+    orchestrator: false,
+    wrk2: false,
   },
 };

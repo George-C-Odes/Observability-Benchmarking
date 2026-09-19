@@ -1,6 +1,6 @@
 export type DockerControlAction = 'start' | 'stop' | 'restart' | 'recreate' | 'delete';
 
-export interface DockerControlCommandParams {
+interface DockerControlCommandParams {
   service: string;
   action: DockerControlAction;
 }
@@ -9,8 +9,9 @@ export interface DockerControlCommandParams {
  * Some benchmark services run behind docker compose profiles (OBS + SERVICES).
  * This helper centralizes that profile selection so UI and API don't drift.
  */
-export function needsServicesProfiles(serviceName: string): boolean {
-  return serviceName.startsWith('spring-') ||
+function needsServicesProfiles(serviceName: string): boolean {
+  return (
+    serviceName.startsWith('spring-') ||
     serviceName.startsWith('quarkus-') ||
     serviceName.startsWith('micronaut-') ||
     serviceName.startsWith('helidon-') ||
@@ -20,10 +21,11 @@ export function needsServicesProfiles(serviceName: string): boolean {
     serviceName.startsWith('vertx-') ||
     serviceName.startsWith('pekko-') ||
     serviceName.startsWith('go') ||
-    serviceName.startsWith('django-');
+    serviceName.startsWith('django-')
+  );
 }
 
-export function composePrefixForService(serviceName: string): string {
+function composePrefixForService(serviceName: string): string {
   const base = 'docker compose';
   return needsServicesProfiles(serviceName) ? `${base} --profile=OBS --profile=SERVICES` : base;
 }

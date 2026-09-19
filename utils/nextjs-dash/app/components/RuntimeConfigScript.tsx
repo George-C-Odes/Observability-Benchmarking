@@ -26,10 +26,7 @@ export function RuntimeConfigScript(props: RuntimeClientConfig) {
   // Outer JSON.stringify turns that string into a safe JS string literal
   // (all special chars are escaped).  The </script> replacement prevents
   // breaking out of the <script> block in the HTML.
-  const safeStringLiteral = JSON.stringify(JSON.stringify(props)).replace(
-    /</g,
-    '\\u003c',
-  );
+  const safeStringLiteral = JSON.stringify(JSON.stringify(props)).replace(/</g, '\\u003c');
   const code = `(() => { try { window.__OBS_DASH_CONFIG__ = JSON.parse(${safeStringLiteral}); } catch (e) {} })();`;
 
   return (

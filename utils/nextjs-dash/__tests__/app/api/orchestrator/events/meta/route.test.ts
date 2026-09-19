@@ -1,12 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import '@/__tests__/_helpers/mockScopedServerLogger';
 
 vi.mock('@/lib/scriptRunnerRunState', () => ({
   getActiveRunId: vi.fn(),
-}));
-
-vi.mock('@/lib/scopedServerLogger', () => ({
-  createScopedServerLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 
 import * as runState from '@/lib/scriptRunnerRunState';
@@ -27,7 +24,9 @@ describe('/api/orchestrator/events/meta route', () => {
   it('returns 404 when no active run is tracked', async () => {
     vi.mocked(runState.getActiveRunId).mockReturnValue(null);
 
-    const res = await GET(new NextRequest('http://localhost/api/orchestrator/events/meta?jobId=job-1'));
+    const res = await GET(
+      new NextRequest('http://localhost/api/orchestrator/events/meta?jobId=job-1'),
+    );
     expect(res.status).toBe(404);
     await expect(res.json()).resolves.toEqual({
       error: 'no_active_run',
@@ -38,7 +37,9 @@ describe('/api/orchestrator/events/meta route', () => {
   it('returns 409 for stale runIds', async () => {
     vi.mocked(runState.getActiveRunId).mockReturnValue('run-active');
 
-    const res = await GET(new NextRequest('http://localhost/api/orchestrator/events/meta?jobId=job-1&runId=run-old'));
+    const res = await GET(
+      new NextRequest('http://localhost/api/orchestrator/events/meta?jobId=job-1&runId=run-old'),
+    );
     expect(res.status).toBe(409);
     await expect(res.json()).resolves.toEqual({
       error: 'stale_run',
@@ -49,7 +50,9 @@ describe('/api/orchestrator/events/meta route', () => {
   it('returns request metadata for the active run', async () => {
     vi.mocked(runState.getActiveRunId).mockReturnValue('run-active');
 
-    const res = await GET(new NextRequest('http://localhost/api/orchestrator/events/meta?jobId=job-1&runId=run-active'));
+    const res = await GET(
+      new NextRequest('http://localhost/api/orchestrator/events/meta?jobId=job-1&runId=run-active'),
+    );
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.headers.get('x-request-id')).toBeTruthy();
@@ -61,4 +64,3 @@ describe('/api/orchestrator/events/meta route', () => {
     });
   });
 });
-

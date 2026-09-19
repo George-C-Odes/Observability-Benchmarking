@@ -187,8 +187,8 @@ nextjs_metadata_html=''
 
 case "$nextjs_status" in
   available)
-    nextjs_item_text='nextjs-dash quality report is available (ESLint + TypeScript).'
-    nextjs_item_html='<li><a href="./nextjs-dash/">nextjs-dash quality report</a> (ESLint + TypeScript)</li>'
+    nextjs_item_text='nextjs-dash quality report is available (Oxlint + Oxfmt + TypeScript 7).'
+    nextjs_item_html='<li><a href="./nextjs-dash/">nextjs-dash quality report</a> (Oxlint + Oxfmt + TypeScript 7)</li>'
     ;;
   'download failed')
     nextjs_item_text='nextjs-dash quality report could not be downloaded for the resolved run.'
@@ -623,8 +623,8 @@ write_html_file "$QUALITY_SITE_DIR/index.html" \
   '  </ul>' \
   "  ${go_metadata_html}" \
   "  ${go_simple_metadata_html}" \
-  '  <h2>Next.js Dashboard (ESLint + TypeScript)</h2>' \
-  '  <p>ESLint and TypeScript strict-mode analysis — the free, open-source equivalent of JetBrains IDE inspections for JavaScript and TypeScript.</p>' \
+  '  <h2>Next.js Dashboard (Oxlint + Oxfmt + TypeScript 7)</h2>' \
+  '  <p>Oxlint static analysis, Oxfmt formatting, and TypeScript 7 native strict-mode checking.</p>' \
   '  <ul>' \
   "    ${nextjs_item_html}" \
   '  </ul>' \

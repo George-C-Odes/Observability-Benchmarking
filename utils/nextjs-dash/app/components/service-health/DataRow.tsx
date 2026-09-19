@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
-export interface DataRowProps {
+interface DataRowProps {
   label: string;
   value: React.ReactNode;
   color?: 'default' | 'secondary' | 'error';
@@ -44,7 +44,12 @@ export const DataRow = React.memo(function DataRow(props: DataRowProps) {
         <Typography
           variant="caption"
           sx={{
-            color: props.color === 'error' ? 'error.main' : props.color === 'secondary' ? 'text.secondary' : 'text.primary',
+            color:
+              props.color === 'error'
+                ? 'error.main'
+                : props.color === 'secondary'
+                  ? 'text.secondary'
+                  : 'text.primary',
             lineHeight: 1.2,
             wordBreak: 'break-word',
           }}
@@ -54,7 +59,9 @@ export const DataRow = React.memo(function DataRow(props: DataRowProps) {
       </Box>
 
       {props.endAdornment && (
-        <Box sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>{props.endAdornment}</Box>
+        <Box sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center' }}>
+          {props.endAdornment}
+        </Box>
       )}
     </Box>
   );

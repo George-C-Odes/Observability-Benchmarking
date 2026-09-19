@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1.7
-ARG IMAGE_DEPS=node:26.8.2-alpine3.24
-ARG IMAGE_RUNTIME=node:26.8.2-alpine3.24
+ARG IMAGE_DEPS=node:26.9.0-alpine3.24
+ARG IMAGE_RUNTIME=node:26.9.0-alpine3.24
 ARG NPM_VERSION=12.0.2
-#ARG IMAGE_DEPS=node:26.8.2-bookworm-slim
-#ARG IMAGE_RUNTIME=node:26.8.2-bookworm-slim
+#ARG IMAGE_DEPS=node:26.9.0-bookworm-slim
+#ARG IMAGE_RUNTIME=node:26.9.0-bookworm-slim
 
 # ------------ DEPS STAGE -----------------------
 # Installs ALL dependencies (prod + dev) for build & test.
 FROM ${IMAGE_DEPS} AS deps
+ARG NPM_VERSION
 WORKDIR /app
 
 # Pin npm before any install step so the container build matches packageManager.
@@ -23,7 +24,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
   npm ci --prefer-offline --no-audit --fund=false
 
 # ------------ QUALITY GATE STAGE ----------------
-# Runs lint + typecheck + tests.  Gated: build won't proceed if this fails.
+# Runs formatting, lint, typecheck, and tests. Gated: build won't proceed if this fails.
 # Enforced quality gate: the builder stage depends on this and cannot skip it.
 FROM deps AS quality
 COPY --link . .
@@ -31,13 +32,14 @@ COPY --link . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PATH=/app/node_modules/.bin:$PATH
 
-# Lint, typecheck, and test in a single RUN to share a layer.
+# Run the module-owned quality scripts in the same order as CI.
 # The build machine has 16 cores — use them.
 # A sentinel file is written on success so the builder stage can depend on it.
-RUN eslint . --max-warnings=0 && \
-    tsc --noEmit && \
-    vitest run -c vitest.config.node.ts --maxWorkers=12 && \
-    vitest run -c vitest.config.dom.ts  --maxWorkers=12 && \
+RUN npm run format:check && \
+    npm run lint && \
+    npm run typecheck && \
+    npm run test:node -- --maxWorkers=12 && \
+    npm run test:dom -- --maxWorkers=12 && \
     touch /tmp/.quality-ok
 
 # ------------ BUILD STAGE -----------------------
@@ -64,7 +66,7 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Cache both the Next.js incremental build cache and the webpack cache
 RUN --mount=type=cache,target=/app/.next/cache \
-  next build
+  npm run build
 
 # ------------ RUNTIME STAGE ---------------------
 FROM ${IMAGE_RUNTIME} AS runner

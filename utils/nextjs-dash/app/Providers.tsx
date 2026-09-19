@@ -54,7 +54,6 @@ export default function Providers({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-
     writeStoredTheme(currentTheme);
     // Keep the data attribute in sync (useful for debugging and future CSS hooks).
     document.documentElement.dataset.dashboardTheme = currentTheme;
@@ -64,9 +63,8 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   const ctxValue = useMemo<DashboardThemeContextValue>(
     () => ({ currentTheme, setCurrentTheme }),
-    [currentTheme]
+    [currentTheme],
   );
-
 
   return (
     <AppRouterCacheProvider>

@@ -36,7 +36,11 @@ export async function GET(request: NextRequest) {
       }, 15000);
 
       // Poll-based follow (simple, reliable in Next.js)
-      let lastTs = initial.length ? initial[initial.length - 1].ts : (Number.isFinite(sinceTs) ? (sinceTs as number) : 0);
+      let lastTs = initial.length
+        ? initial[initial.length - 1].ts
+        : Number.isFinite(sinceTs)
+          ? (sinceTs as number)
+          : 0;
       const follow = setInterval(() => {
         const newer = getServerLogBuffer().snapshot({ sinceTs: lastTs });
         if (newer.length) {

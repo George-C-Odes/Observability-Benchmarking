@@ -36,7 +36,12 @@ vi.mock('@mui/material', async () => {
     delete domProps.variant;
     delete domProps.sx;
 
-    return <div {...domProps}>{icon}{label ?? children}</div>;
+    return (
+      <div {...domProps}>
+        {icon}
+        {label ?? children}
+      </div>
+    );
   }
 
   return {
@@ -49,17 +54,41 @@ vi.mock('@mui/material', async () => {
 
 // ── Module mocks ──────────────────────────────────────────────────────
 
-vi.mock('@/lib/clientLogger', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK);
-vi.mock('@/app/components/ui/InwardPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK);
-vi.mock('@/app/hooks/useTimedPulse', async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK);
+vi.mock(
+  '@/lib/clientLogger',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).CLIENT_LOGGER_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/components/ui/InwardPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).INWARD_PULSE_MODULE_MOCK,
+);
+vi.mock(
+  '@/app/hooks/useTimedPulse',
+  async () => (await import('@/__tests__/_helpers/componentModuleMocks')).TIMED_PULSE_MODULE_MOCK,
+);
 
 // Mock useScripts
 const mockRefresh = vi.fn();
 const defaultScriptsReturn = {
   scripts: [
-    { name: 'Build All', description: 'Build all images', command: 'docker compose build', category: 'build-img' as const },
-    { name: 'Start OBS', description: 'Start observability stack', command: 'docker compose up -d', category: 'multi-cont' as const },
-    { name: 'Run Tests', description: 'Execute test suite', command: 'npm test', category: 'test' as const },
+    {
+      name: 'Build All',
+      description: 'Build all images',
+      command: 'docker compose build',
+      category: 'build-img' as const,
+    },
+    {
+      name: 'Start OBS',
+      description: 'Start observability stack',
+      command: 'docker compose up -d',
+      category: 'multi-cont' as const,
+    },
+    {
+      name: 'Run Tests',
+      description: 'Execute test suite',
+      command: 'npm test',
+      category: 'test' as const,
+    },
   ],
   loading: false,
   error: null,
@@ -96,7 +125,12 @@ vi.mock('@/app/hooks/useJobRunner', () => ({
 
 // Mock ScriptSection to simplify rendering
 vi.mock('@/app/components/scripts/ScriptSection', () => ({
-  ScriptSection: ({ title, scripts, onExecuteAction, executeDisabled }: {
+  ScriptSection: ({
+    title,
+    scripts,
+    onExecuteAction,
+    executeDisabled,
+  }: {
     title: string;
     scripts: Array<{ name: string; command: string }>;
     onExecuteAction: (s: { name: string; command: string }) => void;
@@ -150,10 +184,10 @@ function mockEnvValidation(validation?: EnvValidationState) {
         return new Promise(() => {});
       }
 
-      return new Response(
-        JSON.stringify({ validation }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      );
+      return new Response(JSON.stringify({ validation }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response('Not found', { status: 404 });
@@ -168,7 +202,10 @@ function renderScriptRunner() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('setInterval', vi.fn(() => 0));
+  vi.stubGlobal(
+    'setInterval',
+    vi.fn(() => 0),
+  );
   vi.stubGlobal('clearInterval', vi.fn());
 
   // Reset mocks to default return values
@@ -220,6 +257,21 @@ describe('ScriptRunner', () => {
     expect(mockRunCommand).toHaveBeenCalledWith('docker compose build', 'Build All');
   });
 
+  it('shows a busy message when the orchestrator rejects a submission', async () => {
+    mockRunCommand.mockResolvedValueOnce({
+      ok: false,
+      output: 'Request failed (HTTP 503)',
+      job: null,
+    });
+    renderScriptRunner();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('execute-Build All'));
+    });
+
+    expect(screen.getByText('Orchestrator is busy. Try again shortly.')).toBeInTheDocument();
+  });
+
   it('shows Refresh button', () => {
     renderScriptRunner();
     expect(screen.getByRole('button', { name: /Refresh/i })).toBeInTheDocument();
@@ -243,6 +295,23 @@ describe('ScriptRunner', () => {
     fireEvent.click(screen.getByRole('button', { name: /Custom Command/i }));
 
     expect(screen.getByText('Execute Custom Command')).toBeInTheDocument();
+  });
+
+  it('executes a custom command and closes the editor', async () => {
+    renderScriptRunner();
+    fireEvent.click(screen.getByRole('button', { name: /Custom Command/i }));
+
+    fireEvent.change(
+      screen.getByPlaceholderText('e.g., docker compose --project-directory compose ps'),
+      { target: { value: 'docker compose ps' } },
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Execute$/ }));
+    });
+
+    expect(mockRunCommand).toHaveBeenCalledWith('docker compose ps', 'Free Text Command');
+    expect(screen.queryByText('Execute Custom Command')).not.toBeInTheDocument();
   });
 
   it('shows banner message on successful execution', () => {
@@ -300,6 +369,21 @@ describe('ScriptRunner', () => {
     renderScriptRunner();
 
     expect(screen.getByText('Execution Logs')).toBeInTheDocument();
+  });
+
+  it('clears execution state through the job-runner boundary', () => {
+    setJobRunnerState({
+      eventLogs: ['log line 1'],
+      currentJobId: 'job-clear',
+      lastJobStatus: { jobId: 'job-clear', status: 'RUNNING' },
+      lastCommand: 'test',
+      lastLabel: 'Test',
+    });
+    renderScriptRunner();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Clear$/ }));
+
+    expect(mockReset).toHaveBeenCalledOnce();
   });
 
   it('shows "no scripts found" when script list is empty and not loading', () => {

@@ -1,14 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import '@/__tests__/_helpers/mockOrchestratorConfig';
 
-vi.mock('@/lib/config', () => ({
-  orchestratorConfig: {
-    url: 'http://orchestrator:3002',
-    apiKey: 'x',
-    timeout: 60000,
-  },
-}));
-
-const mod = (await import('@/app/api/orchestrator/events/route')) as unknown as { GET: (req: Request) => Promise<Response> };
+const mod = (await import('@/app/api/orchestrator/events/route')) as unknown as {
+  GET: (req: Request) => Promise<Response>;
+};
 const { GET } = mod;
 
 function makeSseResponseFromChunk(chunk: Uint8Array) {
@@ -27,7 +22,9 @@ function makeSseResponseFromChunk(chunk: Uint8Array) {
 describe('/api/orchestrator/events route', () => {
   it('does not throw when the client aborts while proxying upstream SSE', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    fetchSpy.mockResolvedValueOnce(makeSseResponseFromChunk(new TextEncoder().encode('data: hi\n\n')));
+    fetchSpy.mockResolvedValueOnce(
+      makeSseResponseFromChunk(new TextEncoder().encode('data: hi\n\n')),
+    );
 
     const req = new Request('http://localhost/api/orchestrator/events?jobId=job-1');
     const controller = new AbortController();

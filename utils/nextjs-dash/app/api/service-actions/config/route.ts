@@ -1,6 +1,9 @@
 import { okJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
-import { DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG, type ServiceActionsRuntimeConfig } from '@/lib/runtimeConfigTypes';
+import {
+  DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG,
+  type ServiceActionsRuntimeConfig,
+} from '@/lib/runtimeConfigTypes';
 import { isServiceActionsEnabled } from '@/lib/serviceActionFlags';
 
 const SERVICES = [

@@ -10,11 +10,11 @@ export const GET = withApiRoute({ name: 'SCRIPT_RUNNER_CONFIG_API' }, async func
   const payload: ScriptRunnerRuntimeConfig = {
     maxExecutionLogLines: envNumber(
       'SCRIPT_RUNNER_EXEC_LOG_MAX_LINES',
-      DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines
+      DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.maxExecutionLogLines,
     ),
     eventStreamTimeoutMs: envNumber(
       'SCRIPT_RUNNER_EVENT_STREAM_TIMEOUT_MS',
-      DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs
+      DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.eventStreamTimeoutMs,
     ),
     debug: DEFAULT_SCRIPT_RUNNER_RUNTIME_CONFIG.debug,
   };

@@ -13,11 +13,8 @@ describe('InwardPulse', () => {
   });
 
   it('renders an inactive pulse ring with custom sx', () => {
-    const { container } = render(
-      <InwardPulse active={false} color="#ed6c02" sx={{ top: 0 }} />,
-    );
+    const { container } = render(<InwardPulse active={false} color="#ed6c02" sx={{ top: 0 }} />);
 
     expect(container.firstChild).toBeTruthy();
   });
 });
-

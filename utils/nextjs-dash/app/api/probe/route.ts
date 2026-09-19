@@ -35,7 +35,11 @@ function lookupAllowedProbeTarget(url: URL): string | null {
   return null;
 }
 
-function fetchAllowedProbeUrl(safeTarget: string, method: ProbeMethod, signal: AbortSignal): Promise<Response> {
+function fetchAllowedProbeUrl(
+  safeTarget: string,
+  method: ProbeMethod,
+  signal: AbortSignal,
+): Promise<Response> {
   return fetch(safeTarget, {
     method,
     cache: 'no-store',
@@ -53,8 +57,7 @@ function isAbortError(e: unknown) {
   const name = hasName(e) && typeof e.name === 'string' ? e.name : undefined;
 
   return (
-    name === 'AbortError' ||
-    (e instanceof Error && e.message.toLowerCase().includes('aborted'))
+    name === 'AbortError' || (e instanceof Error && e.message.toLowerCase().includes('aborted'))
   );
 }
 
@@ -103,7 +106,10 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
     const started = Date.now();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), Number.isFinite(timeoutMs) ? timeoutMs : DEFAULT_TIMEOUT_MS);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      Number.isFinite(timeoutMs) ? timeoutMs : DEFAULT_TIMEOUT_MS,
+    );
 
     try {
       // Prefer HEAD so we don't fetch the payload.
@@ -136,7 +142,7 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
           status: upstream.status,
           durationMs,
         },
-        { headers: { 'Cache-Control': 'no-store' } }
+        { headers: { 'Cache-Control': 'no-store' } },
       );
     } catch (error) {
       const durationMs = Date.now() - started;
@@ -154,7 +160,7 @@ export const GET = withApiRoute({ name: 'PROBE_API' }, async function GET(reques
             durationMs,
             timedOut: true,
           },
-          { headers: { 'Cache-Control': 'no-store' } }
+          { headers: { 'Cache-Control': 'no-store' } },
         );
       }
 

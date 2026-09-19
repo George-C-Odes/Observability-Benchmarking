@@ -86,10 +86,10 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 
 ### 3.4 TypeScript / Next.js (dashboard)
 
-- Next.js 16, React 19, MUI 7, TypeScript 5.9.
-- Tests: Vitest (DOM and Node configs).
-- Lint: ESLint (`eslint.config.mjs`).
-- Quality: dedicated `nextjs_dash_quality.yml` workflow + Qodana JS.
+- Next.js 16.3.5, React 19.3.0, MUI 9.4.0, TypeScript 7.0.2 native checker.
+- Tests: Vitest 5.0.1 with separate DOM and Node configs.
+- Lint and format: Oxlint 1.83.0 (`.oxlintrc.json`) and Oxfmt 0.68.0 (`.oxfmtrc.json`).
+- Quality: `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm run test:fast`; CI also runs the production build and report tests.
 
 ---
 
@@ -144,7 +144,7 @@ Every benchmark target **must** export equivalent telemetry to be a fair compari
 | `qodana_code_quality.yml`   | `services/java`, `utils/orchestrator` | Qodana JVM (IntelliJ inspections), hard gate: 0 critical/high/moderate |
 | `django_python_quality.yml` | `services/python/django`              | Ruff lint + format, Django checks, unit tests, Qodana Python           |
 | `go_quality.yml`            | `services/go`                         | Go vet, staticcheck, golangci-lint, unit tests                         |
-| `nextjs_dash_quality.yml`   | `utils/nextjs-dash`                   | ESLint, TypeScript check, Vitest, Qodana JS                            |
+| `nextjs_dash_quality.yml`   | `utils/nextjs-dash`                   | Oxfmt, Oxlint, TypeScript 7, Vitest 5, build, hosted quality report    |
 | `codeql.yml`                | All languages                         | CodeQL security scanning (SARIF → Security tab + Pages report)         |
 | `pages.yml`                 | `docs/` + quality reports             | Jekyll build → GitHub Pages deploy, hosts Qodana + CodeQL reports      |
 
@@ -153,7 +153,7 @@ Every benchmark target **must** export equivalent telemetry to be a fair compari
 - [ ] Java service Checkstyle passes (`mvn checkstyle:check`) when `services/java/**` changes
 - [ ] Orchestrator quality passes (`mvn -f utils/orchestrator/pom.xml verify`) when `utils/orchestrator/**` changes
 - [ ] Ruff passes (`ruff check` + `ruff format --check`) for Python changes
-- [ ] ESLint + `tsc --noEmit` clean for dashboard changes
+- [ ] `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm run test:fast` pass for dashboard changes
 - [ ] Unit tests pass in the affected module
 - [ ] No new Qodana critical/high/moderate findings
 - [ ] No new CodeQL alerts

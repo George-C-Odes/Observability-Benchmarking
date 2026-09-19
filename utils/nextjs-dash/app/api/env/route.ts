@@ -16,7 +16,10 @@ export const GET = withApiRoute({ name: 'ENV_API' }, async function GET() {
     serverLogger.debug('Fetching environment file from orchestrator');
     const envData = await getEnvFile();
 
-    const content = typeof (envData as { content?: unknown })?.content === 'string' ? (envData as { content: string }).content : '';
+    const content =
+      typeof (envData as { content?: unknown })?.content === 'string'
+        ? (envData as { content: string }).content
+        : '';
 
     // This repo uses YAML-style "KEY: VALUE" env files.
     const hostRepoLine = content

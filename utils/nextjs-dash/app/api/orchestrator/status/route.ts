@@ -12,44 +12,67 @@ import { getActiveRunId } from '@/lib/scriptRunnerRunState';
  * NOTE: The Script Runner UI is currently SSE-only and does NOT call this endpoint.
  * Kept for future use (e.g., fallback when SSE isn't available) and for debugging.
  */
-export const GET = withApiRoute({ name: 'ORCH_STATUS_API' }, async function GET(request: NextRequest) {
-  const serverLogger = createScopedServerLogger('ORCH_STATUS_API');
-  try {
-    const { searchParams } = new URL(request.url);
-    const jobId = searchParams.get('jobId');
-    if (!jobId) {
-      return errorJson(400, { error: 'jobId is required' });
-    }
+export const GET = withApiRoute(
+  { name: 'ORCH_STATUS_API' },
+  async function GET(request: NextRequest) {
+    const serverLogger = createScopedServerLogger('ORCH_STATUS_API');
+    try {
+      const { searchParams } = new URL(request.url);
+      const jobId = searchParams.get('jobId');
+      if (!jobId) {
+        return errorJson(400, { error: 'jobId is required' });
+      }
 
-    const runId = searchParams.get('runId');
-    const activeRunId = getActiveRunId();
+      const runId = searchParams.get('runId');
+      const activeRunId = getActiveRunId();
 
-    // If caller supplies runId, it must match the active run (single-run-at-a-time UI contract).
-    if (runId && activeRunId && runId !== activeRunId) {
-      serverLogger.debug('Rejecting stale status polling request', { jobId, runId, activeRunId });
-      return errorJson(409, { error: 'stale_run', message: 'This status polling request is for a stale run.' });
-    }
+      // If caller supplies runId, it must match the active run (single-run-at-a-time UI contract).
+      if (runId && activeRunId && runId !== activeRunId) {
+        serverLogger.debug('Rejecting stale status polling request', { jobId, runId, activeRunId });
+        return errorJson(409, {
+          error: 'stale_run',
+          message: 'This status polling request is for a stale run.',
+        });
+      }
 
-    serverLogger.debug('Fetching status for job', { jobId, runId: runId ?? null, activeRunId: activeRunId ?? null });
+      serverLogger.debug('Fetching status for job', {
+        jobId,
+        runId: runId ?? null,
+        activeRunId: activeRunId ?? null,
+      });
 
-    const statusResult = await getJobStatusWithRunId(jobId, runId ?? null, request.headers.get('x-request-id'))
-      .catch((e: unknown) => {
+      const statusResult = await getJobStatusWithRunId(
+        jobId,
+        runId ?? null,
+        request.headers.get('x-request-id'),
+      ).catch((e: unknown) => {
         const msg = e instanceof Error ? e.message : String(e ?? '');
         if (msg.includes('(409)')) {
-          serverLogger.debug('Orchestrator rejected status as stale (409)', { jobId, runId: runId ?? null });
+          serverLogger.debug('Orchestrator rejected status as stale (409)', {
+            jobId,
+            runId: runId ?? null,
+          });
           return { __stale: true as const };
         }
         throw e;
       });
 
-    if ('__stale' in statusResult) {
-      return errorJson(409, { error: 'stale_run', message: 'This status request is for a stale run/job.' });
-    }
+      if ('__stale' in statusResult) {
+        return errorJson(409, {
+          error: 'stale_run',
+          message: 'This status request is for a stale run/job.',
+        });
+      }
 
-    serverLogger.debug('Status received', { jobId, status: statusResult.status, runId: runId ?? null });
-    return okJson(statusResult);
-  } catch (error: unknown) {
-    serverLogger.error('Error fetching job status', error);
-    return errorFromUnknown(500, error, 'Failed to fetch job status');
-  }
-});
+      serverLogger.debug('Status received', {
+        jobId,
+        status: statusResult.status,
+        runId: runId ?? null,
+      });
+      return okJson(statusResult);
+    } catch (error: unknown) {
+      serverLogger.error('Error fetching job status', error);
+      return errorFromUnknown(500, error, 'Failed to fetch job status');
+    }
+  },
+);

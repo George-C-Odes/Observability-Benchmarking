@@ -720,30 +720,38 @@ cat results.sarif | python3 -m json.tool
 
 ## Code Quality Standards
 
-### Next.js Dashboard (ESLint + TypeScript)
+### Next.js Dashboard (Oxlint + Oxfmt + TypeScript 7)
 
 #### Overview
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **ESLint** — flat-config format (`eslint.config.mjs`), `--max-warnings=0` so any warning is treated as a CI failure.
-2. **TypeScript strict mode** — `tsc --noEmit` with `"strict": true` in `tsconfig.json`.
-3. **Vitest** — dual-environment test suite (Node for API/lib code, jsdom for React components/hooks).
-4. **Production build** — `next build` as a smoke test to catch import/config regressions.
+1. **Oxfmt 0.68.0** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint 1.83.0** — checks the module root with warnings denied.
+3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
+4. **Vitest 5.0.1** — runs separate Node and jsdom suites.
+5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
-The CI workflow is triggered on pushes to `main` and pull requests touching `utils/nextjs-dash/**`.
+The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.
 
-#### ESLint Configuration
+#### Oxlint and Oxfmt Configuration
 
-The module uses ESLint v9 flat config in `utils/nextjs-dash/eslint.config.mjs`:
+`utils/nextjs-dash/.oxlintrc.json` enables Oxlint's native `nextjs`, `react`,
+`typescript`, `import`, and `jsx-a11y` plugins. It preserves the dashboard's
+Next.js core-web-vitals, React Hooks, TypeScript correctness, import, and
+accessibility checks. Overrides provide browser globals to application code,
+Node globals to API routes, libraries, scripts, and config files, and both
+environments plus Vitest globals to tests. Generated output, dependencies,
+coverage, reports, and local temporary files are ignored.
 
-- **Base**: `@eslint/js` recommended rules + `typescript-eslint` recommended
-- **Next.js**: `@next/eslint-plugin-next` (recommended and core-web-vitals)
-- **React**: `eslint-plugin-react-hooks` recommended rules
-- **Server files** (`app/api/**`, `lib/**`, config files): Node globals enabled, `@typescript-eslint/no-require-imports` relaxed
-- **Ignores**: `.next/`, `node_modules/`, `dist/`, `out/`, `coverage/`, `build/`
+Both the config and `npm run lint` deny warnings. Unused disable directives are
+reported as errors, so CI remains a zero-warning gate.
 
-The `--max-warnings=0` flag ensures no warnings are tolerated in CI.
+`utils/nextjs-dash/.oxfmtrc.json` fixes the formatter conventions at two-space
+indentation, semicolons, single quotes in JavaScript and TypeScript, trailing
+commas in multiline constructs, a 100-column print width, and LF endings.
+Import sorting and `package.json` sorting remain disabled. `npm run format`
+writes changes, while `npm run format:check` only verifies the current tree.
 
 #### TypeScript Configuration
 
@@ -755,22 +763,27 @@ The `--max-warnings=0` flag ensures no warnings are tolerated in CI.
 - `"moduleResolution": "bundler"`
 - `"jsx": "react-jsx"`
 
-The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files.
+The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files. With `typescript@7.0.2`, `tsc` invokes the stable native checker.
 
 #### Running Quality Checks Locally
 
 ```bash
 cd utils/nextjs-dash
-npm install
+npm ci
 
 # Individual checks
+npm run format
+npm run format:check
 npm run lint
 npm run typecheck
 npm run test:node
 npm run test:dom
+npm run test:fast
+npm run test:coverage
+npm run build
 
-# Quick one-liner matching CI
-npm -s run lint ; npm -s run typecheck ; npm -s test ; npm -s run build
+# Report generator validation (run from utils/nextjs-dash)
+node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
 ```
 
 #### Qodana JS — Not Currently Active (Licensing)
@@ -779,25 +792,36 @@ A module-local Qodana configuration exists at `utils/nextjs-dash/qodana.yaml` pi
 
 Because this repository currently uses the free community JVM linter, the JS scope is **not** included in the Qodana CI workflow. The configuration file is kept in the repository so it can be activated by adding a `nextjs-dash` matrix entry to `.github/workflows/qodana_code_quality.yml` once a Qodana Cloud license covering JavaScript analysis is available. When re-enabling, the Qodana action does not support a `linter` input — you must add a `docker pull jetbrains/qodana-js:2026.2` step before the scan to ensure the image is available (the action's internal pull phase only reads the root `qodana.yaml`).
 
-#### Free Alternative — Hosted ESLint + TypeScript Quality Report
+#### Free Alternative — Hosted Oxlint, Oxfmt, and TypeScript 7 Quality Report
 
-Since there is no free Qodana community linter for JavaScript/TypeScript, this repository generates a **self-contained HTML quality report** from ESLint and TypeScript strict-mode analysis as the free, open-source equivalent. This covers the same inspections your JetBrains IDE performs for JS/TS:
+Since there is no free Qodana community linter for JavaScript/TypeScript, this repository generates a **self-contained HTML quality report** from the same Oxfmt, Oxlint, and TypeScript 7 checks used by the module and CI:
 
-- **ESLint** — the same rules configured in `eslint.config.mjs` (recommended + typescript-eslint + Next.js + React Hooks)
-- **TypeScript strict mode** — `tsc --noEmit` with `"strict": true`, identical to the IDE's type checking
+- **Oxfmt** — records the non-mutating format check and its exit status
+- **Oxlint** — runs the native Next.js, React, TypeScript, import, and accessibility rules from `.oxlintrc.json`, with warnings denied
+- **TypeScript 7** — runs the native strict checker through `tsc --noEmit`
 
 How it works:
 
-1. The `Next.js Dashboard Quality` workflow (`.github/workflows/nextjs_dash_quality.yml`) runs the normal quality gates (lint, typecheck, tests, build)
-2. After the quality gates, it generates ESLint JSON output and TypeScript diagnostics
+1. The `Next.js Dashboard Quality` workflow (`.github/workflows/nextjs_dash_quality.yml`) runs formatting, lint, typecheck, split tests, report-generator tests, and the production build as separate gates
+2. After the quality gates, it captures Oxfmt output, Oxlint JSON, and TypeScript diagnostics even when an earlier gate failed
 3. A Node.js script (`scripts/pages/generate-nextjs-quality-report.mjs`) produces a polished, self-contained HTML report from those results, using shared utilities from `scripts/pages/report-helpers.mjs` (HTML escaping, CSS theming, metadata assembly)
 4. The report is uploaded as a `quality-report-nextjs-dash` artifact
 5. The Pages workflow downloads the artifact and publishes it alongside the Qodana JVM reports
 
+Oxlint 1.82 emits one JSON object with a `diagnostics` array and run metadata
+such as `number_of_files`. Each diagnostic supplies a string `severity`, `code`,
+`message`, `filename`, and source positions under `labels[].span`. The report
+normalizes Windows and POSIX paths and displays severity, rule ID, message,
+line, column, and span length. TypeScript diagnostics come from the tool-neutral
+`typescript-output.txt` file and retain multiline messages. Oxfmt output is read
+from `oxfmt-output.txt`, including the explicit exit-code marker written by CI.
+Missing, malformed, or structurally invalid inputs produce visible report
+warnings and a failed overall verdict.
+
 The report includes:
-- Summary cards (overall pass/fail, ESLint errors/warnings, TypeScript diagnostics)
-- Per-file ESLint findings table with severity, rule ID, message, and line/column
-- TypeScript diagnostics block
+- Summary cards for the overall verdict, Oxfmt, Oxlint errors/warnings, and TypeScript 7 diagnostics
+- Per-file Oxlint findings with severity, rule ID, message, and source position
+- Oxfmt output and TypeScript multiline diagnostics
 - Metadata (commit SHA, workflow run, tool versions, timestamp)
 - Dark mode support via `prefers-color-scheme`
 
@@ -813,7 +837,7 @@ The landing page at `quality/` now links to all seven scopes:
 - `quality/django-python/` — Qodana Python Community (PyCharm inspections)
 - `quality/go/` — golangci-lint (aggregated Go static analysis)
 - `quality/go-simple/` — golangci-lint (aggregated Go static analysis)
-- `quality/nextjs-dash/` — ESLint + TypeScript (free alternative)
+- `quality/nextjs-dash/` — Oxlint + Oxfmt + TypeScript 7 (free alternative)
 - `quality/codeql/` — CodeQL (semantic security and quality analysis)
 
 The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
@@ -869,7 +893,7 @@ The Django Python quality workflow (`.github/workflows/django_python_quality.yml
 
 A separate Django coverage workflow (`.github/workflows/django_python_coverage.yml`) runs the same shared test suite under `coverage.py` for both runtime modules, writes GitHub Step Summary coverage tables, publishes HTML/XML artifacts, and uploads `coverage.xml` reports to Codecov with the `python-django-platform` and `python-django-reactive` flags.
 
-The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces ESLint (`--max-warnings=0`), TypeScript strict-mode typecheck, Vitest tests, and a production build smoke test on every push and PR.
+The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces Oxfmt checking, zero-warning Oxlint, TypeScript 7 native strict-mode checking, Vitest 5 Node and DOM suites, report-generator tests, and a production build smoke test on every matching push and pull request.
 
 The Go quality workflow (`.github/workflows/go_quality.yml`) now covers both Go modules — `services/go/enhanced` and `services/go/simple` — with the same full pipeline: dependency download, `go mod tidy` verification, `go vet`, `golangci-lint run`, unit tests with race detection, a build smoke test, and a non-blocking `govulncheck` scan. Both jobs also generate Pages-hosted HTML quality report artifacts (`quality-report-go` and `quality-report-go-simple`).
 
@@ -926,10 +950,12 @@ Potential enhancements to the code quality setup:
 - [Qodana Documentation](https://www.jetbrains.com/help/qodana/qodana-yaml.html)
 - [Qodana Python Community Linter](https://www.jetbrains.com/help/qodana/qodana-python-community.html)
 - [Ruff Documentation](https://docs.astral.sh/ruff/)
-- [ESLint Documentation](https://eslint.org/docs/latest/)
-- [typescript-eslint](https://typescript-eslint.io/)
+- [Oxlint Documentation](https://oxc.rs/docs/guide/usage/linter)
+- [Oxlint Configuration](https://oxc.rs/docs/guide/usage/linter/config)
+- [Oxfmt Configuration](https://oxc.rs/docs/guide/usage/formatter/config)
+- [TypeScript 7 Announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)
 - [Vitest Documentation](https://vitest.dev/)
-- [Next.js ESLint Plugin](https://nextjs.org/docs/app/api-reference/config/eslint)
+- [Vitest Migration Guide](https://vitest.dev/guide/migration/)
 - [golangci-lint Documentation](https://golangci-lint.run/)
 - [golangci-lint GitHub Action](https://github.com/golangci/golangci-lint-action)
 - [CodeQL Documentation](https://codeql.github.com/docs/)

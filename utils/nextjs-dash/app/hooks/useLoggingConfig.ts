@@ -10,9 +10,12 @@ export const useLoggingConfig = createRuntimeConfigHook<LoggingRuntimeConfig>(
   (json) => {
     const j = json as Partial<LoggingRuntimeConfig>;
     return {
-      clientLogLevel: (j.clientLogLevel ?? DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel) as LoggingRuntimeConfig['clientLogLevel'],
-      serverLogLevel: (j.serverLogLevel ?? DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel) as LoggingRuntimeConfig['serverLogLevel'],
-      serverLogOutput: (j.serverLogOutput ?? DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput) as LoggingRuntimeConfig['serverLogOutput'],
+      clientLogLevel: (j.clientLogLevel ??
+        DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel) as LoggingRuntimeConfig['clientLogLevel'],
+      serverLogLevel: (j.serverLogLevel ??
+        DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogLevel) as LoggingRuntimeConfig['serverLogLevel'],
+      serverLogOutput: (j.serverLogOutput ??
+        DEFAULT_LOGGING_RUNTIME_CONFIG.serverLogOutput) as LoggingRuntimeConfig['serverLogOutput'],
     };
   },
   'Logging',

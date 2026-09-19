@@ -1,9 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import {
-  createClientLogger,
-  setClientLogLevel,
-  getClientLogLevel,
-} from '@/lib/clientLogger';
+import { createClientLogger, setClientLogLevel, getClientLogLevel } from '@/lib/clientLogger';
 import { silenceConsole, type ConsoleSpy } from '@/__tests__/_helpers/consoleSpy';
 
 describe('clientLogger', () => {

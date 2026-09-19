@@ -52,8 +52,9 @@ yarn-error.log*
 /utils/nextjs-dash/.env*.local
 /utils/nextjs-dash/next-env.d.ts
 /utils/nextjs-dash/quality-report/
-/utils/nextjs-dash/eslint-report.json
-/utils/nextjs-dash/tsc-output.txt
+/utils/nextjs-dash/oxfmt-output.txt
+/utils/nextjs-dash/oxlint-report.json
+/utils/nextjs-dash/typescript-output.txt
 
 # Go Enhanced CI quality report artifacts
 /services/go/enhanced/quality-report/

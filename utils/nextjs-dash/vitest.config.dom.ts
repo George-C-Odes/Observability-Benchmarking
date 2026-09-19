@@ -18,7 +18,7 @@ export default defineConfig({
     include: [
       '__tests__/app/components/**/*.test.{ts,tsx}',
       '__tests__/app/hooks/**/*.test.{ts,tsx}',
-      '__tests__/app/*.test.{ts,tsx}',   // theme.test.ts, Providers.test.tsx
+      '__tests__/app/*.test.{ts,tsx}', // theme.test.ts, Providers.test.tsx
     ],
 
     // Coverage via @vitest/coverage-v8.
@@ -30,8 +30,8 @@ export default defineConfig({
       include: [
         'app/components/**/*.{ts,tsx}',
         'app/hooks/**/*.ts',
-        'app/theme.ts',        // client-side theme logic
-        'app/Providers.tsx',   // client-side context / theme wiring
+        'app/theme.ts', // client-side theme logic
+        'app/Providers.tsx', // client-side context / theme wiring
       ],
       exclude: [
         ...sharedCoverageExclude,

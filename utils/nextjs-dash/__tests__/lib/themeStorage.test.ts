@@ -46,4 +46,3 @@ describe('themeStorage', () => {
     expect(() => writeStoredTheme('dark')).not.toThrow();
   });
 });
-

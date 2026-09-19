@@ -6,7 +6,7 @@ import { createClientLogger } from '@/lib/clientLogger';
 /**
  * Return type for all runtime-config hooks produced by the factory.
  */
-export type UseRuntimeConfigState<T> = {
+type UseRuntimeConfigState<T> = {
   config: T;
   loading: boolean;
   error: string | null;
@@ -47,7 +47,10 @@ export function createRuntimeConfigHook<T>(
         const res = await fetch(endpoint, { cache: 'no-store' });
         if (!res.ok) {
           const txt = await res.text().catch(() => '');
-          clientLogger.error(`Failed to fetch ${label} config`, { status: res.status, bodyText: txt });
+          clientLogger.error(`Failed to fetch ${label} config`, {
+            status: res.status,
+            bodyText: txt,
+          });
           setError(`Failed to load ${label} config`);
           return;
         }
