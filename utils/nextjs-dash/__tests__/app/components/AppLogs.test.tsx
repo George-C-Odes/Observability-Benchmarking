@@ -117,9 +117,7 @@ describe('AppLogs', () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(snapshotResponse())
       .mockResolvedValueOnce(
-        snapshotResponse([
-          { ts: 200, level: 'warn', source: 'server', message: 'fallback log' },
-        ]),
+        snapshotResponse([{ ts: 200, level: 'warn', source: 'server', message: 'fallback log' }]),
       );
     render(<AppLogs />);
     await waitFor(() => expect(MockEventSource.instances).toHaveLength(1));
