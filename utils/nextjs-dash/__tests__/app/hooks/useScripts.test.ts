@@ -49,12 +49,7 @@ describe('useScripts', () => {
   it('refreshes scripts and clears a prior error', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ scripts: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      )
+      .mockResolvedValueOnce(new Response('backend unavailable', { status: 503 }))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
