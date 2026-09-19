@@ -18,18 +18,18 @@ export interface JobStatus {
   lastLine?: string;
 }
 
-export interface CommandPreset {
+interface CommandPreset {
   title: string;
   command: string;
   category: string;
   sourceFile: string;
 }
 
-export interface EnvFileContent {
+interface EnvFileContent {
   content: string;
 }
 
-export interface BenchmarkTargetsContent {
+interface BenchmarkTargetsContent {
   urls: string[];
   path?: string;
 }

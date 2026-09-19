@@ -1,10 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   extractNpmVersionFromPackageManager,
   extractNpmVersionFromUserAgent,
+  collectClientSystemInfo,
   resolveServerNpmVersion,
 } from '@/lib/systemInfo';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('systemInfo npm version helpers', () => {
   it('extracts npm version from packageManager when pinned', () => {
@@ -30,5 +35,40 @@ describe('systemInfo npm version helpers', () => {
 
   it('falls back to N/A when neither source is available', () => {
     expect(resolveServerNpmVersion({})).toBe('N/A');
+  });
+
+  it('collects browser details and prefers the user-agent client hint platform', () => {
+    vi.stubGlobal('navigator', {
+      userAgent: 'ExampleBrowser/1.0',
+      language: 'en-GB',
+      userAgentData: { platform: 'Windows' },
+    });
+    vi.stubGlobal('window', {
+      screen: { width: 1920, height: 1080 },
+      devicePixelRatio: 2,
+    });
+
+    expect(collectClientSystemInfo()).toMatchObject({
+      userAgent: 'ExampleBrowser/1.0',
+      language: 'en-GB',
+      platform: 'Windows',
+      screen: '1920x1080 @2x',
+    });
+  });
+
+  it('uses safe display fallbacks when optional browser details are unavailable', () => {
+    vi.stubGlobal('navigator', {
+      userAgent: 'MinimalBrowser/1.0',
+      language: 'en',
+    });
+    vi.stubGlobal('window', {
+      screen: { width: 800, height: 600 },
+      devicePixelRatio: 0,
+    });
+
+    expect(collectClientSystemInfo()).toMatchObject({
+      platform: 'N/A',
+      screen: '800x600 @1x',
+    });
   });
 });

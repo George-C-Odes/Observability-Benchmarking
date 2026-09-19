@@ -3,7 +3,7 @@
 import { Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 
-export type InwardPulseProps = {
+type InwardPulseProps = {
   /** Controls whether the pulse animation is active. */
   active: boolean;
   /** Border color of the pulse ring. */

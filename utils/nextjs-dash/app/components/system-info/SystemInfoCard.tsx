@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import type { ChipProps } from '@mui/material';
 
-export interface SystemInfoCardData {
+interface SystemInfoCardData {
   label: string;
   value?: string;
   chip: Pick<ChipProps, 'label' | 'color'>;

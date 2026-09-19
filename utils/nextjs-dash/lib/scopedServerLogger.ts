@@ -9,7 +9,7 @@
 
 import { serverLogger } from '@/lib/serverLogger';
 
-export type ScopedServerLogger = typeof serverLogger;
+type ScopedServerLogger = typeof serverLogger;
 
 export function createScopedServerLogger(scope: string): ScopedServerLogger {
   const prefix = `[${scope}]`;

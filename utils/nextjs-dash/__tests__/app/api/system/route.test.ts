@@ -43,7 +43,7 @@ describe('/api/system route', () => {
 
   it('falls back to N/A when npm version lookup fails', async () => {
     vi.mocked(exec).mockImplementation(((
-      command: string,
+      _command: string,
       callback: (error: Error | null, result: { stdout: string; stderr: string }) => void,
     ) => {
       callback(new Error('npm missing'), { stdout: '', stderr: 'no npm' });

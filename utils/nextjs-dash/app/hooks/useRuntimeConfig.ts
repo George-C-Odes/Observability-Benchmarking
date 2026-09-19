@@ -6,7 +6,7 @@ import { createClientLogger } from '@/lib/clientLogger';
 /**
  * Return type for all runtime-config hooks produced by the factory.
  */
-export type UseRuntimeConfigState<T> = {
+type UseRuntimeConfigState<T> = {
   config: T;
   loading: boolean;
   error: string | null;

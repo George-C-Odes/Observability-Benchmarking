@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export interface ApiErrorBody {
+interface ApiErrorBody {
   error: string;
   details?: string;
   [key: string]: unknown;

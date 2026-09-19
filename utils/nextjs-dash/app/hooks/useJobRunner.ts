@@ -23,7 +23,7 @@ export type RunResult = {
   output: string;
 };
 
-export type UseJobRunnerState = {
+type UseJobRunnerState = {
   executing: boolean;
   eventLogs: string[];
   clearEventLogs: () => void;

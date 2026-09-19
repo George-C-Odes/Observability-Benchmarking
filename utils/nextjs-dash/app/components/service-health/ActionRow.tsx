@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
-export interface ActionRowProps {
+interface ActionRowProps {
   label: string;
   ariaLabel: string;
   tooltipCommand: string;

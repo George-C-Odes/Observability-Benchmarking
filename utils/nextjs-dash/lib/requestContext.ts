@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 
-export type RequestContext = {
+type RequestContext = {
   requestId: string;
 };
 

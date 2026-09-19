@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
-export interface DataRowProps {
+interface DataRowProps {
   label: string;
   value: React.ReactNode;
   color?: 'default' | 'secondary' | 'error';

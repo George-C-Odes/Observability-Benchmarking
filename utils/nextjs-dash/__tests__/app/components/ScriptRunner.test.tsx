@@ -257,6 +257,21 @@ describe('ScriptRunner', () => {
     expect(mockRunCommand).toHaveBeenCalledWith('docker compose build', 'Build All');
   });
 
+  it('shows a busy message when the orchestrator rejects a submission', async () => {
+    mockRunCommand.mockResolvedValueOnce({
+      ok: false,
+      output: 'Request failed (HTTP 503)',
+      job: null,
+    });
+    renderScriptRunner();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('execute-Build All'));
+    });
+
+    expect(screen.getByText('Orchestrator is busy. Try again shortly.')).toBeInTheDocument();
+  });
+
   it('shows Refresh button', () => {
     renderScriptRunner();
     expect(screen.getByRole('button', { name: /Refresh/i })).toBeInTheDocument();
@@ -280,6 +295,23 @@ describe('ScriptRunner', () => {
     fireEvent.click(screen.getByRole('button', { name: /Custom Command/i }));
 
     expect(screen.getByText('Execute Custom Command')).toBeInTheDocument();
+  });
+
+  it('executes a custom command and closes the editor', async () => {
+    renderScriptRunner();
+    fireEvent.click(screen.getByRole('button', { name: /Custom Command/i }));
+
+    fireEvent.change(
+      screen.getByPlaceholderText('e.g., docker compose --project-directory compose ps'),
+      { target: { value: 'docker compose ps' } },
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Execute$/ }));
+    });
+
+    expect(mockRunCommand).toHaveBeenCalledWith('docker compose ps', 'Free Text Command');
+    expect(screen.queryByText('Execute Custom Command')).not.toBeInTheDocument();
   });
 
   it('shows banner message on successful execution', () => {
@@ -337,6 +369,21 @@ describe('ScriptRunner', () => {
     renderScriptRunner();
 
     expect(screen.getByText('Execution Logs')).toBeInTheDocument();
+  });
+
+  it('clears execution state through the job-runner boundary', () => {
+    setJobRunnerState({
+      eventLogs: ['log line 1'],
+      currentJobId: 'job-clear',
+      lastJobStatus: { jobId: 'job-clear', status: 'RUNNING' },
+      lastCommand: 'test',
+      lastLabel: 'Test',
+    });
+    renderScriptRunner();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Clear$/ }));
+
+    expect(mockReset).toHaveBeenCalledOnce();
   });
 
   it('shows "no scripts found" when script list is empty and not loading', () => {

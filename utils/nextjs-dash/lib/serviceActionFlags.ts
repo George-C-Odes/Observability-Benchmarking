@@ -1,4 +1,4 @@
-export type ServiceActionFlags = {
+type ServiceActionFlags = {
   start: boolean;
   restart: boolean;
   stop: boolean;
