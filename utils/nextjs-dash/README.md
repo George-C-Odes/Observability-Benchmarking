@@ -238,7 +238,7 @@ Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift bet
 
 ### Prerequisites
 
-- Node.js 22.12 or higher
+- Node.js 26.9.0
 - npm 12.0.2
 
 ### Local Development
