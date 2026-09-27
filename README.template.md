@@ -83,7 +83,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.9.0                  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.10.0                 | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -95,7 +95,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.3.5                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.3.6                  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.0                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2                   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0                   | Component library and theming                                        |
@@ -107,20 +107,20 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.1                  | Auto-instrumentation and exporters                                   |
-| **Performance**   | Cache              | Caffeine                   | 3.2.4                   | High-performance in-memory caching (Java)                            |
+| **Performance**   | Cache              | Caffeine                   | 3.3.0                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.2.0                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.7.2                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.9.16                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.0.2                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.8                  | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.83.0                  | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.68.0                  | Next.js dashboard formatting                                         |
+| **Build**         | Package Manager    | npm                        | 12.1.0                  | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.9                  | Python linting and code formatting                                   |
+| **Quality**       | Linter             | Oxlint                     | 1.85.0                  | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.70.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 5.0.1                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 5.0.2                   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -165,7 +165,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.3.5 and Material-UI 9.4.0
+  - Built with Next.js 16.3.6 and Material-UI 9.4.0
 
 ### 🚀 REST Service Implementations
 
@@ -631,7 +631,7 @@ This project implements comprehensive code quality and security practices to ens
 
 #### JVM Quality Tooling
 - **Java service modules (`services/java/**`)**: Checkstyle 12.2.0 via `maven-checkstyle-plugin` 3.6.0
-- **Orchestrator (`utils/orchestrator`)**: Spotless 3.10.2, PMD 7.27.0, SpotBugs 4.10.4.1 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
+- **Orchestrator (`utils/orchestrator`)**: Spotless 3.10.3, PMD 7.28.0, SpotBugs 4.10.4.1 + FindSecBugs 1.14.0, and a custom Javadoc-tag checker
 - **Integration**: Both setups are wired into Maven so violations fail the build in their scoped modules
 - **Results**: the orchestrator validate / verify lanes and the requested Docker build now pass with the migrated setup
 

@@ -12,15 +12,15 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <caffeine.version>3.2.4</caffeine.version>
+        <caffeine.version>3.3.0</caffeine.version>
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <lombok.version>1.18.46</lombok.version>
-        <logback.version>1.6.3</logback.version>
+        <logback.version>1.6.4</logback.version>
 
-        <micronaut.version>5.2.2</micronaut.version>
+        <micronaut.version>5.2.8</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.3</micronaut.micrometer.version>
         <micronaut.test.version>4.10.2</micronaut.test.version>
