@@ -137,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
 Maven: 3.9+
 Spring Boot: 4.1.1 (3.5.16 also supported)
-Quarkus: 3.39.4
+Quarkus: 3.39.5
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.5
+Next.js: 16.3.6
 React: 19.3.0
 TypeScript: 7.0.2
-Vitest: 5.0.1
-@vitest/coverage-v8: 5.0.1
-Oxlint: 1.83.0
-Oxfmt: 0.68.0
+Vitest: 5.0.2
+@vitest/coverage-v8: 5.0.2
+Oxlint: 1.85.0
+Oxfmt: 0.70.0
 ```
 
 #### Test Structure
@@ -876,7 +876,7 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.1.1
-- Quarkus: 3.39.4
+- Quarkus: 3.39.5
 - Micronaut: 5.2.8
 - Helidon: 4.5.5
 - Spark: 3.0.4
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.1](https://vitest.dev/) with the matching
+[Vitest 5.0.2](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
@@ -1862,7 +1862,7 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.39.4" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.39.5" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.1" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.1" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.1" }

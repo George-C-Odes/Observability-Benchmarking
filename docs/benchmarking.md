@@ -132,7 +132,7 @@ memory: 2GB        # Maximum memory
 
 **Frameworks**:
 - Spring Boot: 4.1.1 (3.5.16 also supported)
-- Quarkus: 3.39.4
+- Quarkus: 3.39.5
 - Micronaut: 5.2.8
 - Helidon: 4.5.5
 - Spark: 3.0.4
