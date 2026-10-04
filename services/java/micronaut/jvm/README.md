@@ -1,7 +1,7 @@
 # Micronaut JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Micronaut 5.2.8 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
+A high-performance REST service implementation built with Micronaut 5.2.13 running on the Java Virtual Machine (JDK 25). This service supports three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment via endpoint routing, making it ideal for benchmarking different concurrency approaches with minimal configuration overhead.
 
 ## Purpose
 - Benchmark Micronaut's compile-time DI/AOP performance across platform threads, virtual threads, and reactive programming models
@@ -12,7 +12,7 @@ A high-performance REST service implementation built with Micronaut 5.2.8 runnin
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Micronaut 5.2.8
+- **Framework**: Micronaut 5.2.13
 - **Java Version**: Eclipse Temurin 25.0.4
 - **HTTP Server**: Netty (Micronaut HTTP Server Netty)
 - **JVM GC**: G1 Garbage Collector
@@ -249,11 +249,11 @@ Tracks request count per endpoint.
 
 ### Docker
 
-**Image**: `micronaut-jvm:5.2.8_latest`
+**Image**: `micronaut-jvm:5.2.13_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.9.16-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
@@ -264,9 +264,9 @@ Tracks request count per endpoint.
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.2.8_latest `
-  --build-arg MICRONAUT_VERSION=5.2.8 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.2.8_latest `
+  -t micronaut-jvm:5.2.13_latest `
+  --build-arg MICRONAUT_VERSION=5.2.13 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.2.13_latest `
   --load `
   services/java
 ```

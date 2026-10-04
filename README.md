@@ -8,8 +8,8 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.4-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F.svg)](https://spring.io/projects/spring-boot)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.39.5-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-5.2.8-1A1A2E.svg)](https://micronaut.io/)
+[![Quarkus](https://img.shields.io/badge/Quarkus-3.40.1-6C63FF.svg)](https://quarkus.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-5.2.13-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.5-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.3-00AFCF.svg)](https://javalin.io/)
@@ -85,8 +85,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Server             | Gunicorn                   | 26.2.0  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.10.0 | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.1   | Enterprise Java baseline framework                                   |
-| **Backend**       | Framework          | Quarkus                    | 3.39.5  | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.2.8   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Quarkus                    | 3.40.1  | Cloud-native Java framework (JVM + native image focus)               |
+| **Backend**       | Framework          | Micronaut                  | 5.2.13  | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.5   | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.5   | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4   | Minimal HTTP server (virtual-thread friendly)                        |
@@ -95,32 +95,32 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Vert.x                     | 5.1.7   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.1   | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.3.6  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.3.8  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.0  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.4.0   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.2.2  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.2.3  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.8   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.8  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.1   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.3.1   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.31.1  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.32.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.0   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.2.0   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.7.2  | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.9.16  | Java build and dependency management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.8.2  | Image build and lifecycle management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.10.0  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.1.0  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.9  | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.85.0  | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.70.0  | Next.js dashboard formatting                                         |
+| **Build**         | Package Manager    | npm                        | 12.2.0  | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.16.10 | Python linting and code formatting                                   |
+| **Quality**       | Linter             | Oxlint                     | 1.86.0  | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.71.0  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 5.0.2   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | 5.0.3   | Frontend unit testing                                                |
 
 ### Why This Project?
 
@@ -165,7 +165,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.3.6 and Material-UI 9.4.0
+  - Built with Next.js 16.3.8 and Material-UI 9.4.0
 
 ### 🚀 REST Service Implementations
 
@@ -179,10 +179,10 @@ If you’re searching for projects like this, these are the topics it covers:
     - Platform threads
     - Virtual threads
     - Reactive (WebFlux)
-- **Quarkus 3.39.5**
+- **Quarkus 3.40.1**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 5.2.8
+- **Micronaut**: 5.2.13
   - JVM build (all three thread modes)
   - Native (all three thread modes)
 - **Helidon**: 4.5.5
@@ -509,8 +509,8 @@ The numbers below are a curated summary of a representative run.
 - **Java JDK**: Eclipse Temurin 25.0.4
 - **Java Native**: GraalVM Enterprise 25.0.4-ol9
 - **Spring Boot**: 4.1.1 (3.5.16 also supported)
-- **Quarkus**: 3.39.5
-- **Micronaut**: 5.2.8
+- **Quarkus**: 3.40.1
+- **Micronaut**: 5.2.13
 - **Helidon**: 4.5.5
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.3

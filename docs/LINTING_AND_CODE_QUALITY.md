@@ -136,7 +136,7 @@ The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow sco
 
 GitHub will print an informational warning in the **Complete job** phase similar to:
 
-> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.2.1.
+> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.2.2.
 
 This warning **confirms the opt-in is working** — the action targets Node 20 in its published metadata, but our `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` setting successfully forces it to run on Node 24. The warning is purely informational and will disappear only after JetBrains republishes the action with native Node 24 support in its action metadata. No action is required on our side.
 
@@ -726,10 +726,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.70.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.85.0** — checks the module root with warnings denied.
+1. **Oxfmt 0.71.0** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint 1.86.0** — checks the module root with warnings denied.
 3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.0.2** — runs separate Node and jsdom suites.
+4. **Vitest 5.0.3** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.

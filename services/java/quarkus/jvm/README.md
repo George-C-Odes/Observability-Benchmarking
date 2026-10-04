@@ -3,7 +3,7 @@
 # Quarkus JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus 3.39.5 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Quarkus 3.40.1 running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Quarkus performance across platform threads, virtual threads, and reactive programming models
@@ -14,18 +14,18 @@ A high-performance REST service implementation built with Quarkus 3.39.5 running
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Quarkus 3.39.5
+- **Framework**: Quarkus 3.40.1
 - **Java Version**: Eclipse Temurin 25.0.4
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
 ### Docker
 
-**Image**: `quarkus-jvm:3.39.5_latest`
+**Image**: `quarkus-jvm:3.40.1_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.9.16-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 This Docker image uses a multi-stage build:
@@ -325,9 +325,9 @@ mvn clean package -DskipTests
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.39.5_latest `
-  --build-arg QUARKUS_VERSION=3.39.5 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.39.5_latest `
+  -t quarkus-jvm:3.40.1_latest `
+  --build-arg QUARKUS_VERSION=3.40.1 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.40.1_latest `
   --load `
   services/java
 ```

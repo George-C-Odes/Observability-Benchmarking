@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.6
+Next.js: 16.3.8
 React: 19.3.0
 TypeScript: 7.0.2
-Vitest: 5.0.2
-@vitest/coverage-v8: 5.0.2
-Oxlint: 1.85.0
-Oxfmt: 0.70.0
+Vitest: 5.0.3
+@vitest/coverage-v8: 5.0.3
+Oxlint: 1.86.0
+Oxfmt: 0.71.0
 ```
 
 #### Test Structure
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.2](https://vitest.dev/) with the matching
+[Vitest 5.0.3](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
