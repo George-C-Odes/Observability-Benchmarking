@@ -51,7 +51,8 @@ func main() {
 	ctx := context.Background()
 
 	// Telemetry setup (OTLP + optional Pyroscope span profiles)
-	tel, err := appotel.Setup(ctx, cfg, bootstrapLogger)
+	var tel *appotel.Telemetry
+	tel, err = appotel.Setup(ctx, cfg, bootstrapLogger)
 	if err != nil {
 		bootstrapLogger.Error("telemetry setup failed", slog.Any("err", err))
 		os.Exit(1)

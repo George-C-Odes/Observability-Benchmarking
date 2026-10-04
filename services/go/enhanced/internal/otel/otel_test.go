@@ -3,9 +3,11 @@ package otel
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -263,6 +265,37 @@ func TestSetupPyroscopeFailureFallsBack(t *testing.T) {
 	}
 	if err := tel.Shutdown(context.Background()); err != nil {
 		t.Fatalf("shutdown: %v", err)
+	}
+}
+
+func TestShutdownAllReverseOrderAndErrors(t *testing.T) {
+	firstErr := errors.New("first shutdown failed")
+	lastErr := errors.New("last shutdown failed")
+	var order []int
+	shutdowns := []func(context.Context) error{
+		func(context.Context) error {
+			order = append(order, 1)
+			return firstErr
+		},
+		func(context.Context) error {
+			order = append(order, 2)
+			return nil
+		},
+		func(context.Context) error {
+			order = append(order, 3)
+			return lastErr
+		},
+	}
+
+	err := shutdownAll(context.Background(), shutdowns)
+	if !slices.Equal(order, []int{3, 2, 1}) {
+		t.Fatalf("unexpected shutdown order: %v", order)
+	}
+	if !errors.Is(err, firstErr) || !errors.Is(err, lastErr) {
+		t.Fatalf("expected both shutdown errors, got %v", err)
+	}
+	if err := shutdownAll(context.Background(), nil); err != nil {
+		t.Fatalf("empty shutdown: %v", err)
 	}
 }
 
