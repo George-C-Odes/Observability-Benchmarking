@@ -10,7 +10,7 @@ cachetools==7.2.0
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 django==6.1.1
     # via -r services/python/django/gunicorn/WSGI/requirements.in
-googleapis-common-protos==1.75.4
+googleapis-common-protos==1.75.5
     # via opentelemetry-exporter-otlp-proto-grpc
 grpcio==1.84.0
     # via
@@ -78,7 +78,7 @@ protobuf==7.36.2
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
-pyroscope-io==1.2.4
+pyroscope-io==1.2.5
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   pyroscope-otel
@@ -93,7 +93,7 @@ typing-extensions==4.16.0
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-tzdata==2026.4
+tzdata==2026.5
     # via django
-wrapt==2.4.1
+wrapt==2.5.0
     # via opentelemetry-instrumentation
