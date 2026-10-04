@@ -16,8 +16,8 @@ describe('runtimeConfig', () => {
       __OBS_DASH_CONFIG__: {
         systemInfo: {
           nodejs: 'v26.10.0',
-          npm: '12.1.0',
-          nextjs: '16.3.6',
+          npm: '12.2.0',
+          nextjs: '16.3.8',
           react: '19.3.0',
           mui: '9.4.0',
           typescript: '6.0.3',
@@ -30,8 +30,8 @@ describe('runtimeConfig', () => {
     expect(getRuntimeConfig()).toEqual({
       systemInfo: {
         nodejs: 'v26.10.0',
-        npm: '12.1.0',
-        nextjs: '16.3.6',
+        npm: '12.2.0',
+        nextjs: '16.3.8',
         react: '19.3.0',
         mui: '9.4.0',
         typescript: '6.0.3',

@@ -159,13 +159,13 @@ Some environments terminate long-lived HTTP connections.
 
 ## Technology Stack
 
-- **Next.js**: v16.3.6
+- **Next.js**: v16.3.8
 - **React**: v19.3.0
 - **Material-UI (MUI)**: v9.4.0
 - **TypeScript**: v7.0.2
-- **Vitest / coverage-v8**: v5.0.2
-- **Oxlint**: v1.85.0
-- **Oxfmt**: v0.70.0
+- **Vitest / coverage-v8**: v5.0.3
+- **Oxlint**: v1.86.0
+- **Oxfmt**: v0.71.0
 - **Node.js**: v26.10.0
 
 ## Configuration
@@ -239,7 +239,7 @@ Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift bet
 ### Prerequisites
 
 - Node.js 26.10.0
-- npm 12.1.0
+- npm 12.2.0
 
 ### Local Development
 
