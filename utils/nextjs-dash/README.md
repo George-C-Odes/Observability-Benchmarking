@@ -164,8 +164,8 @@ Some environments terminate long-lived HTTP connections.
 - **Material-UI (MUI)**: v9.4.0
 - **TypeScript**: v7.0.2
 - **Vitest / coverage-v8**: v5.0.3
-- **Oxlint**: v1.86.0
-- **Oxfmt**: v0.71.0
+- **Oxlint**: v1.87.0
+- **Oxfmt**: v0.72.0
 - **Node.js**: v26.10.0
 
 ## Configuration

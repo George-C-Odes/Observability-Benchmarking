@@ -116,8 +116,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.0                  | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.16.10                 | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.86.0                  | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.71.0                  | Next.js dashboard formatting                                         |
+| **Quality**       | Linter             | Oxlint                     | 1.87.0                  | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.72.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.0.3                   | Frontend unit testing                                                |

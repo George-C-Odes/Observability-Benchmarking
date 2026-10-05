@@ -576,8 +576,8 @@ React: 19.3.0
 TypeScript: 7.0.2
 Vitest: 5.0.3
 @vitest/coverage-v8: 5.0.3
-Oxlint: 1.86.0
-Oxfmt: 0.71.0
+Oxlint: 1.87.0
+Oxfmt: 0.72.0
 ```
 
 #### Test Structure
