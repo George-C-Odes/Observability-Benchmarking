@@ -51,6 +51,9 @@ import java.util.concurrent.locks.LockSupport;
  *   <li>Strategy 3 — Brute-force load known proxy names via {@code Class.forName()}</li>
  * </ul>
  */
+// Intentional build-time reflection into Helidon/Weld internals and classloader state
+// to discover generated CDI proxy classes for native-image initialization.
+@SuppressWarnings("PMD.AvoidAccessibilityAlteration")
 public class WeldProxyBuildTimeInitFeature implements Feature {
 
     private static final String LOG_PREFIX = "[WeldProxyBuildTimeInitFeature]";
