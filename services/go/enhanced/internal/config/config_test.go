@@ -126,6 +126,10 @@ func TestParseDurationFlex(t *testing.T) {
 		{input: "150", want: 150 * time.Millisecond},
 		{input: "0.5*time.Second", want: 500 * time.Millisecond},
 		{input: "2*time.Minute", want: 2 * time.Minute},
+		{input: "3*time.Nanosecond", want: 3 * time.Nanosecond},
+		{input: "4*time.Microsecond", want: 4 * time.Microsecond},
+		{input: "1.5*time.Millisecond", want: 1500 * time.Microsecond},
+		{input: " 0.5 *time.Hour ", want: 30 * time.Minute},
 	}
 
 	for _, tc := range cases {
@@ -138,7 +142,7 @@ func TestParseDurationFlex(t *testing.T) {
 		}
 	}
 
-	for _, input := range []string{"", "abc", "1*time.Fortnight"} {
+	for _, input := range []string{"", "abc", "1*time.Fortnight", "oops*time.Second", "*time.Second", "1*time."} {
 		if _, err := parseDurationFlex(input); err == nil {
 			t.Fatalf("expected error for %q", input)
 		}
@@ -231,6 +235,18 @@ func TestLoadFromEnvOverrides(t *testing.T) {
 	if cfg.MetricsEnabled || !cfg.RuntimeMetricsEnabled || !cfg.GoScheduleMetricsEnabled || !cfg.LogsEnabled {
 		t.Fatalf("unexpected metrics/log config: %#v", cfg)
 	}
+	assertHTTPConfigOverrides(t, cfg)
+	if !cfg.PyroscopeEnabled || cfg.PyroscopeUploadInterval != 2*time.Second || cfg.PyroscopeLogLevel != "debug" {
+		t.Fatalf("unexpected pyroscope config: %#v", cfg)
+	}
+	if cfg.MetricsExportInterval != 250*time.Millisecond {
+		t.Fatalf("unexpected metrics export interval: %v", cfg.MetricsExportInterval)
+	}
+}
+
+func assertHTTPConfigOverrides(t *testing.T, cfg Config) {
+	t.Helper()
+
 	if cfg.HTTPMiddlewareEnabled || cfg.HTTPTracesEnabled || !cfg.HTTPMetricsEnabled || !cfg.HTTPCollectClientIP {
 		t.Fatalf("unexpected HTTP middleware config: %#v", cfg)
 	}
@@ -242,12 +258,6 @@ func TestLoadFromEnvOverrides(t *testing.T) {
 	}
 	if !cfg.HandlerSpansEnabled {
 		t.Fatal("handler spans should be enabled")
-	}
-	if !cfg.PyroscopeEnabled || cfg.PyroscopeUploadInterval != 2*time.Second || cfg.PyroscopeLogLevel != "debug" {
-		t.Fatalf("unexpected pyroscope config: %#v", cfg)
-	}
-	if cfg.MetricsExportInterval != 250*time.Millisecond {
-		t.Fatalf("unexpected metrics export interval: %v", cfg.MetricsExportInterval)
 	}
 }
 
@@ -273,5 +283,39 @@ func TestLoadFromEnvValidationErrors(t *testing.T) {
 	setTestEnv(t, "OTEL_HTTP_SPAN_NAME_MODE", "bad-mode")
 	if _, err := LoadFromEnv(); err == nil {
 		t.Fatal("expected error for invalid OTEL_HTTP_SPAN_NAME_MODE")
+	}
+}
+
+func TestLoadFromEnvIntervalPrecedenceAndPyroscopeOptOut(t *testing.T) {
+	// Keep unrelated environment validation independent of the caller's shell.
+	t.Setenv("OTEL_HTTP_TRACES_MODE", "minimal")
+	t.Setenv("OTEL_HTTP_SPAN_NAME_MODE", "constant")
+	t.Setenv("PYROSCOPE_UPLOAD_INTERVAL", "15s")
+	t.Setenv("PYROSCOPE_SERVER_ADDRESS", "http://pyroscope:4040")
+	t.Setenv("PYROSCOPE_APPLICATION_NAME", "agent/go")
+	t.Setenv("PYROSCOPE_ENABLED", "false")
+	t.Setenv("OTEL_METRICS_EXPORT_INTERVAL", "250ms")
+
+	for _, tc := range []struct {
+		name     string
+		singular string
+		want     time.Duration
+	}{
+		{name: "singular takes precedence", singular: "2s", want: 2 * time.Second},
+		{name: "blank singular uses plural", singular: "   ", want: 250 * time.Millisecond},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("OTEL_METRIC_EXPORT_INTERVAL", tc.singular)
+			cfg, err := LoadFromEnv()
+			if err != nil {
+				t.Fatalf("LoadFromEnv: %v", err)
+			}
+			if cfg.MetricsExportInterval != tc.want {
+				t.Errorf("export interval = %v, want %v", cfg.MetricsExportInterval, tc.want)
+			}
+			if cfg.PyroscopeEnabled {
+				t.Error("explicit false must override automatic Pyroscope enablement")
+			}
+		})
 	}
 }

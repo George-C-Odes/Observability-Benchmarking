@@ -168,7 +168,8 @@ make coverage
   - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
   - uploads `coverage.out` and `coverage.html`
   - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
-  - enforces the current enhanced-module statement threshold of **40%**
+  - enforces the enhanced-module statement threshold of **85%**
+  - fails the gate when coverage jobs fail or profiles are missing or unreadable
 - **Codecov flag**: `go-enhanced`
   - mapped in the repository root `codecov.yml` to `services/go/enhanced/`
 
@@ -186,9 +187,28 @@ The current unit tests cover:
 - query parameter parsing and validation (`sleep`, `log`, bad values)
 - cache implementations and hit/miss behavior
 - configuration parsing from environment variables
+- supported duration units, metric export interval precedence, and explicit Pyroscope opt-out
+- cumulative `hello.request.count` collection, endpoint attributes, error responses, and `int64` saturation
+- continued endpoint operation when metric creation or callback registration fails
 - logging and trace-correlation helpers
 - HTTP tracing middleware utilities
 - OpenTelemetry and Pyroscope setup using deterministic test doubles where needed
+- root sampling decisions and sampled/unsampled remote-parent behavior
+
+### Coverage scope
+
+No enhanced-module source files are excluded. In particular, `cmd/server/main.go`
+also contains the unit-tested HTTP instrumentation setup; excluding the whole
+file would hide that logic along with process startup and signal handling.
+The latter are better candidates for subprocess/integration tests. The
+`internal/buildinfo` version variable has no executable statements, so a Codecov
+exclusion would not improve Go statement coverage.
+
+The CI gate and summaries use the full Go statement profile. Codecov receives
+the same profile with repository-relative paths and reports line coverage;
+its percentages need not exactly match Go's statement percentages. A future
+`codecov.yml` ignore rule would affect only Codecov, not the CI gate or local
+`go tool cover` reports.
 
 If your local Windows Go toolchain has filesystem-permission issues with the
 managed toolchain cache or C toolchain headers, run the same commands in Docker
