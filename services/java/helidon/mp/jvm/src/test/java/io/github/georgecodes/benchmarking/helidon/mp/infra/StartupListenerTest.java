@@ -55,6 +55,8 @@ class StartupListenerTest {
                 .anyMatch(name -> name.contains("OpenTelemetryMeterRegistry")));
     }
 
+    // Reset the private one-time bridge guard between tests without adding a production reset API.
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     private static AtomicBoolean bridgedFlag() throws Exception {
         Field field = StartupListener.class.getDeclaredField("MICROMETER_BRIDGED");
         field.setAccessible(true);
