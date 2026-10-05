@@ -15,9 +15,9 @@ This repository currently uses two scoped JVM quality setups:
   - **maven-checkstyle-plugin**: 3.6.0
   - **checkstyle**: 12.2.0
 - **Orchestrator (`utils/orchestrator`)**
-  - **spotless-maven-plugin**: 3.10.2
+  - **spotless-maven-plugin**: 3.10.3
   - **google-java-format**: 1.36.1
-  - **maven-pmd-plugin**: 3.28.0 with PMD 7.27.0
+  - **maven-pmd-plugin**: 3.28.0 with PMD 7.28.0
   - **spotbugs-maven-plugin**: 4.10.4.1 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
@@ -136,7 +136,7 @@ The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow sco
 
 GitHub will print an informational warning in the **Complete job** phase similar to:
 
-> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.2.1.
+> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.2.2.
 
 This warning **confirms the opt-in is working** — the action targets Node 20 in its published metadata, but our `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` setting successfully forces it to run on Node 24. The warning is purely informational and will disappear only after JetBrains republishes the action with native Node 24 support in its action metadata. No action is required on our side.
 
@@ -715,7 +715,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@1c5b675653bb5c22dbe9b12b556ec555138e09fd` (# v4.38.1, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2` (# v4.38.2, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
@@ -726,10 +726,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.68.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.83.0** — checks the module root with warnings denied.
+1. **Oxfmt 0.72.0** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint 1.87.0** — checks the module root with warnings denied.
 3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.0.1** — runs separate Node and jsdom suites.
+4. **Vitest 5.0.3** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.

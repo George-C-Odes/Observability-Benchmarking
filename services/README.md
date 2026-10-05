@@ -100,9 +100,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.39.4_latest `
-  --build-arg QUARKUS_VERSION=3.39.4 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.39.4_latest `
+  -t quarkus-jvm:3.40.1_latest `
+  --build-arg QUARKUS_VERSION=3.40.1 `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.40.1_latest `
   --load `
   services/java
 ```
@@ -110,9 +110,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/quarkus/native/Dockerfile `
-    -t quarkus-native:3.39.4_latest `
-    --build-arg QUARKUS_VERSION=3.39.4 `
-    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.39.4_latest `
+    -t quarkus-native:3.40.1_latest `
+    --build-arg QUARKUS_VERSION=3.40.1 `
+    --build-arg BUILDKIT_BUILD_NAME=quarkus-native:3.40.1_latest `
     --load `
     services/java
 ```
@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.2.2_latest `
-  --build-arg MICRONAUT_VERSION=5.2.2 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.2.2_latest `
+  -t micronaut-jvm:5.2.13_latest `
+  --build-arg MICRONAUT_VERSION=5.2.13 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.2.13_latest `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:5.2.2_latest `
-  --build-arg MICRONAUT_VERSION=5.2.2 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.2.2_latest `
+  -t micronaut-native:5.2.13_latest `
+  --build-arg MICRONAUT_VERSION=5.2.13 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.2.13_latest `
   --load `
   services/java
 ```

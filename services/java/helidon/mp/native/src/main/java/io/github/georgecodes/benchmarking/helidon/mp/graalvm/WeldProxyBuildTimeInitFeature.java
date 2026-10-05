@@ -4,6 +4,7 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,6 +52,9 @@ import java.util.concurrent.locks.LockSupport;
  *   <li>Strategy 3 — Brute-force load known proxy names via {@code Class.forName()}</li>
  * </ul>
  */
+// Intentional build-time reflection into Helidon/Weld internals and classloader state
+// to discover generated CDI proxy classes for native-image initialization.
+@SuppressWarnings("PMD.AvoidAccessibilityAlteration")
 public class WeldProxyBuildTimeInitFeature implements Feature {
 
     private static final String LOG_PREFIX = "[WeldProxyBuildTimeInitFeature]";
@@ -175,6 +179,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             Class<?> cdiClass = Class.forName("jakarta.enterprise.inject.spi.CDI", false, cl);
             Method currentMethod = cdiClass.getMethod("current");
             long deadlineNanos = System.nanoTime() + CDI_WAIT_TIMEOUT_NANOS;
+            Throwable lastFailure = null;
             while (System.nanoTime() < deadlineNanos) {
                 try {
                     Object cdi = currentMethod.invoke(null);
@@ -183,8 +188,14 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                                 + cdi.getClass().getSimpleName());
                         return;
                     }
-                } catch (Exception e) {
-                    // CDI not ready yet
+                } catch (InvocationTargetException e) {
+                    Throwable failure = e.getCause() == null ? e : e.getCause();
+                    if (!(failure instanceof IllegalStateException)) {
+                        System.out.println(LOG_PREFIX + " CDI.current() invocation failed: " + failure);
+                        return;
+                    }
+                    // CDI.current() signals unavailable CDI with IllegalStateException.
+                    lastFailure = failure;
                 }
                 if (wasCdiPollInterrupted(deadlineNanos)) {
                     System.out.println(LOG_PREFIX + " CDI.current() wait interrupted");
@@ -192,7 +203,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                     return;
                 }
             }
-            System.out.println(LOG_PREFIX + " CDI.current() timeout after 120s");
+            System.out.println(LOG_PREFIX + " CDI.current() timeout after 120s"
+                    + (lastFailure == null ? "" : "; last failure: " + lastFailure));
         } catch (Exception e) {
             System.out.println(LOG_PREFIX + " CDI.current() path failed: "
                     + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -347,7 +359,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                             + " = " + (store == null ? "null" : store.getClass().getName()));
                     if (store instanceof Map<?, ?> map) {
                         for (Object val : map.values()) {
-                            if (val != null && val.getClass().getName().equals("org.jboss.weld.Container")) {
+                            if (val != null && "org.jboss.weld.Container".equals(val.getClass().getName())) {
                                 container = val;
                                 break;
                             }
@@ -411,7 +423,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 // BeanManagerImpl has methods to access internals
                 if (bm.getClass().getName().contains("BeanManagerImpl")) {
                     for (Field f : bm.getClass().getDeclaredFields()) {
-                        if (f.getName().equals("clientProxyProvider")) {
+                        if ("clientProxyProvider".equals(f.getName())) {
                             f.setAccessible(true);
                             Object cpp = f.get(bm);
                             if (cpp != null) {
@@ -493,7 +505,7 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
             // or ClientProxyProvider.getClientProxy(Bean)
             Method getClientProxyMethod = null;
             for (Method m : proxyProvider.getClass().getMethods()) {
-                if (m.getName().equals("getClientProxy") && m.getParameterCount() == 1) {
+                if ("getClientProxy".equals(m.getName()) && m.getParameterCount() == 1) {
                     getClientProxyMethod = m;
                     break;
                 }
@@ -514,8 +526,14 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                         tryRegisterClass(proxy.getClass(), source + "-prePopulate");
                         triggered++;
                     }
+                } catch (InvocationTargetException e) {
+                    // Not all beans are proxyable; report the failure and continue discovery.
+                    Throwable failure = e.getCause() == null ? e : e.getCause();
+                    System.out.println(LOG_PREFIX + " " + source
+                            + ": skipping proxy for bean " + bean + ": " + failure);
                 } catch (Exception e) {
-                    // Not all beans are proxyable — skip
+                    System.out.println(LOG_PREFIX + " " + source
+                            + ": proxy invocation failed for bean " + bean + ": " + e);
                 }
             }
             System.out.println(LOG_PREFIX + " " + source
@@ -608,7 +626,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
                 }
             }
         } catch (Exception e) {
-            // skip
+            System.out.println(LOG_PREFIX + " " + source + ": could not inspect proxy holder "
+                    + valClassName + ": " + e);
         }
     }
 
@@ -645,6 +664,8 @@ public class WeldProxyBuildTimeInitFeature implements Feature {
 
     // ---- Strategy 3: Known proxy names via Class.forName() ----
 
+    // Missing proxy variants are expected; not every bean has a client proxy or subclass.
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     private void registerKnownProxiesByName(ClassLoader cl) {
         int countBefore = registered.size();
         // All @ApplicationScoped (normal-scoped) beans get a WeldClientProxy.

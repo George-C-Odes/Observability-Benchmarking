@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -24,7 +25,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
@@ -116,69 +116,17 @@ func Setup(ctx context.Context, cfg config.Config, baseLogger *slog.Logger) (*Te
 	shutdowns = append(shutdowns, func(ctx context.Context) error { return tp.Shutdown(ctx) })
 
 	// Optional Span Profiles (Pyroscope + otel-profiling-go)
-	if cfg.PyroscopeEnabled && cfg.PyroscopeServerAddress != "" && cfg.PyroscopeApplicationName != "" {
-		var pyLogger pyroscope.Logger
-		switch strings.ToLower(strings.TrimSpace(cfg.PyroscopeLogLevel)) {
-		case "off", "none", "false", "0":
-			pyLogger = nil // pyroscope-go treats nil as "no logging"
-		case "debug":
-			pyLogger = pyroscope.StandardLogger
-		default:
-			// pyroscope-go's StandardLogger always prints DEBUG lines.
-			// Wrap slog so we honour the configured level (e.g. "info").
-			pyLogger = &slogPyroscopeLogger{logger: baseLogger.With("component", "pyroscope")}
-		}
-
-		prof, err := pyroscope.Start(pyroscope.Config{
-			ApplicationName: cfg.PyroscopeApplicationName,
-			ServerAddress:   cfg.PyroscopeServerAddress,
-			Logger:          pyLogger,
-			ProfileTypes:    profileTypes(cfg.PyroscopeProfileTypes),
-			UploadRate:      cfg.PyroscopeUploadInterval,
-		})
-		if err != nil {
-			baseLogger.Warn("pyroscope start failed", slog.Any("err", err))
-			otel.SetTracerProvider(tp)
-		} else {
-			shutdowns = append(shutdowns, func(context.Context) error { return prof.Stop() })
-			otel.SetTracerProvider(otelpyroscope.NewTracerProvider(tp))
-		}
-	} else {
-		otel.SetTracerProvider(tp)
+	if shutdown := setupSpanProfiles(cfg, baseLogger, tp); shutdown != nil {
+		shutdowns = append(shutdowns, shutdown)
 	}
 
 	// ---- Metrics ----
-	if !cfg.MetricsEnabled || cfg.MetricsExportInterval <= 0 {
-		otel.SetMeterProvider(noop.NewMeterProvider())
-	} else {
-		metricExp, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithGRPCConn(conn))
-		if err != nil {
-			return nil, fmt.Errorf("create metric exporter: %w", err)
-		}
-
-		readerOpts := []sdkmetric.PeriodicReaderOption{
-			sdkmetric.WithInterval(cfg.MetricsExportInterval),
-		}
-		// Go scheduling latency histogram is opt-in because it can add overhead.
-		if cfg.GoScheduleMetricsEnabled {
-			readerOpts = append(readerOpts, sdkmetric.WithProducer(runtimemetrics.NewProducer()))
-		}
-
-		reader := sdkmetric.NewPeriodicReader(metricExp, readerOpts...)
-
-		mp := sdkmetric.NewMeterProvider(
-			sdkmetric.WithResource(res),
-			sdkmetric.WithReader(reader),
-		)
-
-		otel.SetMeterProvider(mp)
-		shutdowns = append(shutdowns, func(ctx context.Context) error { return mp.Shutdown(ctx) })
-
-		if cfg.RuntimeMetricsEnabled {
-			if err := runtimemetrics.Start(runtimemetrics.WithMeterProvider(mp)); err != nil {
-				baseLogger.Warn("runtime metrics start failed", slog.Any("err", err))
-			}
-		}
+	metricShutdown, err := setupMetrics(ctx, cfg, baseLogger, res, conn)
+	if err != nil {
+		return nil, err
+	}
+	if metricShutdown != nil {
+		shutdowns = append(shutdowns, metricShutdown)
 	}
 
 	// ---- Logs (optional, experimental) ----
@@ -192,10 +140,9 @@ func Setup(ctx context.Context, cfg config.Config, baseLogger *slog.Logger) (*Te
 			sdklog.WithResource(res),
 			sdklog.WithProcessor(sdklog.NewBatchProcessor(logExp)),
 		)
-		global.SetLoggerProvider(lp)
 		shutdowns = append(shutdowns, func(ctx context.Context) error { return lp.Shutdown(ctx) })
 
-		// Bridge slog -> OpenTelemetry logs
+		// Bridge slog -> OpenTelemetry logs with an explicit provider.
 		otelHandler = otelslog.NewHandler(serviceName, otelslog.WithLoggerProvider(lp))
 	}
 
@@ -203,15 +150,89 @@ func Setup(ctx context.Context, cfg config.Config, baseLogger *slog.Logger) (*Te
 		Enabled:        true,
 		OtelLogHandler: otelHandler,
 		Shutdown: func(ctx context.Context) error {
-			var errs []error
-			for i := len(shutdowns) - 1; i >= 0; i-- {
-				if err := shutdowns[i](ctx); err != nil {
-					errs = append(errs, err)
-				}
-			}
-			return errors.Join(errs...)
+			return shutdownAll(ctx, shutdowns)
 		},
 	}, nil
+}
+
+func setupSpanProfiles(cfg config.Config, baseLogger *slog.Logger, tp *sdktrace.TracerProvider) func(context.Context) error {
+	if !cfg.PyroscopeEnabled || cfg.PyroscopeServerAddress == "" || cfg.PyroscopeApplicationName == "" {
+		otel.SetTracerProvider(tp)
+		return nil
+	}
+
+	var pyLogger pyroscope.Logger
+	switch strings.ToLower(strings.TrimSpace(cfg.PyroscopeLogLevel)) {
+	case "off", "none", "false", "0":
+		pyLogger = nil // pyroscope-go treats nil as "no logging"
+	case "debug":
+		pyLogger = pyroscope.StandardLogger
+	default:
+		// pyroscope-go's StandardLogger always prints DEBUG lines.
+		// Wrap slog so we honour the configured level (e.g. "info").
+		pyLogger = &slogPyroscopeLogger{logger: baseLogger.With("component", "pyroscope")}
+	}
+
+	prof, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: cfg.PyroscopeApplicationName,
+		ServerAddress:   cfg.PyroscopeServerAddress,
+		Logger:          pyLogger,
+		ProfileTypes:    profileTypes(cfg.PyroscopeProfileTypes),
+		UploadRate:      cfg.PyroscopeUploadInterval,
+	})
+	if err != nil {
+		baseLogger.Warn("pyroscope start failed", slog.Any("err", err))
+		otel.SetTracerProvider(tp)
+		return nil
+	}
+
+	otel.SetTracerProvider(otelpyroscope.NewTracerProvider(tp))
+	return func(context.Context) error { return prof.Stop() }
+}
+
+func setupMetrics(ctx context.Context, cfg config.Config, baseLogger *slog.Logger, res *resource.Resource, conn *grpc.ClientConn) (func(context.Context) error, error) {
+	if !cfg.MetricsEnabled || cfg.MetricsExportInterval <= 0 {
+		otel.SetMeterProvider(noop.NewMeterProvider())
+		return nil, nil
+	}
+
+	metricExp, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithGRPCConn(conn))
+	if err != nil {
+		return nil, fmt.Errorf("create metric exporter: %w", err)
+	}
+
+	readerOpts := []sdkmetric.PeriodicReaderOption{
+		sdkmetric.WithInterval(cfg.MetricsExportInterval),
+	}
+	// Go scheduling latency histogram is opt-in because it can add overhead.
+	if cfg.GoScheduleMetricsEnabled {
+		readerOpts = append(readerOpts, sdkmetric.WithProducer(runtimemetrics.NewProducer()))
+	}
+
+	reader := sdkmetric.NewPeriodicReader(metricExp, readerOpts...)
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(reader),
+	)
+
+	otel.SetMeterProvider(mp)
+	if cfg.RuntimeMetricsEnabled {
+		if err := runtimemetrics.Start(runtimemetrics.WithMeterProvider(mp)); err != nil {
+			baseLogger.Warn("runtime metrics start failed", slog.Any("err", err))
+		}
+	}
+
+	return mp.Shutdown, nil
+}
+
+func shutdownAll(ctx context.Context, shutdowns []func(context.Context) error) error {
+	var errs []error
+	for _, shutdown := range slices.Backward(shutdowns) {
+		if err := shutdown(ctx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func parseEndpoint(v string) (isURL bool, endpoint string, err error) {
@@ -299,15 +320,15 @@ func clamp01(v float64) float64 {
 // slog.LevelInfo — slog will drop anything below the configured level.
 type slogPyroscopeLogger struct{ logger *slog.Logger }
 
-func (l *slogPyroscopeLogger) Infof(msg string, args ...interface{}) {
+func (l *slogPyroscopeLogger) Infof(msg string, args ...any) {
 	l.logger.Info(fmt.Sprintf(msg, args...))
 }
 
-func (l *slogPyroscopeLogger) Debugf(msg string, args ...interface{}) {
+func (l *slogPyroscopeLogger) Debugf(msg string, args ...any) {
 	l.logger.Debug(fmt.Sprintf(msg, args...))
 }
 
-func (l *slogPyroscopeLogger) Errorf(msg string, args ...interface{}) {
+func (l *slogPyroscopeLogger) Errorf(msg string, args ...any) {
 	l.logger.Error(fmt.Sprintf(msg, args...))
 }
 

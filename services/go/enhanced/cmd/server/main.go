@@ -51,7 +51,8 @@ func main() {
 	ctx := context.Background()
 
 	// Telemetry setup (OTLP + optional Pyroscope span profiles)
-	tel, err := appotel.Setup(ctx, cfg, bootstrapLogger)
+	var tel *appotel.Telemetry
+	tel, err = appotel.Setup(ctx, cfg, bootstrapLogger)
 	if err != nil {
 		bootstrapLogger.Error("telemetry setup failed", slog.Any("err", err))
 		os.Exit(1)
@@ -105,75 +106,9 @@ func main() {
 	app.Use(recover.New())
 
 	// ---- HTTP instrumentation ----
-	if cfg.HTTPMiddlewareEnabled {
-		spanNameFn := middleware.MakeSpanNameFormatter(cfg.HTTPSpanNameMode)
-
-		// Pre-normalize ignored paths once.
-		ignorePaths := middleware.NormalizePaths(cfg.HTTPIgnorePaths)
-
-		// For performance, we default to TraceContext only (no baggage).
-		var propagators propagation.TextMapPropagator
-		if cfg.HTTPPropagationEnabled {
-			propagators = propagation.TraceContext{}
-		} else {
-			propagators = propagation.NewCompositeTextMapPropagator()
-		}
-
-		switch cfg.HTTPTracesMode {
-		case "otelfiber":
-			opts := []otelfiber.Option{
-				otelfiber.WithPort(cfg.Port),
-				otelfiber.WithNext(func(c fiber.Ctx) bool {
-					return middleware.IsIgnoredPath(c.Path(), ignorePaths)
-				}),
-				otelfiber.WithClientIP(cfg.HTTPCollectClientIP),
-				otelfiber.WithSpanNameFormatter(spanNameFn),
-				otelfiber.WithPropagators(propagators),
-			}
-
-			if !cfg.HTTPTracesEnabled {
-				opts = append(opts, otelfiber.WithTracerProvider(tracenoop.NewTracerProvider()))
-			}
-
-			if !cfg.HTTPMetricsEnabled {
-				opts = append(opts, otelfiber.WithoutMetrics(true))
-				opts = append(opts, otelfiber.WithMeterProvider(metricnoop.NewMeterProvider()))
-			}
-
-			app.Use(otelfiber.Middleware(opts...))
-
-		case "minimal":
-			if cfg.HTTPTracesEnabled {
-				app.Use(middleware.MinimalHTTPTracingMiddleware(
-					otelapi.Tracer(instrumentationName),
-					spanNameFn,
-					propagators,
-					ignorePaths,
-				))
-			} else {
-				logger.Info("http tracing disabled (OTEL_HTTP_TRACES_ENABLED=false)")
-			}
-
-			if cfg.HTTPMetricsEnabled {
-				opts := []otelfiber.Option{
-					otelfiber.WithPort(cfg.Port),
-					otelfiber.WithNext(func(c fiber.Ctx) bool {
-						return middleware.IsIgnoredPath(c.Path(), ignorePaths)
-					}),
-					otelfiber.WithClientIP(cfg.HTTPCollectClientIP),
-					otelfiber.WithSpanNameFormatter(spanNameFn),
-					otelfiber.WithPropagators(propagators),
-					otelfiber.WithTracerProvider(tracenoop.NewTracerProvider()),
-				}
-				app.Use(otelfiber.Middleware(opts...))
-			}
-
-		default:
-			logger.Error("invalid OTEL_HTTP_TRACES_MODE", slog.String("mode", cfg.HTTPTracesMode))
-			os.Exit(1)
-		}
-	} else {
-		logger.Info("http instrumentation disabled (OTEL_HTTP_ENABLED=false)")
+	if err := setupHTTPInstrumentation(app, cfg, logger); err != nil {
+		logger.Error(err.Error(), slog.String("mode", cfg.HTTPTracesMode))
+		os.Exit(1)
 	}
 
 	// Lightweight liveness/readiness endpoints
@@ -211,4 +146,78 @@ func main() {
 	_ = app.ShutdownWithContext(shutdownCtx)
 	_ = tel.Shutdown(shutdownCtx)
 	_ = c.Close()
+}
+
+func setupHTTPInstrumentation(app *fiber.App, cfg config.Config, logger *slog.Logger) error {
+	if !cfg.HTTPMiddlewareEnabled {
+		logger.Info("http instrumentation disabled (OTEL_HTTP_ENABLED=false)")
+		return nil
+	}
+
+	spanNameFn := middleware.MakeSpanNameFormatter(cfg.HTTPSpanNameMode)
+
+	// Pre-normalize ignored paths once.
+	ignorePaths := middleware.NormalizePaths(cfg.HTTPIgnorePaths)
+
+	// For performance, we default to TraceContext only (no baggage).
+	var propagators propagation.TextMapPropagator
+	if cfg.HTTPPropagationEnabled {
+		propagators = propagation.TraceContext{}
+	} else {
+		propagators = propagation.NewCompositeTextMapPropagator()
+	}
+
+	switch cfg.HTTPTracesMode {
+	case "otelfiber":
+		opts := []otelfiber.Option{
+			otelfiber.WithPort(cfg.Port),
+			otelfiber.WithNext(func(c fiber.Ctx) bool {
+				return middleware.IsIgnoredPath(c.Path(), ignorePaths)
+			}),
+			otelfiber.WithClientIP(cfg.HTTPCollectClientIP),
+			otelfiber.WithSpanNameFormatter(spanNameFn),
+			otelfiber.WithPropagators(propagators),
+		}
+
+		if !cfg.HTTPTracesEnabled {
+			opts = append(opts, otelfiber.WithTracerProvider(tracenoop.NewTracerProvider()))
+		}
+
+		if !cfg.HTTPMetricsEnabled {
+			opts = append(opts, otelfiber.WithoutMetrics(true))
+			opts = append(opts, otelfiber.WithMeterProvider(metricnoop.NewMeterProvider()))
+		}
+
+		app.Use(otelfiber.Middleware(opts...))
+
+	case "minimal":
+		if cfg.HTTPTracesEnabled {
+			app.Use(middleware.MinimalHTTPTracingMiddleware(
+				otelapi.Tracer(instrumentationName),
+				spanNameFn,
+				propagators,
+				ignorePaths,
+			))
+		} else {
+			logger.Info("http tracing disabled (OTEL_HTTP_TRACES_ENABLED=false)")
+		}
+
+		if cfg.HTTPMetricsEnabled {
+			opts := []otelfiber.Option{
+				otelfiber.WithPort(cfg.Port),
+				otelfiber.WithNext(func(c fiber.Ctx) bool {
+					return middleware.IsIgnoredPath(c.Path(), ignorePaths)
+				}),
+				otelfiber.WithClientIP(cfg.HTTPCollectClientIP),
+				otelfiber.WithSpanNameFormatter(spanNameFn),
+				otelfiber.WithPropagators(propagators),
+				otelfiber.WithTracerProvider(tracenoop.NewTracerProvider()),
+			}
+			app.Use(otelfiber.Middleware(opts...))
+		}
+
+	default:
+		return errors.New("invalid OTEL_HTTP_TRACES_MODE")
+	}
+	return nil
 }

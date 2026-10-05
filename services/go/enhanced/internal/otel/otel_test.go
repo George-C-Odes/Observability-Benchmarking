@@ -3,14 +3,18 @@ package otel
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"hello/internal/config"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestParseEndpoint(t *testing.T) {
@@ -266,9 +270,77 @@ func TestSetupPyroscopeFailureFallsBack(t *testing.T) {
 	}
 }
 
-func TestFormattingSmoke(t *testing.T) {
-	got := fmt.Sprintf("%T", &Telemetry{})
-	if !strings.Contains(got, "Telemetry") {
-		t.Fatalf("unexpected formatting: %q", got)
+func TestShutdownAllReverseOrderAndErrors(t *testing.T) {
+	firstErr := errors.New("first shutdown failed")
+	lastErr := errors.New("last shutdown failed")
+	var order []int
+	shutdowns := []func(context.Context) error{
+		func(context.Context) error {
+			order = append(order, 1)
+			return firstErr
+		},
+		func(context.Context) error {
+			order = append(order, 2)
+			return nil
+		},
+		func(context.Context) error {
+			order = append(order, 3)
+			return lastErr
+		},
+	}
+
+	err := shutdownAll(context.Background(), shutdowns)
+	if !slices.Equal(order, []int{3, 2, 1}) {
+		t.Fatalf("unexpected shutdown order: %v", order)
+	}
+	if !errors.Is(err, firstErr) || !errors.Is(err, lastErr) {
+		t.Fatalf("expected both shutdown errors, got %v", err)
+	}
+	if err := shutdownAll(context.Background(), nil); err != nil {
+		t.Fatalf("empty shutdown: %v", err)
+	}
+}
+
+func TestTraceSamplerDecisions(t *testing.T) {
+	sampledParent := trace.ContextWithRemoteSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{1},
+		SpanID:     trace.SpanID{1},
+		TraceFlags: trace.FlagsSampled,
+		Remote:     true,
+	}))
+	unsampledParent := trace.ContextWithRemoteSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: trace.TraceID{1},
+		SpanID:  trace.SpanID{1},
+		Remote:  true,
+	}))
+	for _, tc := range []struct {
+		name    string
+		sampler string
+		ratio   float64
+		parent  context.Context
+		want    sdktrace.SamplingDecision
+	}{
+		{name: "parent off drops roots", sampler: "parentbased_always_off", parent: context.Background(), want: sdktrace.Drop},
+		{name: "parent off preserves sampled parent", sampler: "parentbased_always_off", parent: sampledParent, want: sdktrace.RecordAndSample},
+		{name: "parent on respects unsampled parent", sampler: "parentbased_always_on", parent: unsampledParent, want: sdktrace.Drop},
+		{name: "always on ignores unsampled parent", sampler: " ALWAYS_ON ", parent: unsampledParent, want: sdktrace.RecordAndSample},
+		{name: "always off ignores sampled parent", sampler: "always_off", parent: sampledParent, want: sdktrace.Drop},
+		{name: "zero ratio drops roots", sampler: "traceidratio", ratio: 0, parent: context.Background(), want: sdktrace.Drop},
+		{name: "full ratio samples roots", sampler: "traceidratio", ratio: 1, parent: context.Background(), want: sdktrace.RecordAndSample},
+		{name: "zero parent ratio preserves sampled parent", sampler: "parentbased_traceidratio", parent: sampledParent, want: sdktrace.RecordAndSample},
+		{name: "unknown sampler keeps roots", sampler: "unknown", parent: context.Background(), want: sdktrace.RecordAndSample},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sampler := traceSampler(config.Config{TracesSampler: tc.sampler, TracesSamplerArg: tc.ratio})
+			result := sampler.ShouldSample(sdktrace.SamplingParameters{
+				ParentContext: tc.parent,
+				TraceID:       trace.TraceID{1},
+				Name:          "http.request",
+				Kind:          trace.SpanKindServer,
+			})
+			if result.Decision != tc.want {
+				t.Errorf("sampling decision = %v, want %v", result.Decision, tc.want)
+			}
+		})
 	}
 }

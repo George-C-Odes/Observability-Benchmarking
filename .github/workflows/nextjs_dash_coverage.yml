@@ -37,12 +37,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '26.9.0'
+          node-version: '26.10.0'
           cache: npm
           cache-dependency-path: utils/nextjs-dash/package-lock.json
 
-      - name: Set up npm 12.0.2
-        run: npm install --global --ignore-scripts npm@12.0.2
+      - name: Set up npm 12.2.0
+        run: npm install --global --ignore-scripts npm@12.2.0
 
       - name: Install dependencies
         run: npm ci
