@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/contrib/v3/otel v1.2.5
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/grafana/otel-profiling-go v0.6.0
-	github.com/grafana/pyroscope-go v1.4.2
+	github.com/grafana/pyroscope-go v1.4.3
 	github.com/maypok86/otter/v2 v2.3.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.20.1
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.71.0
