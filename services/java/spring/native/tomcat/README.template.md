@@ -322,6 +322,11 @@ The native `pom.xml` includes:
 - Native-compatible dependencies
 - Build-time configuration
 
+Keep the OpenTelemetry core and instrumentation versions aligned with the instrumentation BOM:
+starter `2.32.0` requires core `1.66.0`. Core `1.67.0` removes the internal `ConfigUtil` class
+that this starter uses during SDK initialization, causing startup to fail. Update this pair together
+and rebuild the native image after dependency changes.
+
 ## Testing
 
 ### Health Checks
