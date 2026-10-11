@@ -123,6 +123,7 @@ func TestParseDurationFlex(t *testing.T) {
 		want  time.Duration
 	}{
 		{input: "15s", want: 15 * time.Second},
+		{input: "15000", want: 15 * time.Second},
 		{input: "150", want: 150 * time.Millisecond},
 		{input: "0.5*time.Second", want: 500 * time.Millisecond},
 		{input: "2*time.Minute", want: 2 * time.Minute},
@@ -302,6 +303,7 @@ func TestLoadFromEnvIntervalPrecedenceAndPyroscopeOptOut(t *testing.T) {
 		want     time.Duration
 	}{
 		{name: "singular takes precedence", singular: "2s", want: 2 * time.Second},
+		{name: "SDK milliseconds take precedence", singular: "15000", want: 15 * time.Second},
 		{name: "blank singular uses plural", singular: "   ", want: 250 * time.Millisecond},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

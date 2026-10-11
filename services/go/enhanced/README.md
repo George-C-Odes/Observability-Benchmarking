@@ -94,19 +94,30 @@ export PYROSCOPE_PROFILE_TYPES="cpu,alloc,inuse,goroutines"
 
 ## Configuration
 
-| Env var                        |  Default | Description                                             |
-|--------------------------------|---------:|---------------------------------------------------------|
-| `PORT`                         |   `8080` | HTTP port                                               |
-| `CACHE_SIZE`                   |  `50000` | Size of pre-built cache                                 |
-| `CACHE_IMPL`                   | `theine` | `slice`, `map`, `ristretto`, `theine`, or `otter`       |
-| `LOG_LEVEL`                    |   `info` | `debug`, `info`, `warn`, `error`                        |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`  |       `` | OTLP endpoint URL/host                                  |
-| `OTEL_EXPORTER_OTLP_INSECURE`  |   `true` | Use insecure OTLP (common for local stacks)             |
-| `OTEL_TRACES_SAMPLER_ARG`      |    `1.0` | Trace sampling ratio (0..1), used with `*traceidratio*` |
-| `OTEL_METRICS_EXPORT_INTERVAL` |    `15s` | Metric export interval                                  |
-| `OTEL_LOGS_ENABLED`            |  `false` | Export logs via OTLP (experimental)                     |
-| `PYROSCOPE_SERVER_ADDRESS`     |       `` | Enables Pyroscope push mode                             |
-| `PYROSCOPE_APPLICATION_NAME`   |       `` | Pyroscope app name                                      |
+| Env var                       |  Default | Description                                                 |
+|-------------------------------|---------:|-------------------------------------------------------------|
+| `PORT`                        |   `8080` | HTTP port                                                   |
+| `CACHE_SIZE`                  |  `50000` | Size of pre-built cache                                     |
+| `CACHE_IMPL`                  | `theine` | `slice`, `map`, `ristretto`, `theine`, or `otter`           |
+| `LOG_LEVEL`                   |   `info` | `debug`, `info`, `warn`, `error`                            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` |       `` | OTLP endpoint URL/host                                      |
+| `OTEL_EXPORTER_OTLP_INSECURE` |   `true` | Use insecure OTLP (common for local stacks)                 |
+| `OTEL_TRACES_SAMPLER_ARG`     |    `1.0` | Trace sampling ratio (0..1), used with `*traceidratio*`     |
+| `OTEL_METRIC_EXPORT_INTERVAL` |  `15000` | Metric export interval in integer milliseconds (15 seconds) |
+| `OTEL_LOGS_ENABLED`           |  `false` | Export logs via OTLP (experimental)                         |
+| `PYROSCOPE_SERVER_ADDRESS`    |       `` | Enables Pyroscope push mode                                 |
+| `PYROSCOPE_APPLICATION_NAME`  |       `` | Pyroscope app name                                          |
+
+Use `OTEL_METRIC_EXPORT_INTERVAL=15000`, not `15s`. Although the application's
+duration parser accepts both, the Go SDK reads this environment variable before
+applying the explicit interval option and logs a parse warning for `15s`.
+The legacy application-only alias `OTEL_METRICS_EXPORT_INTERVAL` still accepts
+duration strings when the standard singular variable is unset.
+
+In Compose, set `GO_METRIC_EXPORT_INTERVAL_MS` in `compose/.env` (default `15000`).
+Keep it equivalent to the Java `METRIC_OTEL_INTERVAL` setting (`15s` by default)
+to preserve benchmark fairness. Recreate the `go` container after changing it;
+restarting an existing container does not update its environment.
 
 ---
 
