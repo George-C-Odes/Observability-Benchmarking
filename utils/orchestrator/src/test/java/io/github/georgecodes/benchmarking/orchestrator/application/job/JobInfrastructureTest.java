@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -369,7 +370,9 @@ class JobInfrastructureTest {
 
   private static Path javaExecutable() {
     String executable =
-        System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java";
+        System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
+            ? "java.exe"
+            : "java";
     return Path.of(System.getProperty("java.home"), "bin", executable);
   }
 }

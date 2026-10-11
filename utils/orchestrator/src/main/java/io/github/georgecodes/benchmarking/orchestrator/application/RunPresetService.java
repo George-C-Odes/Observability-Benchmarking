@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
@@ -23,7 +24,8 @@ public class RunPresetService {
   /** Pattern to match run configuration file names with category prefix. */
   private static final Pattern RUN_FILE =
       Pattern.compile(
-          "^\\[(build-img|single-cont|multi-cont)]\\s+(.+)\\.run\\.xml$", Pattern.CASE_INSENSITIVE);
+          "^\\[(build-img|single-cont|multi-cont)]\\s++(.+)\\.run\\.xml$",
+          Pattern.CASE_INSENSITIVE);
 
   /** Strongly-typed project-path configuration. */
   private final ProjectPathsConfig paths;
@@ -56,9 +58,9 @@ public class RunPresetService {
 
     try (var s = Files.list(runDir)) {
       s.filter(Files::isRegularFile)
-          .sorted(Comparator.comparing(p -> fileName(p).toLowerCase()))
+          .sorted(Comparator.comparing(p -> fileName(p).toLowerCase(Locale.ROOT)))
           .forEach(
-              p -> {
+              (Path p) -> {
                 String fn = fileName(p);
                 Matcher m = RUN_FILE.matcher(fn);
                 if (!m.matches()) {
