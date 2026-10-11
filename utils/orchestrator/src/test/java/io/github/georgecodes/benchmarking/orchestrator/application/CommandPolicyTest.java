@@ -14,18 +14,19 @@ import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link CommandPolicy} focusing on compose rewriting. */
 @QuarkusTest
-public class CommandPolicyTest {
+class CommandPolicyTest {
 
   @Inject CommandPolicy policy;
 
   @Test
-  void compose_injects_file_under_workspace_projectDir() {
+  void testComposeInjectsFileUnderWorkspaceProjectDir() {
     var cmd = policy.validate("docker compose version");
     List<String> argv = cmd.argv();
 
-    assertTrue(argv.size() >= 2);
-    assertEquals("docker", argv.get(0));
-    assertEquals("compose", argv.get(1));
+    assertTrue(
+        argv.size() >= 2, "Validated command should contain the Docker executable and subcommand");
+    assertEquals("docker", argv.get(0), "Validated command should use the Docker executable");
+    assertEquals("compose", argv.get(1), "Validated command should use the Compose subcommand");
 
     Path path = Path.of(cmd.projectDir());
     String expectedFile = path.resolve("docker-compose.yml").toString();
@@ -39,7 +40,7 @@ public class CommandPolicyTest {
   }
 
   @Test
-  void compose_allows_windows_style_file_path_when_user_provides_f() {
+  void testComposeAllowsWindowsStyleFilePathWhenUserProvidesF() {
     var cmd = policy.validate("docker compose -f C:/Users/x/compose/docker-compose.yml version");
     List<String> argv = cmd.argv();
 
@@ -47,73 +48,112 @@ public class CommandPolicyTest {
   }
 
   @Test
-  void compose_rejects_disallowed_global_options() {
+  void testComposeRejectsDisallowedGlobalOptions() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> policy.validate("docker compose --context foo version"));
+        () -> policy.validate("docker compose --context foo version"),
+        "Compose should reject the disallowed --context option");
   }
 
   @Test
-  void validate_rejects_short_nonDocker_and_shellLike_commands() {
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker"));
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("podman ps"));
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker ps && whoami"));
+  void testValidateRejectsShortNonDockerAndShellLikeCommands() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker"),
+        "Docker commands should require a subcommand");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("podman ps"),
+        "Only Docker commands should be allowed");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker ps && whoami"),
+        "Shell command chaining should be rejected");
   }
 
   @Test
-  void compose_allows_equals_form_and_rejects_missing_values_or_unknown_subcommands() {
+  void testComposeAllowsEqualsFormAndRejectsMissingValuesOrUnknownSubcommands() {
     var cmd = policy.validate("docker compose --profile=OBS version");
 
     assertContainsSubsequence(cmd.argv(), List.of("--profile=OBS", "version"));
 
     assertThrows(
-        IllegalArgumentException.class, () -> policy.validate("docker compose --project-name"));
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker compose exec sh"));
+        IllegalArgumentException.class,
+        () -> policy.validate("docker compose --project-name"),
+        "Compose options that require values should reject missing values");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker compose exec sh"),
+        "Compose should reject subcommands outside the allowlist");
   }
 
   @Test
-  void buildx_accepts_workspace_relative_file_and_rejects_missing_or_unknown_subcommands() {
+  void testBuildxAcceptsWorkspaceRelativeFileAndRejectsMissingOrUnknownSubcommands() {
     var cmd = policy.validate("docker buildx build -f compose/docker-compose.yml .");
 
     assertEquals(
-        List.of("docker", "buildx", "build", "-f", "compose/docker-compose.yml", "."), cmd.argv());
+        List.of("docker", "buildx", "build", "-f", "compose/docker-compose.yml", "."),
+        cmd.argv(),
+        "Buildx should preserve the workspace-relative file and build context");
 
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker buildx"));
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker buildx imaginary"));
-  }
-
-  @Test
-  void allows_docker_buildx_prune_force_all() {
-    var cmd = policy.validate("docker buildx prune -a --force");
-    assertEquals(List.of("docker", "buildx", "prune", "-a", "--force"), cmd.argv());
-  }
-
-  @Test
-  void allows_docker_builder_prune_force_all() {
-    var cmd = policy.validate("docker builder prune -a --force");
-    assertEquals(List.of("docker", "builder", "prune", "-a", "--force"), cmd.argv());
-  }
-
-  @Test
-  void builder_prune_requires_force() {
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder prune -a"));
-  }
-
-  @Test
-  void builder_prune_rejects_extra_options() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> policy.validate("docker builder prune -a --force --filter foo"));
+        () -> policy.validate("docker buildx"),
+        "Buildx should require a subcommand");
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker buildx imaginary"),
+        "Buildx should reject unknown subcommands");
   }
 
   @Test
-  void builder_prune_requires_prune_subcommand_and_readonly_docker_commands_are_allowed() {
-    assertThrows(IllegalArgumentException.class, () -> policy.validate("docker builder ls"));
-    assertEquals(List.of("docker", "info"), policy.validate("docker info").argv());
+  void testAllowsDockerBuildxPruneForceAll() {
+    var cmd = policy.validate("docker buildx prune -a --force");
+    assertEquals(
+        List.of("docker", "buildx", "prune", "-a", "--force"),
+        cmd.argv(),
+        "Buildx prune should preserve the allowed all and force options");
+  }
+
+  @Test
+  void testAllowsDockerBuilderPruneForceAll() {
+    var cmd = policy.validate("docker builder prune -a --force");
+    assertEquals(
+        List.of("docker", "builder", "prune", "-a", "--force"),
+        cmd.argv(),
+        "Builder prune should preserve the allowed all and force options");
+  }
+
+  @Test
+  void testBuilderPruneRequiresForce() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker builder prune -a"),
+        "Builder prune should require explicit force confirmation");
+  }
+
+  @Test
+  void testBuilderPruneRejectsExtraOptions() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker builder prune -a --force --filter foo"),
+        "Builder prune should reject options outside the allowlist");
+  }
+
+  @Test
+  void testBuilderPruneRequiresPruneSubcommandAndReadonlyDockerCommandsAreAllowed() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> policy.validate("docker builder ls"),
+        "Builder should reject subcommands other than prune");
+    assertEquals(
+        List.of("docker", "info"),
+        policy.validate("docker info").argv(),
+        "Read-only Docker commands should be allowed without rewriting");
   }
 
   private static void assertContainsSubsequence(List<String> haystack, List<String> needle) {
-    assertFalse(needle.isEmpty());
+    assertFalse(needle.isEmpty(), "Expected command subsequence should not be empty");
 
     for (int i = 0; i <= haystack.size() - needle.size(); i++) {
       boolean match = true;
