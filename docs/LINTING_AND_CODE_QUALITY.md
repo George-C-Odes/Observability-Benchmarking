@@ -156,7 +156,7 @@ How it works:
 - it downloads the uploaded Qodana HTML report artifacts for both matrix entries:
   - `qodana-report-services-java`
   - `qodana-report-orchestrator`
-- the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
+- the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8.0.2` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
   - `quality/services-java/`
   - `quality/orchestrator/`

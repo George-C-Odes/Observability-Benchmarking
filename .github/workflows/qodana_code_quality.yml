@@ -95,7 +95,7 @@ jobs:
           args: ${{ steps.qodana_args.outputs.args }}
 
       # Explicit upload of the HTML report directory using upload-artifact@v4
-      # so that the Pages workflow's download-artifact@v8 receives extracted
+      # so that the Pages workflow's download-artifact@v8.0.2 receives extracted
       # files (not the nested ZIP that the Qodana action produces).
       - name: Upload Qodana HTML report
         if: always() && !cancelled()
