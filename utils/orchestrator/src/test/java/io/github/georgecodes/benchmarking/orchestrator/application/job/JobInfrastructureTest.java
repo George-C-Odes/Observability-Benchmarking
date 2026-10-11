@@ -31,11 +31,14 @@ class JobInfrastructureTest {
   @TempDir Path tempDir;
 
   @Test
-  void singleFlightAdmissionPolicyAllowsOneAtATimeAndReleasesOnClose() {
+  void testSingleFlightAdmissionPolicyAllowsOneAtATimeAndReleasesOnClose() {
     SingleFlightJobAdmissionPolicy policy = new SingleFlightJobAdmissionPolicy();
 
     JobAdmissionPolicy.Admission admission = policy.acquire();
-    assertThrows(JobAdmissionRejectedException.class, policy::acquire);
+    assertThrows(
+        JobAdmissionRejectedException.class,
+        policy::acquire,
+        "a second job should be rejected while the admission slot is held");
 
     admission.close();
 
@@ -44,7 +47,7 @@ class JobInfrastructureTest {
   }
 
   @Test
-  void quarkusHeartbeatSchedulerSchedulesAndCancelsHeartbeats() throws Exception {
+  void testQuarkusHeartbeatSchedulerSchedulesAndCancelsHeartbeats() throws Exception {
     QuarkusHeartbeatScheduler scheduler = new QuarkusHeartbeatScheduler();
     CountDownLatch heartbeat = new CountDownLatch(1);
 
@@ -61,7 +64,7 @@ class JobInfrastructureTest {
   }
 
   @Test
-  void inMemoryJobStoreReplaysEventsTracksLifecycleAndValidatesRunIds() {
+  void testInMemoryJobStoreReplaysEventsTracksLifecycleAndValidatesRunIds() {
     InMemoryJobStore store = new InMemoryJobStore();
     UUID jobId = store.create(2, "run-1");
     store.emit(jobId, JobEvent.log("stdout", "line-1"));
@@ -75,30 +78,45 @@ class JobInfrastructureTest {
     List<JobEvent> events = subscriber.getItems();
     List<String> eventTypes = events.stream().map(JobEvent::type).toList();
 
-    assertTrue(eventTypes.contains("status"));
-    assertTrue(eventTypes.contains("summary"));
-    assertTrue(eventTypes.contains("terminalSummary"));
-    assertEquals("line-1", store.status(jobId).lastLine());
-    assertEquals("SUCCEEDED", store.status(jobId).status());
-    assertEquals(0, store.status(jobId).exitCode());
+    assertTrue(eventTypes.contains("status"), "replayed events should include status updates");
+    assertTrue(eventTypes.contains("summary"), "replayed events should include a job summary");
+    assertTrue(
+        eventTypes.contains("terminalSummary"),
+        "replayed events should include the terminal summary");
+    assertEquals(
+        "line-1", store.status(jobId).lastLine(), "the snapshot should retain the last log line");
+    assertEquals(
+        "SUCCEEDED", store.status(jobId).status(), "the snapshot should record job success");
+    assertEquals(
+        0, store.status(jobId).exitCode(), "the snapshot should record the process exit code");
 
     store.validateRunId(jobId, null);
     store.validateRunId(jobId, "run-1");
 
     JobRunConflictException wrongRun =
-        assertThrows(JobRunConflictException.class, () -> store.validateRunId(jobId, "run-2"));
-    assertEquals("stale_run", wrongRun.errorCode());
+        assertThrows(
+            JobRunConflictException.class,
+            () -> store.validateRunId(jobId, "run-2"),
+            "a run ID that differs from the stored run ID should be rejected");
+    assertEquals("stale_run", wrongRun.errorCode(), "a mismatched run ID should report stale_run");
 
     UUID noRunIdJob = store.create(1, null);
     JobRunConflictException staleRun =
-        assertThrows(JobRunConflictException.class, () -> store.validateRunId(noRunIdJob, "run-1"));
-    assertEquals("stale_run", staleRun.errorCode());
+        assertThrows(
+            JobRunConflictException.class,
+            () -> store.validateRunId(noRunIdJob, "run-1"),
+            "a supplied run ID should be rejected when the job has no stored run ID");
+    assertEquals("stale_run", staleRun.errorCode(), "an unexpected run ID should report stale_run");
 
-    assertThrows(IllegalArgumentException.class, () -> store.status(UUID.randomUUID()));
+    UUID unknownJobId = UUID.randomUUID();
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> store.status(unknownJobId),
+        "requesting the status of an unknown job should fail");
   }
 
   @Test
-  void inMemoryJobStoreBuffersOnlyRecentEventsAndJobTerminalStatusCoversAllOutcomes() {
+  void testInMemoryJobStoreBuffersOnlyRecentEventsAndJobTerminalStatusCoversAllOutcomes() {
     InMemoryJobStore store = new InMemoryJobStore();
     UUID jobId = store.create(100, null);
 
@@ -109,15 +127,25 @@ class JobInfrastructureTest {
     List<JobEvent> replayed =
         store.events(jobId).select().first(100).collect().asList().await().indefinitely();
 
-    assertFalse(replayed.stream().anyMatch(event -> "line-0".equals(event.message())));
-    assertTrue(replayed.stream().anyMatch(event -> "line-104".equals(event.message())));
+    assertFalse(
+        replayed.stream().anyMatch(event -> "line-0".equals(event.message())),
+        "the oldest log line should be evicted when the buffer is full");
+    assertTrue(
+        replayed.stream().anyMatch(event -> "line-104".equals(event.message())),
+        "the newest log line should remain in the replay buffer");
 
-    assertEquals(JobStatus.CANCELED, JobTerminalStatus.from(true, 0));
-    assertEquals(JobStatus.FAILED, JobTerminalStatus.from(false, 7));
+    assertEquals(
+        JobStatus.CANCELED,
+        JobTerminalStatus.from(true, 0),
+        "cancellation should take precedence over a successful exit code");
+    assertEquals(
+        JobStatus.FAILED,
+        JobTerminalStatus.from(false, 7),
+        "a nonzero exit code should fail a job that was not canceled");
   }
 
   @Test
-  void jobStoreEventPublisherDelegatesToUnderlyingStore() {
+  void testJobStoreEventPublisherDelegatesToUnderlyingStore() {
     AtomicReference<UUID> emittedJobId = new AtomicReference<>();
     AtomicReference<JobEvent> emittedEvent = new AtomicReference<>();
 
@@ -167,12 +195,12 @@ class JobInfrastructureTest {
 
     publisher.publish(jobId, event);
 
-    assertEquals(jobId, emittedJobId.get());
-    assertEquals(event, emittedEvent.get());
+    assertEquals(jobId, emittedJobId.get(), "the publisher should forward the job ID to the store");
+    assertEquals(event, emittedEvent.get(), "the publisher should forward the event to the store");
   }
 
   @Test
-  void processCommandRunnerCapturesStdoutStderrAndEnvironment() throws Exception {
+  void testProcessCommandRunnerCapturesStdoutStderrAndEnvironment() throws Exception {
     Path source = tempDir.resolve("EchoProgram.java");
     Files.writeString(
         source,
@@ -195,59 +223,62 @@ class JobInfrastructureTest {
             Map.of("ORCH_TEST_ENV", "VALUE"),
             events::add);
 
-    assertEquals(0, result.exitCode());
-    assertNotNull(result.finishedAt());
-    assertEquals("status", events.getFirst().type());
-    assertTrue(events.getFirst().message().startsWith("EXEC "));
+    assertEquals(0, result.exitCode(), "the echo program should exit successfully");
+    assertNotNull(result.finishedAt(), "the runner should record when the process finished");
+    assertEquals("status", events.getFirst().type(), "the runner should emit a status event first");
+    assertTrue(
+        events.getFirst().message().startsWith("EXEC "),
+        "the initial status should describe the command being executed");
     assertTrue(
         events.stream()
             .anyMatch(
                 e ->
                     "log".equals(e.type())
                         && "stdout".equals(e.stream())
-                        && "stdout:VALUE".equals(e.message())));
+                        && "stdout:VALUE".equals(e.message())),
+        "stdout should contain the environment value passed to the process");
     assertTrue(
         events.stream()
             .anyMatch(
                 e ->
                     "log".equals(e.type())
                         && "stderr".equals(e.stream())
-                        && e.message().startsWith("stderr:")));
+                        && e.message().startsWith("stderr:")),
+        "stderr should be captured in a separate log event");
   }
 
   @Test
-  void processCommandRunnerRejectsNullInputs() {
+  void testProcessCommandRunnerRejectsNullInputs() {
     ProcessCommandRunner runner = new ProcessCommandRunner();
+    List<String> argv = List.of("cmd");
+    String workspace = tempDir.toString();
+    Map<String, String> envOverrides = Map.of();
 
     assertAll(
         () ->
             assertThrows(
                 NullPointerException.class,
-                () ->
-                    runner.run(
-                        null, tempDir.toString(), Map.of(), JobInfrastructureTest::ignoreEvent)),
+                () -> runner.run(null, workspace, envOverrides, JobInfrastructureTest::ignoreEvent),
+                "null command arguments should be rejected"),
         () ->
             assertThrows(
                 NullPointerException.class,
-                () ->
-                    runner.run(List.of("cmd"), null, Map.of(), JobInfrastructureTest::ignoreEvent)),
+                () -> runner.run(argv, null, envOverrides, JobInfrastructureTest::ignoreEvent),
+                "a null workspace should be rejected"),
         () ->
             assertThrows(
                 NullPointerException.class,
-                () ->
-                    runner.run(
-                        List.of("cmd"),
-                        tempDir.toString(),
-                        null,
-                        JobInfrastructureTest::ignoreEvent)),
+                () -> runner.run(argv, workspace, null, JobInfrastructureTest::ignoreEvent),
+                "null environment overrides should be rejected"),
         () ->
             assertThrows(
                 NullPointerException.class,
-                () -> runner.run(List.of("cmd"), tempDir.toString(), Map.of(), null)));
+                () -> runner.run(argv, workspace, envOverrides, null),
+                "a null event sink should be rejected"));
   }
 
   @Test
-  void processCommandRunnerWaitsForDestroyedProcessAfterInterrupt() {
+  void testProcessCommandRunnerWaitsForDestroyedProcessAfterInterrupt() {
     FakeInterruptibleProcess process = new FakeInterruptibleProcess();
     ProcessCommandRunner runner =
         new ProcessCommandRunner() {
@@ -265,9 +296,13 @@ class JobInfrastructureTest {
                     List.of("fake-command"),
                     tempDir.toString(),
                     Map.of("ORCH_TEST_ENV", "VALUE"),
-                    JobInfrastructureTest::ignoreEvent));
+                    JobInfrastructureTest::ignoreEvent),
+            "the runner should propagate interruption while waiting for the process");
 
-    assertEquals("wait interrupted", ex.getMessage());
+    assertEquals(
+        "wait interrupted",
+        ex.getMessage(),
+        "the original interruption message should be preserved");
     assertTrue(process.destroyed.get(), "child process should be forcibly destroyed");
     assertTrue(
         process.timedWaitCalled.get(),
@@ -275,7 +310,9 @@ class JobInfrastructureTest {
     assertTrue(Thread.interrupted(), "interrupt status should be restored for the caller");
   }
 
-  private static void ignoreEvent(JobEvent ignored) {}
+  private static void ignoreEvent(JobEvent ignored) {
+    // These tests exercise validation and interruption without inspecting emitted events.
+  }
 
   private static final class FakeInterruptibleProcess extends Process {
 
