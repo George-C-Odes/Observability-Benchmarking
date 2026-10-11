@@ -33,8 +33,6 @@ class CaffeineCacheAdapterTest {
         assertEquals(5_000_000, invokeClampCacheSize(5_000_001));
     }
 
-    // Test private clamping logic without exposing it or allocating a five-million-entry cache.
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     private static int invokeClampCacheSize(int value) throws Exception {
         Method method = CaffeineCacheAdapter.class.getDeclaredMethod("clampCacheSize", int.class);
         method.setAccessible(true);

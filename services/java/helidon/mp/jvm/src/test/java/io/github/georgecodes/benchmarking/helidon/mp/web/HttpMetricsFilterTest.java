@@ -77,8 +77,6 @@ class HttpMetricsFilterTest {
         assertNotNull(uncommonTimer);
     }
 
-    // Proxy equals uses identity to match identityHashCode; calling equals here would recurse.
-    @SuppressWarnings("PMD.CompareObjectsWithEquals")
     private static ContainerResponseContext responseContext(int status) {
         return (ContainerResponseContext) Proxy.newProxyInstance(
                 ContainerResponseContext.class.getClassLoader(),
@@ -111,8 +109,6 @@ class HttpMetricsFilterTest {
             return properties.get("http.metrics.sample");
         }
 
-        // Proxy equals uses identity to match identityHashCode; calling equals here would recurse.
-        @SuppressWarnings("PMD.CompareObjectsWithEquals")
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) {
             return switch (method.getName()) {
