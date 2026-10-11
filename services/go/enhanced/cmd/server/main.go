@@ -188,7 +188,7 @@ func setupHTTPInstrumentation(app *fiber.App, cfg config.Config, logger *slog.Lo
 			opts = append(opts, otelfiber.WithMeterProvider(metricnoop.NewMeterProvider()))
 		}
 
-		app.Use(otelfiber.Middleware(opts...))
+		app.Use(otelfiber.New(opts...))
 
 	case "minimal":
 		if cfg.HTTPTracesEnabled {
@@ -213,7 +213,7 @@ func setupHTTPInstrumentation(app *fiber.App, cfg config.Config, logger *slog.Lo
 				otelfiber.WithPropagators(propagators),
 				otelfiber.WithTracerProvider(tracenoop.NewTracerProvider()),
 			}
-			app.Use(otelfiber.Middleware(opts...))
+			app.Use(otelfiber.New(opts...))
 		}
 
 	default:

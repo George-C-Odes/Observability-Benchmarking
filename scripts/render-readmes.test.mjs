@@ -23,22 +23,22 @@ IMAGE_TAG: ghcr.io/acme/app:1.2.3
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
     SPRING_BOOT_VERSION: '4.1.1',
-    GO_VERSION: '1.27.1',
+    GO_VERSION: '1.27.2',
   });
 
-  assert.equal(rendered, 'Spring 4.1.1 / Go 1.27.1');
+  assert.equal(rendered, 'Spring 4.1.1 / Go 1.27.2');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
-    GO_VERSION: '1.27.1',
+    GO_VERSION: '1.27.2',
   });
 
-  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.1');
+  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.2');
 
   const jekyllSnippet = renderTemplate("Image {{ '/images/foo.png' | relative_url }} with {{GO_VERSION}}", {
-    GO_VERSION: '1.27.1',
+    GO_VERSION: '1.27.2',
   });
 
-  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.1");
+  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.2");
 
   assert.throws(
     () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.1.1' }),
@@ -168,7 +168,7 @@ function testRealignMarkdownTables() {
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
     '| Spring | 4.1.1 | Main framework |',
-    '| Go     | 1.27.1          | Alt runtime    |',
+    '| Go     | 1.27.2          | Alt runtime    |',
     '| Node   | 26.11.1                  | Frontend       |',
   ].join('\n');
 
@@ -178,7 +178,7 @@ function testRealignMarkdownTables() {
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
     '| Spring | 4.1.1   | Main framework |',
-    '| Go     | 1.27.1  | Alt runtime    |',
+    '| Go     | 1.27.2  | Alt runtime    |',
     '| Node   | 26.11.1 | Frontend       |',
   ].join('\n');
 
