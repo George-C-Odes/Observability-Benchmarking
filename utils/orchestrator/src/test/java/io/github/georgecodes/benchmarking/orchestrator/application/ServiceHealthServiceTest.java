@@ -112,11 +112,18 @@ class ServiceHealthServiceTest {
     ServiceHealth lokiResp =
         resp.services().stream().filter(s -> s.name().equals("loki")).findFirst().orElseThrow();
 
-    assertEquals("down", grafanaResp.status(), "Grafana should be reported as down after a 500 response.");
-    assertEquals("http://localhost:" + downPort, grafanaResp.baseUrl(), "Grafana's configured base URL should be preserved.");
+    assertEquals(
+        "down", grafanaResp.status(), "Grafana should be reported as down after a 500 response.");
+    assertEquals(
+        "http://localhost:" + downPort,
+        grafanaResp.baseUrl(),
+        "Grafana's configured base URL should be preserved.");
 
     assertEquals("up", lokiResp.status(), "Loki should be reported as up after a 200 response.");
-    assertEquals("http://localhost:" + okPort, lokiResp.baseUrl(), "Loki's configured base URL should be preserved.");
+    assertEquals(
+        "http://localhost:" + okPort,
+        lokiResp.baseUrl(),
+        "Loki's configured base URL should be preserved.");
   }
 
   @Test
@@ -125,7 +132,10 @@ class ServiceHealthServiceTest {
 
     HealthAggregate resp = service.checkAll(" ").await().indefinitely();
 
-    assertEquals(List.of(), resp.services(), "A null service map and blank filter should select no services.");
+    assertEquals(
+        List.of(),
+        resp.services(),
+        "A null service map and blank filter should select no services.");
   }
 
   @Test
@@ -139,9 +149,14 @@ class ServiceHealthServiceTest {
                     "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready"))));
 
     HealthAggregate resp = service.checkAll("grafana").await().indefinitely();
-    assertEquals(1, resp.services().size(), "Filtering for Grafana should return exactly one service.");
-    assertEquals("grafana", resp.services().getFirst().name(), "The selected service should be Grafana.");
-    assertEquals("down", resp.services().getFirst().status(), "Grafana's failing endpoint should be reported as down.");
+    assertEquals(
+        1, resp.services().size(), "Filtering for Grafana should return exactly one service.");
+    assertEquals(
+        "grafana", resp.services().getFirst().name(), "The selected service should be Grafana.");
+    assertEquals(
+        "down",
+        resp.services().getFirst().status(),
+        "Grafana's failing endpoint should be reported as down.");
   }
 
   @Test
@@ -154,11 +169,13 @@ class ServiceHealthServiceTest {
                     "orchestrator", svc("http://localhost:" + okPort, "/q/health/ready"))));
 
     HealthAggregate resp = service.checkAll("go").await().indefinitely();
-    assertEquals(1, resp.services().size(), "Filtering for the invalid URL should return one service.");
+    assertEquals(
+        1, resp.services().size(), "Filtering for the invalid URL should return one service.");
 
     ServiceHealth g = resp.services().getFirst();
     assertEquals("down", g.status(), "An invalid base URL should be reported as down.");
-    assertEquals("::not-a-url::", g.baseUrl(), "The invalid configured base URL should be retained.");
+    assertEquals(
+        "::not-a-url::", g.baseUrl(), "The invalid configured base URL should be retained.");
     assertNotNull(g.error(), "An invalid base URL should include an error description.");
   }
 
@@ -173,8 +190,12 @@ class ServiceHealthServiceTest {
 
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
-    assertTrue(resp.services().stream().noneMatch(s -> s.name().equals("grafana")), "Services with a false base URL should be skipped.");
-    assertTrue(resp.services().stream().anyMatch(s -> s.name().equals("loki")), "Enabled services should remain in the health response.");
+    assertTrue(
+        resp.services().stream().noneMatch(s -> s.name().equals("grafana")),
+        "Services with a false base URL should be skipped.");
+    assertTrue(
+        resp.services().stream().anyMatch(s -> s.name().equals("loki")),
+        "Enabled services should remain in the health response.");
   }
 
   @Test
@@ -189,9 +210,14 @@ class ServiceHealthServiceTest {
 
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
-    assertEquals(1, resp.services().size(), "Null, blank, and disabled base URLs should all be skipped.");
-    assertEquals("ok", resp.services().getFirst().name(), "Only the service with a configured URL should remain.");
-    assertEquals("up", resp.services().getFirst().status(), "The remaining service should be healthy.");
+    assertEquals(
+        1, resp.services().size(), "Null, blank, and disabled base URLs should all be skipped.");
+    assertEquals(
+        "ok",
+        resp.services().getFirst().name(),
+        "Only the service with a configured URL should remain.");
+    assertEquals(
+        "up", resp.services().getFirst().status(), "The remaining service should be healthy.");
   }
 
   @Test
@@ -203,10 +229,17 @@ class ServiceHealthServiceTest {
 
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
-    assertEquals(1, resp.services().size(), "The health check should return the configured Loki service.");
+    assertEquals(
+        1, resp.services().size(), "The health check should return the configured Loki service.");
     assertEquals("loki", resp.services().getFirst().name(), "The returned service should be Loki.");
-    assertEquals("up", resp.services().getFirst().status(), "Fallback timeout and concurrency values should allow the check to succeed.");
-    assertEquals(200, resp.services().getFirst().statusCode(), "The normalized health path should return HTTP 200.");
+    assertEquals(
+        "up",
+        resp.services().getFirst().status(),
+        "Fallback timeout and concurrency values should allow the check to succeed.");
+    assertEquals(
+        200,
+        resp.services().getFirst().statusCode(),
+        "The normalized health path should return HTTP 200.");
   }
 
   @Test
@@ -222,10 +255,14 @@ class ServiceHealthServiceTest {
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
     ServiceHealth orphan = resp.services().getFirst();
 
-    assertEquals("orphan", orphan.name(), "The unreachable service should be included in the health response.");
+    assertEquals(
+        "orphan",
+        orphan.name(),
+        "The unreachable service should be included in the health response.");
     assertEquals("down", orphan.status(), "A connection failure should be reported as down.");
     assertNull(orphan.statusCode(), "A connection failure should not have an HTTP status code.");
-    assertNotNull(orphan.error(), "A connection failure should include a recovered error description.");
+    assertNotNull(
+        orphan.error(), "A connection failure should include a recovered error description.");
   }
 
   @Test
@@ -237,10 +274,17 @@ class ServiceHealthServiceTest {
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
     ServiceHealth missingDns = resp.services().getFirst();
 
-    assertEquals("missing-dns", missingDns.name(), "The unresolvable service should be included in the health response.");
-    assertEquals("down", missingDns.status(), "A DNS resolution failure should be reported as down.");
-    assertNull(missingDns.statusCode(), "A DNS resolution failure should not have an HTTP status code.");
-    assertNotNull(missingDns.error(), "A DNS resolution failure should include a recovered error description.");
+    assertEquals(
+        "missing-dns",
+        missingDns.name(),
+        "The unresolvable service should be included in the health response.");
+    assertEquals(
+        "down", missingDns.status(), "A DNS resolution failure should be reported as down.");
+    assertNull(
+        missingDns.statusCode(), "A DNS resolution failure should not have an HTTP status code.");
+    assertNotNull(
+        missingDns.error(),
+        "A DNS resolution failure should include a recovered error description.");
   }
 
   @Test
@@ -265,9 +309,17 @@ class ServiceHealthServiceTest {
             .indefinitely();
 
     assertEquals("down", noHost.status(), "A URL without a host should be reported as down.");
-    assertTrue(noHost.error().startsWith("Invalid base URL host"), "A URL without a host should report the invalid-host error.");
-    assertEquals("http-default", httpDefaultPort.name(), "The HTTP default-port probe should preserve its service name.");
-    assertEquals("https-default", httpsDefaultPort.name(), "The HTTPS default-port probe should preserve its service name.");
+    assertTrue(
+        noHost.error().startsWith("Invalid base URL host"),
+        "A URL without a host should report the invalid-host error.");
+    assertEquals(
+        "http-default",
+        httpDefaultPort.name(),
+        "The HTTP default-port probe should preserve its service name.");
+    assertEquals(
+        "https-default",
+        httpsDefaultPort.name(),
+        "The HTTPS default-port probe should preserve its service name.");
   }
 
   private static ServiceHealthService newService(ServiceHealthConfig config) {
