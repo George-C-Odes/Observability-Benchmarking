@@ -885,7 +885,7 @@ Testing Framework Versions:
 - Vert.x: 5.1.7
 - Pekko: 1.3.0
 - Go: 1.27.1
-- Django: 6.1.1
+- Django: 6.1.2
 
 ==========================================
 JVM Services - Deployment Tests

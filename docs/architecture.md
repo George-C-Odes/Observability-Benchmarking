@@ -72,7 +72,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Reactive (Pekko dispatcher)
 - Go 1.27.1
   - Fiber framework (v3.5.0)
-- Django 6.1.1 (CPython)
+- Django 6.1.2 (CPython)
   - Platform threads (Gunicorn gthread)
   - Reactive (Gunicorn + UvicornWorker ASGI)
 

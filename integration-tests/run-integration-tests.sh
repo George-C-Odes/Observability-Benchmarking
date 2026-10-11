@@ -141,7 +141,7 @@ DROPWIZARD_VERSION="5.0.2"
 VERTX_VERSION="5.1.7"
 PEKKO_VERSION="1.3.0"
 GO_VERSION="1.27.1"
-DJANGO_VERSION="6.1.1"
+DJANGO_VERSION="6.1.2"
 
 # Helper function to test HTTP endpoint
 # expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")

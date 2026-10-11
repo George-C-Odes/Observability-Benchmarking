@@ -18,7 +18,7 @@
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-1.27.1-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.15-2F5D8C.svg)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/Django-6.1.1-8B2C3D.svg)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/Django-6.1.2-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
 [![Dependency review](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/dependency-review.yml)
@@ -94,7 +94,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2   | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.7   | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0   | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
-| **Backend**       | Framework          | Django                     | 6.1.1   | Python web framework (WSGI platform + ASGI reactive)                 |
+| **Backend**       | Framework          | Django                     | 6.1.2   | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.4.0  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.0  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2   | Native checker and type-safe dashboard development                   |
@@ -108,14 +108,14 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.32.0  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.0   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.2.0   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.2.1   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.8.2  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.0  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.16.10 | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.0  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.87.0  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.72.0  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest  | Deterministic HTTP benchmarking                                      |
@@ -218,7 +218,7 @@ If you’re searching for projects like this, these are the topics it covers:
 - Full observability setup
 
 #### Python (3.13.15)
-- **Django**: 6.1.1
+- **Django**: 6.1.2
   - Platform (WSGI — Gunicorn gthread workers)
   - Reactive (ASGI — Gunicorn + UvicornWorker)
 
@@ -476,7 +476,7 @@ The numbers below are a curated summary of a representative run.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
 - Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
-- Django 6.1.1 runs on CPython 3.13.15 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
+- Django 6.1.2 runs on CPython 3.13.15 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
 - All tests:
@@ -519,7 +519,7 @@ The numbers below are a curated summary of a representative run.
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
 - **Go**: 1.27.1 (Fiber v3.5.0)
 - **Python**: 3.13.15 (CPython)
-- **Django**: 6.1.1 (Gunicorn 26.2.0)
+- **Django**: 6.1.2 (Gunicorn 26.2.0)
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)
