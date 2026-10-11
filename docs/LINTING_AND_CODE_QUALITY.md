@@ -130,7 +130,7 @@ It keeps the repository root as the Qodana project so the shared root `qodana.ya
 The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2026.2`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
 
 - **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
-- **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7` step. This is what the Pages workflow downloads to host the report.
+- **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7.0.2` step. This is what the Pages workflow downloads to host the report.
 
 The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration.
 
@@ -156,7 +156,7 @@ How it works:
 - it downloads the uploaded Qodana HTML report artifacts for both matrix entries:
   - `qodana-report-services-java`
   - `qodana-report-orchestrator`
-- the HTML report is uploaded as a separate `actions/upload-artifact@v7` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8.0.2` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
+- the HTML report is uploaded as a separate `actions/upload-artifact@v7.0.2` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8.0.2` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
 - it copies those artifacts into the built Pages site under:
   - `quality/services-java/`
   - `quality/orchestrator/`

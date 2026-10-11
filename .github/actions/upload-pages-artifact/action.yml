@@ -1,0 +1,37 @@
+name: Upload Pages artifact
+description: Prepare and upload a Pages artifact using the repository's pinned GitHub action.
+
+inputs:
+  name:
+    description: Pages artifact name.
+    required: false
+    default: github-pages
+  path:
+    description: Directory containing the static site.
+    required: true
+    default: _site/
+  retention-days:
+    description: Retention in days.
+    required: false
+    default: '1'
+  include-hidden-files:
+    description: Include hidden site files, except .git and .github.
+    required: false
+    default: 'false'
+
+outputs:
+  artifact_id:
+    description: ID of the uploaded Pages artifact.
+    value: ${{ steps.upload.outputs.artifact_id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Upload Pages artifact
+      id: upload
+      uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        retention-days: ${{ inputs.retention-days }}
+        include-hidden-files: ${{ inputs.include-hidden-files }}

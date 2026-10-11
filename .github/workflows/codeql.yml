@@ -20,6 +20,8 @@ on:
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
+      - '.github/actions/upload-artifact/**'
+      - '.github/actions/download-artifact/**'
   push:
     paths:
       - 'services/java/**'
@@ -30,6 +32,8 @@ on:
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
+      - '.github/actions/upload-artifact/**'
+      - '.github/actions/download-artifact/**'
   schedule:
     # Weekly full scan — Monday at 05:30 UTC.
     # Scheduled runs ensure new CWE patterns and updated CodeQL query packs
@@ -315,7 +319,7 @@ jobs:
       # Pages workflow can build a hosted HTML summary.
       - name: Upload SARIF artifact
         if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: codeql-sarif-${{ matrix.language }}
           path: codeql-results/*.sarif
@@ -326,7 +330,7 @@ jobs:
       # Java quality violations in the hosted HTML quality page.
       - name: Upload build warnings
         if: always() && !cancelled() && matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: codeql-build-warnings
           path: codeql-build-warnings.json
@@ -358,7 +362,7 @@ jobs:
 
       - name: Download all SARIF artifacts
         continue-on-error: true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: ./.github/actions/download-artifact
         with:
           pattern: codeql-sarif-*
           path: .codeql-sarif
@@ -366,7 +370,7 @@ jobs:
 
       - name: Download build warnings
         continue-on-error: true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: ./.github/actions/download-artifact
         with:
           name: codeql-build-warnings
           path: .codeql-build-warnings
@@ -381,7 +385,7 @@ jobs:
 
       - name: Upload quality report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-codeql
           path: codeql-quality-report/

@@ -10,11 +10,13 @@ on:
     paths:
       - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/upload-artifact/**'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/upload-artifact/**'
   workflow_dispatch:
   schedule:
     - cron: '29 23 * * 6'
@@ -66,7 +68,7 @@ jobs:
 
       - name: Upload PMD report artifact
         if: always() && hashFiles('pmd-report.sarif') != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: PMD Report
           path: pmd-report.sarif

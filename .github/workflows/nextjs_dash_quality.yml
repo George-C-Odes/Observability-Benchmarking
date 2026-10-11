@@ -14,6 +14,7 @@ on:
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+      - '.github/actions/upload-artifact/**'
   push:
     paths:
       - 'utils/nextjs-dash/**'
@@ -22,6 +23,7 @@ on:
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+      - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
     - cron: '15 6 * * 1'
@@ -134,7 +136,7 @@ jobs:
 
       - name: Upload quality report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-nextjs-dash
           path: utils/nextjs-dash/quality-report/

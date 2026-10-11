@@ -18,12 +18,14 @@ on:
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+      - '.github/actions/upload-artifact/**'
   push:
     paths:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+      - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
     - cron: '0 6 * * 1'
@@ -131,7 +133,7 @@ jobs:
 
       - name: Upload quality report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-go
           path: services/go/enhanced/quality-report/
@@ -219,7 +221,7 @@ jobs:
 
       - name: Upload quality report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-go-simple
           path: services/go/simple/quality-report/

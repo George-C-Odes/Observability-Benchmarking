@@ -93,11 +93,21 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.ref }}
 
+      # Load the shared action from main even when the report source is an older branch.
       - name: Checkout main site source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/heads/main
           path: ./.pages-main
+
+      - name: Load shared artifact actions from main
+        shell: bash
+        run: |
+          # Use checked-in paths for IDE resolution while loading trusted main definitions.
+          for action in download-artifact upload-pages-artifact; do
+            mkdir -p ".github/actions/$action"
+            cp ".pages-main/.github/actions/$action/action.yml" ".github/actions/$action/action.yml"
+          done
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1.328.0
@@ -154,8 +164,7 @@ jobs:
         id: download_live_qodana_services_java
         if: steps.live_qodana_source.outputs.run_id != ''
         continue-on-error: true
-        # Define the pinned version once for all report downloads.
-        uses: &download-artifact actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: ./.github/actions/download-artifact
         with:
           name: qodana-report-services-java
           path: ./.live-qodana-pages/services-java
@@ -166,7 +175,7 @@ jobs:
         id: download_live_qodana_orchestrator
         if: steps.live_qodana_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: qodana-report-orchestrator
           path: ./.live-qodana-pages/orchestrator
@@ -198,7 +207,7 @@ jobs:
         id: download_live_nextjs_quality
         if: steps.live_nextjs_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-nextjs-dash
           path: ./.live-nextjs-quality-pages/nextjs-dash
@@ -226,7 +235,7 @@ jobs:
         id: download_live_django_python_quality
         if: steps.live_django_python_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: qodana-report-django-python
           path: ./.live-django-python-quality-pages/django-python
@@ -254,7 +263,7 @@ jobs:
         id: download_live_go_quality
         if: steps.live_go_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-go
           path: ./.live-go-quality-pages/go
@@ -265,7 +274,7 @@ jobs:
         id: download_live_go_simple_quality
         if: steps.live_go_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-go-simple
           path: ./.live-go-simple-quality-pages/go-simple
@@ -293,7 +302,7 @@ jobs:
         id: download_live_codeql_quality
         if: steps.live_codeql_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-codeql
           path: ./.live-codeql-quality-pages/codeql
@@ -369,7 +378,7 @@ jobs:
         id: download_stage_qodana_services_java
         if: steps.stage_qodana_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: qodana-report-services-java
           path: ./.stage-qodana-pages/services-java
@@ -380,7 +389,7 @@ jobs:
         id: download_stage_qodana_orchestrator
         if: steps.stage_qodana_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: qodana-report-orchestrator
           path: ./.stage-qodana-pages/orchestrator
@@ -408,7 +417,7 @@ jobs:
         id: download_stage_nextjs_quality
         if: steps.stage_nextjs_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-nextjs-dash
           path: ./.stage-nextjs-quality-pages/nextjs-dash
@@ -436,7 +445,7 @@ jobs:
         id: download_stage_django_python_quality
         if: steps.stage_django_python_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: qodana-report-django-python
           path: ./.stage-django-python-quality-pages/django-python
@@ -464,7 +473,7 @@ jobs:
         id: download_stage_go_quality
         if: steps.stage_go_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-go
           path: ./.stage-go-quality-pages/go
@@ -475,7 +484,7 @@ jobs:
         id: download_stage_go_simple_quality
         if: steps.stage_go_quality_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-go-simple
           path: ./.stage-go-simple-quality-pages/go-simple
@@ -503,7 +512,7 @@ jobs:
         id: download_stage_codeql_quality
         if: steps.stage_codeql_source.outputs.run_id != ''
         continue-on-error: true
-        uses: *download-artifact
+        uses: ./.github/actions/download-artifact
         with:
           name: quality-report-codeql
           path: ./.stage-codeql-quality-pages/codeql
@@ -546,7 +555,7 @@ jobs:
         run: bash scripts/pages/assemble-quality-pages.sh
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        uses: ./.github/actions/upload-pages-artifact
 
   # Deployment job
   # No explicit `if` needed — `needs: build` already ensures this job only

@@ -1,0 +1,63 @@
+name: Download artifact
+description: Download artifacts using the repository's shared, pinned GitHub action.
+
+# Keep the upstream inputs and defaults so workflows can use this action directly.
+inputs:
+  name:
+    description: Artifact name. Downloads all artifacts when omitted.
+    required: false
+  artifact-ids:
+    description: Comma-separated artifact IDs, mutually exclusive with name.
+    required: false
+  path:
+    description: Destination directory. Defaults to the GitHub workspace.
+    required: false
+  pattern:
+    description: Artifact name glob, ignored when name is supplied.
+    required: false
+  merge-multiple:
+    description: Extract matching artifacts into a single directory.
+    required: false
+    default: 'false'
+  github-token:
+    description: Token required for downloads from another run or repository.
+    required: false
+  repository:
+    description: Repository containing the artifacts, in owner/name format.
+    required: false
+    default: ${{ github.repository }}
+  run-id:
+    description: Workflow run containing the artifacts.
+    required: false
+    default: ${{ github.run_id }}
+  skip-decompress:
+    description: Download artifacts without extracting them.
+    required: false
+    default: 'false'
+  digest-mismatch:
+    description: Digest mismatch behavior (ignore, info, warn, or error).
+    required: false
+    default: error
+
+outputs:
+  download-path:
+    description: Directory containing the downloaded artifacts.
+    value: ${{ steps.download.outputs.download-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download artifact
+      id: download
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: ${{ inputs.name }}
+        artifact-ids: ${{ inputs.artifact-ids }}
+        path: ${{ inputs.path }}
+        pattern: ${{ inputs.pattern }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+        github-token: ${{ inputs.github-token }}
+        repository: ${{ inputs.repository }}
+        run-id: ${{ inputs.run-id }}
+        skip-decompress: ${{ inputs.skip-decompress }}
+        digest-mismatch: ${{ inputs.digest-mismatch }}
