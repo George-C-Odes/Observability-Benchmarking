@@ -27,8 +27,6 @@ class ServiceHealthServiceTest {
   private static int okPort;
   private static int downPort;
 
-  private static ServiceHealthService service;
-
   private static ServiceHealthConfig configFor(Map<String, ServiceHealthConfig.Service> services) {
     return configFor(2000, 4, services);
   }
@@ -78,8 +76,6 @@ class ServiceHealthServiceTest {
     Router downRouter = Router.router(serverVertx);
     downRouter.get("/*").handler(ctx -> ctx.response().setStatusCode(500).end("FAIL"));
     downPort = listen(downRouter);
-
-    service = newService(configFor(Map.of()));
   }
 
   private static int listen(Router router) {
@@ -97,7 +93,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testCheckAllReturnsUpAndDownAndBaseUrl() {
-    service =
+    ServiceHealthService service =
         newService(
             configFor(
                 Map.of(
@@ -108,9 +104,9 @@ class ServiceHealthServiceTest {
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
     ServiceHealth grafanaResp =
-        resp.services().stream().filter(s -> s.name().equals("grafana")).findFirst().orElseThrow();
+        resp.services().stream().filter(s -> "grafana".equals(s.name())).findFirst().orElseThrow();
     ServiceHealth lokiResp =
-        resp.services().stream().filter(s -> s.name().equals("loki")).findFirst().orElseThrow();
+        resp.services().stream().filter(s -> "loki".equals(s.name())).findFirst().orElseThrow();
 
     assertEquals(
         "down", grafanaResp.status(), "Grafana should be reported as down after a 500 response.");
@@ -128,7 +124,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testCheckAllHandlesNullServiceMapAndBlankFilterAsEmptySelection() {
-    service = newService(configFor(null));
+    ServiceHealthService service = newService(configFor(null));
 
     HealthAggregate resp = service.checkAll(" ").await().indefinitely();
 
@@ -140,7 +136,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testCheckAllOnlyServiceFilters() {
-    service =
+    ServiceHealthService service =
         newService(
             configFor(
                 Map.of(
@@ -161,7 +157,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testInvalidBaseUrlMarksDownWithError() {
-    service =
+    ServiceHealthService service =
         newService(
             configFor(
                 Map.of(
@@ -181,7 +177,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testBaseUrlFalseSkipsService() {
-    service =
+    ServiceHealthService service =
         newService(
             configFor(
                 Map.of(
@@ -191,10 +187,10 @@ class ServiceHealthServiceTest {
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
     assertTrue(
-        resp.services().stream().noneMatch(s -> s.name().equals("grafana")),
+        resp.services().stream().noneMatch(s -> "grafana".equals(s.name())),
         "Services with a false base URL should be skipped.");
     assertTrue(
-        resp.services().stream().anyMatch(s -> s.name().equals("loki")),
+        resp.services().stream().anyMatch(s -> "loki".equals(s.name())),
         "Enabled services should remain in the health response.");
   }
 
@@ -206,7 +202,7 @@ class ServiceHealthServiceTest {
     services.put("disabled", svc("FALSE", "/health"));
     services.put("ok", svc("http://localhost:" + okPort, "/ready"));
 
-    service = newService(configFor(services));
+    ServiceHealthService service = newService(configFor(services));
 
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
 
@@ -222,7 +218,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testNonPositiveTimeoutAndConcurrencyFallbackStillWorkAndNormalizePaths() {
-    service =
+    ServiceHealthService service =
         newService(
             configFor(
                 0, 0, Map.of("loki", svc("http://localhost:" + okPort + "/base/", "ready/"))));
@@ -249,7 +245,7 @@ class ServiceHealthServiceTest {
       unusedPort = socket.getLocalPort();
     }
 
-    service =
+    ServiceHealthService service =
         newService(configFor(Map.of("orphan", svc("http://localhost:" + unusedPort, "/ready"))));
 
     HealthAggregate resp = service.checkAll(null).await().indefinitely();
@@ -267,7 +263,7 @@ class ServiceHealthServiceTest {
 
   @Test
   void testUnresolvableHostnameMarksServiceDownWithRecoveredError() {
-    service =
+    ServiceHealthService service =
         newService(
             configFor(Map.of("missing-dns", svc("http://missing-host.invalid:18080", "/ready"))));
 
