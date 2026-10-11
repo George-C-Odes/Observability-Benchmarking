@@ -11,6 +11,7 @@ on:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
+      - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
   push:
@@ -18,6 +19,7 @@ on:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
+      - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
 
@@ -66,7 +68,7 @@ jobs:
 
           echo "args=$args" >> "$GITHUB_OUTPUT"
       - name: Qodana Scan
-        uses: JetBrains/qodana-action@10be11607eb323a180e2b76b26c9c5cdceac3e77 # v2026.2.1
+        uses: JetBrains/qodana-action@3e8d76ff0e0241618abd808682f426afe84bab3f # v2026.2.2
         env:
           # Qodana's startup path loads JNA on JDK 25+, which emits a native
           # access warning unless the JVM explicitly allows unnamed modules.
@@ -95,11 +97,11 @@ jobs:
           args: ${{ steps.qodana_args.outputs.args }}
 
       # Explicit upload of the HTML report directory using upload-artifact@v4
-      # so that the Pages workflow's download-artifact@v8 receives extracted
+      # so that the Pages workflow's download-artifact@v8.0.2 receives extracted
       # files (not the nested ZIP that the Qodana action produces).
       - name: Upload Qodana HTML report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: qodana-report-${{ matrix.name }}
           path: ${{ runner.temp }}/qodana/results/report/

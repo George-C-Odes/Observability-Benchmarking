@@ -10,6 +10,7 @@ on:
     paths:
       - 'services/python/**'
       - '.github/workflows/django_python_coverage.yml'
+      - '.github/actions/upload-artifact/**'
       - 'codecov.yml'
   push:
     branches:
@@ -17,6 +18,7 @@ on:
     paths:
       - 'services/python/**'
       - '.github/workflows/django_python_coverage.yml'
+      - '.github/actions/upload-artifact/**'
       - 'codecov.yml'
 
 permissions:
@@ -208,7 +210,7 @@ jobs:
 
       - name: Upload coverage report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: coverage-${{ matrix.codecov_flag }}
           path: |

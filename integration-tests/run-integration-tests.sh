@@ -131,17 +131,17 @@ NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
 # Framework versions
-QUARKUS_VERSION="3.39.4"
+QUARKUS_VERSION="3.40.1"
 SPRING_BOOT_VERSION="4.1.1"
-MICRONAUT_VERSION="5.2.2"
+MICRONAUT_VERSION="5.2.15"
 HELIDON_VERSION="4.5.5"
 SPARK_VERSION="3.0.4"
 JAVALIN_VERSION="7.2.3"
 DROPWIZARD_VERSION="5.0.2"
 VERTX_VERSION="5.1.7"
 PEKKO_VERSION="1.3.0"
-GO_VERSION="1.27.1"
-DJANGO_VERSION="6.1.1"
+GO_VERSION="1.27.2"
+DJANGO_VERSION="6.1.2"
 
 # Helper function to test HTTP endpoint
 # expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")

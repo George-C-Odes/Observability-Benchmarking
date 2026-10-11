@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <dropwizard.version>5.0.2</dropwizard.version>
-        <caffeine.version>3.2.4</caffeine.version>
+        <caffeine.version>3.3.0</caffeine.version>
         <micrometer.version>1.17.1</micrometer.version>
         <micrometer-jvm-extras.version>0.3.0</micrometer-jvm-extras.version>
 

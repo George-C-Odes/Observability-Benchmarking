@@ -8,15 +8,15 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'services/java/**'
-      - 'utils/orchestrator/**'
+      - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/upload-artifact/**'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'services/java/**'
-      - 'utils/orchestrator/**'
+      - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/upload-artifact/**'
   workflow_dispatch:
   schedule:
     - cron: '29 23 * * 6'
@@ -31,7 +31,7 @@ jobs:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,27 +42,40 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
-      - name: Run PMD
-        id: pmd
-        uses: pmd/pmd-github-action@d9c1f3c5940cbf5923f1354e83fa858b4496ebaa # v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          rulesets: 'rulesets/java/quickstart.xml'
-          sourcePath: 'services/java'
-          analyzeModifiedFilesOnly: false
+      - name: Install PMD
+        shell: bash
+        env:
+          PMD_VERSION: '7.28.0'
+          PMD_SHA256: 'f974ba571f7bc01c73fffe11bade25fbc1f438698f9e9c00e416e8d65e9fbac2'
+        run: |
+          # Use the CLI because pmd/pmd-github-action still declares Node 20.
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/pmd.zip" \
+            "https://github.com/pmd/pmd/releases/download/pmd_releases/${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip"
+          printf '%s  %s\n' "$PMD_SHA256" "$RUNNER_TEMP/pmd.zip" | sha256sum --check --strict
+          unzip -q "$RUNNER_TEMP/pmd.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/pmd-bin-${PMD_VERSION}/bin" >> "$GITHUB_PATH"
 
-      - name: Fail if PMD violations are found
-        if: always()
+      - name: Run PMD
         shell: bash
         run: |
-          violations='${{ steps.pmd.outputs.violations }}'
-          if [[ "$violations" =~ ^[1-9][0-9]*$ ]]; then
-            echo "::error::PMD found $violations violation(s)."
-            exit 1
-          fi
+          # PMD fails by default on violations and analysis errors.
+          pmd check \
+            --dir utils \
+            --rulesets rulesets/java/quickstart.xml \
+            --format sarif \
+            --report-file pmd-report.sarif
+
+      - name: Upload PMD report artifact
+        if: always() && hashFiles('pmd-report.sarif') != ''
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: PMD Report
+          path: pmd-report.sarif
+          if-no-files-found: error
 
       - name: Upload SARIF file
         if: always() && hashFiles('pmd-report.sarif') != ''
-        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           sarif_file: pmd-report.sarif

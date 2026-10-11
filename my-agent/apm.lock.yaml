@@ -1,6 +1,5 @@
 lockfile_version: '1'
-generated_at: '2026-09-13T09:11:47.615290+00:00'
-apm_version: 0.31.0
+apm_version: 0.33.0
 dependencies:
 - repo_url: github/awesome-copilot
   name: github-actions-hardening
@@ -501,7 +500,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:d68f2e851965bf238737e826636314a103402295f3ed4f900f47033d0b8e5476
+  content_hash: sha256:f9463a39310203fb03835934d3309fb51b307e35122959de5a6ea98052919820
 - kind: project-relative
   target: cursor
   value: .cursor/rules/repository-contract.mdc
@@ -510,7 +509,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:84edb598b70067599c01a24c9083beb9abea4ffd91d938b80c6d3a0cc763d88f
+  content_hash: sha256:2a07d2b6a49d752a318625aacb9d13af561baeaaafe76b64213797a933de364f
 - kind: project-relative
   target: gemini
   value: .gemini/commands/review-change.toml
@@ -676,8 +675,8 @@ local_deployed_file_hashes:
   .cursor/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .cursor/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
   .cursor/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
-  .cursor/rules/dashboard-ui.mdc: sha256:d68f2e851965bf238737e826636314a103402295f3ed4f900f47033d0b8e5476
-  .cursor/rules/repository-contract.mdc: sha256:84edb598b70067599c01a24c9083beb9abea4ffd91d938b80c6d3a0cc763d88f
+  .cursor/rules/dashboard-ui.mdc: sha256:f9463a39310203fb03835934d3309fb51b307e35122959de5a6ea98052919820
+  .cursor/rules/repository-contract.mdc: sha256:2a07d2b6a49d752a318625aacb9d13af561baeaaafe76b64213797a933de364f
   .gemini/commands/review-change.toml: sha256:93be42ed6ec71f53ef8b27a08887403a92fe1117bd11d05c59f94f55712929fa
   .gemini/commands/validate-change.toml: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
   .github/agents/repository-reviewer.agent.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798

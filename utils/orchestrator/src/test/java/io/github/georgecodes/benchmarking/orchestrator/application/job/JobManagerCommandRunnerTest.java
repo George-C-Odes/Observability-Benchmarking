@@ -20,7 +20,7 @@ class JobManagerCommandRunnerTest {
   @Inject CommandPolicy policy;
 
   @Test
-  void submit_usesCommandRunner_andJobReachesTerminalState() throws Exception {
+  void testSubmitUsesCommandRunnerAndJobReachesTerminalState() throws Exception {
     var validated = policy.validate("docker compose version");
     var jobId = jobManager.submit(validated, "run-1");
 
@@ -43,8 +43,8 @@ class JobManagerCommandRunnerTest {
 
     try {
       assertTrue(terminal.await(2, TimeUnit.SECONDS), "Job did not finish in time");
-      assertEquals("SUCCEEDED", terminalStatus.get());
-      assertEquals(0, terminalExitCode.get());
+      assertEquals("SUCCEEDED", terminalStatus.get(), "Expected the command job to succeed");
+      assertEquals(0, terminalExitCode.get(), "Expected the command to exit successfully");
     } finally {
       subscription.cancel();
     }

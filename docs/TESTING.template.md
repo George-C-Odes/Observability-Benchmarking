@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.5
+Next.js: 16.4.0
 React: 19.3.0
 TypeScript: 7.0.2
-Vitest: 5.0.1
-@vitest/coverage-v8: 5.0.1
-Oxlint: 1.83.0
-Oxfmt: 0.68.0
+Vitest: 5.0.3
+@vitest/coverage-v8: 5.0.3
+Oxlint: 1.87.0
+Oxfmt: 0.72.0
 ```
 
 #### Test Structure
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.1](https://vitest.dev/) with the matching
+[Vitest 5.0.3](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
@@ -1800,7 +1800,7 @@ jobs:
       
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: java-test-reports
           path: '**/target/surefire-reports/**'
@@ -1852,7 +1852,7 @@ jobs:
       
       - name: Upload Logs
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: integration-test-logs
           path: logs/

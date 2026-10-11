@@ -1,3 +1,5 @@
+package quality;
+
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReturnTree;
@@ -126,7 +128,7 @@ public final class CompactConstructorJavadocParamCheck {
 
     @Override
     public Void visitClass(ClassTree classTree, Deque<RecordContext> recordStack) {
-      boolean isRecord = classTree.getKind().name().equals("RECORD");
+      boolean isRecord = classTree.getKind() == Tree.Kind.RECORD;
       if (isRecord) {
         List<String> componentNames = resolveRecordComponentNames(classTree);
         recordStack.push(new RecordContext(classTree.getSimpleName().toString(), componentNames));

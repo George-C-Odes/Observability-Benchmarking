@@ -137,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
 Maven: 3.9+
 Spring Boot: 4.1.1 (3.5.16 also supported)
-Quarkus: 3.39.4
+Quarkus: 3.40.1
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -304,7 +304,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.27.1+
+Go: 1.27.2+
 Fiber: v3.5.0
 OpenTelemetry: Latest stable
 ```
@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.3.5
+Next.js: 16.4.0
 React: 19.3.0
 TypeScript: 7.0.2
-Vitest: 5.0.1
-@vitest/coverage-v8: 5.0.1
-Oxlint: 1.83.0
-Oxfmt: 0.68.0
+Vitest: 5.0.3
+@vitest/coverage-v8: 5.0.3
+Oxlint: 1.87.0
+Oxfmt: 0.72.0
 ```
 
 #### Test Structure
@@ -876,16 +876,16 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.1.1
-- Quarkus: 3.39.4
-- Micronaut: 5.2.2
+- Quarkus: 3.40.1
+- Micronaut: 5.2.15
 - Helidon: 4.5.5
 - Spark: 3.0.4
 - Javalin: 7.2.3
 - Dropwizard: 5.0.2
 - Vert.x: 5.1.7
 - Pekko: 1.3.0
-- Go: 1.27.1
-- Django: 6.1.1
+- Go: 1.27.2
+- Django: 6.1.2
 
 ==========================================
 JVM Services - Deployment Tests
@@ -1294,7 +1294,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.27.1 | Build version: go1.27.1
+2025-12-16T10:30:00.123Z Runtime version: go1.27.2 | Build version: go1.27.2
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.1](https://vitest.dev/) with the matching
+[Vitest 5.0.3](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
@@ -1800,7 +1800,7 @@ jobs:
       
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: java-test-reports
           path: '**/target/surefire-reports/**'
@@ -1810,10 +1810,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
-      - name: Set up Go 1.27.1
+      - name: Set up Go 1.27.2
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.27.1'
+          go-version: '1.27.2'
       
       - name: Test Go Service
         run: |
@@ -1852,7 +1852,7 @@ jobs:
       
       - name: Upload Logs
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: integration-test-logs
           path: logs/
@@ -1862,10 +1862,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.39.4" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.40.1" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.1" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.1" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.1" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.2" }
     
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1937,7 +1937,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.27.1
+  image: golang:1.27.2
   script:
     - cd services/go/enhanced
     - go mod download

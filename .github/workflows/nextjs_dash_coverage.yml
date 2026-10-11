@@ -10,12 +10,14 @@ on:
     paths:
       - 'utils/nextjs-dash/**'
       - '.github/workflows/nextjs_dash_coverage.yml'
+      - '.github/actions/upload-artifact/**'
   push:
     branches:
       - main
     paths:
       - 'utils/nextjs-dash/**'
       - '.github/workflows/nextjs_dash_coverage.yml'
+      - '.github/actions/upload-artifact/**'
 
 permissions:
   contents: read
@@ -35,14 +37,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.9.0'
+          node-version: '26.11.1'
           cache: npm
           cache-dependency-path: utils/nextjs-dash/package-lock.json
 
-      - name: Set up npm 12.0.2
-        run: npm install --global --ignore-scripts npm@12.0.2
+      - name: Set up npm 12.2.0
+        run: npm install --global --ignore-scripts npm@12.2.0
 
       - name: Install dependencies
         run: npm ci
@@ -176,7 +178,7 @@ jobs:
       # ── Upload HTML coverage reports as artifacts ────────────────────
       - name: Upload Node coverage report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: coverage-nextjs-dash-node
           path: utils/nextjs-dash/coverage/node/
@@ -185,7 +187,7 @@ jobs:
 
       - name: Upload DOM coverage report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: coverage-nextjs-dash-dom
           path: utils/nextjs-dash/coverage/dom/

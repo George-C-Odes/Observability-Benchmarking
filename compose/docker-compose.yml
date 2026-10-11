@@ -1618,7 +1618,8 @@ services:
       OTEL_TRACES_SAMPLER: "parentbased_always_on"
       OTEL_TRACES_SAMPLER_ARG: 1                            # applicable for 'traceidratio' sampler
       OTEL_METRICS_ENABLED: true
-      OTEL_METRIC_EXPORT_INTERVAL: *default_metric_otel_interval
+      # The Go SDK reads integer milliseconds, even when WithInterval is supplied.
+      OTEL_METRIC_EXPORT_INTERVAL: ${GO_METRIC_EXPORT_INTERVAL_MS:-15000}
       OTEL_RUNTIME_METRICS_ENABLED: *default_metric_otel_runtime
       OTEL_GO_SCHEDULE_METRICS_ENABLED: *default_metric_otel_runtime
       OTEL_HTTP_ENABLED: true

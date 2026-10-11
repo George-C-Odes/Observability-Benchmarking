@@ -35,7 +35,7 @@ Example:
 ## Quick start (local)
 
 ### Prerequisites
-- Go **1.27.x** (tested with Go 1.27.1)
+- Go **1.27.x** (tested with Go 1.27.2)
 - Docker (optional)
 
 ### Run
@@ -94,19 +94,30 @@ export PYROSCOPE_PROFILE_TYPES="cpu,alloc,inuse,goroutines"
 
 ## Configuration
 
-| Env var                        |  Default | Description                                             |
-|--------------------------------|---------:|---------------------------------------------------------|
-| `PORT`                         |   `8080` | HTTP port                                               |
-| `CACHE_SIZE`                   |  `50000` | Size of pre-built cache                                 |
-| `CACHE_IMPL`                   | `theine` | `slice`, `map`, `ristretto`, `theine`, or `otter`       |
-| `LOG_LEVEL`                    |   `info` | `debug`, `info`, `warn`, `error`                        |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`  |       `` | OTLP endpoint URL/host                                  |
-| `OTEL_EXPORTER_OTLP_INSECURE`  |   `true` | Use insecure OTLP (common for local stacks)             |
-| `OTEL_TRACES_SAMPLER_ARG`      |    `1.0` | Trace sampling ratio (0..1), used with `*traceidratio*` |
-| `OTEL_METRICS_EXPORT_INTERVAL` |    `15s` | Metric export interval                                  |
-| `OTEL_LOGS_ENABLED`            |  `false` | Export logs via OTLP (experimental)                     |
-| `PYROSCOPE_SERVER_ADDRESS`     |       `` | Enables Pyroscope push mode                             |
-| `PYROSCOPE_APPLICATION_NAME`   |       `` | Pyroscope app name                                      |
+| Env var                       |  Default | Description                                                 |
+|-------------------------------|---------:|-------------------------------------------------------------|
+| `PORT`                        |   `8080` | HTTP port                                                   |
+| `CACHE_SIZE`                  |  `50000` | Size of pre-built cache                                     |
+| `CACHE_IMPL`                  | `theine` | `slice`, `map`, `ristretto`, `theine`, or `otter`           |
+| `LOG_LEVEL`                   |   `info` | `debug`, `info`, `warn`, `error`                            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` |       `` | OTLP endpoint URL/host                                      |
+| `OTEL_EXPORTER_OTLP_INSECURE` |   `true` | Use insecure OTLP (common for local stacks)                 |
+| `OTEL_TRACES_SAMPLER_ARG`     |    `1.0` | Trace sampling ratio (0..1), used with `*traceidratio*`     |
+| `OTEL_METRIC_EXPORT_INTERVAL` |  `15000` | Metric export interval in integer milliseconds (15 seconds) |
+| `OTEL_LOGS_ENABLED`           |  `false` | Export logs via OTLP (experimental)                         |
+| `PYROSCOPE_SERVER_ADDRESS`    |       `` | Enables Pyroscope push mode                                 |
+| `PYROSCOPE_APPLICATION_NAME`  |       `` | Pyroscope app name                                          |
+
+Use `OTEL_METRIC_EXPORT_INTERVAL=15000`, not `15s`. Although the application's
+duration parser accepts both, the Go SDK reads this environment variable before
+applying the explicit interval option and logs a parse warning for `15s`.
+The legacy application-only alias `OTEL_METRICS_EXPORT_INTERVAL` still accepts
+duration strings when the standard singular variable is unset.
+
+In Compose, set `GO_METRIC_EXPORT_INTERVAL_MS` in `compose/.env` (default `15000`).
+Keep it equivalent to the Java `METRIC_OTEL_INTERVAL` setting (`15s` by default)
+to preserve benchmark fairness. Recreate the `go` container after changing it;
+restarting an existing container does not update its environment.
 
 ---
 
@@ -119,8 +130,8 @@ go test ./... -race
 
 ### Docker
 ```bash
-docker build -t go:1.27.1_latest .
-docker run --rm -p 8080:8080 go:1.27.1_latest
+docker build -t go:1.27.2_latest .
+docker run --rm -p 8080:8080 go:1.27.2_latest
 ```
 
 ---
@@ -168,7 +179,8 @@ make coverage
   - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
   - uploads `coverage.out` and `coverage.html`
   - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
-  - enforces the current enhanced-module statement threshold of **40%**
+  - enforces the enhanced-module statement threshold of **85%**
+  - fails the gate when coverage jobs fail or profiles are missing or unreadable
 - **Codecov flag**: `go-enhanced`
   - mapped in the repository root `codecov.yml` to `services/go/enhanced/`
 
@@ -186,9 +198,28 @@ The current unit tests cover:
 - query parameter parsing and validation (`sleep`, `log`, bad values)
 - cache implementations and hit/miss behavior
 - configuration parsing from environment variables
+- supported duration units, metric export interval precedence, and explicit Pyroscope opt-out
+- cumulative `hello.request.count` collection, endpoint attributes, error responses, and `int64` saturation
+- continued endpoint operation when metric creation or callback registration fails
 - logging and trace-correlation helpers
 - HTTP tracing middleware utilities
 - OpenTelemetry and Pyroscope setup using deterministic test doubles where needed
+- root sampling decisions and sampled/unsampled remote-parent behavior
+
+### Coverage scope
+
+No enhanced-module source files are excluded. In particular, `cmd/server/main.go`
+also contains the unit-tested HTTP instrumentation setup; excluding the whole
+file would hide that logic along with process startup and signal handling.
+The latter are better candidates for subprocess/integration tests. The
+`internal/buildinfo` version variable has no executable statements, so a Codecov
+exclusion would not improve Go statement coverage.
+
+The CI gate and summaries use the full Go statement profile. Codecov receives
+the same profile with repository-relative paths and reports line coverage;
+its percentages need not exactly match Go's statement percentages. A future
+`codecov.yml` ignore rule would affect only Codecov, not the CI gate or local
+`go tool cover` reports.
 
 If your local Windows Go toolchain has filesystem-permission issues with the
 managed toolchain cache or C toolchain headers, run the same commands in Docker

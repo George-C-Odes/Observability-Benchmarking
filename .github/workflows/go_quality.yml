@@ -18,12 +18,14 @@ on:
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+      - '.github/actions/upload-artifact/**'
   push:
     paths:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+      - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
     - cron: '0 6 * * 1'
@@ -53,7 +55,7 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.13.2
+          version: v2.14.0
           working-directory: services/go/enhanced
           # The action runs `golangci-lint run` by default after install.
           # We only want to install the binary here — the actual lint run
@@ -117,7 +119,7 @@ jobs:
 
       - name: Set up Node.js (for report generation)
         if: always() && !cancelled()
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
 
@@ -131,7 +133,7 @@ jobs:
 
       - name: Upload quality report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-go
           path: services/go/enhanced/quality-report/
@@ -159,7 +161,7 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.13.2
+          version: v2.14.0
           working-directory: services/go/simple
           args: --help
 
@@ -205,7 +207,7 @@ jobs:
 
       - name: Set up Node.js (for report generation)
         if: always() && !cancelled()
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
 
@@ -219,7 +221,7 @@ jobs:
 
       - name: Upload quality report
         if: always() && !cancelled()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-go-simple
           path: services/go/simple/quality-report/
