@@ -15,7 +15,7 @@ describe('runtimeConfig', () => {
     vi.stubGlobal('window', {
       __OBS_DASH_CONFIG__: {
         systemInfo: {
-          nodejs: 'v26.10.0',
+          nodejs: 'v26.11.1',
           npm: '12.2.0',
           nextjs: '16.4.0',
           react: '19.3.0',
@@ -29,7 +29,7 @@ describe('runtimeConfig', () => {
 
     expect(getRuntimeConfig()).toEqual({
       systemInfo: {
-        nodejs: 'v26.10.0',
+        nodejs: 'v26.11.1',
         npm: '12.2.0',
         nextjs: '16.4.0',
         react: '19.3.0',

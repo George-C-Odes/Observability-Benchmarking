@@ -166,7 +166,7 @@ Some environments terminate long-lived HTTP connections.
 - **Vitest / coverage-v8**: v5.0.3
 - **Oxlint**: v1.87.0
 - **Oxfmt**: v0.72.0
-- **Node.js**: v26.10.0
+- **Node.js**: v26.11.1
 
 ## Configuration
 
@@ -238,7 +238,7 @@ Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift bet
 
 ### Prerequisites
 
-- Node.js 26.10.0
+- Node.js 26.11.1
 - npm 12.2.0
 
 ### Local Development
