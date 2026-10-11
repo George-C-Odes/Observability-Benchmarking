@@ -990,7 +990,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Metrics            | Mimir                      | 3.2.2                   | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.4.0                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.66.0                  | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.32.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.0                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.2.1                   | In-memory caching (Python)                                           |
