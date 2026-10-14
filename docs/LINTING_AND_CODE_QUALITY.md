@@ -18,7 +18,7 @@ This repository currently uses two scoped JVM quality setups:
   - **spotless-maven-plugin**: 3.10.4
   - **google-java-format**: 1.36.1
   - **maven-pmd-plugin**: 3.28.0 with PMD 7.28.0
-  - **spotbugs-maven-plugin**: 4.10.4.1 with FindSecBugs 1.14.0
+  - **spotbugs-maven-plugin**: 4.10.5.0 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
 ### Configuration Files
