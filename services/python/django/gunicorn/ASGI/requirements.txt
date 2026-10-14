@@ -90,7 +90,7 @@ protobuf==7.36.2
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
-pyroscope-io==1.2.5
+pyroscope-io==1.3.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   pyroscope-otel
@@ -109,5 +109,5 @@ tzdata==2026.5
     # via django
 uvicorn==0.54.0
     # via -r services/python/django/gunicorn/ASGI/requirements.in
-wrapt==2.5.0
+wrapt==2.5.1
     # via opentelemetry-instrumentation

@@ -78,7 +78,7 @@ protobuf==7.36.2
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
-pyroscope-io==1.2.5
+pyroscope-io==1.3.0
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   pyroscope-otel
@@ -95,5 +95,5 @@ typing-extensions==4.16.0
     #   opentelemetry-semantic-conventions
 tzdata==2026.5
     # via django
-wrapt==2.5.0
+wrapt==2.5.1
     # via opentelemetry-instrumentation

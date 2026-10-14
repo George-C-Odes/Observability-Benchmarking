@@ -159,13 +159,13 @@ Some environments terminate long-lived HTTP connections.
 
 ## Technology Stack
 
-- **Next.js**: v16.4.0
-- **React**: v19.3.0
+- **Next.js**: v16.4.1
+- **React**: v19.3.1
 - **Material-UI (MUI)**: v9.5.0
 - **TypeScript**: v7.0.2
-- **Vitest / coverage-v8**: v5.0.3
-- **Oxlint**: v1.87.0
-- **Oxfmt**: v0.72.0
+- **Vitest / coverage-v8**: v5.0.4
+- **Oxlint**: v1.88.0
+- **Oxfmt**: v0.73.0
 - **Node.js**: v26.11.1
 
 ## Configuration

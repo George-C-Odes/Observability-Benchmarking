@@ -18,7 +18,7 @@ This repository currently uses two scoped JVM quality setups:
   - **spotless-maven-plugin**: 3.10.4
   - **google-java-format**: 1.36.1
   - **maven-pmd-plugin**: 3.28.0 with PMD 7.28.0
-  - **spotbugs-maven-plugin**: 4.10.4.1 with FindSecBugs 1.14.0
+  - **spotbugs-maven-plugin**: 4.10.5.0 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
 ### Configuration Files
@@ -726,10 +726,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.72.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.87.0** — checks the module root with warnings denied.
+1. **Oxfmt 0.73.0** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint 1.88.0** — checks the module root with warnings denied.
 3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.0.3** — runs separate Node and jsdom suites.
+4. **Vitest 5.0.4** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.

@@ -305,7 +305,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 
 ```
 Go: {{GO_VERSION}}+
-Fiber: v3.5.0
+Fiber: v3.6.1
 OpenTelemetry: Latest stable
 ```
 
@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.4.0
-React: 19.3.0
+Next.js: 16.4.1
+React: 19.3.1
 TypeScript: 7.0.2
-Vitest: 5.0.3
-@vitest/coverage-v8: 5.0.3
-Oxlint: 1.87.0
-Oxfmt: 0.72.0
+Vitest: 5.0.4
+@vitest/coverage-v8: 5.0.4
+Oxlint: 1.88.0
+Oxfmt: 0.73.0
 ```
 
 #### Test Structure
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.3](https://vitest.dev/) with the matching
+[Vitest 5.0.4](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
