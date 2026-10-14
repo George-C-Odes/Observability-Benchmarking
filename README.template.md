@@ -108,7 +108,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.32.0                  | Auto-instrumentation and exporters                                   |
-| **Performance**   | Cache              | Caffeine                   | 3.3.0                   | High-performance in-memory caching (Java)                            |
+| **Performance**   | Cache              | Caffeine                   | 3.3.1                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.2.1                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |

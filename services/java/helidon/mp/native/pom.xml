@@ -13,7 +13,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <helidon.version>4.5.5</helidon.version>
-        <caffeine.version>3.3.0</caffeine.version>
+        <caffeine.version>3.3.1</caffeine.version>
         <jakarta-activation.version>2.1.4</jakarta-activation.version>
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
