@@ -139,7 +139,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.40.1');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.40.1.1');
   } finally {
     try {
       unlinkSync(templatePath);

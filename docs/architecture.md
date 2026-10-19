@@ -45,11 +45,11 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Platform threads
   - Virtual threads
   - Reactive (WebFlux - Reactor)
-- Quarkus 3.40.1 (JVM and Native)
+- Quarkus 3.40.1.1 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Mutiny)
-- Micronaut 5.2.15 (JVM and Native)
+- Micronaut 5.2.16 (JVM and Native)
   - Platform threads
   - Virtual threads
   - Reactive (Reactor)

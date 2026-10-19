@@ -137,7 +137,7 @@ The project implements a comprehensive testing strategy covering:
 Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
 Maven: 3.9+
 Spring Boot: 4.1.1 (3.5.16 also supported)
-Quarkus: 3.40.1
+Quarkus: 3.40.1.1
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -576,8 +576,8 @@ React: 19.3.1
 TypeScript: 7.0.2
 Vitest: 5.0.5
 @vitest/coverage-v8: 5.0.5
-Oxlint: 1.88.0
-Oxfmt: 0.73.0
+Oxlint: 1.89.0
+Oxfmt: 0.74.0
 ```
 
 #### Test Structure
@@ -876,8 +876,8 @@ Integration Test Suite
 
 Testing Framework Versions:
 - Spring Boot: 4.1.1
-- Quarkus: 3.40.1
-- Micronaut: 5.2.15
+- Quarkus: 3.40.1.1
+- Micronaut: 5.2.16
 - Helidon: 4.5.5
 - Spark: 3.0.4
 - Javalin: 7.2.3
@@ -1862,7 +1862,7 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.40.1" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.40.1.1" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.1" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.1" }
           - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.2" }

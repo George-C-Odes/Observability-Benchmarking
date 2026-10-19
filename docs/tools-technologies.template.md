@@ -1001,8 +1001,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.1                  | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.17.1                  | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.88.0                  | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.73.0                  | Next.js dashboard formatting                                         |
+| **Quality**       | Linter             | Oxlint                     | 1.89.0                  | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.74.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.0.5                   | Frontend unit testing                                                |
