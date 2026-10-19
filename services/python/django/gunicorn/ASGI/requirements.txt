@@ -8,7 +8,7 @@ asgiref==3.12.1
     # via
     #   django
     #   opentelemetry-instrumentation-asgi
-cachetools==7.2.1
+cachetools==7.2.3
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 click==8.5.0
     # via uvicorn
