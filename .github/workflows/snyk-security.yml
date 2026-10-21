@@ -76,8 +76,9 @@ jobs:
       # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
         if: always() && hashFiles('snyk-code.sarif') != ''
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: ./.github/actions/codeql-action
         with:
+          phase: upload-sarif
           sarif_file: snyk-code.sarif
 
       - name: Fail if Snyk findings are reported

@@ -10,12 +10,14 @@ on:
     paths:
       - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/codeql-action/**'
       - '.github/actions/upload-artifact/**'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/codeql-action/**'
       - '.github/actions/upload-artifact/**'
   workflow_dispatch:
   schedule:
@@ -76,6 +78,7 @@ jobs:
 
       - name: Upload SARIF file
         if: always() && hashFiles('pmd-report.sarif') != ''
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: ./.github/actions/codeql-action
         with:
+          phase: upload-sarif
           sarif_file: pmd-report.sarif

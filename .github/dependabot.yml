@@ -9,6 +9,16 @@ updates:
       interval: weekly
     commit-message:
       prefix: "ci"
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action"
+          - "github/codeql-action/*"
+      codeql-action-security:
+        applies-to: security-updates
+        patterns:
+          - "github/codeql-action"
+          - "github/codeql-action/*"
 
   # Ruby / Jekyll (docs site)
   - package-ecosystem: bundler
