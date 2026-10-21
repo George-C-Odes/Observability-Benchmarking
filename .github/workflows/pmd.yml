@@ -10,6 +10,7 @@ on:
     paths:
       - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/setup-java/**'
       - '.github/actions/codeql-action/**'
       - '.github/actions/upload-artifact/**'
   pull_request:
@@ -17,6 +18,7 @@ on:
     paths:
       - 'utils/**'
       - '.github/workflows/pmd.yml'
+      - '.github/actions/setup-java/**'
       - '.github/actions/codeql-action/**'
       - '.github/actions/upload-artifact/**'
   workflow_dispatch:
@@ -39,7 +41,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up JDK 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: ./.github/actions/setup-java
         with:
           java-version: '25'
           distribution: 'temurin'

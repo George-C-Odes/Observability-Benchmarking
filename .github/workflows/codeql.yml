@@ -20,6 +20,7 @@ on:
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
+      - '.github/actions/setup-java/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
       - '.github/actions/codeql-action/**'
@@ -35,6 +36,7 @@ on:
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
+      - '.github/actions/setup-java/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
       - '.github/actions/codeql-action/**'
@@ -114,7 +116,7 @@ jobs:
             exit 0
           fi
 
-          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$|\.github/actions/codeql-action/)'; then
+          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$|\.github/actions/(codeql-action|setup-java)/)'; then
             echo "has_modules=true" >> "$GITHUB_OUTPUT"
           else
             echo "No Java/Kotlin paths in changeset — skipping java-kotlin leg"
@@ -126,7 +128,7 @@ jobs:
       # pom files only (native modules are excluded from CodeQL builds).
       - name: Set up JDK 25
         if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: ./.github/actions/setup-java
         with:
           distribution: temurin
           java-version: '25'
@@ -213,8 +215,8 @@ jobs:
               if [[ -z "$changed" ]]; then
                 echo "Empty diff or diff failed — building all JVM modules"
                 build_modules=("${ALL_MODULES[@]}")
-              elif echo "$changed" | grep -qE '^\.github/(workflows/codeql\.yml$|actions/codeql-action/)'; then
-                echo "CodeQL workflow or action changed — building all JVM modules"
+              elif echo "$changed" | grep -qE '^\.github/(workflows/codeql\.yml$|actions/(codeql-action|setup-java)/)'; then
+                echo "CodeQL workflow or shared Java action changed — building all JVM modules"
                 build_modules=("${ALL_MODULES[@]}")
               else
                 # Shared services/java/ checkstyle config → all service modules
