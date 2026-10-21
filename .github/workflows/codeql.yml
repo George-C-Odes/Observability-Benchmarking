@@ -24,6 +24,8 @@ on:
       - '.github/actions/download-artifact/**'
       - '.github/actions/codeql-action/**'
   push:
+    branches:
+      - main
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'

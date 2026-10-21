@@ -12,6 +12,8 @@ on:
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/upload-artifact/**'
   push:
+    branches:
+      - main
     paths:
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
