@@ -101,7 +101,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Language           | TypeScript                 | 7.0.2    | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0    | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.2.4   | Metrics, logs, traces dashboards                                     |
-| **Observability** | Logs               | Loki                       | 3.7.8    | Log aggregation                                                      |
+| **Observability** | Logs               | Loki                       | 3.7.9    | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 2.10.10  | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.2    | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.4.1    | Continuous CPU and memory profiling                                  |
