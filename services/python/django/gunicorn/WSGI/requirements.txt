@@ -6,7 +6,7 @@
 #
 asgiref==3.12.1
     # via django
-cachetools==7.2.3
+cachetools==7.2.4
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 django==6.1.2
     # via -r services/python/django/gunicorn/WSGI/requirements.in
