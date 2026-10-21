@@ -1,5 +1,5 @@
 lockfile_version: '1'
-apm_version: 0.33.0
+apm_version: 0.34.0
 dependencies:
 - repo_url: github/awesome-copilot
   name: github-actions-hardening
@@ -287,6 +287,42 @@ deployments:
   content_hash: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
 - kind: project-relative
   target: codex
+  value: .agents/skills/benchmark-integrity
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/benchmark-integrity/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
+- kind: project-relative
+  target: codex
+  value: .agents/skills/focused-validation
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/focused-validation/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - .
+  active_owner: .
+  content_hash: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
+- kind: project-relative
+  target: codex
   value: .agents/skills/github-actions-hardening
   runtime: null
   scope: project
@@ -528,42 +564,6 @@ deployments:
   - .
   active_owner: .
   content_hash: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
-- kind: project-relative
-  target: legacy
-  value: .agents/skills/benchmark-integrity
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: null
-- kind: project-relative
-  target: legacy
-  value: .agents/skills/benchmark-integrity/SKILL.md
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
-- kind: project-relative
-  target: legacy
-  value: .agents/skills/focused-validation
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: null
-- kind: project-relative
-  target: legacy
-  value: .agents/skills/focused-validation/SKILL.md
-  runtime: null
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: sha256:451856e903994be8cc9ce19ed81c48ff7db4ef96dc8444c712c3c2a420be9ab1
 - kind: project-relative
   target: opencode
   value: .opencode/agents/repository-reviewer.md
