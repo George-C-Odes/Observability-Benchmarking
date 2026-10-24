@@ -20,9 +20,13 @@ on:
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
+      - '.github/actions/setup-java/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
+      - '.github/actions/codeql-action/**'
   push:
+    branches:
+      - main
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
@@ -32,8 +36,10 @@ on:
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
+      - '.github/actions/setup-java/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
+      - '.github/actions/codeql-action/**'
   schedule:
     # Weekly full scan — Monday at 05:30 UTC.
     # Scheduled runs ensure new CWE patterns and updated CodeQL query packs
@@ -110,7 +116,7 @@ jobs:
             exit 0
           fi
 
-          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$)'; then
+          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$|\.github/actions/(codeql-action|setup-java)/)'; then
             echo "has_modules=true" >> "$GITHUB_OUTPUT"
           else
             echo "No Java/Kotlin paths in changeset — skipping java-kotlin leg"
@@ -122,7 +128,7 @@ jobs:
       # pom files only (native modules are excluded from CodeQL builds).
       - name: Set up JDK 25
         if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: ./.github/actions/setup-java
         with:
           distribution: temurin
           java-version: '25'
@@ -133,8 +139,9 @@ jobs:
 
       - name: Initialize CodeQL
         if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
-        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: ./.github/actions/codeql-action
         with:
+          phase: init
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
@@ -154,7 +161,7 @@ jobs:
       #      when violations exist.
       # • On schedule / dispatch: all 12 modules are built (full scan).
       # • On push / PR: only modules whose source tree actually changed
-      #   are built; shared config changes (checkstyle, workflow) trigger
+      #   are built; shared config changes (checkstyle, workflow, action) trigger
       #   a full rebuild.
       # ----------------------------------------------------------------
       - name: Build Java modules
@@ -208,8 +215,8 @@ jobs:
               if [[ -z "$changed" ]]; then
                 echo "Empty diff or diff failed — building all JVM modules"
                 build_modules=("${ALL_MODULES[@]}")
-              elif echo "$changed" | grep -qE '^\.github/workflows/codeql\.yml$'; then
-                echo "Workflow file changed — building all JVM modules"
+              elif echo "$changed" | grep -qE '^\.github/(workflows/codeql\.yml$|actions/(codeql-action|setup-java)/)'; then
+                echo "CodeQL workflow or shared Java action changed — building all JVM modules"
                 build_modules=("${ALL_MODULES[@]}")
               else
                 # Shared services/java/ checkstyle config → all service modules
@@ -310,8 +317,9 @@ jobs:
 
       - name: Perform CodeQL Analysis
         if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
-        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: ./.github/actions/codeql-action
         with:
+          phase: analyze
           category: "/language:${{ matrix.language }}"
           output: codeql-results
 
@@ -391,4 +399,3 @@ jobs:
           path: codeql-quality-report/
           retention-days: 30
           if-no-files-found: warn
-

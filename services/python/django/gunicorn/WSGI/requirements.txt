@@ -4,15 +4,15 @@
 #
 #    pip-compile --no-index --output-file=services/python/django/gunicorn/WSGI/requirements.txt services/python/django/gunicorn/WSGI/requirements.in
 #
-asgiref==3.12.1
+asgiref==3.13.0
     # via django
-cachetools==7.2.1
+cachetools==7.2.4
     # via -r services/python/django/gunicorn/WSGI/requirements.in
 django==6.1.2
     # via -r services/python/django/gunicorn/WSGI/requirements.in
-googleapis-common-protos==1.75.5
+googleapis-common-protos==1.76.0
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.84.0
+grpcio==1.84.1
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
@@ -78,7 +78,7 @@ protobuf==7.36.2
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
-pyroscope-io==1.3.0
+pyroscope-io==1.4.0
     # via
     #   -r services/python/django/gunicorn/WSGI/requirements.in
     #   pyroscope-otel

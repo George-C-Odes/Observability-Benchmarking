@@ -42,6 +42,37 @@ jobs:
         if: env.SNYK_TOKEN != ''
         uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
 
+      - name: Set up JDK 25
+        if: env.SNYK_TOKEN != ''
+        uses: ./.github/actions/setup-java
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: |
+            services/java/**/pom.xml
+            utils/orchestrator/pom.xml
+
+      - name: Set up Python
+        if: env.SNYK_TOKEN != ''
+        uses: ./.github/actions/setup-python
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: services/python/django/gunicorn/*/requirements.txt
+
+      - name: Prepare dependency resolution
+        if: env.SNYK_TOKEN != ''
+        shell: bash
+        run: |
+          # Snyk invokes native modules' Maven wrappers directly on Linux.
+          # These scripts are stored without executable permission in Git.
+          find services/java -type f -name mvnw -exec chmod +x {} +
+          # Snyk needs installed packages to resolve Python's transitive dependencies.
+          python -m pip install \
+            -r services/python/django/gunicorn/WSGI/requirements.txt \
+            -r services/python/django/gunicorn/ASGI/requirements.txt
+
       # Runs Snyk Code (SAST) analysis and exports SARIF for GitHub Code Scanning.
       # continue-on-error ensures SARIF upload still runs even if vulnerabilities are flagged.
       - name: Snyk Code test
@@ -66,28 +97,26 @@ jobs:
         continue-on-error: true
         run: snyk monitor --all-projects
 
-      # Runs Snyk Infrastructure as Code (IaC) analysis and reports to Snyk dashboard
-      - name: Snyk IaC test and report
-        if: env.SNYK_TOKEN != ''
-        id: snyk-iac
-        continue-on-error: true
-        run: snyk iac test --report
+      # Snyk IaC does not support Docker Compose. This repository currently has
+      # no supported IaC manifests (e.g. Terraform, Kubernetes or CloudFormation).
+      # Add a scan scoped to those manifests when they are introduced, rather
+      # than recursively parsing Compose and application YAML from the root.
 
       # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
         if: always() && hashFiles('snyk-code.sarif') != ''
-        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        uses: ./.github/actions/codeql-action
         with:
+          phase: upload-sarif
           sarif_file: snyk-code.sarif
 
-      - name: Fail if Snyk findings are reported
+      - name: Fail if Snyk findings or scan errors are reported
         if: always()
         shell: bash
         run: |
           if [[ "${{ steps.snyk-code.outcome }}" == "failure" || \
                 "${{ steps.snyk-open-source-test.outcome }}" == "failure" || \
-                "${{ steps.snyk-open-source-monitor.outcome }}" == "failure" || \
-                "${{ steps.snyk-iac.outcome }}" == "failure" ]]; then
+                "${{ steps.snyk-open-source-monitor.outcome }}" == "failure" ]]; then
             echo "::error::One or more Snyk scans reported findings or failed."
             exit 1
           fi

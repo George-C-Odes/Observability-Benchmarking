@@ -1,17 +1,18 @@
 <component name="ProjectRunConfigurationManager">
+  <!-- Versions: compose/.env; refresh with node scripts/sync-build-img-runs.mjs -->
   <configuration default="false" name="[build-img] Micronaut NATIVE" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="micronaut-native:5.2.15_latest" />
+        <option name="imageTag" value="micronaut-native:5.2.20_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
               <option name="name" value="MICRONAUT_VERSION" />
-              <option name="value" value="5.2.15" />
+              <option name="value" value="5.2.20" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="micronaut-native:5.2.15_latest" />
+              <option name="value" value="micronaut-native:5.2.20_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

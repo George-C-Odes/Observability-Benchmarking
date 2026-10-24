@@ -475,7 +475,7 @@ The quality workflow does more than execute tests:
 2. Installs the shared package into each runtime module environment.
 3. Prints the Ruff version, runs module syntax checks, Ruff lint and format checks, `python manage.py check`, and the shared test suite.
 
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v7.0.0` is exercised on Node 24 ahead of GitHub's runtime migration.
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v7.1.0` is exercised on Node 24 ahead of GitHub's runtime migration.
 
 Use the following sequence when you want to reproduce the CI gates locally:
 
@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.4.1
+Next.js: 16.4.3
 React: 19.3.1
 TypeScript: 7.0.2
-Vitest: 5.0.4
-@vitest/coverage-v8: 5.0.4
-Oxlint: 1.88.0
-Oxfmt: 0.73.0
+Vitest: 5.0.5
+@vitest/coverage-v8: 5.0.5
+Oxlint: 1.89.0
+Oxfmt: 0.74.0
 ```
 
 #### Test Structure
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.4](https://vitest.dev/) with the matching
+[Vitest 5.0.5](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
@@ -1778,7 +1778,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
       - name: Set up Java 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version: '25'
           distribution: 'corretto'

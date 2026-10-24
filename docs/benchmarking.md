@@ -131,10 +131,10 @@ memory: 2GB        # Maximum memory
 - Build: Optimized for throughput (`-O3`)
 
 **Frameworks**:
-- Spring Boot: 4.1.1 (3.5.16 also supported)
-- Quarkus: 3.40.1
-- Micronaut: 5.2.15
-- Helidon: 4.5.5
+- Spring Boot: 4.1.2 (3.5.16 also supported)
+- Quarkus: 3.40.1.1
+- Micronaut: 5.2.20
+- Helidon: 4.5.6
 - Spark: 3.0.4
 - Javalin: 7.2.3
 - Dropwizard: 5.0.2

@@ -130,18 +130,30 @@ PYROSCOPE_URL="${PYROSCOPE_URL:-http://localhost:4040}"
 NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
 
-# Framework versions
-QUARKUS_VERSION="3.40.1"
-SPRING_BOOT_VERSION="4.1.1"
-MICRONAUT_VERSION="5.2.15"
-HELIDON_VERSION="4.5.5"
-SPARK_VERSION="3.0.4"
-JAVALIN_VERSION="7.2.3"
-DROPWIZARD_VERSION="5.0.2"
-VERTX_VERSION="5.1.7"
-PEKKO_VERSION="1.3.0"
-GO_VERSION="1.27.2"
-DJANGO_VERSION="6.1.2"
+# Framework versions (compose/.env uses KEY: value syntax, not shell assignments)
+ENV_FILE="${SCRIPT_DIR}/../compose/.env"
+if [ ! -r "${ENV_FILE}" ]; then
+    echo "[integration-tests] cannot read framework versions: ${ENV_FILE}" >&2
+    exit 1
+fi
+
+for version_key in QUARKUS_VERSION SPRING_BOOT_VERSION MICRONAUT_VERSION HELIDON_VERSION \
+    SPARK_VERSION JAVALIN_VERSION DROPWIZARD_VERSION VERTX_VERSION PEKKO_VERSION \
+    GO_VERSION DJANGO_VERSION; do
+    if ! version_value=$(awk -v key="${version_key}" '
+        $0 ~ "^[[:space:]]*" key "[[:space:]]*:" {
+            sub(/^[^:]*:[[:space:]]*/, "")
+            sub(/[[:space:]]+#.*$/, "")
+            sub(/[[:space:]]+$/, "")
+            value = $0
+        }
+        END { if (value == "") exit 1; print value }
+    ' "${ENV_FILE}"); then
+        echo "[integration-tests] missing or empty ${version_key} in ${ENV_FILE}" >&2
+        exit 1
+    fi
+    printf -v "${version_key}" '%s' "${version_value}"
+done
 
 # Helper function to test HTTP endpoint
 # expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")

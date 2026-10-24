@@ -1,0 +1,89 @@
+name: CodeQL
+description: Run a CodeQL phase using the repository's shared, pinned GitHub action.
+
+# Call init before manual builds, then analyze after them in the same job.
+# Use upload-sarif independently for reports produced by other scanners.
+# GitHub requires literal uses references. Keep all CodeQL pins identical;
+# Dependabot groups their updates, and validation below rejects version drift.
+inputs:
+  phase:
+    description: CodeQL phase to run (init, analyze, upload-sarif).
+    required: true
+  languages:
+    description: Comma-separated list of languages. Required for the init phase.
+    required: false
+  build-mode:
+    description: CodeQL build mode for initialization (none, autobuild, manual).
+    required: false
+    default: none
+  category:
+    description: Category for analysis or uploaded results. Omit to use the upstream default.
+    required: false
+  output:
+    description: Output directory for analysis results.
+    required: false
+    default: codeql-results
+  sarif_file:
+    description: SARIF file or directory. Required for the upload-sarif phase.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Validate CodeQL version and phase inputs
+      id: validate
+      if: ${{ always() }}
+      shell: bash
+      env:
+        CODEQL_ACTION_PATH: ${{ github.action_path }}
+        CODEQL_PHASE: ${{ inputs.phase }}
+        CODEQL_LANGUAGES: ${{ inputs.languages }}
+        CODEQL_SARIF_FILE: ${{ inputs.sarif_file }}
+      run: |
+        codeql_refs="$(sed -nE 's|^[[:space:]]*uses: github/codeql-action/[^@[:space:]]+@([^[:space:]]+).*|\1|p' "$CODEQL_ACTION_PATH/action.yml" | sort -u)"
+        if [[ ! "$codeql_refs" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "::error::All CodeQL subactions must use the same full commit SHA. Update their version comments together."
+          exit 1
+        fi
+
+        case "$CODEQL_PHASE" in
+          init)
+            if [[ -z "$CODEQL_LANGUAGES" ]]; then
+              echo "::error::languages is required for the init phase."
+              exit 1
+            fi
+            ;;
+          analyze) ;;
+          upload-sarif)
+            if [[ -z "$CODEQL_SARIF_FILE" ]]; then
+              echo "::error::sarif_file is required for the upload-sarif phase."
+              exit 1
+            fi
+            ;;
+          *)
+            echo "::error::phase must be init, analyze, or upload-sarif."
+            exit 1
+            ;;
+        esac
+
+    - name: Initialize CodeQL
+      if: ${{ inputs.phase == 'init' }}
+      uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      with:
+        languages: ${{ inputs.languages }}
+        build-mode: ${{ inputs.build-mode }}
+
+    # Honor callers that run analysis or uploads after an earlier step failed.
+    - name: Perform CodeQL Analysis
+      if: ${{ always() && steps.validate.outcome == 'success' && inputs.phase == 'analyze' }}
+      uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      with:
+        category: ${{ inputs.category }}
+        output: ${{ inputs.output }}
+
+    - name: Upload SARIF
+      if: ${{ always() && steps.validate.outcome == 'success' && inputs.phase == 'upload-sarif' }}
+      uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+      with:
+        sarif_file: ${{ inputs.sarif_file }}
+        category: ${{ inputs.category }}

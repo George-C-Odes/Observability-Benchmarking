@@ -16,6 +16,8 @@ on:
       - '.github/workflows/nextjs_dash_quality.yml'
       - '.github/actions/upload-artifact/**'
   push:
+    branches:
+      - main
     paths:
       - 'utils/nextjs-dash/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
@@ -46,12 +48,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.11.1'
+          node-version: '26.12.1'
           cache: npm
           cache-dependency-path: utils/nextjs-dash/package-lock.json
 
-      - name: Set up npm 12.2.0
-        run: npm install --global --ignore-scripts npm@12.2.0
+      - name: Set up npm 12.2.1
+        run: npm install --global --ignore-scripts npm@12.2.1
 
       - name: Install dependencies
         run: npm ci

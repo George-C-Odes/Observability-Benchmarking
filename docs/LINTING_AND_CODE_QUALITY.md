@@ -715,7 +715,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@24c54180a607b1449ed407dd24f251e4e9147c8d` (# v4.38.3, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370` (# v4.39.1, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
@@ -726,10 +726,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.73.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.88.0** — checks the module root with warnings denied.
+1. **Oxfmt 0.74.0** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint 1.89.0** — checks the module root with warnings denied.
 3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.0.4** — runs separate Node and jsdom suites.
+4. **Vitest 5.0.5** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.
