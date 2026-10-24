@@ -1,4 +1,5 @@
 <component name="ProjectRunConfigurationManager">
+  <!-- Versions: compose/.env; refresh with node scripts/sync-build-img-runs.mjs -->
   <configuration default="false" name="[build-img] Spark JVM Platform" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>

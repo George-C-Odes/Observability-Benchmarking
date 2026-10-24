@@ -23,7 +23,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.1.1
+### Spring Boot 4.1.2
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -34,7 +34,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.1.1** (latest major release)
+- **Spring Boot 4.1.2** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 5.2.18
+### Micronaut 5.2.20
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 5.2.18** (latest stable)
+- **Micronaut 5.2.20** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -187,7 +187,7 @@ mvn package -Pnative
 - Compile-time DI can be harder to debug
 - Some libraries require Micronaut-specific adapters
 
-### Helidon 4.5.5
+### Helidon 4.5.6
 
 **Official Site**: [https://helidon.io/](https://helidon.io/)
 
@@ -198,7 +198,7 @@ mvn package -Pnative
 - `jlink`-optimised JVM builds produce notably small Docker images
 
 **Implementation Details**:
-- **Helidon 4.5.5** (latest stable, virtual-thread–first architecture)
+- **Helidon 4.5.6** (latest stable, virtual-thread–first architecture)
 - **Helidon SE**: Programmatic, functional-style routing with minimal overhead (Níma)
 - **Helidon MP**: MicroProfile-compliant layer on top of SE (CDI + JAX-RS)
 - Both flavours support JVM and GraalVM native builds
@@ -969,18 +969,18 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.15  | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0   | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.12.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.1.1    | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.1.2    | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.1 | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.2.18   | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.5.5    | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.5.5    | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Micronaut                  | 5.2.20   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.6    | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.6    | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4    | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.3    | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2    | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.7    | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.2    | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.4.2   | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.4.3   | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1   | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2    | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0    | Component library and theming                                        |
@@ -1000,7 +1000,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.10.0   | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.1   | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.1   | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.2   | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.89.0   | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.74.0   | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest   | Deterministic HTTP benchmarking                                      |

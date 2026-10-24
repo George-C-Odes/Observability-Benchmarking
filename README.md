@@ -7,10 +7,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25.0.4-ED8B00.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.1-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.40.1.1-6C63FF.svg)](https://quarkus.io/)
-[![Micronaut](https://img.shields.io/badge/Micronaut-5.2.18-1A1A2E.svg)](https://micronaut.io/)
-[![Helidon](https://img.shields.io/badge/Helidon-4.5.5-008F6B.svg)](https://helidon.io/)
+[![Micronaut](https://img.shields.io/badge/Micronaut-5.2.20-1A1A2E.svg)](https://micronaut.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.5.6-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.4-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.3-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
@@ -85,18 +85,18 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.15  | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0   | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.12.1  | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.1.1    | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.1.2    | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.1 | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.2.18   | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.5.5    | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.5.5    | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Micronaut                  | 5.2.20   | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.6    | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.6    | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4    | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.3    | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2    | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.7    | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.2    | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.4.2   | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.4.3   | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1   | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2    | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0    | Component library and theming                                        |
@@ -116,7 +116,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.10.0   | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.1   | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.1   | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.2   | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.89.0   | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.74.0   | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest   | Deterministic HTTP benchmarking                                      |
@@ -166,12 +166,12 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.4.2 and Material-UI 9.5.0
+  - Built with Next.js 16.4.3 and Material-UI 9.5.0
 
 ### 🚀 REST Service Implementations
 
 #### Java (JDK 25 – Eclipse Temurin)
-- **Spring Boot 4.1.1 (3.5.16 also supported)**
+- **Spring Boot 4.1.2 (3.5.16 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -183,10 +183,10 @@ If you’re searching for projects like this, these are the topics it covers:
 - **Quarkus 3.40.1.1**
   - JVM build (all three thread modes)
   - Native build (all three thread modes)
-- **Micronaut**: 5.2.18
+- **Micronaut**: 5.2.20
   - JVM build (all three thread modes)
   - Native (all three thread modes)
-- **Helidon**: 4.5.5
+- **Helidon**: 4.5.6
   - SE JVM build
     - Virtual threads
   - SE Native build
@@ -509,10 +509,10 @@ The numbers below are a curated summary of a representative run.
 #### Software Versions
 - **Java JDK**: Eclipse Temurin 25.0.4
 - **Java Native**: GraalVM Enterprise 25.0.4-ol9
-- **Spring Boot**: 4.1.1 (3.5.16 also supported)
+- **Spring Boot**: 4.1.2 (3.5.16 also supported)
 - **Quarkus**: 3.40.1.1
-- **Micronaut**: 5.2.18
-- **Helidon**: 4.5.5
+- **Micronaut**: 5.2.20
+- **Helidon**: 4.5.6
 - **Spark**: 3.0.4
 - **Javalin**: 7.2.3
 - **Dropwizard**: 5.0.2

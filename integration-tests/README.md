@@ -78,6 +78,7 @@ The `integration-tests/output/` directory is intentionally gitignored (it’s pe
 - **Colored output**: Blue section headers, Green (✓) for pass, Red (✗) for fail
 - **Exit codes**: 0 when all tests pass; 1 when any test fails
 - **Configurable**: Override service URLs via environment variables
+- **Framework versions**: Loaded from `compose/.env`; missing or empty version entries stop the runner with an error
 - **Run logging**: Saves everything (stdout+stderr) to `integration-tests/output/`
 - **wrk2 smoke checks**: Verifies wrk2 `/ready` and that `docker exec` wrk2 can run a tiny load test
 - **Trace generation (smoke)**: Sends `?log=true` requests, then checks one expected substring in the *last* container log line
@@ -159,14 +160,14 @@ bash ./integration-tests/run-integration-tests.sh
 
 ### Framework Versions
 
-The runner prints the versions it is designed against (these values are embedded in the script):
+The runner loads and prints framework versions from `compose/.env`:
 
 | Framework       | Version  |
 |-----------------|----------|
-| Spring Boot     | 4.1.1    |
+| Spring Boot     | 4.1.2    |
 | Quarkus         | 3.40.1.1 |
-| Micronaut       | 5.2.18   |
-| Helidon SE & MP | 4.5.5    |
+| Micronaut       | 5.2.20   |
+| Helidon SE & MP | 4.5.6    |
 | Spark           | 3.0.4    |
 | Javalin         | 7.2.3    |
 | Dropwizard      | 5.0.2    |

@@ -980,7 +980,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.4.2                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.4.3                  | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2                   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0                   | Component library and theming                                        |
@@ -1000,7 +1000,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.10.0                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.1                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.1                  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.2                  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.89.0                  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.74.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
