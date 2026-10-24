@@ -54,6 +54,7 @@ jobs:
         run: |
           # Use the CLI because pmd/pmd-github-action still declares Node 20.
           curl --fail --silent --show-error --location --retry 3 \
+            --proto '=https' --proto-redir '=https' \
             --output "$RUNNER_TEMP/pmd.zip" \
             "https://github.com/pmd/pmd/releases/download/pmd_releases/${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip"
           printf '%s  %s\n' "$PMD_SHA256" "$RUNNER_TEMP/pmd.zip" | sha256sum --check --strict
