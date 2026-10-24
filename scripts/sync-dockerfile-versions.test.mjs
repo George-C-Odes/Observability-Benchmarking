@@ -22,7 +22,7 @@ test('every service Dockerfile changes only its managed default and is repeatabl
 });
 
 test('comments, CRLF, stage redeclarations, image references and tooling versions are preserved', () => {
-  const original = '# ARG GO_VERSION=0.0.0\r\nARG GO_VERSION=1.2.3 # default\r\nFROM golang:${GO_VERSION} AS builder\r\nARG GO_VERSION\r\nARG OTEL_JAVA_AGENT_VERSION=2.32.0\r\nUSER nonroot\r\n';
+  const original = '# ARG GO_VERSION=0.0.0\r\nARG GO_VERSION=1.2.3 # default\r\nFROM golang:${GO_VERSION} AS builder\r\nARG GO_VERSION\r\nARG OTEL_JAVA_AGENT_VERSION=2.33.0\r\nUSER nonroot\r\n';
   assert.equal(syncDockerfileContent(original, 'GO_VERSION', '2.3.4'), original.replace('=1.2.3', '=2.3.4'));
   assert.equal(syncDockerfileContent('  arg GO_VERSION = 1.2.3  \n', 'GO_VERSION', '2.3.4'), '  arg GO_VERSION = 2.3.4  \n');
 });
