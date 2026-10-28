@@ -14,11 +14,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <caffeine.version>3.3.1</caffeine.version>
         <junit-jupiter.version>5.14.4</junit-jupiter.version>
-        <surefire-plugin.version>3.6.0</surefire-plugin.version>
+        <surefire-plugin.version>3.6.1</surefire-plugin.version>
         <checkstyle.config.location>../../checkstyle.xml</checkstyle.config.location>
         <checkstyle.suppressions.location>../../checkstyle-suppressions.xml</checkstyle.suppressions.location>
         <lombok.version>1.18.46</lombok.version>
-        <logback.version>1.6.5</logback.version>
+        <logback.version>1.6.6</logback.version>
 
         <micronaut.version>5.2.20</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
@@ -31,7 +31,7 @@
         <micrometer-jvm-extras.version>0.3.0</micrometer-jvm-extras.version>
 
         <opentelemetry.version>1.67.0</opentelemetry.version>
-        <opentelemetry.instrumentation.version>2.33.0</opentelemetry.instrumentation.version>
+        <opentelemetry.instrumentation.version>2.33.1</opentelemetry.instrumentation.version>
     </properties>
 
     <dependencyManagement>
@@ -282,7 +282,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.15</version>
+                <version>0.8.16</version>
                 <configuration>
                     <excludes>
                         <exclude>io/github/georgecodes/benchmarking/micronaut/MicronautApplication*</exclude>

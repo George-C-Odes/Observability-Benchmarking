@@ -14,7 +14,7 @@
     <findsecbugs.version>1.14.0</findsecbugs.version>
     <google-java-format.version>1.36.1</google-java-format.version>
     <jacoco.skip>false</jacoco.skip>
-    <jacoco.version>0.8.15</jacoco.version>
+    <jacoco.version>0.8.16</jacoco.version>
     <maven.compiler.release>25</maven.compiler.release>
     <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
     <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
@@ -33,7 +33,7 @@
     <spotbugs-maven-plugin.version>4.10.5.0</spotbugs-maven-plugin.version>
     <spotbugs.max.heap>1024</spotbugs.max.heap>
     <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
-    <surefire-plugin.version>3.6.0</surefire-plugin.version>
+    <surefire-plugin.version>3.6.1</surefire-plugin.version>
     <test.jvm.additionalArgs>--add-opens java.base/java.lang=ALL-UNNAMED</test.jvm.additionalArgs>
     <lombok.version>1.18.46</lombok.version>
   </properties>
