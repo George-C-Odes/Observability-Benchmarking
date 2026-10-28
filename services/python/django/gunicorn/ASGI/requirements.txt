@@ -8,7 +8,7 @@ asgiref==3.13.0
     # via
     #   django
     #   opentelemetry-instrumentation-asgi
-cachetools==7.2.4
+cachetools==7.2.6
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 click==8.5.0
     # via uvicorn
@@ -16,7 +16,7 @@ django==6.1.2
     # via -r services/python/django/gunicorn/ASGI/requirements.in
 googleapis-common-protos==1.76.0
     # via opentelemetry-exporter-otlp-proto-grpc
-grpcio==1.84.1
+grpcio==1.85.0
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.in
     #   opentelemetry-exporter-otlp-proto-grpc
