@@ -576,8 +576,8 @@ React: 19.3.1
 TypeScript: 7.0.2
 Vitest: 5.0.5
 @vitest/coverage-v8: 5.0.5
-Oxlint: 1.89.0
-Oxfmt: 0.74.0
+Oxlint: 1.90.0
+Oxfmt: 0.75.0
 ```
 
 #### Test Structure
@@ -1354,7 +1354,7 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 
 All 12 Java/Maven JVM modules are instrumented with the
 [JaCoCo Maven plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
-(version 0.8.15). Coverage reports are generated automatically during the
+(version 0.8.16). Coverage reports are generated automatically during the
 Maven `verify` phase — no extra flags are needed.
 
 #### Running locally
