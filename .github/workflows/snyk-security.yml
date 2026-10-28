@@ -57,9 +57,10 @@ jobs:
         if: env.SNYK_TOKEN != ''
         uses: ./.github/actions/setup-python
         with:
-          python-version: '3.13'
           cache: pip
-          cache-dependency-path: services/python/django/gunicorn/*/requirements.txt
+          cache-dependency-path: |
+            .github/requirements/**
+            services/python/django/gunicorn/*/requirements.txt
 
       - name: Prepare dependency resolution
         if: env.SNYK_TOKEN != ''
@@ -68,10 +69,15 @@ jobs:
           # Snyk invokes native modules' Maven wrappers directly on Linux.
           # These scripts are stored without executable permission in Git.
           find services/java -type f -name mvnw -exec chmod +x {} +
-          # Snyk needs installed packages to resolve Python's transitive dependencies.
-          python -m pip install \
-            -r services/python/django/gunicorn/WSGI/requirements.txt \
-            -r services/python/django/gunicorn/ASGI/requirements.txt
+
+      # Snyk needs installed packages to resolve Python's transitive dependencies.
+      - name: Install Python dependencies
+        if: env.SNYK_TOKEN != ''
+        uses: ./.github/actions/install-python-dependencies
+        with:
+          requirements: |
+            services/python/django/gunicorn/WSGI/requirements.txt
+            services/python/django/gunicorn/ASGI/requirements.txt
 
       # Runs Snyk Code (SAST) analysis and exports SARIF for GitHub Code Scanning.
       # continue-on-error ensures SARIF upload still runs even if vulnerabilities are flagged.

@@ -11,6 +11,8 @@ on:
       - 'services/python/**'
       - '.github/workflows/django_python_coverage.yml'
       - '.github/actions/setup-python/**'
+      - '.github/actions/install-python-dependencies/**'
+      - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
       - 'codecov.yml'
   push:
@@ -20,6 +22,8 @@ on:
       - 'services/python/**'
       - '.github/workflows/django_python_coverage.yml'
       - '.github/actions/setup-python/**'
+      - '.github/actions/install-python-dependencies/**'
+      - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
       - 'codecov.yml'
 
@@ -56,21 +60,22 @@ jobs:
       - name: Set up Python
         uses: ./.github/actions/setup-python
         with:
-          python-version: '3.13'
           cache: pip
           cache-dependency-path: |
+            .github/requirements/**
             services/python/django/gunicorn/common/pyproject.toml
             ${{ matrix.module_dir }}/requirements.txt
             ${{ matrix.module_dir }}/requirements-dev.txt
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install \
-            -e services/python/django/gunicorn/common \
-            -r ${{ matrix.module_dir }}/requirements.txt \
-            -r ${{ matrix.module_dir }}/requirements-dev.txt \
-            coverage[toml]
+        uses: ./.github/actions/install-python-dependencies
+        with:
+          requirements: |
+            ${{ matrix.module_dir }}/requirements.txt
+            ${{ matrix.module_dir }}/requirements-dev.txt
+            .github/requirements/coverage.in
+          local-project: services/python/django/gunicorn/common
+          editable: 'true'
 
       - name: Run tests with coverage
         id: test

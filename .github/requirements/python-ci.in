@@ -1,0 +1,7 @@
+# Single hash inventory for Python CI. Jobs install only their selected inputs.
+-r ../../services/python/django/gunicorn/WSGI/requirements.txt
+-r ../../services/python/django/gunicorn/ASGI/requirements.txt
+-r ../../services/python/django/gunicorn/WSGI/requirements-dev.txt
+-r ../../services/python/django/gunicorn/ASGI/requirements-dev.txt
+-r build.in
+-r coverage.in

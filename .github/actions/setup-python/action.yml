@@ -3,8 +3,9 @@ description: Set up Python using the repository's shared, pinned GitHub action.
 
 inputs:
   python-version:
-    description: Python version to install.
-    required: true
+    description: Python version to install; defaults to the repository's CI version.
+    required: false
+    default: '3.13'
   cache:
     description: Package manager whose dependencies should be cached (pip, pipenv, or poetry).
     required: false
