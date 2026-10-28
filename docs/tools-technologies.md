@@ -558,6 +558,39 @@ limits_config:
 
 **Purpose**: Distributed tracing backend
 
+The Compose stack runs Tempo 3.1.1 in monolithic mode with local storage; Kafka is not required.
+TraceQL metrics use the live-store and backend blocks, so the removed `local-blocks`
+metrics-generator processor is not needed. Alloy continues to generate span metrics.
+
+Tempo persists its WAL, blocks, and scheduler state in the Compose `tempo-data` named
+volume mounted at `/var/tempo`. This keeps write-heavy storage on Docker's Linux
+filesystem instead of a Windows bind mount. `data/tempo` is no longer used. The
+volume survives container recreation; `docker compose down -v` deletes it along
+with other project volumes.
+
+For benchmark ingestion, the configuration retains the 200 MB/s allowance and
+400 MB burst, removes the 10,000-live-trace count cap, and uses a bounded 512 MiB
+live-trace payload buffer. This buffer is not a process memory limit. Eligible
+traces drain to the WAL every second; blocks complete with four workers and a
+50 MiB block threshold. `GOMEMLIMIT` defaults to a soft 4 GiB Go memory target;
+override it with `TEMPO_GOMEMLIMIT` when changing the Docker VM memory budget.
+Neither this target nor the payload buffer is a hard process memory limit.
+Retention remains seven
+days. Recent blocks remain queryable in the live-store for 20 minutes, covering
+the 15-minute backend query boundary. Search and TraceQL metrics exclude the newest
+30 seconds by default; trace-by-ID lookup can still retrieve recent ingested data.
+
+These settings are a starting point, not a throughput guarantee. Keep the same
+Tempo configuration and sampling across compared targets. Before accepting a run,
+check `tempo_discarded_spans_total`,
+`tempo_live_store_back_pressure_seconds_total`,
+`tempo_live_store_complete_queue_length`, and Alloy's
+`otelcol_exporter_queue_size`, `otelcol_exporter_send_failed_spans_total`, and
+`otelcol_exporter_enqueue_failed_spans_total` (filter the Alloy metrics to its
+Tempo exporter). Rising backpressure or a sustained queue means telemetry is
+constraining the run. Avoid broad historical searches during measured load and
+check Tempo CPU, memory, and disk capacity when increasing offered trace volume.
+
 **Why Tempo**:
 - Trace ID-based storage (no indexing required)
 - Cost-effective
@@ -984,25 +1017,25 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Frontend**      | Library            | React                      | 19.3.1   | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2    | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0    | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.2.4   | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.3.0   | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.9    | Log aggregation                                                      |
-| **Observability** | Tracing            | Tempo                      | 2.10.10  | Distributed tracing backend                                          |
+| **Observability** | Tracing            | Tempo                      | 3.1.1    | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.3    | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 2.4.1    | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 2.4.2    | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2   | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.0   | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1   | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1    | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.2.4    | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.2.6    | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+      | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2       | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.8.2   | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0   | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.1   | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.2   | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.89.0   | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.74.0   | Next.js dashboard formatting                                         |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.3   | Python linting and code formatting                                   |
+| **Quality**       | Linter             | Oxlint                     | 1.90.0   | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.75.0   | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest   | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 5 / 6    | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.0.5    | Frontend unit testing                                                |

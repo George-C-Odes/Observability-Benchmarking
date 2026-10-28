@@ -110,16 +110,28 @@ services:
 
   tempo:
     profiles: ["${DOCKER_PROF_TEMPO:-skip}"]
-    image: grafana/tempo:2.10.10
+    image: grafana/tempo:3.1.1
     container_name: tempo
+    environment:
+      # Soft Go memory target; leave VM headroom for the benchmarked services.
+      GOMEMLIMIT: ${TEMPO_GOMEMLIMIT:-4GiB}
     command:
       - "-config.file=/etc/tempo-config/config.yaml"
-      - "-auth.enabled=false"            # single-tenant; no X-Scope-OrgID
-      - "-server.http-listen-port=3200"
       - "-log.level=warn"
     volumes:
       - ${HOST_REPO}/config/tempo:/etc/tempo-config:ro
-      - ${HOST_REPO}/data/tempo:/var/tempo
+      # Keep WAL/block I/O on Docker's Linux filesystem, off the Windows bind mount.
+      - tempo-data:/var/tempo
     ports:
       - "3200:3200"   # Tempo HTTP / API / TraceQL
     cpuset: *default_performance_cores
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD", "/tempo", "-health", "-health.url=http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+volumes:
+  tempo-data:

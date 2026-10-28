@@ -184,3 +184,6 @@ vitest-*.json
 # /docs/_site/
 /docs/vendor/
 /services/python/django/gunicorn/common/build/
+
+# Generated Sonar analysis data
+.sonar/
