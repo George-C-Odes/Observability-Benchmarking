@@ -182,23 +182,26 @@ node .\scripts\render-readmes.mjs "\absolute\path\to\your\Observability-Benchmar
 
 At the moment, the active generated README inventory is:
 
-| Template                                                | Output                                         | Notes                                                                          |
-|---------------------------------------------------------|------------------------------------------------|--------------------------------------------------------------------------------|
-| `README.template.md`                                    | `README.md`                                    | Root project README                                                            |
-| `docs/architecture.template.md`                         | `docs/architecture.md`                         | Architecture guide                                                             |
-| `docs/benchmarking.template.md`                         | `docs/benchmarking.md`                         | Benchmarking guide                                                             |
-| `docs/TESTING.template.md`                              | `docs/TESTING.md`                              | Testing guide documentation                                                    |
-| `docs/tools-technologies.template.md`                   | `docs/tools-technologies.md`                   | Tools and technologies overview                                                |
-| `integration-tests/README.template.md`                  | `integration-tests/README.md`                  | Integration test documentation                                                 |
-| `services/README.template.md`                           | `services/README.md`                           | Services overview                                                              |
-| `services/java/helidon/README.template.md`              | `services/java/helidon/README.md`              | Shared Helidon guide; module READMEs link to its generated framework version   |
-| `services/java/micronaut/README.template.md`            | `services/java/micronaut/README.md`            | Shared Micronaut guide; module READMEs link to its generated framework version |
-| `services/java/quarkus/jvm/README.template.md`          | `services/java/quarkus/jvm/README.md`          | Quarkus JVM service                                                            |
-| `services/java/quarkus/native/README.template.md`       | `services/java/quarkus/native/README.md`       | Quarkus native service                                                         |
-| `services/java/spring/jvm/netty/README.template.md`     | `services/java/spring/jvm/netty/README.md`     | Spring JVM Netty service                                                       |
-| `services/java/spring/jvm/tomcat/README.template.md`    | `services/java/spring/jvm/tomcat/README.md`    | Spring JVM Tomcat service                                                      |
-| `services/java/spring/native/netty/README.template.md`  | `services/java/spring/native/netty/README.md`  | Spring native Netty service                                                    |
-| `services/java/spring/native/tomcat/README.template.md` | `services/java/spring/native/tomcat/README.md` | Spring native Tomcat service                                                   |
+| Template                                                  | Output                                           | Notes                                                                          |
+|-----------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------|
+| `README.template.md`                                      | `README.md`                                      | Root project README                                                            |
+| `docs/architecture.template.md`                           | `docs/architecture.md`                           | Architecture guide                                                             |
+| `docs/benchmarking.template.md`                           | `docs/benchmarking.md`                           | Benchmarking guide                                                             |
+| `docs/TESTING.template.md`                                | `docs/TESTING.md`                                | Testing guide documentation                                                    |
+| `docs/tools-technologies.template.md`                     | `docs/tools-technologies.md`                     | Tools and technologies overview                                                |
+| `integration-tests/README.template.md`                    | `integration-tests/README.md`                    | Integration test documentation                                                 |
+| `services/README.template.md`                             | `services/README.md`                             | Services overview                                                              |
+| `services/java/helidon/README.template.md`                | `services/java/helidon/README.md`                | Shared Helidon guide; module READMEs link to its generated framework version   |
+| `services/java/micronaut/README.template.md`              | `services/java/micronaut/README.md`              | Shared Micronaut guide; module READMEs link to its generated framework version |
+| `services/java/quarkus/jvm/README.template.md`            | `services/java/quarkus/jvm/README.md`            | Quarkus JVM service                                                            |
+| `services/java/quarkus/native/README.template.md`         | `services/java/quarkus/native/README.md`         | Quarkus native service                                                         |
+| `services/java/spring/jvm/netty/README.template.md`       | `services/java/spring/jvm/netty/README.md`       | Spring JVM Netty service                                                       |
+| `services/java/spring/jvm/tomcat/README.template.md`      | `services/java/spring/jvm/tomcat/README.md`      | Spring JVM Tomcat service                                                      |
+| `services/java/spring/native/netty/README.template.md`    | `services/java/spring/native/netty/README.md`    | Spring native Netty service                                                    |
+| `services/java/spring/native/tomcat/README.template.md`   | `services/java/spring/native/tomcat/README.md`   | Spring native Tomcat service                                                   |
+| `services/python/django/README.template.md`               | `services/python/django/README.md`               | Shared Django guide; Python and Django versions from `compose/.env`            |
+| `services/python/django/gunicorn/ASGI/README.template.md` | `services/python/django/gunicorn/ASGI/README.md` | Django reactive service                                                        |
+| `services/python/django/gunicorn/WSGI/README.template.md` | `services/python/django/gunicorn/WSGI/README.md` | Django platform service                                                        |
 
 The default list lives in `scripts/render-readmes.manifest.json` under `defaultTemplatePaths`.
 

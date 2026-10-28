@@ -1,3 +1,5 @@
+<!-- Generated from `services/python/django/gunicorn/WSGI/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/python/django/gunicorn/WSGI/README.md` directly. -->
+
 # Django Platform — Benchmarking Service
 
 WSGI / Gunicorn `gthread` Django module for the Observability Benchmarking suite.
@@ -21,7 +23,7 @@ Health probes:
 
 ## Runtime model
 
-- Django 6 on WSGI
+- Django 6.1.2 on WSGI
 - Gunicorn `gthread`
 - Preloaded 50,000-entry shared cache via copy-on-write
 - OpenTelemetry SDK initialized per worker after fork
@@ -78,7 +80,7 @@ The development server starts on `http://127.0.0.1:8000/hello/platform`.
 docker buildx build `
   -f services/python/django/gunicorn/WSGI/Dockerfile `
   -t django-platform:6.1.2_latest `
-  --build-arg PYTHON_VERSION=3.13.15 `
+  --build-arg PYTHON_VERSION=3.13.18 `
   --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1.2_latest `
   --load `
   services/python/django

@@ -14,6 +14,9 @@
     "services/java/spring/jvm/netty/README.template.md",
     "services/java/spring/jvm/tomcat/README.template.md",
     "services/java/spring/native/netty/README.template.md",
-    "services/java/spring/native/tomcat/README.template.md"
+    "services/java/spring/native/tomcat/README.template.md",
+    "services/python/django/README.template.md",
+    "services/python/django/gunicorn/ASGI/README.template.md",
+    "services/python/django/gunicorn/WSGI/README.template.md"
   ]
 }

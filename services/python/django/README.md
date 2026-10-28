@@ -1,6 +1,8 @@
+<!-- Generated from `services/python/django/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/python/django/README.md` directly. -->
+
 # Django Benchmark Modules
 
-Django-based benchmark implementations are organized under a common Gunicorn-oriented layout.
+Django 6.1.2 benchmark implementations use Python 3.13.18 and are organized under a common Gunicorn-oriented layout.
 
 ## Structure
 
@@ -14,6 +16,19 @@ The runtime naming conventions remain unchanged:
 
 - `django-platform`
 - `django-reactive`
+
+## Version source and updates
+
+Set `PYTHON_VERSION` and `DJANGO_VERSION` in [compose/.env](../../../compose/.env), then run **[doc] Render Updates** in IntelliJ to refresh the generated documentation, Dockerfile defaults, and build image configurations.
+
+For a documentation-only refresh, run from the repository root:
+
+```powershell
+node scripts/render-readmes.mjs
+node scripts/render-readmes.mjs --check
+```
+
+Edit the sibling `README.template.md` files when changing this guide or the ASGI/WSGI READMEs. Django dependency pins in the runtime requirements files must still be updated separately when upgrading Django.
 
 ## Local development (IntelliJ IDEA)
 
@@ -230,7 +245,7 @@ python -m ruff format services/python/django/gunicorn/common services/python/dja
 docker buildx build `
     -f services/python/django/gunicorn/WSGI/Dockerfile `
     -t django-platform:6.1.2_latest `
-    --build-arg PYTHON_VERSION=3.13.15 `
+    --build-arg PYTHON_VERSION=3.13.18 `
     --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1.2_latest `
     --load `
     services/python/django
@@ -238,7 +253,7 @@ docker buildx build `
 docker buildx build `
     -f services/python/django/gunicorn/ASGI/Dockerfile `
     -t django-reactive:6.1.2_latest `
-    --build-arg PYTHON_VERSION=3.13.15 `
+    --build-arg PYTHON_VERSION=3.13.18 `
     --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.1.2_latest `
     --load `
     services/python/django
