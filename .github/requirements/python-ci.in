@@ -5,3 +5,4 @@
 -r ../../services/python/django/gunicorn/ASGI/requirements-dev.txt
 -r build.in
 -r coverage.in
+-r qodana.in

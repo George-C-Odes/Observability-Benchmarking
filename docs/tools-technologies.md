@@ -230,7 +230,7 @@ mvn package -Pnative
 - Smaller community and ecosystem than Spring or Quarkus
 - Helidon MP's CDI overhead is significant compared to SE
 
-### SparkJava 3.0.4 (Zoomba fork)
+### SparkJava 3.0.5 (Zoomba fork)
 
 **Official Site**: [https://sparkjava.com/](https://sparkjava.com/) | [Zoomba fork](https://github.com/nicholaszoomba/spark)
 
@@ -241,7 +241,7 @@ mvn package -Pnative
 - Useful for isolating framework overhead in benchmarks
 
 **Implementation Details**:
-- **SparkJava 3.0.4** (Zoomba fork with virtual thread support)
+- **SparkJava 3.0.5** (Zoomba fork with virtual thread support)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -266,7 +266,7 @@ mvn package -Pnative
 - No native image support
 - Official project is largely unmaintained; the Zoomba fork keeps it viable
 
-### Javalin 7.2.3
+### Javalin 7.2.4
 
 **Official Site**: [https://javalin.io/](https://javalin.io/)
 
@@ -277,7 +277,7 @@ mvn package -Pnative
 - Good middle ground between Spark's minimalism and Spring's richness
 
 **Implementation Details**:
-- **Javalin 7.2.3** (latest major release)
+- **Javalin 7.2.4** (latest major release)
 - Embedded Jetty server
 - JVM builds only (no native image support)
 
@@ -1007,8 +1007,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Micronaut                  | 5.2.20   | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.6    | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.6    | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
-| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.4    | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.2.3    | Lightweight REST server                                              |
+| **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.5    | Minimal HTTP server (virtual-thread friendly)                        |
+| **Backend**       | Framework          | Javalin                    | 7.2.4    | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2    | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.1.7    | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.3.0    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |

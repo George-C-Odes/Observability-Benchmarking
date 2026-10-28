@@ -337,6 +337,9 @@ packaging==26.3 \
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
     #   opentelemetry-instrumentation
     #   wheel
+platformdirs==4.13.7 \
+    --hash=sha256:47664602fbecad0a6efa561fb690d20dbc26875fe8aedf65ba362935df619bbb
+    # via -r .github/requirements/qodana.in
 protobuf==7.36.2 \
     --hash=sha256:89f23aa53c24553a2416fd4fd1ec06f74fa42b14b546d8883128813f775bbfd2 \
     --hash=sha256:912c1221170e16c08d1f086762f563dd61ff83c18b5fa6652952dfaded66f728 \

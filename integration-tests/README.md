@@ -179,8 +179,8 @@ The runner loads and prints framework versions from `compose/.env`:
 | Quarkus         | 3.40.1.1 |
 | Micronaut       | 5.2.20   |
 | Helidon SE & MP | 4.5.6    |
-| Spark           | 3.0.4    |
-| Javalin         | 7.2.3    |
+| Spark           | 3.0.5    |
+| Javalin         | 7.2.4    |
 | Dropwizard      | 5.0.2    |
 | Vert.x          | 5.1.7    |
 | Pekko           | 1.3.0    |

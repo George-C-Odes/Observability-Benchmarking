@@ -192,9 +192,11 @@ At the moment, the active generated README inventory is:
 | `integration-tests/README.template.md`                    | `integration-tests/README.md`                    | Integration test documentation                                                 |
 | `services/README.template.md`                             | `services/README.md`                             | Services overview                                                              |
 | `services/java/helidon/README.template.md`                | `services/java/helidon/README.md`                | Shared Helidon guide; module READMEs link to its generated framework version   |
+| `services/java/javalin/jvm/README.template.md`            | `services/java/javalin/jvm/README.md`            | Javalin JVM service                                                            |
 | `services/java/micronaut/README.template.md`              | `services/java/micronaut/README.md`              | Shared Micronaut guide; module READMEs link to its generated framework version |
 | `services/java/quarkus/jvm/README.template.md`            | `services/java/quarkus/jvm/README.md`            | Quarkus JVM service                                                            |
 | `services/java/quarkus/native/README.template.md`         | `services/java/quarkus/native/README.md`         | Quarkus native service                                                         |
+| `services/java/spark/jvm/README.template.md`              | `services/java/spark/jvm/README.md`              | Spark JVM service                                                              |
 | `services/java/spring/jvm/netty/README.template.md`       | `services/java/spring/jvm/netty/README.md`       | Spring JVM Netty service                                                       |
 | `services/java/spring/jvm/tomcat/README.template.md`      | `services/java/spring/jvm/tomcat/README.md`      | Spring JVM Tomcat service                                                      |
 | `services/java/spring/native/netty/README.template.md`    | `services/java/spring/native/netty/README.md`    | Spring native Netty service                                                    |

@@ -195,7 +195,9 @@ See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
 The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan (`jetbrains/qodana-python-community:2026.2`) that runs PyCharm Community-based inspections on all code under `services/python/django/`. The scan is configured by `services/python/django/qodana.yaml` and enforces the same quality gate as the JVM Qodana scopes (`critical: 0`, `high: 0`, `moderate: 0`).
 
-The `qodana.yaml` includes a `bootstrap` command that installs the project dependencies (Django, OpenTelemetry, gunicorn, cachetools, and the local `obbench-django-common` package) inside the Qodana container before analysis. This ensures Qodana can resolve imports and its findings match what the IDE reports. Any requirement containing `pyroscope` (for example, `pyroscope-io` or `pyroscope-otel`) is filtered out because these agents require a Rust build toolchain not present in the container.
+The `qodana.yaml` bootstrap uses the shared Python CI installer and hash inventory to install Django, OpenTelemetry, gunicorn, cachetools, and the local `obbench-django-common` package for import resolution. Third-party dependencies and local build tools require verified hashes and wheels. The local package is built from a temporary copy with dependency fetching disabled. Pyroscope packages remain excluded from this analysis-only environment, and the bootstrap permits the analyzer's older Python interpreter through `PIP_IGNORE_REQUIRES_PYTHON=1`.
+
+The shared requirements and installer are mounted read-only under `/opt/python-ci`, outside the Django analysis root. Include both mounts in local scans; missing assets fail the bootstrap instead of falling back to an unhashed install.
 
 The `qodana` job currently uses `continue-on-error: true`, so even when findings are present the overall workflow still succeeds and the HTML report is published to GitHub Pages. In the Actions UI, the job is marked as an allowed failure/neutral (while the failing step retains a red ❌). Once findings are resolved or baselined, `continue-on-error` can be removed.
 
@@ -205,12 +207,13 @@ The `qodana` job currently uses `continue-on-error: true`, so even when findings
 New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
 
 docker run --rm `
-  -v "${PWD}:/data/project" `
+  -v "${PWD}/services/python/django:/data/project" `
+  -v "${PWD}/.github/requirements:/opt/python-ci/requirements:ro" `
+  -v "${PWD}/.github/actions/install-python-dependencies:/opt/python-ci/installer:ro" `
   -v "${PWD}/.qodana/django-python:/data/results" `
   jetbrains/qodana-python-community:2026.2 `
   --project-dir=/data/project `
-  --config=/data/project/services/python/django/qodana.yaml `
-  --only-directory=services/python/django `
+  --config=/data/project/qodana.yaml `
   --results-dir=/data/results
 ```
 

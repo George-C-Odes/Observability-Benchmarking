@@ -180,9 +180,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm-platform:3.0.4_latest `
-  --build-arg SPARK_VERSION=3.0.4 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.4_latest `
+  -t spark-jvm-platform:3.0.5_latest `
+  --build-arg SPARK_VERSION=3.0.5 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.5_latest `
   --load `
   services/java
 ```
@@ -190,9 +190,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm-virtual:3.0.4_latest `
-  --build-arg SPARK_VERSION=3.0.4 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.4_latest `
+  -t spark-jvm-virtual:3.0.5_latest `
+  --build-arg SPARK_VERSION=3.0.5 `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.5_latest `
   --load `
   services/java
 ```
@@ -200,9 +200,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-platform:7.2.3_latest `
-  --build-arg JAVALIN_VERSION=7.2.3 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.3_latest `
+  -t javalin-jvm-platform:7.2.4_latest `
+  --build-arg JAVALIN_VERSION=7.2.4 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.4_latest `
   --load `
   services/java
 ```
@@ -210,9 +210,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-virtual:7.2.3_latest `
-  --build-arg JAVALIN_VERSION=7.2.3 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.3_latest `
+  -t javalin-jvm-virtual:7.2.4_latest `
+  --build-arg JAVALIN_VERSION=7.2.4 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.4_latest `
   --load `
   services/java
 ```

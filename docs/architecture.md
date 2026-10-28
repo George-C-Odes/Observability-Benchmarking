@@ -57,10 +57,10 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
   - Virtual threads (Helidon 4 is virtual-thread–first)
 - Helidon MP 4.5.6 (JVM and Native)
   - Virtual threads (MicroProfile / CDI / JAX-RS)
-- Spark 3.0.4 (JVM)
+- Spark 3.0.5 (JVM)
   - Platform threads
   - Virtual threads
-- Javalin 7.2.3 (JVM)
+- Javalin 7.2.4 (JVM)
   - Platform threads
   - Virtual threads
 - Dropwizard 5.0.2 (JVM)

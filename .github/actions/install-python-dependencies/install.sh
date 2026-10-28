@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-args=(--require-hashes --only-binary :all: --constraint .github/requirements/python-ci.txt)
+python_command=${PYTHON_COMMAND:-python}
+requirements_dir=${PYTHON_CI_REQUIREMENTS_DIR:-.github/requirements}
+args=(--constraint "$requirements_dir/python-ci.txt")
 count=0
 while IFS= read -r requirement || [[ -n "$requirement" ]]; do
   requirement=${requirement%$'\r'}
@@ -19,20 +21,25 @@ if [[ "$EDITABLE" != 'true' && "$EDITABLE" != 'false' ]]; then
   exit 1
 fi
 if [[ -n "$LOCAL_PROJECT" ]]; then
-  args+=(--requirement .github/requirements/build.in)
+  args+=(--requirement "$requirements_dir/build.in")
 fi
-python -m pip install "${args[@]}"
+# Qodana bundles an older pip that does not apply constraint hashes correctly.
+# Bootstrap a verified pip wheel before using the shared dependency inventory.
+"$python_command" -m pip install --require-hashes --only-binary :all: --no-deps \
+  --constraint "$requirements_dir/pip.in" \
+  --requirement "$requirements_dir/pip.txt"
+"$python_command" -m pip install --require-hashes --only-binary :all: "${args[@]}"
 
 if [[ -n "$LOCAL_PROJECT" ]]; then
   # The checked-out repository package is deliberately built from local source.
   # Its build tools were hash-verified above; disable dependency fetching and
   # build isolation so this step cannot download unverified build dependencies.
-  args=(--no-deps --no-build-isolation --no-index --only-binary :all:)
+  args=()
   if [[ "$EDITABLE" == 'true' ]]; then
     args+=(--editable "$LOCAL_PROJECT")
   else
     args+=("$LOCAL_PROJECT")
   fi
-  python -m pip install "${args[@]}"
+  "$python_command" -m pip install --no-deps --no-build-isolation --no-index --only-binary :all: "${args[@]}"
 fi
-python -m pip check
+"$python_command" -m pip check
