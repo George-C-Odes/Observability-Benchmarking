@@ -8,7 +8,7 @@ services:
   alloy:
     profiles: ["${DOCKER_PROF_ALLOY:-skip}"]
     image: grafana/alloy:v1.10.2
-    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.20.1
+    #eBPF profiler for windows wsl2 -> 1.10.2 works, version >= 1.11.0 NOT WORKING! latest is 1.21.2
     container_name: alloy
     command:
       - run
@@ -43,23 +43,16 @@ services:
 
   grafana:
     profiles: ["${DOCKER_PROF_GRAFANA:-skip}"]
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.0
     container_name: grafana
-    entrypoint: ["/bin/bash","-lc"]
-    command:
-      - |
-        exec /usr/share/grafana/bin/grafana server \
-          --homepath=/usr/share/grafana \
-          --config=/etc/grafana-config/grafana.ini \
-          1> >(/bin/grep -vE '"logger":"tsdb\.(pyroscope|tempo|loki|mimir)"') \
-          2> >(/bin/grep -vE '"logger":"tsdb\.(pyroscope|tempo|loki|mimir)"' >&2)
-      # start grafana and strip plugin debug lines from stdout
     volumes:
       - ${HOST_REPO}/config/grafana:/etc/grafana-config
       - ${HOST_REPO}/config/grafana/datasources:/etc/grafana/provisioning/datasources
     ports:
       - "3000:3000"
     environment:
+      # Preserve the custom config path with the image's standard entrypoint.
+      GF_PATHS_CONFIG: "/etc/grafana-config/grafana.ini"
       GF_SECURITY_ADMIN_USER: "a"
       GF_SECURITY_ADMIN_PASSWORD: "a"
       GF_PLUGINS_PREINSTALL_SYNC: "grafana-llm-app"
@@ -68,7 +61,7 @@ services:
       GF_DIAGNOSTICS_PROFILING_PORT: 6060
       GF_METRICS_ENABLED: true
       GF_LOG_LEVEL: "warn"
-      GF_LOG_FILTERS: "tsdb.pyroscope:warn tsdb.tempo:warn tsdb.loki:warn tsdb.mimir:warn"
+      GF_LOG_FILTERS: "tsdb.pyroscope:warn,tsdb.tempo:warn,tsdb.loki:warn,tsdb.mimir:warn"
     env_file:
       - path: ~/.grafana_dev_datasources
         required: false
@@ -103,7 +96,7 @@ services:
 
   pyroscope:
     profiles: ["${DOCKER_PROF_PYROSCOPE:-skip}"]
-    image: grafana/pyroscope:2.4.1
+    image: grafana/pyroscope:2.4.2
     container_name: pyroscope
     ports:
       - "4040:4040"
