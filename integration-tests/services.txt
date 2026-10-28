@@ -1,0 +1,26 @@
+# id|URL environment variable|host port|response substring|health statuses|alternative health paths|endpoint~thread marker[;...]
+spring-jvm-tomcat-platform|SPRING_JVM_TOMCAT_PLATFORM_URL|8080|Boot|200|/actuator/metrics;/actuator/health/readiness;/actuator/health/liveness|/hello/platform~http-nio
+spring-jvm-tomcat-virtual|SPRING_JVM_TOMCAT_VIRTUAL_URL|8081|Boot|200|/actuator/metrics;/actuator/health/readiness;/actuator/health/liveness|/hello/virtual~VirtualThread
+spring-jvm-netty|SPRING_JVM_NETTY_URL|8082|Boot|200|/actuator/metrics;/actuator/health/readiness;/actuator/health/liveness|/hello/reactive~reactor-http
+spring-native-tomcat-platform|SPRING_NATIVE_TOMCAT_PLATFORM_URL|8083|Boot|200|/actuator/metrics;/actuator/health/readiness;/actuator/health/liveness|/hello/platform~http-nio
+spring-native-tomcat-virtual|SPRING_NATIVE_TOMCAT_VIRTUAL_URL|8084|Boot|200|/actuator/metrics;/actuator/health/readiness;/actuator/health/liveness|/hello/virtual~VirtualThread
+spring-native-netty|SPRING_NATIVE_NETTY_URL|8085|Boot|200|/actuator/metrics;/actuator/health/readiness;/actuator/health/liveness|/hello/reactive~reactor-http
+quarkus-jvm|QUARKUS_JVM_URL|8086|Quarkus|200|/q/metrics/json;/q/health/ready;/q/health/live|/hello/platform~executor-thread;/hello/virtual~vthread;/hello/reactive~vert.x-eventloop-thread
+quarkus-native|QUARKUS_NATIVE_URL|8087|Quarkus|200|/q/metrics/json;/q/health/ready;/q/health/live|/hello/platform~executor-thread;/hello/virtual~vthread;/hello/reactive~vert.x-eventloop-thread
+micronaut-jvm|MICRONAUT_JVM_URL|8088|Micronaut|200|/metrics;/health|/hello/platform~isVirtual: 'false';/hello/virtual~isVirtual: 'true';/hello/reactive~EventLoopGroup;/health~
+micronaut-native|MICRONAUT_NATIVE_URL|8089|Micronaut|200|/metrics;/health|/hello/platform~isVirtual: 'false';/hello/virtual~isVirtual: 'true';/hello/reactive~EventLoopGroup;/health~
+helidon-se-jvm|HELIDON_SE_JVM_URL|8090|Helidon|200,204|/observe/health|/hello/virtual~isVirtual: 'true';/observe/health~
+helidon-se-native|HELIDON_SE_NATIVE_URL|8091|Helidon|200,204|/observe/health|/hello/virtual~isVirtual: 'true';/observe/health~
+helidon-mp-jvm|HELIDON_MP_JVM_URL|8092|Helidon MP|200|/health|/hello/virtual~isVirtual: 'true';/health~
+helidon-mp-native|HELIDON_MP_NATIVE_URL|8093|Helidon MP|200|/health|/hello/virtual~isVirtual: 'true';/health~
+spark-jvm-platform|SPARK_JVM_PLATFORM_URL|8094|Spark|200|/ready|/hello/platform~isVirtual: 'false';/ready~
+spark-jvm-virtual|SPARK_JVM_VIRTUAL_URL|8095|Spark|200|/ready|/hello/virtual~isVirtual: 'true';/ready~
+javalin-jvm-platform|JAVALIN_JVM_PLATFORM_URL|8096|Javalin|200|/ready|/hello/platform~isVirtual: 'false';/ready~
+javalin-jvm-virtual|JAVALIN_JVM_VIRTUAL_URL|8097|Javalin|200|/ready|/hello/virtual~isVirtual: 'true';/ready~
+dropwizard-jvm-platform|DROPWIZARD_JVM_PLATFORM_URL|8098|Dropwizard|200|/ready|/hello/platform~isVirtual: 'false';/ready~
+dropwizard-jvm-virtual|DROPWIZARD_JVM_VIRTUAL_URL|8099|Dropwizard|200|/ready|/hello/virtual~isVirtual: 'true';/ready~
+vertx-jvm|VERTX_JVM_URL|8100|Vertx|200|/ready|/hello/reactive~vert.x-eventloop-thread;/ready~
+pekko-jvm|PEKKO_JVM_URL|8101|Pekko|200|/ready|/hello/reactive~pekko.actor.default-dispatcher;/ready~
+go|GO_URL|9080|GO|200|/healthz;/readyz;/livez|/hello/virtual~goroutine
+django-platform|DJANGO_PLATFORM_URL|9090|Django|200|/healthz;/readyz;/livez|/hello/platform~ThreadPoolExecutor
+django-reactive|DJANGO_REACTIVE_URL|9091|Django|200|/healthz;/readyz;/livez|/hello/reactive~MainThread
