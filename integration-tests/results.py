@@ -110,7 +110,10 @@ def main():
                 Path(configuration[0]).read_text(encoding="utf-8")
             )
         temporary = Path(destination + ".tmp")
-        temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        # S2083: The trusted Bash runner builds destination from the operator's
+        # OUTPUT_DIR and a generated run ID. Event/configuration file contents
+        # are serialized as report data only; they never determine the path.
+        temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")  # NOSONAR(S2083)
         temporary.replace(destination)
     elif command == "wrk":
         check_wrk(sys.stdin.read())
