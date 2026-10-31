@@ -2,7 +2,7 @@
 
 # Micronaut benchmark services
 
-The JVM and native services use **Micronaut 5.2.20**, Netty, compile-time dependency injection, and the same application sources. Each deployment exposes platform-thread, virtual-thread, and reactive endpoints, plus an experimental event-loop route.
+The JVM and native services use **Micronaut 5.2.21**, Netty, compile-time dependency injection, and the same application sources. Each deployment exposes platform-thread, virtual-thread, and reactive endpoints, plus an experimental event-loop route.
 
 ## Variants
 
@@ -11,7 +11,7 @@ The JVM and native services use **Micronaut 5.2.20**, Netty, compile-time depend
 | [JVM](jvm/README.md)       | `micronaut-jvm`                          | `8088`    | `/health`       |
 | [Native](native/README.md) | `micronaut-native`                       | `8089`    | `/health`       |
 
-Containers listen on port `8080`. Image tags follow `<service>:5.2.20_latest`. Module READMEs describe their runtime-specific packaging and troubleshooting; shared behavior and commands live here.
+Containers listen on port `8080`. Image tags follow `<service>:5.2.21_latest`. Module READMEs describe their runtime-specific packaging and troubleshooting; shared behavior and commands live here.
 
 ## Version source and updates
 
