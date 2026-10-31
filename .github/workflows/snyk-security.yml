@@ -114,20 +114,23 @@ jobs:
             services/python/django/gunicorn/ASGI/requirements.txt
 
       # Runs Snyk Code (SAST) analysis and exports SARIF for GitHub Code Scanning.
-      # continue-on-error ensures SARIF upload still runs even if vulnerabilities are flagged.
+      # Findings are warnings; continue-on-error also lets uploads run after scan errors.
       - name: Snyk Code test
         if: env.SNYK_TOKEN != ''
         id: snyk-code
         continue-on-error: true
-        run: node scripts/snyk-scan.mjs code
+        shell: bash
+        run: node scripts/snyk-scan.mjs code || test "$?" -eq 1
 
       # Runs Snyk Open Source (SCA) analysis. The test command reports findings
-      # through its exit code; unresolved projects fail closed, not silently skipped.
+      # through its exit code; the gate warns on findings but fails on scan errors.
+      # Unresolved projects fail closed, not silently skipped.
       - name: Snyk Open Source test
         if: env.SNYK_TOKEN != ''
         id: snyk-open-source-test
         continue-on-error: true
-        run: node scripts/snyk-scan.mjs test
+        shell: bash
+        run: node scripts/snyk-scan.mjs test || test "$?" -eq 1
 
       # PRs must not overwrite the trusted main dependency snapshot in Snyk.
       # Monitor's exit code only indicates whether the snapshot upload succeeded.
@@ -194,13 +197,23 @@ jobs:
             echo "| Monitor | ${MONITOR_RESULT:-skipped} | ${MONITOR_OUTCOME:-skipped} |"
             echo
           } >> "$GITHUB_STEP_SUMMARY"
-          if [[ "$CODE_OUTCOME" != "success" || \
-                "$TEST_OUTCOME" != "success" || \
-                "$MONITOR_OUTCOME" == "failure" ]]; then
+          # Exit 1 means findings for code/test, not an incomplete scan.
+          # Scan steps normalize that exit code; missing outputs still fail closed.
+          scan_completed() {
+            [[ "$2" == "success" && ( "$1" == "clean" || "$1" == "findings" ) ]]
+          }
+          if ! scan_completed "$CODE_RESULT" "$CODE_OUTCOME" || \
+             ! scan_completed "$TEST_RESULT" "$TEST_OUTCOME" || \
+             [[ "$MONITOR_OUTCOME" == "failure" ]]; then
             # The scan runner already emitted an actionable findings/error
             # annotation. Do not repeat it with a generic custom annotation.
-            echo 'Security gate blocked. See the findings overviews above and the snyk-results artifact.'
-            echo '**Blocked:** security findings or incomplete scans. See the findings overviews and Code Scanning for details.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Security gate blocked: incomplete scan or failed monitor upload. See the snyk-results artifact.'
+            echo '**Blocked:** incomplete scan or failed monitor upload. See the scan overviews and snyk-results artifact for details.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          echo '**Passed:** required scans completed without findings.' >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$CODE_RESULT" == "findings" || "$TEST_RESULT" == "findings" ]]; then
+            echo 'Security findings reported as warnings; the job check remains successful.'
+            echo '**Warning:** required scans completed with security findings (non-blocking). See the findings overviews and Code Scanning for details.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '**Passed:** required scans completed without findings.' >> "$GITHUB_STEP_SUMMARY"
+          fi

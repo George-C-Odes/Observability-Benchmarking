@@ -41,13 +41,17 @@ node --test scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
 
 The Snyk workflow runs these tests before scanning. Real scans require the Snyk CLI, `SNYK_TOKEN`, and installed
 language/dependency prerequisites; see [Snyk scanning guidance](../docs/SECURITY.md#snyk-automated-scanning).
+The workflow gate regression test also requires Bash on `PATH`; it is skipped locally if Bash is unavailable.
 
-Each scan adds an overview to the Actions job summary. Findings annotations include totals and up to three
+Each scan adds an overview to the Actions job summary. Findings warning annotations include totals and up to three
 highest-priority issues; the summary lists up to ten affected files and ten unique issues with reported fixed versions.
 Unique issues are deduplicated by vulnerability/rule ID. Occurrences count SARIF results, not transitive dependency paths.
 Dependency JSON enriches package, severity, and fix details; fixed versions do not guarantee a direct parent/framework upgrade.
 Incomplete scans are marked partial, and missing reports are never displayed as zero findings. The final gate includes a
-status table without repeating the scan's custom error annotation. GitHub's automatic nonzero-exit annotations remain.
+status table: findings are non-blocking warnings, while incomplete scans and monitor failures still fail the job.
+GitHub Actions has no warning job conclusion, so findings-only runs have a successful check with warning annotations.
+The workflow normalizes only the findings exit code to avoid automatic nonzero-exit error annotations for findings;
+the standalone runner retains the original scan exit codes.
 
 ### Sonar test classification
 

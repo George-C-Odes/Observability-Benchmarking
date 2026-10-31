@@ -212,9 +212,11 @@ Runs without a token (including fork pull requests) explicitly skip scanning; a 
   directories such as `node_modules`, `vendor`, `_site`, `target`, `.next`, virtual environments, and `apm_modules`
   are excluded; source manifests and `.github` CI dependency inventories are not excluded.
 - The gate distinguishes **findings** (test exit code 1) from **scan errors** (including exit code 2 and no supported
-  projects, exit code 3). Both fail CI. Open Source uses `--fail-fast` so unresolved projects cannot silently produce
-  a passing partial assessment. Resolve the dependency error and rerun to obtain the full findings report; do not
-  bypass coverage with `--skip-unresolved` or relax the severity threshold to make the job green.
+  projects, exit code 3). Findings produce **non-blocking warning annotations** and a warning in the job summary;
+  GitHub Actions has no warning job conclusion, so a findings-only job check is successful. Scan errors and incomplete
+  scans still fail CI. Open Source uses `--fail-fast` so unresolved projects cannot silently produce a passing partial
+  assessment. Resolve the dependency error and rerun to obtain the full findings report; do not bypass coverage with
+  `--skip-unresolved` or relax the severity threshold to make the job green.
 - Available SARIF reports are uploaded to GitHub Code Scanning with separate Code and Open Source categories.
   The `snyk-results` artifact retains logs, status files, Open Source JSON, and available SARIF for 14 days, including
   after scan failures. Each scan also writes its result and exit code to the Actions step summary.
