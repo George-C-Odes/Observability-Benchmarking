@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="[doc] Render Updates" type="ShConfigurationType" activateToolWindowBeforeRun="false">
-    <option name="SCRIPT_TEXT" value="node ./scripts/sync-java-pom-versions.mjs &amp;&amp; node ./scripts/sync-dockerfile-versions.mjs &amp;&amp; node ./scripts/sync-build-img-runs.mjs &amp;&amp; node ./scripts/render-readmes.mjs" />
+    <option name="SCRIPT_TEXT" value="node ./scripts/sync-java-pom-versions.mjs &amp;&amp; node ./scripts/sync-go-mod-versions.mjs &amp;&amp; node ./scripts/sync-dockerfile-versions.mjs &amp;&amp; node ./scripts/sync-build-img-runs.mjs &amp;&amp; node ./scripts/render-readmes.mjs" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

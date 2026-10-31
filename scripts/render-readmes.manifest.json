@@ -7,6 +7,8 @@
     "docs/tools-technologies.template.md",
     "integration-tests/README.template.md",
     "services/README.template.md",
+    "services/go/enhanced/README.template.md",
+    "services/go/simple/README.template.md",
     "services/java/helidon/README.template.md",
     "services/java/javalin/jvm/README.template.md",
     "services/java/micronaut/README.template.md",

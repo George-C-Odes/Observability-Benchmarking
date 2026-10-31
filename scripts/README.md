@@ -11,8 +11,28 @@ This directory contains small repository-level helper scripts.
 - `sync-build-img-runs.test.mjs` - tests version synchronization across the build configurations
 - `sync-java-pom-versions.mjs` - synchronizes Java service framework properties from `compose/.env`
 - `sync-java-pom-versions.test.mjs` - tests POM version mapping, preservation, validation, and check mode
+- `sync-go-mod-versions.mjs` - synchronizes Go module versions from `compose/.env`, including CI tools
+- `sync-go-mod-versions.test.mjs` - tests Go version propagation, preservation, validation, and check mode
 - `sync-dockerfile-versions.mjs` - synchronizes service Dockerfile framework/runtime ARG defaults from `compose/.env`
 - `sync-dockerfile-versions.test.mjs` - tests Dockerfile default mapping, preservation, validation, and check mode
+
+## Go module versions
+
+After changing `GO_VERSION` in `compose/.env`, synchronize both benchmark modules and `.github/go-tools/go.mod`:
+
+```powershell
+node scripts/sync-go-mod-versions.mjs
+node scripts/sync-go-mod-versions.mjs --check
+node --test scripts/sync-go-mod-versions.test.mjs
+```
+
+In IntelliJ, run **[gen] Sync Go Module Versions**, or **[doc] Render Updates** to synchronize Java POMs, Go modules, Dockerfiles, build image configurations, and generated documentation together. Editing `.env` alone does not run synchronization.
+
+The script sets each module's `go` directive to the full stable `GO_VERSION` (for example, `1.27.3`). It also aligns an existing standard `toolchain go...` pin, preserves `toolchain default`, and does not add a toolchain directive. Dependency versions, tool declarations, `go.sum`, comments, and formatting are preserved. Missing modules, missing or duplicate Go directives, unsupported toolchain declarations, and invalid env versions fail before any module is written. Unchanged modules are not rewritten.
+
+The Go quality and coverage workflows already read service `go.mod` files through `go-version-file`, so the module update also relays the version to CI. The separate CI tools module uses the same Go version while retaining its own dependency lock. Go service READMEs use templates included in the default renderer manifest.
+
+Paths resolve from the repository root. Use `--env path/to/.env` for an alternate source; `--check` reports drift with exit code 1 without writing. Extend `goModules` in the script when adding a module. The script does not invoke Go, download a toolchain, or run `go mod tidy`; review dependency compatibility separately when changing Go release lines.
 
 ## Dockerfile versions
 
@@ -24,7 +44,7 @@ node scripts/sync-dockerfile-versions.mjs --check
 node --test scripts/sync-dockerfile-versions.test.mjs
 ```
 
-In IntelliJ, run **[gen] Sync Dockerfile Versions**, or **[doc] Render Updates** to synchronize POMs, Dockerfiles, documentation, and build image configurations together.
+In IntelliJ, run **[gen] Sync Dockerfile Versions**, or **[doc] Render Updates** to synchronize POMs, Go modules, Dockerfiles, documentation, and build image configurations together.
 
 The script updates the Java framework `ARG ..._VERSION=...` defaults, `GO_VERSION` in both Go Dockerfiles, and `PYTHON_VERSION` in both Django Dockerfiles. Literal defaults keep direct Docker builds usable; Compose and IntelliJ can still override them with build arguments. Django itself is pinned in Python requirements, rather than a Dockerfile ARG.
 
@@ -191,6 +211,8 @@ At the moment, the active generated README inventory is:
 | `docs/tools-technologies.template.md`                     | `docs/tools-technologies.md`                     | Tools and technologies overview                                                |
 | `integration-tests/README.template.md`                    | `integration-tests/README.md`                    | Integration test documentation                                                 |
 | `services/README.template.md`                             | `services/README.md`                             | Services overview                                                              |
+| `services/go/enhanced/README.template.md`                 | `services/go/enhanced/README.md`                 | Enhanced Go service; Go version from `compose/.env`                            |
+| `services/go/simple/README.template.md`                   | `services/go/simple/README.md`                   | Simple Go service; Go version from `compose/.env`                              |
 | `services/java/helidon/README.template.md`                | `services/java/helidon/README.md`                | Shared Helidon guide; module READMEs link to its generated framework version   |
 | `services/java/javalin/jvm/README.template.md`            | `services/java/javalin/jvm/README.md`            | Javalin JVM service                                                            |
 | `services/java/micronaut/README.template.md`              | `services/java/micronaut/README.md`              | Shared Micronaut guide; module READMEs link to its generated framework version |

@@ -998,7 +998,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 |-------------------|--------------------|----------------------------|----------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.4   | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.4   | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.27.2   | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.27.3   | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18  | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0   | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.12.1  | Frontend tooling and SSR runtime                                     |
@@ -1020,7 +1020,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Visualization      | Grafana                    | 13.3.0   | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.9    | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1    | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.2.3    | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.2.4    | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.4.2    | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2   | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |

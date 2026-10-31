@@ -16,7 +16,7 @@
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.1.7-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
-[![Go](https://img.shields.io/badge/Go-1.27.2-38BDF8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.27.3-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.18-2F5D8C.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-6.1.2-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
@@ -81,7 +81,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 |-------------------|--------------------|----------------------------|----------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.4   | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.4   | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.27.2   | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.27.3   | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18  | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0   | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.12.1  | Frontend tooling and SSR runtime                                     |
@@ -103,7 +103,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Visualization      | Grafana                    | 13.3.0   | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.9    | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1    | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.2.3    | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.2.4    | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.4.2    | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2   | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |
@@ -214,7 +214,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - JVM build
     - Reactive (Pekko dispatcher)
 
-#### Go (1.27.2)
+#### Go (1.27.3)
 - Fiber framework integration
 - Full observability setup
 
@@ -518,7 +518,7 @@ The numbers below are a curated summary of a representative run.
 - **Dropwizard**: 5.0.2
 - **Vert.x**: 5.1.7
 - **Pekko**: 1.3.0 (Pekko Core 1.4.0)
-- **Go**: 1.27.2 (Fiber v3.6.1)
+- **Go**: 1.27.3 (Fiber v3.6.1)
 - **Python**: 3.13.18 (CPython)
 - **Django**: 6.1.2 (Gunicorn 26.2.0)
 - **Garbage Collector**: G1GC (all Java implementations)

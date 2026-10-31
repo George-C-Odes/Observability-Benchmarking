@@ -5,6 +5,11 @@ scanner dependencies to either benchmark service. Dependabot maintains its
 `go.mod` and `go.sum`; both Go quality jobs include the checksum lock in their
 cache keys.
 
+The Go language version follows `GO_VERSION` in `compose/.env`. Run
+`node scripts/sync-go-mod-versions.mjs` (or IntelliJ **[doc] Render Updates**)
+after changing it; this updates all three modules without changing dependency
+versions or checksums. Use `--check` to detect version drift without writing.
+
 From the repository root, update the scanner and regenerate its dependency lock:
 
 ```sh
