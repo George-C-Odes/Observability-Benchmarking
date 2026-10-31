@@ -128,8 +128,8 @@ load_targets() {
 
 url_label() {
   local url=$1
-  # Strip the scheme for the filename only; leave the benchmark URL unchanged.
-  echo "${url#*://}" | sed 's|[/:.]|_|g'
+  # Strip only the HTTP prefix; retain the HTTPS scheme to distinguish target labels.
+  echo "${url#http://}" | sed 's|[/:.]|_|g'
 }
 
 # Enhanced run printout:
