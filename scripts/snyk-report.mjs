@@ -160,7 +160,8 @@ export function renderScanReport(mode, result, exitCode, overview, overviewError
       if (overview.unique > 3) message.push(`${overview.unique - 3} more unique issues; see the job summary for the breakdown.`);
     }
     message.push('See the job summary, Security → Code scanning, and the snyk-results artifact.');
-    annotation = `::error title=${label} — ${result === 'findings' ? 'findings overview' : 'scan incomplete'}::${commandData(message.join('\n'))}\n`;
+    const level = result === 'findings' ? 'warning' : 'error';
+    annotation = `::${level} title=${label} — ${result === 'findings' ? 'findings overview' : 'scan incomplete'}::${commandData(message.join('\n'))}\n`;
   }
   return { summary: `${rows.join('\n')}\n`, annotation };
 }

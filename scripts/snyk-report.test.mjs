@@ -61,7 +61,7 @@ test('Code overview resolves indexed rules and artifacts, level fallbacks and co
   assert.equal(overview.projects.find((project) => project.file === 'src/code.js').occurrences, 1);
   const { summary, annotation } = renderScanReport('code', 'findings', 1, overview);
   assert.match(summary, /Files analyzed: \*\*10\*\*; files not analyzed: \*\*3\*\*/);
-  assert.match(annotation, /title=Snyk Code/);
+  assert.match(annotation, /^::warning title=Snyk Code/);
   assert.match(annotation, /2 unique issues; 2 occurrences/);
 });
 
@@ -78,7 +78,7 @@ test('summary and annotation include useful totals, top issues, fixes and safe e
   assert.match(summary, /2\.0/);
   assert.ok(!summary.includes('<img'));
   assert.ok(!summary.includes('|`bad`'));
-  assert.match(annotation, /title=Snyk Open Source — findings overview/);
+  assert.match(annotation, /^::warning title=Snyk Open Source — findings overview/);
   assert.match(annotation, /critical: 2; high: 1/);
   assert.match(annotation, /fixed in 2\.0/);
   assert.match(annotation, /50%25/);
@@ -110,11 +110,14 @@ test('clean reports show zero findings, while missing reports and scan errors ne
   const unavailable = renderScanReport('test', 'error', 2);
   assert.match(unavailable.summary, /Scan incomplete/);
   assert.match(unavailable.summary, /Overview unavailable/);
+  assert.match(unavailable.annotation, /^::error title=/);
   assert.match(unavailable.annotation, /Issue counts unavailable/);
   assert.ok(!unavailable.summary.includes('0 unique issues'));
   const partial = renderScanReport('test', 'error', 2, summarizeSarif(fixture()));
+  assert.match(partial.annotation, /^::error title=/);
   assert.match(partial.annotation, /Partial overview/);
   const monitor = renderScanReport('monitor', 'error', 1);
+  assert.match(monitor.annotation, /^::error title=/);
   assert.match(monitor.annotation, /Snyk monitor failed to complete/);
 });
 

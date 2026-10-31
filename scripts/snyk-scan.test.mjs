@@ -195,8 +195,8 @@ for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 0], ['test', 
       stderr: { write(chunk) { diagnostics += chunk; } },
     });
     assert.deepEqual(result, { exitCode, result: expectedResult });
-    if (expectedResult === 'findings') assert.match(diagnostics, /reported security findings/);
-    if (expectedResult === 'error') assert.match(diagnostics, /failed to complete/);
+    if (expectedResult === 'findings') assert.match(diagnostics, /^::warning title=.*reported security findings/m);
+    if (expectedResult === 'error') assert.match(diagnostics, /^::error title=.*failed to complete/m);
     if (expectedResult === 'clean') assert.ok(!diagnostics.includes('::error'));
     const log = readFileSync(files.log, 'utf8');
     assert.match(log, /Fake Snyk stdout/);
@@ -308,10 +308,71 @@ test('workflow keeps required scans gated and snapshots restricted to trusted ma
   assert.match(workflow, /hashFiles\('snyk-results\/test-github\.sarif'\)/);
   assert.match(workflow, /sarif_file: snyk-results\/test-github\.sarif/);
   assert.ok(!workflow.includes('sarif_file: snyk-results/test.sarif'));
-  assert.match(workflow, /"\$CODE_OUTCOME" != "success"/);
-  assert.match(workflow, /"\$TEST_OUTCOME" != "success"/);
+  assert.match(workflow, /scan_completed "\$CODE_RESULT" "\$CODE_OUTCOME"/);
+  assert.match(workflow, /scan_completed "\$TEST_RESULT" "\$TEST_OUTCOME"/);
   assert.match(workflow, /"\$MONITOR_OUTCOME" == "failure"/);
   assert.match(workflow, /node --test scripts\/snyk-scan\.test\.mjs scripts\/snyk-report\.test\.mjs/);
   assert.ok(!workflow.includes('echo "::error::Snyk reported findings or incomplete scans.'));
   assert.match(workflow, /\| Scan \| Result \| Step outcome \|/);
+});
+
+test('workflow scan steps normalize only findings and the gate warns without hiding scan failures', (t) => {
+  const bash = spawnSync('bash', ['--version'], { encoding: 'utf8' });
+  if (bash.error?.code === 'ENOENT') {
+    t.skip('Bash is required to execute the workflow gate regression test');
+    return;
+  }
+  assert.equal(bash.status, 0, bash.error?.message || bash.stderr);
+  const workflow = readFileSync(new URL('../.github/workflows/snyk-security.yml', import.meta.url), 'utf8');
+  for (const mode of ['code', 'test']) {
+    const command = workflow.match(new RegExp(`run: (node scripts/snyk-scan\\.mjs ${mode}[^\\r\\n]*)`))?.[1];
+    assert.ok(command, `Missing ${mode} scan command`);
+    for (const exitCode of [0, 1, 2, 3, 127]) {
+      const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c',
+        `node() { return ${exitCode}; }\n${command}`], { encoding: 'utf8' });
+      assert.equal(result.status, exitCode <= 1 ? 0 : 1, `${mode} exit ${exitCode}: ${result.stderr}`);
+    }
+  }
+  const script = workflow.match(/- name: Enforce Snyk security gate[\s\S]*? {8}run: \|\r?\n([\s\S]*)$/)?.[1]
+    .replace(/^ {10}/gm, '').replace(/\r/g, '');
+  assert.ok(script, 'Missing security gate script');
+  const root = fixtureRoot(t, 'snyk-gate-');
+  const summaryPath = new URL('summary', root);
+  const defaults = {
+    SNYK_TOKEN: 'test-token', CODE_RESULT: 'clean', CODE_OUTCOME: 'success',
+    TEST_RESULT: 'clean', TEST_OUTCOME: 'success', MONITOR_RESULT: '', MONITOR_OUTCOME: 'skipped',
+    GITHUB_STEP_SUMMARY: fileURLToPath(summaryPath).replace(/\\/g, '/'),
+  };
+  const cases = [];
+  for (const code of ['clean', 'findings']) {
+    for (const dependencies of ['clean', 'findings']) {
+      for (const monitor of ['skipped', 'success', 'failure']) {
+        cases.push({ env: { CODE_RESULT: code, TEST_RESULT: dependencies, MONITOR_OUTCOME: monitor,
+          MONITOR_RESULT: monitor === 'success' ? 'clean' : monitor === 'failure' ? 'error' : '' },
+        status: monitor === 'failure' ? 1 : 0,
+        summary: monitor === 'failure' ? '**Blocked:**' : code === 'findings' || dependencies === 'findings'
+          ? '**Warning:**' : '**Passed:**' });
+      }
+    }
+  }
+  for (const scan of ['CODE', 'TEST']) {
+    for (const [result, outcome] of [['error', 'failure'], ['', 'failure'], ['', 'success'],
+      ['findings', 'failure'], ['findings', 'skipped'], ['findings', 'cancelled'],
+      ['clean', 'failure'], ['clean', 'skipped'], ['error', 'success'], ['unknown', 'success']]) {
+      cases.push({ env: { [`${scan}_RESULT`]: result, [`${scan}_OUTCOME`]: outcome },
+        status: 1, summary: '**Blocked:**' });
+    }
+  }
+  cases.push({ env: { CODE_RESULT: 'findings', TEST_RESULT: 'error', TEST_OUTCOME: 'failure' },
+    status: 1, summary: '**Blocked:**' });
+  cases.push({ env: { SNYK_TOKEN: '', CODE_RESULT: '', CODE_OUTCOME: 'skipped',
+    TEST_RESULT: '', TEST_OUTCOME: 'skipped' }, status: 0, summary: 'Snyk scans skipped' });
+  for (const scenario of cases) {
+    writeFileSync(summaryPath, '');
+    const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', script], {
+      cwd: fileURLToPath(root), env: { ...process.env, ...defaults, ...scenario.env }, encoding: 'utf8',
+    });
+    assert.equal(result.status, scenario.status, `${JSON.stringify(scenario.env)}: ${result.stderr}`);
+    assert.ok(readFileSync(summaryPath, 'utf8').includes(scenario.summary), JSON.stringify(scenario.env));
+  }
 });
