@@ -856,6 +856,18 @@ The Pages workflow resolves the Next.js quality report source independently of t
 
 This ensures every Pages deployment gets the freshest available version of all reports.
 
+The Pages publisher always checks out `main` for the site, scripts, and local actions,
+with persisted Git credentials disabled. Report revisions are metadata only; their
+source code is never executed by the publisher. Both triggering runs and API-selected
+runs must have a source repository matching this repository, so fork reports are
+excluded from live and staging publishing. The build job has read permissions only;
+`pages: write` and `id-token: write` are reserved for the deployment job.
+
+Manual dispatch refreshes both `/quality/` and `/stage/quality/` using the same
+report-selection rules as automatic publishing. The former `source_ref` input has
+been removed: publishing branch reports does not require checking out branch code.
+Run the resolver regression tests with `node --test scripts/pages/resolve-source.test.mjs`.
+
 Scripts involved:
 - `scripts/pages/resolve-source.sh` — generic parameterized resolver; each Pages step supplies `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` (Go Quality and CodeQL accept `success,failure`; others accept `success` only)
 - `scripts/pages/report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators
