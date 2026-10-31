@@ -63,7 +63,7 @@ jobs:
           && github.event.workflow_run.name == 'CodeQL'))
       && (github.event_name != 'workflow_run'
           || github.event.workflow_run.head_repository.full_name == github.repository)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       actions: read
@@ -484,7 +484,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     needs: build
     steps:

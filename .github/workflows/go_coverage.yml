@@ -27,7 +27,7 @@ permissions:
 jobs:
   coverage:
     name: Coverage (${{ matrix.name }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -242,7 +242,7 @@ jobs:
     name: Coverage Gate
     needs: [coverage]
     if: always() && !cancelled()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     env:
       THRESHOLD_GO_ENHANCED: 85

@@ -34,7 +34,7 @@ permissions:
 jobs:
   common:
     name: Django common checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -74,7 +74,7 @@ jobs:
   modules:
     name: Django module checks (${{ matrix.module_name }})
     needs: common
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     env:
       OTEL_SDK_DISABLED: 'true'
@@ -134,7 +134,7 @@ jobs:
   qodana:
     name: Qodana Python (Django)
     needs: common
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     # The Qodana job is allowed to fail without blocking the overall workflow
     # so the HTML report artifact is still uploaded and the Pages deployment

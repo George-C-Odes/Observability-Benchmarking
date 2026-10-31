@@ -31,7 +31,7 @@ permissions:
 jobs:
   coverage:
     name: Coverage (${{ matrix.name }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -254,7 +254,7 @@ jobs:
     name: Coverage Verdict
     needs: coverage
     if: always() && !cancelled()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       verdict: ${{ steps.check.outputs.verdict }}
     steps:
@@ -397,7 +397,7 @@ jobs:
     name: Coverage Gate
     needs: coverage-verdict
     if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict != 'review_needed'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Gate result
         run: |
@@ -414,7 +414,7 @@ jobs:
     name: Coverage Gate
     needs: coverage-verdict
     if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict == 'review_needed'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment: coverage-review
     steps:
       - name: Gate result

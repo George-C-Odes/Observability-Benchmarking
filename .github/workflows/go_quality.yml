@@ -41,7 +41,7 @@ jobs:
   # ── Enhanced module: full quality pipeline ─────────────────────────
   quality:
     name: Enhanced — lint, vet & test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     defaults:
       run:
@@ -153,7 +153,7 @@ jobs:
   # ── Simple module: full quality pipeline ────────────────────────────
   quality-simple:
     name: Simple — lint, vet, test & build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     defaults:
       run:

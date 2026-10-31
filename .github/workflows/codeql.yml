@@ -55,7 +55,7 @@ jobs:
       contents: read
       security-events: write
     name: Analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -366,7 +366,7 @@ jobs:
     name: Generate report
     needs: analyze
     if: always() && !cancelled()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - name: Checkout
