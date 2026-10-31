@@ -67,3 +67,10 @@ updates:
     commit-message:
       prefix: "deps(go-simple)"
 
+  # Go CI tools (scanner and its transitive build dependencies)
+  - package-ecosystem: gomod
+    directory: /.github/go-tools
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "ci(go-tools)"

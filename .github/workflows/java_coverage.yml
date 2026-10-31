@@ -66,6 +66,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up JDK 25
         uses: ./.github/actions/setup-java
@@ -248,6 +250,7 @@ jobs:
   #   review_needed  – builds passed but ≥1 module is below threshold
   #   hard_fail      – ≥1 build/test failure or missing JaCoCo report
   coverage-verdict:
+    timeout-minutes: 10
     name: Coverage Verdict
     needs: coverage
     if: always() && !cancelled()
@@ -258,6 +261,8 @@ jobs:
       - name: Checkout
         if: needs.coverage.result == 'success'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Download threshold status files
         if: needs.coverage.result == 'success'
@@ -388,6 +393,7 @@ jobs:
   #   Then add "Coverage Gate" as a required status check in
   #   Settings → Branches → Branch protection rules.
   coverage-gate:
+    timeout-minutes: 10
     name: Coverage Gate
     needs: coverage-verdict
     if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict != 'review_needed'
@@ -404,6 +410,7 @@ jobs:
           fi
 
   coverage-gate-review:
+    timeout-minutes: 10
     name: Coverage Gate
     needs: coverage-verdict
     if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict == 'review_needed'

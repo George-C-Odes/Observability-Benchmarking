@@ -46,13 +46,14 @@ on:
     # are evaluated even when source code has not changed.
     - cron: '30 5 * * 1'
 
-permissions:
-  actions: read
-  contents: read
-  security-events: write
+permissions: {}
 
 jobs:
   analyze:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -72,6 +73,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           # Full history for the java-kotlin leg so git-diff can identify
           # which modules actually changed (incremental builds).
           # Other languages keep the default shallow clone.
@@ -359,6 +361,8 @@ jobs:
   # that the Pages workflow publishes under /quality/codeql/.
   # ------------------------------------------------------------------
   report:
+    permissions:
+      contents: read
     name: Generate report
     needs: analyze
     if: always() && !cancelled()
@@ -367,6 +371,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Download all SARIF artifacts
         continue-on-error: true

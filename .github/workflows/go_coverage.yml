@@ -45,6 +45,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -59,7 +61,7 @@ jobs:
 
       - name: Check go.mod tidiness
         run: |
-          go mod tidy
+          go mod tidy -diff
           git diff --exit-code go.mod go.sum || {
             echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
             exit 1
@@ -248,6 +250,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
