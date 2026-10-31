@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { appendFileSync, createWriteStream, lstatSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { finished } from 'node:stream/promises';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // Only these literal artifact names may be written. No CLI input is a file path.
 const artifacts = Object.freeze({
@@ -30,7 +30,8 @@ export function scanFiles(mode, workingDirectory = process.cwd()) {
 function checkArtifactTarget(file, directory = false) {
   let stat;
   try {
-    stat = lstatSync(file);
+    // On POSIX, a trailing separator makes lstat follow directory symlinks.
+    stat = lstatSync(path.resolve(fileURLToPath(file)));
   } catch (error) {
     if (error.code === 'ENOENT') return;
     throw error;

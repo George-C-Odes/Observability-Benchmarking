@@ -127,7 +127,8 @@ test('an artifact directory symlink cannot redirect reports outside the cwd', as
   const outside = fixtureRoot(t, 'snyk-outside-');
   const files = scanFiles('test', fileURLToPath(root));
   // A Windows junction is a directory symlink that does not require admin rights.
-  symlinkSync(fileURLToPath(outside), fileURLToPath(files.directory), 'junction');
+  // Linux requires the new symlink path to have no trailing directory separator.
+  symlinkSync(path.resolve(fileURLToPath(outside)), path.resolve(fileURLToPath(files.directory)), 'junction');
   await assert.rejects(runScan('test', { workingDirectory: fileURLToPath(root) }), /Unsafe Snyk artifact target/);
   assert.ok(!existsSync(new URL('test.log', outside)));
 });
