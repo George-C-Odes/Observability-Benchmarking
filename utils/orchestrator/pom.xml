@@ -10,7 +10,7 @@
   <properties>
     <argLine/>
     <compiler-plugin.version>3.16.0</compiler-plugin.version>
-    <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+    <exec-maven-plugin.version>3.6.4</exec-maven-plugin.version>
     <findsecbugs.version>1.14.0</findsecbugs.version>
     <google-java-format.version>2.0.0</google-java-format.version>
     <jacoco.skip>false</jacoco.skip>
