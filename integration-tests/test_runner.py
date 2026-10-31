@@ -5,17 +5,34 @@ import importlib.util
 import json
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("results", ROOT / "results.py")
 RESULTS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RESULTS)
+
+
+def find_bash():
+    """Select a literal installation path, never execute environment/PATH input."""
+    candidates = (
+        ("C:/Program Files/Git/usr/bin/bash.exe",)
+        if sys.platform == "win32"
+        else ("/bin/bash", "/usr/bin/bash")
+    )
+    requested = os.environ.get("BASH_TEST_BINARY")
+    if requested and requested not in candidates:
+        raise ValueError("BASH_TEST_BINARY must be one of: " + ", ".join(candidates))
+    for candidate in candidates:
+        if (not requested or requested == candidate) and Path(candidate).is_file():
+            # Return the allowlist entry, not the environment-derived value.
+            return candidate
+    return None
 
 
 class PayloadTests(unittest.TestCase):
@@ -198,15 +215,81 @@ class PayloadTests(unittest.TestCase):
             self.assertEqual(payload["tests"][1]["message"], message)
 
 
+class BashSelectionTests(unittest.TestCase):
+    def test_defaults_use_fixed_platform_paths(self):
+        for platform, expected in [
+            ("win32", "C:/Program Files/Git/usr/bin/bash.exe"),
+            ("linux", "/bin/bash"),
+            ("darwin", "/bin/bash"),
+        ]:
+            with (
+                self.subTest(platform=platform),
+                mock.patch.object(sys, "platform", platform),
+                mock.patch.dict(os.environ, {"PATH": "/untrusted"}, clear=True),
+                mock.patch.object(Path, "is_file", return_value=True),
+            ):
+                self.assertEqual(find_bash(), expected)
+
+    def test_unix_fallback_uses_second_fixed_path(self):
+        with (
+            mock.patch.object(sys, "platform", "linux"),
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(Path, "is_file", side_effect=[False, True]),
+        ):
+            self.assertEqual(find_bash(), "/usr/bin/bash")
+
+    def test_allowlisted_override_selects_literal_entry(self):
+        with (
+            mock.patch.object(sys, "platform", "linux"),
+            mock.patch.dict(os.environ, {"BASH_TEST_BINARY": "/usr/bin/bash"}),
+            mock.patch.object(Path, "is_file", return_value=True),
+        ):
+            self.assertEqual(find_bash(), "/usr/bin/bash")
+
+    def test_untrusted_overrides_are_rejected_before_launch(self):
+        for requested in [
+            "bash",
+            "/tmp/bash",
+            "/bin/bash -c command",
+            "/bin/bash; command",
+            "/bin/../tmp/bash",
+            "C:/untrusted/bash.exe",
+        ]:
+            with (
+                self.subTest(requested=requested),
+                mock.patch.dict(os.environ, {"BASH_TEST_BINARY": requested}),
+                mock.patch.object(Path, "is_file", return_value=True) as is_file,
+                mock.patch.object(subprocess, "run") as run,
+                self.assertRaisesRegex(ValueError, "BASH_TEST_BINARY must be one of"),
+            ):
+                try:
+                    BashTests.setUpClass()
+                finally:
+                    is_file.assert_not_called()
+                    run.assert_not_called()
+
+    def test_missing_bash_does_not_fall_back_to_path(self):
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(Path, "is_file", return_value=False),
+        ):
+            self.assertIsNone(find_bash())
+
+    def test_missing_override_does_not_select_another_installation(self):
+        with (
+            mock.patch.object(sys, "platform", "linux"),
+            mock.patch.dict(os.environ, {"BASH_TEST_BINARY": "/usr/bin/bash"}),
+            mock.patch.object(Path, "is_file", return_value=False),
+        ):
+            self.assertIsNone(find_bash())
+
+
 class BashTests(unittest.TestCase):
     # unittest discovers this lifecycle hook by its exact name.
     # noinspection PyPep8Naming
     @classmethod
     def setUpClass(cls):
-        git_bash = Path("C:/Program Files/Git/usr/bin/bash.exe")
-        cls.bash = os.environ.get("BASH_TEST_BINARY") or (
-            str(git_bash) if git_bash.exists() else shutil.which("bash")
-        )
+        cls.bash = find_bash()
         if not cls.bash:
             raise unittest.SkipTest("Bash is unavailable")
         cls.functions = (
@@ -222,9 +305,9 @@ class BashTests(unittest.TestCase):
                     "REQUEST_TIMEOUT=2 CONNECT_TIMEOUT=2 DOCKER_TIMEOUT=10 LOG_TIMEOUT=1 POLL_INTERVAL=0.01",
                     "TESTS_PASSED=0 TESTS_FAILED=0 TESTS_SKIPPED=0 CONTENT=GO",
                     "DOCKER_AVAILABLE=true DOCKER_ERROR='' FAIL_REASON='' BLUE='' NC=''",
-                    f"TEMP_DIR='{Path(directory).as_posix()}'",
-                    f"SCRIPT_DIR='{ROOT.as_posix()}'",
-                    f"PYTHON='{Path(sys.executable).as_posix()}'",
+                    f"TEMP_DIR={shlex.quote(Path(directory).as_posix())}",
+                    f"SCRIPT_DIR={shlex.quote(ROOT.as_posix())}",
+                    f"PYTHON={shlex.quote(Path(sys.executable).as_posix())}",
                     'EVENTS_FILE="$TEMP_DIR/events.jsonl"',
                     'OUTPUT_DIR="$TEMP_DIR/output"',
                     "" if real_records else "record_result() { :; }",
@@ -247,6 +330,15 @@ class BashTests(unittest.TestCase):
                 for path in Path(directory).glob("output/*.json")
             ]
         return completed
+
+    def test_temporary_path_with_apostrophe_is_literal(self):
+        temporary_directory = tempfile.TemporaryDirectory
+        with mock.patch.object(
+            tempfile,
+            "TemporaryDirectory",
+            side_effect=lambda: temporary_directory(prefix="shell's path "),
+        ):
+            self.shell('[[ $TEMP_DIR == *"shell\'s path "* ]]')
 
     def test_fallback_is_one_pass_without_failures(self):
         self.shell("""

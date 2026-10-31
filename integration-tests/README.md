@@ -255,7 +255,9 @@ python -m unittest discover -s integration-tests -v
 bash -n integration-tests/run-integration-tests.sh
 ```
 
-Coverage includes fallback counting, continued execution after failures, literal content checks, curl errors, fresh-log boundaries, delayed logs, independent Docker/HTTP deadlines, preflight failure aggregation, WSL client selection, explicit Docker overrides, rejection of remote fallback contexts, Windows CRLF handling, raw metric timestamps, overlapped telemetry requests, permanent query errors, wrk2 timeout/error detection, exact filters, partial reports, skipped prerequisites, and report JSON escaping. `BASH_TEST_BINARY` can select the Bash executable used by the tests.
+Coverage includes fallback counting, continued execution after failures, literal content checks, curl errors, fresh-log boundaries, delayed logs, independent Docker/HTTP deadlines, preflight failure aggregation, WSL client selection, explicit Docker overrides, rejection of remote fallback contexts, Windows CRLF handling, raw metric timestamps, overlapped telemetry requests, permanent query errors, wrk2 timeout/error detection, exact filters, partial reports, skipped prerequisites, report JSON escaping, rejection of unapproved Bash executables, and literal filesystem paths containing apostrophes.
+
+The Python regression harness selects Bash only from fixed installation paths: `C:/Program Files/Git/usr/bin/bash.exe` on Windows, or `/bin/bash` then `/usr/bin/bash` on Unix (including WSL). It does not search PATH. `BASH_TEST_BINARY` may select an exact path from the current platform's list; arbitrary executables and command strings raise a configuration error before launch. If no selected installation exists, Bash-dependent tests are skipped. These installation locations and the local test environment must be trusted; this harness is not a sandbox for untrusted test code.
 
 ## Troubleshooting
 
