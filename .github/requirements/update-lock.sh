@@ -11,3 +11,4 @@ python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
   --pip-args="--only-binary :all:" \
   --output-file=.github/requirements/python-ci.txt \
   .github/requirements/python-ci.in "$@"
+python services/python/django/gunicorn/sync_build_locks.py

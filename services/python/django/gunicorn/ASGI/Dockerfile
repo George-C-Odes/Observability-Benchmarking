@@ -14,21 +14,31 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 
 WORKDIR /build
 
-RUN --mount=type=cache,id=django-reactive-apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=django-reactive-apt-lists,target=/var/lib/apt/lists,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ && \
-    rm -rf /var/lib/apt/lists/*
-
 # -- Third-party dependencies (layer cached until requirements.txt changes) --
+# These generated locks project the central CI inventory into this build context.
+COPY --link gunicorn/dependencies.lock gunicorn/build-requirements.txt gunicorn/pip-requirements.txt /build/
 COPY --link gunicorn/ASGI/requirements.txt /build/django-reactive/requirements.txt
-RUN python -m venv ${VENV_PATH}
+RUN python -m venv ${VENV_PATH} && python -m venv /opt/build-venv
 RUN --mount=type=cache,id=django-reactive-pip-cache,target=/root/.cache/pip,sharing=locked \
-    pip install --no-compile -r /build/django-reactive/requirements.txt
+    pip install --require-hashes --only-binary :all: --no-deps -r /build/pip-requirements.txt && \
+    pip install --require-hashes --only-binary :all: --no-compile \
+      --constraint /build/dependencies.lock -r /build/django-reactive/requirements.txt && \
+    /opt/build-venv/bin/python -m pip install --require-hashes --only-binary :all: --no-deps \
+      -r /build/pip-requirements.txt && \
+    /opt/build-venv/bin/python -m pip install --require-hashes --only-binary :all: --no-compile \
+      --constraint /build/dependencies.lock -r /build/build-requirements.txt
 
 # -- Common shared package (layer cached until common/ changes) --------------
 COPY --link gunicorn/common/ /build/django-common/
-RUN pip install --no-compile --no-deps /build/django-common && \
+# Build trusted repository source offline using only the verified build tools.
+# The build-tool virtualenv and wheel artifacts never enter the runtime image.
+RUN --network=none /opt/build-venv/bin/python -m pip wheel \
+      --no-deps --no-build-isolation --no-index --only-binary :all: \
+      --wheel-dir /build/wheels /build/django-common && \
+    sha256sum /build/wheels/*.whl | awk '{print $2 " --hash=sha256:" $1}' > /build/common-wheel.txt && \
+    pip install --require-hashes --only-binary :all: --no-compile --no-deps --no-index \
+      -r /build/common-wheel.txt && \
+    pip check && \
     rm -rf ${VENV_PATH}/lib/python*/site-packages/pip* && \
     rm -f \
       ${VENV_PATH}/bin/activate \
@@ -72,7 +82,8 @@ ENV DJANGO_SETTINGS_MODULE=hello_project.settings \
     PATH=${VENV_PATH}/bin:$PATH
 
 RUN groupadd -g 65532 nonroot && \
-    useradd -u 65532 -g 65532 -d /app -s /sbin/nologin nonroot
+    useradd -u 65532 -g 65532 -d /app -s /sbin/nologin nonroot && \
+    install -d -m 0700 -o 65532 -g 65532 /app/gunicorn-control
 
 WORKDIR /app
 

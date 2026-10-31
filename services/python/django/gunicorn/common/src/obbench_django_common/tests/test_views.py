@@ -79,3 +79,21 @@ class HealthViewTests(SimpleTestCase):
     def test_livez_returns_200(self) -> None:
         response = views.livez(RequestFactory().get("/livez"))
         self.assertEqual(200, response.status_code)
+
+    def test_probes_accept_get_and_head_with_empty_bodies(self) -> None:
+        factory = RequestFactory()
+        for view in (views.healthz, views.readyz, views.livez):
+            for method in ("GET", "HEAD"):
+                with self.subTest(view=view.__name__, method=method):
+                    response = view(factory.generic(method, f"/{view.__name__}"))
+                    self.assertEqual(200, response.status_code)
+                    self.assertEqual(b"", response.content)
+
+    def test_probes_reject_other_methods(self) -> None:
+        factory = RequestFactory()
+        for view in (views.healthz, views.readyz, views.livez):
+            for method in ("POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"):
+                with self.subTest(view=view.__name__, method=method):
+                    response = view(factory.generic(method, f"/{view.__name__}"))
+                    self.assertEqual(405, response.status_code)
+                    self.assertEqual("GET, HEAD", response["Allow"])
