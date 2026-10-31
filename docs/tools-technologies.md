@@ -1029,7 +1029,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Performance**   | Cache              | cachetools                 | 7.2.7    | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+      | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2       | Local multi-service orchestration                                    |
-| **Platform**      | Tooling            | Docker CLI                 | 29.8.2   | Image build and lifecycle management                                 |
+| **Platform**      | Tooling            | Docker CLI                 | 29.9.2   | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0   | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.1   | Frontend dependency management                                       |
