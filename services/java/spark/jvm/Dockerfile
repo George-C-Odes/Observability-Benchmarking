@@ -1,9 +1,9 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 ARG MAVEN_RELEASE=3.10.0
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:f9518b74815721f537a7458cc693b4406208c04fce23bbffab511516117f34fd
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------

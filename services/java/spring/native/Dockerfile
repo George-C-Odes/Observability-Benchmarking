@@ -1,9 +1,9 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
 ARG JAVA_MINOR_RELEASE=.0.4
 ARG BASE_BUILDER=ol9
-ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot
+ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:3ee00291cf386ec52a552e6a858d555debd74776eb4bfa53fa3df2cd6677515e
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 # ------------ BUILD STAGE -----------------------
 FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder

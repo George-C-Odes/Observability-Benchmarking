@@ -1,7 +1,7 @@
-# syntax=docker/dockerfile:1.7
-ARG IMAGE_BUILDER=maven:3.10.0-eclipse-temurin-25-noble
-ARG IMAGE_DOCKER_CLI=docker:29.8.2-cli-alpine3.24
-ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+ARG IMAGE_BUILDER=maven:3.10.0-eclipse-temurin-25-noble@sha256:51a751cf747bad5968979a66142d443e8d94854172c3891ae2496edec544c6b3
+ARG IMAGE_DOCKER_CLI=docker:29.8.2-cli-alpine3.24@sha256:35cfcf893c20f2931f4909151b5407aaaeab711277de7ce8b8f521f095d54c32
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:f9518b74815721f537a7458cc693b4406208c04fce23bbffab511516117f34fd
 ARG JAVA_RELEASE=25
 #ARG IMAGE_RUNTIME=amazoncorretto:25.0.4
 ## amazoncorretto includes curl for troubleshooting
