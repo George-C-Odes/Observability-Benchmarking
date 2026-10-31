@@ -52,7 +52,7 @@ jobs:
       - name: Install PMD
         shell: bash
         env:
-          PMD_VERSION: '7.28.0'
+          PMD_VERSION: '7.29.0'
           PMD_SHA256: 'f974ba571f7bc01c73fffe11bade25fbc1f438698f9e9c00e416e8d65e9fbac2'
         run: |
           # Use the CLI because pmd/pmd-github-action still declares Node 20.

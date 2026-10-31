@@ -13,12 +13,11 @@ public class QuarkusHeartbeatScheduler implements HeartbeatScheduler {
 
   /** Single-threaded scheduler used to execute heartbeat tasks. */
   private final ScheduledExecutorService scheduler =
-      Executors.newSingleThreadScheduledExecutor(
-          r -> {
-            Thread t = new Thread(r, "orchestrator-heartbeats");
-            t.setDaemon(true);
-            return t;
-          });
+      Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "orchestrator-heartbeats");
+        t.setDaemon(true);
+        return t;
+      });
 
   /**
    * Schedules the provided heartbeat task at a fixed interval.

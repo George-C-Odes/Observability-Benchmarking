@@ -81,13 +81,12 @@ class JobManagerUnitTest {
         manager
             .events(jobId)
             .subscribe()
-            .with(
-                event -> {
-                  events.add(event);
-                  if ("terminalSummary".equals(event.type())) {
-                    terminal.countDown();
-                  }
-                });
+            .with(event -> {
+              events.add(event);
+              if ("terminalSummary".equals(event.type())) {
+                terminal.countDown();
+              }
+            });
 
     try {
       assertTrue(terminal.await(2, TimeUnit.SECONDS), "job should reach terminal state");
@@ -103,10 +102,8 @@ class JobManagerUnitTest {
         seenEnv.get());
     assertTrue(
         events.stream()
-            .anyMatch(
-                e ->
-                    "status".equals(e.type())
-                        && e.message().startsWith(": heartbeat #1 uptimeMs=")));
+            .anyMatch(e ->
+                "status".equals(e.type()) && e.message().startsWith(": heartbeat #1 uptimeMs=")));
     assertTrue(
         events.stream().anyMatch(e -> "log".equals(e.type()) && "hello".equals(e.message())));
     assertTrue(events.stream().anyMatch(e -> "req-42".equals(e.requestId())));
@@ -158,13 +155,12 @@ class JobManagerUnitTest {
         manager
             .events(jobId)
             .subscribe()
-            .with(
-                event -> {
-                  events.add(event);
-                  if ("terminalSummary".equals(event.type())) {
-                    terminal.countDown();
-                  }
-                });
+            .with(event -> {
+              events.add(event);
+              if ("terminalSummary".equals(event.type())) {
+                terminal.countDown();
+              }
+            });
 
     try {
       assertTrue(terminal.await(2, TimeUnit.SECONDS), "failed job should reach terminal state");
@@ -177,10 +173,9 @@ class JobManagerUnitTest {
     assertNull(manager.status(jobId).exitCode());
     assertTrue(
         events.stream()
-            .anyMatch(
-                e ->
-                    "status".equals(e.type())
-                        && e.message().startsWith("FAILED exception=IllegalStateException boom")));
+            .anyMatch(e ->
+                "status".equals(e.type())
+                    && e.message().startsWith("FAILED exception=IllegalStateException boom")));
     assertTrue(
         admissionClosedSignal.await(1, TimeUnit.SECONDS),
         "admission should be released during failure cleanup");
@@ -230,13 +225,12 @@ class JobManagerUnitTest {
         manager
             .events(jobId)
             .subscribe()
-            .with(
-                event -> {
-                  events.add(event);
-                  if ("terminalSummary".equals(event.type())) {
-                    terminal.countDown();
-                  }
-                });
+            .with(event -> {
+              events.add(event);
+              if ("terminalSummary".equals(event.type())) {
+                terminal.countDown();
+              }
+            });
 
     try {
       assertTrue(
@@ -252,12 +246,11 @@ class JobManagerUnitTest {
         commandRunnerInvoked.get(), "command runner must not start after heartbeat failure");
     assertTrue(
         events.stream()
-            .anyMatch(
-                e ->
-                    "status".equals(e.type())
-                        && e.message()
-                            .startsWith(
-                                "FAILED exception=RejectedExecutionException scheduler stopped")));
+            .anyMatch(e ->
+                "status".equals(e.type())
+                    && e.message()
+                        .startsWith(
+                            "FAILED exception=RejectedExecutionException scheduler stopped")));
     assertTrue(
         admissionClosedSignal.await(1, TimeUnit.SECONDS),
         "admission should be released when heartbeat scheduling fails");
@@ -309,12 +302,11 @@ class JobManagerUnitTest {
         manager
             .events(jobId)
             .subscribe()
-            .with(
-                event -> {
-                  if ("terminalSummary".equals(event.type())) {
-                    terminal.countDown();
-                  }
-                });
+            .with(event -> {
+              if ("terminalSummary".equals(event.type())) {
+                terminal.countDown();
+              }
+            });
 
     try {
       assertTrue(

@@ -59,40 +59,38 @@ public class RunPresetService {
     try (var s = Files.list(runDir)) {
       s.filter(Files::isRegularFile)
           .sorted(Comparator.comparing(p -> fileName(p).toLowerCase(Locale.ROOT)))
-          .forEach(
-              (Path p) -> {
-                String fn = fileName(p);
-                Matcher m = RUN_FILE.matcher(fn);
-                if (!m.matches()) {
-                  return;
-                }
+          .forEach((Path p) -> {
+            String fn = fileName(p);
+            Matcher m = RUN_FILE.matcher(fn);
+            if (!m.matches()) {
+              return;
+            }
 
-                String category = m.group(1);
+            String category = m.group(1);
 
-                try {
-                  IntelliJRunXmlParser.ParsedRunConfig cfg = IntelliJRunXmlParser.parse(p);
-                  String title =
-                      normalizeTitle(category, cfg.name() != null ? cfg.name() : m.group(2));
-                  String cmd = IntelliJRunXmlParser.toDockerCommand(cfg, workspace);
+            try {
+              IntelliJRunXmlParser.ParsedRunConfig cfg = IntelliJRunXmlParser.parse(p);
+              String title = normalizeTitle(category, cfg.name() != null ? cfg.name() : m.group(2));
+              String cmd = IntelliJRunXmlParser.toDockerCommand(cfg, workspace);
 
-                  if (cmd == null || cmd.isBlank()) {
-                    log.warnf(
-                        "Skipping %s: unsupported/empty command (type=%s deploymentType=%s)",
-                        fn, cfg.configType(), cfg.deploymentType());
-                    return;
-                  }
+              if (cmd == null || cmd.isBlank()) {
+                log.warnf(
+                    "Skipping %s: unsupported/empty command (type=%s deploymentType=%s)",
+                    fn, cfg.configType(), cfg.deploymentType());
+                return;
+              }
 
-                  // Relative path is friendliest to show in UI
-                  String sourceFile = ".run/" + fn;
+              // Relative path is friendliest to show in UI
+              String sourceFile = ".run/" + fn;
 
-                  out.add(new RunPreset(category, title, cmd, sourceFile));
-                } catch (IOException
-                    | ParserConfigurationException
-                    | SAXException
-                    | IllegalArgumentException e) {
-                  log.warnf(e, "Failed to parse %s", fn);
-                }
-              });
+              out.add(new RunPreset(category, title, cmd, sourceFile));
+            } catch (IOException
+                | ParserConfigurationException
+                | SAXException
+                | IllegalArgumentException e) {
+              log.warnf(e, "Failed to parse %s", fn);
+            }
+          });
     } catch (IOException | SecurityException e) {
       log.warnf(e, "Failed to list .run directory: %s", runDir);
     }

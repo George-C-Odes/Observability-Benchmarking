@@ -12,7 +12,7 @@
     <compiler-plugin.version>3.16.0</compiler-plugin.version>
     <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
     <findsecbugs.version>1.14.0</findsecbugs.version>
-    <google-java-format.version>1.36.1</google-java-format.version>
+    <google-java-format.version>2.0.0</google-java-format.version>
     <jacoco.skip>false</jacoco.skip>
     <jacoco.version>0.8.16</jacoco.version>
     <maven.compiler.release>25</maven.compiler.release>
@@ -24,7 +24,7 @@
     <pmd.failure.priority>3</pmd.failure.priority>
     <pmd.include.tests>false</pmd.include.tests>
     <pmd.ruleset.path>quality/pmd-rules.xml</pmd.ruleset.path>
-    <pmd.version>7.28.0</pmd.version>
+    <pmd.version>7.29.0</pmd.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
