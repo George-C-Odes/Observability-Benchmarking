@@ -272,6 +272,42 @@ class RuntimeEntrypointTests(TestCase):
         post_fork_init.assert_called_once_with()
         shutdown_sdk.assert_called_once_with()
 
+    def test_gunicorn_configs_prepare_private_directories_only_on_starting(self) -> None:
+        for runtime in ("WSGI", "ASGI"):
+            with self.subTest(runtime=runtime):
+                with mock.patch(
+                    "obbench_django_common.infrastructure.gunicorn_runtime.prepare_runtime_directories"
+                ) as prepare:
+                    namespace, _ = self._run_path(self._runtime_dir(runtime) / "gunicorn.conf.py")
+                    prepare.assert_not_called()
+                    self.assertEqual("/dev/shm/obbench-gunicorn", namespace["worker_tmp_dir"])
+                    self.assertEqual(
+                        "/app/gunicorn-control/gunicorn.sock", namespace["control_socket"]
+                    )
+                    server = SimpleNamespace(
+                        cfg=SimpleNamespace(
+                            worker_tmp_dir=namespace["worker_tmp_dir"],
+                            control_socket=namespace["control_socket"],
+                        )
+                    )
+                    namespace["on_starting"](server)
+                    prepare.assert_called_once_with(
+                        server.cfg.worker_tmp_dir, server.cfg.control_socket
+                    )
+
+    def test_gunicorn_runtime_paths_can_be_overridden(self) -> None:
+        for runtime in ("WSGI", "ASGI"):
+            with self.subTest(runtime=runtime):
+                namespace, _ = self._run_path(
+                    self._runtime_dir(runtime) / "gunicorn.conf.py",
+                    env={
+                        "GUNICORN_WORKER_TMP_DIR": "/private/heartbeat",
+                        "GUNICORN_CONTROL_SOCKET": "/private/control/gunicorn.sock",
+                    },
+                )
+                self.assertEqual("/private/heartbeat", namespace["worker_tmp_dir"])
+                self.assertEqual("/private/control/gunicorn.sock", namespace["control_socket"])
+
     def test_asgi_gunicorn_config_reads_env_and_invokes_hooks(self) -> None:
         namespace, _ = self._run_path(
             self._runtime_dir("ASGI") / "gunicorn.conf.py",

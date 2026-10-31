@@ -95,8 +95,9 @@ max_requests = 0
 
 # Use memory-backed tmpfs for worker heartbeat temp files.
 # Inside Docker the default /tmp is overlayfs; /dev/shm is a real tmpfs.
-# This avoids disk I/O on every heartbeat under heavy load.
-worker_tmp_dir = "/dev/shm"
+# A private 0700 subdirectory is prepared by on_starting after the tmpfs mount
+# exists. This preserves the heartbeat optimization without sharing its directory.
+worker_tmp_dir = os.environ.get("GUNICORN_WORKER_TMP_DIR", "/dev/shm/obbench-gunicorn")
 
 # Disable access log for benchmark purity (OTel captures HTTP metrics).
 accesslog = None
@@ -106,8 +107,8 @@ loglevel = os.environ.get("LOG_LEVEL", "info").lower()
 # ---------------------------------------------------------------------------
 # Control socket (gunicorn ≥ 25)
 # ---------------------------------------------------------------------------
-# The nonroot user cannot create the socket at the default system path.
-control_socket = "/tmp/gunicorn-ctrl.sock"
+# The image provisions this private 0700 directory for the nonroot runtime user.
+control_socket = os.environ.get("GUNICORN_CONTROL_SOCKET", "/app/gunicorn-control/gunicorn.sock")
 
 # ---------------------------------------------------------------------------
 # Misc
@@ -119,6 +120,13 @@ proxy_protocol = False
 # ---------------------------------------------------------------------------
 # Hooks
 # ---------------------------------------------------------------------------
+
+
+def on_starting(server):
+    """Prepare private runtime directories before workers are constructed."""
+    from obbench_django_common.infrastructure.gunicorn_runtime import prepare_runtime_directories
+
+    prepare_runtime_directories(server.cfg.worker_tmp_dir, server.cfg.control_socket)
 
 
 def post_fork(_server, _worker):
