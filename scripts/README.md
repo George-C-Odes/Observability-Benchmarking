@@ -20,6 +20,8 @@ This directory contains small repository-level helper scripts.
 - `test-helpers.mjs` - temporary-directory fixtures with guarded cleanup
 - `snyk-scan.mjs` - runs Snyk Code, Open Source tests, or monitoring with retained logs/reports and distinct findings/error status
 - `snyk-scan.test.mjs` - token-free tests for scan arguments, exit codes, report capture, and CI gate contracts
+- `snyk-report.mjs` - builds safely escaped Actions annotations and Markdown overviews with severity counts, affected files, and reported fixes
+- `snyk-report.test.mjs` - tests overview counts, severity ranking, display limits, missing reports, and output escaping
 
 The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
@@ -34,11 +36,18 @@ node --test scripts/sync-*.test.mjs
 Run the Snyk runner regression tests without credentials or an installed Snyk CLI:
 
 ```powershell
-node --test scripts/snyk-scan.test.mjs
+node --test scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
 ```
 
 The Snyk workflow runs these tests before scanning. Real scans require the Snyk CLI, `SNYK_TOKEN`, and installed
 language/dependency prerequisites; see [Snyk scanning guidance](../docs/SECURITY.md#snyk-automated-scanning).
+
+Each scan adds an overview to the Actions job summary. Findings annotations include totals and up to three
+highest-priority issues; the summary lists up to ten affected files and ten unique issues with reported fixed versions.
+Unique issues are deduplicated by vulnerability/rule ID. Occurrences count SARIF results, not transitive dependency paths.
+Dependency JSON enriches package, severity, and fix details; fixed versions do not guarantee a direct parent/framework upgrade.
+Incomplete scans are marked partial, and missing reports are never displayed as zero findings. The final gate includes a
+status table without repeating the scan's custom error annotation. GitHub's automatic nonzero-exit annotations remain.
 
 ### Sonar test classification
 

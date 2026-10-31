@@ -88,7 +88,7 @@ jobs:
 
       - name: Test Snyk scan runner
         if: env.SNYK_TOKEN != ''
-        run: node --test scripts/snyk-scan.test.mjs
+        run: node --test scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
 
       - name: Prepare dependency resolution
         if: env.SNYK_TOKEN != ''
@@ -168,7 +168,7 @@ jobs:
           path: snyk-results/
           retention-days: 14
 
-      - name: Fail if Snyk findings or scan errors are reported
+      - name: Enforce Snyk security gate
         if: always() && !cancelled()
         shell: bash
         env:
@@ -184,9 +184,23 @@ jobs:
             exit 0
           fi
           echo "Code: ${CODE_RESULT:-not completed}; dependencies: ${TEST_RESULT:-not completed}; monitor: ${MONITOR_RESULT:-skipped}."
+          {
+            echo '### Snyk security gate'
+            echo
+            echo '| Scan | Result | Step outcome |'
+            echo '| --- | --- | --- |'
+            echo "| Code | ${CODE_RESULT:-not completed} | ${CODE_OUTCOME:-not completed} |"
+            echo "| Dependencies | ${TEST_RESULT:-not completed} | ${TEST_OUTCOME:-not completed} |"
+            echo "| Monitor | ${MONITOR_RESULT:-skipped} | ${MONITOR_OUTCOME:-skipped} |"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
           if [[ "$CODE_OUTCOME" != "success" || \
                 "$TEST_OUTCOME" != "success" || \
                 "$MONITOR_OUTCOME" == "failure" ]]; then
-            echo "::error::Snyk reported findings or incomplete scans. See the step summaries and snyk-results artifact."
+            # The scan runner already emitted an actionable findings/error
+            # annotation. Do not repeat it with a generic custom annotation.
+            echo 'Security gate blocked. See the findings overviews above and the snyk-results artifact.'
+            echo '**Blocked:** security findings or incomplete scans. See the findings overviews and Code Scanning for details.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+          echo '**Passed:** required scans completed without findings.' >> "$GITHUB_STEP_SUMMARY"

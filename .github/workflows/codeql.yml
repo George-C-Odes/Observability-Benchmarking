@@ -62,6 +62,8 @@ jobs:
       matrix:
         include:
           - language: java-kotlin
+            # Compile to capture Lombok annotation processing and Quarkus
+            # generated sources; do not switch to none just to enable overlays.
             build-mode: manual
           - language: python
             build-mode: none
@@ -142,6 +144,12 @@ jobs:
       - name: Initialize CodeQL
         if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
         uses: ./.github/actions/codeql-action
+        env:
+          # Java manual builds cannot use overlay databases. Explicitly select
+          # the existing fresh-database fallback to avoid the PR warning without
+          # changing extraction or the Maven dependency cache. An empty value
+          # leaves the other languages' default overlay behavior unchanged.
+          CODEQL_OVERLAY_DATABASE_MODE: ${{ matrix.language == 'java-kotlin' && 'none' || '' }}
         with:
           phase: init
           languages: ${{ matrix.language }}
@@ -165,6 +173,8 @@ jobs:
       # • On push / PR: only modules whose source tree actually changed
       #   are built; shared config changes (checkstyle, workflow, action) trigger
       #   a full rebuild.
+      #   A fresh CodeQL database contains only modules compiled in this run;
+      #   unbuilt modules are not restored from a cached overlay base.
       # ----------------------------------------------------------------
       - name: Build Java modules
         id: build-java

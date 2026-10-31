@@ -5,6 +5,7 @@ import { finished } from 'node:stream/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { mergeSnykSarif } from './snyk-sarif.mjs';
+import { renderScanReport, summarizeSarif } from './snyk-report.mjs';
 
 // Only these literal artifact names may be written. No CLI input is a file path.
 const artifacts = Object.freeze({
@@ -61,6 +62,30 @@ function prepareOpenSourceSarif(files, required) {
   writeFileSync(files.githubSarif, `${JSON.stringify(report, null, 2)}\n`);
 }
 
+function scanOverview(mode, files) {
+  if (mode === 'monitor') return {};
+  try {
+    checkArtifactTarget(files.directory, true);
+    checkArtifactTarget(files.sarif);
+    const sarif = JSON.parse(readFileSync(files.sarif, 'utf8'));
+    let dependencies;
+    let overviewError = '';
+    if (mode === 'test') {
+      try {
+        checkArtifactTarget(files.json);
+        dependencies = JSON.parse(readFileSync(files.json, 'utf8'));
+      } catch {
+        overviewError = 'Dependency JSON details unavailable; severity and counts use SARIF only.';
+      }
+    }
+    return { overview: summarizeSarif(sarif, dependencies), overviewError };
+  } catch {
+    // Never present missing/malformed reports as zero findings or change the
+    // authoritative scan outcome because optional display data is unavailable.
+    return { overviewError: 'No readable SARIF overview was produced. See the scan logs for details.' };
+  }
+}
+
 // Exclude generated dependencies, build output, and installed agent packages,
 // not source manifests (including .github's CI dependency inventories).
 const discoveryArgs = [
@@ -110,6 +135,9 @@ export async function runScan(mode, {
     // Never publish a previous scan's SARIF when this scan fails to produce it.
     rmSync(files.sarif, { force: true });
     rmSync(files.githubSarif, { force: true });
+    rmSync(files.json, { force: true });
+  } else if (mode === 'code') {
+    rmSync(files.sarif, { force: true });
   }
   const log = createWriteStream(files.log);
   // Attach error handling before streaming so filesystem errors cannot be lost.
@@ -151,15 +179,10 @@ export async function runScan(mode, {
   writeFileSync(files.status,
     `${JSON.stringify({ mode, exitCode, result }, null, 2)}\n`);
   if (outputPath) appendFileSync(outputPath, `exit-code=${exitCode}\nresult=${result}\n`);
-  if (summaryPath) {
-    appendFileSync(summaryPath, `### Snyk ${mode}\n\nResult: **${result}** (exit code ${exitCode}). `
-      + `See the \`snyk-results\` artifact for logs and available reports.\n\n`);
-  }
-  if (result !== 'clean') {
-    stderr.write(result === 'findings'
-      ? `::error::Snyk ${mode} reported security findings (exit code ${exitCode}).\n`
-      : `::error::Snyk ${mode} failed to complete (exit code ${exitCode}); coverage is not complete.\n`);
-  }
+  const { overview, overviewError } = scanOverview(mode, files);
+  const report = renderScanReport(mode, result, exitCode, overview, overviewError);
+  if (summaryPath) appendFileSync(summaryPath, report.summary);
+  if (report.annotation) stderr.write(report.annotation);
   return { exitCode, result };
 }
 

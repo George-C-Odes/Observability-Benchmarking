@@ -164,12 +164,17 @@ for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 0], ['test', 
     const report = dependencySarif();
     if (exitCode === 0) for (const run of report.runs) run.results = [];
     const rawSarif = JSON.stringify(report);
+    const rawJson = JSON.stringify({ vulnerabilities: exitCode === 0 ? [] : [
+      { id: 'SNYK-A', severity: 'high', title: 'Vulnerable library', packageName: 'example-library', fixedIn: ['2.0'] },
+    ] });
     writeFileSync(fakeCli, `
       import { writeFileSync } from 'node:fs';
       console.log('Fake Snyk stdout');
       console.error('Fake Snyk stderr');
       for (const arg of process.argv.slice(2)) {
-        if (arg === '--json-file-output=snyk-results/test.json') writeFileSync('snyk-results/test.json', '{}');
+        if (arg === '--json-file-output=snyk-results/test.json') {
+          writeFileSync('snyk-results/test.json', ${JSON.stringify(rawJson)});
+        }
         if (arg === '--sarif-file-output=snyk-results/test.sarif') {
           writeFileSync('snyk-results/test.sarif', ${JSON.stringify(rawSarif)});
         }
@@ -192,7 +197,7 @@ for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 0], ['test', 
     assert.deepEqual(result, { exitCode, result: expectedResult });
     if (expectedResult === 'findings') assert.match(diagnostics, /reported security findings/);
     if (expectedResult === 'error') assert.match(diagnostics, /failed to complete/);
-    if (expectedResult === 'clean') assert.ok(!diagnostics.includes('::error::'));
+    if (expectedResult === 'clean') assert.ok(!diagnostics.includes('::error'));
     const log = readFileSync(files.log, 'utf8');
     assert.match(log, /Fake Snyk stdout/);
     assert.match(log, /Fake Snyk stderr/);
@@ -204,7 +209,15 @@ for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 0], ['test', 
     if (mode === 'test') {
       assert.equal(readFileSync(files.sarif, 'utf8'), rawSarif);
       assert.deepEqual(JSON.parse(readFileSync(files.githubSarif, 'utf8')), mergeSnykSarif(report));
-      assert.equal(readFileSync(files.json, 'utf8'), '{}');
+      assert.equal(readFileSync(files.json, 'utf8'), rawJson);
+      const summary = readFileSync(summaryPath, 'utf8');
+      assert.match(summary, /\| Severity \| Unique issues \| Occurrences \|/);
+      assert.match(summary, /Dependency projects reported: \*\*2\*\*/);
+      if (expectedResult === 'findings') {
+        assert.match(diagnostics, /2 unique issues; 2 occurrences across 2 affected files/);
+        assert.match(diagnostics, /fixed in 2\.0/);
+        assert.match(summary, /example-library/);
+      }
     }
   });
 }
@@ -298,4 +311,7 @@ test('workflow keeps required scans gated and snapshots restricted to trusted ma
   assert.match(workflow, /"\$CODE_OUTCOME" != "success"/);
   assert.match(workflow, /"\$TEST_OUTCOME" != "success"/);
   assert.match(workflow, /"\$MONITOR_OUTCOME" == "failure"/);
+  assert.match(workflow, /node --test scripts\/snyk-scan\.test\.mjs scripts\/snyk-report\.test\.mjs/);
+  assert.ok(!workflow.includes('echo "::error::Snyk reported findings or incomplete scans.'));
+  assert.match(workflow, /\| Scan \| Result \| Step outcome \|/);
 });
