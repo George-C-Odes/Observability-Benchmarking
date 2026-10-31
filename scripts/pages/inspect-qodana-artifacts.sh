@@ -14,7 +14,7 @@ set -euo pipefail
 
 response_file="$(mktemp)"
 trap 'rm -f "$response_file"' EXIT
-if ! curl -fsSL \
+if ! curl -fsSL --proto '=https' --proto-redir '=https' \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \

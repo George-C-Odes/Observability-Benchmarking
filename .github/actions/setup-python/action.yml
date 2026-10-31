@@ -1,0 +1,24 @@
+name: Set up Python
+description: Set up Python using the repository's shared, pinned GitHub action.
+
+inputs:
+  python-version:
+    description: Python version to install; defaults to the repository's CI version.
+    required: false
+    default: '3.13'
+  cache:
+    description: Package manager whose dependencies should be cached (pip, pipenv, or poetry).
+    required: false
+  cache-dependency-path:
+    description: Dependency file paths or globs used to calculate the cache key.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: ${{ inputs.cache }}
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}

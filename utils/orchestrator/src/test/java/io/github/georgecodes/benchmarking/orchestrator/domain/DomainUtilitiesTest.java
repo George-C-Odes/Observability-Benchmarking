@@ -57,16 +57,16 @@ class DomainUtilitiesTest {
     Files.writeString(
         xml,
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[multi-cont] Start Stack" type="ShConfigurationType">
-          <option name="SCRIPT_TEXT"><![CDATA[
-            echo preparing
-            docker compose --project-directory $PROJECT_DIR$/compose up -d
-            docker ps
-          ]]></option>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[multi-cont] Start Stack" type="ShConfigurationType">
+            <option name="SCRIPT_TEXT"><![CDATA[
+              echo preparing
+              docker compose --project-directory $PROJECT_DIR$/compose up -d
+              docker ps
+            ]]></option>
+          </configuration>
+        </component>
+        """);
 
     IntelliJRunXmlParser.ParsedRunConfig cfg = IntelliJRunXmlParser.parse(xml);
 
@@ -86,33 +86,33 @@ class DomainUtilitiesTest {
     Files.writeString(
         xml,
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[build-img] Build Sample" type="docker-deploy">
-          <deployment type="dockerfile">
-            <settings>
-              <option name="imageTag" value="local/sample:dev"/>
-              <option name="sourceFilePath" value="/workspace/service dir/Dockerfile"/>
-              <option name="buildArgs">
-                <list>
-                  <DockerEnvVarImpl>
-                    <option name="name" value="HTTP_PORT"/>
-                    <option name="value" value="8080"/>
-                  </DockerEnvVarImpl>
-                  <DockerEnvVarImpl>
-                    <option name="name" value="GREETING"/>
-                    <option name="value" value="hello world"/>
-                  </DockerEnvVarImpl>
-                  <DockerEnvVarImpl>
-                    <option name="name" value=""/>
-                    <option name="value" value="ignored"/>
-                  </DockerEnvVarImpl>
-                </list>
-              </option>
-            </settings>
-          </deployment>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[build-img] Build Sample" type="docker-deploy">
+            <deployment type="dockerfile">
+              <settings>
+                <option name="imageTag" value="local/sample:dev"/>
+                <option name="sourceFilePath" value="/workspace/service dir/Dockerfile"/>
+                <option name="buildArgs">
+                  <list>
+                    <DockerEnvVarImpl>
+                      <option name="name" value="HTTP_PORT"/>
+                      <option name="value" value="8080"/>
+                    </DockerEnvVarImpl>
+                    <DockerEnvVarImpl>
+                      <option name="name" value="GREETING"/>
+                      <option name="value" value="hello world"/>
+                    </DockerEnvVarImpl>
+                    <DockerEnvVarImpl>
+                      <option name="name" value=""/>
+                      <option name="value" value="ignored"/>
+                    </DockerEnvVarImpl>
+                  </list>
+                </option>
+              </settings>
+            </deployment>
+          </configuration>
+        </component>
+        """);
 
     IntelliJRunXmlParser.ParsedRunConfig cfg = IntelliJRunXmlParser.parse(xml);
 
@@ -141,19 +141,19 @@ class DomainUtilitiesTest {
     Files.writeString(
         xml,
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="No Settings" type="docker-deploy">
-          <deployment type="dockerfile"/>
-          <option value="ignored-without-name"/>
-          <option name="imageTag" value="local/no-settings:dev"/>
-          <option name="sourceFilePath" value="Dockerfile"/>
-          <option name="description">
-            Uses option text when the value attribute is blank.
-          </option>
-          <option name="buildArgs"><list/></option>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="No Settings" type="docker-deploy">
+            <deployment type="dockerfile"/>
+            <option value="ignored-without-name"/>
+            <option name="imageTag" value="local/no-settings:dev"/>
+            <option name="sourceFilePath" value="Dockerfile"/>
+            <option name="description">
+              Uses option text when the value attribute is blank.
+            </option>
+            <option name="buildArgs"><list/></option>
+          </configuration>
+        </component>
+        """);
 
     IntelliJRunXmlParser.ParsedRunConfig cfg = IntelliJRunXmlParser.parse(xml);
 

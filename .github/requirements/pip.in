@@ -1,0 +1,2 @@
+# Use the same constraint-hash behavior in Actions and the older Qodana image.
+pip==26.2.2

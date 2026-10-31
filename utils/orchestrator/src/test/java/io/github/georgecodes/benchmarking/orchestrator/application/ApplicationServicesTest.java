@@ -145,37 +145,37 @@ class ApplicationServicesTest {
     Files.writeString(
         runDir.resolve("[build-img] Build Sample.run.xml"),
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[build-img] Build Sample" type="docker-deploy">
-          <deployment type="dockerfile">
-            <settings>
-              <option name="imageTag" value="local/sample:dev"/>
-              <option name="sourceFilePath" value="/workspace/services/sample/Dockerfile"/>
-            </settings>
-          </deployment>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[build-img] Build Sample" type="docker-deploy">
+            <deployment type="dockerfile">
+              <settings>
+                <option name="imageTag" value="local/sample:dev"/>
+                <option name="sourceFilePath" value="/workspace/services/sample/Dockerfile"/>
+              </settings>
+            </deployment>
+          </configuration>
+        </component>
+        """);
     Files.writeString(
         runDir.resolve("[multi-cont] Start Stack.run.xml"),
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[multi-cont] Start Stack" type="ShConfigurationType">
-          <option name="SCRIPT_TEXT"><![CDATA[
-            docker compose --project-directory $PROJECT_DIR$/compose up -d
-          ]]></option>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[multi-cont] Start Stack" type="ShConfigurationType">
+            <option name="SCRIPT_TEXT"><![CDATA[
+              docker compose --project-directory $PROJECT_DIR$/compose up -d
+            ]]></option>
+          </configuration>
+        </component>
+        """);
     Files.writeString(
         runDir.resolve("[single-cont] Unsupported.run.xml"),
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[single-cont] Unsupported" type="ShConfigurationType">
-          <option name="SCRIPT_TEXT" value="echo not docker"/>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[single-cont] Unsupported" type="ShConfigurationType">
+            <option name="SCRIPT_TEXT" value="echo not docker"/>
+          </configuration>
+        </component>
+        """);
     Files.writeString(runDir.resolve("[single-cont] Broken.run.xml"), "<component>");
     Files.writeString(runDir.resolve("ignored.txt"), "ignored");
 
@@ -226,30 +226,30 @@ class ApplicationServicesTest {
     Files.writeString(
         runDir.resolve("[MULTI-CONT] z-last.run.xml"),
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[MULTI-CONT] z-last" type="ShConfigurationType">
-          <option name="SCRIPT_TEXT" value="docker ps"/>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[MULTI-CONT] z-last" type="ShConfigurationType">
+            <option name="SCRIPT_TEXT" value="docker ps"/>
+          </configuration>
+        </component>
+        """);
     Files.writeString(
         runDir.resolve("[single-cont] A-first.run.xml"),
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="[single-cont] A-first" type="ShConfigurationType">
-          <option name="SCRIPT_TEXT" value="docker images"/>
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="[single-cont] A-first" type="ShConfigurationType">
+            <option name="SCRIPT_TEXT" value="docker images"/>
+          </configuration>
+        </component>
+        """);
     Files.writeString(
         runDir.resolve("[build-img] Blank.run.xml"),
         """
-      <component name="ProjectRunConfigurationManager">
-        <configuration default="false" name="Blank" type="ShConfigurationType">
-          <option name="SCRIPT_TEXT" value="   " />
-        </configuration>
-      </component>
-      """);
+        <component name="ProjectRunConfigurationManager">
+          <configuration default="false" name="Blank" type="ShConfigurationType">
+            <option name="SCRIPT_TEXT" value="   " />
+          </configuration>
+        </component>
+        """);
     Files.writeString(runDir.resolve("not-a-preset.run.xml"), "ignored");
 
     RunPresetService service =

@@ -136,8 +136,8 @@ The project implements a comprehensive testing strategy covering:
 ```
 Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
 Maven: 3.9+
-Spring Boot: 4.1.1 (3.5.16 also supported)
-Quarkus: 3.40.1
+Spring Boot: 4.1.2 (3.5.16 also supported)
+Quarkus: 3.40.1.1
 ```
 
 > **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
@@ -239,7 +239,7 @@ public void testPlatformEndpoint() throws Exception {
 ```
 
 **Key Features Tested**:
-- Spring Boot 4.1.1 with OpenTelemetry Java Agent
+- Spring Boot 4.1.2 with OpenTelemetry Java Agent
 - Micrometer metrics integration
 - Platform vs. Virtual thread behavior
 - POM refactoring (no parent dependency)
@@ -304,7 +304,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.27.2+
+Go: 1.27.3+
 Fiber: v3.6.1
 OpenTelemetry: Latest stable
 ```
@@ -475,7 +475,7 @@ The quality workflow does more than execute tests:
 2. Installs the shared package into each runtime module environment.
 3. Prints the Ruff version, runs module syntax checks, Ruff lint and format checks, `python manage.py check`, and the shared test suite.
 
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v7.0.0` is exercised on Node 24 ahead of GitHub's runtime migration.
+The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v7.1.0` is exercised on Node 24 ahead of GitHub's runtime migration.
 
 Use the following sequence when you want to reproduce the CI gates locally:
 
@@ -571,13 +571,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.4.1
+Next.js: 16.4.3
 React: 19.3.1
 TypeScript: 7.0.2
-Vitest: 5.0.4
-@vitest/coverage-v8: 5.0.4
-Oxlint: 1.88.0
-Oxfmt: 0.73.0
+Vitest: 5.0.5
+@vitest/coverage-v8: 5.0.5
+Oxlint: 1.90.0
+Oxfmt: 0.75.0
 ```
 
 #### Test Structure
@@ -875,16 +875,16 @@ Integration Test Suite
 ==========================================
 
 Testing Framework Versions:
-- Spring Boot: 4.1.1
-- Quarkus: 3.40.1
-- Micronaut: 5.2.15
-- Helidon: 4.5.5
-- Spark: 3.0.4
-- Javalin: 7.2.3
+- Spring Boot: 4.1.2
+- Quarkus: 3.40.1.1
+- Micronaut: 5.2.21
+- Helidon: 4.5.6
+- Spark: 3.0.5
+- Javalin: 7.2.4
 - Dropwizard: 5.0.2
 - Vert.x: 5.1.7
 - Pekko: 1.3.0
-- Go: 1.27.2
+- Go: 1.27.3
 - Django: 6.1.2
 
 ==========================================
@@ -1294,7 +1294,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.27.2 | Build version: go1.27.2
+2025-12-16T10:30:00.123Z Runtime version: go1.27.3 | Build version: go1.27.3
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1354,7 +1354,7 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 
 All 12 Java/Maven JVM modules are instrumented with the
 [JaCoCo Maven plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
-(version 0.8.15). Coverage reports are generated automatically during the
+(version 0.8.16). Coverage reports are generated automatically during the
 Maven `verify` phase — no extra flags are needed.
 
 #### Running locally
@@ -1443,7 +1443,7 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.4](https://vitest.dev/) with the matching
+[Vitest 5.0.5](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
@@ -1778,7 +1778,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
       - name: Set up Java 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           java-version: '25'
           distribution: 'corretto'
@@ -1810,10 +1810,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
-      - name: Set up Go 1.27.2
+      - name: Set up Go 1.27.3
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.27.2'
+          go-version: '1.27.3'
       
       - name: Test Go Service
         run: |
@@ -1862,10 +1862,10 @@ jobs:
     strategy:
       matrix:
         service:
-          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.40.1" }
-          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.1" }
-          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.1" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.2" }
+          - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.40.1.1" }
+          - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.2" }
+          - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.2" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.3" }
     
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1937,7 +1937,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.27.2
+  image: golang:1.27.3
   script:
     - cd services/go/enhanced
     - go mod download

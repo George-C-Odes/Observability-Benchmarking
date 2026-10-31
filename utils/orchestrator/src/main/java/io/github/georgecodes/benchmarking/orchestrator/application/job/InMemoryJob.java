@@ -51,45 +51,42 @@ final class InMemoryJob {
 
   /** Publishes the start status and timestamp as a single state update. */
   void markStarted(Instant startedAt) {
-    state.updateAndGet(
-        previous ->
-            new JobStatusSnapshot(
-                id,
-                "RUNNING",
-                previous.createdAt(),
-                startedAt,
-                previous.finishedAt(),
-                previous.exitCode(),
-                previous.lastLine()));
+    state.updateAndGet(previous ->
+        new JobStatusSnapshot(
+            id,
+            "RUNNING",
+            previous.createdAt(),
+            startedAt,
+            previous.finishedAt(),
+            previous.exitCode(),
+            previous.lastLine()));
   }
 
   /** Publishes terminal lifecycle fields together without losing concurrent log updates. */
   void markFinished(String status, Instant finishedAt, Integer exitCode) {
-    state.updateAndGet(
-        previous ->
-            new JobStatusSnapshot(
-                id,
-                status,
-                previous.createdAt(),
-                previous.startedAt(),
-                finishedAt,
-                exitCode,
-                previous.lastLine()));
+    state.updateAndGet(previous ->
+        new JobStatusSnapshot(
+            id,
+            status,
+            previous.createdAt(),
+            previous.startedAt(),
+            finishedAt,
+            exitCode,
+            previous.lastLine()));
   }
 
   /** Buffers an event and publishes it to the current subscribers in replay order. */
   synchronized void emit(JobEvent event) {
     if ("log".equals(event.type()) && event.message() != null) {
-      state.updateAndGet(
-          previous ->
-              new JobStatusSnapshot(
-                  id,
-                  previous.status(),
-                  previous.createdAt(),
-                  previous.startedAt(),
-                  previous.finishedAt(),
-                  previous.exitCode(),
-                  event.message()));
+      state.updateAndGet(previous ->
+          new JobStatusSnapshot(
+              id,
+              previous.status(),
+              previous.createdAt(),
+              previous.startedAt(),
+              previous.finishedAt(),
+              previous.exitCode(),
+              event.message()));
     }
     if (buffer.size() >= maxLines) {
       buffer.removeFirst();

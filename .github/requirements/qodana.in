@@ -1,0 +1,3 @@
+# Qodana 2026.2 bundles virtualenv requiring platformdirs>=4.4,<5, but ships 3.10.0.
+# Install a verified compatible wheel so the analyzer passes pip check.
+platformdirs==4.13.7

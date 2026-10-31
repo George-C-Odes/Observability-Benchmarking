@@ -206,13 +206,13 @@ class JobInfrastructureTest {
     Files.writeString(
         source,
         """
-      public class EchoProgram {
-        public static void main(String[] args) {
-          System.out.println("stdout:" + System.getenv("ORCH_TEST_ENV"));
-          System.err.println("stderr:" + args[0]);
+        public class EchoProgram {
+          public static void main(String[] args) {
+            System.out.println("stdout:" + System.getenv("ORCH_TEST_ENV"));
+            System.err.println("stderr:" + args[0]);
+          }
         }
-      }
-      """);
+        """);
 
     ProcessCommandRunner runner = new ProcessCommandRunner();
     List<JobEvent> events = new ArrayList<>();
@@ -232,19 +232,17 @@ class JobInfrastructureTest {
         "the initial status should describe the command being executed");
     assertTrue(
         events.stream()
-            .anyMatch(
-                e ->
-                    "log".equals(e.type())
-                        && "stdout".equals(e.stream())
-                        && "stdout:VALUE".equals(e.message())),
+            .anyMatch(e ->
+                "log".equals(e.type())
+                    && "stdout".equals(e.stream())
+                    && "stdout:VALUE".equals(e.message())),
         "stdout should contain the environment value passed to the process");
     assertTrue(
         events.stream()
-            .anyMatch(
-                e ->
-                    "log".equals(e.type())
-                        && "stderr".equals(e.stream())
-                        && e.message().startsWith("stderr:")),
+            .anyMatch(e ->
+                "log".equals(e.type())
+                    && "stderr".equals(e.stream())
+                    && e.message().startsWith("stderr:")),
         "stderr should be captured in a separate log event");
   }
 

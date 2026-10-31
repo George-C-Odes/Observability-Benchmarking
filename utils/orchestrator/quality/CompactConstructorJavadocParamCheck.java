@@ -94,10 +94,9 @@ public final class CompactConstructorJavadocParamCheck {
 
       violations.stream()
           .sorted(Comparator.comparing(Violation::file).thenComparingLong(Violation::line))
-          .forEach(
-              violation ->
-                  System.err.println(
-                      violation.file() + ":" + violation.line() + ": " + violation.message()));
+          .forEach(violation ->
+              System.err.println(
+                  violation.file() + ":" + violation.line() + ": " + violation.message()));
       System.exit(1);
     }
   }

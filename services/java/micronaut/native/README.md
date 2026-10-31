@@ -1,333 +1,39 @@
-# Micronaut Native Service
+# Micronaut native service
 
-## Overview
-A high-performance REST service implementation built with Micronaut 5.2.15 compiled to a **GraalVM native executable**. This service shares the exact same source code as the JVM module (via `build-helper-maven-plugin`) and supports the same three concurrency models — platform threads, virtual threads, and reactive (Reactor) — in a single deployment. The native build trades JIT-level peak throughput for near-instant startup, lower memory usage, and a smaller container image.
+This module compiles the [JVM module's sources](../jvm/src) with GraalVM `native-image`. Its [POM](pom.xml) reuses JVM Java sources, resources, and test sources through `build-helper-maven-plugin`; it has no separate application implementation.
 
-## Purpose
-- Benchmark Micronaut's native image performance across platform threads, virtual threads, and reactive programming models
-- Compare native vs JVM execution using identical source code and endpoint logic
-- Achieve sub-second startup and reduced memory footprint for serverless / high-density deployment scenarios
-- Provide full observability (traces, metrics, logs) in a native binary via the embedded OpenTelemetry SDK
+See the [shared Micronaut guide](../README.md) for the current framework version, endpoint contract, ports, build/run commands, configuration, and telemetry.
 
-## Service Details
+## Native packaging and configuration
 
-### Framework & Runtime
-- **Framework**: Micronaut 5.2.15
-- **Compiler**: GraalVM Native Image 25.0.4 (Enterprise — G1 GC)
-- **Base Java**: 25.0.4
-- **GC**: G1 Garbage Collector (Enterprise only)
-- **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
+The [Dockerfile](Dockerfile) uses the Maven Wrapper in the Oracle GraalVM builder, copies the shared source tree into its workspace, shades the application JAR, and compiles it with the `-Dnative` Maven profile. The final non-root distroless C/C++ runtime image contains the executable rather than a JVM.
 
-### Source Code
-This module contains **no `src/` directory**. Sources, resources, and tests are pulled from the JVM module at build time:
+The runtime image copies `application.yml` to `/native/application.yml` and sets `MICRONAUT_CONFIG_FILES` to that path. Its entrypoint is `./micronaut-native`. Compose supplies native runtime arguments; the POM also defines defaults baked into the binary.
 
-```xml
-<!-- build-helper-maven-plugin -->
-<source>../jvm/src/main/java</source>
-<resource><directory>../jvm/src/main/resources</directory></resource>
-<testSource>../jvm/src/test/java</testSource>
-```
+Compose forces `MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER=false` for this variant. The experimental event-loop route remains available, but it does not use the JVM's Loom-carrier setup. The regular virtual-thread executor is configured separately.
 
-See [`../jvm/README.md`](../jvm/README.md) for the full architecture, source layout, and code walkthrough.
+## Native-image settings
 
-### Endpoints
-Identical to the JVM module:
+The native POM owns the complete flag list, including:
 
-| Endpoint                        | Mode                      | Annotation               |
-|---------------------------------|---------------------------|--------------------------|
-| `GET /hello/platform`           | Platform threads          | `@ExecuteOn("platform")` |
-| `GET /hello/virtual`            | Virtual threads           | `@ExecuteOn("virtual")`  |
-| `GET /hello/virtual-event-loop` | Event-loop (experimental) | `@NonBlocking`           |
-| `GET /hello/reactive`           | Reactive (`Mono`)         | `@NonBlocking`           |
+- Throughput optimization with `-O2` and `-march=native`, G1 GC, and `--no-fallback`. The binary targets the build CPU.
+- Frame/debug metadata plus heap-dump and JFR monitoring support.
+- `-H:+SharedArenaSupport` for Netty shared-arena direct buffers and native access support.
+- Runtime initialization for Netty, Reactor Netty, and the OTel Logback instrumentation.
+- Application/Logback resource inclusion and service-provider metadata merged by the shade plugin.
 
-**Query Parameters** (all endpoints):
+These flags are tied to the configured GraalVM builder. Validate compiler support when changing its image or toolchain.
 
-| Parameter | Type    | Default | Description                           |
-|-----------|---------|---------|---------------------------------------|
-| `sleep`   | int     | `0`     | Sleep duration in **seconds**         |
-| `log`     | boolean | `false` | Logs the current thread name and type |
+## Build and startup troubleshooting
 
-**Responses** follow the same pattern:
-```
-Hello from Micronaut {mode} REST value-1
-```
+| Symptom or constraint                                 | Configuration to inspect                                                                                                                                                     |
+|-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Native compiler runs out of memory                    | Dockerfile `NATIVE_IMAGE_MAX_HEAP` build argument and memory available to the builder                                                                                        |
+| Missing classes or reflective access failures         | Shared [reflect-config.json](../jvm/src/main/resources/META-INF/native-image/io.github.georgecodes/micronaut-native/reflect-config.json) and generated reachability metadata |
+| Netty or OTel initialization fails during compilation | Native POM's `--initialize-at-run-time` directives and shared-arena settings                                                                                                 |
+| Configuration is not found at startup                 | Copied `application.yml`, `MICRONAUT_CONFIG_FILES`, and included resources                                                                                                   |
+| Exporter or service-provider discovery fails          | Shade plugin's `ServicesResourceTransformer`, dependency metadata, and Compose `OTEL_*` settings                                                                             |
 
-## Configuration
+Telemetry uses the embedded SDK. JVM agent options do not apply to this executable; profiling relies on the configured native monitoring support and external collection.
 
-### Build-Time Configuration
-
-#### Native Image Build Arguments
-```bash
-# Core flags
---no-fallback
--march=native
--O2
---gc=G1                                    # Enterprise only
-
-# Memory
--R:+AlwaysPreTouch
--R:MaxGCPauseMillis=200
--R:MaxDirectMemorySize=32M
--R:MaxHeapSize=640M
--R:MinHeapSize=64M
-
-# Debugging & profiling
--H:+PreserveFramePointer
--H:-DeleteLocalSymbols
--H:-StripDebugInfo
--H:GenerateDebugInfo=1
--H:+ReportExceptionStackTraces
-
-# Monitoring
---enable-monitoring=heapdump,jfr
-
-# Resources
--H:IncludeResources=logback.xml|application.yml
-
-# Initialization
---initialize-at-run-time=io.netty
---initialize-at-run-time=io.opentelemetry.instrumentation.logback
---initialize-at-run-time=reactor.netty
-
-# Foreign Memory / Access
--H:+SharedArenaSupport                     # Netty shared-arena direct buffers
---enable-native-access=ALL-UNNAMED
-```
-
-### Runtime Configuration
-
-#### Environment Variables (via Docker Compose)
-
-| Variable                                           | Description                      | Default             |
-|----------------------------------------------------|----------------------------------|---------------------|
-| `CACHE_SIZE`                                       | Number of Caffeine cache entries | `50000`             |
-| `MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_LOOM_CARRIER` | Loom carrier property            | `false` (native)    |
-| `MICRONAUT_NETTY_EVENT_LOOPS_DEFAULT_NUM_THREADS`  | Netty event-loop thread count    | CPU limit           |
-| `MICRONAUT_EXECUTORS_PLATFORM_NTHREADS`            | Platform thread pool size        | CPU limit           |
-| `MICRONAUT_SERVER_THREAD_SELECTION`                | Thread selection strategy        | `MANUAL`            |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`                      | OpenTelemetry collector endpoint | `http://alloy:4317` |
-| `OTEL_SERVICE_NAME`                                | Service name for telemetry       | `micronaut-native`  |
-
-> **Loom carrier is disabled in native.** Native images cannot use `--add-opens` to access VirtualThread internals, so the experimental `loom-carrier` property is forced to `false`.
-
-#### Native Image Runtime Options (Command Line)
-```bash
--Xms64M -Xmx640M
--XX:ActiveProcessorCount=2
--XX:MaxGCPauseMillis=200          # Enterprise
--XX:MaxDirectMemorySize=32M       # Enterprise
--XX:+ExitOnOutOfMemoryError
--XX:+HeapDumpOnOutOfMemoryError
--XX:HeapDumpPath=/var/log/error
-```
-
-### Application Configuration
-Same `application.yml` as the JVM module. The native Dockerfile explicitly copies it into the runtime image and sets `MICRONAUT_CONFIG_FILES=/native/application.yml` so the executable can locate it.
-
-## Observability
-
-### OpenTelemetry Integration (embedded SDK)
-
-The native binary embeds the same OpenTelemetry SDK wiring as the JVM module:
-
-| Signal  | Mechanism                                          | Destination   |
-|---------|----------------------------------------------------|---------------|
-| Traces  | `micronaut-tracing-opentelemetry-http` (auto HTTP) | Alloy → Tempo |
-| Metrics | Micrometer → `OpenTelemetryMeterRegistry` bridge   | Alloy → Mimir |
-| Logs    | Logback OTel appender                              | Alloy → Loki  |
-
-All three signals export via **OTLP gRPC**.
-
-### Custom Application Metrics
-
-#### `hello.request.count` (Counter)
-Same as JVM module — tracks request count per endpoint.
-
-**Tags**: `endpoint` = `/hello/platform` | `/hello/virtual` | `/hello/virtual-event-loop` | `/hello/reactive`
-
-### Standard Metrics
-- HTTP server request metrics
-- JVM memory and GC metrics (adapted for native — G1 available in Enterprise)
-- Process memory (RSS, VSS) and thread metrics (via `micrometer-jvm-extras`)
-
-### Profiling Options
-- **JFR (Java Flight Recorder)**: Supported in Enterprise GraalVM (`--enable-monitoring=jfr`)
-- **eBPF Profiling**: Supported via Alloy/Pyroscope eBPF collector
-- **Pyroscope Java Agent**: Not available (JVM agent only)
-
-## Native Compilation Details
-
-### Reflect Config
-A hand-maintained `reflect-config.json` lives in the JVM module at:
-```
-src/main/resources/META-INF/native-image/io.github.georgecodes/micronaut-native/reflect-config.json
-```
-
-Micronaut's compile-time DI minimises the amount of reflection needed, but some OTel SDK and Netty classes still require explicit entries.
-
-### Shade Plugin
-The native module uses `maven-shade-plugin` to produce a single fat JAR before `native-image` compilation. Key behaviours:
-- Merges `META-INF/services/*` entries (via `ServicesResourceTransformer`)
-- Sets main class via `ManifestResourceTransformer`
-- Excludes overlapping metadata (Netty, OTel, Spring config)
-
-### Build Pipeline (Dockerfile)
-```
-┌──────────────────────────────────────────────────────────┐
-│  Stage 1: builder (GraalVM native-image:25.0.4-ol9)     │
-│  ├── Copy pom.xml + mvnw + checkstyle                   │
-│  ├── mvn dependency:go-offline                           │
-│  ├── Copy JVM module sources (shared)                    │
-│  └── mvn package -Dnative → binary: micronaut-native     │
-├──────────────────────────────────────────────────────────┤
-│  Stage 2: runner (distroless/cc-debian13:nonroot)        │
-│  ├── Copy application.yml                                │
-│  ├── Copy native binary                                  │
-│  └── ENTRYPOINT ["./micronaut-native"]                   │
-└──────────────────────────────────────────────────────────┘
-```
-
-## Performance Characteristics
-
-### Benchmark Results (2 vCPU limit, 28/02/2026)
-
-| Mode     | RPS    | vs JVM  |
-|----------|--------|---------|
-| Platform | 16,000 | −47 %   |
-| Virtual  | 15,000 | −59 %   |
-| Reactive | 14,000 | −55 %   |
-
-### Native Compilation Benefits
-- **Fast Startup**: Sub-second (vs ~2–3 s for JVM)
-- **Low Memory**: ~180 MB peak (vs ~431 MB for JVM)
-- **Small Image**: ~348 MB container image
-- **No JIT Warmup**: Instant peak performance (though peak is lower than JVM's JIT-optimised steady state)
-
-### Native Compilation Trade-offs
-- **Reduced Throughput**: JVM's JIT compiler produces better hot-path code over time
-- **Build Time**: 5–10 minutes per native image
-- **Build Memory**: Requires 10 GB+ RAM
-- **Limited Reflection**: Requires explicit `reflect-config.json`
-- **No Java Agent**: OTEL Java agent and Pyroscope agent not available
-- **No Loom Carrier**: `--add-opens` not supported in native → `loom-carrier=false`
-
-### Resource Usage
-- **Heap Memory**: 640 MB (configurable)
-- **Off-Heap**: 32 MB max
-- **Peak Memory (observed)**: ~180 MB
-- **Container Image Size**: ~348 MB
-- **Startup Time**: <1 second
-
-## Building and Running
-
-### Prerequisites
-- GraalVM Native Image 25.0.4+ (Enterprise recommended for G1 GC)
-- Maven 3.9+ (bundled via `mvnw`)
-- Docker (for containerized build)
-- 16 GB+ RAM (for native compilation)
-
-### Docker Build (Recommended)
-```bash
-cd services/java
-docker build -f micronaut/native/Dockerfile -t micronaut-native:latest .
-```
-
-### Docker Compose
-```bash
-# From repository root
-docker compose --project-directory compose \
-  --profile=OBS \
-  --profile=SERVICES \
-  up micronaut-native -d
-```
-
-### Local Native Build
-```bash
-cd services/java/micronaut/native
-./mvnw package -Dnative \
-  -Dmicronaut.version=5.2.15 \
-  -Dmaven.compiler.release=25
-```
-
-### Running the Binary
-```bash
-./target/micronaut-native \
-  -Xms64M -Xmx640M \
-  -XX:MaxGCPauseMillis=200
-```
-
-## Testing
-
-### Health Checks
-```bash
-curl http://localhost:8093/health
-```
-
-### Endpoint Testing
-```bash
-# Platform threads
-curl "http://localhost:8093/hello/platform"
-
-# Virtual threads
-curl "http://localhost:8093/hello/virtual"
-
-# Reactive
-curl "http://localhost:8093/hello/reactive"
-
-# With logging
-curl "http://localhost:8093/hello/virtual?log=true"
-```
-
-### Startup Time Verification
-```bash
-docker logs micronaut-native 2>&1 | grep -i "started"
-# Expected: sub-second startup
-```
-
-## Monitoring in Grafana
-
-### Key Queries
-```promql
-# RPS by endpoint
-rate(hello_request_count_total{service_name="micronaut-native"}[1m])
-
-# Memory (RSS)
-process_memory_rss_bytes{service_name="micronaut-native"}
-
-# Heap usage
-jvm_memory_used_bytes{service_name="micronaut-native", area="heap"}
-```
-
-## GraalVM Editions
-
-| Feature     | Enterprise         | Community                  |
-|-------------|--------------------|----------------------------|
-| G1 GC       | ✅ Yes              | ❌ No (serial/epsilon only) |
-| Performance | ~10 % better       | Baseline                   |
-| JFR         | ✅ Yes              | ❌ No                       |
-| License     | Oracle License     | GPL v2 + CPE               |
-
-**Recommendation**: Use Enterprise for production benchmarks. This repository defaults to the Oracle Enterprise image.
-
-## Known Issues
-- `loom-carrier` is always `false` in native (JVM-only feature)
-- Throughput is lower than JVM due to absence of JIT optimisation
-- Some OTel SDK classes require `--initialize-at-run-time` to avoid build failures
-- Shade plugin produces overlap warnings for Netty/OTel metadata — these are harmless and filtered
-
-## Contributing
-When modifying this service:
-1. **Do not add sources here** — all code lives in `../jvm/src/` and is shared via `build-helper-maven-plugin`
-2. Test native compilation locally (requires significant resources)
-3. If new dependencies use reflection, update `reflect-config.json` in the JVM module's `META-INF/native-image/` directory
-4. Update native build args in `pom.xml` if initialization behavior changes
-5. Keep this README synchronised with the JVM README where applicable
-
-## References
-- [Micronaut GraalVM Guide](https://docs.micronaut.io/latest/guide/#graal)
-- [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/)
-- [Native Image Build Configuration](https://www.graalvm.org/latest/reference-manual/native-image/overview/BuildConfiguration/)
-- [Micronaut Tracing (OpenTelemetry)](https://micronaut-projects.github.io/micronaut-tracing/latest/guide/#openTelemetry)
-- [Micronaut Micrometer](https://micronaut-projects.github.io/micronaut-micrometer/latest/guide/)
-- [Caffeine Cache](https://github.com/ben-manes/caffeine)
-
+Edit shared application behavior in the [JVM module](../jvm/README.md). Edit native compilation and packaging here. Run a native build after changing flags, reflection metadata, or dependencies; passing shared JVM tests alone does not validate native-image analysis.

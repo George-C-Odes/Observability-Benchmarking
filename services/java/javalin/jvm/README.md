@@ -1,6 +1,8 @@
+<!-- Generated from `services/java/javalin/jvm/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/javalin/jvm/README.md` directly. -->
+
 # Javalin JVM Service
 
-A lightweight, high-throughput REST service implemented with Javalin on **Java 25**.
+A lightweight, high-throughput REST service implemented with Javalin 7.2.4 on **Java 25**.
 
 This module mirrors the `/hello/*` contracts used by the existing Spring JVM and Spark JVM services.
 
@@ -63,7 +65,7 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
   -t javalin-jvm:latest `
-  --build-arg JAVALIN_VERSION=7.2.3 `
+  --build-arg JAVALIN_VERSION=7.2.4 `
   --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
   --load `
   services/java

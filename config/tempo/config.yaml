@@ -1,5 +1,5 @@
-# tempo.yaml — compatible with Tempo 2.9.x
-
+# Tempo 3.1.1: one process, local storage, no Kafka.
+target: all
 multitenancy_enabled: false
 
 server:
@@ -8,9 +8,9 @@ server:
   log_level: warn
 
 distributor:
+  # Per-span logging can amplify overload; monitor tempo_discarded_spans_total instead.
   log_discarded_spans:
-    enabled: true
-    include_all_attributes: false
+    enabled: false
   receivers:
     otlp:
       protocols:
@@ -19,38 +19,23 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
-ingester:
-  lifecycler:
-    ring:
-      # Single node -> 1 replica is fine
-      replication_factor: 1
-  # reasonable flush defaults; omit to use built-ins
-  # trace_idle_period: 5s
-  # trace_live_period: 30s
-  # max_block_bytes: 500MB
-  # max_block_duration: 30m
-  complete_block_timeout: 2m
-
-query_frontend: {
-}
+# Search and TraceQL metrics leave the newest 30s out to avoid partial results.
+query_frontend:
+  query_end_cutoff: 30s
+  search:
+    query_backend_after: 15m
+  metrics:
+    query_backend_after: 15m
 
 querier:
   frontend_worker:
     frontend_address: 127.0.0.1:9095
 
-compactor:
-  compaction:
-    # how long to retain compacted blocks (tune as you wish)
-    block_retention: 168h  # 7d
-    compacted_block_retention: 1h
-
-# Memberlist is the default ring backend; no join peers needed in single-node
-memberlist: {}
-
-# Storage for actual traces (TempoDB)
 storage:
   trace:
     backend: local
+    block:
+      version: vParquet5
     blocklist_poll: 30s
     blocklist_poll_stale_tenant_index: 2m
     wal:
@@ -58,47 +43,42 @@ storage:
     local:
       path: /var/tempo/blocks
 
-# Metrics from traces (enables TraceQL metrics like rate()/sum()/avg())
-metrics_generator:
-  # ring for the metrics-generator workers
-  ring:
-    kvstore:
-      store: memberlist
-  # enable the local_blocks processor and tune it
-  processor:
-    local_blocks:
-      # persist metrics blocks so historical TraceQL metrics work reliably
-      flush_to_storage: true
-      # optional tuning (defaults shown in docs)
-      # flush_check_period: 10s
-      # trace_idle_period: 5s
-      # max_block_duration: 1m
-      # max_block_bytes: 500MB
-      # complete_block_timeout: 1h
+live_store:
+  wal:
+    path: /var/tempo/live-store/traces
+  # Drain eligible traces every second to keep the high-RPS live buffer moving.
+  flush_check_period: 1s
+  # Bound the live-trace payload buffer above the default 250 MB backpressure threshold.
+  # This is not a process memory limit; allow headroom for decoding, blocks and queries.
+  max_live_traces_bytes: 536870912 # 512 MiB
+  # Keep blocks at 50 MiB; four workers complete WAL blocks in parallel.
+  max_block_bytes: 52428800 # 50 MiB
+  max_block_duration: 30s
+  complete_block_concurrency: 4
+  # Must cover the 15m backend query boundary plus block-list polling delay.
+  complete_block_timeout: 20m
 
-  # required paths for the generator
-  # keeps a small WAL of per-tenant trace shards used by local-blocks
-  traces_storage:
-    path: /var/tempo/generator/traces
+backend_scheduler:
+  local_work_path: /var/tempo/scheduler
 
-  # WAL for span-metrics/service-graphs (safe to set even if you don’t remote_write)
-  storage:
-    path: /var/tempo/generator/wal
-    # If later you also want Prometheus metrics from traces, add remote_write endpoints:
-    # remote_write:
-    #   - url: http://mimir:9009/api/v1/push
+backend_worker:
+  backend_scheduler_addr: 127.0.0.1:9095
+  compaction:
+    compacted_block_retention: 1h
 
-# Turn on processors for the (single) default tenant.
-# Without this, the generator starts but contributes no workers -> "empty ring".
+# TraceQL metrics use live-store/backend blocks. Alloy already produces span metrics;
+# enabling Tempo's span-metrics/service-graphs here would add duplicate processing.
 overrides:
   defaults:
-    metrics_generator:
-      processors:
-        - local-blocks
-    # You can also cap cardinality later with:
-    #   max_active_series: 50000
+    compaction:
+      block_retention: 168h # 7d
     ingestion:
-      rate_strategy: global        # or: local
-      rate_limit_bytes: 200000000 # 200 MB/s sustained
-      burst_size_bytes: 400000000 # 400 MB burst
-#      max_traces_per_user: 0    #default 10000; 0 disables live-trace count limit
+      rate_strategy: local # One distributor; no cluster-wide rate-limit coordination.
+      rate_limit_bytes: 200000000 # Preserve the existing 200 MB/s allowance.
+      burst_size_bytes: 400000000
+      # 10,000 live traces is too restrictive for high-RPS runs. The byte guard above
+      # still applies backpressure; this does not disable trace-size protection.
+      max_traces_per_user: 0
+
+usage_report:
+  reporting_enabled: false
