@@ -31,16 +31,60 @@ the hash-verified build tools with `--no-deps --no-build-isolation --no-index`.
 This permits the intended local build without downloading additional build
 dependencies. Workflow steps do not upgrade pip independently.
 
+## Regenerate or upgrade the locks
+
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
-regenerate both locks with Python 3.13 and pip-tools (generated using 7.6.1) on Linux:
+regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
+Use a virtualenv for the compiler:
 
 ```bash
+python3.13 -m venv .venv-python-ci
+source .venv-python-ci/bin/activate
+python -m pip install --upgrade pip-tools==7.6.2
 bash .github/requirements/update-lock.sh
 ```
+
+To refresh all versions allowed by the inputs, pass `--upgrade`:
+
+```bash
+bash .github/requirements/update-lock.sh --upgrade
+```
+
+This writes `pip.txt` and `python-ci.txt`. `--upgrade` does not loosen explicit
+`==` pins: change the corresponding inputs first. When upgrading Django, regenerate
+its runtime/development requirements before regenerating the CI inventory.
 
 Existing runtime pins remain the source of truth; the hash inventory does not
 replace those files. Keep generated hashes out of the runtime requirements so
 local development can continue installing them alongside the repository package.
+Review and commit the changed inputs and both regenerated locks together.
+
+## IntelliJ run configurations (Windows / PowerShell)
+
+The shared configurations in `.run/` use `pwsh` and `$PROJECT_DIR$` as the working
+directory, following the existing Django install/upgrade naming convention:
+
+| Configuration                                                           | Purpose                                                                                                                                  | Prerequisites                                                                  |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| [`[install] Python CI`](../../.run/%5Binstall%5D%20Python%20CI.run.xml) | Install hash-verified pip, pip-tools 7.6.2, and the tools from `build.in`, `coverage.in`, and `qodana.in`; finish with `pip check`.      | PowerShell 7 and Python 3.13 on `PATH`, preferably in an activated virtualenv. |
+| [`[upgrade] Python CI`](../../.run/%5Bupgrade%5D%20Python%20CI.run.xml) | Regenerate both locks with `update-lock.sh --upgrade` in a disposable Linux `python:3.13-slim-bookworm` container using pip-tools 7.6.2. | PowerShell 7 and a running Docker daemon configured for Linux containers.      |
+
+The install configuration targets the selected local `python` environment; it does
+not install Django or Pyroscope, nor regenerate locks. The upgrade configuration
+bind-mounts the checkout, so the generated files are written back to the repository;
+it does not install anything into the host Python environment. Linux compilation
+is required for the full inventory, including Pyroscope; Git Bash with a Windows
+Python interpreter is not a substitute.
+
+After changing source pins, run **`[upgrade] Python CI`**, then
+**`[install] Python CI`** to install the updated auxiliary tools locally. The exact
+same upgrade can be run from PowerShell at the repository root:
+
+```powershell
+docker run --rm --mount "type=bind,source=$($PWD.Path),target=/workspace" --workdir /workspace python:3.13-slim-bookworm bash -lc 'set -euo pipefail; python -m pip install pip-tools==7.6.2; bash .github/requirements/update-lock.sh --upgrade'
+```
+
+## Exercise the shared CI installer
 
 To exercise the shared installer from the repository root in a clean Linux
 Python 3.13 virtualenv:

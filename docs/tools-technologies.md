@@ -1001,7 +1001,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Go                         | 1.27.3   | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18  | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0   | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.12.1  | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | 26.13.0  | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.2    | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.1 | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.2.20   | Compile-time optimized JVM microservices framework                   |
@@ -1026,7 +1026,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1   | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1    | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.2.6    | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.2.7    | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+      | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2       | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.8.2   | Image build and lifecycle management                                 |
