@@ -18,13 +18,17 @@ on:
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+      - '.github/go-tools/**'
       - '.github/actions/upload-artifact/**'
   push:
+    branches:
+      - main
     paths:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
+      - '.github/go-tools/**'
       - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
@@ -37,7 +41,7 @@ jobs:
   # ── Enhanced module: full quality pipeline ─────────────────────────
   quality:
     name: Enhanced — lint, vet & test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     defaults:
       run:
@@ -45,17 +49,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: services/go/enhanced/go.mod
-          cache-dependency-path: services/go/enhanced/go.sum
+          cache-dependency-path: |
+            services/go/enhanced/go.sum
+            .github/go-tools/go.sum
 
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.14.0
+          version: v2.15.0
           working-directory: services/go/enhanced
           # The action runs `golangci-lint run` by default after install.
           # We only want to install the binary here — the actual lint run
@@ -80,7 +88,7 @@ jobs:
 
       - name: Check go.mod tidiness
         run: |
-          go mod tidy
+          go mod tidy -diff
           git diff --exit-code go.mod go.sum || {
             echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
             exit 1
@@ -105,8 +113,10 @@ jobs:
       - name: Govulncheck
         continue-on-error: true
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+          # Build the scanner from its dedicated module and checksum lock.
+          go -C "$GITHUB_WORKSPACE/.github/go-tools" build -mod=readonly \
+            -o "$RUNNER_TEMP/govulncheck" golang.org/x/vuln/cmd/govulncheck
+          "$RUNNER_TEMP/govulncheck" ./...
 
       # ------------------------------------------------------------------
       # Quality report: generate an HTML report from the JSON output
@@ -143,7 +153,7 @@ jobs:
   # ── Simple module: full quality pipeline ────────────────────────────
   quality-simple:
     name: Simple — lint, vet, test & build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     defaults:
       run:
@@ -151,17 +161,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: services/go/simple/go.mod
-          cache-dependency-path: services/go/simple/go.sum
+          cache-dependency-path: |
+            services/go/simple/go.sum
+            .github/go-tools/go.sum
 
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.14.0
+          version: v2.15.0
           working-directory: services/go/simple
           args: --help
 
@@ -180,7 +194,7 @@ jobs:
 
       - name: Check go.mod tidiness
         run: |
-          go mod tidy
+          go mod tidy -diff
           git diff --exit-code go.mod go.sum || {
             echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
             exit 1
@@ -202,8 +216,10 @@ jobs:
       - name: Govulncheck
         continue-on-error: true
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+          # Build the scanner from its dedicated module and checksum lock.
+          go -C "$GITHUB_WORKSPACE/.github/go-tools" build -mod=readonly \
+            -o "$RUNNER_TEMP/govulncheck" golang.org/x/vuln/cmd/govulncheck
+          "$RUNNER_TEMP/govulncheck" ./...
 
       - name: Set up Node.js (for report generation)
         if: always() && !cancelled()

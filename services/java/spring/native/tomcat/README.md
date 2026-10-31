@@ -3,7 +3,7 @@
 # Spring Boot Tomcat Native Service
 
 ## Overview
-A REST service implementation built with Spring Boot 4.1.1 compiled to a native executable using GraalVM Native Image. This service runs on embedded Tomcat and can be configured for either platform thread mode or virtual thread mode, offering fast startup times and low memory footprint.
+A REST service implementation built with Spring Boot 4.1.2 compiled to a native executable using GraalVM Native Image. This service runs on embedded Tomcat and can be configured for either platform thread mode or virtual thread mode, offering fast startup times and low memory footprint.
 
 ## Purpose
 - Demonstrate Spring Boot native compilation with traditional Spring Web (MVC)
@@ -14,7 +14,7 @@ A REST service implementation built with Spring Boot 4.1.1 compiled to a native 
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.1.1 + Spring Web MVC
+- **Framework**: Spring Boot 4.1.2 + Spring Web MVC
 - **Web Server**: Apache Tomcat (embedded)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.4
@@ -321,11 +321,6 @@ The native `pom.xml` includes:
 - Native profile
 - Native-compatible dependencies
 - Build-time configuration
-
-Keep the OpenTelemetry core and instrumentation versions aligned with the instrumentation BOM:
-starter `2.32.0` requires core `1.66.0`. Core `1.67.0` removes the internal `ConfigUtil` class
-that this starter uses during SDK initialization, causing startup to fail. Update this pair together
-and rebuild the native image after dependency changes.
 
 ## Testing
 

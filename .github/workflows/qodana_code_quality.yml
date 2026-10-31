@@ -15,6 +15,8 @@ on:
       - 'qodana.yaml'
       - '.qodana/baseline/**'
   push:
+    branches:
+      - main
     paths:
       - 'services/java/**'
       - 'utils/orchestrator/**'
@@ -23,14 +25,15 @@ on:
       - 'qodana.yaml'
       - '.qodana/baseline/**'
 
-permissions:
-  contents: read
-  checks: write
+permissions: {}
 
 jobs:
   qodana:
+    permissions:
+      contents: read
+      checks: write
     name: Qodana (${{ matrix.name }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -49,6 +52,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Prepare Qodana arguments
         id: qodana_args

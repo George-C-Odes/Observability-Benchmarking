@@ -1,8 +1,9 @@
 <component name="ProjectRunConfigurationManager">
+  <!-- Versions: compose/.env; refresh with node scripts/sync-build-img-runs.mjs -->
   <configuration default="false" name="[build-img] Spring NATIVE Tomcat Virtual" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="spring-native-tomcat-virtual:4.1.1_latest" />
+        <option name="imageTag" value="spring-native-tomcat-virtual:4.1.2_latest" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
@@ -15,11 +16,11 @@
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="SPRING_BOOT_VERSION" />
-              <option name="value" value="4.1.1" />
+              <option name="value" value="4.1.2" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="spring-native-tomcat-virtual:4.1.1_latest" />
+              <option name="value" value="spring-native-tomcat-virtual:4.1.2_latest" />
             </DockerEnvVarImpl>
           </list>
         </option>

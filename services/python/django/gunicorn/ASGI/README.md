@@ -1,3 +1,5 @@
+<!-- Generated from `services/python/django/gunicorn/ASGI/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/python/django/gunicorn/ASGI/README.md` directly. -->
+
 # Django Reactive — Benchmarking Service
 
 ASGI / Gunicorn + UvicornWorker Django module for the Observability Benchmarking suite.
@@ -21,7 +23,7 @@ Health probes:
 
 ## Runtime model
 
-- Django 6 on ASGI
+- Django 6.1.2 on ASGI
 - Gunicorn with `uvicorn.workers.UvicornWorker`
 - Async view hot path with shared preloaded cache via copy-on-write
 - OpenTelemetry SDK initialized per worker after fork
@@ -77,7 +79,7 @@ The development server starts on `http://127.0.0.1:8000/hello/reactive`.
 docker buildx build `
   -f services/python/django/gunicorn/ASGI/Dockerfile `
   -t django-reactive:6.1.2_latest `
-  --build-arg PYTHON_VERSION=3.13.15 `
+  --build-arg PYTHON_VERSION=3.13.18 `
   --build-arg BUILDKIT_BUILD_NAME=django-reactive:6.1.2_latest `
   --load `
   services/python/django

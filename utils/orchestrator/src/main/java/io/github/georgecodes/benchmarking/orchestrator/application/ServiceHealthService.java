@@ -95,21 +95,19 @@ public class ServiceHealthService {
         .intoLists()
         .of(batchSize)
         .onItem()
-        .transformToUniAndMerge(
-            batch ->
-                Multi.createFrom()
-                    .iterable(batch)
-                    .onItem()
-                    .transformToUniAndMerge(this::checkOne)
-                    .collect()
-                    .asList())
+        .transformToUniAndMerge(batch ->
+            Multi.createFrom()
+                .iterable(batch)
+                .onItem()
+                .transformToUniAndMerge(this::checkOne)
+                .collect()
+                .asList())
         .collect()
         .asList()
-        .map(
-            batches -> {
-              List<ServiceHealth> all = batches.stream().flatMap(List::stream).toList();
-              return new HealthAggregate(all);
-            });
+        .map(batches -> {
+          List<ServiceHealth> all = batches.stream().flatMap(List::stream).toList();
+          return new HealthAggregate(all);
+        });
   }
 
   /**

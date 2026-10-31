@@ -12,6 +12,7 @@
 #   WR_NAME             – github.event.workflow_run.name (only for workflow_run)
 #   WR_CONCLUSION       – github.event.workflow_run.conclusion (only for workflow_run)
 #   WR_HEAD_SHA         – github.event.workflow_run.head_sha (only for workflow_run)
+#   WR_HEAD_REPOSITORY - github.event.workflow_run.head_repository.full_name
 #   WR_HEAD_BRANCH      – github.event.workflow_run.head_branch (only for workflow_run)
 #   GITHUB_REPOSITORY   – owner/repo
 #   GITHUB_OUTPUT       – path to the step output file
@@ -64,7 +65,8 @@ fi
 
 # If the Pages build was triggered directly by this workflow, use that run when
 # its branch scope matches the requested resolution mode.
-if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "$WORKFLOW_NAME" ]]; then
+if [[ "$EVENT_NAME" == "workflow_run" && "${WR_NAME:-}" == "$WORKFLOW_NAME"
+      && "${WR_HEAD_REPOSITORY:-}" == "$GITHUB_REPOSITORY" ]]; then
   if [[ "$BRANCH_MODE" == 'main' && "${WR_HEAD_BRANCH:-}" != 'main' ]]; then
     :
   elif [[ "$BRANCH_MODE" == 'non-main' && ( -z "${WR_HEAD_BRANCH:-}" || "${WR_HEAD_BRANCH:-}" == 'main' ) ]]; then
@@ -95,7 +97,7 @@ if ! curl -fsSL \
   exit 0
 fi
 
-resolved="$(python3 - "$response_file" "$ACCEPTED" "$BRANCH_MODE" <<'PY'
+resolved="$(python3 - "$response_file" "$ACCEPTED" "$BRANCH_MODE" "$GITHUB_REPOSITORY" <<'PY'
 import json, sys
 
 with open(sys.argv[1], encoding="utf-8") as fh:
@@ -103,8 +105,13 @@ with open(sys.argv[1], encoding="utf-8") as fh:
 
 accepted = set(sys.argv[2].split(","))
 branch_mode = sys.argv[3]
+repository = sys.argv[4]
 
 for run in data.get("workflow_runs", []):
+    # PR runs can belong to this repository while their source is a fork.
+    if (run.get("head_repository") or {}).get("full_name") != repository:
+        continue
+
     if run.get("conclusion") not in accepted:
         continue
 

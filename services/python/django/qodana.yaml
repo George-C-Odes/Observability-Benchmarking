@@ -11,9 +11,9 @@ version: "1.0"
 
 # Python-specific Qodana configuration for Django services.
 #
-# This file is self-contained so the Django directory can be mounted as the
-# Qodana project root. This keeps unrelated repository data out of the Python
-# project-opening/indexing stage.
+# Mount Django as the project root and the shared Python CI requirements and
+# installer read-only under /opt/python-ci. Shared CI files stay outside the
+# project-opening/indexing stage; the workflow and local commands use the same mounts.
 
 profile:
   name: qodana.recommended
@@ -28,42 +28,40 @@ linter: jetbrains/qodana-python-community:2026.2
 # is unresolved, producing false positives that do not appear in the IDE
 # (where the venv is configured).
 #
-# pyroscope-io and related pyroscope-* packages may contain Rust/C native
-# extensions that require a build toolchain not present in the Qodana
-# container — filter out any pyroscope-related requirements (the app
-# handles their absence gracefully at runtime).
+# Preserve the analysis-only omission of Pyroscope packages. All selected
+# third-party packages and local build tools must match the shared hash lock
+# and have wheels available for the analyzer's Python interpreter.
 #
-# --ignore-requires-python is required because the Qodana Python Community
+# PIP_IGNORE_REQUIRES_PYTHON is required because the Qodana Python Community
 # container may use an older Python version than the project declares
 # requires-python >= 3.13.  The packages are only needed for import
 # resolution and type stubs, not for execution.
 # ---------------------------------------------------------------------------
 bootstrap: |
   set -e
-  pip install --quiet --disable-pip-version-check --ignore-requires-python \
-    /data/project/gunicorn/common
-  rm -rf /data/project/gunicorn/common/build \
-    /data/project/gunicorn/common/*.egg-info
-  if ! grep -v -i pyroscope /data/project/gunicorn/WSGI/requirements.txt \
-    > /tmp/wsgi-reqs.txt; then
-    status=$?
-    if [ "$status" -eq 1 ]; then
-      : > /tmp/wsgi-reqs.txt
-    else
-      exit "$status"
-    fi
-  fi
-  if ! grep -v -i pyroscope /data/project/gunicorn/ASGI/requirements.txt \
-    > /tmp/asgi-reqs.txt; then
-    status=$?
-    if [ "$status" -eq 1 ]; then
-      : > /tmp/asgi-reqs.txt
-    else
-      exit "$status"
-    fi
-  fi
-  pip install --quiet --disable-pip-version-check --ignore-requires-python \
-    -r /tmp/wsgi-reqs.txt -r /tmp/asgi-reqs.txt
+  bootstrap_dir=$(mktemp -d /tmp/qodana-python.XXXXXX)
+  trap 'rm -rf "$bootstrap_dir"' EXIT
+  cp -R /data/project/gunicorn/common "$bootstrap_dir/common"
+  python3 - "$bootstrap_dir" <<'PY'
+  from pathlib import Path
+  import sys
+
+  destination = Path(sys.argv[1])
+  for module in ("WSGI", "ASGI"):
+      source = Path("/data/project/gunicorn") / module / "requirements.txt"
+      lines = source.read_text(encoding="utf-8").splitlines()
+      filtered = [line for line in lines if "pyroscope" not in line.lower()]
+      (destination / f"{module}.txt").write_text("\n".join(filtered) + "\n", encoding="utf-8")
+  PY
+  REQUIREMENTS=$(printf '%s\n' "$bootstrap_dir/WSGI.txt" "$bootstrap_dir/ASGI.txt" /opt/python-ci/requirements/qodana.in)
+  export REQUIREMENTS
+  export LOCAL_PROJECT="$bootstrap_dir/common"
+  export EDITABLE=false
+  export PYTHON_COMMAND=python3
+  export PYTHON_CI_REQUIREMENTS_DIR=/opt/python-ci/requirements
+  export PIP_IGNORE_REQUIRES_PYTHON=1
+  export PIP_DISABLE_PIP_VERSION_CHECK=1
+  bash /opt/python-ci/installer/install.sh
 
 # ---------------------------------------------------------------------------
 # Exclude paths that are not application source code.

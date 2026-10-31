@@ -105,17 +105,15 @@ public class VertxHealthProbeClient implements HealthProbeClient {
     final boolean requestSsl = ssl;
 
     return resolveServerAddress(host, requestPort)
-        .map(
-            serverAddress ->
-                new RequestOptions()
-                    .setServer(serverAddress)
-                    .setHost(host)
-                    .setPort(requestPort)
-                    .setURI(requestPath)
-                    .setSsl(requestSsl))
-        .flatMap(
-            requestOptions ->
-                client.request(HttpMethod.GET, requestOptions).timeout(timeoutMs).send())
+        .map(serverAddress ->
+            new RequestOptions()
+                .setServer(serverAddress)
+                .setHost(host)
+                .setPort(requestPort)
+                .setURI(requestPath)
+                .setSsl(requestSsl))
+        .flatMap(requestOptions ->
+            client.request(HttpMethod.GET, requestOptions).timeout(timeoutMs).send())
         .map(resp -> toServiceHealth(endpoint, start, resp.statusCode(), resp.bodyAsString()))
         .onFailure()
         .recoverWithItem(ex -> failedServiceHealth(endpoint, start, ex));
@@ -152,15 +150,14 @@ public class VertxHealthProbeClient implements HealthProbeClient {
   private static Uni<SocketAddress> resolveServerAddress(String host, int port) {
     return Uni.createFrom()
         .item(
-            Unchecked.supplier(
-                () -> {
-                  try {
-                    InetAddress address = InetAddress.getByName(host);
-                    return SocketAddress.inetSocketAddress(port, address.getHostAddress());
-                  } catch (UnknownHostException ex) {
-                    throw new IllegalStateException("Failed to resolve host: " + host, ex);
-                  }
-                }))
+            Unchecked.supplier(() -> {
+              try {
+                InetAddress address = InetAddress.getByName(host);
+                return SocketAddress.inetSocketAddress(port, address.getHostAddress());
+              } catch (UnknownHostException ex) {
+                throw new IllegalStateException("Failed to resolve host: " + host, ex);
+              }
+            }))
         .runSubscriptionOn(Infrastructure.getDefaultExecutor());
   }
 

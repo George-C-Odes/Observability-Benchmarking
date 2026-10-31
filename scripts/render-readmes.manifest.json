@@ -7,11 +7,20 @@
     "docs/tools-technologies.template.md",
     "integration-tests/README.template.md",
     "services/README.template.md",
+    "services/go/enhanced/README.template.md",
+    "services/go/simple/README.template.md",
+    "services/java/helidon/README.template.md",
+    "services/java/javalin/jvm/README.template.md",
+    "services/java/micronaut/README.template.md",
     "services/java/quarkus/jvm/README.template.md",
     "services/java/quarkus/native/README.template.md",
+    "services/java/spark/jvm/README.template.md",
     "services/java/spring/jvm/netty/README.template.md",
     "services/java/spring/jvm/tomcat/README.template.md",
     "services/java/spring/native/netty/README.template.md",
-    "services/java/spring/native/tomcat/README.template.md"
+    "services/java/spring/native/tomcat/README.template.md",
+    "services/python/django/README.template.md",
+    "services/python/django/gunicorn/ASGI/README.template.md",
+    "services/python/django/gunicorn/WSGI/README.template.md"
   ]
 }

@@ -1,0 +1,27 @@
+name: Install Python dependencies
+description: Install selected CI requirements using the shared hash lock and wheels only.
+
+inputs:
+  requirements:
+    description: Newline-separated requirements file paths, relative to the repository root.
+    required: true
+  local-project:
+    description: Optional repository package to install after its build tools have been hash-verified.
+    required: false
+    default: ''
+  editable:
+    description: Install the local repository package in editable mode.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        REQUIREMENTS: ${{ inputs.requirements }}
+        LOCAL_PROJECT: ${{ inputs.local-project }}
+        EDITABLE: ${{ inputs.editable }}
+      run: bash "$GITHUB_ACTION_PATH/install.sh"

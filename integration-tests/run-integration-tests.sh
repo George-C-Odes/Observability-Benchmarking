@@ -1,696 +1,501 @@
 #!/usr/bin/env bash
-# Integration Test Runner
-# Validates deployment and observability for all services (JVM and Native)
-
+# The stack must already be running. See README.md for prerequisites and filters.
 set -euo pipefail
 
-# --- Output logging (tee to file) ---
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUTPUT_DIR="${SCRIPT_DIR}/output"
-mkdir -p "${OUTPUT_DIR}"
-LOG_FILE="${OUTPUT_DIR}/$(date +'%Y%m%d_%H%M%S').log"
+usage() {
+    cat <<'EOF'
+Usage: bash integration-tests/run-integration-tests.sh [options]
+  --services ID[,ID...]   Select exact service IDs from services.txt
+  --groups NAME[,NAME...] Select deployment,health,logs,telemetry,stack,wrk2
+  --list                 List service IDs and exit
+  --help                 Show this help
 
-# Tee all output (stdout+stderr) to the log file.
-# Use a grouped command so failures in tee don't terminate the script under pipefail.
-{ exec > >(tee -a "${LOG_FILE}") 2>&1; } || true
+Default: all services and groups. Health polling is a prerequisite for service
+checks. Shared stack/wrk2 groups obey --groups only.
+Timeouts (positive integer seconds): REQUEST_TIMEOUT=2, CONNECT_TIMEOUT=2,
+STARTUP_TIMEOUT=30, LOG_TIMEOUT=5, TELEMETRY_TIMEOUT=90, DOCKER_TIMEOUT=10.
+DOCKER_STARTUP_TIMEOUT=30 bounds the retrying daemon preflight.
+POLL_INTERVAL=0.5, OUTPUT_DIR=integration-tests/output, PYTHON=python3.
+Existing *_URL and WRK2_CONTAINER_NAME overrides remain supported.
+DOCKER_BIN selects the Docker executable (default: docker). In WSL, a missing
+default socket can fall back to docker.exe's local Docker Desktop Linux context.
+EOF
+}
 
-echo "[integration-tests] logging to: ${LOG_FILE}"
+contains() { [[ ",$1," == *",$2,"* ]]; }
+group_selected() { contains "$GROUP_FILTER" "$1"; }
+service_selected() { [[ -z "$SERVICE_FILTER" ]] || contains "$SERVICE_FILTER" "$1"; }
 
-# --- Host/environment header (helps compare runs) ---
-echo ""
-echo "=========================================="
-echo "Run Environment"
-echo "=========================================="
-echo "Host OS: $(uname -a 2>/dev/null || echo 'unknown')"
-
-echo "Terminal / session:"
-if [ -t 0 ]; then echo "  stdin:   TTY"; else echo "  stdin:   not a TTY"; fi
-if [ -t 1 ]; then echo "   stdout: TTY"; else echo "  stdout:  not a TTY"; fi
-if [ -t 2 ]; then echo "   stderr: TTY"; else echo "  stderr:  not a TTY"; fi
-if [ -n "${TERM-}" ]; then echo "  TERM:    ${TERM}"; else echo "  TERM:    <not set>"; fi
-if [ -n "${SHELL-}" ]; then echo "  SHELL:   ${SHELL}"; else echo "  SHELL:   <not set>"; fi
-if [ -n "${0-}" ]; then echo "  argv0:   ${0}"; fi
-if [ -n "${USER-}" ]; then echo "  USER:    ${USER}"; fi
-if [ -n "${LOGNAME-}" ]; then echo "  LOGNAME: ${LOGNAME}"; fi
-if [ -n "${WSL_DISTRO_NAME-}" ]; then echo "  WSL:     ${WSL_DISTRO_NAME}"; fi
-if [ -n "${WT_SESSION-}" ]; then echo "  WT_SESSION:  ${WT_SESSION}"; fi
-
-echo "Docker:"
-echo "  CLI:     $(docker --version 2>/dev/null || echo '<not found>')"
-echo "  Socket:  $(ls -la /var/run/docker.sock 2>/dev/null || echo '<missing>')"
-echo "  DOCKER_HOST: ${DOCKER_HOST:-<not set>}"
-
-echo "Timestamp (host): $(date -Iseconds)"
-echo "=========================================="
-echo ""
-
-# Colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Test counters
-TESTS_PASSED=0
-TESTS_FAILED=0
-
-TIMEOUT=2
-
-# Run a single test command but never abort the suite (set -e safe)
-run_test() {
-    local label="$1"
-    shift
-
-    # Run the test; if it fails, swallow the non-zero to keep suite running.
-    if "$@"; then
-        return 0
+http_probe() {
+    local url=$1 statuses=$2 expected=$3 curl_rc=0
+    shift 3
+    PROBE_FATAL=false
+    : > "$TEMP_DIR/body"
+    HTTP_STATUS=$(curl --silent --show-error --connect-timeout "$CONNECT_TIMEOUT" \
+        --max-time "${PROBE_TIMEOUT:-$REQUEST_TIMEOUT}" --output "$TEMP_DIR/body" \
+        --write-out '%{http_code}' "$@" "$url" 2>"$TEMP_DIR/curl-error") || curl_rc=$?
+    HTTP_BODY=$(<"$TEMP_DIR/body")
+    if ((curl_rc != 0)); then
+        FAIL_REASON="curl exit ${curl_rc} for ${url}: $(<"$TEMP_DIR/curl-error")"
+        return 1
     fi
-
-    echo -e "${RED}[integration-tests] test failed:${NC} ${label}" >&2
+    if ! contains "$statuses" "$HTTP_STATUS"; then
+        FAIL_REASON="${url}: expected HTTP ${statuses}, got ${HTTP_STATUS}; body: ${HTTP_BODY:0:1000}"
+        case $HTTP_STATUS in 400|401|403|405|422) PROBE_FATAL=true ;; esac
+        return 1
+    fi
+    if [[ $HTTP_BODY != *"$expected"* ]]; then
+        FAIL_REASON="${url}: missing literal content '${expected}'; body: ${HTTP_BODY:0:1000}"
+        return 1
+    fi
     return 0
 }
 
-# Configuration - Port mappings match docker-compose.yml order
-# Spring Services
-SPRING_JVM_TOMCAT_PLATFORM_URL="${SPRING_JVM_TOMCAT_PLATFORM_URL:-http://localhost:8080}"
-SPRING_JVM_TOMCAT_VIRTUAL_URL="${SPRING_JVM_TOMCAT_VIRTUAL_URL:-http://localhost:8081}"
-SPRING_JVM_NETTY_URL="${SPRING_JVM_NETTY_URL:-http://localhost:8082}"
-SPRING_NATIVE_TOMCAT_PLATFORM_URL="${SPRING_NATIVE_TOMCAT_PLATFORM_URL:-http://localhost:8083}"
-SPRING_NATIVE_TOMCAT_VIRTUAL_URL="${SPRING_NATIVE_TOMCAT_VIRTUAL_URL:-http://localhost:8084}"
-SPRING_NATIVE_NETTY_URL="${SPRING_NATIVE_NETTY_URL:-http://localhost:8085}"
-
-# Quarkus Services
-QUARKUS_JVM_URL="${QUARKUS_JVM_URL:-http://localhost:8086}"
-QUARKUS_NATIVE_URL="${QUARKUS_NATIVE_URL:-http://localhost:8087}"
-
-# Micronaut Services
-MICRONAUT_JVM_URL="${MICRONAUT_JVM_URL:-http://localhost:8088}"
-MICRONAUT_NATIVE_URL="${MICRONAUT_NATIVE_URL:-http://localhost:8089}"
-
-# Helidon SE Services
-HELIDON_SE_JVM_URL="${HELIDON_SE_JVM_URL:-http://localhost:8090}"
-HELIDON_SE_NATIVE_URL="${HELIDON_SE_NATIVE_URL:-http://localhost:8091}"
-
-# Helidon MP Services
-HELIDON_MP_JVM_URL="${HELIDON_MP_JVM_URL:-http://localhost:8092}"
-HELIDON_MP_NATIVE_URL="${HELIDON_MP_NATIVE_URL:-http://localhost:8093}"
-
-# Spark Services
-SPARK_JVM_PLATFORM_URL="${SPARK_JVM_PLATFORM_URL:-http://localhost:8094}"
-SPARK_JVM_VIRTUAL_URL="${SPARK_JVM_VIRTUAL_URL:-http://localhost:8095}"
-
-# Javalin Services
-JAVALIN_JVM_PLATFORM_URL="${JAVALIN_JVM_PLATFORM_URL:-http://localhost:8096}"
-JAVALIN_JVM_VIRTUAL_URL="${JAVALIN_JVM_VIRTUAL_URL:-http://localhost:8097}"
-
-# Dropwizard Services
-DROPWIZARD_JVM_PLATFORM_URL="${DROPWIZARD_JVM_PLATFORM_URL:-http://localhost:8098}"
-DROPWIZARD_JVM_VIRTUAL_URL="${DROPWIZARD_JVM_VIRTUAL_URL:-http://localhost:8099}"
-
-# Vert.x Services
-VERTX_JVM_URL="${VERTX_JVM_URL:-http://localhost:8100}"
-
-# Pekko Services
-PEKKO_JVM_URL="${PEKKO_JVM_URL:-http://localhost:8101}"
-
-# Go Service
-GO_URL="${GO_URL:-http://localhost:9080}"
-
-# Django Services
-DJANGO_PLATFORM_URL="${DJANGO_PLATFORM_URL:-http://localhost:9090}"
-DJANGO_REACTIVE_URL="${DJANGO_REACTIVE_URL:-http://localhost:9091}"
-
-# Observability
-GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
-ALLOY_URL="${ALLOY_URL:-http://localhost:12345}"
-LOKI_URL="${LOKI_URL:-http://localhost:3100}"
-MIMIR_URL="${MIMIR_URL:-http://localhost:9009}"
-TEMPO_URL="${TEMPO_URL:-http://localhost:3200}"
-PYROSCOPE_URL="${PYROSCOPE_URL:-http://localhost:4040}"
-NEXTJS_URL="${NEXTJS_URL:-http://localhost:3001}"
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-http://localhost:3002}"
-
-# Framework versions
-QUARKUS_VERSION="3.40.1"
-SPRING_BOOT_VERSION="4.1.1"
-MICRONAUT_VERSION="5.2.15"
-HELIDON_VERSION="4.5.5"
-SPARK_VERSION="3.0.4"
-JAVALIN_VERSION="7.2.3"
-DROPWIZARD_VERSION="5.0.2"
-VERTX_VERSION="5.1.7"
-PEKKO_VERSION="1.3.0"
-GO_VERSION="1.27.2"
-DJANGO_VERSION="6.1.2"
-
-# Helper function to test HTTP endpoint
-# expected_status can be a single code (e.g., 200) or a comma-separated list (e.g., "200,204")
-test_endpoint() {
-    local name=$1
-    local url=$2
-    local expected_status=${3:-200}
-    local expected_content=${4-}
-
-    echo -n "Testing ${name}... "
-
-    # Don't exit on curl failure
-    response=$(curl -s --max-time ${TIMEOUT} -w "\n%{http_code}" "${url}" 2>/dev/null || echo -e "\n000")
-    http_code=$(echo "${response}" | tail -n1)
-    body=$(echo "${response}" | head -n-1)
-
-    # Support multiple allowed statuses via comma-separated list
-    local status_ok=1
-    IFS=',' read -r -a allowed_statuses <<< "${expected_status}"
-    for s in "${allowed_statuses[@]}"; do
-        # trim spaces
-        s="${s//[[:space:]]/}"
-        if [ -n "${s}" ] && [ "${http_code}" = "${s}" ]; then
-            status_ok=0
-            break
-        fi
-    done
-
-    if [ ${status_ok} -eq 0 ]; then
-        # If expected_content is set, only validate when there's a body to search.
-        # (204 responses have no content by definition.)
-        if [ -z "${expected_content}" ] || { [ -n "${body}" ] && echo "${body}" | grep -q "${expected_content}"; }; then
-            echo -e "${GREEN}✓ PASSED${NC}"
-            TESTS_PASSED=$((TESTS_PASSED + 1))
-            return 0
-        else
-            echo -e "${RED}✗ FAILED${NC} - Expected content '${expected_content}' not found"
-            echo "  Response: ${body}"
-            TESTS_FAILED=$((TESTS_FAILED + 1))
+# Remaining deadlines cap each HTTP/Docker attempt as well as the whole poll.
+poll_until() {
+    local duration=$1 deadline remaining PROBE_TIMEOUT POLL_DEADLINE
+    shift
+    deadline=$((SECONDS + duration))
+    POLL_DEADLINE=$deadline
+    TEST_ATTEMPTS=0
+    while ((SECONDS < deadline)); do
+        TEST_ATTEMPTS=$((TEST_ATTEMPTS + 1))
+        PROBE_FATAL=false
+        remaining=$((deadline - SECONDS))
+        PROBE_TIMEOUT=$REQUEST_TIMEOUT
+        ((remaining >= PROBE_TIMEOUT)) || PROBE_TIMEOUT=$remaining
+        if "$@"; then return 0; fi
+        if [[ $PROBE_FATAL == true ]]; then
+            FAIL_REASON="Non-retryable failure: $FAIL_REASON"
             return 1
         fi
-    else
-        echo -e "${RED}✗ FAILED${NC} - Expected status ${expected_status}, got ${http_code}"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+        ((SECONDS < deadline)) || break
+        remaining=$((deadline - SECONDS))
+        ((remaining > 0)) || break
+        sleep "$(awk -v interval="$POLL_INTERVAL" -v remaining="$remaining" \
+            'BEGIN { print interval < remaining ? interval : remaining }')"
+    done
+    FAIL_REASON="Timed out after ${duration}s: ${FAIL_REASON:-condition not met}"
+    return 1
+}
+
+probe_any_health() {
+    local base=$1 statuses=$2 paths=$3 path failures=''
+    local deadline remaining
+    local -a alternatives
+    IFS=';' read -r -a alternatives <<< "$paths"
+    deadline=${POLL_DEADLINE:-$((SECONDS + REQUEST_TIMEOUT * ${#alternatives[@]}))}
+    for path in "${alternatives[@]}"; do
+        remaining=$((deadline - SECONDS))
+        ((remaining > 0)) || break
+        local PROBE_TIMEOUT=$REQUEST_TIMEOUT
+        ((remaining >= PROBE_TIMEOUT)) || PROBE_TIMEOUT=$remaining
+        if http_probe "${base}${path}" "$statuses" ''; then return 0; fi
+        # A missing optional endpoint must not prevent another alternative.
+        PROBE_FATAL=false
+        failures+="${FAIL_REASON}"$'\n'
+    done
+    FAIL_REASON=$failures
+    return 1
+}
+
+docker_capture() {
+    local limit=$DOCKER_TIMEOUT rc=0 remaining
+    local -a command=("${DOCKER_CLI:-docker}")
+    if [[ -n ${DOCKER_FALLBACK_CONTEXT:-} ]]; then command+=(--context "$DOCKER_FALLBACK_CONTEXT"); fi
+    if [[ -n ${POLL_DEADLINE:-} ]]; then
+        remaining=$((POLL_DEADLINE - SECONDS))
+        if ((remaining <= 0)); then FAIL_REASON='Docker polling deadline expired'; return 1; fi
+        ((remaining >= limit)) || limit=$remaining
+    fi
+    # Git Bash must leave container paths such as /wrk2/wrk intact for Docker.
+    DOCKER_OUTPUT=$(MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' \
+        timeout --kill-after=2s "${limit}s" "${command[@]}" "$@" 2>&1 </dev/null) || rc=$?
+    # Windows CLI metadata may contain CRLF; never pass a trailing CR to --since.
+    DOCKER_OUTPUT=${DOCKER_OUTPUT//$'\r'/}
+    if ((rc != 0)); then
+        FAIL_REASON="${command[*]} $*: exit ${rc}: ${DOCKER_OUTPUT:0:2000}"
+        if ((rc == 124 || rc == 137)); then
+            FAIL_REASON+=" (command deadline ${limit}s; Docker may still be starting)"
+        elif ((rc == 127)) || [[ ${DOCKER_OUTPUT,,} == *'permission denied'* ]]; then
+            PROBE_FATAL=true
+        fi
         return 1
     fi
 }
 
-# Wait for an endpoint to become ready (polls until success or timeout)
-wait_for_endpoint() {
-    local name=$1
-    local url=$2
-    local expected_status=${3:-200}
-    local timeout_seconds=${4:-30}
-
-    echo -n "Waiting for ${name} to be ready... "
-
-    local start_ts
-    start_ts=$(date +%s)
-
-    while true; do
-        response=$(curl -s --max-time ${TIMEOUT} -w "\n%{http_code}" "${url}" 2>/dev/null || echo -e "\n000")
-        http_code=$(echo "${response}" | tail -n1)
-
-        if [ "${http_code}" = "${expected_status}" ]; then
-            echo -e "${GREEN}✓ READY${NC}"
-            return 0
-        fi
-
-        now_ts=$(date +%s)
-        if [ $((now_ts - start_ts)) -ge "${timeout_seconds}" ]; then
-            echo -e "${RED}✗ TIMEOUT${NC} (last status ${http_code})"
-            return 1
-        fi
-
-        sleep 0.5
-    done
+is_wsl() {
+    [[ -n ${WSL_DISTRO_NAME:-} || -n ${WSL_INTEROP:-} ]] || \
+        { [[ -r /proc/sys/kernel/osrelease ]] && [[ $(</proc/sys/kernel/osrelease) == *microsoft* ]]; }
 }
 
-# Helper functions to test metrics endpoint
-test_spring_metrics() {
-    local name=$1
-    local url=$2
-
-    # Try different metric endpoints
-    test_endpoint "${name} Metrics" "${url}/actuator/metrics" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/actuator/health/readiness" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/actuator/health/liveness" 200 ""
-}
-
-test_quarkus_metrics() {
-    local name=$1
-    local url=$2
-
-    # Try different metric endpoints
-    test_endpoint "${name} Metrics" "${url}/q/metrics/json" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/q/health/ready" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/q/health/live" 200 ""
-}
-
-test_go_metrics() {
-    local name=$1
-    local url=$2
-
-    # Try different metric endpoints
-    test_endpoint "${name} Metrics" "${url}/healthz" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/readyz" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/livez" 200 ""
-}
-
-test_ready_endpoint() {
-    local name=$1
-    local url=$2
-    local path=$3
-
-    # Helidon SE health endpoints may respond with 204 (No Content) when healthy.
-    if [ "${path}" = "/observe/health" ]; then
-        test_endpoint "${name} Ready" "${url}${path}" "200,204" ""
-    else
-        test_endpoint "${name} Ready" "${url}${path}" 200 ""
+try_wsl_docker_desktop() {
+    local windows_cli original_cli=${DOCKER_CLI:-docker} native_error=$FAIL_REASON fallback_error
+    # Never change an explicitly selected client/host/context or a working client.
+    [[ -z ${DOCKER_BIN:-} && -z ${DOCKER_HOST:-} && -z ${DOCKER_CONTEXT:-} ]] || return 1
+    is_wsl || return 1
+    [[ $native_error == *'unix:///var/run/docker.sock'* && $native_error == *'no such file or directory'* ]] || return 1
+    if ! windows_cli=$(command -v docker.exe); then
+        FAIL_REASON+=$'\nEnable Docker Desktop > Settings > Resources > WSL Integration for '"${WSL_DISTRO_NAME:-this distro}"'. Alternatively set DOCKER_BIN to the Windows docker.exe path.'
+        PROBE_FATAL=true
+        return 1
     fi
+    DOCKER_CLI=$windows_cli
+    # Only auto-select Docker Desktop's local named pipe, never a remote context.
+    if docker_capture context inspect desktop-linux --format '{{.Endpoints.docker.Host}}'; then
+        if [[ $DOCKER_OUTPUT == npipe://* ]]; then
+            DOCKER_FALLBACK_CONTEXT=desktop-linux
+            if docker_capture version --format '{{.Server.Version}}'; then
+                PROBE_FATAL=false
+                printf 'WSL default Docker socket is missing; using Docker Desktop via %s --context desktop-linux\n' "$DOCKER_CLI"
+                return 0
+            fi
+        else
+            FAIL_REASON="Docker Desktop context is not a local named pipe: $DOCKER_OUTPUT"
+        fi
+    fi
+    fallback_error=$FAIL_REASON
+    DOCKER_CLI=$original_cli; DOCKER_FALLBACK_CONTEXT=''
+    FAIL_REASON="$native_error"$'\n'"Windows Docker Desktop fallback failed: $fallback_error"$'\nEnable Docker Desktop > Settings > Resources > WSL Integration for '"${WSL_DISTRO_NAME:-this distro}"'.'
+    return 1
 }
 
-test_micronaut_metrics() {
-    local name=$1
-    local url=$2
-
-    # Micronaut exposes management endpoints at root by config (endpoints.all.path=/)
-    test_endpoint "${name} Metrics" "${url}/metrics" 200 "" || \
-    test_endpoint "${name} Metrics" "${url}/health" 200 ""
-}
-
-# --- Docker connectivity pre-flight check ---
-# The trace-log and wrk2-exec tests require the Docker CLI to reach the daemon.
-# Detect and warn early so silent "Last log line: <empty>" failures are obvious.
-DOCKER_AVAILABLE=false
-echo "Docker pre-flight check:"
-if ! command -v docker &>/dev/null; then
-    echo -e "  ${RED}✗ 'docker' CLI not found on PATH${NC}"
-elif docker_info_out="$(docker info --format '{{.ServerVersion}}' 2>&1)"; then
-    echo -e "  ${GREEN}✓ Docker daemon reachable (server ${docker_info_out})${NC}"
+probe_docker() {
+    # version is substantially lighter than collecting the full `docker info`.
+    if ! docker_capture version --format '{{.Server.Version}}'; then
+        try_wsl_docker_desktop || return 1
+    fi
     DOCKER_AVAILABLE=true
-else
-    echo -e "  ${RED}✗ Docker daemon unreachable${NC}"
-    echo "  Error: ${docker_info_out}"
-    echo ""
-    echo "  The 'docker exec' and 'docker logs' tests will be skipped/fail."
-    echo "  Common fixes (WSL2):"
-    echo "    1. Ensure Docker Desktop → Settings → Resources → WSL Integration"
-    echo "       has your distro ('$(echo "${WSL_DISTRO_NAME:-Ubuntu}")') enabled."
-    echo "    2. Restart Docker Desktop, then re-open your WSL terminal."
-    echo "    3. Verify: ls -la /var/run/docker.sock"
-fi
-echo ""
+    printf 'Docker server: %s; client: %s; context: %s\n' "$DOCKER_OUTPUT" \
+        "${DOCKER_CLI:-docker}" "${DOCKER_FALLBACK_CONTEXT:-${DOCKER_CONTEXT:-client default}}"
+}
 
-echo "=========================================="
-echo "Integration Test Suite"
-echo "=========================================="
-echo ""
-echo "Testing Framework Versions:"
-echo "- Spring Boot: ${SPRING_BOOT_VERSION}"
-echo "- Quarkus: ${QUARKUS_VERSION}"
-echo "- Micronaut: ${MICRONAUT_VERSION}"
-echo "- Helidon: ${HELIDON_VERSION}"
-echo "- Spark: ${SPARK_VERSION}"
-echo "- Javalin: ${JAVALIN_VERSION}"
-echo "- Dropwizard: ${DROPWIZARD_VERSION}"
-echo "- Vert.x: ${VERTX_VERSION}"
-echo "- Pekko: ${PEKKO_VERSION}"
-echo "- Go: ${GO_VERSION}"
-echo "- Django: ${DJANGO_VERSION}"
-echo ""
+require_docker() {
+    if [[ $DOCKER_AVAILABLE != true ]]; then
+        FAIL_REASON="Docker unavailable: ${DOCKER_ERROR}"
+        return 1
+    fi
+}
 
-echo "=========================================="
-echo "JVM Services - Deployment Tests"
-echo "=========================================="
-echo ""
+probe_log() {
+    local container=$1 since=$2 marker=$3
+    docker_capture logs --since "$since" --tail 200 "$container" || return 1
+    if [[ ${DOCKER_OUTPUT,,} == *"${marker,,}"* ]]; then return 0; fi
+    FAIL_REASON="No new '${marker}' log in ${container} since ${since}; logs: ${DOCKER_OUTPUT:0:2000}"
+    return 1
+}
 
-echo -e "${BLUE}--- Spring Boot JVM Tomcat Platform (port 8080) ---${NC}"
-run_test "Spring Tomcat Platform - /hello/platform" test_endpoint "Spring Tomcat Platform - /hello/platform" "${SPRING_JVM_TOMCAT_PLATFORM_URL}/hello/platform" 200 "Boot"
-echo ""
+test_runtime_log() {
+    local url=$1 container=$2 marker=$3 since
+    require_docker || return 1
+    # The daemon clock avoids host/daemon skew and excludes old matching logs.
+    docker_capture info --format '{{.SystemTime}}' || return 1
+    since=$DOCKER_OUTPUT
+    if [[ $since != ????-??-??T* ]]; then FAIL_REASON="Invalid Docker clock: $since"; return 1; fi
+    http_probe "${url}?log=true" 200 "$CONTENT" || return 1
+    poll_until "$LOG_TIMEOUT" probe_log "$container" "$since" "$marker"
+}
 
-echo -e "${BLUE}--- Spring Boot JVM Tomcat Virtual (port 8081) ---${NC}"
-run_test "Spring Tomcat Virtual - /hello/virtual" test_endpoint "Spring Tomcat Virtual - /hello/virtual" "${SPRING_JVM_TOMCAT_VIRTUAL_URL}/hello/virtual" 200 "Boot"
-echo ""
+seed_telemetry() {
+    local url=$1 ids
+    ids=$("$PYTHON" "$SCRIPT_DIR/results.py" ids) || return 1
+    read -r TRACE_ID SPAN_ID <<< "$ids"
+    TELEMETRY_SINCE=$(date +%s)
+    http_probe "${url}?log=true" 200 "$CONTENT" \
+        --header "traceparent: 00-${TRACE_ID}-${SPAN_ID}-01"
+}
 
-echo -e "${BLUE}--- Spring Boot JVM Netty (port 8082) ---${NC}"
-run_test "Spring Netty - /hello/reactive" test_endpoint "Spring Netty - /hello/reactive" "${SPRING_JVM_NETTY_URL}/hello/reactive" 200 "Boot"
-echo ""
+probe_telemetry() {
+    local kind=$1 service=$2 since=$3 trace_id=$4 marker=$5 query check_error window
+    local -a headers=()
+    case $kind in
+        mimir)
+            # Raw range samples retain metric names and their actual timestamps.
+            # timestamp(selector) drops __name__, colliding for identically labeled metrics.
+            window=$(( $(date +%s) - since + 1 ))
+            ((window > 0)) || window=1
+            query="{service_name=\"${service}\"}[${window}s]"
+            headers=(--header "X-Scope-OrgID: ${MIMIR_TENANT_ID:-anonymous}")
+            http_probe "${MIMIR_URL}/prometheus/api/v1/query" 200 '' --get \
+                --data-urlencode "query=${query}" "${headers[@]}" || return 1
+            ;;
+        loki)
+            query="{service_name=\"${service}\"} |= \"${marker}\""
+            if [[ -n ${LOKI_TENANT_ID:-} ]]; then headers=(--header "X-Scope-OrgID: $LOKI_TENANT_ID"); fi
+            http_probe "${LOKI_URL}/loki/api/v1/query_range" 200 '' --get \
+                --data-urlencode "query=${query}" --data-urlencode "start=${since}000000000" \
+                --data-urlencode 'limit=20' "${headers[@]}" || return 1
+            ;;
+        tempo)
+            if [[ -n ${TEMPO_TENANT_ID:-} ]]; then headers=(--header "X-Scope-OrgID: $TEMPO_TENANT_ID"); fi
+            http_probe "${TEMPO_URL}/api/traces/${trace_id}" 200 '' \
+                --header 'Accept: application/json' "${headers[@]}" || return 1
+            ;;
+    esac
+    if check_error=$("$PYTHON" "$SCRIPT_DIR/results.py" check "$kind" "$service" "$since" "$trace_id" \
+        <<< "$HTTP_BODY" 2>&1); then return 0; fi
+    FAIL_REASON="${kind}: ${check_error}"
+    return 1
+}
 
-echo -e "${BLUE}--- Quarkus JVM (port 8086) ---${NC}"
-run_test "Quarkus JVM - /hello/platform" test_endpoint "Quarkus JVM - /hello/platform" "${QUARKUS_JVM_URL}/hello/platform" 200 "Quarkus"
-run_test "Quarkus JVM - /hello/virtual" test_endpoint "Quarkus JVM - /hello/virtual" "${QUARKUS_JVM_URL}/hello/virtual" 200 "Quarkus"
-run_test "Quarkus JVM - /hello/reactive" test_endpoint "Quarkus JVM - /hello/reactive" "${QUARKUS_JVM_URL}/hello/reactive" 200 "Quarkus"
-echo ""
+test_wrk() {
+    local validation
+    require_docker || return 1
+    docker_capture exec "${WRK2_CONTAINER_NAME:-wrk2}" /wrk2/wrk -t1 -c1 -d3s -R10 \
+        --timeout 2s http://127.0.0.1:3003/ready || return 1
+    printf '%s\n' "$DOCKER_OUTPUT"
+    if validation=$("$PYTHON" "$SCRIPT_DIR/results.py" wrk <<< "$DOCKER_OUTPUT" 2>&1); then return 0; fi
+    FAIL_REASON="${validation}; output: ${DOCKER_OUTPUT:0:2000}"
+    return 1
+}
 
-echo -e "${BLUE}--- Micronaut JVM (port 8088) ---${NC}"
-run_test "Micronaut JVM - /hello/platform" test_endpoint "Micronaut JVM - /hello/platform" "${MICRONAUT_JVM_URL}/hello/platform" 200 "Micronaut"
-run_test "Micronaut JVM - /hello/virtual" test_endpoint "Micronaut JVM - /hello/virtual" "${MICRONAUT_JVM_URL}/hello/virtual" 200 "Micronaut"
-run_test "Micronaut JVM - /hello/reactive" test_endpoint "Micronaut JVM - /hello/reactive" "${MICRONAUT_JVM_URL}/hello/reactive" 200 "Micronaut"
-run_test "Micronaut JVM - /health" test_endpoint "Micronaut JVM - /health" "${MICRONAUT_JVM_URL}/health" 200 ""
-echo ""
-
-echo -e "${BLUE}--- Helidon SE JVM (port 8090) ---${NC}"
-run_test "Helidon SE JVM - /hello/virtual" test_endpoint "Helidon SE JVM - /hello/virtual" "${HELIDON_SE_JVM_URL}/hello/virtual" 200 "Helidon"
-run_test "Helidon SE JVM - /observe/health" test_endpoint "Helidon SE JVM - /observe/health" "${HELIDON_SE_JVM_URL}/observe/health" "200,204" ""
-echo ""
-
-echo -e "${BLUE}--- Helidon MP JVM (port 8092) ---${NC}"
-run_test "Helidon MP JVM - /hello/virtual" test_endpoint "Helidon MP JVM - /hello/virtual" "${HELIDON_MP_JVM_URL}/hello/virtual" 200 "Helidon MP"
-run_test "Helidon MP JVM - /health" test_endpoint "Helidon MP JVM - /health" "${HELIDON_MP_JVM_URL}/health" 200 ""
-echo ""
-
-echo -e "${BLUE}--- Spark JVM Platform (port 8094) ---${NC}"
-run_test "Spark JVM Platform - /hello/platform" test_endpoint "Spark JVM Platform - /hello/platform" "${SPARK_JVM_PLATFORM_URL}/hello/platform" 200 "Spark"
-run_test "Spark JVM Platform - /ready" test_ready_endpoint "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Spark JVM Virtual (port 8095) ---${NC}"
-run_test "Spark JVM Virtual - /hello/virtual" test_endpoint "Spark JVM Virtual - /hello/virtual" "${SPARK_JVM_VIRTUAL_URL}/hello/virtual" 200 "Spark"
-run_test "Spark JVM Virtual - /ready" test_ready_endpoint "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Javalin JVM Platform (port 8096) ---${NC}"
-run_test "Javalin JVM Platform - /hello/platform" test_endpoint "Javalin JVM Platform - /hello/platform" "${JAVALIN_JVM_PLATFORM_URL}/hello/platform" 200 "Javalin"
-run_test "Javalin JVM Platform - /ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Javalin JVM Virtual (port 8097) ---${NC}"
-run_test "Javalin JVM Virtual - /hello/virtual" test_endpoint "Javalin JVM Virtual - /hello/virtual" "${JAVALIN_JVM_VIRTUAL_URL}/hello/virtual" 200 "Javalin"
-run_test "Javalin JVM Virtual - /ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Dropwizard JVM Platform (port 8098) ---${NC}"
-run_test "Dropwizard JVM Platform - /hello/platform" test_endpoint "Dropwizard JVM Platform - /hello/platform" "${DROPWIZARD_JVM_PLATFORM_URL}/hello/platform" 200 "Dropwizard"
-run_test "Dropwizard JVM Platform - /ready" test_ready_endpoint "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Dropwizard JVM Virtual (port 8099) ---${NC}"
-run_test "Dropwizard JVM Virtual - /hello/virtual" test_endpoint "Dropwizard JVM Virtual - /hello/virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}/hello/virtual" 200 "Dropwizard"
-run_test "Dropwizard JVM Virtual - /ready" test_ready_endpoint "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Vert.x JVM (port 8100) ---${NC}"
-run_test "Vertx JVM - /hello/reactive" test_endpoint "Vertx JVM - /hello/reactive" "${VERTX_JVM_URL}/hello/reactive" 200 "Vertx"
-run_test "Vertx JVM - /ready" test_ready_endpoint "Vertx JVM" "${VERTX_JVM_URL}" "/ready"
-echo ""
-
-echo -e "${BLUE}--- Pekko JVM (port 8101) ---${NC}"
-run_test "Pekko JVM - /hello/reactive" test_endpoint "Pekko JVM - /hello/reactive" "${PEKKO_JVM_URL}/hello/reactive" 200 "Pekko"
-run_test "Pekko JVM - /ready" test_ready_endpoint "Pekko JVM" "${PEKKO_JVM_URL}" "/ready"
-echo ""
-
-echo "=========================================="
-echo "Native Services - Deployment Tests"
-echo "=========================================="
-echo ""
-
-echo -e "${BLUE}--- Spring Boot Native Tomcat Platform (port 8083) ---${NC}"
-run_test "Spring Native Tomcat Platform - /hello/platform" test_endpoint "Spring Native Tomcat Platform - /hello/platform" "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}/hello/platform" 200 "Boot"
-echo ""
-
-echo -e "${BLUE}--- Spring Boot Native Tomcat Virtual (port 8084) ---${NC}"
-run_test "Spring Native Tomcat Virtual - /hello/virtual" test_endpoint "Spring Native Tomcat Virtual - /hello/virtual" "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}/hello/virtual" 200 "Boot"
-echo ""
-
-echo -e "${BLUE}--- Spring Boot Native Netty (port 8085) ---${NC}"
-run_test "Spring Native Netty - /hello/reactive" test_endpoint "Spring Native Netty - /hello/reactive" "${SPRING_NATIVE_NETTY_URL}/hello/reactive" 200 "Boot"
-echo ""
-
-echo -e "${BLUE}--- Quarkus Native (port 8087) ---${NC}"
-run_test "Quarkus Native - /hello/platform" test_endpoint "Quarkus Native - /hello/platform" "${QUARKUS_NATIVE_URL}/hello/platform" 200 "Quarkus"
-run_test "Quarkus Native - /hello/virtual" test_endpoint "Quarkus Native - /hello/virtual" "${QUARKUS_NATIVE_URL}/hello/virtual" 200 "Quarkus"
-run_test "Quarkus Native - /hello/reactive" test_endpoint "Quarkus Native - /hello/reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" 200 "Quarkus"
-echo ""
-
-echo -e "${BLUE}--- Micronaut Native (port 8089) ---${NC}"
-run_test "Micronaut Native - /hello/platform" test_endpoint "Micronaut Native - /hello/platform" "${MICRONAUT_NATIVE_URL}/hello/platform" 200 "Micronaut"
-run_test "Micronaut Native - /hello/virtual" test_endpoint "Micronaut Native - /hello/virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" 200 "Micronaut"
-run_test "Micronaut Native - /hello/reactive" test_endpoint "Micronaut Native - /hello/reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" 200 "Micronaut"
-run_test "Micronaut Native - /health" test_endpoint "Micronaut Native - /health" "${MICRONAUT_NATIVE_URL}/health" 200 ""
-echo ""
-
-echo -e "${BLUE}--- Helidon SE Native (port 8091) ---${NC}"
-run_test "Helidon SE Native - /hello/virtual" test_endpoint "Helidon SE Native - /hello/virtual" "${HELIDON_SE_NATIVE_URL}/hello/virtual" 200 "Helidon"
-run_test "Helidon SE Native - /observe/health" test_endpoint "Helidon SE Native - /observe/health" "${HELIDON_SE_NATIVE_URL}/observe/health" "200,204" ""
-echo ""
-
-echo -e "${BLUE}--- Helidon MP Native (port 8093) ---${NC}"
-run_test "Helidon MP Native - /hello/virtual" test_endpoint "Helidon MP Native - /hello/virtual" "${HELIDON_MP_NATIVE_URL}/hello/virtual" 200 "Helidon MP"
-run_test "Helidon MP Native - /health" test_endpoint "Helidon MP Native - /health" "${HELIDON_MP_NATIVE_URL}/health" 200 ""
-echo ""
-
-echo "=========================================="
-echo "Go Service - Deployment Tests"
-echo "=========================================="
-echo ""
-
-echo -e "${BLUE}--- Go Fiber (port 9080) ---${NC}"
-run_test "Go - /hello/virtual" test_endpoint "Go - /hello/virtual" "${GO_URL}/hello/virtual" 200 "GO"
-echo ""
-
-echo "=========================================="
-echo "Django Service - Deployment Tests"
-echo "=========================================="
-echo ""
-
-echo -e "${BLUE}--- Django Platform (port 9090) ---${NC}"
-run_test "Django - /hello/platform" test_endpoint "Django - /hello/platform" "${DJANGO_PLATFORM_URL}/hello/platform" 200 "Django"
-echo ""
-
-echo -e "${BLUE}--- Django Reactive (port 9091) ---${NC}"
-run_test "Django - /hello/reactive" test_endpoint "Django - /hello/reactive" "${DJANGO_REACTIVE_URL}/hello/reactive" 200 "Django"
-echo ""
-
-echo "=========================================="
-echo "Observability Mechanism Tests"
-echo "=========================================="
-echo ""
-
-echo -e "${BLUE}--- Metrics Collection ---${NC}"
-run_test "Spring Tomcat Platform metrics" test_spring_metrics "Spring Tomcat Platform" "${SPRING_JVM_TOMCAT_PLATFORM_URL}"
-run_test "Spring Tomcat Virtual metrics" test_spring_metrics "Spring Tomcat Virtual" "${SPRING_JVM_TOMCAT_VIRTUAL_URL}"
-run_test "Spring Netty metrics" test_spring_metrics "Spring Netty" "${SPRING_JVM_NETTY_URL}"
-run_test "Spring Native Tomcat Platform metrics" test_spring_metrics "Spring Native Tomcat Platform" "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}"
-run_test "Spring Native Tomcat Virtual metrics" test_spring_metrics "Spring Native Tomcat Virtual" "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}"
-run_test "Spring Native Netty metrics" test_spring_metrics "Spring Native Netty" "${SPRING_NATIVE_NETTY_URL}"
-run_test "Quarkus JVM metrics" test_quarkus_metrics "Quarkus JVM" "${QUARKUS_JVM_URL}"
-run_test "Quarkus Native metrics" test_quarkus_metrics "Quarkus Native" "${QUARKUS_NATIVE_URL}"
-run_test "Micronaut JVM metrics" test_micronaut_metrics "Micronaut JVM" "${MICRONAUT_JVM_URL}"
-run_test "Micronaut Native metrics" test_micronaut_metrics "Micronaut Native" "${MICRONAUT_NATIVE_URL}"
-run_test "Helidon SE JVM health" test_ready_endpoint "Helidon SE JVM" "${HELIDON_SE_JVM_URL}" "/observe/health"
-run_test "Helidon SE Native health" test_ready_endpoint "Helidon SE Native" "${HELIDON_SE_NATIVE_URL}" "/observe/health"
-run_test "Helidon MP JVM health" test_ready_endpoint "Helidon MP JVM" "${HELIDON_MP_JVM_URL}" "/health"
-run_test "Helidon MP Native health" test_ready_endpoint "Helidon MP Native" "${HELIDON_MP_NATIVE_URL}" "/health"
-run_test "Spark JVM Platform ready" test_ready_endpoint "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}" "/ready"
-run_test "Spark JVM Virtual ready" test_ready_endpoint "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}" "/ready"
-run_test "Javalin JVM Platform ready" test_ready_endpoint "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}" "/ready"
-run_test "Javalin JVM Virtual ready" test_ready_endpoint "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}" "/ready"
-run_test "Dropwizard JVM Platform ready" test_ready_endpoint "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}" "/ready"
-run_test "Dropwizard JVM Virtual ready" test_ready_endpoint "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}" "/ready"
-run_test "Vertx JVM ready" test_ready_endpoint "Vertx JVM" "${VERTX_JVM_URL}" "/ready"
-run_test "Pekko JVM ready" test_ready_endpoint "Pekko JVM" "${PEKKO_JVM_URL}" "/ready"
-run_test "Go metrics" test_go_metrics "Go" "${GO_URL}"
-run_test "Django Platform health" test_go_metrics "Django Platform" "${DJANGO_PLATFORM_URL}"
-run_test "Django Reactive health" test_go_metrics "Django Reactive" "${DJANGO_REACTIVE_URL}"
-echo ""
-
-echo -e "${BLUE}--- Grafana Stack Readiness ---${NC}"
-run_test "Grafana UI" test_endpoint "Grafana UI" "${GRAFANA_URL}/api/health" 200 ""
-run_test "Alloy" test_endpoint "Alloy" "${ALLOY_URL}/-/ready" 200 ""
-run_test "Loki" test_endpoint "Loki" "${LOKI_URL}/ready" 200 ""
-run_test "Mimir" test_endpoint "Mimir" "${MIMIR_URL}/ready" 200 ""
-run_test "Tempo" test_endpoint "Tempo" "${TEMPO_URL}/ready" 200 ""
-run_test "Pyroscope" test_endpoint "Pyroscope" "${PYROSCOPE_URL}/ready" 200 ""
-echo ""
-
-echo -e "${BLUE}--- Orchestration Stack Readiness ---${NC}"
-run_test "NextJS UI" test_endpoint "NextJS UI" "${NEXTJS_URL}/api/app-health" 200 ""
-run_test "Orchestrator" test_endpoint "Orchestrator" "${ORCHESTRATOR_URL}/q/health/ready" 200 ""
-run_test "Orchestrator Aggregated" test_endpoint "Orchestrator Aggregated" "${ORCHESTRATOR_URL}/v1/health" 200 ""
-
-# --- wrk2 readiness + on-demand exec smoke test ---
-# We assume containers are already up; this verifies wrk2 is serving /ready and that on-demand exec works.
-echo ""
-echo -e "${BLUE}--- wrk2 Readiness + On-demand Exec ---${NC}"
-
-WRK2_READY_URL="${WRK2_READY_URL:-http://localhost:3003/ready}"
-WRK2_CONTAINER_NAME="${WRK2_CONTAINER_NAME:-wrk2}"
-
-if wait_for_endpoint "wrk2 (/ready)" "${WRK2_READY_URL}" 200 2; then
-    if [ "${DOCKER_AVAILABLE}" != "true" ]; then
-        echo -e "${RED}✗ ERROR${NC} - Docker daemon unreachable; cannot 'docker exec' into wrk2 container."
-        echo "  See Docker pre-flight check above for remediation steps."
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+# Only run_test records results; fallback attempts never change counters.
+run_test() {
+    local label=$1 group=$2 service=$3 started=$SECONDS status=passed
+    shift 3
+    FAIL_REASON=''; TEST_ATTEMPTS=1
+    if "$@"; then
+        TESTS_PASSED=$((TESTS_PASSED + 1)); LAST_TEST_OK=true
     else
-    echo "wrk2 exec self-ready check (printing wrk output below):"
+        status=failed; TESTS_FAILED=$((TESTS_FAILED + 1)); LAST_TEST_OK=false
+        FAIL_REASON=${FAIL_REASON:-Test command returned nonzero}
+    fi
+    if [[ $status == passed ]]; then FAIL_REASON=''; fi
+    record_result "$label" "$group" "$service" "$status" "$((SECONDS - started))" "$FAIL_REASON"
+}
 
-    # Run wrk2 against its own readiness endpoint from inside the container.
-    # We must also verify output contains "Transfer/sec" (ensures the command actually ran).
-    WRK_EXEC_OUT=""
-    if WRK_EXEC_OUT="$(docker exec "${WRK2_CONTAINER_NAME}" /wrk2/wrk -t1 -c1 -d1s -R1 --timeout 3s http://0.0.0.0:3003/ready 2>&1)"; then
-        echo "----- wrk2 exec output (begin) -----"
-        echo "${WRK_EXEC_OUT}"
-        echo "----- wrk2 exec output (end) -----"
+record_result() {
+    local label=$1 group=$2 service=$3 status=$4 duration=$5 message=$6
+    printf '%s' "$message" | "$PYTHON" "$SCRIPT_DIR/results.py" record \
+        "$label" "$group" "$service" "$status" "$duration" "${TEST_ATTEMPTS:-1}" >> "$EVENTS_FILE" || exit 2
+    printf '%s%s: %s%s\n' "$BLUE" "$status" "$label" "$NC"
+    if [[ -n $message ]]; then printf '  %s\n' "$message"; fi
+}
 
-        # Sometimes output arrives slightly delayed in terminals/streams. Be tolerant up to 2s.
-        deadline=$((SECONDS + 2))
-        while ! echo "${WRK_EXEC_OUT}" | grep -q "Transfer/sec"; do
-            [ ${SECONDS} -ge ${deadline} ] && break
-            sleep 0.2
+skip_test() {
+    TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
+    TEST_ATTEMPTS=0
+    record_result "$1" "$2" "$3" skipped 0 "$4"
+}
+
+finish() {
+    local rc=$? report_rc=0 tee_rc=0
+    trap - EXIT
+    # Still finish the report if the logging pipe itself has failed.
+    set +e
+    trap '' PIPE
+    printf '\nTests passed: %s; failed: %s; skipped: %s; exit: %s\n' \
+        "$TESTS_PASSED" "$TESTS_FAILED" "$TESTS_SKIPPED" "$rc"
+    printf '[integration-tests] report: %s\n' "$REPORT_FILE"
+    # Close the pipe and wait to drain tee; sync cannot drain a process pipe.
+    exec 1>&3 2>&4
+    wait "$TEE_PID" || tee_rc=$?
+    if ((tee_rc != 0)); then rc=2; fi
+    "$PYTHON" "$SCRIPT_DIR/results.py" report "$EVENTS_FILE" "$REPORT_FILE" \
+        "$STARTED_AT" "$rc" "$LOG_FILE" "$TEMP_DIR/configuration.json" || report_rc=$?
+    rm -rf -- "$TEMP_DIR"
+    if ((report_rc != 0 || tee_rc != 0)); then
+        printf 'Failed to write report or log (report=%s, tee=%s)\n' "$report_rc" "$tee_rc" >&2
+        exit 2
+    fi
+    exit "$rc"
+}
+
+load_versions() {
+    local key value
+    for key in QUARKUS_VERSION SPRING_BOOT_VERSION MICRONAUT_VERSION HELIDON_VERSION \
+        SPARK_VERSION JAVALIN_VERSION DROPWIZARD_VERSION VERTX_VERSION PEKKO_VERSION GO_VERSION DJANGO_VERSION; do
+        if ! value=$(awk -v key="$key" '
+            $0 ~ "^[[:space:]]*" key "[[:space:]]*:" {
+                sub(/^[^:]*:[[:space:]]*/, ""); sub(/[[:space:]]+#.*$/, ""); sub(/[[:space:]]+$/, ""); value=$0
+            }
+            END { if (value == "") exit 1; print value }
+        ' "$SCRIPT_DIR/../compose/.env"); then
+            printf 'Missing or empty %s in compose/.env\n' "$key" >&2; return 1
+        fi
+        printf '%s: %s\n' "$key" "$value"
+    done
+}
+
+run_services() {
+    local row id url_var port codes paths specs base spec path marker first_spec backend ready seeded expected statuses
+    local job since trace_id telemetry_count=0
+    local -a endpoints telemetry_jobs=()
+    for row in "${SERVICES[@]}"; do
+        [[ -n $row && $row != \#* ]] || continue
+        IFS='|' read -r id url_var port CONTENT codes paths specs <<< "$row"
+        service_selected "$id" || continue
+        base=${!url_var:-http://localhost:$port}; base=${base%/}
+        IFS=';' read -r -a endpoints <<< "$specs"
+        run_test "$id health/readiness" health "$id" poll_until "$STARTUP_TIMEOUT" probe_any_health "$base" "$codes" "$paths"
+        ready=$LAST_TEST_OK
+        for spec in "${endpoints[@]}"; do
+            path=${spec%%~*}; marker=${spec#*~}
+            if group_selected deployment; then
+                expected=''; statuses=$codes
+                if [[ $path == /hello/* ]]; then expected=$CONTENT; statuses=200; fi
+                if [[ $ready == true ]]; then
+                    run_test "$id $path response" deployment "$id" http_probe "$base$path" "$statuses" "$expected"
+                else skip_test "$id $path response" deployment "$id" 'Service readiness failed'; fi
+            fi
+            if group_selected logs && [[ -n $marker ]]; then
+                if [[ $DOCKER_AVAILABLE != true ]]; then
+                    skip_test "$id $path runtime log" logs "$id" 'Docker preflight failed (see preflight result)'
+                elif [[ $ready == true ]]; then
+                    run_test "$id $path runtime log" logs "$id" test_runtime_log "$base$path" "$id" "$marker"
+                else skip_test "$id $path runtime log" logs "$id" 'Service readiness failed'; fi
+            fi
         done
-
-        if echo "${WRK_EXEC_OUT}" | grep -q "Transfer/sec"; then
-            echo -e "${GREEN}✓ PASSED${NC}"
-            TESTS_PASSED=$((TESTS_PASSED + 1))
-        else
-            echo -e "${RED}✗ FAILED${NC}"
-            echo "  wrk2 exec completed but expected output 'Transfer/sec' was not found within 2s."
-            TESTS_FAILED=$((TESTS_FAILED + 1))
+        if group_selected telemetry; then
+            first_spec=${endpoints[0]}; path=${first_spec%%~*}; marker=${first_spec#*~}; seeded=false
+            if [[ $ready == true ]]; then
+                run_test "$id telemetry request" telemetry "$id" seed_telemetry "$base$path"
+                seeded=$LAST_TEST_OK
+            else skip_test "$id telemetry request" telemetry "$id" 'Service readiness failed'; fi
+            if [[ $seeded == true ]]; then
+                telemetry_jobs+=("$id|$TELEMETRY_SINCE|$TRACE_ID|$marker")
+                telemetry_count=$((telemetry_count + 1))
+            else
+                for backend in mimir loki tempo; do
+                    skip_test "$id $backend ingestion" telemetry "$id" 'Telemetry request prerequisite failed'
+                done
+            fi
         fi
-    else
-        echo "----- wrk2 exec output (begin) -----"
-        echo "${WRK_EXEC_OUT}"
-        echo "----- wrk2 exec output (end) -----"
-        echo -e "${RED}✗ FAILED${NC}"
-        echo "  Could not run on-demand wrk2 self-ready check inside container '${WRK2_CONTAINER_NAME}'."
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-    fi
-    fi
-else
-    echo -e "${RED}✗ FAILED${NC} - wrk2 readiness endpoint was not ready at ${WRK2_READY_URL}"
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-fi
-
-echo ""
-
-echo -e "${BLUE}--- Trace Generation (Smoke Test) ---${NC}"
-echo "Generating request to create trace and verify container log output..."
-
-# Verify last log line contains expected substring (case-insensitive)
-verify_last_log_contains() {
-    local container_name="$1"
-    local expected="$2"
-    local label="$3"
-
-    echo -n "Trace log check ${label} (${container_name})... "
-
-    # Fast-fail if Docker is unreachable (avoids misleading "<empty>" messages)
-    if [ "${DOCKER_AVAILABLE}" != "true" ]; then
-        echo -e "${RED}✗ ERROR${NC} (Docker daemon unreachable — cannot fetch container logs)"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        return 1
-    fi
-
-    # Get last log line (merge stdout+stderr — many services log to stderr)
-    local last_line docker_err
-    docker_err="$(docker logs --tail 1 "${container_name}" 2>&1 1>/dev/null || true)"
-    last_line="$(docker logs --tail 1 "${container_name}" 2>&1 || true)"
-
-    if echo "${last_line}" | grep -qi "${expected}"; then
-        echo -e "${GREEN}✓ PASSED${NC} (found '${expected}')"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        return 0
-    else
-        echo -e "${RED}✗ FAILED${NC} (missing '${expected}')"
-        if [ -n "${docker_err}" ]; then
-            echo "  Docker error: ${docker_err}"
-        fi
-        echo "  Last log line: ${last_line:-<empty>}"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        return 1
+    done
+    # Seed every selected service first so exporter/batch delays overlap.
+    if ((telemetry_count > 0)); then
+        for job in "${telemetry_jobs[@]}"; do
+            IFS='|' read -r id since trace_id marker <<< "$job"
+            for backend in mimir loki tempo; do
+                run_test "$id $backend ingestion" telemetry "$id" poll_until "$TELEMETRY_TIMEOUT" \
+                    probe_telemetry "$backend" "$id" "$since" "$trace_id" "$marker"
+            done
+        done
     fi
 }
 
-# Run request then verify logs
-run_trace_and_verify() {
-    local label="$1"
-    local url="$2"
-    local container_name="$3"
-    local expected="$4"
-
-    # Fire request to generate log/trace (don't fail suite on curl failure)
-    curl -s --max-time ${TIMEOUT} "${url}?log=true" > /dev/null 2>&1 || true
-
-    # Small delay to let the service flush logs
-    sleep 0.2
-
-    verify_last_log_contains "${container_name}" "${expected}" "${label}"
+run_stack() {
+    local id url_var default path base
+    while IFS='|' read -r id url_var default path; do
+        base=${!url_var:-$default}; base=${base%/}
+        run_test "$id readiness" stack "$id" poll_until "$STARTUP_TIMEOUT" http_probe "${base}${path}" 200 ''
+    done <<'EOF'
+grafana|GRAFANA_URL|http://localhost:3000|/api/health
+alloy|ALLOY_URL|http://localhost:12345|/-/ready
+loki|LOKI_URL|http://localhost:3100|/ready
+mimir|MIMIR_URL|http://localhost:9009|/ready
+tempo|TEMPO_URL|http://localhost:3200|/ready
+pyroscope|PYROSCOPE_URL|http://localhost:4040|/ready
+nextjs-dash|NEXTJS_URL|http://localhost:3001|/api/app-health
+orchestrator|ORCHESTRATOR_URL|http://localhost:3002|/q/health/ready
+orchestrator-aggregated|ORCHESTRATOR_URL|http://localhost:3002|/v1/health
+EOF
 }
 
-run_test "Trace Spring JVM Tomcat Platform" run_trace_and_verify "Spring JVM Tomcat Platform" "${SPRING_JVM_TOMCAT_PLATFORM_URL}/hello/platform" "spring-jvm-tomcat-platform" "http-nio"
-run_test "Trace Spring JVM Tomcat Virtual" run_trace_and_verify "Spring JVM Tomcat Virtual" "${SPRING_JVM_TOMCAT_VIRTUAL_URL}/hello/virtual" "spring-jvm-tomcat-virtual" "VirtualThread"
-run_test "Trace Spring JVM Netty Reactive" run_trace_and_verify "Spring JVM Netty Reactive" "${SPRING_JVM_NETTY_URL}/hello/reactive" "spring-jvm-netty" "reactor-http"
+write_configuration() {
+    "$PYTHON" "$SCRIPT_DIR/results.py" configuration \
+        "services=${SERVICE_FILTER:-all}" "groups=$GROUP_FILTER" "bash=$BASH_VERSION" \
+        "REQUEST_TIMEOUT=$REQUEST_TIMEOUT" "CONNECT_TIMEOUT=$CONNECT_TIMEOUT" "STARTUP_TIMEOUT=$STARTUP_TIMEOUT" \
+        "LOG_TIMEOUT=$LOG_TIMEOUT" "TELEMETRY_TIMEOUT=$TELEMETRY_TIMEOUT" "DOCKER_TIMEOUT=$DOCKER_TIMEOUT" \
+        "DOCKER_STARTUP_TIMEOUT=$DOCKER_STARTUP_TIMEOUT" "POLL_INTERVAL=$POLL_INTERVAL" \
+        "DOCKER_BIN=${DOCKER_BIN:-auto}" "docker_client=$DOCKER_CLI" \
+        "docker_context=${DOCKER_FALLBACK_CONTEXT:-${DOCKER_CONTEXT:-client default}}" \
+        "DOCKER_HOST=${DOCKER_HOST:-client default}" "WSL_DISTRO_NAME=${WSL_DISTRO_NAME:-}" > "$TEMP_DIR/configuration.json"
+}
 
-run_test "Trace Spring Native Tomcat Platform" run_trace_and_verify "Spring Native Tomcat Platform" "${SPRING_NATIVE_TOMCAT_PLATFORM_URL}/hello/platform" "spring-native-tomcat-platform" "http-nio"
-run_test "Trace Spring Native Tomcat Virtual" run_trace_and_verify "Spring Native Tomcat Virtual" "${SPRING_NATIVE_TOMCAT_VIRTUAL_URL}/hello/virtual" "spring-native-tomcat-virtual" "VirtualThread"
-run_test "Trace Spring Native Netty Reactive" run_trace_and_verify "Spring Native Netty Reactive" "${SPRING_NATIVE_NETTY_URL}/hello/reactive" "spring-native-netty" "reactor-http"
+main() {
+    if ((BASH_VERSINFO[0] < 4)); then printf 'Bash 4.0 or newer is required\n' >&2; return 2; fi
+    SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+    SERVICE_FILTER=''; GROUP_FILTER=deployment,health,logs,telemetry,stack,wrk2
+    mapfile -t SERVICES < "$SCRIPT_DIR/services.txt"
+    local arg token row known_ids='' key value
+    while (($#)); do
+        arg=$1; shift
+        case $arg in
+            --help|-h) usage; return 0 ;;
+            --list) for row in "${SERVICES[@]}"; do [[ -z $row || $row == \#* ]] || printf '%s\n' "${row%%|*}"; done; return 0 ;;
+            --services|--groups)
+                if (($# == 0)) || [[ -z $1 || $1 == --* ]]; then printf 'Expected value after %s\n' "$arg" >&2; return 2; fi
+                if [[ $arg == --services ]]; then SERVICE_FILTER=$1; else GROUP_FILTER=$1; fi
+                shift ;;
+            *) printf 'Unknown option: %s\n' "$arg" >&2; return 2 ;;
+        esac
+    done
+    for row in "${SERVICES[@]}"; do [[ -z $row || $row == \#* ]] || known_ids+="${row%%|*},"; done
+    local -a tokens
+    for key in SERVICE_FILTER GROUP_FILTER; do
+        value=${!key}
+        if [[ $value == ,* || $value == *, || $value == *,,* ]]; then printf 'Invalid filter: %s\n' "$value" >&2; return 2; fi
+        IFS=',' read -r -a tokens <<< "$value"
+        for token in "${tokens[@]}"; do
+            if [[ $key == SERVICE_FILTER ]]; then contains "${known_ids%,}" "$token" && continue
+            else contains deployment,health,logs,telemetry,stack,wrk2 "$token" && continue; fi
+            printf 'Unknown filter value: %s\n' "$token" >&2; return 2
+        done
+    done
+    REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-2}; CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-2}
+    STARTUP_TIMEOUT=${STARTUP_TIMEOUT:-30}; LOG_TIMEOUT=${LOG_TIMEOUT:-5}
+    TELEMETRY_TIMEOUT=${TELEMETRY_TIMEOUT:-90}; DOCKER_TIMEOUT=${DOCKER_TIMEOUT:-10}
+    DOCKER_STARTUP_TIMEOUT=${DOCKER_STARTUP_TIMEOUT:-30}
+    DOCKER_CLI=${DOCKER_BIN:-docker}; DOCKER_FALLBACK_CONTEXT=''
+    POLL_INTERVAL=${POLL_INTERVAL:-0.5}; PYTHON=${PYTHON:-python3}
+    for key in REQUEST_TIMEOUT CONNECT_TIMEOUT STARTUP_TIMEOUT LOG_TIMEOUT TELEMETRY_TIMEOUT DOCKER_TIMEOUT DOCKER_STARTUP_TIMEOUT; do
+        if [[ ! ${!key} =~ ^[1-9][0-9]*$ ]]; then printf '%s must be a positive integer\n' "$key" >&2; return 2; fi
+    done
+    if group_selected wrk2 && ((DOCKER_TIMEOUT < 5)); then
+        printf 'DOCKER_TIMEOUT must be at least 5 seconds for the 3-second wrk2 workload\n' >&2; return 2
+    fi
+    if [[ ! $POLL_INTERVAL =~ ^([0-9]+)(\.[0-9]+)?$ || ! $POLL_INTERVAL =~ [1-9] ]]; then
+        printf 'POLL_INTERVAL must be positive\n' >&2; return 2
+    fi
+    local tool
+    for tool in curl "$PYTHON" awk date mktemp tee sleep timeout; do
+        command -v "$tool" >/dev/null || { printf 'Missing required tool: %s\n' "$tool" >&2; return 2; }
+    done
+    "$PYTHON" -c 'import sys; sys.exit(sys.version_info < (3, 9))' || return 2
+    [[ -r $SCRIPT_DIR/results.py && -r $SCRIPT_DIR/../compose/.env ]] || return 2
+    OUTPUT_DIR=${OUTPUT_DIR:-$SCRIPT_DIR/output}
+    mkdir -p "$OUTPUT_DIR"
+    TEMP_DIR=$(mktemp -d "$OUTPUT_DIR/.run.XXXXXXXX")
+    local run_id
+    run_id="$(date -u +%Y%m%d_%H%M%S)_${TEMP_DIR##*.}"
+    LOG_FILE=$OUTPUT_DIR/$run_id.log; REPORT_FILE=$OUTPUT_DIR/$run_id.json
+    EVENTS_FILE=$TEMP_DIR/events.jsonl; : > "$EVENTS_FILE"; : > "$TEMP_DIR/body"
+    STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    TESTS_PASSED=0; TESTS_FAILED=0; TESTS_SKIPPED=0
+    DOCKER_AVAILABLE=false; DOCKER_ERROR='Not checked'; FAIL_REASON=''; BLUE=''; NC=''
+    if [[ -t 1 && -z ${NO_COLOR:-} ]]; then BLUE=$'\033[0;34m'; NC=$'\033[0m'; fi
+    exec 3>&1 4>&2
+    exec > >(tee "$LOG_FILE") 2>&1
+    TEE_PID=$!
+    trap finish EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    printf '[integration-tests] log: %s\nStarted: %s\nHost: %s\nGroups: %s\nServices: %s\n' \
+        "$LOG_FILE" "$STARTED_AT" "$(uname -a)" "$GROUP_FILTER" "${SERVICE_FILTER:-all}"
+    write_configuration
+    printf 'Effective configuration: %s\n' "$(<"$TEMP_DIR/configuration.json")"
+    if group_selected telemetry && ((TELEMETRY_TIMEOUT < 10)); then
+        printf 'Warning: TELEMETRY_TIMEOUT=%ss may be shorter than exporter and collector batching intervals.\n' "$TELEMETRY_TIMEOUT"
+    fi
+    load_versions || return 2
+    if group_selected logs || group_selected wrk2; then
+        run_test 'Docker daemon connectivity' preflight docker poll_until "$DOCKER_STARTUP_TIMEOUT" probe_docker
+        if [[ $LAST_TEST_OK != true ]]; then DOCKER_ERROR=$FAIL_REASON; fi
+        write_configuration
+    fi
+    MIMIR_URL=${MIMIR_URL:-http://localhost:9009}; LOKI_URL=${LOKI_URL:-http://localhost:3100}
+    TEMPO_URL=${TEMPO_URL:-http://localhost:3200}
+    if group_selected stack; then run_stack; fi
+    if group_selected deployment || group_selected health || group_selected logs || group_selected telemetry; then run_services; fi
+    if group_selected wrk2; then
+        run_test 'wrk2 readiness' wrk2 wrk2 poll_until "$STARTUP_TIMEOUT" http_probe "${WRK2_READY_URL:-http://localhost:3003/ready}" 200 ''
+        if [[ $DOCKER_AVAILABLE != true ]]; then skip_test 'wrk2 successful requests' wrk2 wrk2 'Docker preflight failed (see preflight result)'
+        elif [[ $LAST_TEST_OK == true ]]; then run_test 'wrk2 successful requests' wrk2 wrk2 test_wrk
+        else skip_test 'wrk2 successful requests' wrk2 wrk2 'wrk2 readiness failed'; fi
+    fi
+    ((TESTS_FAILED == 0))
+}
 
-run_test "Trace Quarkus JVM Platform" run_trace_and_verify "Quarkus JVM Platform" "${QUARKUS_JVM_URL}/hello/platform" "quarkus-jvm" "executor-thread"
-run_test "Trace Quarkus JVM Virtual" run_trace_and_verify "Quarkus JVM Virtual" "${QUARKUS_JVM_URL}/hello/virtual"  "quarkus-jvm" "vthread"
-run_test "Trace Quarkus JVM Reactive" run_trace_and_verify "Quarkus JVM Reactive" "${QUARKUS_JVM_URL}/hello/reactive" "quarkus-jvm" "vert.x-eventloop-thread"
-
-run_test "Trace Quarkus Native Platform" run_trace_and_verify "Quarkus Native Platform" "${QUARKUS_NATIVE_URL}/hello/platform" "quarkus-native" "executor-thread"
-run_test "Trace Quarkus Native Virtual" run_trace_and_verify "Quarkus Native Virtual" "${QUARKUS_NATIVE_URL}/hello/virtual" "quarkus-native" "vthread"
-run_test "Trace Quarkus Native Reactive" run_trace_and_verify "Quarkus Native Reactive" "${QUARKUS_NATIVE_URL}/hello/reactive" "quarkus-native" "vert.x-eventloop-thread"
-
-run_test "Trace Micronaut JVM Platform" run_trace_and_verify "Micronaut JVM Platform" "${MICRONAUT_JVM_URL}/hello/platform" "micronaut-jvm" "isVirtual: 'false'"
-run_test "Trace Micronaut JVM Virtual" run_trace_and_verify "Micronaut JVM Virtual" "${MICRONAUT_JVM_URL}/hello/virtual" "micronaut-jvm" "isVirtual: 'true'"
-run_test "Trace Micronaut JVM Reactive" run_trace_and_verify "Micronaut JVM Reactive" "${MICRONAUT_JVM_URL}/hello/reactive" "micronaut-jvm" "EventLoopGroup"
-
-run_test "Trace Micronaut Native Platform" run_trace_and_verify "Micronaut Native Platform" "${MICRONAUT_NATIVE_URL}/hello/platform" "micronaut-native" "isVirtual: 'false'"
-run_test "Trace Micronaut Native Virtual" run_trace_and_verify "Micronaut Native Virtual" "${MICRONAUT_NATIVE_URL}/hello/virtual" "micronaut-native" "isVirtual: 'true'"
-run_test "Trace Micronaut Native Reactive" run_trace_and_verify "Micronaut Native Reactive" "${MICRONAUT_NATIVE_URL}/hello/reactive" "micronaut-native" "EventLoopGroup"
-
-run_test "Trace Helidon SE JVM Virtual" run_trace_and_verify "Helidon SE JVM Virtual" "${HELIDON_SE_JVM_URL}/hello/virtual" "helidon-se-jvm" "isVirtual: 'true'"
-run_test "Trace Helidon SE Native Virtual" run_trace_and_verify "Helidon SE Native Virtual" "${HELIDON_SE_NATIVE_URL}/hello/virtual" "helidon-se-native" "isVirtual: 'true'"
-
-run_test "Trace Helidon MP JVM Virtual" run_trace_and_verify "Helidon MP JVM Virtual" "${HELIDON_MP_JVM_URL}/hello/virtual" "helidon-mp-jvm" "isVirtual: 'true'"
-run_test "Trace Helidon MP Native Virtual" run_trace_and_verify "Helidon MP Native Virtual" "${HELIDON_MP_NATIVE_URL}/hello/virtual" "helidon-mp-native" "isVirtual: 'true'"
-
-run_test "Trace Spark JVM Platform" run_trace_and_verify "Spark JVM Platform" "${SPARK_JVM_PLATFORM_URL}/hello/platform" "spark-jvm-platform" "isVirtual: 'false'"
-run_test "Trace Spark JVM Virtual" run_trace_and_verify "Spark JVM Virtual" "${SPARK_JVM_VIRTUAL_URL}/hello/virtual" "spark-jvm-virtual" "isVirtual: 'true'"
-
-run_test "Trace Javalin JVM Platform" run_trace_and_verify "Javalin JVM Platform" "${JAVALIN_JVM_PLATFORM_URL}/hello/platform" "javalin-jvm-platform" "isVirtual: 'false'"
-run_test "Trace Javalin JVM Virtual" run_trace_and_verify "Javalin JVM Virtual" "${JAVALIN_JVM_VIRTUAL_URL}/hello/virtual" "javalin-jvm-virtual" "isVirtual: 'true'"
-
-run_test "Trace Dropwizard JVM Platform" run_trace_and_verify "Dropwizard JVM Platform" "${DROPWIZARD_JVM_PLATFORM_URL}/hello/platform" "dropwizard-jvm-platform" "isVirtual: 'false'"
-run_test "Trace Dropwizard JVM Virtual" run_trace_and_verify "Dropwizard JVM Virtual" "${DROPWIZARD_JVM_VIRTUAL_URL}/hello/virtual" "dropwizard-jvm-virtual" "isVirtual: 'true'"
-
-run_test "Trace Vertx JVM Reactive" run_trace_and_verify "Vertx JVM Reactive" "${VERTX_JVM_URL}/hello/reactive" "vertx-jvm" "vert.x-eventloop-thread"
-
-run_test "Trace Pekko JVM Reactive" run_trace_and_verify "Pekko JVM Reactive" "${PEKKO_JVM_URL}/hello/reactive" "pekko-jvm" "pekko.actor.default-dispatcher"
-
-run_test "Trace Go Virtual" run_trace_and_verify "Go Virtual" "${GO_URL}/hello/virtual" "go" "goroutine"
-
-run_test "Trace Django Platform" run_trace_and_verify "Django Platform" "${DJANGO_PLATFORM_URL}/hello/platform" "django-platform" "ThreadPoolExecutor"
-run_test "Trace Django Reactive" run_trace_and_verify "Django Reactive" "${DJANGO_REACTIVE_URL}/hello/reactive" "django-reactive" "MainThread"
-
-echo ""
-
-echo "=========================================="
-echo "Test Summary"
-echo "=========================================="
-echo -e "Tests Passed: ${GREEN}${TESTS_PASSED}${NC}"
-echo -e "Tests Failed: ${RED}${TESTS_FAILED}${NC}"
-echo "=========================================="
-echo ""
-
-if [ ${TESTS_FAILED} -eq 0 ]; then
-    echo -e "${GREEN}✅ All tests passed!${NC}"
-    echo ""
-    echo "Next Steps:"
-    echo "1. Open Grafana: ${GRAFANA_URL} (credentials: a/a)"
-    echo "2. Navigate to Drilldown"
-    echo "3. View Metrics [Mimir]"
-    echo "4. View Logs [Loki]"
-    echo "5. View Traces [Tempo]"
-    echo "6. View Profiles [Pyroscope]"
-
-    # Ensure the end of suite is clearly visible in logs even when stdout isn't a TTY.
-    echo ""
-    echo "[integration-tests] suite finished successfully"
-    sync 2>/dev/null || true
-    exit 0
-else
-    echo -e "${RED}❌ Some tests failed. Please check the output above.${NC}"
-    echo ""
-    echo "[integration-tests] suite finished with failures"
-    sync 2>/dev/null || true
-    exit 1
-fi
+# Sourcing exposes functions without starting the suite.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then main "$@"; fi

@@ -91,12 +91,11 @@ public class JobManager {
     this.jobStore = jobStore;
     this.eventPublisher = eventPublisher;
     this.executor =
-        Executors.newSingleThreadExecutor(
-            r -> {
-              Thread t = new Thread(r, "orchestrator-job-runner");
-              t.setDaemon(true);
-              return t;
-            });
+        Executors.newSingleThreadExecutor(r -> {
+          Thread t = new Thread(r, "orchestrator-job-runner");
+          t.setDaemon(true);
+          return t;
+        });
   }
 
   /**

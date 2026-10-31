@@ -1,0 +1,81 @@
+<!-- Generated from `services/java/javalin/jvm/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/javalin/jvm/README.md` directly. -->
+
+# Javalin JVM Service
+
+A lightweight, high-throughput REST service implemented with Javalin {{JAVALIN_VERSION}} on **Java 25**.
+
+This module mirrors the `/hello/*` contracts used by the existing Spring JVM and Spark JVM services.
+
+## Endpoints
+
+- `GET /ready`
+- `GET /hello/platform`
+- `GET /hello/virtual`
+
+`/ready` returns `200 OK` with body `UP` and is always available for liveness/readiness checks.
+
+### Query params
+- `sleep` (int, default `0`) – sleep duration in **seconds**
+- `log` (boolean, default `false`) – logs the current thread
+
+### Responses
+- `Hello from Javalin platform REST value-1`
+- `Hello from Javalin virtual REST value-1`
+
+## Thread modes
+One mode per deployment, controlled via env var:
+
+- `THREAD_MODE=platform` (default)
+- `THREAD_MODE=virtual`
+
+Only the active `/hello/*` route is registered for the selected thread mode.
+If the service is started in platform mode, `/hello/virtual` returns `404` and vice-versa.
+
+## Configuration (env)
+- `SERVICE_PORT` (default `8080`)
+- `THREAD_MODE` (default `platform`)
+- `CACHE_SIZE` (default `50000`)
+- `JETTY_MAX_THREADS` (default `0` → computed)
+- `JETTY_MIN_THREADS` (default `0` → computed)
+- `JETTY_ACCEPT_QUEUE_SIZE` (default `10000`)
+- `JETTY_IDLE_TIMEOUT_MS` (default `60000`)
+
+### Throughput tuning
+- `JAVALIN_HANDLER_EXECUTION_MODE`:
+  - `direct` (default) – handler runs on Jetty request thread (fastest)
+  - `offload` – handler work is offloaded to an executor
+- `JAVALIN_PLATFORM_EXECUTOR_THREADS` (default `0` → computed) – only used when `THREAD_MODE=platform` and `JAVALIN_HANDLER_EXECUTION_MODE=offload`
+
+## Docker
+
+**Image**: `javalin-jvm:latest`
+
+| Stage   | Image                                                        |
+|---------|--------------------------------------------------------------|
+| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
+| Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
+
+- Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
+- The runtime image contains only the application JAR + a minimal custom JRE in `/opt/jre`
+- **Container Image Size**: ~219 MB
+
+### Build Command
+
+```powershell
+docker buildx build `
+  -f services/java/javalin/jvm/Dockerfile `
+  -t javalin-jvm:latest `
+  --build-arg JAVALIN_VERSION={{JAVALIN_VERSION}} `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
+  --load `
+  services/java
+```
+
+## Metrics
+Defines a Micrometer counter:
+- `hello.request.count{endpoint="/hello/platform"}`
+- `hello.request.count{endpoint="/hello/virtual"}`
+
+Also binds `ProcessMemoryMetrics` and `ProcessThreadMetrics` (micrometer-jvm-extras).
+
+Export is typically handled by the OpenTelemetry Java agent in the benchmark stack.

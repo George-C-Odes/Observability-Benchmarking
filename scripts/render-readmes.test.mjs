@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { test } from 'node:test';
 
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 
@@ -10,38 +11,38 @@ function testParseColonEnv() {
 # Commented values must be ignored
 #SPRING_BOOT_VERSION: 3.5.16
 HOST_REPO: C:\\Users\\example\\repo
-SPRING_BOOT_VERSION: 4.1.1
+SPRING_BOOT_VERSION: 4.1.2
 IMAGE_TAG: ghcr.io/acme/app:1.2.3
 `);
 
   assert.equal(env.HOST_REPO, 'C:\\Users\\example\\repo');
-  assert.equal(env.SPRING_BOOT_VERSION, '4.1.1');
+  assert.equal(env.SPRING_BOOT_VERSION, '4.1.2');
   assert.equal(env.IMAGE_TAG, 'ghcr.io/acme/app:1.2.3');
   assert.equal(env['#SPRING_BOOT_VERSION'], undefined);
 }
 
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
-    SPRING_BOOT_VERSION: '4.1.1',
-    GO_VERSION: '1.27.2',
+    SPRING_BOOT_VERSION: '4.1.2',
+    GO_VERSION: '1.27.3',
   });
 
-  assert.equal(rendered, 'Spring 4.1.1 / Go 1.27.2');
+  assert.equal(rendered, 'Spring 4.1.2 / Go 1.27.3');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
-    GO_VERSION: '1.27.2',
+    GO_VERSION: '1.27.3',
   });
 
-  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.2');
+  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.3');
 
   const jekyllSnippet = renderTemplate("Image {{ '/images/foo.png' | relative_url }} with {{GO_VERSION}}", {
-    GO_VERSION: '1.27.2',
+    GO_VERSION: '1.27.3',
   });
 
-  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.2");
+  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.3");
 
   assert.throws(
-    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.1.1' }),
+    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.1.2' }),
     /Missing value for placeholder \{\{QUARKUS_VERSION}}/,
   );
 }
@@ -112,10 +113,10 @@ function testGeneratedOutputRoundTrip() {
     const outputPath = path.join(tempDir, 'README.md');
 
     writeFileSync(templatePath, 'Version {{SPRING_BOOT_VERSION}}', 'utf8');
-    writeFileSync(outputPath, 'Version 4.1.1', 'utf8');
+    writeFileSync(outputPath, 'Version 4.1.2', 'utf8');
 
     const rendered = renderTemplate(readFileSync(templatePath, 'utf8'), {
-      SPRING_BOOT_VERSION: '4.1.1',
+      SPRING_BOOT_VERSION: '4.1.2',
     });
 
     assert.equal(rendered, readFileSync(outputPath, 'utf8'));
@@ -139,7 +140,7 @@ function testRenderTemplatesResolvesRelativeEnvPath() {
     });
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.1 / Quarkus 3.40.1');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.2 / Quarkus 3.40.1.1');
   } finally {
     try {
       unlinkSync(templatePath);
@@ -167,9 +168,9 @@ function testRealignMarkdownTables() {
   const ragged = [
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
-    '| Spring | 4.1.1 | Main framework |',
-    '| Go     | 1.27.2          | Alt runtime    |',
-    '| Node   | 26.11.1                  | Frontend       |',
+    '| Spring | 4.1.2 | Main framework |',
+    '| Go     | 1.27.3          | Alt runtime    |',
+    '| Node   | 26.13.0                  | Frontend       |',
   ].join('\n');
 
   const aligned = realignMarkdownTables(ragged);
@@ -177,9 +178,9 @@ function testRealignMarkdownTables() {
   const expected = [
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
-    '| Spring | 4.1.1   | Main framework |',
-    '| Go     | 1.27.2  | Alt runtime    |',
-    '| Node   | 26.11.1 | Frontend       |',
+    '| Spring | 4.1.2   | Main framework |',
+    '| Go     | 1.27.3  | Alt runtime    |',
+    '| Node   | 26.13.0 | Frontend       |',
   ].join('\n');
 
   assert.equal(aligned, expected);
@@ -244,16 +245,11 @@ function testRealignMarkdownTables() {
   assert.equal(emojiAligned, emojiExpected);
 }
 
-function main() {
-  testParseColonEnv();
-  testRenderTemplate();
-  testDeriveOutputPath();
-  testLoadManifestTemplatePaths();
-  testResolveTemplatePaths();
-  testGeneratedOutputRoundTrip();
-  testRenderTemplatesResolvesRelativeEnvPath();
-  testRealignMarkdownTables();
-  console.log('render-readmes tests passed');
-}
-
-main();
+test('parses colon-delimited environment values', testParseColonEnv);
+test('renders placeholders and preserves other template syntax', testRenderTemplate);
+test('derives output paths from template paths', testDeriveOutputPath);
+test('loads and validates manifest template paths', testLoadManifestTemplatePaths);
+test('resolves explicit and default template paths', testResolveTemplatePaths);
+test('generated output matches the rendered template', testGeneratedOutputRoundTrip);
+test('renders templates with a relative environment path', testRenderTemplatesResolvesRelativeEnvPath);
+test('realigns Markdown tables and preserves alignment markers', testRealignMarkdownTables);

@@ -86,9 +86,9 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 
 ### 3.4 TypeScript / Next.js (dashboard)
 
-- Next.js 16.4.1, React 19.3.1, MUI 9.5.0, TypeScript 7.0.2 native checker.
-- Tests: Vitest 5.0.4 with separate DOM and Node configs.
-- Lint and format: Oxlint 1.88.0 (`.oxlintrc.json`) and Oxfmt 0.73.0 (`.oxfmtrc.json`).
+- Next.js 16.4.3, React 19.3.1, MUI 9.5.0, TypeScript 7.0.2 native checker.
+- Tests: Vitest 5.0.5 with separate DOM and Node configs.
+- Lint and format: Oxlint 1.90.0 (`.oxlintrc.json`) and Oxfmt 0.75.0 (`.oxfmtrc.json`).
 - Quality: `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm run test:fast`; CI also runs the production build and report tests.
 
 ---
@@ -167,6 +167,12 @@ All workflows set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow-level `e
 
 All GitHub Actions are pinned to **full commit SHAs** (with version comments) for supply-chain hardening. Never pin to a mutable tag alone.
 
+- Set `persist-credentials: false` on checkouts unless authenticated Git operations are required.
+- Scope write permissions to the jobs that need them; keep report-only jobs read-only.
+- Use `npm ci --ignore-scripts` for dashboard installs and the locked `.github/go-tools` module for Go CI tools.
+- Keep `workflow_run` source-repository guards and trusted-main checkout in Pages. Downloaded reports are data; never execute their source revision.
+- Set a timeout on every job.
+
 ---
 
 ## 8 · Documentation Conventions
@@ -185,8 +191,8 @@ All GitHub Actions are pinned to **full commit SHAs** (with version comments) fo
 - `.env` files with secrets must never be committed.
 - Dockerfiles: non-root users, multi-stage builds, minimal attack surface.
 - Grafana default creds (`a/a`) are for local dev only — always flag if someone hardcodes real credentials.
-- CodeQL runs on every push to `main`, on PRs, and on a weekly schedule.
-- Dependabot monitors: GitHub Actions, Bundler (docs), pip (Django WSGI + ASGI), npm (Next.js dashboard), gomod (Go enhanced).
+- CodeQL runs on matching source/configuration changes on `main` and PRs, on manual dispatch, and on a weekly schedule.
+- Dependabot monitors: GitHub Actions, Bundler (docs), pip (Django WSGI + ASGI), npm (Next.js dashboard), gomod (both Go services and CI tools).
 
 ---
 
@@ -288,18 +294,18 @@ The benchmark services are **deliberately minimal** — a REST endpoint, an in-m
 
 This environment is optimized for **local benchmarking**, not internet-facing production. Most OWASP categories don't apply directly, but some hygiene items do:
 
-| OWASP Category                 | Applicable? | What to watch for                                                                                                                                  |
-|--------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| A01: Broken Access Control     | ⚠️ Limited  | Grafana creds are `a/a` for local dev — fine here, flag if real creds appear                                                                       |
-| A02: Cryptographic Failures    | ⚠️ Limited  | No TLS by design (local Docker network). Flag if secrets are logged or stored in plain text                                                        |
-| A03: Injection                 | ✅ Yes      | The orchestrator executes shell commands — validate that user input from the dashboard is sanitized before reaching `ProcessBuilder` or equivalent |
-| A04: Insecure Design           | ✅ Yes      | Non-root containers, multi-stage builds, minimal images — already enforced in Section 4                                                            |
-| A05: Security Misconfiguration | ✅ Yes      | Default ports, debug flags, verbose logging in prod-like images — flag unnecessary exposure                                                        |
-| A06: Vulnerable Components     | ✅ Yes      | Dependabot + CodeQL + Qodana already scan. Flag outdated dependencies in reviews                                                                   |
-| A07: Auth Failures             | ❌ N/A      | No user authentication system exists                                                                                                               |
-| A08: Data Integrity Failures   | ⚠️ Limited  | GitHub Actions pinned to SHAs (supply-chain). Flag unsigned or unverified dependencies                                                             |
-| A09: Logging Failures          | ✅ Yes      | The full LGTM stack exists for this. Ensure services don't log sensitive data (Section 9)                                                          |
-| A10: SSRF                      | ⚠️ Limited  | The orchestrator proxies requests — ensure it doesn't blindly forward user-supplied URLs to internal services                                      |
+| OWASP Category                 | Applicable? | What to watch for                                                                                                                                                              |
+|--------------------------------|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A01: Broken Access Control     | ⚠️ Limited  | Grafana creds are `a/a` for local dev — fine here, flag if real creds appear                                                                                                   |
+| A02: Cryptographic Failures    | ⚠️ Limited  | No TLS by design (local Docker network). Flag if secrets are logged or stored in plain text                                                                                    |
+| A03: Injection                 | ✅ Yes      | The orchestrator executes shell commands — validate that user input from the dashboard is sanitized before reaching `ProcessBuilder` or equivalent                             |
+| A04: Insecure Design           | ✅ Yes      | Non-root containers, multi-stage builds, minimal images — already enforced in Section 4                                                                                        |
+| A05: Security Misconfiguration | ✅ Yes      | Default ports, debug flags, verbose logging in prod-like images — flag unnecessary exposure                                                                                    |
+| A06: Vulnerable Components     | ✅ Yes      | Dependabot + CodeQL + Qodana already scan. Flag outdated dependencies in reviews                                                                                               |
+| A07: Auth Failures             | ✅ Yes      | The orchestrator protects annotated endpoints with a bearer token. Review authentication filters, annotation coverage, and the intentional blank-key local-development bypass. |
+| A08: Data Integrity Failures   | ⚠️ Limited  | GitHub Actions pinned to SHAs (supply-chain). Flag unsigned or unverified dependencies                                                                                         |
+| A09: Logging Failures          | ✅ Yes      | The full LGTM stack exists for this. Ensure services don't log sensitive data (Section 9)                                                                                      |
+| A10: SSRF                      | ⚠️ Limited  | The orchestrator proxies requests — ensure it doesn't blindly forward user-supplied URLs to internal services                                                                  |
 
 **Key takeaway for Copilot:** Focus OWASP vigilance on the **orchestrator** (it runs shell commands and proxies requests) and the **dashboard** (it accepts user input). Benchmark services have negligible attack surface.
 

@@ -1,6 +1,8 @@
+<!-- Generated from `services/java/spark/jvm/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/spark/jvm/README.md` directly. -->
+
 # Spark JVM Service
 
-A lightweight, high-throughput REST service implemented with SparkJava (Zoomba fork) on **Java 25**.
+A lightweight, high-throughput REST service implemented with SparkJava (Zoomba fork) 3.0.5 on **Java 25**.
 
 This module mirrors the `/hello/*` contracts used by the existing Quarkus and Spring JVM services.
 
@@ -75,7 +77,7 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
   -t spark-jvm:latest `
-  --build-arg SPARK_VERSION=3.0.4 `
+  --build-arg SPARK_VERSION=3.0.5 `
   --build-arg BUILDKIT_BUILD_NAME=spark-jvm:latest `
   --load `
   services/java

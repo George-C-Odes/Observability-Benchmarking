@@ -199,6 +199,31 @@ OpenTelemetry agents are configured with:
 
 For details on the CodeQL configuration and how to run it locally, see [docs/LINTING_AND_CODE_QUALITY.md](LINTING_AND_CODE_QUALITY.md#codeql-configuration-security--quality-analysis).
 
+### Snyk Automated Scanning
+
+The workflow (`.github/workflows/snyk-security.yml`) runs Snyk Code and Open Source scans on pushes and pull requests
+to `main`, manual dispatch, and a weekly schedule. Configure the repository secret `SNYK_TOKEN` to enable it.
+Runs without a token (including fork pull requests) explicitly skip scanning; a skipped run is not a security assessment.
+
+- Java 25, Python 3.13, Go from the service `go.mod`, and the dashboard's Node.js version are set up before scanning.
+  Maven wrappers are made executable on Linux, and both Django dependency sets are installed through the shared
+  hash-verified Python action. Snyk uses that same Python interpreter for dependency resolution.
+- Open Source discovery includes deeply nested JVM/native variants and source dependency manifests. Generated
+  directories such as `node_modules`, `vendor`, `_site`, `target`, `.next`, virtual environments, and `apm_modules`
+  are excluded; source manifests and `.github` CI dependency inventories are not excluded.
+- The gate distinguishes **findings** (test exit code 1) from **scan errors** (including exit code 2 and no supported
+  projects, exit code 3). Both fail CI. Open Source uses `--fail-fast` so unresolved projects cannot silently produce
+  a passing partial assessment. Resolve the dependency error and rerun to obtain the full findings report; do not
+  bypass coverage with `--skip-unresolved` or relax the severity threshold to make the job green.
+- Available SARIF reports are uploaded to GitHub Code Scanning with separate Code and Open Source categories.
+  The `snyk-results` artifact retains logs, status files, Open Source JSON, and available SARIF for 14 days, including
+  after scan failures. Each scan also writes its result and exit code to the Actions step summary.
+- `snyk monitor` uploads a dependency snapshot only on non-PR runs on `main`. PR and non-main manual runs still test,
+  but do not overwrite the trusted dashboard snapshot. Monitor failures are operational errors and also fail CI.
+
+Troubleshoot **errors** using the saved logs and runtime versions printed in the preparation step. Findings require
+dependency or source remediation; fixing the workflow alone does not resolve genuine vulnerabilities.
+
 ## Runtime Security
 
 ### Java Security Manager

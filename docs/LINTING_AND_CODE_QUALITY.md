@@ -16,8 +16,8 @@ This repository currently uses two scoped JVM quality setups:
   - **checkstyle**: 12.2.0
 - **Orchestrator (`utils/orchestrator`)**
   - **spotless-maven-plugin**: 3.10.4
-  - **google-java-format**: 1.36.1
-  - **maven-pmd-plugin**: 3.28.0 with PMD 7.28.0
+  - **google-java-format**: 2.0.0
+  - **maven-pmd-plugin**: 3.28.0 with PMD 7.29.0
   - **spotbugs-maven-plugin**: 4.10.5.0 with FindSecBugs 1.14.0
   - **exec-maven-plugin**: 3.6.3 (for the custom Javadoc checker)
 
@@ -365,7 +365,7 @@ In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https
 - **Ruff** focuses on PEP 8, import ordering, and formatting.
 - **Qodana Python Community** adds semantic inspections such as type mismatches, unreachable code, unused variables, and general Python best-practice warnings.
 
-The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2026.2`). The Python config is self-contained with its own linter pin and quality gate.
+The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2026.2`). The Python config has its own linter pin and quality gate, and reuses the shared Python CI installer and hash inventory through read-only mounts outside the analysis root.
 
 #### How the Qodana Python Scan Works
 
@@ -373,17 +373,17 @@ The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the
 
 1. Checks out the repository.
 2. Runs `docker run jetbrains/qodana-python-community:2026.2` with:
-   - `--project-dir=/data/project` — repository root
-   - `--config=/data/project/services/python/django/qodana.yaml` — Python-specific config
-   - `--only-directory=services/python/django` — scopes analysis to Django code only
+   - Django mounted at `/data/project` with `--project-dir=/data/project`
+   - `--config=/data/project/qodana.yaml` — Python-specific config
+   - Shared requirements and installer mounted read-only at `/opt/python-ci/requirements` and `/opt/python-ci/installer`
 3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without a bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
 4. Uploads the HTML report directory as `qodana-report-django-python`.
 
 The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
 
-**Why the bootstrap is critical:** Qodana runs in an isolated Docker container with no pre-installed project dependencies. The IDE resolves imports via the configured Python interpreter and virtualenv. Without matching dependencies in the Qodana container, the linter cannot resolve `from django.http import ...`, `from opentelemetry.trace import ...`, etc., and reports them as errors — these are false positives. The `bootstrap` section in `services/python/django/qodana.yaml` installs the same packages the IDE sees, bringing CI findings in line with local IDE inspections. Any requirement line containing `pyroscope` is filtered out (so both `pyroscope-io` and `pyroscope-otel` are skipped) because these agents require a Rust build toolchain not available in the Qodana container; the application handles their absence gracefully at runtime.
+**Why the bootstrap is critical:** Qodana needs installed dependencies to resolve imports accurately. Its bootstrap uses the same hash inventory as the Django checks and Snyk, with `--require-hashes --only-binary :all:` for third-party packages and local build tools. The common package is built from a temporary copy with `--no-deps --no-build-isolation --no-index`, so builds cannot fetch unverified dependencies or leave build artifacts in the checkout. Pyroscope requirements remain filtered out of this analysis-only environment. Missing shared files, hashes, or compatible wheels fail the bootstrap; there is no unhashed fallback.
 
-**Python version mismatch:** The Qodana Python Community 2026.2 container ships Python 3.12.4, while the project declares `requires-python >= 3.13`. The bootstrap uses `--ignore-requires-python` so pip installs the packages despite the version mismatch. The packages are only needed for Qodana's import resolution and type inference, not for execution.
+**Python version mismatch:** The analyzer's bundled Python can be older than the project's declared `requires-python >= 3.13`. The bootstrap sets `PIP_IGNORE_REQUIRES_PYTHON=1` only in this analysis environment. Packages are installed for import resolution and type inference; the Django runtime tests continue using Python 3.13.
 
 #### Quality Gate
 
@@ -425,12 +425,13 @@ The Pages workflow triggers on successful `Django Python Quality` runs on `main`
 mkdir -p .qodana/django-python
 
 docker run --rm \
-  -v "$PWD":/data/project \
+  -v "$PWD/services/python/django":/data/project \
+  -v "$PWD/.github/requirements":/opt/python-ci/requirements:ro \
+  -v "$PWD/.github/actions/install-python-dependencies":/opt/python-ci/installer:ro \
   -v "$PWD/.qodana/django-python":/data/results \
   jetbrains/qodana-python-community:2026.2 \
   --project-dir=/data/project \
-  --config=/data/project/services/python/django/qodana.yaml \
-  --only-directory=services/python/django \
+  --config=/data/project/qodana.yaml \
   --results-dir=/data/results
 ```
 
@@ -440,12 +441,13 @@ docker run --rm \
 New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
 
 docker run --rm `
-  -v "${PWD}:/data/project" `
+  -v "${PWD}/services/python/django:/data/project" `
+  -v "${PWD}/.github/requirements:/opt/python-ci/requirements:ro" `
+  -v "${PWD}/.github/actions/install-python-dependencies:/opt/python-ci/installer:ro" `
   -v "${PWD}/.qodana/django-python:/data/results" `
   jetbrains/qodana-python-community:2026.2 `
   --project-dir=/data/project `
-  --config=/data/project/services/python/django/qodana.yaml `
-  --only-directory=services/python/django `
+  --config=/data/project/qodana.yaml `
   --results-dir=/data/results
 ```
 
@@ -715,7 +717,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@24c54180a607b1449ed407dd24f251e4e9147c8d` (# v4.38.3, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370` (# v4.39.1, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
@@ -726,10 +728,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.73.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.88.0** — checks the module root with warnings denied.
+1. **Oxfmt 0.75.0** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint 1.90.0** — checks the module root with warnings denied.
 3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.0.4** — runs separate Node and jsdom suites.
+4. **Vitest 5.0.5** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.
@@ -853,6 +855,18 @@ The Pages workflow resolves the Next.js quality report source independently of t
 - When triggered by push or manual dispatch, the latest successful run for Qodana, Next.js Dashboard Quality, and Django Python Quality workflows and the latest successful or failed Go Quality run are resolved via API
 
 This ensures every Pages deployment gets the freshest available version of all reports.
+
+The Pages publisher always checks out `main` for the site, scripts, and local actions,
+with persisted Git credentials disabled. Report revisions are metadata only; their
+source code is never executed by the publisher. Both triggering runs and API-selected
+runs must have a source repository matching this repository, so fork reports are
+excluded from live and staging publishing. The build job has read permissions only;
+`pages: write` and `id-token: write` are reserved for the deployment job.
+
+Manual dispatch refreshes both `/quality/` and `/stage/quality/` using the same
+report-selection rules as automatic publishing. The former `source_ref` input has
+been removed: publishing branch reports does not require checking out branch code.
+Run the resolver regression tests with `node --test scripts/pages/resolve-source.test.mjs`.
 
 Scripts involved:
 - `scripts/pages/resolve-source.sh` — generic parameterized resolver; each Pages step supplies `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` (Go Quality and CodeQL accept `success,failure`; others accept `success` only)

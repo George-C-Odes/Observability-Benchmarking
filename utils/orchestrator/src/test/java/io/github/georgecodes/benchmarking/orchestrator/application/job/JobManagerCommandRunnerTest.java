@@ -32,14 +32,13 @@ class JobManagerCommandRunnerTest {
         jobManager
             .events(jobId)
             .subscribe()
-            .with(
-                e -> {
-                  if ("terminalSummary".equals(e.type())) {
-                    terminalStatus.set(e.jobStatus());
-                    terminalExitCode.set(e.exitCode());
-                    terminal.countDown();
-                  }
-                });
+            .with(e -> {
+              if ("terminalSummary".equals(e.type())) {
+                terminalStatus.set(e.jobStatus());
+                terminalExitCode.set(e.exitCode());
+                terminal.countDown();
+              }
+            });
 
     try {
       assertTrue(terminal.await(2, TimeUnit.SECONDS), "Job did not finish in time");

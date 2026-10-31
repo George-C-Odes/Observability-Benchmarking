@@ -135,28 +135,25 @@ class InMemoryJobStoreTest {
 
     try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
       Future<?> subscription =
-          executor.submit(
-              () ->
-                  store
-                      .events(id)
-                      .onItem()
-                      .invoke(
-                          event -> {
-                            if ("QUEUED".equals(event.message())) {
-                              replayStarted.countDown();
-                              await(publicationAttempted);
-                            }
-                          })
-                      .subscribe()
-                      .withSubscriber(subscriber));
+          executor.submit(() ->
+              store
+                  .events(id)
+                  .onItem()
+                  .invoke(event -> {
+                    if ("QUEUED".equals(event.message())) {
+                      replayStarted.countDown();
+                      await(publicationAttempted);
+                    }
+                  })
+                  .subscribe()
+                  .withSubscriber(subscriber));
       Future<?> publication =
-          executor.submit(
-              () -> {
-                await(replayStarted);
-                publicationAttempted.countDown();
-                store.emit(id, JobEvent.log("stdout", "during replay"));
-                store.markFinished(id, "SUCCEEDED", FINISHED_AT, 0);
-              });
+          executor.submit(() -> {
+            await(replayStarted);
+            publicationAttempted.countDown();
+            store.emit(id, JobEvent.log("stdout", "during replay"));
+            store.markFinished(id, "SUCCEEDED", FINISHED_AT, 0);
+          });
       subscription.get(5, TimeUnit.SECONDS);
       publication.get(5, TimeUnit.SECONDS);
     }
@@ -178,14 +175,13 @@ class InMemoryJobStoreTest {
 
     try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
       Future<?> writer =
-          executor.submit(
-              () -> {
-                await(start);
-                for (int i = 0; i < 10_000; i++) {
-                  job.markFinished("FAILED", failedAt, 1);
-                  job.markFinished("SUCCEEDED", succeededAt, 0);
-                }
-              });
+          executor.submit(() -> {
+            await(start);
+            for (int i = 0; i < 10_000; i++) {
+              job.markFinished("FAILED", failedAt, 1);
+              job.markFinished("SUCCEEDED", succeededAt, 0);
+            }
+          });
       start.countDown();
       for (int i = 0; i < 10_000; i++) {
         JobStatusSnapshot snapshot = job.toStatus();

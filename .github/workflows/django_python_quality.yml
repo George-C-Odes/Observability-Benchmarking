@@ -10,11 +10,19 @@ on:
     paths:
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
+      - '.github/actions/setup-python/**'
+      - '.github/actions/install-python-dependencies/**'
+      - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
   push:
+    branches:
+      - main
     paths:
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
+      - '.github/actions/setup-python/**'
+      - '.github/actions/install-python-dependencies/**'
+      - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:30 UTC (staggered after Next.js at 06:15).
@@ -26,24 +34,26 @@ permissions:
 jobs:
   common:
     name: Django common checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.13'
+          persist-credentials: false
+      - name: Set up Python
+        uses: ./.github/actions/setup-python
+        with:
           cache: pip
           cache-dependency-path: |
+            .github/requirements/**
             services/python/django/gunicorn/common/pyproject.toml
             services/python/django/gunicorn/WSGI/requirements-dev.txt
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r services/python/django/gunicorn/WSGI/requirements-dev.txt
+        uses: ./.github/actions/install-python-dependencies
+        with:
+          requirements: services/python/django/gunicorn/WSGI/requirements-dev.txt
 
       - name: Syntax check
         working-directory: services/python/django/gunicorn/common
@@ -64,7 +74,7 @@ jobs:
   modules:
     name: Django module checks (${{ matrix.module_name }})
     needs: common
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     env:
       OTEL_SDK_DISABLED: 'true'
@@ -83,20 +93,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.13'
+          persist-credentials: false
+      - name: Set up Python
+        uses: ./.github/actions/setup-python
+        with:
           cache: pip
           cache-dependency-path: |
+            .github/requirements/**
             services/python/django/gunicorn/common/pyproject.toml
             ${{ matrix.module_dir }}/requirements.txt
             ${{ matrix.module_dir }}/requirements-dev.txt
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install ../common -r requirements.txt -r requirements-dev.txt
+        uses: ./.github/actions/install-python-dependencies
+        with:
+          requirements: |
+            ${{ matrix.module_dir }}/requirements.txt
+            ${{ matrix.module_dir }}/requirements-dev.txt
+          local-project: services/python/django/gunicorn/common
 
       - name: Syntax check
         run: python -m compileall manage.py hello_project gunicorn.conf.py
@@ -119,7 +134,7 @@ jobs:
   qodana:
     name: Qodana Python (Django)
     needs: common
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     # The Qodana job is allowed to fail without blocking the overall workflow
     # so the HTML report artifact is still uploaded and the Pages deployment
@@ -133,6 +148,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Qodana Python Community Scan
@@ -142,6 +158,8 @@ jobs:
           mkdir -p "$RESULTS_DIR"
           docker run --rm \
             -v "$GITHUB_WORKSPACE/services/python/django:/data/project" \
+            -v "$GITHUB_WORKSPACE/.github/requirements:/opt/python-ci/requirements:ro" \
+            -v "$GITHUB_WORKSPACE/.github/actions/install-python-dependencies:/opt/python-ci/installer:ro" \
             -v "$RESULTS_DIR:/data/results" \
             jetbrains/qodana-python-community:2026.2 \
             --project-dir=/data/project \
