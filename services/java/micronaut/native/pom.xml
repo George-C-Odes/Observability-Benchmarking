@@ -23,7 +23,7 @@
         <micronaut.version>5.2.21</micronaut.version>
         <micronaut.runtime>netty</micronaut.runtime>
         <micronaut.micrometer.version>5.13.3</micronaut.micrometer.version>
-        <micronaut.test.version>4.10.2</micronaut.test.version>
+        <micronaut.test.version>4.10.3</micronaut.test.version>
         <micronaut.processing.incremental>true</micronaut.processing.incremental>
         <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.*</micronaut.processing.annotations>
         <micronaut.tracing.version>7.2.0</micronaut.tracing.version>
