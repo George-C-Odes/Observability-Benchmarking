@@ -5,12 +5,12 @@ set -euo pipefail
 
 apply_tz() {
   local tz_val="${TZ:-}"
-  if [ -z "${tz_val}" ]; then
+  if [[ -z "${tz_val}" ]]; then
     return 0
   fi
 
   local zonefile="/usr/share/zoneinfo/${tz_val}"
-  if [ -f "${zonefile}" ]; then
+  if [[ -f "${zonefile}" ]]; then
     ln -snf "${zonefile}" /etc/localtime 2>/dev/null || true
     echo "${tz_val}" > /etc/timezone 2>/dev/null || true
   else
@@ -84,7 +84,7 @@ print_common_vars() {
   local bench_dir_val="${WRK_BENCH_DIR:-$DEFAULT_BENCH_DIR}"
   local export_dir_val="${WRK_EXPORT_DIR:-$DEFAULT_EXPORT_DIR}"
 
-  if [ "${mode}" = "help" ]; then
+  if [[ "${mode}" = "help" ]]; then
     # Use literal text (single-quoted heredoc) to avoid unwanted interpolation.
     cat <<'EOF'
 Common variables:
