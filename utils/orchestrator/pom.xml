@@ -35,7 +35,7 @@
     <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
     <surefire-plugin.version>3.6.1</surefire-plugin.version>
     <test.jvm.additionalArgs>--add-opens java.base/java.lang=ALL-UNNAMED</test.jvm.additionalArgs>
-    <lombok.version>1.18.46</lombok.version>
+    <lombok.version>1.18.48</lombok.version>
   </properties>
 
   <dependencyManagement>
