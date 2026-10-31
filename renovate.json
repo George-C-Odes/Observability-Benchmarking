@@ -1,6 +1,54 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
-  ]
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests"
+  ],
+  "automerge": false,
+  "ignoreScripts": true,
+  "prConcurrentLimit": 5,
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/examples/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/__fixtures__/**",
+    "**/.venv/**",
+    ".tmp/**",
+    "tmp/**",
+    "data/**",
+    "_site/**",
+    "docs/_site/**",
+    "my-agent/apm_modules/**"
+  ],
+  "packageRules": [
+    {
+      "description": "Let registry releases age before updating; do not apply this to Docker or action digests.",
+      "matchDatasources": [
+        "npm",
+        "pypi",
+        "maven",
+        "go",
+        "rubygems"
+      ],
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-required"
+    },
+    {
+      "description": "Require opt-in for major upgrades so benchmark compatibility can be reviewed before CI runs.",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "dependencyDashboardApproval": false,
+    "minimumReleaseAge": "0 days"
+  }
 }
