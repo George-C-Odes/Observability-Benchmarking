@@ -1,13 +1,16 @@
 import { spawn } from 'node:child_process';
-import { appendFileSync, createWriteStream, lstatSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, createWriteStream, lstatSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { finished } from 'node:stream/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { mergeSnykSarif } from './snyk-sarif.mjs';
+
 // Only these literal artifact names may be written. No CLI input is a file path.
 const artifacts = Object.freeze({
   code: Object.freeze({ log: 'code.log', status: 'code-status.json', sarif: 'code.sarif' }),
-  test: Object.freeze({ log: 'test.log', status: 'test-status.json', json: 'test.json', sarif: 'test.sarif' }),
+  test: Object.freeze({ log: 'test.log', status: 'test-status.json', json: 'test.json', sarif: 'test.sarif',
+    githubSarif: 'test-github.sarif' }),
   monitor: Object.freeze({ log: 'monitor.log', status: 'monitor-status.json' }),
 });
 
@@ -40,6 +43,22 @@ function checkArtifactTarget(file, directory = false) {
   if (stat.isSymbolicLink() || (directory ? !stat.isDirectory() : !stat.isFile() || stat.nlink > 1)) {
     throw new Error(`Unsafe Snyk artifact target: ${file.href}`);
   }
+}
+
+function prepareOpenSourceSarif(files, required) {
+  checkArtifactTarget(files.directory, true);
+  checkArtifactTarget(files.sarif);
+  checkArtifactTarget(files.githubSarif);
+  let raw;
+  try {
+    raw = readFileSync(files.sarif, 'utf8');
+  } catch (error) {
+    // Scan errors may produce no SARIF; successful scans and findings must.
+    if (error.code === 'ENOENT' && !required) return;
+    throw error;
+  }
+  const report = mergeSnykSarif(JSON.parse(raw));
+  writeFileSync(files.githubSarif, `${JSON.stringify(report, null, 2)}\n`);
 }
 
 // Exclude generated dependencies, build output, and installed agent packages,
@@ -87,6 +106,11 @@ export async function runScan(mode, {
   for (const [key, file] of Object.entries(files)) {
     if (key !== 'directory') checkArtifactTarget(file);
   }
+  if (mode === 'test') {
+    // Never publish a previous scan's SARIF when this scan fails to produce it.
+    rmSync(files.sarif, { force: true });
+    rmSync(files.githubSarif, { force: true });
+  }
   const log = createWriteStream(files.log);
   // Attach error handling before streaming so filesystem errors cannot be lost.
   const logFinished = finished(log);
@@ -99,7 +123,7 @@ export async function runScan(mode, {
   child.stderr.on('data', (chunk) => { stderr.write(chunk); log.write(chunk); });
   let spawnError;
   child.on('error', (error) => { spawnError = error; });
-  const exitCode = await new Promise((resolve) => {
+  let exitCode = await new Promise((resolve) => {
     child.on('close', (code, signal) => {
       if (spawnError || signal) {
         const message = `Snyk ${mode} could not complete: ${spawnError?.message ?? signal}\n`;
@@ -111,6 +135,18 @@ export async function runScan(mode, {
   });
   log.end();
   await logFinished;
+  if (mode === 'test') {
+    try {
+      prepareOpenSourceSarif(files, exitCode === 0 || exitCode === 1);
+    } catch (error) {
+      const message = `Snyk test SARIF preparation failed: ${error.message}\n`;
+      stderr.write(message);
+      checkArtifactTarget(files.directory, true);
+      checkArtifactTarget(files.log);
+      appendFileSync(files.log, message);
+      exitCode = 2;
+    }
+  }
   const result = scanResult(mode, exitCode);
   writeFileSync(files.status,
     `${JSON.stringify({ mode, exitCode, result }, null, 2)}\n`);

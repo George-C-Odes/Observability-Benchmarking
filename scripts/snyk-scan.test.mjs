@@ -6,12 +6,104 @@ import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { runScan, scanArguments, scanFiles, scanResult } from './snyk-scan.mjs';
+import { mergeSnykSarif } from './snyk-sarif.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
 
 function fixtureRoot(t, prefix) {
   // Private mkdtemp directory; every fixture filename below is a literal.
   return pathToFileURL(`${temporaryDirectory(t, prefix)}${path.sep}`);
 }
+
+function dependencySarif() {
+  const rule = (id, project) => ({
+    id, shortDescription: { text: id }, fullDescription: { text: 'Vulnerable dependency' },
+    help: { text: '', markdown: `Introduced through ${project}` },
+    properties: { tags: ['security'], 'security-severity': '7.5' },
+  });
+  const result = (ruleId, ruleIndex, uri) => ({
+    ruleId, ruleIndex, message: { text: 'Vulnerable dependency' }, level: 'error',
+    locations: [{ physicalLocation: { artifactLocation: { uri }, region: { startLine: 1 } } }],
+    partialFingerprints: { primaryLocationLineHash: uri },
+  });
+  return {
+    $schema: 'https://json.schemastore.org/sarif-2.1.0.json', version: '2.1.0',
+    runs: [
+      {
+        tool: { driver: { name: 'Snyk Open Source', version: '1.1308.3',
+          rules: [rule('SNYK-A', 'project-a'), rule('SNYK-B', 'project-a')],
+          properties: { artifactsScanned: 10 } } },
+        automationDetails: { id: 'Snyk/Open Source/hello/timestamp' },
+        results: [result('SNYK-A', 0, 'services/a/pom.xml')],
+      },
+      {
+        tool: { driver: { name: 'Snyk Open Source', version: '1.1308.3',
+          rules: [rule('SNYK-B', 'project-b'), rule('SNYK-A', 'project-b')],
+          properties: { artifactsScanned: 20 } } },
+        automationDetails: { id: 'Snyk/Open Source/hello/timestamp' },
+        results: [{ ...result('SNYK-B', 0, 'services/b/pom.xml'), rule: { id: 'SNYK-B', index: 0 } }],
+      },
+    ],
+  };
+}
+
+test('dependency SARIF consolidates duplicate categories without losing findings or rule references', () => {
+  const raw = dependencySarif();
+  const original = structuredClone(raw);
+  const merged = mergeSnykSarif(raw);
+  assert.deepEqual(raw, original);
+  assert.equal(merged.runs.length, 1);
+  const run = merged.runs[0];
+  assert.equal(run.automationDetails.id, 'snyk-open-source/');
+  assert.equal(run.tool.driver.properties.artifactsScanned, 30);
+  assert.deepEqual(run.tool.driver.rules.map((rule) => rule.id), ['SNYK-A', 'SNYK-B']);
+  assert.deepEqual(run.results[0], raw.runs[0].results[0]);
+  assert.deepEqual(run.results[1], { ...raw.runs[1].results[0], ruleIndex: 1,
+    rule: { id: 'SNYK-B', index: 1 } });
+  for (const rule of run.tool.driver.rules) {
+    assert.match(rule.help.markdown, /project-a/);
+    assert.match(rule.help.markdown, /project-b/);
+    assert.equal(rule.properties['security-severity'], '7.5');
+  }
+  assert.deepEqual(mergeSnykSarif(merged), merged);
+});
+
+test('dependency SARIF remaps explicit driver references and rejects unsupported rule references', () => {
+  const raw = dependencySarif();
+  raw.runs[1].results[0].rule.toolComponent = { index: -1 };
+  assert.deepEqual(mergeSnykSarif(raw).runs[0].results[1].rule,
+    { id: 'SNYK-B', index: 1, toolComponent: { index: -1 } });
+  raw.runs[1].results[0].rule.toolComponent = { index: 0 };
+  assert.throws(() => mergeSnykSarif(raw), /unsupported result rule toolComponent/);
+  const invocations = dependencySarif();
+  for (const run of invocations.runs) run.invocations = [{ executionSuccessful: true }];
+  assert.throws(() => mergeSnykSarif(invocations), /unsupported run-local rule references/);
+});
+
+test('dependency SARIF supports more than 20 projects and retains clean runs', () => {
+  const raw = dependencySarif();
+  raw.runs = Array.from({ length: 25 }, () => structuredClone(raw.runs[0]));
+  assert.equal(mergeSnykSarif(raw).runs[0].results.length, 25);
+  for (const run of raw.runs) { run.results = []; run.tool.driver.rules = []; }
+  const clean = mergeSnykSarif(raw);
+  assert.equal(clean.runs.length, 1);
+  assert.deepEqual(clean.runs[0].results, []);
+  assert.deepEqual(clean.runs[0].tool.driver.rules, []);
+});
+
+test('dependency SARIF rejects incompatible metadata and invalid rule indexes', () => {
+  for (const raw of [null, {}, { version: '2.1.0', runs: [] }, { version: '2.0.0', runs: [] }]) {
+    assert.throws(() => mergeSnykSarif(raw), /Cannot consolidate Snyk SARIF/);
+  }
+  const metadata = dependencySarif();
+  metadata.runs[1].originalUriBaseIds = { SRC: { uri: 'file:///other/' } };
+  assert.throws(() => mergeSnykSarif(metadata), /incompatible run or tool metadata/);
+  const index = dependencySarif();
+  index.runs[1].results[0].ruleIndex = 99;
+  assert.throws(() => mergeSnykSarif(index), /invalid rule index/);
+  const conflict = dependencySarif();
+  conflict.runs[1].tool.driver.rules[0].properties['security-severity'] = '9.8';
+  assert.throws(() => mergeSnykSarif(conflict), /conflicting rule/);
+});
 
 test('scan arguments retain deep source coverage without skipping unresolved dependencies', () => {
   for (const mode of ['test', 'monitor']) {
@@ -54,6 +146,7 @@ test('artifact paths are fixed and reject traversal and inherited property names
   assert.equal(files.status.href, new URL('snyk-results/test-status.json', root).href);
   assert.equal(files.json.href, new URL('snyk-results/test.json', root).href);
   assert.equal(files.sarif.href, new URL('snyk-results/test.sarif', root).href);
+  assert.equal(files.githubSarif.href, new URL('snyk-results/test-github.sarif', root).href);
   for (const mode of ['../test', '..\\test', '/test', 'C:\\test', 'constructor', '__proto__', 'toString']) {
     assert.throws(() => scanFiles(mode, fileURLToPath(root)), /Unknown Snyk scan mode/);
     assert.throws(() => scanArguments(mode), /Unknown Snyk scan mode/);
@@ -64,17 +157,22 @@ test('artifact paths are fixed and reject traversal and inherited property names
   assert.ok(!existsSync(files.directory));
 });
 
-for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 1], ['test', 2], ['test', 3], ['monitor', 1]]) {
+for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 0], ['test', 1], ['test', 2], ['test', 3], ['monitor', 1]]) {
   test(`${mode} exit ${exitCode}: preserve logs, reports, status, and Actions outputs`, async (t) => {
     const root = fixtureRoot(t, 'snyk-scan-');
     const fakeCli = new URL('fake-snyk.mjs', root);
+    const report = dependencySarif();
+    if (exitCode === 0) for (const run of report.runs) run.results = [];
+    const rawSarif = JSON.stringify(report);
     writeFileSync(fakeCli, `
       import { writeFileSync } from 'node:fs';
       console.log('Fake Snyk stdout');
       console.error('Fake Snyk stderr');
       for (const arg of process.argv.slice(2)) {
         if (arg === '--json-file-output=snyk-results/test.json') writeFileSync('snyk-results/test.json', '{}');
-        if (arg === '--sarif-file-output=snyk-results/test.sarif') writeFileSync('snyk-results/test.sarif', '{}');
+        if (arg === '--sarif-file-output=snyk-results/test.sarif') {
+          writeFileSync('snyk-results/test.sarif', ${JSON.stringify(rawSarif)});
+        }
         if (arg === '--sarif-file-output=snyk-results/code.sarif') writeFileSync('snyk-results/code.sarif', '{}');
       }
       process.exitCode = ${exitCode};
@@ -102,10 +200,42 @@ for (const [mode, exitCode] of [['code', 0], ['code', 1], ['test', 1], ['test', 
       { mode, exitCode, result: expectedResult });
     assert.equal(readFileSync(outputPath, 'utf8'), `exit-code=${exitCode}\nresult=${expectedResult}\n`);
     assert.ok(readFileSync(summaryPath, 'utf8').includes(`**${expectedResult}** (exit code ${exitCode})`));
-    if (mode !== 'monitor') {
-      assert.equal(readFileSync(files.sarif, 'utf8'), '{}');
+    if (mode === 'code') assert.equal(readFileSync(files.sarif, 'utf8'), '{}');
+    if (mode === 'test') {
+      assert.equal(readFileSync(files.sarif, 'utf8'), rawSarif);
+      assert.deepEqual(JSON.parse(readFileSync(files.githubSarif, 'utf8')), mergeSnykSarif(report));
+      assert.equal(readFileSync(files.json, 'utf8'), '{}');
     }
-    if (mode === 'test') assert.equal(readFileSync(files.json, 'utf8'), '{}');
+  });
+}
+
+for (const raw of ['{', '{}', null]) {
+  test(`invalid or missing dependency SARIF (${raw}) fails closed with retained diagnostics`, async (t) => {
+    const root = fixtureRoot(t, 'snyk-invalid-sarif-');
+    const fakeCli = new URL('fake-snyk.mjs', root);
+    writeFileSync(fakeCli, `
+      import { writeFileSync } from 'node:fs';
+      console.log('Fake Snyk scan completed');
+      ${raw === null ? '' : `writeFileSync('snyk-results/test.sarif', ${JSON.stringify(raw)});`}
+    `);
+    const files = scanFiles('test', fileURLToPath(root));
+    mkdirSync(files.directory);
+    writeFileSync(files.sarif, JSON.stringify(dependencySarif()));
+    writeFileSync(files.githubSarif, JSON.stringify(mergeSnykSarif(dependencySarif())));
+    const outputPath = new URL('output', root);
+    const summaryPath = new URL('summary', root);
+    const result = await runScan('test', {
+      workingDirectory: fileURLToPath(root), outputPath, summaryPath,
+      executable: process.execPath, prefixArgs: [fileURLToPath(fakeCli)],
+      stdout: { write() {} }, stderr: { write() {} },
+    });
+    assert.deepEqual(result, { exitCode: 2, result: 'error' });
+    assert.ok(!existsSync(files.githubSarif));
+    assert.match(readFileSync(files.log, 'utf8'), /SARIF preparation failed/);
+    assert.deepEqual(JSON.parse(readFileSync(files.status, 'utf8')), { mode: 'test', ...result });
+    assert.equal(readFileSync(outputPath, 'utf8'), 'exit-code=2\nresult=error\n');
+    assert.match(readFileSync(summaryPath, 'utf8'), /\*\*error\*\*/);
+    if (raw !== null) assert.equal(readFileSync(files.sarif, 'utf8'), raw);
   });
 }
 
@@ -133,7 +263,7 @@ test('an artifact directory symlink cannot redirect reports outside the cwd', as
   assert.ok(!existsSync(new URL('test.log', outside)));
 });
 
-for (const key of ['log', 'status', 'json', 'sarif']) {
+for (const key of ['log', 'status', 'json', 'sarif', 'githubSarif']) {
   test(`a hard-linked ${key} artifact cannot overwrite another file`, async (t) => {
     const root = fixtureRoot(t, 'snyk-file-link-');
     const files = scanFiles('test', fileURLToPath(root));
@@ -162,6 +292,9 @@ test('workflow keeps required scans gated and snapshots restricted to trusted ma
   assert.match(workflow, /github\.event_name != 'pull_request' && github\.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /CODE_OUTCOME: \$\{\{ steps\.snyk-code\.outcome }}/);
   assert.match(workflow, /TEST_OUTCOME: \$\{\{ steps\.snyk-open-source-test\.outcome }}/);
+  assert.match(workflow, /hashFiles\('snyk-results\/test-github\.sarif'\)/);
+  assert.match(workflow, /sarif_file: snyk-results\/test-github\.sarif/);
+  assert.ok(!workflow.includes('sarif_file: snyk-results/test.sarif'));
   assert.match(workflow, /"\$CODE_OUTCOME" != "success"/);
   assert.match(workflow, /"\$TEST_OUTCOME" != "success"/);
   assert.match(workflow, /"\$MONITOR_OUTCOME" == "failure"/);

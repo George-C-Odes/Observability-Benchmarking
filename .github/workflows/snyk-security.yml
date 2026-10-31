@@ -150,12 +150,14 @@ jobs:
           sarif_file: snyk-results/code.sarif
           category: snyk-code
 
+      # The runner consolidates per-project runs for GitHub's single-run/category
+      # requirement. The original test.sarif remains in the diagnostics artifact.
       - name: Upload Snyk Open Source results to GitHub Code Scanning
-        if: always() && !cancelled() && hashFiles('snyk-results/test.sarif') != ''
+        if: always() && !cancelled() && hashFiles('snyk-results/test-github.sarif') != ''
         uses: ./.github/actions/codeql-action
         with:
           phase: upload-sarif
-          sarif_file: snyk-results/test.sarif
+          sarif_file: snyk-results/test-github.sarif
           category: snyk-open-source
 
       - name: Retain Snyk diagnostics
