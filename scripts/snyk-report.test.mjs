@@ -73,7 +73,7 @@ test('summary and annotation include useful totals, top issues, fixes and safe e
   assert.match(summary, /3 occurrences across 2 affected files/);
   assert.match(summary, /\| critical \| 1 \| 2 \|/);
   assert.match(summary, /a\/pom.xml/);
-  assert.match(summary, /security.snyk.io\/vuln\/SNYK-A/);
+  assert.match(summary, /security\.snyk\.io\/vuln\/SNYK-A/);
   assert.match(summary, /library-a/);
   assert.match(summary, /2\.0/);
   assert.ok(!summary.includes('<img'));
