@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
 import { resolveRepoPath } from './render-readmes.mjs';
+import { temporaryDirectory } from './test-helpers.mjs';
 import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sync-java-pom-versions.mjs';
 
 test('every service mapping updates only its framework property and is repeatable', () => {
@@ -52,12 +51,7 @@ test('missing, commented, misplaced and duplicate declarations fail without gues
 });
 
 function fixture(t) {
-  const directory = mkdtempSync(path.join(os.tmpdir(), 'sync-java-pom-versions-'));
-  t.after(() => {
-    assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('sync-java-pom-versions-'));
-    rmSync(directory, { recursive: true, force: true });
-  });
+  const directory = temporaryDirectory(t, 'sync-java-pom-versions-');
   const envPath = path.join(directory, '.env');
   const javaDirectory = path.join(directory, 'java');
   const originals = new Map();
@@ -118,29 +112,4 @@ test('a missing POM or malformed property prevents earlier POMs from being writt
   for (const [file, original] of originals) {
     if (file !== last) assert.equal(readFileSync(file, 'utf8'), original);
   }
-});
-
-test('CLI supports help and rejects unknown options and missing env arguments', () => {
-  const script = resolveRepoPath('scripts/sync-java-pom-versions.mjs');
-  const help = spawnSync(process.execPath, [script, '--help'], { encoding: 'utf8' });
-  assert.equal(help.status, 0);
-  assert.match(help.stdout, /Usage:.*--env.*--check/);
-  for (const args of [['--unknown'], ['--env'], ['--env', '--check']]) {
-    const result = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /Unknown argument|Expected a path after --env/);
-  }
-});
-
-test('CLI reads a custom env file from another working directory and checks without writing', (t) => {
-  const { directory, envPath } = fixture(t);
-  const files = javaFrameworkVersions.flatMap(({ modules }) => modules.map((module) => resolveRepoPath(`services/java/${module}/pom.xml`)));
-  const originals = files.map((file) => readFileSync(file, 'utf8'));
-  const result = spawnSync(process.execPath, [resolveRepoPath('scripts/sync-java-pom-versions.mjs'), '--env', envPath, '--check'], {
-    cwd: directory,
-    encoding: 'utf8',
-  });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /Java POM versions are out of date/);
-  assert.deepEqual(files.map((file) => readFileSync(file, 'utf8')), originals);
 });

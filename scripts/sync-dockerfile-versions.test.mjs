@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
 import { resolveRepoPath } from './render-readmes.mjs';
+import { temporaryDirectory } from './test-helpers.mjs';
 import { dockerfileVersions, syncDockerfileContent, syncDockerfileVersions } from './sync-dockerfile-versions.mjs';
 
 test('every service Dockerfile changes only its managed default and is repeatable', () => {
@@ -38,12 +38,7 @@ test('missing or duplicate defaults and invalid inputs fail without guessing', (
 });
 
 function fixture(t) {
-  const directory = mkdtempSync(path.join(os.tmpdir(), 'sync-dockerfile-versions-'));
-  t.after(() => {
-    assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('sync-dockerfile-versions-'));
-    rmSync(directory, { recursive: true, force: true });
-  });
+  const directory = temporaryDirectory(t, 'sync-dockerfile-versions-');
   const envPath = path.join(directory, '.env');
   const servicesDirectory = path.join(directory, 'services');
   const originals = new Map();

@@ -1,9 +1,8 @@
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
+import { finishSync, readSyncFile, runSyncCli } from './sync-common.mjs';
 
 // Django images are tagged with the framework version, but built with Python's version.
 const imageVersionOverrides = {
@@ -100,58 +99,15 @@ export function syncBuildImageRuns({ envPath = 'compose/.env', runDirectory = '.
   // Validate every configuration before writing, so a missing version cannot leave a partial update.
   const results = files.map((file) => {
     const filePath = path.join(directory, file);
-    const existing = readFileSync(filePath, 'utf8');
-    try {
-      const content = syncBuildImageXml(existing, variables);
-      return { filePath, content, changed: content !== existing };
-    } catch (error) {
-      throw new Error(`${file}: ${error.message}`, { cause: error });
-    }
+    return readSyncFile(filePath, (existing) => syncBuildImageXml(existing, variables), file);
   });
 
-  const changed = results.filter((result) => result.changed);
-  if (check && changed.length > 0) {
-    throw new Error(`Build image run configurations are out of date. Run node scripts/sync-build-img-runs.mjs:\n${changed.map(({ filePath }) => path.basename(filePath)).join('\n')}`);
-  }
-  if (!check) {
-    for (const { filePath, content } of changed) writeFileSync(filePath, content, 'utf8');
-  }
-  return results;
+  return finishSync(results, {
+    check,
+    description: 'Build image run configurations',
+    scriptName: 'sync-build-img-runs.mjs',
+    displayPath: path.basename,
+  });
 }
 
-function main() {
-  let envPath = 'compose/.env';
-  let check = false;
-  const args = process.argv.slice(2);
-  for (let index = 0; index < args.length; index += 1) {
-    switch (args[index]) {
-      case '--env':
-        envPath = args[++index];
-        if (!envPath || envPath.startsWith('--')) throw new Error('Expected a path after --env');
-        break;
-      case '--check':
-        check = true;
-        break;
-      case '--help':
-      case '-h':
-        console.log('Usage: node scripts/sync-build-img-runs.mjs [--env path/to/.env] [--check]');
-        return;
-      default:
-        throw new Error(`Unknown argument: ${args[index]}`);
-    }
-  }
-  const results = syncBuildImageRuns({ envPath, check });
-  for (const { filePath, changed } of results) {
-    if (changed) console.log(`Updated ${path.basename(filePath)}`);
-  }
-  console.log(`Checked ${results.length} build image run configurations; ${results.filter(({ changed }) => changed).length} updated.`);
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    main();
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  }
-}
+runSyncCli(import.meta.url, syncBuildImageRuns, 'build image run configurations', path.basename);

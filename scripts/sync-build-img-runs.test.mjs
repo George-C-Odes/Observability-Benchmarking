@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
+import { temporaryDirectory } from './test-helpers.mjs';
 import { syncBuildImageRuns, syncBuildImageXml } from './sync-build-img-runs.mjs';
 
 const readRun = (name) => readFileSync(resolveRepoPath(`.run/[build-img] ${name}.run.xml`), 'utf8');
@@ -83,13 +83,7 @@ test('missing and invalid versions fail, and ambiguous image versions require an
 });
 
 function fixture(t) {
-  const directory = mkdtempSync(path.join(os.tmpdir(), 'sync-build-img-runs-'));
-  t.after(() => {
-    // Only remove the temporary directory created by this test.
-    assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('sync-build-img-runs-'));
-    rmSync(directory, { recursive: true, force: true });
-  });
+  const directory = temporaryDirectory(t, 'sync-build-img-runs-');
   const envPath = path.join(directory, '.env');
   writeFileSync(envPath, '#MICRONAUT_VERSION: 0.0.0\r\nMICRONAUT_VERSION: 91.3.5\r\n');
   return { directory, envPath };
@@ -108,7 +102,7 @@ test('check detects drift without writes; generation is scoped, repeatable and s
   assert.equal(results.length, 1);
   assert.equal(results[0].changed, true);
   assert.equal(readFileSync(excluded, 'utf8'), original);
-  assert.match(readFileSync(file, 'utf8'), /\r\n  <!-- Versions:/);
+  assert.match(readFileSync(file, 'utf8'), /\r\n {2}<!-- Versions:/);
   assert.equal(syncBuildImageRuns({ envPath, runDirectory: directory, check: true })[0].changed, false);
   assert.equal(syncBuildImageRuns({ envPath, runDirectory: directory })[0].changed, false);
 });

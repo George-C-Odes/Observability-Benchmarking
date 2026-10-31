@@ -1,9 +1,8 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
+import { finishSync, readSyncFile, runSyncCli } from './sync-common.mjs';
 
 export const goModules = ['services/go/enhanced', 'services/go/simple', '.github/go-tools'];
 
@@ -37,57 +36,14 @@ export function syncGoModVersions({ envPath = 'compose/.env', repoDirectory = '.
   // Validate all modules before writing any of them. Dependency and checksum locks are untouched.
   const results = goModules.map((module) => {
     const filePath = path.join(directory, module, 'go.mod');
-    try {
-      const existing = readFileSync(filePath, 'utf8');
-      const content = syncGoModContent(existing, version);
-      return { filePath, content, changed: content !== existing };
-    } catch (error) {
-      throw new Error(`${module}/go.mod: ${error.message}`, { cause: error });
-    }
+    return readSyncFile(filePath, (existing) => syncGoModContent(existing, version), `${module}/go.mod`);
   });
-  const changed = results.filter((result) => result.changed);
-  if (check && changed.length > 0) {
-    throw new Error(`Go module versions are out of date. Run node scripts/sync-go-mod-versions.mjs:\n${changed.map(({ filePath }) => path.relative(directory, filePath)).join('\n')}`);
-  }
-  if (!check) {
-    for (const { filePath, content } of changed) writeFileSync(filePath, content, 'utf8');
-  }
-  return results;
+  return finishSync(results, {
+    check,
+    description: 'Go module versions',
+    scriptName: 'sync-go-mod-versions.mjs',
+    displayPath: (filePath) => path.relative(directory, filePath),
+  });
 }
 
-function main() {
-  let envPath = 'compose/.env';
-  let check = false;
-  const args = process.argv.slice(2);
-  for (let index = 0; index < args.length; index += 1) {
-    switch (args[index]) {
-      case '--env':
-        envPath = args[++index];
-        if (!envPath || envPath.startsWith('--')) throw new Error('Expected a path after --env');
-        break;
-      case '--check':
-        check = true;
-        break;
-      case '--help':
-      case '-h':
-        console.log('Usage: node scripts/sync-go-mod-versions.mjs [--env path/to/.env] [--check]');
-        return;
-      default:
-        throw new Error(`Unknown argument: ${args[index]}`);
-    }
-  }
-  const results = syncGoModVersions({ envPath, check });
-  for (const { filePath, changed } of results) {
-    if (changed) console.log(`Updated ${path.relative(resolveRepoPath('.'), filePath)}`);
-  }
-  console.log(`Checked ${results.length} Go modules; ${results.filter(({ changed }) => changed).length} updated.`);
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    main();
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  }
-}
+runSyncCli(import.meta.url, syncGoModVersions, 'Go modules');

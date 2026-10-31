@@ -15,6 +15,33 @@ This directory contains small repository-level helper scripts.
 - `sync-go-mod-versions.test.mjs` - tests Go version propagation, preservation, validation, and check mode
 - `sync-dockerfile-versions.mjs` - synchronizes service Dockerfile framework/runtime ARG defaults from `compose/.env`
 - `sync-dockerfile-versions.test.mjs` - tests Dockerfile default mapping, preservation, validation, and check mode
+- `sync-common.mjs` - shared synchronizer CLI, literal-version validation, file diagnostics, and check/write handling
+- `sync-common.test.mjs` - CLI contract tests across all four synchronizers
+- `test-helpers.mjs` - temporary-directory fixtures with guarded cleanup
+
+The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
+entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
+normal mode writes only changed files. This validation guarantee does not provide rollback if a filesystem write fails.
+
+Run the synchronizer regression tests with:
+
+```powershell
+node --test scripts/sync-*.test.mjs
+```
+
+### Sonar test classification
+
+The repository currently contains an IDE SonarQube Cloud binding in `.sonarlint/connectedMode.json`, but no checked-in
+Sonar scanner workflow or analysis properties. In the existing project's analysis configuration, ensure that
+`**/*.test.mjs` is included in the test scope, retaining the patterns for other languages and existing tests.
+Correctly classified test files are exempt from duplication checks; production synchronizers should stay in scope.
+
+For a CLI-based scanner, `sonar.tests` must include the directories containing the tests and
+`sonar.test.inclusions` must include `**/*.test.mjs`. Test inclusion patterns also exclude those files from the source
+scope. A `sonar-project.properties` file is ignored by automatic analysis, which uses `.sonarcloud.properties` and
+supports a limited set of settings instead. Confirm the project's analysis method and verify the next analysis before
+changing its scope. See [Sonar's analysis scope documentation](https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/setting-analysis-scope/excluding-files-based-on-patterns)
+and [automatic analysis configuration](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/automatic-analysis).
 
 ## Go module versions
 

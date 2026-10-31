@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 
 import { resolveRepoPath } from './render-readmes.mjs';
+import { temporaryDirectory } from './test-helpers.mjs';
 import { goModules, syncGoModContent, syncGoModVersions } from './sync-go-mod-versions.mjs';
 
 test('all repository modules change only their Go version and are repeatable', () => {
@@ -46,12 +45,7 @@ test('preserves slash-heavy comments and ignores long malformed version tokens',
 });
 
 function fixture(t) {
-  const repoDirectory = mkdtempSync(path.join(os.tmpdir(), 'sync-go-mod-versions-'));
-  t.after(() => {
-    assert.equal(path.dirname(path.resolve(repoDirectory)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(repoDirectory).startsWith('sync-go-mod-versions-'));
-    rmSync(repoDirectory, { recursive: true, force: true });
-  });
+  const repoDirectory = temporaryDirectory(t, 'sync-go-mod-versions-');
   const envPath = path.join(repoDirectory, '.env');
   writeFileSync(envPath, '#GO_VERSION: 1.27.2\nGO_VERSION: 1.27.3\n');
   const originals = new Map();
@@ -92,17 +86,4 @@ test('invalid env, malformed or missing final module prevents any batch writes',
   for (const [file, original] of options.originals) {
     if (file !== last) assert.equal(readFileSync(file, 'utf8'), original);
   }
-});
-
-test('CLI validates options and reports stale modules with a failing exit code', (t) => {
-  const { envPath } = fixture(t);
-  // Alternate env deliberately differs from the repository; check must not mutate it.
-  writeFileSync(envPath, 'GO_VERSION: 1.99.0\n');
-  const run = (...args) => spawnSync(process.execPath, [resolveRepoPath('scripts/sync-go-mod-versions.mjs'), ...args], { encoding: 'utf8', cwd: os.tmpdir() });
-  assert.equal(run('--help').status, 0);
-  assert.match(run('--env').stderr, /Expected a path/);
-  assert.match(run('--unknown').stderr, /Unknown argument/);
-  const result = run('--env', envPath, '--check');
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /go-tools/);
 });
