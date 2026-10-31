@@ -10,6 +10,12 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'
+
+concurrency:
+  group: snyk-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -65,6 +71,25 @@ jobs:
             .github/requirements/**
             services/python/django/gunicorn/*/requirements.txt
 
+      - name: Set up Go
+        if: env.SNYK_TOKEN != ''
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/go/enhanced/go.mod
+          cache-dependency-path: |
+            services/go/**/go.sum
+            .github/go-tools/go.sum
+
+      - name: Set up Node.js
+        if: env.SNYK_TOKEN != ''
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.13.0'
+
+      - name: Test Snyk scan runner
+        if: env.SNYK_TOKEN != ''
+        run: node --test scripts/snyk-scan.test.mjs
+
       - name: Prepare dependency resolution
         if: env.SNYK_TOKEN != ''
         shell: bash
@@ -72,6 +97,12 @@ jobs:
           # Snyk invokes native modules' Maven wrappers directly on Linux.
           # These scripts are stored without executable permission in Git.
           find services/java -type f -name mvnw -exec chmod +x {} +
+          snyk --version
+          java -version
+          mvn --version
+          python --version
+          go version
+          node --version
 
       # Snyk needs installed packages to resolve Python's transitive dependencies.
       - name: Install Python dependencies
@@ -88,44 +119,72 @@ jobs:
         if: env.SNYK_TOKEN != ''
         id: snyk-code
         continue-on-error: true
-        run: snyk code test --sarif-file-output=snyk-code.sarif
+        run: node scripts/snyk-scan.mjs code
 
       # Runs Snyk Open Source (SCA) analysis. The test command reports findings
-      # through its exit code so the final step can enforce the security gate.
+      # through its exit code; unresolved projects fail closed, not silently skipped.
       - name: Snyk Open Source test
         if: env.SNYK_TOKEN != ''
         id: snyk-open-source-test
         continue-on-error: true
-        run: snyk test --all-projects
+        run: node scripts/snyk-scan.mjs test
 
-      # Uploads the Snyk Open Source dependency snapshot to the Snyk dashboard.
+      # PRs must not overwrite the trusted main dependency snapshot in Snyk.
       # Monitor's exit code only indicates whether the snapshot upload succeeded.
       - name: Snyk Open Source monitor
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_TOKEN != '' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         id: snyk-open-source-monitor
         continue-on-error: true
-        run: snyk monitor --all-projects
+        run: node scripts/snyk-scan.mjs monitor
 
       # Snyk IaC does not support Docker Compose. This repository currently has
       # no supported IaC manifests (e.g. Terraform, Kubernetes or CloudFormation).
       # Add a scan scoped to those manifests when they are introduced, rather
       # than recursively parsing Compose and application YAML from the root.
 
-      # Push the Snyk Code results into GitHub Code Scanning tab
-      - name: Upload result to GitHub Code Scanning
-        if: always() && hashFiles('snyk-code.sarif') != ''
+      - name: Upload Snyk Code results to GitHub Code Scanning
+        if: always() && !cancelled() && hashFiles('snyk-results/code.sarif') != ''
         uses: ./.github/actions/codeql-action
         with:
           phase: upload-sarif
-          sarif_file: snyk-code.sarif
+          sarif_file: snyk-results/code.sarif
+          category: snyk-code
+
+      - name: Upload Snyk Open Source results to GitHub Code Scanning
+        if: always() && !cancelled() && hashFiles('snyk-results/test.sarif') != ''
+        uses: ./.github/actions/codeql-action
+        with:
+          phase: upload-sarif
+          sarif_file: snyk-results/test.sarif
+          category: snyk-open-source
+
+      - name: Retain Snyk diagnostics
+        if: always() && !cancelled() && hashFiles('snyk-results/**') != ''
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: snyk-results
+          path: snyk-results/
+          retention-days: 14
 
       - name: Fail if Snyk findings or scan errors are reported
-        if: always()
+        if: always() && !cancelled()
         shell: bash
+        env:
+          CODE_OUTCOME: ${{ steps.snyk-code.outcome }}
+          TEST_OUTCOME: ${{ steps.snyk-open-source-test.outcome }}
+          MONITOR_OUTCOME: ${{ steps.snyk-open-source-monitor.outcome }}
+          CODE_RESULT: ${{ steps.snyk-code.outputs.result }}
+          TEST_RESULT: ${{ steps.snyk-open-source-test.outputs.result }}
+          MONITOR_RESULT: ${{ steps.snyk-open-source-monitor.outputs.result }}
         run: |
-          if [[ "${{ steps.snyk-code.outcome }}" == "failure" || \
-                "${{ steps.snyk-open-source-test.outcome }}" == "failure" || \
-                "${{ steps.snyk-open-source-monitor.outcome }}" == "failure" ]]; then
-            echo "::error::One or more Snyk scans reported findings or failed."
+          if [[ -z "$SNYK_TOKEN" ]]; then
+            echo 'Snyk scans skipped: no SNYK_TOKEN is available.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "Code: ${CODE_RESULT:-not completed}; dependencies: ${TEST_RESULT:-not completed}; monitor: ${MONITOR_RESULT:-skipped}."
+          if [[ "$CODE_OUTCOME" != "success" || \
+                "$TEST_OUTCOME" != "success" || \
+                "$MONITOR_OUTCOME" == "failure" ]]; then
+            echo "::error::Snyk reported findings or incomplete scans. See the step summaries and snyk-results artifact."
             exit 1
           fi

@@ -18,6 +18,8 @@ This directory contains small repository-level helper scripts.
 - `sync-common.mjs` - shared synchronizer CLI, literal-version validation, file diagnostics, and check/write handling
 - `sync-common.test.mjs` - CLI contract tests across all four synchronizers
 - `test-helpers.mjs` - temporary-directory fixtures with guarded cleanup
+- `snyk-scan.mjs` - runs Snyk Code, Open Source tests, or monitoring with retained logs/reports and distinct findings/error status
+- `snyk-scan.test.mjs` - token-free tests for scan arguments, exit codes, report capture, and CI gate contracts
 
 The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
@@ -28,6 +30,15 @@ Run the synchronizer regression tests with:
 ```powershell
 node --test scripts/sync-*.test.mjs
 ```
+
+Run the Snyk runner regression tests without credentials or an installed Snyk CLI:
+
+```powershell
+node --test scripts/snyk-scan.test.mjs
+```
+
+The Snyk workflow runs these tests before scanning. Real scans require the Snyk CLI, `SNYK_TOKEN`, and installed
+language/dependency prerequisites; see [Snyk scanning guidance](../docs/SECURITY.md#snyk-automated-scanning).
 
 ### Sonar test classification
 

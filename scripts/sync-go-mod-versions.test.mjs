@@ -44,6 +44,35 @@ test('preserves slash-heavy comments and ignores long malformed version tokens',
   assert.equal(syncGoModContent(`${malformed}go 1.27.2\n`, '1.27.3'), `${malformed}go 1.27.3\n`);
 });
 
+test('preserves long indentation, directive spacing, trailing whitespace and comments', () => {
+  const padding = ' \t'.repeat(50_000);
+  for (const suffix of [padding, `${padding}// comment`]) {
+    const original = `${padding}go${padding}1.27.2${suffix}\r\n${padding}toolchain${padding}go1.27.2${suffix}`;
+    const expected = original.replaceAll('1.27.2', '1.27.3');
+    assert.equal(syncGoModContent(original, '1.27.3'), expected);
+    assert.equal(syncGoModContent(expected, '1.27.3'), expected);
+  }
+});
+
+test('ignores whitespace-heavy malformed directives without accepting extra tokens or single slashes', () => {
+  const padding = ' \t'.repeat(50_000);
+  for (const tail of ['invalid', '/ not a comment']) {
+    const malformed = `go 1.27.2${padding}${tail}\ntoolchain go1.27.2${padding}${tail}\n`;
+    assert.equal(syncGoModContent(`${malformed}go 1.27.2\n`, '1.27.3'), `${malformed}go 1.27.3\n`);
+    assert.throws(() => syncGoModContent(malformed, '1.27.3'), /exactly one go directive/);
+  }
+  assert.throws(() => syncGoModContent(`go${padding}\n`, '1.27.3'), /exactly one go directive/);
+  assert.equal(syncGoModContent(`go 1.27.2\ntoolchain${padding}\n`, '1.27.3'), `go 1.27.3\ntoolchain${padding}\n`);
+});
+
+test('preserves adjacent comments and line separators without requiring a final newline', () => {
+  for (const separator of ['\n', '\r\n', '\r']) {
+    const original = `// go 1.27.2${separator}\tgo\t1.27.2// minimum${separator}toolchain default// policy`;
+    assert.equal(syncGoModContent(original, '1.27.3'), original.replace('go\t1.27.2', 'go\t1.27.3'));
+    assert.equal(syncGoModContent(`go 1.27.2${separator}toolchain go1.27.2// pin`, '1.27.3'), `go 1.27.3${separator}toolchain go1.27.3// pin`);
+  }
+});
+
 function fixture(t) {
   const repoDirectory = temporaryDirectory(t, 'sync-go-mod-versions-');
   const envPath = path.join(repoDirectory, '.env');

@@ -12,21 +12,40 @@ function validateVersion(version) {
   }
 }
 
+function parseGoDirective(line) {
+  const prefix = /^[\t ]*(go|toolchain)[\t ]+/.exec(line);
+  if (!prefix) return undefined;
+  // Consume the token separately so malformed suffixes cannot backtrack into it.
+  const token = /^[^/\t \r\n]+/.exec(line.slice(prefix[0].length));
+  if (!token) return undefined;
+  const suffix = line.slice(prefix[0].length + token[0].length);
+  const tail = suffix.replace(/^[\t ]*/, '');
+  if (tail !== '' && !tail.startsWith('//')) return undefined;
+  return { directive: prefix[1], prefix: prefix[0], version: token[0], suffix };
+}
+
 export function syncGoModContent(content, version) {
   validateVersion(version);
-  // Version tokens cannot contain '/', keeping them disjoint from // comments.
-  const goPattern = /^([\t ]*go[\t ]+)([^/\t \r\n]+)([\t ]*(?:\/\/[^\r\n]*)?\r?)$/gm;
-  const declarations = [...content.matchAll(goPattern)];
+  // Keep line separators verbatim; each line is parsed without whole-line backtracking.
+  const lines = content.split(/(\r\n|[\r\n\u2028\u2029])/);
+  const directives = lines.map(parseGoDirective);
+  const declarations = directives.filter((match) => match?.directive === 'go');
   if (declarations.length !== 1) {
     throw new Error(`Expected exactly one go directive, found ${declarations.length}`);
   }
-  const toolchainPattern = /^([\t ]*toolchain[\t ]+)([^/\t \r\n]+)([\t ]*(?:\/\/[^\r\n]*)?\r?)$/gm;
-  const toolchains = [...content.matchAll(toolchainPattern)];
-  if (toolchains.length > 1 || toolchains.some((match) => !/^(?:default|go1\.\d+(?:\.\d+)?)$/.test(match[2]))) {
+  const toolchains = directives.filter((match) => match?.directive === 'toolchain');
+  if (toolchains.length > 1 || toolchains.some((match) => !/^(?:default|go1\.\d+(?:\.\d+)?)$/.test(match.version))) {
     throw new Error('Expected at most one standard Go toolchain directive or toolchain default');
   }
-  return content.replace(goPattern, (_match, prefix, _old, suffix) => `${prefix}${version}${suffix}`)
-    .replace(toolchainPattern, (_match, prefix, old, suffix) => `${prefix}${old === 'default' ? old : `go${version}`}${suffix}`);
+  return lines.map((line, index) => {
+    const match = directives[index];
+    if (!match) return line;
+    let replacement = version;
+    if (match.directive === 'toolchain') {
+      replacement = match.version === 'default' ? 'default' : `go${version}`;
+    }
+    return `${match.prefix}${replacement}${match.suffix}`;
+  }).join('');
 }
 
 export function syncGoModVersions({ envPath = 'compose/.env', repoDirectory = '.', check = false } = {}) {
