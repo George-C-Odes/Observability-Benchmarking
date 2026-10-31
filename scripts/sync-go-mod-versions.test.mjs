@@ -35,6 +35,16 @@ test('rejects missing or duplicate directives and invalid env versions', () => {
   }
 });
 
+test('preserves slash-heavy comments and ignores long malformed version tokens', () => {
+  const comment = `//${'/'.repeat(20_000)} comment`;
+  const original = `go 1.27.2 ${comment}\r\ntoolchain go1.27.2 ${comment}\r\n`;
+  assert.equal(syncGoModContent(original, '1.27.3'), original.replaceAll('1.27.2', '1.27.3'));
+
+  const token = '1'.repeat(20_000);
+  const malformed = `go ${token} invalid\ntoolchain go${token} invalid\n`;
+  assert.equal(syncGoModContent(`${malformed}go 1.27.2\n`, '1.27.3'), `${malformed}go 1.27.3\n`);
+});
+
 function fixture(t) {
   const repoDirectory = mkdtempSync(path.join(os.tmpdir(), 'sync-go-mod-versions-'));
   t.after(() => {

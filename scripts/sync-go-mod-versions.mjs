@@ -15,12 +15,13 @@ function validateVersion(version) {
 
 export function syncGoModContent(content, version) {
   validateVersion(version);
-  const goPattern = /^([\t ]*go[\t ]+)([^\t \r\n]+)([\t ]*(?:\/\/[^\r\n]*)?\r?)$/gm;
+  // Version tokens cannot contain '/', keeping them disjoint from // comments.
+  const goPattern = /^([\t ]*go[\t ]+)([^/\t \r\n]+)([\t ]*(?:\/\/[^\r\n]*)?\r?)$/gm;
   const declarations = [...content.matchAll(goPattern)];
   if (declarations.length !== 1) {
     throw new Error(`Expected exactly one go directive, found ${declarations.length}`);
   }
-  const toolchainPattern = /^([\t ]*toolchain[\t ]+)([^\t \r\n]+)([\t ]*(?:\/\/[^\r\n]*)?\r?)$/gm;
+  const toolchainPattern = /^([\t ]*toolchain[\t ]+)([^/\t \r\n]+)([\t ]*(?:\/\/[^\r\n]*)?\r?)$/gm;
   const toolchains = [...content.matchAll(toolchainPattern)];
   if (toolchains.length > 1 || toolchains.some((match) => !/^(?:default|go1\.\d+(?:\.\d+)?)$/.test(match[2]))) {
     throw new Error('Expected at most one standard Go toolchain directive or toolchain default');
