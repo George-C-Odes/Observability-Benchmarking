@@ -55,6 +55,13 @@ jobs:
         with:
           requirements: services/python/django/gunicorn/WSGI/requirements-dev.txt
 
+      - name: Check Docker dependency locks
+        run: |
+          python services/python/django/gunicorn/sync_build_locks.py --check
+          python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
+          python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py
+          python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py
+
       - name: Syntax check
         working-directory: services/python/django/gunicorn/common
         run: python -m compileall src

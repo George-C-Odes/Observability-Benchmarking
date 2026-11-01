@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib.sh"
 
-if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+if [[ "${1:-}" = "--help" ]] || [[ "${1:-}" = "-h" ]]; then
   emit_benchmark_help
   exit 0
 fi
@@ -45,7 +45,7 @@ if ! can_write_dir "${BENCH_DIR}"; then
   mkdir -p "${BENCH_DIR}" || true
 fi
 
-if [ "${SAVE_LOGS}" = "auto" ]; then
+if [[ "${SAVE_LOGS}" = "auto" ]]; then
   if can_write_dir "${BENCH_DIR}"; then
     SAVE_LOGS=true
   else
@@ -54,14 +54,14 @@ if [ "${SAVE_LOGS}" = "auto" ]; then
   fi
 fi
 
-if [ "${SAVE_LOGS}" = "true" ] && ! can_write_dir "${BENCH_DIR}"; then
+if [[ "${SAVE_LOGS}" = "true" ]] && ! can_write_dir "${BENCH_DIR}"; then
   echo "[wrk2] ERROR: ${BENCH_DIR} is not writable (cannot create benchmark log files)."
   echo "[wrk2] HINT: fix host folder permissions/mount options or set WRK_SAVE_LOGS=false/auto."
   exit 13
 fi
 
 EXPORT_ENABLED=false
-if [ -n "${EXPORT_DIR}" ]; then
+if [[ -n "${EXPORT_DIR}" ]]; then
   mkdir -p "${EXPORT_DIR}" 2>/dev/null || true
   # NOTE: some analyzers mis-detect the line below as having a stray ']'.
   if can_write_dir "${EXPORT_DIR}"; then
@@ -73,10 +73,10 @@ fi
 
 export_log() {
   local src_file=$1
-  if [ "${EXPORT_ENABLED}" != "true" ]; then
+  if [[ "${EXPORT_ENABLED}" != "true" ]]; then
     return 0
   fi
-  if [ ! -f "${src_file}" ]; then
+  if [[ ! -f "${src_file}" ]]; then
     return 0
   fi
   local dest_dir
@@ -99,22 +99,22 @@ export_log() {
 # ========================
 
 load_targets() {
-  if [ ! -f "${TARGETS_FILE}" ]; then
+  if [[ ! -f "${TARGETS_FILE}" ]]; then
     echo "[wrk2] ERROR: benchmark targets file not found: ${TARGETS_FILE}"
     exit 1
   fi
 
   local urls=()
-  while IFS= read -r line || [ -n "${line}" ]; do
+  while IFS= read -r line || [[ -n "${line}" ]]; do
     # Strip leading/trailing whitespace
     line="$(echo "${line}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     # Skip blank lines and comments
-    [ -z "${line}" ] && continue
+    [[ -z "${line}" ]] && continue
     [[ "${line}" == \#* ]] && continue
     urls+=("${line}")
   done < "${TARGETS_FILE}"
 
-  if [ ${#urls[@]} -eq 0 ]; then
+  if [[ ${#urls[@]} -eq 0 ]]; then
     echo "[wrk2] WARN: no URLs found in ${TARGETS_FILE}"
   fi
 
@@ -128,8 +128,8 @@ load_targets() {
 
 url_label() {
   local url=$1
-  # Extract host and path, replace slashes and colons with underscores
-  echo "${url}" | sed 's|http://||;s|[/:.]|_|g'
+  # Strip only the HTTP prefix; retain the HTTPS scheme to distinguish target labels.
+  echo "${url#http://}" | sed 's|[/:.]|_|g'
 }
 
 # Enhanced run printout:
@@ -146,12 +146,12 @@ run_wrk_one() {
   local overall_bench_idx=$7
   local overall_total=$8
 
-  if [ -z "${url}" ]; then
+  if [[ -z "${url}" ]]; then
     echo "[wrk2] ERROR: url is empty"
     return 2
   fi
 
-  if [ -z "${RATE}" ]; then
+  if [[ -z "${RATE}" ]]; then
     echo "[wrk2] ERROR: WRK_RATE must be set for wrk2 (-R)."
     return 2
   fi
@@ -169,12 +169,12 @@ run_wrk_one() {
   outfile="${BENCH_DIR}/${filename}"
 
   local iter_disp_total="${iter_total}"
-  if [ "${iter_total}" = "0" ]; then
+  if [[ "${iter_total}" = "0" ]]; then
     iter_disp_total="∞"
   fi
 
   local overall_disp_total="${overall_total}"
-  if [ "${overall_total}" = "0" ]; then
+  if [[ "${overall_total}" = "0" ]]; then
     overall_disp_total="∞"
   fi
 
@@ -185,14 +185,14 @@ run_wrk_one() {
   echo "  connections: ${CONNECTIONS}"
   echo "  duration:    ${DURATION}"
   echo "  rate:        ${RATE}"
-  if [ "${SAVE_LOGS}" = "true" ]; then
+  if [[ "${SAVE_LOGS}" = "true" ]]; then
     echo "  output:      ${outfile}"
   fi
 
   local wrk_bin
   wrk_bin="${WRK_BIN:-/wrk2/wrk}"
 
-  if [ "${SAVE_LOGS}" = "true" ]; then
+  if [[ "${SAVE_LOGS}" = "true" ]]; then
     "${wrk_bin}" -t"${THREADS}" -c"${CONNECTIONS}" -d"${DURATION}" -R"${RATE}" --timeout 10s "${url}" 2>&1 | tee "${outfile}"
     export_log "${outfile}"
   else
@@ -209,11 +209,11 @@ echo "[wrk2] benchmark script ready (exec /script/benchmark.sh to run on-demand)
 # Avoid printing config twice when WRK_AUTORUN=true:
 # - entrypoint.sh prints config once on container boot
 # - benchmark.sh prints config only when run on-demand (WRK_PRINT_CONFIG=true)
-if [ "${WRK_PRINT_CONFIG:-false}" = "true" ]; then
+if [[ "${WRK_PRINT_CONFIG:-false}" = "true" ]]; then
   print_common_vars summary
 fi
 
-if [ "${SLEEP_INIT}" != "0" ] && [ -n "${SLEEP_INIT}" ]; then
+if [[ "${SLEEP_INIT}" != "0" ]] && [[ -n "${SLEEP_INIT}" ]]; then
   echo "[wrk2] initial sleep: ${SLEEP_INIT}s";
   sleep "${SLEEP_INIT}"
 fi
@@ -223,7 +223,7 @@ load_targets
 
 ITER_BENCH_TOTAL="${#BENCHMARK_URLS[@]}"
 
-if [ "${ITER_BENCH_TOTAL}" -eq 0 ]; then
+if [[ "${ITER_BENCH_TOTAL}" -eq 0 ]]; then
   echo "[wrk2] no benchmark targets configured; exiting"
   exit 0
 fi
@@ -233,7 +233,7 @@ echo "[wrk2] loaded ${ITER_BENCH_TOTAL} benchmark target(s) from ${TARGETS_FILE}
 # Totals for progress printout:
 TOTAL_ITER="${ITERATIONS}"
 TOTAL_OVERALL=0
-if [ "${ITERATIONS}" != "0" ]; then
+if [[ "${ITERATIONS}" != "0" ]]; then
   TOTAL_OVERALL=$((ITERATIONS * ITER_BENCH_TOTAL))
 fi
 
@@ -247,7 +247,7 @@ while true; do
     iter_bench_idx=$((iter_bench_idx + 1))
     overall_count=$((overall_count + 1))
     run_wrk_one "${url}" "${count}" "${count}" "${TOTAL_ITER}" "${iter_bench_idx}" "${ITER_BENCH_TOTAL}" "${overall_count}" "${TOTAL_OVERALL}" || true
-    if [ "${iter_bench_idx}" -lt "${ITER_BENCH_TOTAL}" ]; then
+    if [[ "${iter_bench_idx}" -lt "${ITER_BENCH_TOTAL}" ]]; then
       echo "[wrk2] sleeping ${SLEEP_BETWEEN}s";
       sleep "${SLEEP_BETWEEN}"
     fi
@@ -256,7 +256,7 @@ while true; do
   # Stop condition:
   # - WRK_ITERATIONS=0 => loop forever
   # - WRK_ITERATIONS>0 => stop when count reaches ITERATIONS
-  if [ "${ITERATIONS}" != "0" ] && [ "${count}" -ge "${ITERATIONS}" ]; then
+  if [[ "${ITERATIONS}" != "0" ]] && [[ "${count}" -ge "${ITERATIONS}" ]]; then
     echo "[wrk2] reached WRK_ITERATIONS=${ITERATIONS}, exiting";
     break
   fi
