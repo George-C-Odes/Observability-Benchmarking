@@ -75,8 +75,12 @@ class InspectionSummaryTests(unittest.TestCase):
         self.assertEqual(112, report.inspection_summary(fixture)["enabled"])
 
     def test_missing_and_malformed_sarif_still_produce_diagnostics(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            results = Path(temporary)
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch.dict(report.os.environ, {"RUNNER_TEMP": temporary}),
+        ):
+            results = Path(temporary) / "qodana-python/results"
+            results.mkdir(parents=True)
             for contents in (None, "not json", "null", "[]"):
                 with self.subTest(contents=contents):
                     if contents is not None:
@@ -85,6 +89,104 @@ class InspectionSummaryTests(unittest.TestCase):
                     summary = json.loads((results / "inspection-summary.json").read_text("utf-8"))
                     self.assertIn("error", summary)
                     self.assertIn("FAIL", (results / "inspection-summary.md").read_text("utf-8"))
+
+
+class ReportPathTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        environment = patch.dict(report.os.environ, {"RUNNER_TEMP": str(self.root)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        self.results = self.root / "qodana-python/results"
+
+    def create_symlink(self, link: Path, target: Path, *, directory=False):
+        try:
+            link.symlink_to(target, target_is_directory=directory)
+        except (OSError, NotImplementedError) as error:
+            self.skipTest(f"Symlinks are unavailable: {error}")
+
+    def test_valid_results_produce_passing_summary(self):
+        self.results.mkdir(parents=True)
+        (self.results / "qodana.sarif.json").write_text(
+            json.dumps(sarif_fixture()), encoding="utf-8"
+        )
+        self.assertEqual(0, report.summarize_results(self.results))
+        summary = json.loads((self.results / "inspection-summary.json").read_text("utf-8"))
+        self.assertTrue(report.coverage_passes(summary))
+        self.assertIn("PASS", (self.results / "inspection-summary.md").read_text("utf-8"))
+
+    def test_missing_results_directory_still_produces_diagnostics(self):
+        self.assertEqual(1, report.summarize_results(self.results))
+        self.assertTrue((self.results / "inspection-summary.json").is_file())
+        self.assertIn("FAIL", (self.results / "inspection-summary.md").read_text("utf-8"))
+
+    def test_arbitrary_paths_are_rejected_before_filesystem_changes(self):
+        for path in (
+            self.root / "outside",
+            self.results / "../../outside",
+            self.root / "qodana-python/results-other",
+            self.results / "child",
+            self.root,
+        ):
+            with self.subTest(path=path), self.assertRaisesRegex(ValueError, "Results directory"):
+                report.summarize_results(path)
+            self.assertEqual([], list(self.root.iterdir()))
+
+    def test_os_temporary_directory_is_used_locally(self):
+        with (
+            patch.dict(report.os.environ, {}, clear=True),
+            patch.object(report.tempfile, "gettempdir", return_value=str(self.root)),
+        ):
+            self.assertEqual(1, report.summarize_results(self.results))
+        self.assertTrue((self.results / "inspection-summary.json").is_file())
+
+    def test_symlinked_results_directory_is_rejected(self):
+        outside = self.root / "outside"
+        outside.mkdir()
+        self.results.parent.mkdir()
+        self.create_symlink(self.results, outside, directory=True)
+        with self.assertRaisesRegex(ValueError, "Results directory"):
+            report.summarize_results(self.results)
+        self.assertEqual([], list(outside.iterdir()))
+
+    def test_symlinked_parent_directory_is_rejected_before_mkdir(self):
+        outside = self.root / "outside"
+        outside.mkdir()
+        self.create_symlink(self.results.parent, outside, directory=True)
+        with self.assertRaisesRegex(ValueError, "Results directory"):
+            report.summarize_results(self.results)
+        self.assertEqual([], list(outside.iterdir()))
+
+    def test_symlinked_report_files_are_rejected_before_reading_or_writing(self):
+        self.results.mkdir(parents=True)
+        for filename in ("qodana.sarif.json", "inspection-summary.json", "inspection-summary.md"):
+            outside = self.root / "outside"
+            outside.write_text("unchanged", encoding="utf-8")
+            link = self.results / filename
+            self.create_symlink(link, outside)
+            with (
+                self.subTest(filename=filename),
+                patch.object(report.Path, "read_text") as read,
+                patch.object(report.Path, "write_text") as write,
+                self.assertRaisesRegex(ValueError, "Symlinked report files"),
+            ):
+                report.summarize_results(self.results)
+            read.assert_not_called()
+            write.assert_not_called()
+            self.assertEqual("unchanged", outside.read_text("utf-8"))
+            self.assertEqual([filename], [path.name for path in self.results.iterdir()])
+            link.unlink()
+
+    def test_dangling_report_symlink_is_rejected(self):
+        self.results.mkdir(parents=True)
+        outside = self.root / "missing"
+        self.create_symlink(self.results / "inspection-summary.json", outside)
+        with self.assertRaisesRegex(ValueError, "Symlinked report files"):
+            report.summarize_results(self.results)
+        self.assertFalse(outside.exists())
+        self.assertFalse((self.results / "inspection-summary.md").exists())
 
 
 class ScanRunnerTests(unittest.TestCase):

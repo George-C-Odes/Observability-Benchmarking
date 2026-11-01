@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import os
+import tempfile
 from pathlib import Path
 
 REQUIRED_INSPECTIONS = frozenset(
@@ -87,24 +89,44 @@ def coverage_passes(summary: dict) -> bool:
 
 def summarize_results(results_dir: Path) -> int:
     """Keep a diagnostic summary even when analysis failed before writing SARIF."""
-    results_dir.mkdir(parents=True, exist_ok=True)
-    sarif_path = results_dir / "qodana.sarif.json"
+    # Trust runner/OS configuration, never a caller-supplied directory as the boundary.
+    trusted_root = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir())).resolve()
+    allowed_results = trusted_root / "qodana-python" / "results"
+    if results_dir.resolve() != allowed_results:
+        raise ValueError(
+            f"Results directory must be {allowed_results} without symlink redirection."
+        )
+    # Use the trusted path, not the CLI value, for every filesystem operation.
+    for filename in ("qodana.sarif.json", "inspection-summary.json", "inspection-summary.md"):
+        report_path = allowed_results / filename
+        if report_path.is_symlink() or report_path.resolve() != report_path:
+            raise ValueError(f"Symlinked report files are not supported: {filename}")
+    allowed_results.mkdir(parents=True, exist_ok=True)
+    sarif_path = allowed_results / "qodana.sarif.json"
     try:
         sarif = json.loads(sarif_path.read_text(encoding="utf-8"))
         summary = inspection_summary(sarif)
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         summary = inspection_summary({})
         summary["error"] = f"Cannot read Qodana SARIF: {error}"
-    (results_dir / "inspection-summary.json").write_text(
+    (allowed_results / "inspection-summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
     markdown = markdown_summary(summary)
-    (results_dir / "inspection-summary.md").write_text(markdown, encoding="utf-8")
+    (allowed_results / "inspection-summary.md").write_text(markdown, encoding="utf-8")
     print(markdown)
     return 0 if coverage_passes(summary) else 1
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("results_dir", type=Path)
-    raise SystemExit(summarize_results(parser.parse_args().results_dir))
+    parser.add_argument(
+        "results_dir", type=Path, help="RUNNER_TEMP/qodana-python/results (OS temp locally)"
+    )
+    arguments = parser.parse_args()
+    exit_code = 2
+    try:
+        exit_code = summarize_results(arguments.results_dir)
+    except (OSError, ValueError, RuntimeError) as error:
+        parser.error(str(error))
+    raise SystemExit(exit_code)

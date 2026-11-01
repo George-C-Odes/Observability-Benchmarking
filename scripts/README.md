@@ -22,6 +22,9 @@ This directory contains small repository-level helper scripts.
 - `snyk-scan.test.mjs` - token-free tests for scan arguments, exit codes, report capture, and CI gate contracts
 - `snyk-report.mjs` - builds safely escaped Actions annotations and Markdown overviews with severity counts, affected files, and reported fixes
 - `snyk-report.test.mjs` - tests overview counts, severity ranking, display limits, missing reports, and output escaping
+- `run-qodana-python.py` - runs isolated, unprivileged Django-only Qodana Python Community scans
+- `qodana-python-report.py` - summarizes inspection coverage and fails closed on missing scan evidence
+- `test_qodana_python.py` - tests scan isolation, coverage, and report path validation
 
 The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
@@ -52,6 +55,26 @@ status table: findings are non-blocking warnings, while incomplete scans and mon
 GitHub Actions has no warning job conclusion, so findings-only runs have a successful check with warning annotations.
 The workflow normalizes only the findings exit code to avoid automatic nonzero-exit error annotations for findings;
 the standalone runner retains the original scan exit codes.
+
+### Qodana Python reports
+
+`qodana-python-report.py` accepts only `RUNNER_TEMP/qodana-python/results`; when `RUNNER_TEMP` is
+unset, it uses the OS temporary directory as the root. The root comes from trusted runner/OS configuration,
+not CLI input. The existing Django quality workflow already uses this location. Other directories and
+symlink redirection of the results directory, its parents below the root, or report files are rejected
+before reading or writing. Missing or malformed SARIF still produces failing diagnostic summaries.
+
+For local scans and summaries, use the same directory for both helpers:
+
+```powershell
+$tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { python -c "import tempfile; print(tempfile.gettempdir())" }
+$results = Join-Path $tempRoot 'qodana-python/results'
+python scripts/run-qodana-python.py --results-dir $results
+python scripts/qodana-python-report.py $results
+```
+
+Run the regression tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
+Symlink tests are skipped on systems that do not permit creating symlinks.
 
 ### Sonar test classification
 
