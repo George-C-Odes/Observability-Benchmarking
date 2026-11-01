@@ -153,6 +153,7 @@
         "io.quarkus.platform:quarkus-bom",
         "io.quarkus.platform:quarkus-maven-plugin",
         "io.quarkus:quarkus-maven-plugin",
+        "io.quarkus:quarkus-extension-processor",
         "io.micronaut:micronaut-core-bom",
         "io.micronaut:micronaut-inject-java",
         "io.helidon:helidon-bom",

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
-import { api, assertRenovatePullRequest, buildGitHubRequest, selectGeneratedUpdates, validateFrameworkTree, validateVersionChange } from './renovate-framework-sync.mjs';
-import { frameworkVersionKeys } from './sync-framework-versions.mjs';
+import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, publish, selectGeneratedUpdates, validateFrameworkTree, validateVersionChange } from './renovate-framework-sync.mjs';
+import { frameworkVersionKeys, generatedFrameworkPaths } from './sync-framework-versions.mjs';
+import { temporaryDirectory } from './test-helpers.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
 const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
@@ -49,6 +51,11 @@ test('only env-driven downstream versions are disabled; existing safeguards rema
   assert.ok(rules.every(({ matchManagers, matchFileNames }) => matchManagers.length && matchFileNames.length));
   const maven = rules.find(({ matchManagers }) => matchManagers.includes('maven'));
   assert.ok(maven.matchPackageNames.includes('org.apache.pekko:pekko-http_3'));
+  assert.ok(maven.matchPackageNames.includes('io.quarkus:quarkus-extension-processor'));
+  for (const variant of ['jvm', 'native']) {
+    const pom = readFileSync(resolveRepoPath(`services/java/quarkus/${variant}/pom.xml`), 'utf8');
+    assert.match(pom, /<groupId>io\.quarkus<\/groupId>\s*<artifactId>quarkus-extension-processor<\/artifactId>\s*<version>\$\{quarkus.platform.version}<\/version>/);
+  }
   assert.ok(!maven.matchPackageNames.some((pattern) => pattern.includes('pekko-stream') || pattern.includes('pekko-slf4j') || pattern.includes('micronaut-micrometer')));
   const go = rules.find(({ matchManagers }) => matchManagers.includes('gomod'));
   assert.deepEqual(go.matchDepTypes, ['golang']);
@@ -270,24 +277,84 @@ test('complete tree comparison ignores parent tree hashes, but rejects source ed
   assert.throws(() => validateFrameworkTree(entries, new Map(head).set('compose/.env', undefined), allowed), /regular file mode/);
 });
 
+function blobEntries(contents) {
+  return new Map([...contents].map(([file, content]) => [file, { type: 'blob', mode: '100644', sha: gitBlobSha(content) }]));
+}
+
+test('Git blob hashes include the header and UTF-8 byte length', () => {
+  assert.equal(gitBlobSha('hello\n'), 'ce013625030ba8dba906f756967f9e9ca394464a');
+  assert.equal(gitBlobSha(''), 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391');
+  assert.equal(gitBlobSha('caf\u00e9\n'), '572eb43fe8e34fb87d01c69e01151ff696022924');
+  assert.notEqual(gitBlobSha('hello\r\n'), gitBlobSha('hello\n'));
+});
+
 test('generated updates are idempotent and never overwrite unrelated branch edits', () => {
   const files = [{ file: 'pom.xml', content: 'new' }];
-  const base = new Map([['pom.xml', 'old']]);
+  const base = blobEntries([['pom.xml', 'old']]);
   assert.deepEqual(selectGeneratedUpdates(files, base, base), files);
-  assert.deepEqual(selectGeneratedUpdates(files, base, new Map([['pom.xml', 'new']])), []);
-  assert.throws(() => selectGeneratedUpdates(files, base, new Map([['pom.xml', 'custom']])), /overwrite a PR edit/);
+  assert.deepEqual(selectGeneratedUpdates(files, base, blobEntries([['pom.xml', 'new']])), []);
+  assert.throws(() => selectGeneratedUpdates(files, base, blobEntries([['pom.xml', 'custom']])), /overwrite a PR edit/);
+  assert.deepEqual(selectGeneratedUpdates([{ file: 'pom.xml', content: 'old' }], base, base), []);
+});
+
+test('hash-based no-op selection still rejects missing files, symlinks and changed modes', () => {
+  const files = [{ file: 'pom.xml', content: 'same' }];
+  const base = blobEntries([['pom.xml', 'same']]);
+  for (const invalid of [undefined, { ...base.get('pom.xml'), type: 'tree' },
+    ...['120000', '160000', '100755'].map((mode) => ({ ...base.get('pom.xml'), mode }))]) {
+    assert.throws(() => selectGeneratedUpdates(files, base, new Map([['pom.xml', invalid]])), /regular tracked file|regular file mode/);
+  }
+  assert.throws(() => selectGeneratedUpdates(files, new Map(), base), /regular tracked file/);
+  assert.throws(() => selectGeneratedUpdates(files, base, new Map([['pom.xml', { ...base.get('pom.xml'), sha: '../issues' }]])), /full Git SHA/);
+  const executable = new Map([['pom.xml', { ...base.get('pom.xml'), mode: '100755' }]]);
+  assert.deepEqual(selectGeneratedUpdates([{ file: 'pom.xml', content: 'new' }], executable, executable), [{ file: 'pom.xml', content: 'new' }]);
+});
+
+test('repeat publication performs only PR/tree reads, with no blob downloads or writes', async (t) => {
+  setRepository(t);
+  const originalTemp = process.env.RUNNER_TEMP;
+  process.env.RUNNER_TEMP = temporaryDirectory(t, 'framework-publish-');
+  t.after(() => {
+    if (originalTemp === undefined) delete process.env.RUNNER_TEMP;
+    else process.env.RUNNER_TEMP = originalTemp;
+  });
+  const state = { number: 424, baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40), ref: 'renovate/framework', changed: ['QUARKUS_VERSION'] };
+  writeFileSync(path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'), JSON.stringify(state));
+  const head = blobEntries([...new Set(generatedFrameworkPaths())].map((file) => [file, readFileSync(resolveRepoPath(file), 'utf8')]));
+  const base = new Map(head);
+  base.set('services/java/quarkus/jvm/pom.xml', { ...head.get('services/java/quarkus/jvm/pom.xml'), sha: gitBlobSha('before synchronization') });
+  const baseTreeSha = 'c'.repeat(40);
+  const headTreeSha = 'd'.repeat(40);
+  const mock = t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(options.method, 'GET');
+    assert.equal(options.redirect, 'error');
+    const route = url.replace('https://api.github.com/repos/owner/repo/', '');
+    let response;
+    if (route === 'pulls/424') {
+      response = { state: 'open', user: { login: 'renovate[bot]' },
+        base: { sha: state.baseSha, repo: { full_name: 'owner/repo' } },
+        head: { sha: state.headSha, ref: state.ref, repo: { full_name: 'owner/repo' } } };
+    } else if (route === `git/commits/${state.baseSha}`) response = { tree: { sha: baseTreeSha } };
+    else if (route === `git/commits/${state.headSha}`) response = { tree: { sha: headTreeSha } };
+    else if (route === `git/trees/${baseTreeSha}?recursive=1`) response = { tree: [...base].map(([file, entry]) => ({ path: file, ...entry })) };
+    else if (route === `git/trees/${headTreeSha}?recursive=1`) response = { tree: [...head].map(([file, entry]) => ({ path: file, ...entry })) };
+    else assert.fail(`Unexpected request: ${route}`);
+    return new Response(JSON.stringify(response), { status: 200 });
+  });
+  await publish('synthetic-test-token');
+  assert.equal(mock.mock.callCount(), 5);
 });
 
 test('Sonar version publication refuses unrelated PR edits to scanner scope or encoding', () => {
   const file = '.sonarcloud.properties';
   const original = 'sonar.python.version=3.13\nsonar.sourceEncoding=UTF-8\n';
   const content = original.replace('3.13', '3.14');
-  const base = new Map([[file, original]]);
+  const base = blobEntries([[file, original]]);
   const files = [{ file, content }];
   assert.deepEqual(selectGeneratedUpdates(files, base, base), files);
-  assert.deepEqual(selectGeneratedUpdates(files, base, new Map([[file, content]])), []);
+  assert.deepEqual(selectGeneratedUpdates(files, base, blobEntries([[file, content]])), []);
   for (const edited of [`${original}sonar.exclusions=**\n`, original.replace('UTF-8', 'ISO-8859-1')]) {
-    assert.throws(() => selectGeneratedUpdates(files, base, new Map([[file, edited]])), /overwrite a PR edit/);
+    assert.throws(() => selectGeneratedUpdates(files, base, blobEntries([[file, edited]])), /overwrite a PR edit/);
   }
 });
 
@@ -299,6 +366,15 @@ test('workflow executes only trusted base scripts, keeps credentials scoped, and
   assert.match(workflow, /persist-credentials: false/);
   assert.doesNotMatch(workflow, /^\s+contents: write/m);
   assert.match(workflow, /RENOVATE_SYNC_TOKEN: \$\{\{ secrets.RENOVATE_SYNC_TOKEN }}/);
+  assert.match(workflow, /python -m pip install --require-hashes --only-binary=:all:/);
+  assert.match(workflow, /--requirement \.github\/requirements\/lock-compiler\.txt/);
+  assert.match(workflow, /--constraint \.github\/requirements\/lock-compiler\.in/);
+  assert.doesNotMatch(workflow, /pip install[^\n]*pip-tools==/);
+  const compilerLock = readFileSync(resolveRepoPath('.github/requirements/lock-compiler.txt'), 'utf8');
+  const requirements = compilerLock.replaceAll(/\\\r?\n[\t ]*/g, ' ').split(/\r?\n/).filter((line) => /^[a-z]/i.test(line));
+  assert.ok(requirements.length > 1, 'The compiler lock must include transitive dependencies');
+  assert.ok(requirements.every((line) => /^[a-z0-9-]+==\S+ +--hash=sha256:[a-f0-9]{64}(?: |$)/i.test(line)));
+  assert.match(compilerLock, /^pip-tools==7\.6\.2 /m);
   const helper = readFileSync(resolveRepoPath('scripts/renovate-framework-sync.mjs'), 'utf8');
   assert.match(helper, /force: false/);
   assert.ok(helper.includes('parents: [state.headSha]'));

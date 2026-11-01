@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -104,11 +105,28 @@ export function assertRenovatePullRequest(pr, repository, baseSha) {
   requireRenovateRef(pr.head.ref);
 }
 
-export function selectGeneratedUpdates(files, baseContents, headContents) {
+export function gitBlobSha(content) {
+  const bytes = Buffer.from(content, 'utf8');
+  // S4790 review: SHA-1 is required to match GitHub's Git blob object IDs.
+  // This is Git change detection, not password hashing, signing or authentication;
+  // PR identity, repository scope and file modes are validated independently.
+  // Do not reuse this helper for security-sensitive digests or disable S4790 globally.
+  return createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'); // NOSONAR - S4790: required Git blob-ID compatibility; rationale above.
+}
+
+export function selectGeneratedUpdates(files, baseEntries, headEntries) {
   return files.filter(({ file, content }) => {
-    const current = headContents.get(file);
-    if (current === content) return false; // Repeat runs are a no-op.
-    if (current !== baseContents.get(file)) throw new Error(`Refusing to overwrite a PR edit to ${file}`);
+    const original = baseEntries.get(file);
+    const current = headEntries.get(file);
+    for (const entry of [original, current]) {
+      if (entry?.type !== 'blob' || !['100644', '100755'].includes(entry.mode)) {
+        throw new Error(`Expected a regular tracked file, not a symlink: ${file}`);
+      }
+      requireGitSha(entry.sha);
+    }
+    if (current.mode !== original.mode) throw new Error(`Expected an unchanged regular file mode: ${file}`);
+    if (current.sha === gitBlobSha(content)) return false; // Repeat runs are a no-op.
+    if (current.sha !== original.sha) throw new Error(`Refusing to overwrite a PR edit to ${file}`);
     return true;
   });
 }
@@ -179,7 +197,7 @@ async function prepare(event, token) {
   console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No framework version changes');
 }
 
-async function publish(token) {
+export async function publish(token) {
   const state = JSON.parse(readFileSync(statePath(), 'utf8'));
   if (!state.changed.length) return;
   const pr = await api('readPull', token, { identifier: state.number });
@@ -187,19 +205,10 @@ async function publish(token) {
   if (pr.head.sha !== state.headSha || pr.head.ref !== state.ref) throw new Error('PR head changed during synchronization; rerun on the new revision');
   const baseTree = await readTree(state.baseSha, token);
   const headTree = await readTree(state.headSha, token);
-  const files = [];
-  const baseContents = new Map();
-  const headContents = new Map();
-  for (const file of new Set(generatedFrameworkPaths())) {
-    const content = readFileSync(resolveRepoPath(file), 'utf8');
-    const original = await readBlob(baseTree, file, token);
-    const current = headTree.entries.get(file)?.sha === baseTree.entries.get(file)?.sha
-      ? original : await readBlob(headTree, file, token);
-    files.push({ file, content });
-    baseContents.set(file, original);
-    headContents.set(file, current);
-  }
-  const updates = selectGeneratedUpdates(files, baseContents, headContents);
+  const files = [...new Set(generatedFrameworkPaths())].map((file) => ({
+    file, content: readFileSync(resolveRepoPath(file), 'utf8'),
+  }));
+  const updates = selectGeneratedUpdates(files, baseTree.entries, headTree.entries);
   if (!updates.length) { console.log('Generated versions are already synchronized'); return; }
   // A PAT/App token, unlike GITHUB_TOKEN, triggers the normal path-scoped CI on the new commit.
   const writeToken = process.env.RENOVATE_SYNC_TOKEN;

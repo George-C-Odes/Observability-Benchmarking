@@ -3,8 +3,15 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { djangoGeneratedFiles, djangoInputs, djangoLocks, lockedDjangoVersion, pinDjangoInput, syncDjangoVersions } from './sync-django-versions.mjs';
+import { djangoGeneratedFiles, djangoInputs, djangoLocks, lockedDjangoVersion, pinDjangoInput, runCompiler, syncDjangoVersions } from './sync-django-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
+
+test('compiler wrapper does not replace the actual regeneration command in headers', (t) => {
+  const workspace = temporaryDirectory(t, 'django-compiler-');
+  assert.doesNotThrow(() => runCompiler(process.execPath, ['--input-type=module', '-e',
+    'import assert from "node:assert/strict"; assert.equal(process.env.CUSTOM_COMPILE_COMMAND ?? "", process.argv[1]);',
+    process.env.CUSTOM_COMPILE_COMMAND ?? ''], workspace));
+});
 
 test('Django input pins preserve unrelated dependencies, comments, casing and CRLF', () => {
   const input = '#Django>=1,<2\r\nDjango>=6.1.2,<7 # framework\r\ngunicorn>=26,<27\r\n';
@@ -44,7 +51,10 @@ test('regenerate runtime resolutions before central hashes and projections; repe
   const calls = [];
   const run = (command, args, workspace) => {
     calls.push([command, args]);
-    if (args.includes('compile')) {
+    if (args.includes('--version')) {
+      assert.deepEqual(args, ['-m', 'piptools', 'compile', '--version']);
+      assert.ok(djangoInputs.every((file) => readFileSync(path.join(workspace, file), 'utf8').startsWith('Django>=6.1.2')));
+    } else if (args.includes('compile')) {
       const output = args.find((arg) => arg.startsWith('--output-file=')).slice('--output-file='.length);
       writeFileSync(path.join(workspace, output), 'django==7.0.1\n');
     } else if (command === 'bash') {
@@ -54,7 +64,7 @@ test('regenerate runtime resolutions before central hashes and projections; repe
   const results = syncDjangoVersions({ ...options, run });
   assert.ok(results.some(({ changed }) => changed));
   assert.equal(calls.length, 4);
-  assert.deepEqual(calls[0], ['python', ['-m', 'piptools', '--version']]);
+  assert.deepEqual(calls[0], ['python', ['-m', 'piptools', 'compile', '--version']]);
   for (const [, args] of calls.slice(1, 3)) {
     assert.ok(args.includes('--upgrade-package'));
     assert.ok(args.includes('--pip-args=--only-binary :all:'));

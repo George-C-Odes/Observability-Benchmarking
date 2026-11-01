@@ -14,6 +14,12 @@ gives Actions and Qodana the same pip behavior without an unpinned upgrade.
 The bootstrap also constrains that install with `pip.in`, so a changed pip pin
 cannot silently use an outdated bootstrap lock.
 
+`lock-compiler.in` and its generated `lock-compiler.txt` independently pin and hash
+pip-tools 7.6.2 and its complete compiler dependency set. Framework Version Sync
+installs this wheel-only lock from the trusted base revision before regeneration;
+no unpinned compiler dependencies run in the job that later receives the publication token.
+The compiler lock is not part of the Django runtime inventory or its Docker projections.
+
 | Workflow/job          | Selected requirements                                                      |
 |-----------------------|----------------------------------------------------------------------------|
 | Snyk                  | Both runtime variants                                                      |
@@ -49,9 +55,26 @@ Use a virtualenv for the compiler:
 ```bash
 python3.13 -m venv .venv-python-ci
 source .venv-python-ci/bin/activate
-python -m pip install --upgrade pip-tools==7.6.2
+python -m pip install --require-hashes --only-binary=:all: \
+  --requirement .github/requirements/lock-compiler.txt \
+  --constraint .github/requirements/lock-compiler.in
 bash .github/requirements/update-lock.sh
 ```
+
+To refresh the compiler itself, change `lock-compiler.in` if needed and run the
+following in a trusted Linux compiler environment. Review and commit both files;
+automatic Django updates intentionally leave this bootstrap lock unchanged.
+
+```bash
+python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
+  --pip-args="--only-binary :all:" \
+  --output-file=.github/requirements/lock-compiler.txt \
+  .github/requirements/lock-compiler.in --upgrade
+```
+
+Runtime requirements headers retain pip-tools' actual compile command, allowing
+dependency-only changes to be recompiled even when `DJANGO_VERSION` is unchanged.
+`update-lock.sh` records its own command for the central hash inventories.
 
 To refresh all versions allowed by the inputs, pass `--upgrade`:
 

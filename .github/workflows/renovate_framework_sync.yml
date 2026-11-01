@@ -57,10 +57,12 @@ jobs:
         with:
           python-version: ${{ steps.python.outputs.version }}
 
-      - name: Install pinned lock compiler when Django changes
+      - name: Install hash-locked compiler when Django changes
         if: steps.proposal.outputs.django == 'true'
         run: |
-          python -m pip install --only-binary=:all: pip-tools==7.6.2
+          python -m pip install --require-hashes --only-binary=:all: \
+            --requirement .github/requirements/lock-compiler.txt \
+            --constraint .github/requirements/lock-compiler.in
 
       - name: Relay versions and verify generated output
         if: steps.proposal.outputs.changed == 'true'

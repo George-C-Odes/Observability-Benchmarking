@@ -35,7 +35,6 @@ export function lockedDjangoVersion(content) {
 export function runCompiler(command, args, workspace) {
   const result = spawnSync(command, args, {
     cwd: workspace, stdio: 'inherit', timeout: 10 * 60 * 1000, shell: false,
-    env: { ...process.env, CUSTOM_COMPILE_COMMAND: 'node scripts/sync-framework-versions.mjs' },
   });
   if (result.error || result.status !== 0) {
     throw new Error(`Lock regeneration failed (${command}); use Linux with Python and pip-tools 7.6.2`, { cause: result.error });
@@ -58,7 +57,7 @@ export function syncDjangoVersions({
     }
   } else {
     // Check the compiler before changing inputs. Never substitute a version into existing hashes.
-    if (staleLocks) run('python', ['-m', 'piptools', '--version'], workspace);
+    if (staleLocks) run('python', ['-m', 'piptools', 'compile', '--version'], workspace);
     for (const { filePath, original, content } of files) {
       if (original !== content) writeFileSync(filePath, content, 'utf8');
     }
