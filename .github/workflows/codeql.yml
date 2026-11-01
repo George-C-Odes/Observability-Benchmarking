@@ -17,6 +17,7 @@ on:
       - 'services/go/**'
       - 'utils/nextjs-dash/**'
       - 'utils/orchestrator/**'
+      - 'scripts/pages/codeql-workflow.test.mjs'
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
@@ -33,6 +34,7 @@ on:
       - 'services/python/**'
       - 'services/go/**'
       - 'utils/nextjs-dash/**'
+      - 'scripts/pages/codeql-workflow.test.mjs'
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
@@ -76,62 +78,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Full history for the java-kotlin leg so git-diff can identify
-          # which modules actually changed (incremental builds).
-          # Other languages keep the default shallow clone.
-          fetch-depth: ${{ matrix.language == 'java-kotlin' && '0' || '1' }}
-
-      # ── Fast-path: skip the entire java-kotlin leg when no Java-related
-      # paths changed (the workflow triggers on python/go/js paths too). ──
-      - name: Detect Java changes
-        id: java-changes
-        if: matrix.language == 'java-kotlin'
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-        run: |
-          set -euo pipefail
-
-          # Scheduled / manual runs always do a full scan.
-          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "has_modules=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          diff_base=""
-          if [[ "$EVENT_NAME" == "pull_request" && -n "${PR_BASE_SHA:-}" ]]; then
-            diff_base="$PR_BASE_SHA"
-          elif [[ -n "${PUSH_BEFORE:-}" && "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
-            diff_base="$PUSH_BEFORE"
-          fi
-
-          # When the diff base is unknown, assume modules are affected.
-          if [[ -z "$diff_base" ]]; then
-            echo "has_modules=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          changed="$(git diff --name-only "$diff_base"...HEAD 2>/dev/null || echo "")"
-
-          if [[ -z "$changed" ]]; then
-            echo "has_modules=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if echo "$changed" | grep -qE '^(services/java/|utils/orchestrator/|\.github/workflows/codeql\.yml$|\.github/actions/(codeql-action|setup-java)/)'; then
-            echo "has_modules=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No Java/Kotlin paths in changeset — skipping java-kotlin leg"
-            echo "has_modules=false" >> "$GITHUB_OUTPUT"
-          fi
 
       # Java modules require JDK 25 (maven.compiler.release=25 across all
       # 12 JVM projects).  Maven dependency cache is seeded from the JVM
       # pom files only (native modules are excluded from CodeQL builds).
       - name: Set up JDK 25
-        if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
+        if: matrix.language == 'java-kotlin'
         uses: ./.github/actions/setup-java
         with:
           distribution: temurin
@@ -142,7 +94,6 @@ jobs:
             utils/orchestrator/pom.xml
 
       - name: Initialize CodeQL
-        if: matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false'
         uses: ./.github/actions/codeql-action
         env:
           # Java manual builds cannot use overlay databases. Explicitly select
@@ -169,21 +120,17 @@ jobs:
       #      workflow warnings and the result is captured in a step
       #      output.  A later step (after SARIF upload) fails the job
       #      when violations exist.
-      # • On schedule / dispatch: all 12 modules are built (full scan).
-      # • On push / PR: only modules whose source tree actually changed
-      #   are built; shared config changes (checkstyle, workflow, action) trigger
-      #   a full rebuild.
-      #   A fresh CodeQL database contains only modules compiled in this run;
-      #   unbuilt modules are not restored from a cached overlay base.
+      # • Every event builds all 12 modules. GitHub compares the same language
+      #   category against main even on non-Java PRs, so skipping this leg
+      #   produces a "configuration not found" warning.
+      # • Fresh manual-build databases contain only this run's compiled modules;
+      #   changed-module-only builds would leave incomplete security coverage.
+      #   Keep the Maven dependency cache, not incremental source extraction.
       # ----------------------------------------------------------------
       - name: Build Java modules
         id: build-java
-        if: matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
+        if: matrix.language == 'java-kotlin'
         shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
 
@@ -201,64 +148,7 @@ jobs:
             services/java/vertx/jvm
             services/java/pekko/jvm
           )
-          ALL_MODULES=( "${SERVICE_MODULES[@]}" utils/orchestrator )
-
-          # ── Determine which modules need building ──
-          build_modules=()
-
-          if [[ "$EVENT_NAME" == "schedule" || "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "Full scan — building all JVM modules"
-            build_modules=("${ALL_MODULES[@]}")
-          else
-            # Compute the merge-base diff reference
-            diff_base=""
-            if [[ "$EVENT_NAME" == "pull_request" && -n "${PR_BASE_SHA:-}" ]]; then
-              diff_base="$PR_BASE_SHA"
-            elif [[ -n "${PUSH_BEFORE:-}" && "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
-              diff_base="$PUSH_BEFORE"
-            fi
-
-            if [[ -z "$diff_base" ]]; then
-              echo "Cannot determine diff base — building all JVM modules"
-              build_modules=("${ALL_MODULES[@]}")
-            else
-              changed="$(git diff --name-only "$diff_base"...HEAD 2>/dev/null || echo "")"
-
-              if [[ -z "$changed" ]]; then
-                echo "Empty diff or diff failed — building all JVM modules"
-                build_modules=("${ALL_MODULES[@]}")
-              elif echo "$changed" | grep -qE '^\.github/(workflows/codeql\.yml$|actions/(codeql-action|setup-java)/)'; then
-                echo "CodeQL workflow or shared Java action changed — building all JVM modules"
-                build_modules=("${ALL_MODULES[@]}")
-              else
-                # Shared services/java/ checkstyle config → all service modules
-                if echo "$changed" | grep -qE '^services/java/checkstyle'; then
-                  echo "Shared checkstyle config changed — including all service JVM modules"
-                  build_modules=("${SERVICE_MODULES[@]}")
-                fi
-
-                # Map remaining changed files to their owning module
-                declare -A seen
-                for m in "${build_modules[@]+"${build_modules[@]}"}"; do seen["$m"]=1; done
-
-                while IFS= read -r file; do
-                  [[ -z "$file" ]] && continue
-                  for mod in "${ALL_MODULES[@]}"; do
-                    if [[ "$file" == "$mod/"* && -z "${seen[$mod]:-}" ]]; then
-                      build_modules+=("$mod")
-                      seen["$mod"]=1
-                      break
-                    fi
-                  done
-                done <<< "$changed"
-              fi
-            fi
-          fi
-
-          if [[ ${#build_modules[@]} -eq 0 ]]; then
-            echo "No specific JVM modules mapped from changes — building all JVM modules as fallback"
-            build_modules=("${ALL_MODULES[@]}")
-          fi
+          build_modules=( "${SERVICE_MODULES[@]}" utils/orchestrator )
 
           echo "Building ${#build_modules[@]} JVM module(s):"
           printf '  • %s\n' "${build_modules[@]}"
@@ -328,7 +218,7 @@ jobs:
           done
 
       - name: Perform CodeQL Analysis
-        if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
+        if: always() && !cancelled()
         uses: ./.github/actions/codeql-action
         with:
           phase: analyze
@@ -338,7 +228,7 @@ jobs:
       # Upload SARIF as a reusable artifact so the report job and the
       # Pages workflow can build a hosted HTML summary.
       - name: Upload SARIF artifact
-        if: always() && !cancelled() && (matrix.language != 'java-kotlin' || steps.java-changes.outputs.has_modules != 'false')
+        if: always() && !cancelled()
         uses: ./.github/actions/upload-artifact
         with:
           name: codeql-sarif-${{ matrix.language }}
@@ -349,7 +239,7 @@ jobs:
       # Upload build-warning details so the report job can surface
       # Java quality violations in the hosted HTML quality page.
       - name: Upload build warnings
-        if: always() && !cancelled() && matrix.language == 'java-kotlin' && steps.java-changes.outputs.has_modules != 'false'
+        if: always() && !cancelled() && matrix.language == 'java-kotlin'
         uses: ./.github/actions/upload-artifact
         with:
           name: codeql-build-warnings
@@ -392,17 +282,24 @@ jobs:
           path: .codeql-sarif
           merge-multiple: false
 
+      # Optional when Java compilation fails before writing the summary.
+      # Pattern downloads allow zero matches without an error annotation;
+      # merging preserves the generator's existing input path.
       - name: Download build warnings
         continue-on-error: true
         uses: ./.github/actions/download-artifact
         with:
-          name: codeql-build-warnings
+          pattern: codeql-build-warnings
           path: .codeql-build-warnings
+          merge-multiple: true
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
+
+      - name: Validate CodeQL workflow contract
+        run: node --test scripts/pages/codeql-workflow.test.mjs
 
       - name: Generate HTML report
         run: node scripts/pages/generate-codeql-report.mjs
