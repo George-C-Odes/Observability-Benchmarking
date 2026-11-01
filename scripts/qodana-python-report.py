@@ -41,7 +41,10 @@ def inspection_summary(sarif: dict) -> dict:
             for rule in component.get("rules", []):
                 rule_id = rule["id"]
                 available.add(rule_id)
-                if rule.get("defaultConfiguration", {}).get("enabled", True):
+                configured_enabled = rule.get("defaultConfiguration", {}).get("enabled", True)
+                if not isinstance(configured_enabled, bool):
+                    raise ValueError("SARIF rule enabled flags must be boolean.")
+                if configured_enabled:
                     enabled.add(rule_id)
     return {
         "available": len(available),
