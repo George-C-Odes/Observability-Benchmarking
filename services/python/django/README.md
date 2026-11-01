@@ -261,7 +261,7 @@ if ($scanExit -ne 0 -or $coverageExit -ne 0) { throw "Qodana failed; inspect $re
 
 Each scan requires an empty results directory so stale reports cannot mask failures. Run the summary helper even when the scanner fails; both scanner and coverage-check exit codes are meaningful.
 
-The HTML report is published to GitHub Pages after successful runs on `main`:
+The HTML report is published to GitHub Pages after completed successful or failed runs on `main` when the report artifact is available. Quality-gate failures remain blocking; Pages shows their findings instead of falling back to an older successful scan:
 
 ```text
 https://george-c-odes.github.io/Observability-Benchmarking/quality/django-python/

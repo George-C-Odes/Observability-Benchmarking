@@ -299,6 +299,8 @@ class RuntimeEntrypointTests(TestCase):
 
     def test_gunicorn_runtime_paths_can_be_overridden(self) -> None:
         for runtime in ("WSGI", "ASGI"):
+            # Qodana 2026.2 intermittently misses subTest inherited from unittest.TestCase.
+            # noinspection PyUnresolvedReferences
             with self.subTest(runtime=runtime):
                 namespace, _ = self._run_path(
                     self._runtime_dir(runtime) / "gunicorn.conf.py",

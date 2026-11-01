@@ -27,10 +27,10 @@
 #                             "main" (default) or "non-main".
 #
 # Why some workflows accept "failure":
-#   Go Quality and CodeQL upload their report artifacts unconditionally
-#   (via `if: always() && !cancelled()`), so even a failing run produces a
-#   downloadable quality report.  Other workflows (Qodana, Next.js, Django)
-#   only produce useful artifacts on success.
+#   Qodana, Django Python Quality, Go Quality and CodeQL retain available reports
+#   via `if: always() && !cancelled()`, including after quality-gate failures.
+#   Missing artifacts are handled by the download/assembly steps, not by falling
+#   back to an older successful scan. Next.js accepts failures in staging only.
 #
 # Outputs (written to GITHUB_OUTPUT):
 #   run_id    – the workflow run ID to fetch artifacts from
