@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
@@ -40,7 +40,46 @@ test('Sonar follows Python major/minor only, preserving encoding, scope, comment
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
   assert.equal(syncSonarPythonVersion(checkedIn, variables.PYTHON_VERSION), checkedIn);
   assert.match(checkedIn, /^sonar.sourceEncoding=UTF-8\r?$/m);
-  assert.doesNotMatch(checkedIn, /^sonar\.(?:exclusions|inclusions|sources|tests|issue\.ignore)/m);
+  assert.doesNotMatch(checkedIn, /^sonar\.(?:exclusions|inclusions|sources|issue\.ignore|test\.exclusions)/m);
+});
+
+test('Sonar classifies tracked non-Java tests and helpers without excluding production roots', () => {
+  const config = readFileSync(resolveRepoPath('.sonarcloud.properties'), 'utf8');
+  const values = new Map(config.split(/\r?\n/).filter((line) => line.startsWith('sonar.')).map((line) => {
+    const separator = line.indexOf('=');
+    return [line.slice(0, separator), line.slice(separator + 1)];
+  }));
+  const roots = values.get('sonar.tests').split(',');
+  const patterns = values.get('sonar.test.inclusions').split(',');
+  assert.ok(roots.every((root) => root && !/[*?\\]/.test(root)), 'Candidate roots must be literal repo paths');
+  for (const root of roots) {
+    const entry = statSync(resolveRepoPath(root));
+    assert.ok(entry.isDirectory() || entry.isFile(), `Missing candidate root: ${root}`);
+  }
+  const isTest = (file) => roots.some((root) => file === root || file.startsWith(`${root}/`))
+    && patterns.some((pattern) => path.posix.matchesGlob(file, pattern));
+  const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: resolveRepoPath('.'), encoding: 'utf8', timeout: 30_000 });
+  assert.equal(tracked.status, 0, tracked.stderr);
+  const tests = tracked.stdout.split('\0').filter((file) => file.endsWith('.test.mjs') || file.endsWith('_test.go')
+    || (file.endsWith('.py') && (path.posix.basename(file).startsWith('test_') || file.includes('/tests/')))
+    || file.startsWith('utils/nextjs-dash/__tests__/'));
+  assert.ok(tests.length > 50, 'Verify a nonempty multi-language inventory');
+  for (const file of [...tests, 'scripts/test-helpers.mjs', 'utils/nextjs-dash/vitest.setup.ts']) {
+    assert.ok(isTest(file), `Unclassified test/helper: ${file}`);
+  }
+  for (const file of [
+    'scripts/renovate-framework-sync.mjs', 'scripts/sync-framework-versions.mjs', 'scripts/run-qodana-python.py',
+    'integration-tests/results.py', 'services/python/django/gunicorn/sync_build_locks.py',
+    'services/python/django/gunicorn/common/src/obbench_django_common/views.py',
+    'services/python/django/gunicorn/WSGI/src/manage.py', 'services/go/simple/cmd/server/main.go',
+    'services/go/enhanced/internal/handlers/hello.go', 'utils/nextjs-dash/app/page.tsx',
+  ]) assert.equal(isTest(file), false, `Production path must not be a test: ${file}`);
+  for (const file of tracked.stdout.split('\0').filter((file) => file.includes('/src/main/java/') && file.endsWith('.java'))) {
+    assert.equal(isTest(file), false, `Java production path must not be a test: ${file}`);
+  }
+  assert.ok(roots.every((root) => !root.startsWith('services/java') && !root.startsWith('utils/orchestrator')),
+    'Java keeps automatic Maven/Gradle classification');
+  assert.equal(syncSonarPythonVersion(config, '3.14.99'), config.replace(/^sonar.python.version=.*$/m, 'sonar.python.version=3.14'));
 });
 
 test('generated allowlist includes all target classes, but never scripts or source templates', () => {
@@ -90,7 +129,8 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.match(readFileSync(path.join(workspace, 'services/java/quarkus/native/pom.xml'), 'utf8'), /<quarkus.platform.version>9\.0\.1/);
   assert.match(readFileSync(path.join(workspace, '.github/go-tools/go.mod'), 'utf8'), /^go 1\.99\.0/m);
   assert.match(readFileSync(path.join(workspace, '.github/actions/setup-python/action.yml'), 'utf8'), /default: '3\.14\.99'/);
-  assert.match(readFileSync(path.join(workspace, '.sonarcloud.properties'), 'utf8'), /^sonar.python.version=3\.14\r?$/m);
+  assert.equal(readFileSync(path.join(workspace, '.sonarcloud.properties'), 'utf8'),
+    readFileSync(resolveRepoPath('.sonarcloud.properties'), 'utf8').replace(/^sonar.python.version=.*$/m, 'sonar.python.version=3.14'));
   assert.match(readFileSync(path.join(workspace, 'services/python/django/gunicorn/WSGI/Dockerfile'), 'utf8'), /ARG PYTHON_VERSION=3\.14\.99/);
   assert.match(readFileSync(path.join(workspace, 'services/README.md'), 'utf8'), /9\.0\.1/);
   const generated = snapshot();

@@ -158,7 +158,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
+  content_hash: sha256:bf3d593515a6536fd59fd0570fb900d31430f379cb87aa40e540b1104dc0c28e
 - kind: project-relative
   target: claude
   value: .claude/skills/focused-validation
@@ -338,7 +338,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
+  content_hash: sha256:bf3d593515a6536fd59fd0570fb900d31430f379cb87aa40e540b1104dc0c28e
 - kind: project-relative
   target: codex
   value: .agents/skills/focused-validation
@@ -703,7 +703,7 @@ local_deployed_files:
 - .windsurf/workflows/validate-change.md
 local_deployed_file_hashes:
   .agents/skills/benchmark-integrity/SKILL.md: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
-  .agents/skills/ci-report-safety/SKILL.md: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
+  .agents/skills/ci-report-safety/SKILL.md: sha256:bf3d593515a6536fd59fd0570fb900d31430f379cb87aa40e540b1104dc0c28e
   .agents/skills/focused-validation/SKILL.md: sha256:89103530e877864e4d5dcbc58767f30f57c59d408bf7b519196d994725962942
   .claude/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .claude/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
@@ -711,7 +711,7 @@ local_deployed_file_hashes:
   .claude/rules/dashboard-ui.md: sha256:0ce868af6af70b1d716a4cba602d0a93a0c534ae475f2ba3c0c9eda809211cb6
   .claude/rules/repository-contract.md: sha256:8dcf0ceac933c7dfb2b773bc6b435408e4388d1fbf8cb4c979d6d2630a03ea21
   .claude/skills/benchmark-integrity/SKILL.md: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
-  .claude/skills/ci-report-safety/SKILL.md: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
+  .claude/skills/ci-report-safety/SKILL.md: sha256:bf3d593515a6536fd59fd0570fb900d31430f379cb87aa40e540b1104dc0c28e
   .claude/skills/focused-validation/SKILL.md: sha256:89103530e877864e4d5dcbc58767f30f57c59d408bf7b519196d994725962942
   .codex/agents/repository-reviewer.toml: sha256:093b7abc16191542901ea5054c3fd9702a181984315e4cae68c9140a33a0aaac
   .cursor/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798

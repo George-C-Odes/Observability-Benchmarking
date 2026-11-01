@@ -147,7 +147,17 @@ export function validateFrameworkTree(baseEntries, headEntries, allowed) {
 export async function api(operation, token, { identifier, body } = {}) {
   if (!token) throw new Error('Missing GitHub token');
   const { url, method } = buildGitHubRequest(operation, process.env.GITHUB_REPOSITORY, identifier);
-  const response = await fetch(url, {
+  // Reviewed S8476 false positive (PR 424, issue AaGY1oYFDeJydjxQPt0K):
+  // Sonar carries readCommit's response tree SHA into updateRef, but that caller
+  // selects readTree, which requires a full SHA; updateRef requires a Renovate ref.
+  // Fixed operations/origin/repository scope, strict identifier validation and
+  // per-component encoding prevent URL injection; redirects are rejected below.
+  // renovate-framework-sync.test.mjs verifies zero subsequent requests for the
+  // reported SHA-to-ref path and malicious inputs, plus valid publication behavior.
+  // User-approved 2026-11-02: JavaScript NOSONAR is line-wide, NOT S8476-only;
+  // it also hides other findings at this shared sink. Re-review/remove if callers,
+  // scope, validators, encoding or redirect policy change. Never copy by default.
+  const response = await fetch(url, { // NOSONAR - reviewed S8476 false positive; line-wide scope explicitly accepted above.
     method, redirect: 'error', signal: AbortSignal.timeout(60_000),
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
     ...(body ? { body: JSON.stringify(body) } : {}),

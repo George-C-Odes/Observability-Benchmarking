@@ -191,6 +191,11 @@ configuration in `.sonarcloud.properties`, but no Sonar scanner workflow. Sonar 
   scanner's named file/line and analysis revision, check the bytes at that revision and any generated/vendor input,
   then convert a confirmed non-UTF-8 text file or correct the specific scope error. Do not change encoding globally
   to hide malformed bytes or add broad source exclusions without evidence.
+- The 2026-11-02 follow-up also audited the **committed HEAD blobs**, not just working files: no invalid UTF-8,
+  replacement characters (U+FFFD), or text NULs were found, excluding PNG/ICO binaries. The warning still appeared
+  in the matching remote scan. The public background-task response omits warning details, and scanner context
+  requires Sonar permissions unavailable locally; the file-specific scanner log is still needed. Do not infer
+  the cause from the generic warning alone.
 
 Automatic analysis reads the additional configuration from the **default branch**; verify both warnings after
 the configuration reaches that branch and Sonar performs a fresh analysis. Merely creating this file locally does
@@ -210,23 +215,42 @@ plain/encoded traversal, separator, query, fragment and newline injection with *
 Valid nested refs and publication bodies remain covered. These tests run in **Framework Version Consistency** on
 every PR; make that check required in branch protection for enforcement beyond agent guidance.
 
-This evidence supports a **scoped false-positive review**, not another speculative URL rewrite or blanket suppression.
-No alert was dismissed, and no rule or gate was weakened. Any dismissal requires user authorization and must be
-reassessed if callers, identifier validation, resource scope, encoding or redirect policy change. The alert is still
-open; passing tests do not establish scanner clearance. Apply the request-safety completion gate in
-`my-agent/.apm/skills/ci-report-safety/SKILL.md` for future HTTP clients and Sonar triage.
+The 2026-11-02 follow-up verified that Sonar's complete scanned client matched the working source at
+`cb3386bef19c82ffacf8463c1a3c343a5b0ae420`; the same issue and flow persisted at line 150 in analysis
+`ae749881-5549-4931-985e-27cc11a08e80`. Moving the line had not fixed or dismissed it.
+
+After reviewing the trade-off, the user explicitly authorized a **local line-wide suppression** on 2026-11-02.
+The shared `fetch` call now has a `NOSONAR` comment and the verified rationale above it. JavaScript's documented
+form suppresses **all issues on that line**, not just S8476; this can also hide a future traversal finding at the
+shared sink. This accepted exception is not a template for new clients. Request-boundary tests remain active,
+and callers, resource scope, validation, encoding or redirect-policy changes require re-review/removal.
+
+No remote issue status was changed, no rule was disabled globally, and no production file was excluded. A fresh
+matching Sonar scan must verify the local suppression is honored; tests alone cannot establish that. An
+issue-specific false-positive disposition remains the narrower alternative. See
+[JavaScript inline suppression](https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/languages/javascript-typescript-css)
+and apply the request-safety completion gate in `my-agent/.apm/skills/ci-report-safety/SKILL.md` for future clients.
 
 ### Sonar test classification
 
-In the existing project's analysis configuration, ensure that
-`**/*.test.mjs` is included in the test scope, retaining the patterns for other languages and existing tests.
-Correctly classified test files are exempt from duplication checks; production synchronizers should stay in scope.
+The Python-version warning disappeared in the follow-up screenshot, but a **different** warning appeared:
+SonarPython detected test code without `sonar.tests`. `.sonarcloud.properties` now defines literal test candidate
+roots and scoped `sonar.test.inclusions` for Python regressions, Django's test package, Node `.test.mjs` files,
+Go `_test.go` files, dashboard `__tests__`, and test-only setup/helpers. Shared directories are candidate roots,
+not blanket test classifications: production scripts, integration result handling, Django lock tooling and runtime
+code, Go servers, and dashboard application files remain source. Correctly classified tests are exempt from
+duplication checks; production synchronizers remain in scope.
 
-For a CLI-based scanner, `sonar.tests` must include the directories containing the tests and
-`sonar.test.inclusions` must include `**/*.test.mjs`. Test inclusion patterns also exclude those files from the source
-scope. A `sonar-project.properties` file is ignored by automatic analysis, which uses `.sonarcloud.properties` and
-supports a limited set of settings instead. Confirm the project's analysis method and verify the next analysis before
-changing its scope. See [Sonar's analysis scope documentation](https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/setting-analysis-scope/excluding-files-based-on-patterns)
+Current Sonar automatic-analysis documentation lists `sonar.tests` and `sonar.test.inclusions` as supported
+optional settings; the documented **Java-specific** restriction is not a restriction for all languages.
+Java retains automatic Maven/Gradle `src/main` and `src/test` classification. Do not replace the monorepo source
+inventory with a Python-only `sonar.sources`, exclude shared directories wholesale, or use wildcard candidate
+roots. Inclusion patterns are separate from literal roots. The regression test checks all tracked non-Java test
+paths, production examples and actual Java source paths, and confirms the Python relay preserves these settings.
+
+These are local configuration/inventory checks, not a scanner run; verify the next remote scan. For CI-based
+analysis use `sonar-project.properties`; automatic analysis uses `.sonarcloud.properties`. See
+[Sonar's analysis scope documentation](https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/setting-analysis-scope/excluding-files-based-on-patterns)
 and [automatic analysis configuration](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/automatic-analysis).
 
 ## Go module versions
