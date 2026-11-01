@@ -120,7 +120,11 @@ def add_sarif_provenance(results: Path, provenance: dict[str, str], log: TextIO)
         if not isinstance(runs, list) or not runs or any(not isinstance(run, dict) for run in runs):
             raise ValueError("SARIF must contain a nonempty list of runs.")
         for run in runs:
-            run["versionControlProvenance"] = [dict(provenance)]
+            if provenance.get("repositoryUri"):
+                run["versionControlProvenance"] = [dict(provenance)]
+            else:
+                run.pop("versionControlProvenance", None)
+                run.setdefault("properties", {})["gitProvenance"] = dict(provenance)
         path.write_text(json.dumps(sarif, ensure_ascii=False) + "\n", encoding="utf-8")
     except (OSError, ValueError, KeyError, TypeError) as error:
         # Do not echo report contents or unsanitized Git configuration into the log.
