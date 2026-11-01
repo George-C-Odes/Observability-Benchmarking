@@ -15,6 +15,8 @@ on:
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/codecov-upload/**'
+      - 'scripts/coverage_summary.py'
+      - 'scripts/test_coverage_summary.py'
       - 'codecov.yml'
   push:
     branches:
@@ -27,6 +29,8 @@ on:
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/codecov-upload/**'
+      - 'scripts/coverage_summary.py'
+      - 'scripts/test_coverage_summary.py'
       - 'codecov.yml'
 
 permissions:
@@ -112,112 +116,7 @@ jobs:
           MODULE_DIR: ${{ matrix.module_dir }}
           TEST_OUTCOME: ${{ steps.test.outcome }}
           COVERAGE_JSON: ${{ github.workspace }}/${{ matrix.module_dir }}/coverage-summary.json
-        run: |
-          python3 << 'PYEOF'
-          import json
-          import os
-          import sys
-
-          module_name = os.environ["MODULE_NAME"]
-          module_dir = os.environ["MODULE_DIR"].replace("\\", "/")
-          test_outcome = os.environ["TEST_OUTCOME"]
-          coverage_json = os.environ["COVERAGE_JSON"]
-          summary_file = os.environ["GITHUB_STEP_SUMMARY"]
-          workspace = os.environ.get("GITHUB_WORKSPACE", "")
-
-          def write_missing_report_message() -> None:
-              with open(summary_file, "a", encoding="utf-8") as fh:
-                  if test_outcome == "success":
-                      fh.write(f"### ❌ Coverage: {module_name}\n\n")
-                      fh.write("Tests passed but no coverage summary was generated.\n")
-                      print(f"::error::Tests passed but {coverage_json} was not found")
-                      sys.exit(1)
-                  fh.write(f"### ⚠️ Coverage: {module_name}\n\n")
-                  fh.write("No coverage summary generated. Tests may have failed.\n")
-
-          if not os.path.isfile(coverage_json):
-              write_missing_report_message()
-              sys.exit(0)
-
-          with open(coverage_json, encoding="utf-8") as fh:
-              data = json.load(fh)
-
-          totals = data.get("totals", {})
-          files = data.get("files", {})
-
-          covered_statements = int(totals.get("covered_lines", 0))
-          missed_statements = int(totals.get("missing_lines", 0))
-          total_statements = int(totals.get("num_statements", covered_statements + missed_statements))
-          statement_pct = (covered_statements * 100 / total_statements) if total_statements else 0.0
-
-          covered_branches = int(totals.get("covered_branches", 0))
-          missed_branches = int(totals.get("missing_branches", 0))
-          total_branches = int(totals.get("num_branches", covered_branches + missed_branches))
-          branch_pct = (covered_branches * 100 / total_branches) if total_branches else None
-          partial_branches = int(totals.get("num_partial_branches", 0))
-          overall_pct = float(totals.get("percent_covered", statement_pct))
-
-          def normalize_path(path: str) -> str:
-              path = path.replace("\\", "/")
-              if workspace and os.path.isabs(path):
-                  try:
-                      return os.path.relpath(path, workspace).replace("\\", "/")
-                  except ValueError:
-                      return path
-              if path.startswith("../"):
-                  return os.path.normpath(os.path.join(module_dir, path)).replace("\\", "/")
-              if path.startswith("services/"):
-                  return path
-              return f"{module_dir}/{path}".replace("//", "/")
-
-          with open(summary_file, "a", encoding="utf-8") as fh:
-              badge = "✅ Tests passed" if test_outcome == "success" else "⚠️ Tests had issues"
-              fh.write(f"### 📊 Coverage: {module_name}\n\n")
-              fh.write(f"**{badge}**\n\n")
-              fh.write("| Metric | Covered | Missed | Total | Coverage |\n")
-              fh.write("|--------|--------:|-------:|------:|---------:|\n")
-              fh.write(
-                  f"| **Statements** | **{covered_statements}** | **{missed_statements}** | "
-                  f"**{total_statements}** | **{statement_pct:.1f}%** |\n"
-              )
-              if branch_pct is None:
-                  fh.write(
-                      f"| **Branches** | **{covered_branches}** | **{missed_branches}** | "
-                      f"**{total_branches}** | **n/a** |\n\n"
-                  )
-              else:
-                  fh.write(
-                      f"| **Branches** | **{covered_branches}** | **{missed_branches}** | "
-                      f"**{total_branches}** | **{branch_pct:.1f}%** |\n\n"
-                  )
-
-              fh.write(
-                  f"> coverage.py overall coverage (statements + branches): **{overall_pct:.1f}%**"
-                  f" · partial branches: **{partial_branches}**\n\n"
-              )
-
-              if files:
-                  fh.write("<details>\n<summary>Per-file breakdown</summary>\n\n")
-                  fh.write("| File | Statements | Covered | Branches | Covered branches | Coverage |\n")
-                  fh.write("|------|-----------:|--------:|---------:|-----------------:|---------:|\n")
-                  for raw_path in sorted(files):
-                      summary = files[raw_path].get("summary", {})
-                      total_stmt = int(summary.get("num_statements", 0))
-                      covered_stmt = int(summary.get("covered_lines", 0))
-                      total_branch = int(summary.get("num_branches", 0))
-                      covered_branch = int(summary.get("covered_branches", 0))
-                      file_pct = float(summary.get("percent_covered", 0.0))
-                      fh.write(
-                          f"| `{normalize_path(raw_path)}` | {total_stmt} | {covered_stmt} | "
-                          f"{total_branch} | {covered_branch} | {file_pct:.1f}% |\n"
-                      )
-                  fh.write("\n</details>\n\n")
-
-              fh.write(
-                  f"> Reports generated from `{module_dir}/coverage-summary.json`, `{module_dir}/coverage.xml`, "
-                  f"and `{module_dir}/htmlcov/`\n"
-              )
-          PYEOF
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" python
 
       - name: Upload coverage report
         if: always() && !cancelled()

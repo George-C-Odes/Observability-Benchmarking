@@ -1,0 +1,34 @@
+name: Set up Next.js dashboard
+description: Install the dashboard's Node runtime and locked dependencies without lifecycle scripts.
+
+inputs:
+  node-version:
+    description: Node.js runtime for the dashboard's quality and coverage jobs.
+    required: false
+    default: '26.13.0'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: ./.github/actions/setup-node
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: utils/nextjs-dash/package-lock.json
+
+    - name: Install dashboard npm version
+      shell: bash
+      working-directory: ${{ github.workspace }}/utils/nextjs-dash
+      run: |
+        package_manager="$(node -p "require('./package.json').packageManager")"
+        if [[ ! "$package_manager" =~ ^npm@[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo '::error::Dashboard packageManager must pin an exact npm version.'
+          exit 1
+        fi
+        npm install --global --ignore-scripts "$package_manager"
+
+    - name: Install dashboard dependencies
+      shell: bash
+      working-directory: ${{ github.workspace }}/utils/nextjs-dash
+      run: npm ci --ignore-scripts

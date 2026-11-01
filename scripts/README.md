@@ -31,10 +31,38 @@ This directory contains small repository-level helper scripts.
 - `run-qodana-python.py` - runs isolated, unprivileged Django-only Qodana Python Community scans
 - `qodana-python-report.py` - summarizes inspection coverage and fails closed on missing scan evidence
 - `test_qodana_python.py` - tests scan isolation, coverage, and report path validation
+- `github-actions.test.mjs` - tests action pin centralization, nested action triggers, dashboard setup, and Go report contracts
+- `coverage_summary.py` - shared coverage tables and format-specific coverage.py, Go, JaCoCo, and Vitest summaries
+- `test_coverage_summary.py` - tests coverage totals, failure/missing-report behavior, Java statuses, and XML entity rejection
 
 The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
 normal mode writes only changed files. This validation guarantee does not provide rollback if a filesystem write fails.
+
+## Shared CI setup and coverage summaries
+
+`.github/actions/setup-nextjs` reuses the shared Node setup and installs the exact npm version from the
+dashboard's `package.json` `packageManager` field. Both npm installation and `npm ci` disable lifecycle
+scripts. Its steps stop on failure. Workflow path filters include the dashboard setup and its nested Node action.
+
+Go Quality uses one matrix pipeline with independent legs (`fail-fast: false`). Matrix entries retain the
+existing check display names, module caches, report titles, and `quality-report-go` / `quality-report-go-simple`
+artifact names; Pages still downloads those exact names.
+
+Coverage workflows call `coverage_summary.py` with `python`, `go`, `java`, `java-combined`, or `nextjs`.
+Each mode retains its workflow environment inputs and working directory. Shared tables do not replace
+format-specific metrics or gates: missing reports after successful Python/Go tests or Java builds fail,
+Java threshold violations remain reviewable through status artifacts, and missing Next.js reports remain
+informational. Weighted totals sum counters rather than averaging percentages. The JaCoCo reader accepts
+its standard external DTD declaration without fetching it and rejects entity definitions. Go's optional
+function detail uses a fixed argument list without a shell and has a 30-second timeout; timeouts fail.
+
+The unconditional Framework Version Consistency workflow runs both contract suites:
+
+```powershell
+node --test scripts/github-actions.test.mjs
+python -m unittest discover -s scripts -p test_coverage_summary.py -v
+```
 
 ## Framework versions and Renovate
 
