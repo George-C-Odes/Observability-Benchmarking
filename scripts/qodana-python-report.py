@@ -30,9 +30,10 @@ def inspection_summary(sarif: dict) -> dict:
     successful = bool(runs)
     problems = 0
     for run in runs:
-        successful &= any(
-            invocation.get("executionSuccessful", False)
-            for invocation in run.get("invocations", [])
+        invocations = run.get("invocations", [])
+        # Empty lists and missing/non-boolean flags are not successful scan evidence.
+        successful &= bool(invocations) and all(
+            invocation.get("executionSuccessful") is True for invocation in invocations
         )
         problems += len(run.get("results", []))
         tool = run.get("tool", {})
@@ -90,6 +91,8 @@ def coverage_passes(summary: dict) -> bool:
 def summarize_results(results_dir: Path) -> int:
     """Keep a diagnostic summary even when analysis failed before writing SARIF."""
     # Trust runner/OS configuration, never a caller-supplied directory as the boundary.
+    # resolve() canonicalizes paths; it does not sanitize an attacker-controlled environment.
+    # See docs/SECURITY.md: Qodana report environment trust boundary.
     trusted_root = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir())).resolve()
     allowed_results = trusted_root / "qodana-python" / "results"
     if results_dir.resolve() != allowed_results:

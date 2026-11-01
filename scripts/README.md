@@ -64,6 +64,16 @@ not CLI input. The existing Django quality workflow already uses this location. 
 symlink redirection of the results directory, its parents below the root, or report files are rejected
 before reading or writing. Missing or malformed SARIF still produces failing diagnostic summaries.
 
+Coverage passes only if every SARIF run contains a nonempty invocation list and every recorded
+`executionSuccessful` flag is explicitly `true`, in addition to the required inspections and minimum
+count. A successful invocation cannot hide a failed or incomplete one; JSON/Markdown diagnostics
+remain available when the coverage gate fails.
+
+The environment root is a trust assumption, not sanitized input: controlling both `RUNNER_TEMP` and
+the CLI path can change the accepted location, and the OS temp fallback also uses environment values.
+Do not launch this helper with elevated privileges or untrusted remote/agent-supplied environment
+overrides. See the [environment trust boundary and scoped Snyk triage guidance](../docs/SECURITY.md#qodana-report-environment-trust-boundary).
+
 `run-qodana-python.py` bounds each Git call to 30 seconds, the complete scan (including silent or
 continuous output) to 20 minutes, report export to five minutes, and container removal to one minute.
 A timed-out scan kills its local Docker client, then still attempts report export and container removal.

@@ -71,6 +71,45 @@ class InspectionSummaryTests(unittest.TestCase):
         fixture["runs"].extend(sarif_fixture(successful=False)["runs"])
         self.assertFalse(report.coverage_passes(report.inspection_summary(fixture)))
 
+    def test_every_invocation_must_explicitly_succeed(self):
+        for unsuccessful in ({}, {"executionSuccessful": False}, {"executionSuccessful": None}):
+            for failed_first in (False, True):
+                with self.subTest(unsuccessful=unsuccessful, failed_first=failed_first):
+                    fixture = sarif_fixture()
+                    invocations = [{"executionSuccessful": True}, unsuccessful]
+                    fixture["runs"][0]["invocations"] = (
+                        list(reversed(invocations)) if failed_first else invocations
+                    )
+                    summary = report.inspection_summary(fixture)
+                    self.assertFalse(summary["execution_successful"])
+                    self.assertFalse(report.coverage_passes(summary))
+
+    def test_truthy_non_boolean_success_flags_fail(self):
+        for value in (1, "true", "false", [True], {"success": True}):
+            with self.subTest(value=value):
+                fixture = sarif_fixture(successful=value)
+                fixture["runs"][0]["invocations"].append({"executionSuccessful": True})
+                self.assertFalse(report.coverage_passes(report.inspection_summary(fixture)))
+
+    def test_every_run_requires_nonempty_invocations(self):
+        for missing_key in (False, True):
+            with self.subTest(missing_key=missing_key):
+                fixture = sarif_fixture()
+                other_run = sarif_fixture()["runs"][0]
+                if missing_key:
+                    other_run.pop("invocations")
+                else:
+                    other_run["invocations"] = []
+                fixture["runs"].append(other_run)
+                self.assertFalse(report.coverage_passes(report.inspection_summary(fixture)))
+
+    def test_multiple_successful_invocations_and_runs_pass(self):
+        fixture = sarif_fixture()
+        fixture["runs"].extend(sarif_fixture()["runs"])
+        for run in fixture["runs"]:
+            run["invocations"].append({"executionSuccessful": True})
+        self.assertTrue(report.coverage_passes(report.inspection_summary(fixture)))
+
     def test_duplicate_rule_ids_do_not_inflate_coverage(self):
         fixture = sarif_fixture()
         rules = fixture["runs"][0]["tool"]["extensions"][0]["rules"]
@@ -124,6 +163,39 @@ class ReportPathTests(unittest.TestCase):
         self.assertEqual(1, report.summarize_results(self.results))
         self.assertTrue((self.results / "inspection-summary.json").is_file())
         self.assertIn("FAIL", (self.results / "inspection-summary.md").read_text("utf-8"))
+
+    def test_cli_rejects_mixed_invocations_and_retains_diagnostics(self):
+        self.results.mkdir(parents=True)
+        for failure in ({"executionSuccessful": False}, {}):
+            with self.subTest(failure=failure):
+                fixture = sarif_fixture()
+                fixture["runs"][0]["invocations"].append(failure)
+                (self.results / "qodana.sarif.json").write_text(
+                    json.dumps(fixture), encoding="utf-8"
+                )
+                # Fixed current Python and repository-owned script; no shell/user command.
+                completed = subprocess.run(  # noqa: S603
+                    [
+                        sys.executable,
+                        str(Path(__file__).with_name("qodana-python-report.py")),
+                        str(self.results),
+                    ],
+                    env=dict(report.os.environ),
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual(1, completed.returncode, completed.stderr)
+                self.assertIn("FAIL", completed.stdout)
+                summary = json.loads((self.results / "inspection-summary.json").read_text("utf-8"))
+                self.assertFalse(summary["execution_successful"])
+                self.assertEqual(report.MIN_ENABLED_INSPECTIONS, summary["enabled"])
+                self.assertFalse(summary["missing_required"])
+                markdown = (self.results / "inspection-summary.md").read_text("utf-8")
+                self.assertIn("FAIL", markdown)
+                self.assertIn("Analysis did not report a successful execution.", markdown)
 
     def test_arbitrary_paths_are_rejected_before_filesystem_changes(self):
         for path in (

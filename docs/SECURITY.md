@@ -98,6 +98,35 @@ environment:
   - API_KEY=${EXTERNAL_API_KEY}
 ```
 
+### Qodana Report Environment Trust Boundary
+
+`scripts/qodana-python-report.py` is a local/CI report helper, not a privileged service for remote
+requests. Its allowed results location is `RUNNER_TEMP/qodana-python/results`; without `RUNNER_TEMP`,
+the root comes from `tempfile.gettempdir()`. GitHub runner configuration supplies `RUNNER_TEMP` in the
+checked-in Django quality workflow. No separate remote request or LLM-supplied data is mapped to that
+variable by the workflow. Locally, the launcher and its environment must be trusted.
+
+The helper requires the CLI path to resolve to that exact location and rejects symlink redirection
+of the results directory, parents below the root, and report files before I/O. These checks constrain
+CLI paths relative to the configured root; they do **not** establish that the root itself is trustworthy.
+`Path.resolve()` is canonicalization, not sanitization. An attacker controlling both the environment
+and CLI path can select a different accepted root. The OS temporary-directory fallback also considers
+environment variables (`TMPDIR`, `TEMP`, `TMP`), so using it alone does not remove this trust dependency.
+
+Do not run this helper with elevated privileges and a caller-controlled environment, or accept remote
+or agent-supplied environment overrides without a separate boundary. Such launchers must select and
+protect an output root from trusted configuration independently of request/LLM data and construct the
+child environment from trusted values. Use isolated output storage when other users/processes could
+modify it concurrently; the pre-I/O symlink checks are not a guarantee against hostile filesystem races.
+
+SnykCode alert [#345](https://github.com/George-C-Odes/Observability-Benchmarking/security/code-scanning/345)
+(`python/PT`, this helper's environment-derived root) was reviewed as a context-specific false positive
+under the above execution model: no lower-trust input-to-environment path or privilege boundary was
+identified. Dismiss only this alert with that justification, not the rule or environment-source checks
+globally. Reassess the finding if a new launcher introduces untrusted environment input, elevated
+execution, or shared writable output storage. PR-controlled executable source is not made trusted by
+these path checks; existing workflow permission and isolation constraints still apply.
+
 ### Configuration Files
 
 Application configuration files contain:
