@@ -40,7 +40,41 @@ test('Sonar follows Python major/minor only, preserving encoding, scope, comment
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
   assert.equal(syncSonarPythonVersion(checkedIn, variables.PYTHON_VERSION), checkedIn);
   assert.match(checkedIn, /^sonar.sourceEncoding=UTF-8\r?$/m);
-  assert.doesNotMatch(checkedIn, /^sonar\.(?:exclusions|inclusions|sources|issue\.ignore|test\.exclusions)/m);
+  assert.doesNotMatch(checkedIn, /^sonar\.(?:inclusions|sources|issue\.ignore|test\.exclusions)/m);
+});
+
+test('Sonar excludes only verified binary images and all other tracked files are valid UTF-8', () => {
+  const config = readFileSync(resolveRepoPath('.sonarcloud.properties'), 'utf8');
+  const matches = [...config.matchAll(/^sonar\.exclusions=([^\r\n]*)/gm)];
+  assert.equal(matches.length, 1, 'Keep one reviewed source exclusion setting');
+  const exclusions = matches[0][1].split(',');
+  assert.deepEqual(exclusions, ['**/*.png', '**/*.ico'], 'Do not exclude source files or entire directories');
+  const excluded = (file) => exclusions.some((pattern) => path.posix.matchesGlob(file, pattern));
+  const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: resolveRepoPath('.'), encoding: 'utf8', timeout: 30_000 });
+  assert.equal(tracked.status, 0, tracked.stderr);
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const icoSignature = Buffer.from([0x00, 0x00, 0x01, 0x00]);
+  let images = 0;
+  for (const file of tracked.stdout.split('\0').filter(Boolean)) {
+    const bytes = readFileSync(resolveRepoPath(file));
+    if (excluded(file)) {
+      const signature = file.endsWith('.png') ? pngSignature : icoSignature;
+      assert.ok(bytes.subarray(0, signature.length).equals(signature), `Excluded file is not a verified image: ${file}`);
+      images++;
+      continue;
+    }
+    let text;
+    assert.doesNotThrow(() => { text = decoder.decode(bytes); }, `Invalid UTF-8 in tracked text: ${file}`);
+    assert.ok(!text.includes('\ufffd'), `Literal replacement character in ${file}; use an escape in intentional fixtures`);
+    assert.ok(!text.includes('\0'), `Unexpected binary/NUL content in tracked text: ${file}`);
+  }
+  assert.ok(images > 0, 'Exercise actual binary assets, not just exclusion syntax');
+  for (const file of [
+    'docs/favicon.svg', 'utils/nextjs-dash/public/favicon.svg', 'scripts/renovate-framework-sync.mjs',
+    'services/python/django/gunicorn/common/src/obbench_django_common/views.py',
+    'services/go/simple/cmd/server/main.go', 'utils/nextjs-dash/app/page.tsx', '.sonarcloud.properties',
+  ]) assert.equal(excluded(file), false, `Text source must remain in scope: ${file}`);
 });
 
 test('Sonar classifies tracked non-Java tests and helpers without excluding production roots', () => {

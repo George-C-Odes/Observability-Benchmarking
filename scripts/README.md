@@ -193,11 +193,28 @@ configuration in `.sonarcloud.properties`, but no Sonar scanner workflow. Sonar 
   to hide malformed bytes or add broad source exclusions without evidence.
 - The 2026-11-02 follow-up also audited the **committed HEAD blobs**, not just working files: no invalid UTF-8,
   replacement characters (U+FFFD), or text NULs were found, excluding PNG/ICO binaries. The warning still appeared
-  in the matching remote scan. The public background-task response omits warning details, and scanner context
-  requires Sonar permissions unavailable locally; the file-specific scanner log is still needed. Do not infer
-  the cause from the generic warning alone.
+  in the matching remote scan. The supplied **scanner context** confirms UTF-8 and the test settings, but is a
+  property dump, not the runtime log identifying the affected file. SonarSource confirms that automatic-analysis
+  runtime logs are provider-hosted and unavailable to users; the warning's "check the scanner logs" instruction is
+  misleading for this analysis method. See [SonarSource's explanation](https://community.sonarsource.com/t/188330/2).
+- SonarSource also confirmed a scanner-engine behavior change that reports binary assets as UTF-8 encoding
+  warnings, and recommends explicit binary exclusions. They identified PNGs and fonts in another automatic-analysis
+  project's logs. See [the scanner-engine explanation](https://community.sonarsource.com/t/185002/6) and
+  [the automatic-analysis example](https://community.sonarsource.com/t/189294/3). Our audit of revision
+  `d5b4125093b7869e9cf0fc688e88358e1ceb826d` found **959 valid UTF-8 text blobs and 24 signature-verified PNG/ICO
+  images**. `.sonarcloud.properties` now excludes only `**/*.png,**/*.ico`; SVGs, production source and text configuration
+  stay in scope. No binary image is converted to text, no whole directory is excluded, and UTF-8 remains enabled.
+  The CI regression checks each excluded image's signature, strictly decodes all other tracked working files,
+  rejects unexpected literal replacement characters/NULs, and verifies Python synchronization preserves the exclusions.
+  Intentional replacement-character test fixtures should use a language escape rather than a literal U+FFFD.
 
-Automatic analysis reads the additional configuration from the **default branch**; verify both warnings after
+This is a supported, narrowly scoped correction consistent with the local evidence, not proof of this project's
+exact provider-side file diagnostics. The next fresh scan must confirm whether the warning clears. If it remains,
+request SonarSource's file/line/byte diagnostics using project `George-C-Odes_Observability-Benchmarking`, PR 424,
+analysis `d5d0f36d-ad89-4d1f-bc76-8b921fbee63e`, and background task `AaGZNyEgcL3MZz6g6MJi` (the pre-exclusion
+analysis), plus the latest IDs after the change. Do not broaden exclusions or change source encoding speculatively.
+
+Automatic analysis reads the additional configuration from the **default branch**; verify remaining warnings after
 the configuration reaches that branch and Sonar performs a fresh analysis. Merely creating this file locally does
 not update the remote project, and automatic analysis does not execute the env-relay script itself.
 
@@ -225,8 +242,10 @@ form suppresses **all issues on that line**, not just S8476; this can also hide 
 shared sink. This accepted exception is not a template for new clients. Request-boundary tests remain active,
 and callers, resource scope, validation, encoding or redirect-policy changes require re-review/removal.
 
-No remote issue status was changed, no rule was disabled globally, and no production file was excluded. A fresh
-matching Sonar scan must verify the local suppression is honored; tests alone cannot establish that. An
+No remote issue status was manually changed, no rule was disabled globally, and no production file was excluded.
+The 2026-11-02 analysis `d5d0f36d-ad89-4d1f-bc76-8b921fbee63e` now reports **zero open/confirmed issues** and
+one encoding warning, consistent with the authorized suppression taking effect. This is suppression, not a new
+runtime security fix; the shared-line trade-off still applies. An
 issue-specific false-positive disposition remains the narrower alternative. See
 [JavaScript inline suppression](https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/languages/javascript-typescript-css)
 and apply the request-safety completion gate in `my-agent/.apm/skills/ci-report-safety/SKILL.md` for future clients.
@@ -248,7 +267,9 @@ inventory with a Python-only `sonar.sources`, exclude shared directories wholesa
 roots. Inclusion patterns are separate from literal roots. The regression test checks all tracked non-Java test
 paths, production examples and actual Java source paths, and confirms the Python relay preserves these settings.
 
-These are local configuration/inventory checks, not a scanner run; verify the next remote scan. For CI-based
+The supplied 2026-11-02 scanner context confirms these settings were applied, and its warning list no longer
+includes the Python-version or Python-test warning. The inventory checks still do not substitute for scanner
+execution; verify future changes in the remote scan. For CI-based
 analysis use `sonar-project.properties`; automatic analysis uses `.sonarcloud.properties`. See
 [Sonar's analysis scope documentation](https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/setting-analysis-scope/excluding-files-based-on-patterns)
 and [automatic analysis configuration](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/automatic-analysis).
