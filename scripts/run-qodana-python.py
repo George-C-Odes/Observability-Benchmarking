@@ -2,12 +2,23 @@
 
 import argparse
 import os
+import queue
 import re
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 import uuid
 from pathlib import Path
+from typing import TextIO
+
+GIT_TIMEOUT_SECONDS = 30
+SCAN_TIMEOUT_SECONDS = 20 * 60
+COPY_TIMEOUT_SECONDS = 5 * 60
+REMOVE_TIMEOUT_SECONDS = 60
+PROCESS_EXIT_TIMEOUT_SECONDS = 10
+TIMEOUT_STATUS = 124
 
 
 def executable(name: str) -> str:
@@ -20,7 +31,88 @@ def executable(name: str) -> str:
 # Only fixed Git subcommands below call this helper; no shell or PR expressions.
 def git_output(workspace: Path, *arguments: str) -> str:
     command = [executable("git"), "-C", str(workspace), *arguments]
-    return subprocess.check_output(command, text=True).strip()  # noqa: S603
+    try:
+        return subprocess.check_output(  # noqa: S603
+            command, text=True, timeout=GIT_TIMEOUT_SECONDS
+        ).strip()
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f"Git command timed out after {GIT_TIMEOUT_SECONDS}s") from error
+
+
+def log_message(log: TextIO, message: str) -> None:
+    print(message, flush=True)
+    log.write(message + "\n")
+    log.flush()
+
+
+def run_bounded_command(command: list[str], log: TextIO, timeout: int) -> int:
+    """A stalled export must not prevent the separately bounded removal attempt."""
+    try:
+        return subprocess.call(  # noqa: S603
+            command, stdout=log, stderr=subprocess.STDOUT, timeout=timeout
+        )
+    except subprocess.TimeoutExpired:
+        log_message(log, f"Docker {command[1]} timed out after {timeout}s")
+        return TIMEOUT_STATUS
+    except OSError as error:
+        log_message(log, f"Cannot run Docker {command[1]}: {error}")
+        return 1
+
+
+def stream_scan(command: list[str], log: TextIO, timeout: float) -> int:
+    """Bound the entire scan, including silent or continuously streaming stdout."""
+    # Fixed Docker executable, validated image, argument vector, no shell.
+    process = subprocess.Popen(  # noqa: S603
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    events: queue.Queue[str | Exception | None] = queue.Queue()
+
+    def read_output() -> None:
+        try:
+            if process.stdout is None:
+                raise RuntimeError("Docker output pipe was not created.")
+            for line in process.stdout:
+                events.put(line)
+        except (OSError, ValueError, RuntimeError) as error:
+            events.put(error)
+        finally:
+            events.put(None)
+
+    reader = threading.Thread(target=read_output, daemon=True)
+    deadline = time.monotonic() + timeout
+    reader.start()
+    try:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(command, timeout)
+            event = events.get(timeout=remaining)
+            if event is None:
+                return process.wait(timeout=max(0, deadline - time.monotonic()))
+            if isinstance(event, Exception):
+                raise event
+            print(event, end="", flush=True)
+            log.write(event)
+            log.flush()
+    except (queue.Empty, subprocess.TimeoutExpired):
+        log_message(log, f"Qodana scan timed out after {timeout:g}s")
+        return TIMEOUT_STATUS
+    finally:
+        # Do not use Popen's context manager: its unbounded wait can defeat the deadline.
+        if process.poll() is None:
+            process.kill()
+            try:
+                process.wait(timeout=PROCESS_EXIT_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                log_message(log, "Docker client did not exit after being killed")
+        reader.join(timeout=1)
+        if not reader.is_alive() and process.stdout is not None:
+            process.stdout.close()
 
 
 def docker_command(workspace: Path, staging: Path, image: str, name: str) -> list[str]:
@@ -132,33 +224,18 @@ def run_scan(workspace: Path, results: Path, image: str) -> int:
         command = docker_command(workspace, staging, image, name)
         with (results / "scan.log").open("w", encoding="utf-8") as log:
             try:
-                # Fixed Docker executable, validated image, argument vector, no shell.
-                with subprocess.Popen(  # noqa: S603
-                    command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                ) as process:
-                    if process.stdout is None:
-                        raise RuntimeError("Docker output pipe was not created.")
-                    for line in process.stdout:
-                        print(line, end="", flush=True)
-                        log.write(line)
-                        log.flush()
-                    scan_status = process.wait()
+                scan_status = stream_scan(command, log, SCAN_TIMEOUT_SECONDS)
                 # Export even after gate/bootstrap failure, before removing the container.
-                copy_status = subprocess.call(  # noqa: S603
+                copy_status = run_bounded_command(
                     [command[0], "cp", f"{name}:/tmp/qodana-results/.", str(results)],
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
+                    log,
+                    COPY_TIMEOUT_SECONDS,
                 )
             finally:
-                cleanup_status = subprocess.call(  # noqa: S603
+                cleanup_status = run_bounded_command(
                     [command[0], "rm", "--force", name],
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
+                    log,
+                    REMOVE_TIMEOUT_SECONDS,
                 )
             return scan_status or copy_status or cleanup_status
 

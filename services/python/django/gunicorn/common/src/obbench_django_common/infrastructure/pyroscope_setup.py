@@ -87,16 +87,16 @@ def register_span_processor() -> bool:
     # The zero-code agent may wrap the SDK TracerProvider in a Proxy.
     real_provider = getattr(provider, "_real_provider", provider)
     span_processor_adder = getattr(real_provider, "add_span_processor", None)
-    if span_processor_adder is None:
+    if not callable(span_processor_adder):
         span_processor_adder = getattr(provider, "add_span_processor", None)
 
-    if span_processor_adder is None:
+    if not callable(span_processor_adder):
         logger.warning(
             "could not register pyroscope span-processor: TracerProvider has no add_span_processor"
         )
         return False
 
-    # Both provider lookups above rule out None; the SDK/proxy supplies this method.
+    # The explicit callable guard validates this dynamic SDK/proxy method.
     # noinspection PyCallingNonCallable
     span_processor_adder(PyroscopeSpanProcessor())
     return True

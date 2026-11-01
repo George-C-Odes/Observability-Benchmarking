@@ -151,8 +151,6 @@ jobs:
     # Collect semantic diagnostics even when common lint checks fail.
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    env:
-      RESULTS_DIR: ${{ runner.temp }}/qodana-python/results
     permissions:
       contents: read
     steps:
@@ -161,6 +159,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Set results directory
+        run: echo "RESULTS_DIR=$RUNNER_TEMP/qodana-python/results" >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: ./.github/actions/setup-python

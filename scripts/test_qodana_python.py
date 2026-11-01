@@ -3,7 +3,10 @@
 import importlib.util
 import io
 import json
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
@@ -190,6 +193,21 @@ class ReportPathTests(unittest.TestCase):
 
 
 class ScanRunnerTests(unittest.TestCase):
+    def test_git_commands_are_bounded_and_timeouts_fail(self):
+        with (
+            patch.object(runner, "executable", return_value="git"),
+            patch.object(
+                runner.subprocess, "check_output", return_value="/repository/.git\n"
+            ) as check_output,
+        ):
+            self.assertEqual(
+                "/repository/.git", runner.git_output(Path("/repository"), "rev-parse")
+            )
+            self.assertEqual(runner.GIT_TIMEOUT_SECONDS, check_output.call_args.kwargs["timeout"])
+            check_output.side_effect = subprocess.TimeoutExpired("git", runner.GIT_TIMEOUT_SECONDS)
+            with self.assertRaisesRegex(RuntimeError, "Git command timed out"):
+                runner.git_output(Path("/repository"), "rev-parse")
+
     def test_command_is_unprivileged_git_aware_and_django_scoped(self):
         with (
             patch.object(runner, "git_output", return_value="/repository/.git"),
@@ -272,9 +290,9 @@ class ScanRunnerTests(unittest.TestCase):
         for scan_status, copy_status, cleanup_status, expected in statuses:
             with tempfile.TemporaryDirectory() as temporary:
                 process = MagicMock()
-                process.__enter__.return_value = process
                 process.stdout = io.StringIO("Analyzer diagnostic\n")
                 process.wait.return_value = scan_status
+                process.poll.return_value = scan_status
                 with (
                     self.subTest(scan_status=scan_status, copy_status=copy_status),
                     patch.object(runner, "stage_project"),
@@ -289,7 +307,125 @@ class ScanRunnerTests(unittest.TestCase):
                 self.assertEqual(expected, status)
                 self.assertEqual("cp", call.call_args_list[0].args[0][1])
                 self.assertEqual(["rm", "--force"], call.call_args_list[1].args[0][1:3])
+                self.assertEqual(
+                    runner.COPY_TIMEOUT_SECONDS, call.call_args_list[0].kwargs["timeout"]
+                )
+                self.assertEqual(
+                    runner.REMOVE_TIMEOUT_SECONDS, call.call_args_list[1].kwargs["timeout"]
+                )
                 self.assertIn("Analyzer diagnostic", (results / "scan.log").read_text("utf-8"))
+
+    def test_scan_copy_and_removal_timeouts_fail_without_skipping_cleanup(self):
+        timeout = subprocess.TimeoutExpired("docker", 1)
+        cases = (
+            (runner.TIMEOUT_STATUS, [0, 0]),
+            (0, [timeout, 0]),
+            (0, [0, timeout]),
+            (runner.TIMEOUT_STATUS, [timeout, timeout]),
+            (0, [OSError("daemon unavailable"), 0]),
+        )
+        for scan_status, commands in cases:
+            with (
+                self.subTest(scan_status=scan_status, commands=commands),
+                tempfile.TemporaryDirectory() as temporary,
+                patch.object(runner, "stage_project"),
+                patch.object(runner, "docker_command", return_value=["docker", "run"]),
+                patch.object(runner, "stream_scan", return_value=scan_status) as scan,
+                patch.object(runner.subprocess, "call", side_effect=commands) as call,
+            ):
+                results = Path(temporary) / "results"
+                status = runner.run_scan(Path(temporary), results, IMAGE)
+                self.assertNotEqual(0, status)
+                self.assertEqual(runner.SCAN_TIMEOUT_SECONDS, scan.call_args.args[2])
+                self.assertEqual(["cp", "rm"], [item.args[0][1] for item in call.call_args_list])
+                if any(isinstance(item, subprocess.TimeoutExpired) for item in commands):
+                    self.assertIn("timed out", (results / "scan.log").read_text("utf-8"))
+
+    def test_scan_exception_still_attempts_bounded_removal(self):
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch.object(runner, "stage_project"),
+            patch.object(runner, "docker_command", return_value=["docker", "run"]),
+            patch.object(runner, "stream_scan", side_effect=OSError("cannot start Docker")),
+            patch.object(runner.subprocess, "call", return_value=0) as call,
+        ):
+            with self.assertRaisesRegex(OSError, "cannot start Docker"):
+                runner.run_scan(Path(temporary), Path(temporary) / "results", IMAGE)
+            call.assert_called_once()
+            self.assertEqual(["rm", "--force"], call.call_args.args[0][1:3])
+            self.assertEqual(runner.REMOVE_TIMEOUT_SECONDS, call.call_args.kwargs["timeout"])
+
+
+class StreamingDeadlineTests(unittest.TestCase):
+    def test_silent_partial_continuous_and_closed_output_cannot_defeat_deadline(self):
+        programs = (
+            "import time; time.sleep(10)",
+            "import sys, time; sys.stdout.write('partial'); sys.stdout.flush(); time.sleep(10)",
+            "import time\nwhile True:\n print('diagnostic', flush=True)\n time.sleep(0.01)",
+            "import os, time; os.close(1); os.close(2); time.sleep(10)",
+        )
+        real_popen = subprocess.Popen
+        processes = []
+
+        def start_process(*args, **kwargs):
+            # Test-only, fixed current Python executable and literal programs above.
+            process = real_popen(*args, **kwargs)  # noqa: S603
+            processes.append(process)
+            return process
+
+        for program in programs:
+            processes.clear()
+            with (
+                self.subTest(program=program),
+                patch.object(runner.subprocess, "Popen", side_effect=start_process),
+                patch("builtins.print"),
+            ):
+                log = io.StringIO()
+                started = time.monotonic()
+                self.assertEqual(
+                    runner.TIMEOUT_STATUS,
+                    runner.stream_scan([sys.executable, "-u", "-c", program], log, 0.4),
+                )
+                self.assertLess(time.monotonic() - started, 5)
+                self.assertIsNotNone(processes[0].poll())
+                self.assertIn("Qodana scan timed out", log.getvalue())
+
+    def test_client_reaping_after_timeout_is_also_bounded(self):
+        process = MagicMock()
+        process.stdout = io.StringIO("")
+        process.poll.return_value = None
+        process.wait.side_effect = subprocess.TimeoutExpired("docker", 1)
+        log = io.StringIO()
+        with patch.object(runner.subprocess, "Popen", return_value=process):
+            self.assertEqual(runner.TIMEOUT_STATUS, runner.stream_scan(["docker", "run"], log, 1))
+        process.kill.assert_called_once()
+        self.assertEqual(
+            runner.PROCESS_EXIT_TIMEOUT_SECONDS, process.wait.call_args.kwargs["timeout"]
+        )
+        self.assertIn("did not exit after being killed", log.getvalue())
+
+
+class WorkflowContractTests(unittest.TestCase):
+    def test_results_directory_is_exported_before_scanning(self):
+        root = Path(__file__).resolve().parent.parent
+        workflow = (root / ".github/workflows/django_python_quality.yml").read_text("utf-8")
+        qodana = workflow.split("\n  qodana:\n", 1)[1]
+        self.assertNotIn("\n    env:", qodana)
+        export = 'echo "RESULTS_DIR=$RUNNER_TEMP/qodana-python/results" >> "$GITHUB_ENV"'
+        self.assertIn(export, qodana)
+        self.assertLess(qodana.index(export), qodana.index("python scripts/run-qodana-python.py"))
+        self.assertIn("${{ runner.temp }}/qodana-python/results/report/", qodana)
+
+    def test_subprocess_deadlines_leave_time_for_ci_setup_and_artifacts(self):
+        budget = (
+            2 * runner.GIT_TIMEOUT_SECONDS
+            + runner.SCAN_TIMEOUT_SECONDS
+            + runner.COPY_TIMEOUT_SECONDS
+            + runner.REMOVE_TIMEOUT_SECONDS
+            + runner.PROCESS_EXIT_TIMEOUT_SECONDS
+            + 1
+        )
+        self.assertLess(budget, 28 * 60)
 
 
 class CompatibilityProfileTests(unittest.TestCase):

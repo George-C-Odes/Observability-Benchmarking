@@ -64,6 +64,14 @@ not CLI input. The existing Django quality workflow already uses this location. 
 symlink redirection of the results directory, its parents below the root, or report files are rejected
 before reading or writing. Missing or malformed SARIF still produces failing diagnostic summaries.
 
+`run-qodana-python.py` bounds each Git call to 30 seconds, the complete scan (including silent or
+continuous output) to 20 minutes, report export to five minutes, and container removal to one minute.
+A timed-out scan kills its local Docker client, then still attempts report export and container removal.
+Export failure or timeout also leaves removal enabled. Docker timeouts return a nonzero status (124 when
+not superseded by an earlier scan failure), and diagnostics are retained in `scan.log`. A Git timeout
+fails before starting Docker. The CI job's 30-minute timeout remains the outer safety limit; a stalled
+daemon can prevent export/removal from succeeding even though the local commands are bounded.
+
 For local scans and summaries, use the same directory for both helpers:
 
 ```powershell
