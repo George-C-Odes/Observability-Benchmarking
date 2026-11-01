@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
-import { assertRenovatePullRequest, selectGeneratedUpdates, validateFrameworkTree, validateVersionChange } from './renovate-framework-sync.mjs';
+import { api, assertRenovatePullRequest, buildGitHubRequest, selectGeneratedUpdates, validateFrameworkTree, validateVersionChange } from './renovate-framework-sync.mjs';
 import { frameworkVersionKeys } from './sync-framework-versions.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
@@ -85,6 +85,124 @@ test('publisher accepts only same-repository open Renovate branches at the expec
     { ...pr, head: { ...pr.head, repo: { full_name: 'fork/repo' } } },
     { ...pr, head: { ...pr.head, ref: 'main' } }, { ...pr, base: { ...pr.base, sha: 'c'.repeat(40) } },
   ]) assert.throws(() => assertRenovatePullRequest(invalid, repository, sha), /same-repository/);
+  assert.doesNotThrow(() => assertRenovatePullRequest({ ...pr, head: { ...pr.head, ref: 'renovate/maven/framework-4.x' } }, repository, sha));
+  assert.throws(() => assertRenovatePullRequest({ ...pr, head: { ...pr.head, ref: 'renovate/../other' } }, repository, sha), /valid Renovate branch/);
+  assert.throws(() => assertRenovatePullRequest({ ...pr, head: { ...pr.head, sha: `${sha}?ref=main` } }, repository, sha), /full Git SHA/);
+  assert.throws(() => assertRenovatePullRequest({ ...pr, base: { ...pr.base, sha: `${sha}\n` } }, repository, `${sha}\n`), /full Git SHA/);
+});
+
+test('GitHub request operations have fixed endpoints, methods and query strings', () => {
+  const sha = 'a'.repeat(40);
+  const cases = [
+    ['readPull', 424, 'GET', 'pulls/424'],
+    ['readCommit', sha, 'GET', `git/commits/${sha}`],
+    ['readTree', sha, 'GET', `git/trees/${sha}?recursive=1`],
+    ['readBlob', sha, 'GET', `git/blobs/${sha}`],
+    ['createBlob', undefined, 'POST', 'git/blobs'],
+    ['createTree', undefined, 'POST', 'git/trees'],
+    ['createCommit', undefined, 'POST', 'git/commits'],
+    ['updateRef', 'renovate/maven/framework-4.x', 'PATCH', 'git/refs/heads/renovate%2Fmaven%2Fframework-4.x'],
+  ];
+  for (const [operation, identifier, method, route] of cases) {
+    const request = buildGitHubRequest(operation, 'Owner/repo.name', identifier);
+    assert.deepEqual(request, { url: `https://api.github.com/repos/Owner/repo.name/${route}`, method });
+    const url = new URL(request.url);
+    assert.equal(url.origin, 'https://api.github.com');
+    assert.ok(url.pathname.startsWith('/repos/Owner/repo.name/'));
+    assert.equal(url.hash, '');
+    assert.equal(url.search, operation === 'readTree' ? '?recursive=1' : '');
+  }
+});
+
+test('GitHub request construction rejects alternate routes, traversal and query injection', () => {
+  const sha = 'a'.repeat(40);
+  for (const repository of [undefined, null, {}, '', '.', '..', 'owner/.', 'owner/..', 'owner/repo/extra',
+    'owner/repo?x=1', 'owner/repo#fragment', 'owner/repo%2fissues', 'owner\\repo',
+    'https://evil.example/repo', '//evil.example/repo', 'owner/repo\n', 'owner/repo\r\n', 'owner/repo ']) {
+    assert.throws(() => buildGitHubRequest('readPull', repository, 424), /owner\/repository/);
+  }
+  for (const identifier of [undefined, null, {}, '424', '424/../issues', 0, -1, 1.2, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => buildGitHubRequest('readPull', 'owner/repo', identifier), /positive PR number/);
+  }
+  for (const operation of ['readCommit', 'readTree', 'readBlob']) {
+    for (const identifier of [undefined, null, {}, '', 'a'.repeat(39), 'a'.repeat(41), 'g'.repeat(40),
+      '../issues', `${sha}/../../issues`, `${sha}?recursive=0`, `${sha}#fragment`,
+      `${sha}%2f..`, `${sha}\n`, `${sha}\r\n`, ` ${sha}`, 'https://evil.example']) {
+      assert.throws(() => buildGitHubRequest(operation, 'owner/repo', identifier), /full Git SHA/);
+    }
+  }
+  for (const identifier of [undefined, null, {}, '', 'main', 'renovate/', 'renovate/../main', 'renovate/branch..name',
+    'renovate/foo/../../main', 'renovate//branch', 'renovate/foo?x=1', 'renovate/foo#fragment',
+    'renovate/foo%2f..', 'renovate/foo%252f..', 'renovate/foo\\bar', 'renovate/foo.lock', 'renovate/foo.lock/bar',
+    'renovate/.hidden', 'renovate/foo.', 'renovate/foo\n', 'renovate/foo\r\n']) {
+    assert.throws(() => buildGitHubRequest('updateRef', 'owner/repo', identifier), /valid Renovate branch/);
+  }
+  for (const operation of [undefined, '__proto__', 'constructor', 'git/blobs', 'https://evil.example', 'readTree?recursive=0']) {
+    assert.throws(() => buildGitHubRequest(operation, 'owner/repo', sha), /Unsupported GitHub API operation/);
+  }
+});
+
+function setRepository(t, repository = 'owner/repo') {
+  const original = process.env.GITHUB_REPOSITORY;
+  process.env.GITHUB_REPOSITORY = repository;
+  t.after(() => {
+    if (original === undefined) delete process.env.GITHUB_REPOSITORY;
+    else process.env.GITHUB_REPOSITORY = original;
+  });
+}
+
+test('authenticated fetch uses the fixed operation, rejects redirects and preserves publication body', async (t) => {
+  setRepository(t);
+  const sha = 'a'.repeat(40);
+  const body = { sha, force: false };
+  const mock = t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url, 'https://api.github.com/repos/owner/repo/git/refs/heads/renovate%2Fmaven%2Fframework-4.x');
+    assert.equal(options.method, 'PATCH');
+    assert.equal(options.redirect, 'error');
+    assert.equal(options.headers.Authorization, 'Bearer synthetic-test-token');
+    assert.deepEqual(JSON.parse(options.body), body);
+    assert.ok(options.signal instanceof AbortSignal);
+    return new Response(JSON.stringify({ ref: 'refs/heads/renovate/maven/framework-4.x' }), { status: 200 });
+  });
+  assert.deepEqual(await api('updateRef', 'synthetic-test-token', { identifier: 'renovate/maven/framework-4.x', body }), { ref: 'refs/heads/renovate/maven/framework-4.x' });
+  assert.equal(mock.mock.callCount(), 1);
+});
+
+test('invalid API identifiers never reach the authenticated fetch boundary', async (t) => {
+  setRepository(t);
+  const mock = t.mock.method(globalThis, 'fetch', () => assert.fail('Invalid input must not send a request'));
+  for (const [operation, identifier] of [
+    ['readPull', '424/../issues'], ['readTree', `${'a'.repeat(40)}?recursive=0`],
+    ['readBlob', '../issues'], ['updateRef', 'renovate/../main'], ['git/blobs', undefined],
+  ]) await assert.rejects(api(operation, 'synthetic-test-token', { identifier }));
+  process.env.GITHUB_REPOSITORY = 'owner/repo/../../other';
+  await assert.rejects(api('createBlob', 'synthetic-test-token', { body: { content: 'test' } }), /owner\/repository/);
+  await assert.rejects(api('readPull', '', { identifier: 424 }), /Missing GitHub token/);
+  assert.equal(mock.mock.callCount(), 0);
+});
+
+test('a malicious response SHA cannot propagate into the next authenticated API request', async (t) => {
+  setRepository(t);
+  const mock = t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    assert.equal(options.redirect, 'error');
+    return new Response(JSON.stringify({ tree: { sha: '../issues?state=all' } }), { status: 200 });
+  });
+  const commit = await api('readCommit', 'synthetic-test-token', { identifier: 'a'.repeat(40) });
+  await assert.rejects(api('readTree', 'synthetic-test-token', { identifier: commit.tree.sha }), /full Git SHA/);
+  assert.equal(mock.mock.callCount(), 1);
+});
+
+test('non-success and redirect API responses fail without a second request', async (t) => {
+  setRepository(t);
+  for (const status of [302, 403, 500]) {
+    const mock = t.mock.method(globalThis, 'fetch', async (_url, options) => {
+      assert.equal(options.redirect, 'error');
+      return new Response(null, { status, headers: { Location: 'https://evil.example/' } });
+    });
+    await assert.rejects(api('readPull', 'synthetic-test-token', { identifier: 424 }), new RegExp(`readPull failed \\(${status}\\)`));
+    assert.equal(mock.mock.callCount(), 1);
+    mock.mock.restore();
+  }
 });
 
 test('complete tree comparison ignores parent tree hashes, but rejects source edits, modes and symlinks', () => {

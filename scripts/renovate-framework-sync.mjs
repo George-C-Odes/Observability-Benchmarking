@@ -7,6 +7,67 @@ import { frameworkVersionKeys, generatedFrameworkPaths } from './sync-framework-
 
 const envFile = 'compose/.env';
 
+function matchesEntireString(value, pattern) {
+  return typeof value === 'string' && pattern.exec(value)?.[0] === value;
+}
+
+function requireGitSha(value) {
+  if (!matchesEntireString(value, /^[a-f0-9]{40}$/)) throw new Error('Expected a full Git SHA');
+  return value;
+}
+
+function requireRenovateRef(value) {
+  // Keep nested Renovate branches, but reject Git-invalid names and URL syntax.
+  if (!matchesEntireString(value, /^renovate\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$/)
+      || value.includes('..') || value.split('/').some((part) => part.endsWith('.') || part.endsWith('.lock'))) {
+    throw new Error('Expected a valid Renovate branch ref');
+  }
+  return value;
+}
+
+export function buildGitHubRequest(operation, repository, identifier) {
+  if (!matchesEntireString(repository, /^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+$/)
+      || ['.', '..'].includes(repository.split('/')[1])) {
+    throw new Error('Expected an owner/repository GitHub identifier');
+  }
+  let route;
+  let method = 'GET';
+  switch (operation) {
+    case 'readPull':
+      if (!Number.isSafeInteger(identifier) || identifier <= 0) throw new Error('Expected a positive PR number');
+      route = `pulls/${identifier}`;
+      break;
+    case 'readCommit':
+      route = `git/commits/${requireGitSha(identifier)}`;
+      break;
+    case 'readTree':
+      route = `git/trees/${requireGitSha(identifier)}?recursive=1`;
+      break;
+    case 'readBlob':
+      route = `git/blobs/${requireGitSha(identifier)}`;
+      break;
+    case 'createBlob':
+      route = 'git/blobs';
+      method = 'POST';
+      break;
+    case 'createTree':
+      route = 'git/trees';
+      method = 'POST';
+      break;
+    case 'createCommit':
+      route = 'git/commits';
+      method = 'POST';
+      break;
+    case 'updateRef':
+      route = `git/refs/heads/${encodeURIComponent(requireRenovateRef(identifier))}`;
+      method = 'PATCH';
+      break;
+    default:
+      throw new Error('Unsupported GitHub API operation');
+  }
+  return { url: `https://api.github.com/repos/${repository}/${route}`, method };
+}
+
 export function validateVersionChange(base, head) {
   const read = (content) => {
     const versions = {};
@@ -31,9 +92,12 @@ export function validateVersionChange(base, head) {
 export function assertRenovatePullRequest(pr, repository, baseSha) {
   if (pr.state !== 'open' || pr.user?.login !== 'renovate[bot]' || pr.head?.repo?.full_name !== repository
       || pr.base?.repo?.full_name !== repository || !pr.head.ref.startsWith('renovate/')
-      || pr.base.sha !== baseSha || !/^[a-f0-9]{40}$/.test(pr.head.sha)) {
+      || pr.base.sha !== baseSha) {
     throw new Error('Expected an open, same-repository Renovate PR at the trusted base revision');
   }
+  requireGitSha(baseSha);
+  requireGitSha(pr.head.sha);
+  requireRenovateRef(pr.head.ref);
 }
 
 export function selectGeneratedUpdates(files, baseContents, headContents) {
@@ -58,20 +122,21 @@ export function validateFrameworkTree(baseEntries, headEntries, allowed) {
   }
 }
 
-async function api(route, token, method = 'GET', body) {
+export async function api(operation, token, { identifier, body } = {}) {
   if (!token) throw new Error('Missing GitHub token');
-  const response = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${route}`, {
-    method, signal: AbortSignal.timeout(60_000),
+  const { url, method } = buildGitHubRequest(operation, process.env.GITHUB_REPOSITORY, identifier);
+  const response = await fetch(url, {
+    method, redirect: 'error', signal: AbortSignal.timeout(60_000),
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  if (!response.ok) throw new Error(`GitHub API ${method} ${route.split('?')[0]} failed (${response.status})`);
+  if (!response.ok) throw new Error(`GitHub API ${operation} failed (${response.status})`);
   return response.json();
 }
 
 async function readTree(commitSha, token) {
-  const commit = await api(`git/commits/${commitSha}`, token);
-  const tree = await api(`git/trees/${commit.tree.sha}?recursive=1`, token);
+  const commit = await api('readCommit', token, { identifier: commitSha });
+  const tree = await api('readTree', token, { identifier: commit.tree.sha });
   if (tree.truncated) throw new Error('Cannot validate a truncated Git tree');
   return { sha: commit.tree.sha, entries: new Map(tree.tree.map((entry) => [entry.path, entry])) };
 }
@@ -81,7 +146,7 @@ async function readBlob(tree, file, token) {
   if (entry?.type !== 'blob' || !['100644', '100755'].includes(entry.mode)) {
     throw new Error(`Expected a regular tracked file, not a symlink: ${file}`);
   }
-  const blob = await api(`git/blobs/${entry.sha}`, token);
+  const blob = await api('readBlob', token, { identifier: entry.sha });
   if (blob.encoding !== 'base64') throw new Error(`Unexpected blob encoding: ${file}`);
   return Buffer.from(blob.content, 'base64').toString('utf8');
 }
@@ -94,7 +159,7 @@ function statePath() {
 async function prepare(event, token) {
   const repository = process.env.GITHUB_REPOSITORY;
   const baseSha = event.pull_request.base.sha;
-  const pr = await api(`pulls/${event.number}`, token);
+  const pr = await api('readPull', token, { identifier: event.number });
   assertRenovatePullRequest(pr, repository, baseSha);
   const baseTree = await readTree(baseSha, token);
   const headTree = await readTree(pr.head.sha, token);
@@ -113,7 +178,7 @@ async function prepare(event, token) {
 async function publish(token) {
   const state = JSON.parse(readFileSync(statePath(), 'utf8'));
   if (!state.changed.length) return;
-  const pr = await api(`pulls/${state.number}`, token);
+  const pr = await api('readPull', token, { identifier: state.number });
   assertRenovatePullRequest(pr, process.env.GITHUB_REPOSITORY, state.baseSha);
   if (pr.head.sha !== state.headSha || pr.head.ref !== state.ref) throw new Error('PR head changed during synchronization; rerun on the new revision');
   const baseTree = await readTree(state.baseSha, token);
@@ -137,15 +202,18 @@ async function publish(token) {
   if (!writeToken) throw new Error('Configure RENOVATE_SYNC_TOKEN (contents: write, pull requests: read) so generated commits trigger CI');
   const entries = [];
   for (const { file, content } of updates) {
-    const blob = await api('git/blobs', writeToken, 'POST', { content: Buffer.from(content).toString('base64'), encoding: 'base64' });
+    const blob = await api('createBlob', writeToken, { body: { content: Buffer.from(content).toString('base64'), encoding: 'base64' } });
+    requireGitSha(blob.sha);
     entries.push({ path: file, mode: baseTree.entries.get(file).mode, type: 'blob', sha: blob.sha });
   }
-  const tree = await api('git/trees', writeToken, 'POST', { base_tree: headTree.sha, tree: entries });
-  const commit = await api('git/commits', writeToken, 'POST', {
+  const tree = await api('createTree', writeToken, { body: { base_tree: headTree.sha, tree: entries } });
+  requireGitSha(tree.sha);
+  const commit = await api('createCommit', writeToken, { body: {
     message: 'chore: relay framework versions from compose/.env', tree: tree.sha, parents: [state.headSha],
     author: { name: 'github-actions[bot]', email: '41898282+github-actions[bot]@users.noreply.github.com' },
-  });
-  await api(`git/refs/heads/${encodeURIComponent(state.ref)}`, writeToken, 'PATCH', { sha: commit.sha, force: false });
+  } });
+  requireGitSha(commit.sha);
+  await api('updateRef', writeToken, { identifier: state.ref, body: { sha: commit.sha, force: false } });
   console.log(`Committed ${updates.length} generated files to the Renovate PR`);
 }
 
