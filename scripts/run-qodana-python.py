@@ -248,28 +248,42 @@ def stage_project(workspace: Path, staging: Path) -> None:
     """Copy only source; never reuse host SDK metadata, caches or local secrets."""
     source = django_source(workspace)
     destination = staging / "workspace/services/python/django"
+    ignore_patterns = shutil.ignore_patterns(
+        ".git",
+        ".idea",
+        "*.iml",
+        ".venv",
+        "venv",
+        "__pycache__",
+        "*.pyc",
+        "build",
+        "*.egg-info",
+        ".ruff_cache",
+        ".pytest_cache",
+        ".coverage*",
+        "htmlcov",
+        "coverage.xml",
+        ".env",
+        ".env.*",
+    )
+
+    def validate_source_entries(directory: str | Path, names: list[str]) -> set[str]:
+        ignored = ignore_patterns(directory, names)
+        for entry in names:
+            if entry in ignored:
+                continue
+            path = Path(directory) / entry
+            if path.is_symlink() or path.is_junction():
+                raise ValueError(
+                    "Symlinked source is not supported; staging must not read outside Django."
+                )
+        return ignored
+
     shutil.copytree(
         source,
         destination,
         symlinks=True,
-        ignore=shutil.ignore_patterns(
-            ".git",
-            ".idea",
-            "*.iml",
-            ".venv",
-            "venv",
-            "__pycache__",
-            "*.pyc",
-            "build",
-            "*.egg-info",
-            ".ruff_cache",
-            ".pytest_cache",
-            ".coverage*",
-            "htmlcov",
-            "coverage.xml",
-            ".env",
-            ".env.*",
-        ),
+        ignore=validate_source_entries,
     )
     if any(path.is_symlink() or path.is_junction() for path in destination.rglob("*")):
         raise ValueError("Symlinked source is not supported; staging must not read outside Django.")
