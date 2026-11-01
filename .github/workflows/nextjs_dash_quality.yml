@@ -14,6 +14,7 @@ on:
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
   push:
     branches:
@@ -25,6 +26,7 @@ on:
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
@@ -48,7 +50,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node
         with:
           node-version: '26.13.0'
           cache: npm

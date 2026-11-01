@@ -10,6 +10,8 @@ on:
     paths:
       - 'utils/nextjs-dash/**'
       - '.github/workflows/nextjs_dash_coverage.yml'
+      - '.github/actions/setup-node/**'
+      - '.github/actions/codecov-upload/**'
       - '.github/actions/upload-artifact/**'
   push:
     branches:
@@ -17,6 +19,8 @@ on:
     paths:
       - 'utils/nextjs-dash/**'
       - '.github/workflows/nextjs_dash_coverage.yml'
+      - '.github/actions/setup-node/**'
+      - '.github/actions/codecov-upload/**'
       - '.github/actions/upload-artifact/**'
 
 permissions:
@@ -39,7 +43,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node
         with:
           node-version: '26.13.0'
           cache: npm
@@ -205,22 +209,18 @@ jobs:
       # mappings and component definitions.
       - name: Upload to Codecov (Node)
         if: always() && !cancelled() && steps.coverage_node.outcome == 'success'
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: ./.github/actions/codecov-upload
         with:
           files: utils/nextjs-dash/coverage/node/lcov.info
           flags: nextjs-dash-node
           name: nextjs-dash-node
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          disable_search: true
 
       - name: Upload to Codecov (DOM)
         if: always() && !cancelled() && steps.coverage_dom.outcome == 'success'
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: ./.github/actions/codecov-upload
         with:
           files: utils/nextjs-dash/coverage/dom/lcov.info
           flags: nextjs-dash-dom
           name: nextjs-dash-dom
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          disable_search: true

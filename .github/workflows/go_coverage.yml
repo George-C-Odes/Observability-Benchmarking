@@ -10,6 +10,8 @@ on:
     paths:
       - 'services/go/**'
       - '.github/workflows/go_coverage.yml'
+      - '.github/actions/setup-go/**'
+      - '.github/actions/codecov-upload/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
   push:
@@ -18,6 +20,8 @@ on:
     paths:
       - 'services/go/**'
       - '.github/workflows/go_coverage.yml'
+      - '.github/actions/setup-go/**'
+      - '.github/actions/codecov-upload/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
 
@@ -49,7 +53,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: ./.github/actions/setup-go
         with:
           go-version-file: ${{ matrix.module_dir }}/go.mod
           cache-dependency-path: |
@@ -226,14 +230,12 @@ jobs:
       # and component definitions.
       - name: Upload to Codecov
         if: always() && !cancelled() && steps.test.outcome == 'success'
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: ./.github/actions/codecov-upload
         with:
           files: ${{ matrix.module_dir }}/coverage-codecov.out
           flags: ${{ matrix.name }}
           name: ${{ matrix.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          disable_search: true
 
   # ── Coverage Gate ─────────────────────────────────────────────────
   # Enforces minimum statement-coverage thresholds for each Go module.
@@ -254,7 +256,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: ./.github/actions/setup-go
         with:
           go-version-file: services/go/enhanced/go.mod
           cache-dependency-path: |

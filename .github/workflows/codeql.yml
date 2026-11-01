@@ -22,6 +22,7 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
       - '.github/actions/codeql-action/**'
@@ -39,6 +40,7 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
       - '.github/actions/codeql-action/**'
@@ -294,7 +296,7 @@ jobs:
           merge-multiple: true
 
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node
         with:
           node-version: '22'
 

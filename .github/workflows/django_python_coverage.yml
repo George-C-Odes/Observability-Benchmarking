@@ -14,6 +14,7 @@ on:
       - '.github/actions/install-python-dependencies/**'
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
+      - '.github/actions/codecov-upload/**'
       - 'codecov.yml'
   push:
     branches:
@@ -25,6 +26,7 @@ on:
       - '.github/actions/install-python-dependencies/**'
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
+      - '.github/actions/codecov-upload/**'
       - 'codecov.yml'
 
 permissions:
@@ -233,12 +235,10 @@ jobs:
 
       - name: Upload to Codecov
         if: always() && !cancelled() && steps.test.outcome == 'success'
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: ./.github/actions/codecov-upload
         with:
           files: ${{ github.workspace }}/${{ matrix.module_dir }}/coverage.xml
           flags: ${{ matrix.codecov_flag }}
           name: ${{ matrix.codecov_flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          disable_search: true
 

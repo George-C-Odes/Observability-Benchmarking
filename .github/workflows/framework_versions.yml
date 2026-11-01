@@ -24,12 +24,15 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node
         with:
           node-version: '24'
 
       - name: Set up Python
         uses: ./.github/actions/setup-python
+
+      - name: Validate shared GitHub actions
+        run: node --test scripts/github-actions.test.mjs
 
       - name: Test version synchronization and Renovate routing
         run: node --test scripts/sync-*.test.mjs scripts/render-readmes.test.mjs scripts/renovate-framework-sync.test.mjs

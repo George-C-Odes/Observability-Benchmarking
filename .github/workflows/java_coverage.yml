@@ -14,6 +14,7 @@ on:
       - '.github/actions/setup-java/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
+      - '.github/actions/codecov-upload/**'
   push:
     branches:
       - main
@@ -24,6 +25,7 @@ on:
       - '.github/actions/setup-java/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
+      - '.github/actions/codecov-upload/**'
 
 permissions:
   contents: read
@@ -232,14 +234,12 @@ jobs:
       # this workflow.
       - name: Upload to Codecov
         if: always() && !cancelled() && steps.build.outcome == 'success'
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: ./.github/actions/codecov-upload
         with:
           files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
           flags: java-${{ matrix.name }}
           name: java-${{ matrix.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-          disable_search: true
 
   # ── Verdict aggregation ─────────────────────────────────────────────
   # Determines why the matrix failed (if it did) by inspecting
