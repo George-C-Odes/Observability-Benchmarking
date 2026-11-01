@@ -122,7 +122,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:274f28a0b13576f0a424306b9202dba73b6ea82ac37f7436585a09b8a99f603e
+  content_hash: sha256:8dcf0ceac933c7dfb2b773bc6b435408e4388d1fbf8cb4c979d6d2630a03ea21
 - kind: project-relative
   target: claude
   value: .claude/skills/benchmark-integrity
@@ -158,7 +158,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:14a8641e662ee9e678eac77e02e227af8ac23592b21a34b578bd5e9416b49e2a
+  content_hash: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
 - kind: project-relative
   target: claude
   value: .claude/skills/focused-validation
@@ -338,7 +338,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:14a8641e662ee9e678eac77e02e227af8ac23592b21a34b578bd5e9416b49e2a
+  content_hash: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
 - kind: project-relative
   target: codex
   value: .agents/skills/focused-validation
@@ -518,7 +518,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:d85b11d1830c8a1256e52860bfe9cf76d1400a1499de70b058c57fbb0e8c1fd0
+  content_hash: sha256:087d0780e84e2cd5cff3d2f782977e53ac4e07418f0336aada8f82d31f54c514
 - kind: project-relative
   target: copilot
   value: .github/prompts/review-change.prompt.md
@@ -581,7 +581,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:6636a50761fff5f6544078ca5a23c8cb6e609a503f9b82d42ca7e20657dc46b6
+  content_hash: sha256:a8587b37a5bce326bb60eb8161d7c2c11a590dc0d8f8e6a5e811f7c1063f571f
 - kind: project-relative
   target: gemini
   value: .gemini/commands/review-change.toml
@@ -644,7 +644,7 @@ deployments:
   owners:
   - .
   active_owner: .
-  content_hash: sha256:c13b7d40d8ddb10fd108bf2b47bd10fc799da61f8a61e17eb5c28479ff798917
+  content_hash: sha256:2af84ce1b954887712f67967d9d904bcb8bba91bd3d961fad04b66ea7c5553e6
 - kind: project-relative
   target: windsurf
   value: .windsurf/workflows/review-change.md
@@ -703,33 +703,33 @@ local_deployed_files:
 - .windsurf/workflows/validate-change.md
 local_deployed_file_hashes:
   .agents/skills/benchmark-integrity/SKILL.md: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
-  .agents/skills/ci-report-safety/SKILL.md: sha256:14a8641e662ee9e678eac77e02e227af8ac23592b21a34b578bd5e9416b49e2a
+  .agents/skills/ci-report-safety/SKILL.md: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
   .agents/skills/focused-validation/SKILL.md: sha256:89103530e877864e4d5dcbc58767f30f57c59d408bf7b519196d994725962942
   .claude/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .claude/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
   .claude/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
   .claude/rules/dashboard-ui.md: sha256:0ce868af6af70b1d716a4cba602d0a93a0c534ae475f2ba3c0c9eda809211cb6
-  .claude/rules/repository-contract.md: sha256:274f28a0b13576f0a424306b9202dba73b6ea82ac37f7436585a09b8a99f603e
+  .claude/rules/repository-contract.md: sha256:8dcf0ceac933c7dfb2b773bc6b435408e4388d1fbf8cb4c979d6d2630a03ea21
   .claude/skills/benchmark-integrity/SKILL.md: sha256:96df104eefaa9203401d52ff2b5fe4c9501a97a9ac810a5a0f26776aa06a43e2
-  .claude/skills/ci-report-safety/SKILL.md: sha256:14a8641e662ee9e678eac77e02e227af8ac23592b21a34b578bd5e9416b49e2a
+  .claude/skills/ci-report-safety/SKILL.md: sha256:7b893fff16d8dfe599efed2e721cb185df355eb1f2dc410b98de0e0a853f247f
   .claude/skills/focused-validation/SKILL.md: sha256:89103530e877864e4d5dcbc58767f30f57c59d408bf7b519196d994725962942
   .codex/agents/repository-reviewer.toml: sha256:093b7abc16191542901ea5054c3fd9702a181984315e4cae68c9140a33a0aaac
   .cursor/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .cursor/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
   .cursor/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
   .cursor/rules/dashboard-ui.mdc: sha256:f9463a39310203fb03835934d3309fb51b307e35122959de5a6ea98052919820
-  .cursor/rules/repository-contract.mdc: sha256:6636a50761fff5f6544078ca5a23c8cb6e609a503f9b82d42ca7e20657dc46b6
+  .cursor/rules/repository-contract.mdc: sha256:a8587b37a5bce326bb60eb8161d7c2c11a590dc0d8f8e6a5e811f7c1063f571f
   .gemini/commands/review-change.toml: sha256:93be42ed6ec71f53ef8b27a08887403a92fe1117bd11d05c59f94f55712929fa
   .gemini/commands/validate-change.toml: sha256:338639ecda6c139275a9049fa47fa20870c01658e9673dcf18fa69ef7493b9b6
   .github/agents/repository-reviewer.agent.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .github/instructions/dashboard-ui.instructions.md: sha256:e1299220f159e7d87cf2b3969fd35a18abbf96a84cd49d4ecbad01544a264f0a
-  .github/instructions/repository-contract.instructions.md: sha256:d85b11d1830c8a1256e52860bfe9cf76d1400a1499de70b058c57fbb0e8c1fd0
+  .github/instructions/repository-contract.instructions.md: sha256:087d0780e84e2cd5cff3d2f782977e53ac4e07418f0336aada8f82d31f54c514
   .github/prompts/review-change.prompt.md: sha256:2126fca5894e46c1f905486408ef8c903c51d7c9b8d6466beb1d114001222b10
   .github/prompts/validate-change.prompt.md: sha256:4996ebdfd0c6d32167c7ac2e3faf29bb841a99aec64672820f6578e1d609191b
   .opencode/agents/repository-reviewer.md: sha256:1dd028a2506fd5da179aef96b1dc37785cb3e65ce0397f89efd8ebcb53d7d798
   .opencode/commands/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
   .opencode/commands/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06
   .windsurf/rules/dashboard-ui.md: sha256:203196409e446f26a3f08cbbf78ee03f6692864dc850526e184ec225177beeff
-  .windsurf/rules/repository-contract.md: sha256:c13b7d40d8ddb10fd108bf2b47bd10fc799da61f8a61e17eb5c28479ff798917
+  .windsurf/rules/repository-contract.md: sha256:2af84ce1b954887712f67967d9d904bcb8bba91bd3d961fad04b66ea7c5553e6
   .windsurf/workflows/review-change.md: sha256:25eb8132251196ea8b255356aad21bb1555a0344298f497cfca5eb015a2d2097
   .windsurf/workflows/validate-change.md: sha256:7c126a5ef7f26bdc11ea762fe1c88b9cf0fc63c95d7d4a96a4b52c91a50c9a06

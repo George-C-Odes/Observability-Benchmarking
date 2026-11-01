@@ -199,25 +199,43 @@ test('authenticated fetch uses the fixed operation, rejects redirects and preser
 test('invalid API identifiers never reach the authenticated fetch boundary', async (t) => {
   setRepository(t);
   const mock = t.mock.method(globalThis, 'fetch', () => assert.fail('Invalid input must not send a request'));
-  for (const [operation, identifier] of [
-    ['readPull', '424/../issues'], ['readTree', `${'a'.repeat(40)}?recursive=0`],
-    ['readBlob', '../issues'], ['updateRef', 'renovate/../main'], ['git/blobs', undefined],
-  ]) await assert.rejects(api(operation, 'synthetic-test-token', { identifier }));
-  process.env.GITHUB_REPOSITORY = 'owner/repo/../../other';
-  await assert.rejects(api('createBlob', 'synthetic-test-token', { body: { content: 'test' } }), /owner\/repository/);
+  for (const operation of ['readPull', 'readCommit', 'readTree', 'readBlob', 'updateRef']) {
+    for (const identifier of [undefined, null, {}, '../issues', '%2e%2e%2fissues', 'renovate/../main',
+      'renovate/foo%2f..', 'renovate/foo%252f..', 'renovate/foo?x=1', 'renovate/foo#fragment',
+      'renovate/foo\\bar', 'renovate/foo\n', 'renovate/foo\r\n', `${'a'.repeat(40)}?recursive=0`]) {
+      await assert.rejects(api(operation, 'synthetic-test-token', { identifier }));
+    }
+  }
+  await assert.rejects(api('git/blobs', 'synthetic-test-token'), /Unsupported/);
+  for (const repository of ['owner/repo/../../other', 'owner/..', 'owner/repo%2fissues',
+    'https://evil.example/repo', 'owner/repo?x=1', 'owner/repo#fragment', 'owner/repo\n']) {
+    process.env.GITHUB_REPOSITORY = repository;
+    for (const operation of ['createBlob', 'createTree', 'createCommit']) {
+      await assert.rejects(api(operation, 'synthetic-test-token', { body: { content: 'test' } }), /owner\/repository/);
+    }
+  }
   await assert.rejects(api('readPull', '', { identifier: 424 }), /Missing GitHub token/);
   assert.equal(mock.mock.callCount(), 0);
 });
 
-test('a malicious response SHA cannot propagate into the next authenticated API request', async (t) => {
+test('response SHAs cannot inject later requests or become branch refs (Sonar S8476 flow)', async (t) => {
   setRepository(t);
-  const mock = t.mock.method(globalThis, 'fetch', async (_url, options) => {
-    assert.equal(options.redirect, 'error');
-    return new Response(JSON.stringify({ tree: { sha: '../issues?state=all' } }), { status: 200 });
-  });
-  const commit = await api('readCommit', 'synthetic-test-token', { identifier: 'a'.repeat(40) });
-  await assert.rejects(api('readTree', 'synthetic-test-token', { identifier: commit.tree.sha }), /full Git SHA/);
-  assert.equal(mock.mock.callCount(), 1);
+  const sha = 'a'.repeat(40);
+  for (const returned of ['../issues?state=all', `${sha}\n`, `${sha}%2f..`, `${sha}#fragment`, sha]) {
+    const mock = t.mock.method(globalThis, 'fetch', async (url, options) => {
+      assert.equal(url, `https://api.github.com/repos/owner/repo/git/commits/${sha}`);
+      assert.equal(options.method, 'GET');
+      assert.equal(options.redirect, 'error');
+      return new Response(JSON.stringify({ tree: { sha: returned } }), { status: 200 });
+    });
+    const commit = await api('readCommit', 'synthetic-test-token', { identifier: sha });
+    if (returned !== sha) await assert.rejects(api('readTree', 'synthetic-test-token', { identifier: commit.tree.sha }), /full Git SHA/);
+    // The live Sonar flow passes a response tree SHA into updateRef. Even a valid
+    // SHA is not a Renovate branch, and must fail before any PATCH is sent.
+    await assert.rejects(api('updateRef', 'synthetic-test-token', { identifier: commit.tree.sha }), /valid Renovate branch/);
+    assert.equal(mock.mock.callCount(), 1);
+    mock.mock.restore();
+  }
 });
 
 test('non-success and redirect API responses fail without a second request', async (t) => {
@@ -258,6 +276,19 @@ test('generated updates are idempotent and never overwrite unrelated branch edit
   assert.deepEqual(selectGeneratedUpdates(files, base, base), files);
   assert.deepEqual(selectGeneratedUpdates(files, base, new Map([['pom.xml', 'new']])), []);
   assert.throws(() => selectGeneratedUpdates(files, base, new Map([['pom.xml', 'custom']])), /overwrite a PR edit/);
+});
+
+test('Sonar version publication refuses unrelated PR edits to scanner scope or encoding', () => {
+  const file = '.sonarcloud.properties';
+  const original = 'sonar.python.version=3.13\nsonar.sourceEncoding=UTF-8\n';
+  const content = original.replace('3.13', '3.14');
+  const base = new Map([[file, original]]);
+  const files = [{ file, content }];
+  assert.deepEqual(selectGeneratedUpdates(files, base, base), files);
+  assert.deepEqual(selectGeneratedUpdates(files, base, new Map([[file, content]])), []);
+  for (const edited of [`${original}sonar.exclusions=**\n`, original.replace('UTF-8', 'ISO-8859-1')]) {
+    assert.throws(() => selectGeneratedUpdates(files, base, new Map([[file, edited]])), /overwrite a PR edit/);
+  }
 });
 
 test('workflow executes only trusted base scripts, keeps credentials scoped, and does not force refs', () => {

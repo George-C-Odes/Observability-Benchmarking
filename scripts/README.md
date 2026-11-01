@@ -4,8 +4,8 @@ This directory contains small repository-level helper scripts.
 
 ## Current scripts
 
-- `sync-framework-versions.mjs` - runs every env-driven synchronizer and README renderer, including orchestrator Quarkus and the shared Python CI version
-- `sync-framework-versions.test.mjs` - tests canonical inventories, Python defaults, and generated output scope
+- `sync-framework-versions.mjs` - runs every env-driven synchronizer and README renderer, including orchestrator Quarkus, the shared Python CI version, and Sonar's Python language version
+- `sync-framework-versions.test.mjs` - tests canonical inventories, Python CI/Sonar versions, and generated output scope
 - `sync-django-versions.mjs` - pins Django inputs from the env and regenerates runtime/CI/Docker locks when the version changes
 - `sync-django-versions.test.mjs` - offline tests for Django pinning and compiler/hash regeneration contracts
 - `renovate-framework-sync.mjs` - validates Renovate PR data and publishes only trusted generated output without checking out PR code
@@ -57,7 +57,7 @@ node scripts/sync-framework-versions.mjs --check
 
 This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
 Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django requirement inputs and locks, the shared
-Python CI default, and manifest-listed documentation. Direct builds retain literal defaults. Individual
+Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Direct builds retain literal defaults. Individual
 synchronizers remain available; use the combined command for a complete update. `--env` selects another env
 source and `--check` never writes or downloads dependencies. Changes do not run automatically just by editing
 the env. The combined operation is not transactional: after a compiler or filesystem failure, inspect the diff,
@@ -174,10 +174,51 @@ python scripts/qodana-python-report.py $results
 Run the regression tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
 Symlink tests are skipped on systems that do not permit creating symlinks.
 
+### Sonar automatic-analysis configuration
+
+The repository contains an IDE SonarQube Cloud binding in `.sonarlint/connectedMode.json` and an automatic-analysis
+configuration in `.sonarcloud.properties`, but no Sonar scanner workflow. Sonar documents both
+`sonar.python.version` and `sonar.sourceEncoding` as supported automatic-analysis properties. Confirm
+**Administration > Analysis Method** in Sonar before switching methods; Qodana configuration does not control Sonar.
+
+- `PYTHON_VERSION` in the colon-style `compose/.env` remains authoritative. The existing framework synchronizer
+  relays a stable X.Y.Z runtime pin to Sonar's accepted **X.Y** language version (for example, 3.13.18 becomes 3.13).
+  Patch-only updates leave the language version unchanged. CI's drift check and guarded Renovate publication include
+  this file; only the Python setting is generated, and other analysis settings remain authored.
+- `sonar.sourceEncoding=UTF-8` makes the intended source encoding explicit without converting files or excluding
+  production code. A strict local UTF-8 audit of tracked files, excluding PNG/ICO binaries, found no decoding failures
+  during the 2026-11-01 investigation. This does **not** identify or clear the remote encoding warning: retrieve the
+  scanner's named file/line and analysis revision, check the bytes at that revision and any generated/vendor input,
+  then convert a confirmed non-UTF-8 text file or correct the specific scope error. Do not change encoding globally
+  to hide malformed bytes or add broad source exclusions without evidence.
+
+Automatic analysis reads the additional configuration from the **default branch**; verify both warnings after
+the configuration reaches that branch and Sonar performs a fresh analysis. Merely creating this file locally does
+not update the remote project, and automatic analysis does not execute the env-relay script itself.
+
+### Sonar request-forgery triage
+
+On 2026-11-01 the public Sonar API for PR 424 confirmed that `jssecurity:S7044` was fixed but `jssecurity:S8476`
+(issue `AaGY1oYFDeJydjxQPt0K`) remained open on the source matching revision
+`689eb81e0f1aed75581a1711e75625e17c475ffc`. The remaining flow carries `readCommit`'s returned tree SHA through
+the `updateRef` branch into `fetch`. That reported path is rejected at runtime: a tree SHA is not a `renovate/`
+branch ref. The real `readTree` call requires a full SHA, and the legitimate ref path already uses validation and
+`encodeURIComponent`. Operations, methods, origin and endpoint prefixes are fixed; redirects are rejected.
+
+The request-boundary regression now exercises that exact SHA-to-ref path, malformed response identifiers, and
+plain/encoded traversal, separator, query, fragment and newline injection with **zero subsequent requests**.
+Valid nested refs and publication bodies remain covered. These tests run in **Framework Version Consistency** on
+every PR; make that check required in branch protection for enforcement beyond agent guidance.
+
+This evidence supports a **scoped false-positive review**, not another speculative URL rewrite or blanket suppression.
+No alert was dismissed, and no rule or gate was weakened. Any dismissal requires user authorization and must be
+reassessed if callers, identifier validation, resource scope, encoding or redirect policy change. The alert is still
+open; passing tests do not establish scanner clearance. Apply the request-safety completion gate in
+`my-agent/.apm/skills/ci-report-safety/SKILL.md` for future HTTP clients and Sonar triage.
+
 ### Sonar test classification
 
-The repository currently contains an IDE SonarQube Cloud binding in `.sonarlint/connectedMode.json`, but no checked-in
-Sonar scanner workflow or analysis properties. In the existing project's analysis configuration, ensure that
+In the existing project's analysis configuration, ensure that
 `**/*.test.mjs` is included in the test scope, retaining the patterns for other languages and existing tests.
 Correctly classified test files are exempt from duplication checks; production synchronizers should stay in scope.
 

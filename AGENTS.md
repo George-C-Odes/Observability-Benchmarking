@@ -26,7 +26,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | Django services                       | `services/python/django/README.md`                                                   | `gunicorn/common`, then `WSGI` or `ASGI` runtime wrapper          |
 | Next.js dashboard                     | `utils/nextjs-dash/README.md`, `package.json`, `.oxlintrc.json`, `.oxfmtrc.json`     | `app/components`, `app/api`, `lib`, matching `__tests__`          |
 | CI, scanner wrappers, quality reports | Matching workflow and `my-agent/.apm/skills/ci-report-safety/SKILL.md`               | Nearest helper tests; `scripts/pages/*` if report output changes  |
-| Authenticated HTTP/API clients        | Matching client and `my-agent/.apm/skills/ci-report-safety/SKILL.md` section 7       | Request-boundary tests; callers supplying URL identifiers         |
+| HTTP/API request construction         | Matching client and `my-agent/.apm/skills/ci-report-safety/SKILL.md` section 7       | Request-boundary tests; callers supplying URL identifiers         |
 | Docs site                             | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
 | Agent guidance or APM package         | `AGENTS.md`, relevant `.github/instructions/*`, `my-agent/README.md`                 | `docs/AGENT_IMPLEMENTATION_MAP.md`, then affected `.apm/*` files  |
 
@@ -40,6 +40,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 - `service.name` and endpoint response semantics must remain stable across benchmark variants.
 - The orchestrator executes commands; treat command validation, path validation, and auth filters as security-sensitive.
 - Scanner/report and authenticated API helpers cross command, filesystem, container, URL, and credential trust boundaries; apply the CI/report safety skill before changing them or triaging their alerts.
+- For any HTTP request construction, complete the skill's request-safety gate: trace lower-trust inputs to the client, enforce origin/resource scope, and test zero requests for malicious input. Report fresh matching scanner evidence separately; passing tests do not clear an open Sonar alert.
 
 ## Cheapest validation by area
 
