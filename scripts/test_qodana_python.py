@@ -280,9 +280,9 @@ class ScanRunnerTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "Git command timed out"):
                 runner.git_output(Path("/repository"), "rev-parse")
 
-    def test_command_is_unprivileged_git_aware_and_django_scoped(self):
+    def test_command_is_unprivileged_git_isolated_and_django_scoped(self):
         with (
-            patch.object(runner, "git_output", return_value="/repository/.git"),
+            patch.object(runner, "git_output") as git_output,
             patch.object(runner, "executable", side_effect=lambda name: name),
             patch.object(runner.os, "getuid", return_value=1001, create=True),
             patch.object(runner.os, "getgid", return_value=1001, create=True),
@@ -294,12 +294,11 @@ class ScanRunnerTests(unittest.TestCase):
         self.assertIn("--cap-drop=ALL", command)
         self.assertIn("--security-opt=no-new-privileges", command)
         self.assertIn("1001:1001", command)
-        self.assertIn("GIT_WORK_TREE=/data/workspace", command)
-        self.assertIn("GIT_DIR=/opt/project-git", command)
+        git_output.assert_not_called()
+        self.assertFalse(any(value.startswith("GIT_") for value in command))
         mounts = [command[i + 1] for i, value in enumerate(command) if value == "--mount"]
-        git_mounts = [mount for mount in mounts if "target=/opt/project-git" in mount]
-        self.assertEqual(2, len(git_mounts))
-        self.assertTrue(all(mount.endswith(",readonly") for mount in git_mounts))
+        self.assertEqual(3, len(mounts))
+        self.assertFalse(any("/.git/" in mount or "/opt/project-git" in mount for mount in mounts))
         self.assertFalse(
             any("target=/data/workspace" in m and "source=/repository," in m for m in mounts)
         )
@@ -325,9 +324,13 @@ class ScanRunnerTests(unittest.TestCase):
             (source / "app.py").write_text("pass\n", encoding="utf-8")
             (source / ".env").write_text("secret", encoding="utf-8")
             (source / "module.iml").write_text("host SDK", encoding="utf-8")
-            for name in (".idea", ".venv", "__pycache__", "build"):
+            for name in (".git", ".idea", ".venv", "__pycache__", "build"):
                 (source / name).mkdir()
                 (source / name / "ignored").touch()
+            (workspace / ".git").mkdir()
+            (workspace / ".git/config").write_text(
+                "[http]\nextraHeader = Authorization: SYNTHETIC-SECRET\n", encoding="utf-8"
+            )
             (workspace / "unrelated-secret").touch()
             staging = Path(temporary) / "stage"
             runner.stage_project(workspace, staging)
@@ -335,10 +338,7 @@ class ScanRunnerTests(unittest.TestCase):
             self.assertEqual(["app.py"], sorted(path.name for path in destination.iterdir()))
             self.assertFalse((staging / "workspace/unrelated-secret").exists())
             self.assertTrue((source / ".env").exists())
-            self.assertEqual(
-                "gitdir: /opt/project-git\n",
-                (staging / "workspace/.git").read_text(encoding="utf-8"),
-            )
+            self.assertFalse((staging / "workspace/.git").exists())
 
     def test_mutable_or_paid_image_is_rejected_before_docker(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -368,6 +368,8 @@ class ScanRunnerTests(unittest.TestCase):
                 with (
                     self.subTest(scan_status=scan_status, copy_status=copy_status),
                     patch.object(runner, "stage_project"),
+                    patch.object(runner, "git_provenance", return_value={"revisionId": "a" * 40}),
+                    patch.object(runner, "add_sarif_provenance", return_value=0) as annotate,
                     patch.object(runner, "docker_command", return_value=["docker", "run"]),
                     patch.object(runner.subprocess, "Popen", return_value=process),
                     patch.object(
@@ -377,6 +379,7 @@ class ScanRunnerTests(unittest.TestCase):
                     results = Path(temporary) / "results"
                     status = runner.run_scan(Path(temporary), results, IMAGE)
                 self.assertEqual(expected, status)
+                self.assertEqual(copy_status == 0, annotate.called)
                 self.assertEqual("cp", call.call_args_list[0].args[0][1])
                 self.assertEqual(["rm", "--force"], call.call_args_list[1].args[0][1:3])
                 self.assertEqual(
@@ -401,6 +404,8 @@ class ScanRunnerTests(unittest.TestCase):
                 self.subTest(scan_status=scan_status, commands=commands),
                 tempfile.TemporaryDirectory() as temporary,
                 patch.object(runner, "stage_project"),
+                patch.object(runner, "git_provenance", return_value={"revisionId": "a" * 40}),
+                patch.object(runner, "add_sarif_provenance", return_value=0),
                 patch.object(runner, "docker_command", return_value=["docker", "run"]),
                 patch.object(runner, "stream_scan", return_value=scan_status) as scan,
                 patch.object(runner.subprocess, "call", side_effect=commands) as call,
@@ -417,6 +422,7 @@ class ScanRunnerTests(unittest.TestCase):
         with (
             tempfile.TemporaryDirectory() as temporary,
             patch.object(runner, "stage_project"),
+            patch.object(runner, "git_provenance", return_value={"revisionId": "a" * 40}),
             patch.object(runner, "docker_command", return_value=["docker", "run"]),
             patch.object(runner, "stream_scan", side_effect=OSError("cannot start Docker")),
             patch.object(runner.subprocess, "call", return_value=0) as call,
@@ -426,6 +432,218 @@ class ScanRunnerTests(unittest.TestCase):
             call.assert_called_once()
             self.assertEqual(["rm", "--force"], call.call_args.args[0][1:3])
             self.assertEqual(runner.REMOVE_TIMEOUT_SECONDS, call.call_args.kwargs["timeout"])
+
+    def test_provenance_failure_fails_scan_but_does_not_skip_removal(self):
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch.object(runner, "stage_project"),
+            patch.object(runner, "git_provenance", return_value={"revisionId": "a" * 40}),
+            patch.object(runner, "add_sarif_provenance", return_value=1),
+            patch.object(runner, "docker_command", return_value=["docker", "run"]),
+            patch.object(runner, "stream_scan", return_value=0),
+            patch.object(runner.subprocess, "call", return_value=0) as call,
+        ):
+            self.assertEqual(
+                1, runner.run_scan(Path(temporary), Path(temporary) / "results", IMAGE)
+            )
+        self.assertEqual(["cp", "rm"], [item.args[0][1] for item in call.call_args_list])
+
+    def test_export_keeps_shell_metacharacters_in_one_argument(self):
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch.object(runner, "stage_project"),
+            patch.object(runner, "git_provenance", return_value={"revisionId": "a" * 40}),
+            patch.object(runner, "add_sarif_provenance", return_value=0),
+            patch.object(runner, "docker_command", return_value=["docker", "run"]),
+            patch.object(runner, "stream_scan", return_value=0),
+            patch.object(runner.subprocess, "call", return_value=0) as call,
+        ):
+            results = Path(temporary) / "results; $(not-a-command)"
+            self.assertEqual(0, runner.run_scan(Path(temporary), results, IMAGE))
+            self.assertEqual(str(results.resolve()), call.call_args_list[0].args[0][-1])
+        for item in call.call_args_list:
+            self.assertIsInstance(item.args[0], list)
+            self.assertFalse(item.kwargs.get("shell", False))
+        self.assertRegex(call.call_args_list[1].args[0][-1], r"^qodana-python-[a-f0-9]{32}$")
+
+
+class SourceBoundaryTests(unittest.TestCase):
+    def test_junction_source_parent_is_rejected_before_copying(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            workspace = root / "repository"
+            (workspace / "services/python/django").mkdir(parents=True)
+            for relative in ("services", "services/python", "services/python/django"):
+                target = workspace / relative
+                with (
+                    self.subTest(relative=relative),
+                    patch.object(runner.Path, "is_junction", autospec=True) as junction,
+                    patch.object(runner.shutil, "copytree") as copy,
+                ):
+                    junction.side_effect = target.__eq__
+                    with self.assertRaisesRegex(ValueError, "Symlinked source"):
+                        runner.stage_project(workspace, root / "stage")
+                    copy.assert_not_called()
+                    self.assertFalse((root / "stage").exists())
+
+    def test_redirected_source_root_or_parent_is_rejected_before_copying(self):
+        for relative in ("services", "services/python", "services/python/django"):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                workspace = root / "repository"
+                workspace.mkdir()
+                outside = root / "outside"
+                outside.mkdir()
+                (outside / "outside-only.txt").write_text("unchanged", encoding="utf-8")
+                link = workspace / relative
+                link.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    link.symlink_to(outside, target_is_directory=True)
+                except (OSError, NotImplementedError) as error:
+                    self.skipTest(f"Symlinks unavailable: {error}")
+                staging = root / "stage"
+                with (
+                    patch.object(runner.shutil, "copytree") as copy,
+                    self.assertRaisesRegex(ValueError, "Symlinked source"),
+                ):
+                    runner.stage_project(workspace, staging)
+                copy.assert_not_called()
+                self.assertFalse(staging.exists())
+                self.assertEqual("unchanged", (outside / "outside-only.txt").read_text("utf-8"))
+
+    def test_descendant_symlink_is_still_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "repository/services/python/django"
+            source.mkdir(parents=True)
+            outside = root / "outside"
+            outside.write_text("unchanged", encoding="utf-8")
+            try:
+                (source / "linked.py").symlink_to(outside)
+            except (OSError, NotImplementedError) as error:
+                self.skipTest(f"Symlinks unavailable: {error}")
+            with self.assertRaisesRegex(ValueError, "Symlinked source"):
+                runner.stage_project(root / "repository", root / "stage")
+            self.assertEqual("unchanged", outside.read_text("utf-8"))
+
+
+class ProvenanceTests(unittest.TestCase):
+    def test_remote_uri_drops_credentials_query_and_fragment(self):
+        cases = (
+            (
+                "https://user:token@example.com/org/repo.git?token=secret#private",
+                "https://example.com/org/repo.git",
+            ),
+            (
+                "ssh://git:token@example.com:2222/org/repo.git",
+                "ssh://example.com:2222/org/repo.git",
+            ),
+            ("git@example.com:org/repo.git?secret=token#private", "ssh://example.com/org/repo.git"),
+            ("https://[::1]:443/org/repo", "https://[::1]:443/org/repo"),
+        )
+        for remote, expected in cases:
+            with self.subTest(remote=remote):
+                self.assertEqual(expected, runner.sanitized_repository_uri(remote))
+
+    def test_local_invalid_or_unsupported_remotes_are_omitted(self):
+        for remote in (
+            "",
+            "/home/private/repo",
+            "../private",
+            "C:/private/repo",
+            "file:///home/private",
+            "ext::command",
+            "https://host:bad/repo",
+            "https://[broken",
+            "https://host/repo\nsecret",
+            "https://host\\private",
+        ):
+            with self.subTest(remote=remote):
+                self.assertIsNone(runner.sanitized_repository_uri(remote))
+
+    def test_git_collection_exports_only_sanitized_scalar_metadata(self):
+        with patch.object(
+            runner,
+            "git_output",
+            side_effect=[
+                "a" * 40,
+                "feature/scan",
+                "https://user:token@example.com/org/repo?secret=yes",
+            ],
+        ) as git:
+            provenance = runner.git_provenance(Path("/repository"))
+        self.assertEqual(
+            {
+                "revisionId": "a" * 40,
+                "branch": "feature/scan",
+                "repositoryUri": "https://example.com/org/repo",
+            },
+            provenance,
+        )
+        self.assertEqual(3, git.call_count)
+        self.assertNotIn("token", json.dumps(provenance))
+
+    def test_detached_checkout_without_remote_retains_revision(self):
+        missing = subprocess.CalledProcessError(1, "git")
+        with patch.object(runner, "git_output", side_effect=["a" * 40, missing, missing]):
+            self.assertEqual({"revisionId": "a" * 40}, runner.git_provenance(Path("/repository")))
+
+    def test_invalid_revision_and_git_failures_do_not_leak_values(self):
+        with patch.object(runner, "git_output", return_value="private-value"):
+            with self.assertRaisesRegex(ValueError, "invalid revision") as error:
+                runner.git_provenance(Path("/repository"))
+            self.assertNotIn("private-value", str(error.exception))
+        with patch.object(
+            runner, "git_output", side_effect=["a" * 40, subprocess.CalledProcessError(128, "git")]
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                runner.git_provenance(Path("/repository"))
+
+    def test_sarif_enrichment_preserves_findings_and_invocations_in_all_runs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            results = Path(temporary)
+            fixture = sarif_fixture()
+            fixture["runs"].extend(sarif_fixture(successful=False)["runs"])
+            for run in fixture["runs"]:
+                run["results"] = [{"ruleId": "example", "message": {"text": "finding"}}]
+                run["versionControlProvenance"] = [{"repositoryUri": "file:///old"}]
+            path = results / "qodana.sarif.json"
+            path.write_text(json.dumps(fixture), encoding="utf-8")
+            provenance = {"revisionId": "a" * 40, "repositoryUri": "https://example.com/repo"}
+            self.assertEqual(0, runner.add_sarif_provenance(results, provenance, io.StringIO()))
+            updated = json.loads(path.read_text("utf-8"))
+            for before, after in zip(fixture["runs"], updated["runs"], strict=True):
+                self.assertEqual([provenance], after.pop("versionControlProvenance"))
+                before.pop("versionControlProvenance")
+                self.assertEqual(before, after)
+
+    def test_missing_or_malformed_sarif_fails_without_overwriting_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            results = Path(temporary)
+            path = results / "qodana.sarif.json"
+            for contents in (None, "private-invalid-value", "null", "[]", '{"runs": []}'):
+                with self.subTest(contents=contents):
+                    if contents is not None:
+                        path.write_text(contents, encoding="utf-8")
+                    log = io.StringIO()
+                    self.assertEqual(1, runner.add_sarif_provenance(results, {}, log))
+                    self.assertNotIn("private-invalid-value", log.getvalue())
+                    if contents is not None:
+                        self.assertEqual(contents, path.read_text("utf-8"))
+
+    def test_symlinked_sarif_is_not_read_or_written(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            results = root / "results"
+            results.mkdir()
+            outside = root / "outside"
+            outside.write_text("unchanged", encoding="utf-8")
+            try:
+                (results / "qodana.sarif.json").symlink_to(outside)
+            except (OSError, NotImplementedError) as error:
+                self.skipTest(f"Symlinks unavailable: {error}")
+            self.assertEqual(1, runner.add_sarif_provenance(results, {}, io.StringIO()))
+            self.assertEqual("unchanged", outside.read_text("utf-8"))
 
 
 class StreamingDeadlineTests(unittest.TestCase):
@@ -490,7 +708,7 @@ class WorkflowContractTests(unittest.TestCase):
 
     def test_subprocess_deadlines_leave_time_for_ci_setup_and_artifacts(self):
         budget = (
-            2 * runner.GIT_TIMEOUT_SECONDS
+            3 * runner.GIT_TIMEOUT_SECONDS
             + runner.SCAN_TIMEOUT_SECONDS
             + runner.COPY_TIMEOUT_SECONDS
             + runner.REMOVE_TIMEOUT_SECONDS

@@ -1,6 +1,7 @@
 """Run Django-only Qodana Community on a disposable, unprivileged source copy."""
 
 import argparse
+import json
 import os
 import queue
 import re
@@ -12,6 +13,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import TextIO
+from urllib.parse import urlsplit, urlunsplit
 
 GIT_TIMEOUT_SECONDS = 30
 SCAN_TIMEOUT_SECONDS = 20 * 60
@@ -33,16 +35,98 @@ def git_output(workspace: Path, *arguments: str) -> str:
     command = [executable("git"), "-C", str(workspace), *arguments]
     try:
         return subprocess.check_output(  # noqa: S603
-            command, text=True, timeout=GIT_TIMEOUT_SECONDS
+            command, text=True, stderr=subprocess.DEVNULL, timeout=GIT_TIMEOUT_SECONDS
         ).strip()
     except subprocess.TimeoutExpired as error:
         raise RuntimeError(f"Git command timed out after {GIT_TIMEOUT_SECONDS}s") from error
+
+
+def sanitized_repository_uri(remote: str) -> str | None:
+    """Retain a network repository URI, never credentials, queries or local paths."""
+    if not remote or re.search(r"[\s\\\x00-\x1f\x7f]", remote):
+        return None
+    if "://" not in remote:
+        scp = re.fullmatch(r"(?:[^/@:]+@)?([A-Za-z0-9.-]+):([^:]+)", remote)
+        if scp is None or len(scp[1]) == 1:
+            return None  # Includes Windows drive paths, not just file:// URLs.
+        remote = f"ssh://{scp[1]}/{scp[2]}"
+    try:
+        uri = urlsplit(remote)
+        if uri.scheme not in {"https", "http", "ssh", "git"} or not uri.hostname:
+            return None
+        host = uri.hostname
+        if re.fullmatch(r"[A-Za-z0-9.:-]+", host) is None:
+            return None
+        authority = f"[{host}]" if ":" in host else host
+        if uri.port is not None:
+            authority += f":{uri.port}"
+        return urlunsplit((uri.scheme, authority, uri.path, "", ""))
+    except ValueError:
+        return None
+
+
+def git_provenance(workspace: Path) -> dict[str, str]:
+    """Collect scalars on the host; never expose host Git files to the scanner."""
+    revision = git_output(workspace, "rev-parse", "--verify", "HEAD")
+    if re.fullmatch(r"[a-f0-9]{40}|[a-f0-9]{64}", revision) is None:
+        raise ValueError("Git returned an invalid revision ID.")
+    provenance = {"revisionId": revision}
+    try:
+        branch = git_output(workspace, "symbolic-ref", "--quiet", "--short", "HEAD")
+    except subprocess.CalledProcessError as error:
+        if error.returncode != 1:
+            raise
+    else:
+        if branch:
+            provenance["branch"] = branch
+    try:
+        remote = git_output(workspace, "config", "--local", "--get", "remote.origin.url")
+    except subprocess.CalledProcessError as error:
+        if error.returncode != 1:
+            raise
+    else:
+        repository_uri = sanitized_repository_uri(remote)
+        if repository_uri:
+            provenance["repositoryUri"] = repository_uri
+    return provenance
+
+
+def django_source(workspace: Path) -> Path:
+    """The caller chooses a trusted workspace; its Django subtree cannot redirect."""
+    source = workspace.resolve(strict=True)
+    for component in ("services", "python", "django"):
+        source = source / component
+        if source.is_symlink() or source.is_junction() or source.resolve(strict=True) != source:
+            raise ValueError("Symlinked source directories are not supported below the workspace.")
+        if not source.is_dir():
+            raise ValueError("Django source must be a directory within the workspace.")
+    return source
 
 
 def log_message(log: TextIO, message: str) -> None:
     print(message, flush=True)
     log.write(message + "\n")
     log.flush()
+
+
+def add_sarif_provenance(results: Path, provenance: dict[str, str], log: TextIO) -> int:
+    """Annotate exported SARIF only; scanner invocations and findings are untouched."""
+    path = results / "qodana.sarif.json"
+    try:
+        if path.is_symlink() or path.resolve() != path:
+            raise ValueError("Symlinked SARIF is not supported.")
+        sarif = json.loads(path.read_text(encoding="utf-8"))
+        runs = sarif["runs"]
+        if not isinstance(runs, list) or not runs or any(not isinstance(run, dict) for run in runs):
+            raise ValueError("SARIF must contain a nonempty list of runs.")
+        for run in runs:
+            run["versionControlProvenance"] = [dict(provenance)]
+        path.write_text(json.dumps(sarif, ensure_ascii=False) + "\n", encoding="utf-8")
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        # Do not echo report contents or unsanitized Git configuration into the log.
+        log_message(log, f"Cannot add sanitized SARIF provenance ({type(error).__name__})")
+        return 1
+    return 0
 
 
 def run_bounded_command(command: list[str], log: TextIO, timeout: int) -> int:
@@ -116,10 +200,6 @@ def stream_scan(command: list[str], log: TextIO, timeout: float) -> int:
 
 
 def docker_command(workspace: Path, staging: Path, image: str, name: str) -> list[str]:
-    git_dir = Path(git_output(workspace, "rev-parse", "--absolute-git-dir"))
-    common_dir = Path(
-        git_output(workspace, "rev-parse", "--path-format=absolute", "--git-common-dir")
-    )
     requirements = workspace / ".github/requirements"
     installer = workspace / ".github/actions/install-python-dependencies"
     uid = os.getuid() if hasattr(os, "getuid") else 1000
@@ -148,16 +228,6 @@ def docker_command(workspace: Path, staging: Path, image: str, name: str) -> lis
         "QODANA_PYTHON_PATH=/opt/miniconda3/bin/python3",
         "--env",
         "QODANA_DJANGO_ROOT=/data/workspace/services/python/django",
-        "--env",
-        "GIT_DIR=/opt/project-git",
-        "--env",
-        "GIT_COMMON_DIR=/opt/project-git-common",
-        "--env",
-        "GIT_WORK_TREE=/data/workspace",
-        "--mount",
-        f"type=bind,source={git_dir},target=/opt/project-git,readonly",
-        "--mount",
-        f"type=bind,source={common_dir},target=/opt/project-git-common,readonly",
         "--mount",
         f"type=bind,source={staging / 'workspace'},target=/data/workspace",
         "--mount",
@@ -176,9 +246,10 @@ def docker_command(workspace: Path, staging: Path, image: str, name: str) -> lis
 
 def stage_project(workspace: Path, staging: Path) -> None:
     """Copy only source; never reuse host SDK metadata, caches or local secrets."""
+    source = django_source(workspace)
     destination = staging / "workspace/services/python/django"
     shutil.copytree(
-        workspace / "services/python/django",
+        source,
         destination,
         symlinks=True,
         ignore=shutil.ignore_patterns(
@@ -200,10 +271,8 @@ def stage_project(workspace: Path, staging: Path) -> None:
             ".env.*",
         ),
     )
-    if any(path.is_symlink() for path in destination.rglob("*")):
+    if any(path.is_symlink() or path.is_junction() for path in destination.rglob("*")):
         raise ValueError("Symlinked source is not supported; staging must not read outside Django.")
-    # The IDE's Git integration discovers marker files, not just GIT_* env vars.
-    (staging / "workspace/.git").write_text("gitdir: /opt/project-git\n", encoding="utf-8")
 
 
 def run_scan(workspace: Path, results: Path, image: str) -> int:
@@ -217,9 +286,11 @@ def run_scan(workspace: Path, results: Path, image: str) -> int:
     # Reject stale evidence instead of mixing it into the new scan/artifact.
     if any(results.iterdir()):
         raise ValueError("The results directory must be empty for each scan.")
+    provenance_status = 0
     with tempfile.TemporaryDirectory(prefix="qodana-python-") as temporary:
         staging = Path(temporary)
         stage_project(workspace, staging)
+        provenance = git_provenance(workspace)
         name = f"qodana-python-{uuid.uuid4().hex}"
         command = docker_command(workspace, staging, image, name)
         with (results / "scan.log").open("w", encoding="utf-8") as log:
@@ -231,13 +302,15 @@ def run_scan(workspace: Path, results: Path, image: str) -> int:
                     log,
                     COPY_TIMEOUT_SECONDS,
                 )
+                if copy_status == 0:
+                    provenance_status = add_sarif_provenance(results, provenance, log)
             finally:
                 cleanup_status = run_bounded_command(
                     [command[0], "rm", "--force", name],
                     log,
                     REMOVE_TIMEOUT_SECONDS,
                 )
-            return scan_status or copy_status or cleanup_status
+            return scan_status or copy_status or cleanup_status or provenance_status
 
 
 if __name__ == "__main__":
@@ -245,7 +318,7 @@ if __name__ == "__main__":
     parser.add_argument("--workspace", type=Path, default=Path(__file__).resolve().parent.parent)
     parser.add_argument("--results-dir", required=True, type=Path)
     arguments = parser.parse_args()
-    config = arguments.workspace / "services/python/django/qodana.yaml"
+    config = django_source(arguments.workspace) / "qodana.yaml"
     image_line = next(
         line
         for line in config.read_text(encoding="utf-8").splitlines()

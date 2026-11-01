@@ -74,6 +74,15 @@ the CLI path can change the accepted location, and the OS temp fallback also use
 Do not launch this helper with elevated privileges or untrusted remote/agent-supplied environment
 overrides. See the [environment trust boundary and scoped Snyk triage guidance](../docs/SECURITY.md#qodana-report-environment-trust-boundary).
 
+The scan runner validates `services/python/django` and each intermediate directory before copying
+or reading its Qodana configuration, rejecting symlink/junction redirection outside the selected trusted
+workspace. Descendant symlinks remain unsupported. No host Git files are mounted or copied, including
+configuration, objects, refs, and `.git` pointers. The host collects three provenance scalars (revision,
+attached branch, sanitized network remote URI) and adds them only to exported SARIF. Remote userinfo,
+queries, and fragments are removed; local/unsupported URLs are omitted. Qodana's native HTML metadata
+and logs may lack Git context; SARIF findings and execution flags are preserved. Provenance annotation
+failure returns a nonzero status without skipping container removal or overwriting malformed evidence.
+
 `run-qodana-python.py` bounds each Git call to 30 seconds, the complete scan (including silent or
 continuous output) to 20 minutes, report export to five minutes, and container removal to one minute.
 A timed-out scan kills its local Docker client, then still attempts report export and container removal.

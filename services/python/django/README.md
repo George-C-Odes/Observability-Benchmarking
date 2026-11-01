@@ -243,14 +243,15 @@ Compatibility versions use the repository-managed XML settings in `quality/`, co
 
 The `qodana.yaml` bootstrap uses the shared Python CI installer and hash inventory to install Django, OpenTelemetry, gunicorn, cachetools, and the local `obbench-django-common` package for import resolution. Third-party dependencies and local build tools require verified hashes and wheels. The local package is built from a temporary copy with dependency fetching disabled. Pyroscope packages remain excluded from this analysis-only environment, and the bootstrap permits the analyzer's older Python interpreter through `PIP_IGNORE_REQUIRES_PYTHON=1`.
 
-`scripts/run-qodana-python.py` runs Docker as a non-root user with all capabilities dropped and privilege escalation disabled. It creates a disposable Django source copy, omitting host IDE metadata, virtualenvs, caches, build output, and local `.env` files. Read-only Git metadata preserves revision provenance without opening other repository sources. Shared requirements and the installer are mounted read-only under `/opt/python-ci`, outside the Django analysis root; missing assets fail the bootstrap instead of falling back to an unhashed install.
+`scripts/run-qodana-python.py` runs Docker as a non-root user with all capabilities dropped and privilege escalation disabled. It validates the Django root and intermediate directories before copying, rejecting symlink/junction redirection, and creates a disposable source copy without host IDE metadata, virtualenvs, caches, build output, or local `.env` files. No host Git directories, configuration, history, or `.git` pointer enter the container. The host adds revision, attached branch, and a sanitized network repository URI to exported SARIF after analysis; userinfo, query strings, and fragments are stripped, and local/unsupported remote paths are omitted. Shared requirements and the installer are mounted read-only under `/opt/python-ci`, outside the Django analysis root; missing assets fail the bootstrap instead of falling back to an unhashed install.
 
 Qodana runs independently of common lint checks and has no `continue-on-error` allowance. HTML report and diagnostic uploads run even after a failed scan. The existing `qodana-report-django-python` artifact remains compatible with Pages; `qodana-diagnostics-django-python` retains scanner logs, SARIF, and inspection summaries. GitHub Step Summary shows enabled-inspection coverage and regressions fail the job.
 
 ### Run Qodana locally
 
 ```powershell
-$results = Join-Path $PWD (".qodana/django-python/" + [guid]::NewGuid().ToString("N"))
+$tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { python -c "import tempfile; print(tempfile.gettempdir())" }
+$results = Join-Path $tempRoot 'qodana-python/results'
 python scripts/run-qodana-python.py --results-dir "$results"
 $scanExit = $LASTEXITCODE
 python scripts/qodana-python-report.py "$results"

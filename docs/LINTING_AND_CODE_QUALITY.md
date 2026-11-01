@@ -373,9 +373,9 @@ The `qodana` job in `.github/workflows/django_python_quality.yml` runs independe
 
 1. Checks out the repository without persisted credentials and sets up Python.
 2. Invokes `scripts/run-qodana-python.py`, using the Community image tag and digest from `services/python/django/qodana.yaml` (maintained by Renovate):
-   - Only a disposable Django source copy is opened at `/data/workspace/services/python/django`; host IDE metadata, virtualenvs, caches, build output, and `.env` files are omitted.
+   - The Django source root and intermediate directories are validated before copying; symlink/junction redirection is rejected. Only a disposable Django copy is opened at `/data/workspace/services/python/django`; host IDE metadata, virtualenvs, caches, build output, and `.env` files are omitted.
    - Docker runs as the caller's non-root UID/GID with `--cap-drop=ALL` and `--security-opt=no-new-privileges`.
-   - Git metadata is mounted read-only outside the analysis root, preserving repository/revision provenance without indexing other services.
+   - No host Git directories, config, object database, or `.git` pointer are mounted/copied. The host collects only the revision, attached branch, and sanitized network repository URI and adds them to exported SARIF after analysis. URL userinfo, query strings, and fragments are stripped; local/unsupported remote URLs are omitted. Git integration is unavailable inside Qodana, so its native report/logs may lack Git metadata; exported SARIF receives the sanitized provenance without altering findings or invocation status.
    - Shared requirements and installer are mounted read-only at `/opt/python-ci/requirements` and `/opt/python-ci/installer`.
 3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without a bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
 4. Runs `scripts/qodana-python-report.py` even after scan failure, writes inspection-count diagnostics, and verifies required inspections remain enabled.
@@ -433,7 +433,8 @@ The Pages workflow triggers on successful `Django Python Quality` runs on `main`
 **Bash / zsh:**
 
 ```bash
-results=".qodana/django-python/$(date +%Y%m%d-%H%M%S)"
+temp_root="${RUNNER_TEMP:-$(python3 -c 'import tempfile; print(tempfile.gettempdir())')}"
+results="$temp_root/qodana-python/results"
 scan_status=0
 python3 scripts/run-qodana-python.py --results-dir "$results" || scan_status=$?
 coverage_status=0
@@ -444,7 +445,8 @@ test "$scan_status" -eq 0 && test "$coverage_status" -eq 0
 **PowerShell:**
 
 ```powershell
-$results = Join-Path $PWD (".qodana/django-python/" + [guid]::NewGuid().ToString("N"))
+$tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { python -c "import tempfile; print(tempfile.gettempdir())" }
+$results = Join-Path $tempRoot 'qodana-python/results'
 python scripts/run-qodana-python.py --results-dir "$results"
 $scanExit = $LASTEXITCODE
 python scripts/qodana-python-report.py "$results"
@@ -456,7 +458,7 @@ Notes:
 - The `bootstrap` command in `services/python/django/qodana.yaml` runs automatically inside the container before analysis, installing Django and other dependencies so imports resolve correctly.
 - A non-zero scanner exit code indicates a quality-gate violation or scanner/bootstrap failure. A non-zero summary exit code indicates failed analysis or missing inspection coverage.
 - A `QODANA_TOKEN` is not required for local scans with the community linter.
-- Results and logs are written under a fresh `.qodana/django-python/` subdirectory; reusing a non-empty results directory is rejected.
+- Use `RUNNER_TEMP/qodana-python/results` (OS temp locally) for both helpers. Reusing a non-empty results directory is rejected; archive or remove prior results before another scan. The selected workspace and launcher environment must be trusted; see `docs/SECURITY.md` for the trust boundary.
 - Run helper tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
 
 ### Configuration
