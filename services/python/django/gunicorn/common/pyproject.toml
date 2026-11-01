@@ -22,7 +22,13 @@ src = ["src"]
 extend-exclude = ["build"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "S", "B", "ASYNC"]
+
+[tool.ruff.lint.per-file-ignores]
+# The service must listen on its container interfaces for Compose benchmarking.
+"src/obbench_django_common/infrastructure/config.py" = ["S104"]
+# This test verifies the owned 0700 tmpfs directory created by the startup hook.
+"src/obbench_django_common/tests/test_boot_and_runtime_entrypoints.py" = ["S108"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["obbench_django_common"]

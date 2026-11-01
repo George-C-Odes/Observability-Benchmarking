@@ -155,6 +155,7 @@ Every benchmark target **must** export equivalent telemetry to be a fair compari
 - [ ] Ruff passes (`ruff check` + `ruff format --check`) for Python changes
 - [ ] `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm run test:fast` pass for dashboard changes
 - [ ] Unit tests pass in the affected module
+- [ ] Changed workflows pass actionlint expression/context validation; YAML parsing alone is insufficient
 - [ ] No new Qodana critical/high/moderate findings
 - [ ] No new CodeQL alerts
 - [ ] Dependabot-managed dependencies are not pinned to outdated versions
@@ -172,6 +173,10 @@ All GitHub Actions are pinned to **full commit SHAs** (with version comments) fo
 - Use `npm ci --ignore-scripts` for dashboard installs and the locked `.github/go-tools` module for Go CI tools.
 - Keep `workflow_run` source-repository guards and trusted-main checkout in Pages. Downloaded reports are data; never execute their source revision.
 - Set a timeout on every job.
+
+### Scanner and report helper safety
+
+For workflow, scanner-wrapper, report-gate, staging/mount, or security-alert tasks, apply `my-agent/.apm/skills/ci-report-safety/SKILL.md` and the CI recipe in `docs/AGENT_IMPLEMENTATION_MAP.md`. These are the repository-specific checks for command-versus-path trust, streaming deadlines, read-only mount disclosure, fail-closed SARIF evidence, and authorized per-alert triage. Keep reviewed false positives scoped; do not weaken security rules or quality gates to clear warnings.
 
 ---
 

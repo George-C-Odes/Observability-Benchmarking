@@ -17,8 +17,27 @@ version: "1.0"
 
 profile:
   name: qodana.recommended
+  inspections:
+    # These bundled inspections are disabled by the recommended profile because
+    # dynamic Python can produce false positives. Keep exceptions local/reviewed.
+    - inspection: PyUnresolvedReferencesInspection
+      enabled: true
+    - inspection: PyTypeCheckerInspection
+      enabled: true
+    - inspection: PyArgumentListInspection
+      enabled: true
+    - inspection: PyDataclassInspection
+      enabled: true
+    - inspection: PyCompatibilityInspection
+      enabled: true
 
-linter: jetbrains/qodana-python-community:2026.2
+linter: jetbrains/qodana-python-community:2026.2@sha256:b95b8b235095482ef140a5fdf6653b6cb8e586caa65e4c1bbfd07ab16599e895
+
+# Enforce annotations in shared production code, not Django test methods/hooks.
+include:
+  - name: PyMissingTypeHintsInspection
+    paths:
+      - gunicorn/common/src/obbench_django_common
 
 # ---------------------------------------------------------------------------
 # Bootstrap: install dependencies so Qodana can resolve imports.
@@ -39,16 +58,22 @@ linter: jetbrains/qodana-python-community:2026.2
 # ---------------------------------------------------------------------------
 bootstrap: |
   set -e
+  project_dir=${QODANA_DJANGO_ROOT:-/data/project}
+  # The recommended profile inherits Project Default. Use XML for this legacy
+  # list option; Qodana's scalar YAML option overrides silently leave defaults.
+  mkdir -p "$project_dir/.idea/inspectionProfiles"
+  cp "$project_dir/quality/Project_Default.xml" "$project_dir/.idea/inspectionProfiles/Project_Default.xml"
+  cp "$project_dir/quality/profiles_settings.xml" "$project_dir/.idea/inspectionProfiles/profiles_settings.xml"
   bootstrap_dir=$(mktemp -d /tmp/qodana-python.XXXXXX)
   trap 'rm -rf "$bootstrap_dir"' EXIT
-  cp -R /data/project/gunicorn/common "$bootstrap_dir/common"
-  python3 - "$bootstrap_dir" <<'PY'
+  cp -R "$project_dir/gunicorn/common" "$bootstrap_dir/common"
+  python3 - "$bootstrap_dir" "$project_dir" <<'PY'
   from pathlib import Path
   import sys
 
   destination = Path(sys.argv[1])
   for module in ("WSGI", "ASGI"):
-      source = Path("/data/project/gunicorn") / module / "requirements.txt"
+      source = Path(sys.argv[2]) / "gunicorn" / module / "requirements.txt"
       lines = source.read_text(encoding="utf-8").splitlines()
       filtered = [line for line in lines if "pyroscope" not in line.lower()]
       (destination / f"{module}.txt").write_text("\n".join(filtered) + "\n", encoding="utf-8")
@@ -79,6 +104,9 @@ exclude:
       - .dockerignore
       - gunicorn/common/build
       - gunicorn/common/*.egg-info
+  - name: PyMissingTypeHintsInspection
+    paths:
+      - gunicorn/common/src/obbench_django_common/tests
 
 # Quality gate — matches the JVM config in the root qodana.yaml so the
 # Python codebase is held to the same standard.

@@ -362,22 +362,24 @@ The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatt
 
 In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2026.2`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
 
-- **Ruff** focuses on PEP 8, import ordering, and formatting.
+- **Ruff** covers PEP 8, import ordering, formatting, security (`S`), bugbear (`B`), and async (`ASYNC`) checks.
 - **Qodana Python Community** adds semantic inspections such as type mismatches, unreachable code, unused variables, and general Python best-practice warnings.
 
 The scan uses a dedicated configuration at `services/python/django/qodana.yaml` because the root `qodana.yaml` pins the JVM linter (`jetbrains/qodana-jvm-community:2026.2`). The Python config has its own linter pin and quality gate, and reuses the shared Python CI installer and hash inventory through read-only mounts outside the analysis root.
 
 #### How the Qodana Python Scan Works
 
-The `qodana` job in `.github/workflows/django_python_quality.yml` runs after the `common` checks pass:
+The `qodana` job in `.github/workflows/django_python_quality.yml` runs independently of the `common` checks so lint failures do not hide semantic diagnostics:
 
-1. Checks out the repository.
-2. Runs `docker run jetbrains/qodana-python-community:2026.2` with:
-   - Django mounted at `/data/project` with `--project-dir=/data/project`
-   - `--config=/data/project/qodana.yaml` — Python-specific config
-   - Shared requirements and installer mounted read-only at `/opt/python-ci/requirements` and `/opt/python-ci/installer`
+1. Checks out the repository without persisted credentials and sets up Python.
+2. Invokes `scripts/run-qodana-python.py`, using the Community image tag and digest from `services/python/django/qodana.yaml` (maintained by Renovate):
+   - The Django source root and intermediate directories are validated before copying; symlink/junction redirection is rejected. Only a disposable Django copy is opened at `/data/workspace/services/python/django`; host IDE metadata, virtualenvs, caches, build output, and `.env` files are omitted.
+   - Docker runs as the caller's non-root UID/GID with `--cap-drop=ALL` and `--security-opt=no-new-privileges`.
+   - No host Git directories, config, object database, or `.git` pointer are mounted/copied. The host collects only the revision, attached branch, and sanitized network repository URI and adds them to exported SARIF after analysis. URL userinfo, query strings, and fragments are stripped; local/unsupported remote URLs are omitted. Git integration is unavailable inside Qodana, so its native report/logs may lack Git metadata; exported SARIF receives the sanitized provenance without altering findings or invocation status.
+   - Shared requirements and installer are mounted read-only at `/opt/python-ci/requirements` and `/opt/python-ci/installer`.
 3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without a bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
-4. Uploads the HTML report directory as `qodana-report-django-python`.
+4. Runs `scripts/qodana-python-report.py` even after scan failure, writes inspection-count diagnostics, and verifies required inspections remain enabled.
+5. Always attempts HTML upload as `qodana-report-django-python` and logs/SARIF/summary upload as `qodana-diagnostics-django-python`, unless cancelled.
 
 The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
 
@@ -397,15 +399,24 @@ failureConditions:
     moderate: 0
 ```
 
-#### Soft Gate Strategy (Initial Rollout)
+#### Community Inspection Hardening and Enforcement
 
-The `qodana` job uses `continue-on-error: true` at the job level. This means:
+The `qodana.recommended` profile is extended with:
 
-- When the quality gate is violated, the **job** is marked as neutral (yellow, allowed failure) in the Actions UI — findings remain visible.
-- The **workflow** still succeeds, so the HTML report artifact is uploaded, and the Pages deployment can download and host it.
-- The `modules` job (Ruff lint, format, Django checks, unit tests) is unaffected — it still gates the workflow independently.
+- `PyUnresolvedReferencesInspection`
+- `PyTypeCheckerInspection`
+- `PyArgumentListInspection`
+- `PyDataclassInspection`
+- `PyCompatibilityInspection`, targeting Python 3.13
+- `PyMissingTypeHintsInspection`, scoped to shared production code, excluding tests
 
-This is a safe initial rollout pattern: the Qodana report is published for visibility while the existing Ruff and test gates remain strict. Once the Qodana findings are fixed or acknowledged via a reviewed SARIF baseline, `continue-on-error` can be removed to promote the Qodana gate to a hard gate.
+Some of these are deliberately disabled by JetBrains' recommended profile because dynamic Python can produce false positives. Review findings and use only narrow, explained suppressions. Do not globally disable correctness checks or baseline new findings blindly.
+
+The compatibility inspection stores versions in a legacy JDOM list. The bootstrap copies repository-managed `quality/Project_Default.xml` and `quality/profiles_settings.xml` into the disposable project's inspection settings so the recommended profile inherits Python 3.13 targeting; scalar YAML overrides are silently ignored for this option. The runner explicitly sets `QODANA_PYTHON_PATH` to the bundled interpreter, ensuring SDK/import resolution is available.
+
+The job has no `continue-on-error`: scanner failures, quality-gate violations, and coverage regressions block workflow success. The inspection-summary helper reads enabled flags from SARIF, requires at least 112 enabled inspections (the reviewed 106 plus six additions), and checks mandatory rule IDs. Missing or malformed SARIF fails closed while still producing summary diagnostics. Updating the image/profile requires reviewing this coverage contract.
+
+Artifact uploads use `always() && !cancelled()`, so enforcing the gate does not prevent retaining reports after failure. Failed-run artifacts are available for diagnosis; the existing Pages workflow still publishes only eligible successful runs.
 
 #### Hosted Qodana Python Report on GitHub Pages
 
@@ -422,40 +433,33 @@ The Pages workflow triggers on successful `Django Python Quality` runs on `main`
 **Bash / zsh:**
 
 ```bash
-mkdir -p .qodana/django-python
-
-docker run --rm \
-  -v "$PWD/services/python/django":/data/project \
-  -v "$PWD/.github/requirements":/opt/python-ci/requirements:ro \
-  -v "$PWD/.github/actions/install-python-dependencies":/opt/python-ci/installer:ro \
-  -v "$PWD/.qodana/django-python":/data/results \
-  jetbrains/qodana-python-community:2026.2 \
-  --project-dir=/data/project \
-  --config=/data/project/qodana.yaml \
-  --results-dir=/data/results
+temp_root="${RUNNER_TEMP:-$(python3 -c 'import tempfile; print(tempfile.gettempdir())')}"
+results="$temp_root/qodana-python/results"
+scan_status=0
+python3 scripts/run-qodana-python.py --results-dir "$results" || scan_status=$?
+coverage_status=0
+python3 scripts/qodana-python-report.py "$results" || coverage_status=$?
+test "$scan_status" -eq 0 && test "$coverage_status" -eq 0
 ```
 
 **PowerShell:**
 
 ```powershell
-New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
-
-docker run --rm `
-  -v "${PWD}/services/python/django:/data/project" `
-  -v "${PWD}/.github/requirements:/opt/python-ci/requirements:ro" `
-  -v "${PWD}/.github/actions/install-python-dependencies:/opt/python-ci/installer:ro" `
-  -v "${PWD}/.qodana/django-python:/data/results" `
-  jetbrains/qodana-python-community:2026.2 `
-  --project-dir=/data/project `
-  --config=/data/project/qodana.yaml `
-  --results-dir=/data/results
+$tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { python -c "import tempfile; print(tempfile.gettempdir())" }
+$results = Join-Path $tempRoot 'qodana-python/results'
+python scripts/run-qodana-python.py --results-dir "$results"
+$scanExit = $LASTEXITCODE
+python scripts/qodana-python-report.py "$results"
+$coverageExit = $LASTEXITCODE
+if ($scanExit -ne 0 -or $coverageExit -ne 0) { throw "Qodana failed; inspect $results/scan.log and the report." }
 ```
 
 Notes:
 - The `bootstrap` command in `services/python/django/qodana.yaml` runs automatically inside the container before analysis, installing Django and other dependencies so imports resolve correctly.
-- A non-zero container exit code means the configured quality gate was violated.
+- A non-zero scanner exit code indicates a quality-gate violation or scanner/bootstrap failure. A non-zero summary exit code indicates failed analysis or missing inspection coverage.
 - A `QODANA_TOKEN` is not required for local scans with the community linter.
-- Results and logs are written under `.qodana/django-python/` in the example commands above.
+- Use `RUNNER_TEMP/qodana-python/results` (OS temp locally) for both helpers. Reusing a non-empty results directory is rejected; archive or remove prior results before another scan. The selected workspace and launcher environment must be trusted; see `docs/SECURITY.md` for the trust boundary.
+- Run helper tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
 
 ### Configuration
 Each Django module has its own Ruff configuration in a local `pyproject.toml`
@@ -464,7 +468,8 @@ Each Django module has its own Ruff configuration in a local `pyproject.toml`
 same settings are applied when linting `common`, `WSGI`, and `ASGI`:
 - **Target version**: Python 3.13
 - **Line length**: 100 characters
-- **Rules**: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort import ordering)
+- **Rules**: `E` (pycodestyle errors), `F` (Pyflakes), `I` (isort import ordering), `S` (security), `B` (bugbear), `ASYNC` (async correctness)
+- **Narrow exceptions**: `S104` for intentional container-interface binding in infrastructure configuration; `S108` for Gunicorn's owned, mode-0700 tmpfs heartbeat directory and its verification test. These preserve benchmark behavior, not blanket exemptions for application code or tests.
 
 ### Running Ruff
 

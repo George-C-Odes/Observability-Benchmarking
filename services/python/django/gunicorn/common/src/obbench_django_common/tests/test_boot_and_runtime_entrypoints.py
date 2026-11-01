@@ -71,8 +71,8 @@ class BootTests(TestCase):
         boot.replace_boot_state(booted=True)
 
         with (
-            mock.patch.object(boot, "load_config") as load_config,
-            mock.patch.object(boot, "create_cache") as create_cache,
+            mock.patch("obbench_django_common.infrastructure.boot.load_config") as load_config,
+            mock.patch("obbench_django_common.infrastructure.boot.create_cache") as create_cache,
             mock.patch.object(boot, "instrument_observability_app") as instrument_app,
             mock.patch.object(boot, "init_observability") as init_observability,
         ):
@@ -96,8 +96,10 @@ class BootTests(TestCase):
         cache = _FakeCache(size=5)
 
         with (
-            mock.patch.object(boot, "load_config", return_value=cfg),
-            mock.patch.object(boot, "create_cache", return_value=cache),
+            mock.patch("obbench_django_common.infrastructure.boot.load_config", return_value=cfg),
+            mock.patch(
+                "obbench_django_common.infrastructure.boot.create_cache", return_value=cache
+            ),
             mock.patch.object(boot, "instrument_observability_app") as instrument_app,
             mock.patch.object(boot, "init_observability") as init_observability,
             mock.patch.object(boot.platform, "python_version", return_value="3.13.0"),

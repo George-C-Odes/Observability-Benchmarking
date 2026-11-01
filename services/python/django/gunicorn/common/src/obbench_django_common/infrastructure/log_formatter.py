@@ -34,6 +34,8 @@ class JsonFormatter(logging.Formatter):
 
         # Attach trace context when available (for Loki correlation).
         if _OTEL_AVAILABLE:
+            # This flag is true only after _trace was imported successfully.
+            # noinspection PyUnresolvedReferences
             span = _trace.get_current_span()
             ctx = span.get_span_context()
             if ctx and ctx.trace_id:
