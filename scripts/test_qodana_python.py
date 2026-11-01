@@ -601,7 +601,7 @@ class ProvenanceTests(unittest.TestCase):
 
     def test_sarif_enrichment_preserves_findings_and_invocations_in_all_runs(self):
         with tempfile.TemporaryDirectory() as temporary:
-            results = Path(temporary)
+            results = Path(temporary).resolve()
             fixture = sarif_fixture()
             fixture["runs"].extend(sarif_fixture(successful=False)["runs"])
             for run in fixture["runs"]:
