@@ -235,31 +235,33 @@ See `docs/TESTING.md` for the per-file breakdown and coverage notes.
 
 ## Qodana static analysis
 
-The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan (`jetbrains/qodana-python-community:2026.2`) that runs PyCharm Community-based inspections on all code under `services/python/django/`. The scan is configured by `services/python/django/qodana.yaml` and enforces the same quality gate as the JVM Qodana scopes (`critical: 0`, `high: 0`, `moderate: 0`).
+The CI workflow includes a [Qodana Python Community](https://www.jetbrains.com/qodana/) scan that runs PyCharm Community-based inspections on code under `services/python/django/`. The Community image tag and immutable digest are centralized in `services/python/django/qodana.yaml` and maintained by Renovate. The scan enforces the same blocking quality gate as the JVM scopes (`critical: 0`, `high: 0`, `moderate: 0`). No paid linter or Qodana token is needed.
+
+The recommended profile is extended with unresolved-reference, type-checker, call-argument, dataclass, and Python 3.13 compatibility inspections. Missing type hints are checked in shared production code, not test methods. These inspections can produce false positives with dynamic Python: keep any reviewed suppressions narrowly scoped. The coverage helper requires at least 112 enabled inspections and checks mandatory inspection IDs, rather than treating a zero-finding report as proof of coverage.
+
+Compatibility versions use the repository-managed XML settings in `quality/`, copied into the disposable project's default inspection profile during bootstrap. Qodana's legacy list option cannot be overridden reliably with scalar YAML. The runner explicitly selects the bundled interpreter via `QODANA_PYTHON_PATH` so imports and type checks do not silently run without an SDK.
 
 The `qodana.yaml` bootstrap uses the shared Python CI installer and hash inventory to install Django, OpenTelemetry, gunicorn, cachetools, and the local `obbench-django-common` package for import resolution. Third-party dependencies and local build tools require verified hashes and wheels. The local package is built from a temporary copy with dependency fetching disabled. Pyroscope packages remain excluded from this analysis-only environment, and the bootstrap permits the analyzer's older Python interpreter through `PIP_IGNORE_REQUIRES_PYTHON=1`.
 
-The shared requirements and installer are mounted read-only under `/opt/python-ci`, outside the Django analysis root. Include both mounts in local scans; missing assets fail the bootstrap instead of falling back to an unhashed install.
+`scripts/run-qodana-python.py` runs Docker as a non-root user with all capabilities dropped and privilege escalation disabled. It validates the Django root and intermediate directories before copying, rejecting symlink/junction redirection, and creates a disposable source copy without host IDE metadata, virtualenvs, caches, build output, or local `.env` files. No host Git directories, configuration, history, or `.git` pointer enter the container. The host adds revision, attached branch, and a sanitized network repository URI to exported SARIF after analysis; userinfo, query strings, and fragments are stripped, and local/unsupported remote paths are omitted. Shared requirements and the installer are mounted read-only under `/opt/python-ci`, outside the Django analysis root; missing assets fail the bootstrap instead of falling back to an unhashed install.
 
-The `qodana` job currently uses `continue-on-error: true`, so even when findings are present the overall workflow still succeeds and the HTML report is published to GitHub Pages. In the Actions UI, the job is marked as an allowed failure/neutral (while the failing step retains a red ❌). Once findings are resolved or baselined, `continue-on-error` can be removed.
+Qodana runs independently of common lint checks and has no `continue-on-error` allowance. HTML report and diagnostic uploads run even after a failed scan. The existing `qodana-report-django-python` artifact remains compatible with Pages; `qodana-diagnostics-django-python` retains scanner logs, SARIF, and inspection summaries. GitHub Step Summary shows enabled-inspection coverage and regressions fail the job.
 
 ### Run Qodana locally
 
 ```powershell
-New-Item -ItemType Directory -Force .qodana/django-python | Out-Null
-
-docker run --rm `
-  -v "${PWD}/services/python/django:/data/project" `
-  -v "${PWD}/.github/requirements:/opt/python-ci/requirements:ro" `
-  -v "${PWD}/.github/actions/install-python-dependencies:/opt/python-ci/installer:ro" `
-  -v "${PWD}/.qodana/django-python:/data/results" `
-  jetbrains/qodana-python-community:2026.2 `
-  --project-dir=/data/project `
-  --config=/data/project/qodana.yaml `
-  --results-dir=/data/results
+$tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { python -c "import tempfile; print(tempfile.gettempdir())" }
+$results = Join-Path $tempRoot 'qodana-python/results'
+python scripts/run-qodana-python.py --results-dir "$results"
+$scanExit = $LASTEXITCODE
+python scripts/qodana-python-report.py "$results"
+$coverageExit = $LASTEXITCODE
+if ($scanExit -ne 0 -or $coverageExit -ne 0) { throw "Qodana failed; inspect $results/scan.log and the report." }
 ```
 
-The HTML report is published to GitHub Pages after successful runs on `main`:
+Each scan requires an empty results directory so stale reports cannot mask failures. Run the summary helper even when the scanner fails; both scanner and coverage-check exit codes are meaningful.
+
+The HTML report is published to GitHub Pages after completed successful or failed runs on `main` when the report artifact is available. Quality-gate failures remain blocking; Pages shows their findings instead of falling back to an older successful scan:
 
 ```text
 https://george-c-odes.github.io/Observability-Benchmarking/quality/django-python/
@@ -270,6 +272,8 @@ See `docs/LINTING_AND_CODE_QUALITY.md` for full details including bash equivalen
 ## Lint and format check locally
 
 Run [Ruff](https://docs.astral.sh/ruff/) across **all** Django modules (from the repository root):
+
+All three configurations select `E`, `F`, `I`, `S` (security), `B` (bugbear), and `ASYNC`. File-scoped exceptions preserve intentional container-interface binding and the startup-validated private tmpfs heartbeat directory; security checks remain active elsewhere.
 
 ```powershell
 python -m ruff --version

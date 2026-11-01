@@ -8,6 +8,9 @@ from unittest import TestCase, mock
 
 from obbench_django_common.infrastructure import pyroscope_setup
 
+# Preserve the exact logger instance while making the mocked method contract explicit.
+_pyroscope_logger: logging.Logger = pyroscope_setup.logger
+
 
 class PyroscopeSetupTests(TestCase):
     def reset_pyroscope_for_test(self) -> None:
@@ -61,10 +64,7 @@ class PyroscopeSetupTests(TestCase):
                 "register_span_processor",
                 return_value=True,
             ),
-            mock.patch.object(
-                pyroscope_setup.logger,
-                "info",
-            ) as info_log,
+            mock.patch.object(_pyroscope_logger, "info") as info_log,
         ):
             pyroscope_setup.configure_pyroscope()
 
@@ -112,10 +112,7 @@ class PyroscopeSetupTests(TestCase):
                 "register_span_processor",
                 return_value=False,
             ),
-            mock.patch.object(
-                pyroscope_setup.logger,
-                "info",
-            ) as info_log,
+            mock.patch.object(_pyroscope_logger, "info") as info_log,
         ):
             pyroscope_setup.configure_pyroscope()
 

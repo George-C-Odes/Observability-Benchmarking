@@ -98,6 +98,52 @@ environment:
   - API_KEY=${EXTERNAL_API_KEY}
 ```
 
+### Qodana Report Environment Trust Boundary
+
+`scripts/qodana-python-report.py` is a local/CI report helper, not a privileged service for remote
+requests. Its allowed results location is `RUNNER_TEMP/qodana-python/results`; without `RUNNER_TEMP`,
+the root comes from `tempfile.gettempdir()`. GitHub runner configuration supplies `RUNNER_TEMP` in the
+checked-in Django quality workflow. No separate remote request or LLM-supplied data is mapped to that
+variable by the workflow. Locally, the launcher and its environment must be trusted.
+
+The helper requires the CLI path to resolve to that exact location and rejects symlink redirection
+of the results directory, parents below the root, and report files before I/O. These checks constrain
+CLI paths relative to the configured root; they do **not** establish that the root itself is trustworthy.
+`Path.resolve()` is canonicalization, not sanitization. An attacker controlling both the environment
+and CLI path can select a different accepted root. The OS temporary-directory fallback also considers
+environment variables (`TMPDIR`, `TEMP`, `TMP`), so using it alone does not remove this trust dependency.
+
+Do not run this helper with elevated privileges and a caller-controlled environment, or accept remote
+or agent-supplied environment overrides without a separate boundary. Such launchers must select and
+protect an output root from trusted configuration independently of request/LLM data and construct the
+child environment from trusted values. Use isolated output storage when other users/processes could
+modify it concurrently; the pre-I/O symlink checks are not a guarantee against hostile filesystem races.
+
+SnykCode alert [#345](https://github.com/George-C-Odes/Observability-Benchmarking/security/code-scanning/345)
+(`python/PT`, this helper's environment-derived root) was reviewed as a context-specific false positive
+under the above execution model: no lower-trust input-to-environment path or privilege boundary was
+identified. Dismiss only this alert with that justification, not the rule or environment-source checks
+globally. Reassess the finding if a new launcher introduces untrusted environment input, elevated
+execution, or shared writable output storage. PR-controlled executable source is not made trusted by
+these path checks; existing workflow permission and isolation constraints still apply.
+
+`scripts/run-qodana-python.py` likewise expects a trusted local/CI-selected workspace, not a remote
+filesystem selector. Before reading Qodana config or copying source, it rejects symlink/junction
+redirection of `services`, `python`, and `django` below that workspace. Descendant symlinks are also
+rejected. Host Git directories are not mounted into the scanner: revision, attached branch, and a
+network remote URI are collected on the host and applied only to exported SARIF. The URI omits
+userinfo, query strings, and fragments; local/unsupported remotes are omitted. This does not promise
+to detect secrets placed in repository path names. No Git config, history, refs, or objects enter Docker.
+
+SnykCode command-injection alerts [#346](https://github.com/George-C-Odes/Observability-Benchmarking/security/code-scanning/346)
+and [#347](https://github.com/George-C-Odes/Observability-Benchmarking/security/code-scanning/347)
+refer to the runner's `docker cp` and `docker rm` calls. Both use argument vectors and a resolved Docker
+executable, with no shell. The export destination remains one absolute-path argument and the removal
+target is an internally generated UUID-based name. They were reviewed as context-specific false positives;
+dismiss only these instances, not command-injection checks globally. Reassess if execution gains a shell,
+an untrusted executable selection, or caller-selected Docker operations. Path validation and Git-data
+isolation remain separate requirements, not reasons to suppress the staging path-traversal finding.
+
 ### Configuration Files
 
 Application configuration files contain:

@@ -119,6 +119,73 @@ class PyroscopeSetupExtraTests(TestCase):
         self.assertTrue(result)
         real_provider.add_span_processor.assert_called_once_with("proc")
 
+    def test_register_span_processor_falls_back_when_real_adder_is_not_callable(self) -> None:
+        for invalid_adder in (None, False, "not callable", object()):
+            provider = types.SimpleNamespace(
+                _real_provider=types.SimpleNamespace(add_span_processor=invalid_adder),
+                add_span_processor=mock.Mock(),
+            )
+            trace_module = types.SimpleNamespace(
+                get_tracer_provider=mock.Mock(return_value=provider)
+            )
+            opentelemetry_module = types.ModuleType("opentelemetry")
+            opentelemetry_module.trace = trace_module
+            pyroscope_otel_module = types.SimpleNamespace(
+                PyroscopeSpanProcessor=mock.Mock(return_value="proc")
+            )
+            with (
+                self.subTest(invalid_adder=invalid_adder),
+                mock.patch.dict(
+                    sys.modules,
+                    {
+                        "opentelemetry": opentelemetry_module,
+                        "opentelemetry.trace": trace_module,
+                        "pyroscope.otel": pyroscope_otel_module,
+                    },
+                    clear=False,
+                ),
+            ):
+                self.assertTrue(pyroscope_setup.register_span_processor())
+            provider.add_span_processor.assert_called_once_with("proc")
+            pyroscope_otel_module.PyroscopeSpanProcessor.assert_called_once_with()
+
+    def test_register_span_processor_warns_when_neither_adder_is_callable(self) -> None:
+        providers = (
+            types.SimpleNamespace(add_span_processor=False),
+            types.SimpleNamespace(
+                _real_provider=types.SimpleNamespace(add_span_processor="not callable"),
+                add_span_processor=False,
+            ),
+        )
+        for provider in providers:
+            trace_module = types.SimpleNamespace(
+                get_tracer_provider=mock.Mock(return_value=provider)
+            )
+            opentelemetry_module = types.ModuleType("opentelemetry")
+            opentelemetry_module.trace = trace_module
+            pyroscope_otel_module = types.SimpleNamespace(PyroscopeSpanProcessor=mock.Mock())
+            with (
+                self.subTest(provider=provider),
+                mock.patch.dict(
+                    sys.modules,
+                    {
+                        "opentelemetry": opentelemetry_module,
+                        "opentelemetry.trace": trace_module,
+                        "pyroscope.otel": pyroscope_otel_module,
+                    },
+                    clear=False,
+                ),
+                self.assertLogs("hello", level="WARNING") as logs,
+            ):
+                self.assertFalse(pyroscope_setup.register_span_processor())
+            pyroscope_otel_module.PyroscopeSpanProcessor.assert_not_called()
+            self.assertTrue(
+                any(
+                    "could not register pyroscope span-processor" in message
+                    for message in logs.output
+                )
+            )
+
     def test_register_span_processor_falls_back_to_proxy_provider_and_warns_without_adder(
         self,
     ) -> None:

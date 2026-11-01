@@ -367,6 +367,8 @@ def configure_log_export(resource: Any) -> None:
     else:
         set_global_logger_provider = getattr(otel_logs_module, "set_logger_provider", None)
         if callable(set_global_logger_provider):
+            # The explicit callable guard rules out None for this optional dynamic API.
+            # noinspection PyCallingNonCallable
             set_global_logger_provider(logger_provider)
 
     # Attach OTel LoggingHandler to application loggers so log records

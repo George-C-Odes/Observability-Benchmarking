@@ -20,6 +20,14 @@ The package installs only these skills from the MIT-licensed `github/awesome-cop
 
 The catalog is pinned to an audited full commit SHA in `apm.yml`; `apm.lock.yaml` records file hashes. Review upstream changes before moving the pin. Generic Docker, framework, and browser-testing skills are intentionally excluded where they duplicate or conflict with repository-specific guidance.
 
+## Repository-authored skills
+
+- `.apm/skills/benchmark-integrity/SKILL.md` protects comparable endpoint, telemetry, and resource behavior.
+- `.apm/skills/focused-validation/SKILL.md` selects failure-mode-appropriate checks and reports validation limits.
+- `.apm/skills/ci-report-safety/SKILL.md` covers workflow context validity, scanner/helper trust boundaries, subprocess deadlines, Git-data isolation, fail-closed reports, and scoped security-alert triage.
+
+The root router and repository contract load these only for matching tasks. They complement the pinned upstream skills with local contracts; do not manually copy them into generated deployments or edit upstream dependency sources. `includes: auto` discovers authored primitives without dependency pin changes, but adding or changing deployed primitives can require refreshed lockfile deployment records.
+
 ## Validate
 
 Run from this directory:
@@ -37,6 +45,8 @@ After changing dependencies, regenerate the lockfile before validating:
 apm lock
 apm install --frozen
 ```
+
+If `apm install --frozen` reports new local deployments missing from the lockfile, run `apm install` without `--update`/`--refresh`, inspect the generated lock diff for unchanged upstream pins, then rerun the full validation sequence. Preserve any locally modified deployments APM skips; do not use `--force` to bypass ownership or security checks. Record such skips, and validate the authored primitives in a clean temporary deployment if necessary.
 
 To evaluate an upstream skill update, inspect the available refs and use `apm install --dry-run` before changing the pinned commit:
 

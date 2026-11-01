@@ -8,6 +8,17 @@
   "automerge": false,
   "ignoreScripts": true,
   "prConcurrentLimit": 5,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^services\\/python\\/django\\/qodana\\.yaml$/"],
+      "matchStrings": [
+        "linter:\\s+(?<depName>jetbrains/qodana-python-community):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",
