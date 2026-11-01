@@ -11,6 +11,13 @@ from obbench_django_common.infrastructure.gunicorn_runtime import prepare_runtim
 
 @skipUnless(hasattr(os, "geteuid"), "Gunicorn requires a POSIX runtime")
 class GunicornRuntimeTests(TestCase):
+    root: Path
+    worker_dir: Path
+    control_dir: Path
+    socket: Path
+
+    # unittest requires this lifecycle method's exact name.
+    # noinspection PyPep8Naming
     def setUp(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
