@@ -55,7 +55,7 @@ Commit **source** files under `docs/` (Markdown, HTML, CSS, layouts, images). Do
 
 ### Current docs toolchain
 
-- Ruby version: `4.0` (pinned in `docs/.ruby-version`)
+- Ruby version: `4.0.9` (pinned in `docs/.ruby-version`)
 - Bundler lockfile: `docs/Gemfile.lock`
 - Static site generator: Jekyll `4.4.1`
 
