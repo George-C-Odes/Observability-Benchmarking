@@ -14,6 +14,7 @@ on:
       - '.github/actions/install-python-dependencies/**'
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
+      - 'scripts/*qodana*'
   push:
     branches:
       - main
@@ -24,6 +25,7 @@ on:
       - '.github/actions/install-python-dependencies/**'
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
+      - 'scripts/*qodana*'
   schedule:
     # Weekly scan — Monday at 06:30 UTC (staggered after Next.js at 06:15).
     - cron: '30 6 * * 1'
@@ -61,6 +63,12 @@ jobs:
           python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
           python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py
           python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py
+
+      - name: Check Qodana helpers
+        run: |
+          python -m unittest discover -s scripts -p test_qodana_python.py -v
+          python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+          python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
 
       - name: Syntax check
         working-directory: services/python/django/gunicorn/common
@@ -140,15 +148,11 @@ jobs:
 
   qodana:
     name: Qodana Python (Django)
-    needs: common
+    # Collect semantic diagnostics even when common lint checks fail.
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    # The Qodana job is allowed to fail without blocking the overall workflow
-    # so the HTML report artifact is still uploaded and the Pages deployment
-    # can download it. The job itself shows as failed (yellow) in the Actions
-    # UI when the quality gate is violated, keeping the signal visible.
-    # Remove this once the codebase is clean or a reviewed baseline is in place.
-    continue-on-error: true
+    env:
+      RESULTS_DIR: ${{ runner.temp }}/qodana-python/results
     permissions:
       contents: read
     steps:
@@ -158,20 +162,15 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: ./.github/actions/setup-python
+
       - name: Qodana Python Community Scan
-        env:
-          RESULTS_DIR: ${{ runner.temp }}/qodana-python/results
-        run: |
-          mkdir -p "$RESULTS_DIR"
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE/services/python/django:/data/project" \
-            -v "$GITHUB_WORKSPACE/.github/requirements:/opt/python-ci/requirements:ro" \
-            -v "$GITHUB_WORKSPACE/.github/actions/install-python-dependencies:/opt/python-ci/installer:ro" \
-            -v "$RESULTS_DIR:/data/results" \
-            jetbrains/qodana-python-community:2026.2 \
-            --project-dir=/data/project \
-            --config=/data/project/qodana.yaml \
-            --results-dir=/data/results
+        run: python scripts/run-qodana-python.py --results-dir "$RESULTS_DIR"
+
+      - name: Verify inspection coverage and publish summary
+        if: always() && !cancelled()
+        run: python scripts/qodana-python-report.py "$RESULTS_DIR" >> "$GITHUB_STEP_SUMMARY"
 
       # Explicit upload of the HTML report directory so the Pages workflow
       # can download and host it alongside the JVM and Next.js reports.
@@ -181,5 +180,19 @@ jobs:
         with:
           name: qodana-report-django-python
           path: ${{ runner.temp }}/qodana-python/results/report/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload Qodana diagnostics
+        if: always() && !cancelled()
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: qodana-diagnostics-django-python
+          path: |
+            ${{ runner.temp }}/qodana-python/results/scan.log
+            ${{ runner.temp }}/qodana-python/results/log/
+            ${{ runner.temp }}/qodana-python/results/projectStructure/
+            ${{ runner.temp }}/qodana-python/results/qodana.sarif.json
+            ${{ runner.temp }}/qodana-python/results/inspection-summary.*
           retention-days: 30
           if-no-files-found: warn

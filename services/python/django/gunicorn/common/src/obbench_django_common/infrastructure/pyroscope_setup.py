@@ -96,6 +96,8 @@ def register_span_processor() -> bool:
         )
         return False
 
+    # Both provider lookups above rule out None; the SDK/proxy supplies this method.
+    # noinspection PyCallingNonCallable
     span_processor_adder(PyroscopeSpanProcessor())
     return True
 

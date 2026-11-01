@@ -1,0 +1,210 @@
+"""Tests for Django Qodana isolation, hardening, and inspection coverage."""
+
+import importlib.util
+import io
+import json
+import tempfile
+import unittest
+import xml.etree.ElementTree as ElementTree
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+
+def load_module(filename: str):
+    path = Path(__file__).with_name(filename)
+    spec = importlib.util.spec_from_file_location(path.stem.replace("-", "_"), path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+runner = load_module("run-qodana-python.py")
+report = load_module("qodana-python-report.py")
+IMAGE = "jetbrains/qodana-python-community:2026.2@sha256:" + "a" * 64
+
+
+def sarif_fixture(enabled=True, successful=True):
+    ids = sorted(report.REQUIRED_INSPECTIONS)
+    ids.extend(f"FixtureInspection{i}" for i in range(report.MIN_ENABLED_INSPECTIONS - len(ids)))
+    rules = [{"id": rule_id, "defaultConfiguration": {"enabled": enabled}} for rule_id in ids]
+    return {
+        "runs": [
+            {
+                "tool": {"driver": {"rules": []}, "extensions": [{"rules": rules}]},
+                "invocations": [{"executionSuccessful": successful}],
+                "results": [],
+            }
+        ]
+    }
+
+
+class InspectionSummaryTests(unittest.TestCase):
+    def test_zero_findings_does_not_mean_zero_inspections(self):
+        summary = report.inspection_summary(sarif_fixture())
+        self.assertEqual(112, summary["enabled"])
+        self.assertEqual(0, summary["problems"])
+        self.assertTrue(report.coverage_passes(summary))
+
+    def test_disabled_required_inspections_fail(self):
+        summary = report.inspection_summary(sarif_fixture(enabled=False))
+        self.assertFalse(report.coverage_passes(summary))
+        self.assertEqual(sorted(report.REQUIRED_INSPECTIONS), summary["missing_required"])
+
+    def test_count_regression_fails_with_required_inspections_still_enabled(self):
+        fixture = sarif_fixture()
+        fixture["runs"][0]["tool"]["extensions"][0]["rules"].pop()
+        summary = report.inspection_summary(fixture)
+        self.assertFalse(summary["missing_required"])
+        self.assertFalse(report.coverage_passes(summary))
+
+    def test_unsuccessful_execution_fails(self):
+        summary = report.inspection_summary(sarif_fixture(successful=False))
+        self.assertFalse(report.coverage_passes(summary))
+
+    def test_one_successful_run_cannot_mask_a_failed_run(self):
+        fixture = sarif_fixture()
+        fixture["runs"].extend(sarif_fixture(successful=False)["runs"])
+        self.assertFalse(report.coverage_passes(report.inspection_summary(fixture)))
+
+    def test_duplicate_rule_ids_do_not_inflate_coverage(self):
+        fixture = sarif_fixture()
+        rules = fixture["runs"][0]["tool"]["extensions"][0]["rules"]
+        fixture["runs"][0]["tool"]["driver"]["rules"] = rules
+        self.assertEqual(112, report.inspection_summary(fixture)["enabled"])
+
+    def test_missing_and_malformed_sarif_still_produce_diagnostics(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            results = Path(temporary)
+            for contents in (None, "not json", "null", "[]"):
+                with self.subTest(contents=contents):
+                    if contents is not None:
+                        (results / "qodana.sarif.json").write_text(contents, encoding="utf-8")
+                    self.assertEqual(1, report.summarize_results(results))
+                    summary = json.loads((results / "inspection-summary.json").read_text("utf-8"))
+                    self.assertIn("error", summary)
+                    self.assertIn("FAIL", (results / "inspection-summary.md").read_text("utf-8"))
+
+
+class ScanRunnerTests(unittest.TestCase):
+    def test_command_is_unprivileged_git_aware_and_django_scoped(self):
+        with (
+            patch.object(runner, "git_output", return_value="/repository/.git"),
+            patch.object(runner, "executable", side_effect=lambda name: name),
+            patch.object(runner.os, "getuid", return_value=1001, create=True),
+            patch.object(runner.os, "getgid", return_value=1001, create=True),
+        ):
+            command = runner.docker_command(
+                Path("/repository"), Path("/stage"), IMAGE, "qodana-test"
+            )
+        self.assertEqual(["docker", "run", "--init", "--name"], command[:4])
+        self.assertIn("--cap-drop=ALL", command)
+        self.assertIn("--security-opt=no-new-privileges", command)
+        self.assertIn("1001:1001", command)
+        self.assertIn("GIT_WORK_TREE=/data/workspace", command)
+        self.assertIn("GIT_DIR=/opt/project-git", command)
+        mounts = [command[i + 1] for i, value in enumerate(command) if value == "--mount"]
+        git_mounts = [mount for mount in mounts if "target=/opt/project-git" in mount]
+        self.assertEqual(2, len(git_mounts))
+        self.assertTrue(all(mount.endswith(",readonly") for mount in git_mounts))
+        self.assertFalse(
+            any("target=/data/workspace" in m and "source=/repository," in m for m in mounts)
+        )
+        self.assertIn("--project-dir=/data/workspace/services/python/django", command)
+        self.assertIn("--results-dir=/tmp/qodana-results", command)
+        self.assertIn("--report-dir=/tmp/qodana-results/report", command)
+        self.assertIn("QODANA_PYTHON_PATH=/opt/miniconda3/bin/python3", command)
+        self.assertNotIn("--privileged", command)
+
+    def test_root_host_user_is_rejected(self):
+        with (
+            patch.object(runner, "git_output", return_value="/repository/.git"),
+            patch.object(runner.os, "getuid", return_value=0, create=True),
+        ):
+            with self.assertRaisesRegex(ValueError, "non-root"):
+                runner.docker_command(Path("/repository"), Path("/stage"), IMAGE, "qodana-test")
+
+    def test_staging_omits_host_metadata_secrets_and_build_outputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary) / "repository"
+            source = workspace / "services/python/django"
+            source.mkdir(parents=True)
+            (source / "app.py").write_text("pass\n", encoding="utf-8")
+            (source / ".env").write_text("secret", encoding="utf-8")
+            (source / "module.iml").write_text("host SDK", encoding="utf-8")
+            for name in (".idea", ".venv", "__pycache__", "build"):
+                (source / name).mkdir()
+                (source / name / "ignored").touch()
+            (workspace / "unrelated-secret").touch()
+            staging = Path(temporary) / "stage"
+            runner.stage_project(workspace, staging)
+            destination = staging / "workspace/services/python/django"
+            self.assertEqual(["app.py"], sorted(path.name for path in destination.iterdir()))
+            self.assertFalse((staging / "workspace/unrelated-secret").exists())
+            self.assertTrue((source / ".env").exists())
+            self.assertEqual(
+                "gitdir: /opt/project-git\n",
+                (staging / "workspace/.git").read_text(encoding="utf-8"),
+            )
+
+    def test_mutable_or_paid_image_is_rejected_before_docker(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            for image in (
+                "jetbrains/qodana-python-community:2026.2",
+                "jetbrains/qodana-python:2026.2@sha256:" + "a" * 64,
+            ):
+                with self.subTest(image=image), self.assertRaisesRegex(ValueError, "Community"):
+                    runner.run_scan(Path(temporary), Path(temporary) / "results", image)
+
+    def test_stale_results_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            results = Path(temporary) / "results"
+            results.mkdir()
+            (results / "qodana.sarif.json").touch()
+            with self.assertRaisesRegex(ValueError, "empty"):
+                runner.run_scan(Path(temporary), results, IMAGE)
+
+    def test_scan_exports_results_and_cleans_up_even_when_gate_fails(self):
+        statuses = ((0, 0, 0, 0), (255, 0, 0, 255), (0, 1, 0, 1), (0, 0, 1, 1))
+        for scan_status, copy_status, cleanup_status, expected in statuses:
+            with tempfile.TemporaryDirectory() as temporary:
+                process = MagicMock()
+                process.__enter__.return_value = process
+                process.stdout = io.StringIO("Analyzer diagnostic\n")
+                process.wait.return_value = scan_status
+                with (
+                    self.subTest(scan_status=scan_status, copy_status=copy_status),
+                    patch.object(runner, "stage_project"),
+                    patch.object(runner, "docker_command", return_value=["docker", "run"]),
+                    patch.object(runner.subprocess, "Popen", return_value=process),
+                    patch.object(
+                        runner.subprocess, "call", side_effect=[copy_status, cleanup_status]
+                    ) as call,
+                ):
+                    results = Path(temporary) / "results"
+                    status = runner.run_scan(Path(temporary), results, IMAGE)
+                self.assertEqual(expected, status)
+                self.assertEqual("cp", call.call_args_list[0].args[0][1])
+                self.assertEqual(["rm", "--force"], call.call_args_list[1].args[0][1:3])
+                self.assertIn("Analyzer diagnostic", (results / "scan.log").read_text("utf-8"))
+
+
+class CompatibilityProfileTests(unittest.TestCase):
+    def test_managed_profile_targets_only_python_313(self):
+        root = Path(__file__).resolve().parent.parent
+        profile_path = root / "services/python/django/quality/Project_Default.xml"
+        # Fixed repository-owned inspection settings, never downloaded report XML.
+        profile = ElementTree.parse(profile_path)  # noqa: S314
+        inspection = profile.find(".//inspection_tool[@class='PyCompatibilityInspection']")
+        self.assertIsNotNone(inspection)
+        versions = inspection.findall("./option[@name='ourVersions']/value/list/item")
+        self.assertEqual(["3.13"], [item.get("itemvalue") for item in versions])
+        settings_path = root / "services/python/django/quality/profiles_settings.xml"
+        settings = ElementTree.parse(settings_path)  # noqa: S314
+        name = settings.find(".//option[@name='PROJECT_PROFILE']")
+        self.assertEqual("Project Default", name.get("value"))
+
+
+if __name__ == "__main__":
+    unittest.main()
