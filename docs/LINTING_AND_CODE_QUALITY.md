@@ -416,7 +416,7 @@ The compatibility inspection stores versions in a legacy JDOM list. The bootstra
 
 The job has no `continue-on-error`: scanner failures, quality-gate violations, and coverage regressions block workflow success. The inspection-summary helper reads enabled flags from SARIF, requires at least 112 enabled inspections (the reviewed 106 plus six additions), and checks mandatory rule IDs. Missing or malformed SARIF fails closed while still producing summary diagnostics. Updating the image/profile requires reviewing this coverage contract.
 
-Artifact uploads use `always() && !cancelled()`, so enforcing the gate does not prevent retaining reports after failure. Failed-run artifacts are available for diagnosis; the existing Pages workflow still publishes only eligible successful runs.
+Artifact uploads use `always() && !cancelled()`, so enforcing the gate does not prevent retaining reports after failure. Pages accepts completed successful or failed Django runs so failed-run findings remain visible in the hosted report without weakening the gate.
 
 #### Hosted Qodana Python Report on GitHub Pages
 
@@ -426,7 +426,7 @@ The Qodana Python HTML report is published to GitHub Pages alongside the JVM and
 https://george-c-odes.github.io/Observability-Benchmarking/quality/django-python/
 ```
 
-The Pages workflow triggers on successful `Django Python Quality` runs on `main`, downloads the `qodana-report-django-python` artifact, and copies it into the site under `quality/django-python/`.
+The Pages workflow triggers on completed successful or failed `Django Python Quality` runs on `main`, downloads the `qodana-report-django-python` artifact, and copies it into the site under `quality/django-python/`. It does not skip a newer failed scan in favor of an older successful report. If the selected run has no usable artifact, the site reports that unavailability.
 
 #### Testing Qodana Python Locally
 
@@ -847,19 +847,17 @@ The landing page at `quality/` now links to all seven scopes:
 - `quality/nextjs-dash/` — Oxlint + Oxfmt + TypeScript 7 (free alternative)
 - `quality/codeql/` — CodeQL (semantic security and quality analysis)
 
-The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. For most workflows, only reports from **successful** runs on `main` are published to GitHub Pages. The **Go Quality** workflow is an exception: because its report artifact is uploaded unconditionally (`if: always() && !cancelled()`), the Pages workflow accepts both successful and failed Go Quality runs so the hosted report always reflects the latest lint results.
+The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. Live Next.js reports use successful runs on `main`. Qodana, Django Python Quality, Go Quality, and CodeQL also accept failed runs because they retain available reports after quality-gate failures (`if: always() && !cancelled()`). All these workflows accept success or failure in shared non-main staging; cancelled/skipped runs are not selected.
 
 #### Pages Integration for the Next.js Quality Report
 
 The Pages workflow resolves the Next.js quality report source independently of the Qodana source:
 
-- When triggered by the `Next.js Dashboard Quality` workflow, the triggering run is used for the Next.js report and the latest successful Qodana and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
-- When triggered by the `Qodana` workflow, the triggering run is used for Qodana reports and the latest successful Next.js and Django Python Quality runs and the latest successful or failed Go Quality run are resolved via API
-- When triggered by the `Django Python Quality` workflow, the triggering run is used for the Django Python report and the latest successful Qodana and Next.js runs and the latest successful or failed Go Quality run are resolved via API
-- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report (regardless of whether it succeeded or failed) and the latest successful Qodana, Next.js, and Django Python Quality runs are resolved via API
-- When triggered by push or manual dispatch, the latest successful run for Qodana, Next.js Dashboard Quality, and Django Python Quality workflows and the latest successful or failed Go Quality run are resolved via API
+- A matching `workflow_run` supplies its triggering run when its branch, conclusion, and source repository satisfy the requested scope's policy.
+- Other report sources, and all sources for push/manual dispatch, use the latest completed API run with an accepted conclusion in the requested branch scope.
+- Live sources use `main`; shared staging uses non-main branches. Django accepts success or failure in both scopes, so a failed main scan can refresh its own live report or be selected during another workflow's Pages publish.
 
-This ensures every Pages deployment gets the freshest available version of all reports.
+Missing or unusable selected artifacts produce an unavailable report status rather than silently substituting an older successful scan.
 
 The Pages publisher always checks out `main` for the site, scripts, and local actions,
 with persisted Git credentials disabled. Report revisions are metadata only; their
@@ -874,7 +872,7 @@ been removed: publishing branch reports does not require checking out branch cod
 Run the resolver regression tests with `node --test scripts/pages/resolve-source.test.mjs`.
 
 Scripts involved:
-- `scripts/pages/resolve-source.sh` — generic parameterized resolver; each Pages step supplies `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` (Go Quality and CodeQL accept `success,failure`; others accept `success` only)
+- `scripts/pages/resolve-source.sh` — generic parameterized resolver; each Pages step supplies `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` (Qodana, Django Python Quality, Go Quality, and CodeQL accept `success,failure`; Next.js accepts `success` live and `success,failure` in staging)
 - `scripts/pages/report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators
 - `scripts/pages/assemble-quality-pages.sh` — assembles all quality report scopes (Qodana JVM, Django Python, Go, Next.js, CodeQL) into the Pages site
 

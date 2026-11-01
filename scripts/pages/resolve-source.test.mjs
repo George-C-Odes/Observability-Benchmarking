@@ -9,6 +9,7 @@ import test from 'node:test';
 
 const repository = 'example/benchmark';
 const resolver = fileURLToPath(new URL('./resolve-source.sh', import.meta.url));
+const pagesWorkflow = readFileSync(new URL('../../.github/workflows/pages.yml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
 const bash = process.platform === 'win32' ? 'C:/Program Files/Git/bin/bash.exe' : 'bash';
 const shellPath = (value) => value.replaceAll('\\', '/').replace(/^([A-Za-z]):/, (_, drive) => `/${drive.toLowerCase()}`);
 const run = (overrides = {}) => ({
@@ -67,6 +68,50 @@ test('stage resolution skips forks and main but accepts failed repository branch
 
 test('success-only workflows skip failed reports', () => {
   assert.equal(resolve([run({ id: 999, conclusion: 'failure' }), run()], { RESOLVE_ACCEPTED: 'success' }), 'run_id=123\nhead_sha=abc123\n');
+});
+
+function liveDjangoSettings() {
+  const marker = '      - name: Resolve live Django Python quality artifact source run\n';
+  const start = pagesWorkflow.indexOf(marker);
+  assert.notEqual(start, -1, 'Missing live Django resolver');
+  const end = pagesWorkflow.indexOf('\n      - name: ', start + marker.length);
+  const block = pagesWorkflow.slice(start, end === -1 ? undefined : end);
+  const settings = {};
+  for (const key of ['RESOLVE_WORKFLOW_NAME', 'RESOLVE_WORKFLOW_FILE', 'RESOLVE_ACCEPTED', 'RESOLVE_BRANCH_MODE']) {
+    const match = block.match(new RegExp(`^          ${key}: (.+)$`, 'm'));
+    assert.ok(match, `Missing ${key}`);
+    settings[key] = match[1];
+  }
+  return settings;
+}
+
+test('live Django configuration selects a newer failed scan instead of an older successful report', () => {
+  assert.equal(resolve([
+    run({ id: 999, head_branch: 'feature', conclusion: 'failure' }),
+    run({ id: 456, conclusion: 'failure', head_sha: 'latest-main-sha' }),
+    run(),
+  ], liveDjangoSettings()), 'run_id=456\nhead_sha=latest-main-sha\n');
+});
+
+test('live Django configuration accepts the failed main scan that triggered Pages', () => {
+  assert.equal(resolve([run()], {
+    ...liveDjangoSettings(),
+    EVENT_NAME: 'workflow_run',
+    WR_NAME: 'Django Python Quality',
+    WR_ID: '789',
+    WR_HEAD_SHA: 'failed-main-sha',
+    WR_HEAD_BRANCH: 'main',
+    WR_HEAD_REPOSITORY: repository,
+    WR_CONCLUSION: 'failure',
+  }), 'run_id=789\nhead_sha=failed-main-sha\n');
+});
+
+test('Pages starts for failed Django scans without removing the source-repository guard', () => {
+  const condition = pagesWorkflow.match(/^ {4}if: >-\n([\s\S]*?)^ {4}runs-on:/m)?.[1];
+  assert.ok(condition, 'Missing Pages build condition');
+  assert.match(condition, /\|\| \(github\.event\.workflow_run\.conclusion == 'failure'\s+&& github\.event\.workflow_run\.name == 'Django Python Quality'\)/);
+  assert.match(condition, /&& \(github\.event_name != 'workflow_run'\s+\|\| github\.event\.workflow_run\.head_repository\.full_name == github\.repository\)/);
+  assert.match(pagesWorkflow, /^ {10}ref: refs\/heads\/main$/m);
 });
 
 test('runs with missing source repository are excluded', () => {
