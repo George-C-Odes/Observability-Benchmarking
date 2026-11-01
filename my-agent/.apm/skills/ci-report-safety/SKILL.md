@@ -1,11 +1,11 @@
 ---
 name: ci-report-safety
-description: "Implement or review workflows, scanner wrappers, report gates, and security-alert triage without weakening trust boundaries"
+description: "Implement or review workflows, authenticated API helpers, scanner wrappers, report gates, and security-alert triage without weakening trust boundaries"
 ---
 
 # CI and Report Safety
 
-Use for changes to `.github/workflows/**`, scanner/report helpers in `scripts/**`, or container staging and quality gates. Apply only the sections affected by the change. Read `AGENTS.md`, the matching workflow and nearest tests first; use `docs/SECURITY.md` for the supported execution model and `docs/AGENT_IMPLEMENTATION_MAP.md` for validation commands.
+Use for changes to `.github/workflows/**`, authenticated HTTP/API clients, scanner/report helpers in `scripts/**`, or container staging and quality gates. Apply only the sections affected by the change. Read `AGENTS.md`, the matching workflow/client and nearest tests first; use `docs/SECURITY.md` for the supported execution model and `docs/AGENT_IMPLEMENTATION_MAP.md` for validation commands.
 
 ## 1. Validate workflow semantics, not just YAML
 
@@ -51,6 +51,16 @@ Use for changes to `.github/workflows/**`, scanner/report helpers in `scripts/**
 - Separate confirmed defects, optional robustness, context-specific false positives, and validation gaps. Explain the source-to-sink path, privilege boundary, concrete impact, and smallest safe fix; do not classify all alerts from one tool alike.
 - Fix reachable defects with tests. Dismiss an alert only with user authorization and a verified scoped rationale; record conditions requiring reassessment. Do not weaken a gate, exclude production code, disable a rule globally, or mask a path issue to silence a command warning.
 - A later scan can report the same root cause under a new alert ID/location. Check old dismissal state and new instances instead of assuming dismissal failed; reverify before triaging the new alert. Confirm the alert-level state after any mutation, and disclose exactly which alerts changed.
+- Custom validators may establish runtime safety without being recognized as taint sanitizers by Sonar or another analyzer. Prefer standard, context-appropriate sanitizers at URL construction and preserve semantic validation; do not hide data flow, encode an entire URL, or add redundant wrappers just to move a finding. After a change, verify the new analysis revision and execution flow. Passing tests or moving a finding to a new line does not prove it is cleared. If no fresh scan is available, report scanner confirmation as pending; persistent findings need current evidence or an authorized, scoped false-positive review, not another speculative rewrite.
+
+## 7. Keep authenticated HTTP/API requests within their intended boundary
+
+- Trace request/event values, environment configuration, persisted state, and earlier API responses through the next request's URL, method, headers, and body. A response from a trusted API is still external input; validate returned identifiers before reusing them. An environment-selected API root is trusted only when the launcher establishes that boundary.
+- For a bounded API helper, use named operations with fixed methods and endpoint prefixes rather than accepting arbitrary routes or complete URLs. Keep scheme, origin, and repository/resource scope fixed or independently allowlisted. A fixed host alone does not prevent traversal into another endpoint on that host. Legitimate generic clients need equivalent origin/resource authorization, not an unrestricted route concatenation.
+- Validate identifiers according to the API contract, then encode each dynamic path component exactly once with `encodeURIComponent` or the language's equivalent. Encode owner and repository separately; keep fixed `/` delimiters and query syntax outside the encoded component. Build query values with `URLSearchParams` or an equivalent query builder. Reject pre-encoded URL syntax when the contract expects raw identifiers. Encoding is not validation or authorization: `encodeURIComponent('..')` leaves `..` intact. Reject traversal, malformed SHAs/PR numbers, control characters (including trailing newlines), and invalid refs; preserve valid nested branch refs and the API's intended slash semantics.
+- Keep credentials in headers, never URLs, query strings, error messages, fixtures, or logs. Reject redirects by default for authenticated internal/API requests (`redirect: 'error'` with fetch); if redirects are required, explicitly authorize each destination and credential policy. Do not assume the HTTP client's redirect behavior preserves the intended endpoint. Retain request timeouts and narrowly scoped tokens.
+- Test the request boundary, not only validator functions: malformed input must produce zero fetch/client calls; malicious identifiers returned by one response must not reach a later request; valid identifiers must retain their exact URL, method, query, and publication body. Cover plain/encoded traversal, query/fragment injection, separators, newline anchors, nested valid refs, and redirect/error behavior. Use synthetic credentials. A mocked encoding call proves wiring, not scanner recognition; a mocked redirect response proves configured policy, not live redirect enforcement.
+- Reference pattern: `scripts/renovate-framework-sync.mjs` and `scripts/renovate-framework-sync.test.mjs` combine fixed operations, identifier validation, per-component encoding, redirect rejection, and request-boundary tests. Reuse the principles rather than its GitHub-specific identifiers or workflow assumptions. Sonar `jssecurity:S8476` and `jssecurity:S7044` motivated this guidance; their clearance still requires a fresh matching scan.
 
 ## Validation evidence
 

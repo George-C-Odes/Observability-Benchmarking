@@ -210,6 +210,31 @@ For Django staging, mount, interpreter/bootstrap, or scan/report lifecycle chang
 
 For scanner/reviewer feedback, read the latest alert and source, reproduce the claim, and distinguish code fixes from authorized per-alert dismissal. Do not disable a rule globally or treat new alert IDs as proof that a prior dismissal failed; see the safety skill for the evidence and authorization requirements.
 
+### Work on authenticated HTTP/API helpers
+
+Read the changed client, the callers supplying its identifiers/credentials, the matching workflow when present,
+and section 7 of `my-agent/.apm/skills/ci-report-safety/SKILL.md`. Trace external response fields into subsequent
+requests, not just user input into the first request. Use `scripts/renovate-framework-sync.mjs` and its tests as
+a bounded GitHub API example, not a universal client abstraction.
+
+Before implementing, identify the trusted origin/resource scope, fixed operations, identifier validation,
+per-component URL encoding, redirect policy, and credential placement. Custom validation is not a substitute
+for standard context-appropriate encoding, and encoding alone does not authorize paths or reject `..`.
+Prefer changes at the actual boundary over wrappers that merely move a taint finding.
+
+For the framework helper, run from the repository root:
+
+```bash
+node --test scripts/renovate-framework-sync.test.mjs
+```
+
+For other clients, run their matching tests instead. Verify zero outgoing calls for rejected values, exact valid
+URLs/methods/bodies, response-to-next-request injection, and redirect behavior. Encoding spies and mocked
+responses establish test contracts, not live API behavior or analyzer recognition. For Sonar `S8476`/`S7044`
+feedback, inspect the fresh analysis revision and source-to-sink flow; report clearance separately from test
+success. If remote analysis is unavailable, record that limit rather than claiming resolution or iterating on
+speculative scanner workarounds. See the safety skill for scoped false-positive review requirements.
+
 ### Work on agent guidance or the APM package
 
 Read:

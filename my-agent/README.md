@@ -24,7 +24,7 @@ The catalog is pinned to an audited full commit SHA in `apm.yml`; `apm.lock.yaml
 
 - `.apm/skills/benchmark-integrity/SKILL.md` protects comparable endpoint, telemetry, and resource behavior.
 - `.apm/skills/focused-validation/SKILL.md` selects failure-mode-appropriate checks and reports validation limits.
-- `.apm/skills/ci-report-safety/SKILL.md` covers workflow context validity, scanner/helper trust boundaries, subprocess deadlines, Git-data isolation, fail-closed reports, and scoped security-alert triage.
+- `.apm/skills/ci-report-safety/SKILL.md` covers workflow context validity, scanner/helper trust boundaries, authenticated API URL/credential boundaries, subprocess deadlines, Git-data isolation, fail-closed reports, and scoped security-alert triage with fresh-scan confirmation.
 
 The root router and repository contract load these only for matching tasks. They complement the pinned upstream skills with local contracts; do not manually copy them into generated deployments or edit upstream dependency sources. `includes: auto` discovers authored primitives without dependency pin changes, but adding or changing deployed primitives can require refreshed lockfile deployment records.
 

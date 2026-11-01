@@ -114,6 +114,34 @@ test('GitHub request operations have fixed endpoints, methods and query strings'
   }
 });
 
+test('every dynamic URL component uses standard encoding once, without encoding fixed route syntax', (t) => {
+  const encode = globalThis.encodeURIComponent;
+  const sanitizer = t.mock.method(globalThis, 'encodeURIComponent', (value) => encode(value));
+  const sha = 'a'.repeat(40);
+  const ref = 'renovate/maven/framework-4.x';
+  for (const [operation, identifier, expectedIdentifier] of [
+    ['readPull', 424, '424'],
+    ['readCommit', sha, sha],
+    ['readTree', sha, sha],
+    ['readBlob', sha, sha],
+    ['updateRef', ref, ref],
+    ['createBlob', undefined, undefined],
+    ['createTree', undefined, undefined],
+    ['createCommit', undefined, undefined],
+  ]) {
+    const before = sanitizer.mock.callCount();
+    const request = buildGitHubRequest(operation, 'Owner/repo.name', identifier);
+    const encodedInputs = sanitizer.mock.calls.slice(before).map(({ arguments: args }) => args[0]);
+    assert.deepEqual(encodedInputs, ['Owner', 'repo.name', ...(expectedIdentifier === undefined ? [] : [expectedIdentifier])], operation);
+    const url = new URL(request.url);
+    assert.ok(url.pathname.startsWith('/repos/Owner/repo.name/'));
+    assert.equal(url.search, operation === 'readTree' ? '?recursive=1' : '');
+    assert.equal(url.hash, '');
+    assert.ok(!url.pathname.includes('%252F'), 'Do not double-encode the ref');
+    if (operation === 'updateRef') assert.equal(url.pathname, '/repos/Owner/repo.name/git/refs/heads/renovate%2Fmaven%2Fframework-4.x');
+  }
+});
+
 test('GitHub request construction rejects alternate routes, traversal and query injection', () => {
   const sha = 'a'.repeat(40);
   for (const repository of [undefined, null, {}, '', '.', '..', 'owner/.', 'owner/..', 'owner/repo/extra',

@@ -192,6 +192,7 @@ For workflow, scanner-wrapper, report-gate, staging/mount, or security-alert tas
 
 ## 9 · Security Postures
 
+- For authenticated HTTP/API clients, apply section 7 of `my-agent/.apm/skills/ci-report-safety/SKILL.md` before implementing URL construction. It covers external response identifiers, fixed operations, validation plus standard component encoding, redirects, and request-boundary tests. Report fresh Sonar confirmation separately from passing tests; custom validators are not necessarily recognized taint sanitizers.
 - **No secrets in code or config**. Sensitive values come from env vars.
 - `.env` files with secrets must never be committed.
 - Dockerfiles: non-root users, multi-stage builds, minimal attack surface.

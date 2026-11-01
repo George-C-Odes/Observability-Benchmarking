@@ -30,21 +30,25 @@ export function buildGitHubRequest(operation, repository, identifier) {
       || ['.', '..'].includes(repository.split('/')[1])) {
     throw new Error('Expected an owner/repository GitHub identifier');
   }
+  const [owner, repo] = repository.split('/');
+  // Validation rejects invalid identifiers; standard component encoding also
+  // makes sanitization explicit to taint analyzers. Never encode a whole route.
+  const repositoryPath = `${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   let route;
   let method = 'GET';
   switch (operation) {
     case 'readPull':
       if (!Number.isSafeInteger(identifier) || identifier <= 0) throw new Error('Expected a positive PR number');
-      route = `pulls/${identifier}`;
+      route = `pulls/${encodeURIComponent(String(identifier))}`;
       break;
     case 'readCommit':
-      route = `git/commits/${requireGitSha(identifier)}`;
+      route = `git/commits/${encodeURIComponent(requireGitSha(identifier))}`;
       break;
     case 'readTree':
-      route = `git/trees/${requireGitSha(identifier)}?recursive=1`;
+      route = `git/trees/${encodeURIComponent(requireGitSha(identifier))}?recursive=1`;
       break;
     case 'readBlob':
-      route = `git/blobs/${requireGitSha(identifier)}`;
+      route = `git/blobs/${encodeURIComponent(requireGitSha(identifier))}`;
       break;
     case 'createBlob':
       route = 'git/blobs';
@@ -65,7 +69,7 @@ export function buildGitHubRequest(operation, repository, identifier) {
     default:
       throw new Error('Unsupported GitHub API operation');
   }
-  return { url: `https://api.github.com/repos/${repository}/${route}`, method };
+  return { url: `https://api.github.com/repos/${repositoryPath}/${route}`, method };
 }
 
 export function validateVersionChange(base, head) {
