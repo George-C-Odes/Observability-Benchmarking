@@ -9,6 +9,7 @@ import threading
 from typing import TYPE_CHECKING, Optional
 
 from django.http import HttpRequest, HttpResponse
+from django.views.decorators.http import require_safe
 
 from obbench_django_common.infrastructure.boot import get_hello_service
 
@@ -101,16 +102,19 @@ def log_thread(mode: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+@require_safe
 def healthz(_request: HttpRequest) -> HttpResponse:
     """Liveness probe."""
     return HttpResponse(status=200)
 
 
+@require_safe
 def readyz(_request: HttpRequest) -> HttpResponse:
     """Readiness probe."""
     return HttpResponse(status=200)
 
 
+@require_safe
 def livez(_request: HttpRequest) -> HttpResponse:
     """Liveness probe (alias)."""
     return HttpResponse(status=200)

@@ -59,7 +59,12 @@ keepalive = 65
 # ---------------------------------------------------------------------------
 preload_app = True
 max_requests = 0
-worker_tmp_dir = "/dev/shm"
+# Keep heartbeat files on tmpfs, inside a private directory created at startup.
+# Sonar python:S5443 reviewed safe: on_starting validates runtime-user ownership,
+# exact 0700 permissions and no final symlink (see gunicorn_runtime.py and tests).
+# The default parent is root-owned sticky tmpfs; Gunicorn uses mkstemp (0600)
+# and immediately unlinks heartbeat files. Overrides require trusted parents.
+worker_tmp_dir = os.environ.get("GUNICORN_WORKER_TMP_DIR", "/dev/shm/obbench-gunicorn")  # NOSONAR
 
 # Disable access log for benchmark purity (OTel captures HTTP metrics).
 accesslog = None
@@ -69,7 +74,8 @@ loglevel = os.environ.get("LOG_LEVEL", "info").lower()
 # ---------------------------------------------------------------------------
 # Control socket (gunicorn ≥ 25)
 # ---------------------------------------------------------------------------
-control_socket = "/tmp/gunicorn-ctrl.sock"
+# The image provisions this private 0700 directory for the nonroot runtime user.
+control_socket = os.environ.get("GUNICORN_CONTROL_SOCKET", "/app/gunicorn-control/gunicorn.sock")
 
 # ---------------------------------------------------------------------------
 # Misc
@@ -81,6 +87,13 @@ proxy_protocol = False
 # ---------------------------------------------------------------------------
 # Hooks
 # ---------------------------------------------------------------------------
+
+
+def on_starting(server):
+    """Prepare private runtime directories before workers are constructed."""
+    from obbench_django_common.infrastructure.gunicorn_runtime import prepare_runtime_directories
+
+    prepare_runtime_directories(server.cfg.worker_tmp_dir, server.cfg.control_socket)
 
 
 def post_fork(_server, _worker):

@@ -2,7 +2,8 @@
 
 `python-ci.in` collects the existing Django runtime and development requirements,
 plus the coverage and local build tools defined here. `python-ci.txt` is the single
-generated hash inventory used by the shared `install-python-dependencies` action.
+generated hash inventory used by the shared `install-python-dependencies` action
+and projected into the Django Docker build context.
 The action passes this lock as a constraint file, so each job installs only its
 selected requirements. A missing hash or conflicting pin fails the install.
 
@@ -50,14 +51,33 @@ To refresh all versions allowed by the inputs, pass `--upgrade`:
 bash .github/requirements/update-lock.sh --upgrade
 ```
 
-This writes `pip.txt` and `python-ci.txt`. `--upgrade` does not loosen explicit
+This writes `pip.txt` and `python-ci.txt`, then regenerates the Docker-context
+`gunicorn/dependencies.lock`, `gunicorn/build-requirements.txt`, and
+`gunicorn/pip-requirements.txt` using the standard-library `sync_build_locks.py`.
+The projection includes only runtime and local build dependencies, never Ruff,
+coverage, or Qodana-only tooling. Docker installs only the selected variant's
+requirements, constrained by these hashes, and bootstraps the same verified pip.
+`--upgrade` does not loosen explicit
 `==` pins: change the corresponding inputs first. When upgrading Django, regenerate
 its runtime/development requirements before regenerating the CI inventory.
 
 Existing runtime pins remain the source of truth; the hash inventory does not
 replace those files. Keep generated hashes out of the runtime requirements so
 local development can continue installing them alongside the repository package.
-Review and commit the changed inputs and both regenerated locks together.
+Review and commit the changed inputs, CI locks, and Docker projections together.
+
+To refresh only the Docker projections from an already-current CI inventory:
+
+```bash
+python services/python/django/gunicorn/sync_build_locks.py
+python services/python/django/gunicorn/sync_build_locks.py --check
+```
+
+The Django quality workflow checks projection freshness and runs its unit tests.
+Docker builds intentionally fail on conflicting pins, missing hashes, or missing
+target-platform wheels; there is no fallback to third-party source builds. Local
+common-package wheels are built offline in a separate build-tool virtualenv and
+hash-checked before installation; that virtualenv is not copied to runtime images.
 
 ## IntelliJ run configurations (Windows / PowerShell)
 

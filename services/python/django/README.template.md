@@ -17,6 +17,37 @@ The runtime naming conventions remain unchanged:
 - `django-platform`
 - `django-reactive`
 
+## Build and runtime security
+
+- The API adapter explicitly accepts **GET and HEAD** on `/healthz`, `/readyz`,
+  and `/livez`; other methods return `405` with `Allow: GET, HEAD`. Benchmark
+  endpoints, cache behavior, worker counts, and telemetry remain unchanged.
+- Docker installs third-party dependencies and pip from hash-verified wheels.
+  `gunicorn/dependencies.lock` is generated from the central CI inventory, not a
+  second version source; only the selected runtime's requirements are installed.
+  A missing target-platform wheel fails the build instead of executing a source
+  build. See [the dependency-lock guide](../../../.github/requirements/README.md).
+- The trusted common package is built with pinned, hash-verified tools in a
+  separate build virtualenv with networking and isolated dependency fetching
+  disabled. Its local wheel is hash-checked before installation. Neither build
+  tools nor compilers are copied into the nonroot runtime image.
+- Gunicorn's infrastructure startup hook creates an owned `0700` heartbeat
+  directory at `/dev/shm/obbench-gunicorn` **after** Docker mounts tmpfs. This
+  preserves memory-backed heartbeat I/O. The control socket is inside the image's
+  owned `0700` `/app/gunicorn-control` directory, not public `/tmp`.
+  Both paths are checked for ownership, permissions, and final-component symlinks
+  before workers start; unsafe existing directories cause startup to fail.
+- `GUNICORN_WORKER_TMP_DIR` and `GUNICORN_CONTROL_SOCKET` can override these paths
+  for Unix host runs. Use absolute paths with existing, trusted parent directories;
+  keep the heartbeat path on tmpfs. The runtime-directory helper stays in the
+  infrastructure layer, while method policy stays in the API layer. Application
+  and domain code have no new filesystem or server dependencies.
+
+Sonar may still identify the `/dev/shm` literals as security hotspots because
+static analysis cannot prove startup ownership/permission checks. Review these
+as safe only after validating the private-directory hook and runtime permissions;
+do not suppress the rule globally or move heartbeat files onto overlayfs.
+
 ## Version source and updates
 
 Set `PYTHON_VERSION` and `DJANGO_VERSION` in [compose/.env](../../../compose/.env), then run **[doc] Render Updates** in IntelliJ to refresh the generated documentation, Dockerfile defaults, and build image configurations.
@@ -86,6 +117,17 @@ python -m piptools compile --upgrade services/python/django/gunicorn/WSGI/requir
 if ($LASTEXITCODE -ne 0) { throw 'WSGI dependency compilation failed.' }
 python -m piptools compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'ASGI dependency compilation failed.' }
+```
+
+After changing runtime pins, run **`[upgrade] Python CI`** (Linux container), or
+follow the [central lock regeneration guide](../../../.github/requirements/README.md).
+The shared updater regenerates the Docker-context locks automatically. Commit
+the runtime pins, central hashes, and generated Docker locks together. To check
+the Docker projection without fetching or upgrading any dependencies:
+
+```powershell
+python services/python/django/gunicorn/sync_build_locks.py --check
+python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
 ```
 
 Then re-install into the local virtualenv (filtering out `pyroscope-io` which only builds on Linux):
