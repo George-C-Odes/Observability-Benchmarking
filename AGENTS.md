@@ -16,18 +16,18 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 
 ## Path router
 
-| If the task touches                | Read first                                                                           | Then inspect                                                      |
-|------------------------------------|--------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| Root docs or generated READMEs     | `scripts/render-readmes.manifest.json`, the relevant `*.template.md`                 | Generated target only to verify output                            |
-| Docker Compose or benchmark wiring | `compose/docker-compose.yml`, `compose/obs.yml`, `compose/utils.yml`, `compose/.env` | A sibling service with the same profile                           |
-| Java benchmark services            | Matching `services/java/<framework>/.../README.md`, `pom.xml`                        | Same framework tests plus `services/java/checkstyle.xml`          |
-| Java orchestrator                  | `utils/orchestrator/README.md`, `utils/orchestrator/pom.xml`                         | `application/`, `resource/`, `domain/`, and matching tests        |
-| Go services                        | `services/go/<simple\| enhanced>/README.md`, `go.mod`, `Makefile`                    | `internal/*` for enhanced, `cmd/server` for simple                |
-| Django services                    | `services/python/django/README.md`                                                   | `gunicorn/common`, then `WSGI` or `ASGI` runtime wrapper          |
-| Next.js dashboard                  | `utils/nextjs-dash/README.md`, `package.json`, `.oxlintrc.json`, `.oxfmtrc.json`     | `app/components`, `app/api`, `lib`, matching `__tests__`          |
-| CI and quality reports             | Matching `.github/workflows/*.yml`                                                   | `scripts/pages/*` if report output changes                        |
-| Docs site                          | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
-| Agent guidance or APM package      | `AGENTS.md`, relevant `.github/instructions/*`, `my-agent/README.md`                 | `docs/AGENT_IMPLEMENTATION_MAP.md`, then affected `.apm/*` files  |
+| If the task touches                   | Read first                                                                           | Then inspect                                                      |
+|---------------------------------------|--------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| Root docs or generated READMEs        | `scripts/render-readmes.manifest.json`, the relevant `*.template.md`                 | Generated target only to verify output                            |
+| Docker Compose or benchmark wiring    | `compose/docker-compose.yml`, `compose/obs.yml`, `compose/utils.yml`, `compose/.env` | A sibling service with the same profile                           |
+| Java benchmark services               | Matching `services/java/<framework>/.../README.md`, `pom.xml`                        | Same framework tests plus `services/java/checkstyle.xml`          |
+| Java orchestrator                     | `utils/orchestrator/README.md`, `utils/orchestrator/pom.xml`                         | `application/`, `resource/`, `domain/`, and matching tests        |
+| Go services                           | `services/go/<simple\| enhanced>/README.md`, `go.mod`, `Makefile`                    | `internal/*` for enhanced, `cmd/server` for simple                |
+| Django services                       | `services/python/django/README.md`                                                   | `gunicorn/common`, then `WSGI` or `ASGI` runtime wrapper          |
+| Next.js dashboard                     | `utils/nextjs-dash/README.md`, `package.json`, `.oxlintrc.json`, `.oxfmtrc.json`     | `app/components`, `app/api`, `lib`, matching `__tests__`          |
+| CI, scanner wrappers, quality reports | Matching workflow and `my-agent/.apm/skills/ci-report-safety/SKILL.md`               | Nearest helper tests; `scripts/pages/*` if report output changes  |
+| Docs site                             | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
+| Agent guidance or APM package         | `AGENTS.md`, relevant `.github/instructions/*`, `my-agent/README.md`                 | `docs/AGENT_IMPLEMENTATION_MAP.md`, then affected `.apm/*` files  |
 
 ## Non-negotiable contracts
 
@@ -38,19 +38,22 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 - Compose profile, CPU, memory, ulimit, health, and telemetry settings are part of benchmark fairness.
 - `service.name` and endpoint response semantics must remain stable across benchmark variants.
 - The orchestrator executes commands; treat command validation, path validation, and auth filters as security-sensitive.
+- Scanner/report helpers also cross command, filesystem, and container trust boundaries; apply the CI/report safety skill before changing them or triaging their alerts.
 
 ## Cheapest validation by area
 
-| Area                                                 | Focused checks                                                                                                              |
-|------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `utils/nextjs-dash/**`                               | `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test:fast` from `utils/nextjs-dash`                   |
-| `utils/orchestrator/**`                              | `mvn verify -B` from `utils/orchestrator`                                                                                   |
-| `services/java/<module>/**`                          | `mvn verify -B` from the changed Maven module; add Checkstyle if style-sensitive                                            |
-| `services/go/enhanced/**` or `services/go/simple/**` | `go test ./... -race`, `go vet ./...`, `golangci-lint run` from the changed module                                          |
-| `services/python/django/gunicorn/common/**`          | `python -m compileall src`, `python -m ruff check .`, `python -m ruff format --check .` from `common`                       |
-| Django `WSGI` or `ASGI` runtime                      | Install common package, then `python manage.py check` and `python manage.py test obbench_django_common.tests --verbosity=2` |
-| Template docs                                        | `node scripts/render-readmes.mjs` and inspect the generated diff                                                            |
-| `my-agent/**`                                        | `apm install --frozen`, `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`    |
+| Area                                                 | Focused checks                                                                                                                |
+|------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `utils/nextjs-dash/**`                               | `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test:fast` from `utils/nextjs-dash`                     |
+| `utils/orchestrator/**`                              | `mvn verify -B` from `utils/orchestrator`                                                                                     |
+| `services/java/<module>/**`                          | `mvn verify -B` from the changed Maven module; add Checkstyle if style-sensitive                                              |
+| `services/go/enhanced/**` or `services/go/simple/**` | `go test ./... -race`, `go vet ./...`, `golangci-lint run` from the changed module                                            |
+| `services/python/django/gunicorn/common/**`          | `python -m compileall src`, `python -m ruff check .`, `python -m ruff format --check .` from `common`                         |
+| Django `WSGI` or `ASGI` runtime                      | Install common package, then `python manage.py check` and `python manage.py test obbench_django_common.tests --verbosity=2`   |
+| `.github/workflows/**`                               | Run actionlint on changed workflows; YAML parsing alone does not validate expression contexts (see the CI recipe)             |
+| Django Qodana helpers                                | `python -m unittest discover -s scripts -p test_qodana_python.py`; helper Ruff checks and scan verification per the CI recipe |
+| Template docs                                        | `node scripts/render-readmes.mjs` and inspect the generated diff                                                              |
+| `my-agent/**`                                        | `apm install --frozen`, `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`      |
 
 Use broader CI reasoning only after the focused path is clean or when shared contracts are changed.
 

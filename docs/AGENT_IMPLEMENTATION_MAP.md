@@ -186,12 +186,29 @@ Read:
 - The exact workflow under `.github/workflows`.
 - Shared report helpers in `scripts/pages/report-helpers.mjs` when HTML report output changes.
 - Specific generator scripts only for the relevant language report.
+- `my-agent/.apm/skills/ci-report-safety/SKILL.md` for workflow context checks, helper trust boundaries, subprocess deadlines, scanner isolation, evidence gates, and alert triage. Use the same recipe for scanner/report scripts even when the workflow itself is unchanged.
+- For Django Qodana, `scripts/README.md`, `scripts/test_qodana_python.py`, and the environment trust boundary in `docs/SECURITY.md`.
 
 Contracts:
 
 - Actions are pinned to full commit SHAs with version comments.
 - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` appears at workflow-level `env:` with the existing TODO comment.
 - Report upload artifact names are consumed by Pages/report assembly; rename with care.
+
+Validation (from the repository root):
+
+```bash
+actionlint .github/workflows/django_python_quality.yml # substitute the changed workflow
+python -m unittest discover -s scripts -p test_qodana_python.py -v
+python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+```
+
+Run only checks relevant to the changed helper. If actionlint is unavailable, use a verified pinned installation or record the blocker; a YAML-only check is not a substitute. Record the validator version and any narrowly justified runner-label exclusion, without suppressing expression/security diagnostics.
+
+For Django staging, mount, interpreter/bootstrap, or scan/report lifecycle changes, follow the local scan commands in `scripts/README.md` and verify fresh coverage, exported HTML/SARIF, sanitized provenance, and container removal. Use an empty results directory at the documented runner/OS temp location. Run Linux checks for symlink behavior skipped on Windows; do not weaken locked installs to make local validation pass. A summary rerun against old SARIF validates only the summary, not the modified scanner. Template edits require a selected render/check and inspection of the generated diff.
+
+For scanner/reviewer feedback, read the latest alert and source, reproduce the claim, and distinguish code fixes from authorized per-alert dismissal. Do not disable a rule globally or treat new alert IDs as proof that a prior dismissal failed; see the safety skill for the evidence and authorization requirements.
 
 ### Work on agent guidance or the APM package
 
