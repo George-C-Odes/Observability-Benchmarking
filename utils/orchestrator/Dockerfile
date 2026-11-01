@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 ARG IMAGE_BUILDER=maven:3.10.0-eclipse-temurin-25-noble@sha256:51a751cf747bad5968979a66142d443e8d94854172c3891ae2496edec544c6b3
 ARG IMAGE_DOCKER_CLI=docker:29.9.2-cli-alpine3.24@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:9039a88709bcc2bacf5a2faac331d65dd6840f763f225ad9594cc0c67bcd0fba
