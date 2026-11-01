@@ -49,7 +49,12 @@ export function syncFrameworkVersions({ envPath = 'compose/.env', check = false 
   const templatePaths = loadManifestTemplatePaths('scripts/render-readmes.manifest.json');
   const before = new Map(templatePaths.map((file) => {
     const output = resolveRepoPath(deriveOutputPath(file));
-    return [output, readFileSync(output, 'utf8')];
+    try {
+      return [output, readFileSync(output, 'utf8')];
+    } catch (error) {
+      if (error.code !== 'ENOENT' || check) throw error;
+      return [output, undefined];
+    }
   }));
   for (const { outputPath } of renderTemplates({ envPath, templatePaths, check })) {
     const content = readFileSync(outputPath, 'utf8');
