@@ -97,7 +97,11 @@ max_requests = 0
 # Inside Docker the default /tmp is overlayfs; /dev/shm is a real tmpfs.
 # A private 0700 subdirectory is prepared by on_starting after the tmpfs mount
 # exists. This preserves the heartbeat optimization without sharing its directory.
-worker_tmp_dir = os.environ.get("GUNICORN_WORKER_TMP_DIR", "/dev/shm/obbench-gunicorn")
+# Sonar python:S5443 reviewed safe: on_starting validates runtime-user ownership,
+# exact 0700 permissions and no final symlink (see gunicorn_runtime.py and tests).
+# The default parent is root-owned sticky tmpfs; Gunicorn uses mkstemp (0600)
+# and immediately unlinks heartbeat files. Overrides require trusted parents.
+worker_tmp_dir = os.environ.get("GUNICORN_WORKER_TMP_DIR", "/dev/shm/obbench-gunicorn")  # NOSONAR
 
 # Disable access log for benchmark purity (OTel captures HTTP metrics).
 accesslog = None
