@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7-labs@sha256:b99fecfe00268a8b556fad7d9c37ee25d716ae08a5d7320e6d51c4dd83246894
+# syntax=docker/dockerfile:1.28-labs@sha256:ad43eec41369d9ef94412c0d1eb3203d12218d01da225afc92a3aeba3a0e7796
 ARG GO_VERSION=1.27.3
 ARG BASE_BUILDER=alpine3.24
 
