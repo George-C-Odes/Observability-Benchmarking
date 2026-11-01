@@ -4,6 +4,12 @@ This directory contains small repository-level helper scripts.
 
 ## Current scripts
 
+- `sync-framework-versions.mjs` - runs every env-driven synchronizer and README renderer, including orchestrator Quarkus and the shared Python CI version
+- `sync-framework-versions.test.mjs` - tests canonical inventories, Python defaults, and generated output scope
+- `sync-django-versions.mjs` - pins Django inputs from the env and regenerates runtime/CI/Docker locks when the version changes
+- `sync-django-versions.test.mjs` - offline tests for Django pinning and compiler/hash regeneration contracts
+- `renovate-framework-sync.mjs` - validates Renovate PR data and publishes only trusted generated output without checking out PR code
+- `renovate-framework-sync.test.mjs` - tests Renovate extraction, downstream exclusions, env-only edits, fork/mode guards, and repeat publication
 - `render-readmes.mjs` - renders generated README files from `.template.md` sources using values from `compose/.env`
 - `render-readmes.test.mjs` - lightweight tests for the README rendering logic
 - `render-readmes.manifest.json` - default list of README templates rendered when no explicit template paths are passed
@@ -30,10 +36,75 @@ The synchronizers keep their format-specific transformations and inventories sep
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
 normal mode writes only changed files. This validation guarantee does not provide rollback if a filesystem write fails.
 
+## Framework versions and Renovate
+
+`compose/.env` is authoritative for the twelve active `*_VERSION` values. Renovate's custom regex managers
+read this repository's colon-style syntax, ignore commented-out alternatives, and update the env value rather
+than independently changing its generated copies. Maven lookups use the actual service coordinates, including
+the Zoomba Spark fork, Micronaut **core** BOM, and Pekko **HTTP** (not its separately versioned core libraries).
+Framework major upgrades still require Dependency Dashboard approval; automerge remains disabled. Stable
+registry releases still age for three days, except vulnerability alerts. Unrelated libraries, plugins, action pins,
+Docker digests, and independent tool versions remain managed normally.
+
+### One command for manual changes
+
+After editing the env, run the same command used by **[doc] Render Updates** and Renovate:
+
+```powershell
+node scripts/sync-framework-versions.mjs
+node scripts/sync-framework-versions.mjs --check
+```
+
+This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
+Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django requirement inputs and locks, the shared
+Python CI default, and manifest-listed documentation. Direct builds retain literal defaults. Individual
+synchronizers remain available; use the combined command for a complete update. `--env` selects another env
+source and `--check` never writes or downloads dependencies. Changes do not run automatically just by editing
+the env. The combined operation is not transactional: after a compiler or filesystem failure, inspect the diff,
+resolve the error, rerun, and commit only after check mode passes.
+
+Django's two `requirements.in` files use **exact** `DJANGO_VERSION` pins. If Django locks already match, no
+compiler is needed. When Django changes, use **Linux**, Python matching `PYTHON_VERSION`, and pip-tools **7.6.2**
+in a compiler virtualenv. The helper checks the compiler before updating inputs, resolves both runtime locks
+with a targeted Django upgrade, then runs `.github/requirements/update-lock.sh` to regenerate the hash inventory
+and Docker projections. Existing hashes are never relabeled for a different release, and there is no unhashed
+runtime install fallback. Windows users must run a Django version change in a Linux environment/container;
+Git Bash with Windows Python cannot compile the Pyroscope-containing inventory. See
+[Python compiler setup](../.github/requirements/README.md#regenerate-or-upgrade-the-locks).
+
+### Renovate PR synchronization
+
+1. Renovate proposes an env update and labels the PR `framework-version`.
+2. **Framework Version Sync** (`renovate_framework_sync.yml`) runs the **trusted base revision's** scripts.
+   It accepts only open `renovate[bot]` PRs from this repository under `renovate/`, validates that the env changed
+   only active framework values, and rejects changes outside the generated-file inventory. Branch files are
+   Git API blobs, not executable code; symlinks, file-mode changes, and truncated trees are rejected.
+3. The workflow synchronizes and checks all output, including hash projections, then adds the generated files
+   to the same PR through the Git API. It never checks out the PR, executes its scripts, or force-updates a ref.
+   Concurrent head changes fail safely; existing unrelated edits to generated files are not overwritten.
+4. The generated commit triggers the normal path-scoped service checks. Repeat publication is a no-op.
+   `gitIgnoredAuthors` matches the Actions bot author used by this helper so Renovate can refresh/rebase its PR.
+5. **Framework Version Consistency** (`framework_versions.yml`) runs regression tests and read-only drift/hash
+   checks on every PR and on `main`. Make its check required in branch protection to enforce the contract.
+
+**One-time setup:** after merging this integration into the trusted base branch, add the Actions repository
+secret **`RENOVATE_SYNC_TOKEN`**, using a repository-scoped fine-grained PAT (or supplied GitHub App token) with
+**Contents: read/write** and **Pull requests: read**. Do not put the token in `compose/.env`. It is exposed only
+to the publication step; checkout and preparation use the read-only `GITHUB_TOKEN` without persisted Git
+credentials. There is deliberately no write-token fallback: commits made with `GITHUB_TOKEN` suppress normal
+push/PR workflows, which would otherwise leave the generated service changes untested. A missing token fails
+publication rather than merging an env-only update. Hosted Renovate does not execute repository-configured
+`postUpgradeTasks`, so this workflow supplies the synchronization without requiring a self-hosted bot.
+
+The env represents benchmark framework/runtime versions, not every tool/library in the monorepo. Other pins
+(for example Pekko core, Micronaut integration modules, Java/Maven tooling, and dashboard dependencies) retain
+their separate compatibility lifecycles. When adding another env-managed version, extend Renovate extraction,
+its scoped downstream exclusions, the corresponding synchronizer/inventory, and regression tests together.
+
 Run the synchronizer regression tests with:
 
 ```powershell
-node --test scripts/sync-*.test.mjs
+node --test scripts/sync-*.test.mjs scripts/render-readmes.test.mjs scripts/renovate-framework-sync.test.mjs
 ```
 
 Run the Snyk runner regression tests without credentials or an installed Snyk CLI:

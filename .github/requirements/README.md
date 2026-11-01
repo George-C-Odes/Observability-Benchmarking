@@ -22,7 +22,8 @@ cannot silently use an outdated bootstrap lock.
 | Django coverage       | Selected runtime and development requirements, coverage, local build tools |
 | Django Qodana         | Both runtime variants excluding Pyroscope, local build tools, `qodana.in`  |
 
-The Python version defaults to 3.13 in `setup-python/action.yml`. Both Django
+The Python version default in `setup-python/action.yml` is synchronized from
+`PYTHON_VERSION` in `compose/.env`. Both Django
 workflows include the shared action and requirements directory in their path
 filters, and all consumers include the lock in their pip cache keys.
 
@@ -33,6 +34,13 @@ This permits the intended local build without downloading additional build
 dependencies. Workflow steps do not upgrade pip independently.
 
 ## Regenerate or upgrade the locks
+
+**Django framework updates:** change `DJANGO_VERSION` in `compose/.env`, then run
+`node scripts/sync-framework-versions.mjs` in the Linux compiler environment described below.
+It synchronizes both exact Django input pins, regenerates the runtime resolutions, and invokes
+`update-lock.sh` for the verified CI inventory and Docker projections. Renovate follows this same
+source-of-truth flow; do not independently upgrade Django in generated requirements or hashes.
+Use `node scripts/sync-framework-versions.mjs --check` to check the complete version contract.
 
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
@@ -61,8 +69,8 @@ requirements, constrained by these hashes, and bootstraps the same verified pip.
 `==` pins: change the corresponding inputs first. When upgrading Django, regenerate
 its runtime/development requirements before regenerating the CI inventory.
 
-Existing runtime pins remain the source of truth; the hash inventory does not
-replace those files. Keep generated hashes out of the runtime requirements so
+Existing runtime pins remain the installation contract; Django's framework pin is relayed
+from `compose/.env`, and the hash inventory does not replace those files. Keep generated hashes out of the runtime requirements so
 local development can continue installing them alongside the repository package.
 Review and commit the changed inputs, CI locks, and Docker projections together.
 

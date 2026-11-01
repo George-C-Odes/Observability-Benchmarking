@@ -1,0 +1,79 @@
+name: Framework Version Sync
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
+
+env:
+  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: framework-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'renovate/') &&
+      contains(github.event.pull_request.labels.*.name, 'framework-version')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      # Never check out or run PR code in this privileged event. Only regular
+      # branch blobs are read; base scripts validate the env-only version change.
+      - name: Checkout trusted base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Validate Renovate version proposal
+        id: proposal
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/renovate-framework-sync.mjs prepare
+
+      - name: Select Python runtime
+        if: steps.proposal.outputs.changed == 'true'
+        id: python
+        run: |
+          node --input-type=module -e "import { readFileSync, appendFileSync } from 'node:fs'; import { parseColonEnv } from './scripts/render-readmes.mjs'; const env = parseColonEnv(readFileSync('compose/.env', 'utf8')); appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + env.PYTHON_VERSION + '\n');"
+
+      - name: Set up Python for lock projection
+        if: steps.proposal.outputs.changed == 'true'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ steps.python.outputs.version }}
+
+      - name: Install pinned lock compiler when Django changes
+        if: steps.proposal.outputs.django == 'true'
+        run: |
+          python -m pip install --only-binary=:all: pip-tools==7.6.2
+
+      - name: Relay versions and verify generated output
+        if: steps.proposal.outputs.changed == 'true'
+        run: |
+          node scripts/sync-framework-versions.mjs
+          node scripts/sync-framework-versions.mjs --check
+          python services/python/django/gunicorn/sync_build_locks.py --check
+
+      - name: Commit generated files to the PR
+        if: steps.proposal.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Required to trigger the usual path-scoped CI on the generated commit.
+          # A repository-scoped fine-grained PAT needs contents: write and PRs: read.
+          RENOVATE_SYNC_TOKEN: ${{ secrets.RENOVATE_SYNC_TOKEN }}
+        run: node scripts/renovate-framework-sync.mjs publish

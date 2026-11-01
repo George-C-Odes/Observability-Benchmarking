@@ -902,6 +902,28 @@ All public classes and methods should include:
 
 ## Integration with CI/CD
 
+### Framework version consistency and Renovate
+
+`compose/.env` is the source of truth for benchmark framework/runtime versions. Renovate updates its
+active version values through custom managers instead of independently updating the generated POM,
+Go, Docker, or Django copies. The **Framework Version Sync** workflow runs trusted base-branch
+synchronizers and adds generated manifests, verified Django locks, IDE build configurations, and
+documentation to the same Renovate PR before merge. The normal service quality workflows then test
+that generated commit. Unrelated dependency updates and Docker/action digest maintenance remain enabled.
+
+The **Framework Version Consistency** workflow tests the synchronization logic and checks all managed
+outputs against the env on PRs and `main`, including Docker hash projection freshness. Make its check
+required in branch protection. Major-upgrade dashboard approval and existing service quality gates
+remain unchanged; consistency checks do not establish framework API compatibility.
+
+For manual updates, run `node scripts/sync-framework-versions.mjs`, then the same command with `--check`.
+Actual Django version changes require a Linux Python/pip-tools compiler environment; up-to-date checks
+do not fetch dependencies. Automatic PR publication requires the repository secret `RENOVATE_SYNC_TOKEN`
+so generated commits trigger CI instead of being suppressed by `GITHUB_TOKEN`.
+See [framework synchronization and one-time Renovate setup](../scripts/README.md#framework-versions-and-renovate).
+
+### Language quality gates
+
 Checkstyle remains fatal for the Java service modules, and the orchestrator's Spotless / PMD / SpotBugs / custom-Javadoc stack is also enforced as fatal during Maven builds.
 
 Qodana is stricter: the GitHub Actions workflow for `services/java/**` and `utils/orchestrator/**` fails on **critical**, **high**, or **moderate** Qodana findings.
