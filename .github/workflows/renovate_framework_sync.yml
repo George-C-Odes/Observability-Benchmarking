@@ -4,10 +4,6 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened, labeled]
 
-env:
-  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 permissions:
   contents: read
   pull-requests: read
