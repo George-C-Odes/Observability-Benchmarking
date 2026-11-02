@@ -195,9 +195,15 @@
         "maven",
         "go",
         "golang-version",
-        "github-tags",
         "rubygems"
       ],
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-required"
+    },
+    {
+      "description": "Let CPython releases age without delaying unrelated GitHub Action version updates.",
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": ["python/cpython"],
       "minimumReleaseAge": "3 days",
       "minimumReleaseAgeBehaviour": "timestamp-required"
     },

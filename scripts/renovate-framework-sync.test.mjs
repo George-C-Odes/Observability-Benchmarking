@@ -69,6 +69,20 @@ test('only env-driven downstream versions are disabled; existing safeguards rema
   assert.equal(config.vulnerabilityAlerts.minimumReleaseAge, '0 days');
 });
 
+test('release-age gates preserve registry policies and scope GitHub tags to CPython', () => {
+  const ageRules = config.packageRules.filter(({ minimumReleaseAge }) => minimumReleaseAge !== undefined);
+  const registry = ageRules.find(({ matchDatasources }) => matchDatasources?.includes('npm'));
+  assert.deepEqual(registry.matchDatasources, ['npm', 'pypi', 'maven', 'go', 'golang-version', 'rubygems']);
+  assert.equal(registry.minimumReleaseAge, '3 days');
+  assert.equal(registry.minimumReleaseAgeBehaviour, 'timestamp-required');
+  const githubTags = ageRules.filter(({ matchDatasources }) => matchDatasources?.includes('github-tags'));
+  assert.equal(githubTags.length, 1);
+  assert.deepEqual(githubTags[0].matchDatasources, ['github-tags']);
+  assert.deepEqual(githubTags[0].matchPackageNames, ['python/cpython']);
+  assert.equal(githubTags[0].minimumReleaseAge, '3 days');
+  assert.equal(githubTags[0].minimumReleaseAgeBehaviour, 'timestamp-required');
+});
+
 test('only active version values may change, preserving local settings and comments', () => {
   const updated = env.replace(/(^QUARKUS_VERSION:)[^\r\n]+/m, '$1 9.0.1');
   assert.deepEqual(validateVersionChange(env, updated), ['QUARKUS_VERSION']);
