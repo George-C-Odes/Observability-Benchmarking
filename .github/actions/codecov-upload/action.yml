@@ -1,0 +1,39 @@
+name: Upload to Codecov
+description: Upload coverage using the repository's shared, pinned GitHub action.
+
+inputs:
+  files:
+    description: Coverage report files to upload.
+    required: true
+  flags:
+    description: Codecov flags identifying the covered components.
+    required: true
+  name:
+    description: Name identifying this coverage upload.
+    required: false
+  token:
+    description: Codecov token supplied by the caller; may be empty on fork PRs.
+    required: false
+  fail_ci_if_error:
+    description: Fail the step when the upload fails.
+    required: false
+    default: 'false'
+  disable_search:
+    description: Upload only the explicitly selected reports without searching for others.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    # Preserve uploads selected by the caller even after another step has failed.
+    - name: Upload to Codecov
+      if: ${{ always() }}
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+      with:
+        files: ${{ inputs.files }}
+        flags: ${{ inputs.flags }}
+        name: ${{ inputs.name }}
+        token: ${{ inputs.token }}
+        fail_ci_if_error: ${{ inputs.fail_ci_if_error }}
+        disable_search: ${{ inputs.disable_search }}

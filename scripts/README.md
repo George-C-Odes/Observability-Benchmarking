@@ -4,6 +4,12 @@ This directory contains small repository-level helper scripts.
 
 ## Current scripts
 
+- `sync-framework-versions.mjs` - runs every env-driven synchronizer and README renderer, including orchestrator Quarkus, the shared Python CI version, and Sonar's Python language version
+- `sync-framework-versions.test.mjs` - tests canonical inventories, Python CI/Sonar versions, and generated output scope
+- `sync-django-versions.mjs` - pins Django inputs from the env and regenerates runtime/CI/Docker locks when the version changes
+- `sync-django-versions.test.mjs` - offline tests for Django pinning and compiler/hash regeneration contracts
+- `renovate-framework-sync.mjs` - validates Renovate PR data and publishes only trusted generated output without checking out PR code
+- `renovate-framework-sync.test.mjs` - tests Renovate extraction, downstream exclusions, env-only edits, fork/mode guards, and repeat publication
 - `render-readmes.mjs` - renders generated README files from `.template.md` sources using values from `compose/.env`
 - `render-readmes.test.mjs` - lightweight tests for the README rendering logic
 - `render-readmes.manifest.json` - default list of README templates rendered when no explicit template paths are passed
@@ -25,15 +31,108 @@ This directory contains small repository-level helper scripts.
 - `run-qodana-python.py` - runs isolated, unprivileged Django-only Qodana Python Community scans
 - `qodana-python-report.py` - summarizes inspection coverage and fails closed on missing scan evidence
 - `test_qodana_python.py` - tests scan isolation, coverage, and report path validation
+- `github-actions.test.mjs` - tests action pin centralization, nested action triggers, dashboard setup, and Go report contracts
+- `coverage_summary.py` - shared coverage tables and format-specific coverage.py, Go, JaCoCo, and Vitest summaries
+- `test_coverage_summary.py` - tests coverage totals, failure/missing-report behavior, Java statuses, and XML entity rejection
 
 The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
 normal mode writes only changed files. This validation guarantee does not provide rollback if a filesystem write fails.
 
+## Shared CI setup and coverage summaries
+
+`.github/actions/setup-nextjs` reuses the shared Node setup and installs the exact npm version from the
+dashboard's `package.json` `packageManager` field. Both npm installation and `npm ci` disable lifecycle
+scripts. Its steps stop on failure. Workflow path filters include the dashboard setup and its nested Node action.
+
+Go Quality uses one matrix pipeline with independent legs (`fail-fast: false`). Matrix entries retain the
+existing check display names, module caches, report titles, and `quality-report-go` / `quality-report-go-simple`
+artifact names; Pages still downloads those exact names.
+
+Coverage workflows call `coverage_summary.py` with `python`, `go`, `java`, `java-combined`, or `nextjs`.
+Each mode retains its workflow environment inputs and working directory. Shared tables do not replace
+format-specific metrics or gates: missing reports after successful Python/Go tests or Java builds fail,
+Java threshold violations remain reviewable through status artifacts, and missing Next.js reports remain
+informational. Weighted totals sum counters rather than averaging percentages. The JaCoCo reader accepts
+its standard external DTD declaration without fetching it and rejects entity definitions. Go's optional
+function detail uses a fixed argument list without a shell and has a 30-second timeout; timeouts fail.
+
+The unconditional Framework Version Consistency workflow runs both contract suites:
+
+```powershell
+node --test scripts/github-actions.test.mjs
+python -m unittest discover -s scripts -p test_coverage_summary.py -v
+```
+
+## Framework versions and Renovate
+
+`compose/.env` is authoritative for the twelve active `*_VERSION` values. Renovate's custom regex managers
+read this repository's colon-style syntax, ignore commented-out alternatives, and update the env value rather
+than independently changing its generated copies. Maven lookups use the actual service coordinates, including
+the Zoomba Spark fork, Micronaut **core** BOM, and Pekko **HTTP** (not its separately versioned core libraries).
+Framework major upgrades still require Dependency Dashboard approval; automerge remains disabled. Stable
+registry releases still age for three days, except vulnerability alerts. Unrelated libraries, plugins, action pins,
+Docker digests, and independent tool versions remain managed normally.
+
+### One command for manual changes
+
+After editing the env, run the same command used by **[doc] Render Updates** and Renovate:
+
+```powershell
+node scripts/sync-framework-versions.mjs
+node scripts/sync-framework-versions.mjs --check
+```
+
+This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
+Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django requirement inputs and locks, the shared
+Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Direct builds retain literal defaults. Individual
+synchronizers remain available; use the combined command for a complete update. `--env` selects another env
+source and `--check` never writes or downloads dependencies. Changes do not run automatically just by editing
+the env. The combined operation is not transactional: after a compiler or filesystem failure, inspect the diff,
+resolve the error, rerun, and commit only after check mode passes.
+
+Django's two `requirements.in` files use **exact** `DJANGO_VERSION` pins. If Django locks already match, no
+compiler is needed. When Django changes, use **Linux**, Python matching `PYTHON_VERSION`, and pip-tools **7.6.2**
+in a compiler virtualenv. The helper checks the compiler before updating inputs, resolves both runtime locks
+with a targeted Django upgrade, then runs `.github/requirements/update-lock.sh` to regenerate the hash inventory
+and Docker projections. Existing hashes are never relabeled for a different release, and there is no unhashed
+runtime install fallback. Windows users must run a Django version change in a Linux environment/container;
+Git Bash with Windows Python cannot compile the Pyroscope-containing inventory. See
+[Python compiler setup](../.github/requirements/README.md#regenerate-or-upgrade-the-locks).
+
+### Renovate PR synchronization
+
+1. Renovate proposes an env update and labels the PR `framework-version`.
+2. **Framework Version Sync** (`renovate_framework_sync.yml`) runs the **trusted base revision's** scripts.
+   It accepts only open `renovate[bot]` PRs from this repository under `renovate/`, validates that the env changed
+   only active framework values, and rejects changes outside the generated-file inventory. Branch files are
+   Git API blobs, not executable code; symlinks, file-mode changes, and truncated trees are rejected.
+3. The workflow synchronizes and checks all output, including hash projections, then adds the generated files
+   to the same PR through the Git API. It never checks out the PR, executes its scripts, or force-updates a ref.
+   Concurrent head changes fail safely; existing unrelated edits to generated files are not overwritten.
+4. The generated commit triggers the normal path-scoped service checks. Repeat publication is a no-op.
+   `gitIgnoredAuthors` matches the Actions bot author used by this helper so Renovate can refresh/rebase its PR.
+5. **Framework Version Consistency** (`framework_versions.yml`) runs regression tests and read-only drift/hash
+   checks on every PR and on `main`. Make its check required in branch protection to enforce the contract.
+
+**One-time setup:** after merging this integration into the trusted base branch, add the Actions repository
+secret **`RENOVATE_SYNC_TOKEN`**, using a repository-scoped fine-grained PAT (or supplied GitHub App token) with
+**Contents: read/write** and **Pull requests: read**. Do not put the token in `compose/.env`. It is exposed only
+to the publication step; checkout and preparation use the read-only `GITHUB_TOKEN` without persisted Git
+credentials. There is deliberately no write-token fallback: commits made with `GITHUB_TOKEN` suppress normal
+push/PR workflows, which would otherwise leave the generated service changes untested. A missing token fails
+publication rather than merging an env-only update. Hosted Renovate does not execute repository-configured
+`postUpgradeTasks`, so this workflow supplies the synchronization without requiring a self-hosted bot.
+
+The env represents benchmark framework/runtime versions, not every tool/library in the monorepo. Other pins
+(for example Pekko core, Micronaut integration modules, Java/Maven tooling, and dashboard dependencies) retain
+their separate compatibility lifecycles. When adding another env-managed version, extend Renovate extraction,
+its scoped downstream exclusions, the corresponding synchronizer/inventory, and regression tests together.
+
 Run the synchronizer regression tests with:
 
 ```powershell
-node --test scripts/sync-*.test.mjs
+node --test scripts/sync-*.test.mjs scripts/render-readmes.test.mjs scripts/renovate-framework-sync.test.mjs
 ```
 
 Run the Snyk runner regression tests without credentials or an installed Snyk CLI:
@@ -103,18 +202,104 @@ python scripts/qodana-python-report.py $results
 Run the regression tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
 Symlink tests are skipped on systems that do not permit creating symlinks.
 
+### Sonar automatic-analysis configuration
+
+The repository contains an IDE SonarQube Cloud binding in `.sonarlint/connectedMode.json` and an automatic-analysis
+configuration in `.sonarcloud.properties`, but no Sonar scanner workflow. Sonar documents both
+`sonar.python.version` and `sonar.sourceEncoding` as supported automatic-analysis properties. Confirm
+**Administration > Analysis Method** in Sonar before switching methods; Qodana configuration does not control Sonar.
+
+- `PYTHON_VERSION` in the colon-style `compose/.env` remains authoritative. The existing framework synchronizer
+  relays a stable X.Y.Z runtime pin to Sonar's accepted **X.Y** language version (for example, 3.13.18 becomes 3.13).
+  Patch-only updates leave the language version unchanged. CI's drift check and guarded Renovate publication include
+  this file; only the Python setting is generated, and other analysis settings remain authored.
+- `sonar.sourceEncoding=UTF-8` makes the intended source encoding explicit without converting files or excluding
+  production code. A strict local UTF-8 audit of tracked files, excluding PNG/ICO binaries, found no decoding failures
+  during the 2026-11-01 investigation. This does **not** identify or clear the remote encoding warning: retrieve the
+  scanner's named file/line and analysis revision, check the bytes at that revision and any generated/vendor input,
+  then convert a confirmed non-UTF-8 text file or correct the specific scope error. Do not change encoding globally
+  to hide malformed bytes or add broad source exclusions without evidence.
+- The 2026-11-02 follow-up also audited the **committed HEAD blobs**, not just working files: no invalid UTF-8,
+  replacement characters (U+FFFD), or text NULs were found, excluding PNG/ICO binaries. The warning still appeared
+  in the matching remote scan. The supplied **scanner context** confirms UTF-8 and the test settings, but is a
+  property dump, not the runtime log identifying the affected file. SonarSource confirms that automatic-analysis
+  runtime logs are provider-hosted and unavailable to users; the warning's "check the scanner logs" instruction is
+  misleading for this analysis method. See [SonarSource's explanation](https://community.sonarsource.com/t/188330/2).
+- SonarSource also confirmed a scanner-engine behavior change that reports binary assets as UTF-8 encoding
+  warnings, and recommends explicit binary exclusions. They identified PNGs and fonts in another automatic-analysis
+  project's logs. See [the scanner-engine explanation](https://community.sonarsource.com/t/185002/6) and
+  [the automatic-analysis example](https://community.sonarsource.com/t/189294/3). Our audit of revision
+  `d5b4125093b7869e9cf0fc688e88358e1ceb826d` found **959 valid UTF-8 text blobs and 24 signature-verified PNG/ICO
+  images**. `.sonarcloud.properties` now excludes only `**/*.png,**/*.ico`; SVGs, production source and text configuration
+  stay in scope. No binary image is converted to text, no whole directory is excluded, and UTF-8 remains enabled.
+  The CI regression checks each excluded image's signature, strictly decodes all other tracked working files,
+  rejects unexpected literal replacement characters/NULs, and verifies Python synchronization preserves the exclusions.
+  Intentional replacement-character test fixtures should use a language escape rather than a literal U+FFFD.
+
+This is a supported, narrowly scoped correction consistent with the local evidence, not proof of this project's
+exact provider-side file diagnostics. The next fresh scan must confirm whether the warning clears. If it remains,
+request SonarSource's file/line/byte diagnostics using project `George-C-Odes_Observability-Benchmarking`, PR 424,
+analysis `d5d0f36d-ad89-4d1f-bc76-8b921fbee63e`, and background task `AaGZNyEgcL3MZz6g6MJi` (the pre-exclusion
+analysis), plus the latest IDs after the change. Do not broaden exclusions or change source encoding speculatively.
+
+Automatic analysis reads the additional configuration from the **default branch**; verify remaining warnings after
+the configuration reaches that branch and Sonar performs a fresh analysis. Merely creating this file locally does
+not update the remote project, and automatic analysis does not execute the env-relay script itself.
+
+### Sonar request-forgery triage
+
+On 2026-11-01 the public Sonar API for PR 424 confirmed that `jssecurity:S7044` was fixed but `jssecurity:S8476`
+(issue `AaGY1oYFDeJydjxQPt0K`) remained open on the source matching revision
+`689eb81e0f1aed75581a1711e75625e17c475ffc`. The remaining flow carries `readCommit`'s returned tree SHA through
+the `updateRef` branch into `fetch`. That reported path is rejected at runtime: a tree SHA is not a `renovate/`
+branch ref. The real `readTree` call requires a full SHA, and the legitimate ref path already uses validation and
+`encodeURIComponent`. Operations, methods, origin and endpoint prefixes are fixed; redirects are rejected.
+
+The request-boundary regression now exercises that exact SHA-to-ref path, malformed response identifiers, and
+plain/encoded traversal, separator, query, fragment and newline injection with **zero subsequent requests**.
+Valid nested refs and publication bodies remain covered. These tests run in **Framework Version Consistency** on
+every PR; make that check required in branch protection for enforcement beyond agent guidance.
+
+The 2026-11-02 follow-up verified that Sonar's complete scanned client matched the working source at
+`cb3386bef19c82ffacf8463c1a3c343a5b0ae420`; the same issue and flow persisted at line 150 in analysis
+`ae749881-5549-4931-985e-27cc11a08e80`. Moving the line had not fixed or dismissed it.
+
+After reviewing the trade-off, the user explicitly authorized a **local line-wide suppression** on 2026-11-02.
+The shared `fetch` call now has a `NOSONAR` comment and the verified rationale above it. JavaScript's documented
+form suppresses **all issues on that line**, not just S8476; this can also hide a future traversal finding at the
+shared sink. This accepted exception is not a template for new clients. Request-boundary tests remain active,
+and callers, resource scope, validation, encoding or redirect-policy changes require re-review/removal.
+
+No remote issue status was manually changed, no rule was disabled globally, and no production file was excluded.
+The 2026-11-02 analysis `d5d0f36d-ad89-4d1f-bc76-8b921fbee63e` now reports **zero open/confirmed issues** and
+one encoding warning, consistent with the authorized suppression taking effect. This is suppression, not a new
+runtime security fix; the shared-line trade-off still applies. An
+issue-specific false-positive disposition remains the narrower alternative. See
+[JavaScript inline suppression](https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/languages/javascript-typescript-css)
+and apply the request-safety completion gate in `my-agent/.apm/skills/ci-report-safety/SKILL.md` for future clients.
+
 ### Sonar test classification
 
-The repository currently contains an IDE SonarQube Cloud binding in `.sonarlint/connectedMode.json`, but no checked-in
-Sonar scanner workflow or analysis properties. In the existing project's analysis configuration, ensure that
-`**/*.test.mjs` is included in the test scope, retaining the patterns for other languages and existing tests.
-Correctly classified test files are exempt from duplication checks; production synchronizers should stay in scope.
+The Python-version warning disappeared in the follow-up screenshot, but a **different** warning appeared:
+SonarPython detected test code without `sonar.tests`. `.sonarcloud.properties` now defines literal test candidate
+roots and scoped `sonar.test.inclusions` for Python regressions, Django's test package, Node `.test.mjs` files,
+Go `_test.go` files, dashboard `__tests__`, and test-only setup/helpers. Shared directories are candidate roots,
+not blanket test classifications: production scripts, integration result handling, Django lock tooling and runtime
+code, Go servers, and dashboard application files remain source. Correctly classified tests are exempt from
+duplication checks; production synchronizers remain in scope.
 
-For a CLI-based scanner, `sonar.tests` must include the directories containing the tests and
-`sonar.test.inclusions` must include `**/*.test.mjs`. Test inclusion patterns also exclude those files from the source
-scope. A `sonar-project.properties` file is ignored by automatic analysis, which uses `.sonarcloud.properties` and
-supports a limited set of settings instead. Confirm the project's analysis method and verify the next analysis before
-changing its scope. See [Sonar's analysis scope documentation](https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/setting-analysis-scope/excluding-files-based-on-patterns)
+Current Sonar automatic-analysis documentation lists `sonar.tests` and `sonar.test.inclusions` as supported
+optional settings; the documented **Java-specific** restriction is not a restriction for all languages.
+Java retains automatic Maven/Gradle `src/main` and `src/test` classification. Do not replace the monorepo source
+inventory with a Python-only `sonar.sources`, exclude shared directories wholesale, or use wildcard candidate
+roots. Inclusion patterns are separate from literal roots. The regression test checks all tracked non-Java test
+paths, production examples and actual Java source paths, and confirms the Python relay preserves these settings.
+
+The supplied 2026-11-02 scanner context confirms these settings were applied, and its warning list no longer
+includes the Python-version or Python-test warning. The inventory checks still do not substitute for scanner
+execution; verify future changes in the remote scan. For CI-based
+analysis use `sonar-project.properties`; automatic analysis uses `.sonarcloud.properties`. See
+[Sonar's analysis scope documentation](https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/setting-analysis-scope/excluding-files-based-on-patterns)
 and [automatic analysis configuration](https://docs.sonarsource.com/sonarqube-cloud/analyzing-source-code/automatic-analysis).
 
 ## Go module versions

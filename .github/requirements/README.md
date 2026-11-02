@@ -14,6 +14,12 @@ gives Actions and Qodana the same pip behavior without an unpinned upgrade.
 The bootstrap also constrains that install with `pip.in`, so a changed pip pin
 cannot silently use an outdated bootstrap lock.
 
+`lock-compiler.in` and its generated `lock-compiler.txt` independently pin and hash
+pip-tools 7.6.2 and its complete compiler dependency set. Framework Version Sync
+installs this wheel-only lock from the trusted base revision before regeneration;
+no unpinned compiler dependencies run in the job that later receives the publication token.
+The compiler lock is not part of the Django runtime inventory or its Docker projections.
+
 | Workflow/job          | Selected requirements                                                      |
 |-----------------------|----------------------------------------------------------------------------|
 | Snyk                  | Both runtime variants                                                      |
@@ -22,7 +28,8 @@ cannot silently use an outdated bootstrap lock.
 | Django coverage       | Selected runtime and development requirements, coverage, local build tools |
 | Django Qodana         | Both runtime variants excluding Pyroscope, local build tools, `qodana.in`  |
 
-The Python version defaults to 3.13 in `setup-python/action.yml`. Both Django
+The Python version default in `setup-python/action.yml` is synchronized from
+`PYTHON_VERSION` in `compose/.env`. Both Django
 workflows include the shared action and requirements directory in their path
 filters, and all consumers include the lock in their pip cache keys.
 
@@ -34,6 +41,13 @@ dependencies. Workflow steps do not upgrade pip independently.
 
 ## Regenerate or upgrade the locks
 
+**Django framework updates:** change `DJANGO_VERSION` in `compose/.env`, then run
+`node scripts/sync-framework-versions.mjs` in the Linux compiler environment described below.
+It synchronizes both exact Django input pins, regenerates the runtime resolutions, and invokes
+`update-lock.sh` for the verified CI inventory and Docker projections. Renovate follows this same
+source-of-truth flow; do not independently upgrade Django in generated requirements or hashes.
+Use `node scripts/sync-framework-versions.mjs --check` to check the complete version contract.
+
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
 Use a virtualenv for the compiler:
@@ -41,9 +55,26 @@ Use a virtualenv for the compiler:
 ```bash
 python3.13 -m venv .venv-python-ci
 source .venv-python-ci/bin/activate
-python -m pip install --upgrade pip-tools==7.6.2
+python -m pip install --require-hashes --only-binary=:all: \
+  --requirement .github/requirements/lock-compiler.txt \
+  --constraint .github/requirements/lock-compiler.in
 bash .github/requirements/update-lock.sh
 ```
+
+To refresh the compiler itself, change `lock-compiler.in` if needed and run the
+following in a trusted Linux compiler environment. Review and commit both files;
+automatic Django updates intentionally leave this bootstrap lock unchanged.
+
+```bash
+python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
+  --pip-args="--only-binary :all:" \
+  --output-file=.github/requirements/lock-compiler.txt \
+  .github/requirements/lock-compiler.in --upgrade
+```
+
+Runtime requirements headers retain pip-tools' actual compile command, allowing
+dependency-only changes to be recompiled even when `DJANGO_VERSION` is unchanged.
+`update-lock.sh` records its own command for the central hash inventories.
 
 To refresh all versions allowed by the inputs, pass `--upgrade`:
 
@@ -61,8 +92,8 @@ requirements, constrained by these hashes, and bootstraps the same verified pip.
 `==` pins: change the corresponding inputs first. When upgrading Django, regenerate
 its runtime/development requirements before regenerating the CI inventory.
 
-Existing runtime pins remain the source of truth; the hash inventory does not
-replace those files. Keep generated hashes out of the runtime requirements so
+Existing runtime pins remain the installation contract; Django's framework pin is relayed
+from `compose/.env`, and the hash inventory does not replace those files. Keep generated hashes out of the runtime requirements so
 local development can continue installing them alongside the repository package.
 Review and commit the changed inputs, CI locks, and Docker projections together.
 

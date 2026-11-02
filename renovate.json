@@ -7,8 +7,106 @@
   ],
   "automerge": false,
   "ignoreScripts": true,
+  "gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"],
   "prConcurrentLimit": 5,
   "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)SPRING_BOOT_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "org.springframework.boot:spring-boot-dependencies",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)QUARKUS_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "io.quarkus.platform:quarkus-bom",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)MICRONAUT_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "io.micronaut:micronaut-core-bom",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)HELIDON_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "io.helidon:helidon-bom",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)SPARK_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "org.zoomba-lang:spark-core",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)JAVALIN_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "io.javalin:javalin",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)DROPWIZARD_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "io.dropwizard:dropwizard-dependencies",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)VERTX_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "io.vertx:vertx-stack-depchain",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)PEKKO_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "org.apache.pekko:pekko-http_3",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)GO_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "go",
+      "datasourceTemplate": "golang-version",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)PYTHON_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "python/cpython",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
+      "versioningTemplate": "pep440"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)DJANGO_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "django",
+      "datasourceTemplate": "pypi",
+      "versioningTemplate": "pep440"
+    },
     {
       "customType": "regex",
       "managerFilePatterns": ["/^services\\/python\\/django\\/qodana\\.yaml$/"],
@@ -38,14 +136,74 @@
   ],
   "packageRules": [
     {
+      "description": "Framework/runtime PRs update only compose/.env; the Framework Version Sync workflow relays them before merge.",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["compose/.env"],
+      "addLabels": ["framework-version"],
+      "rebaseWhen": "behind-base-branch",
+      "prBodyNotes": ["compose/.env is authoritative. Framework Version Sync commits the generated manifests, locks, IDE configurations, and documentation to this PR."],
+      "ignoreUnstable": true
+    },
+    {
+      "description": "These Maven versions are generated from compose/.env; keep unrelated libraries/plugins and Pekko core independently managed.",
+      "matchManagers": ["maven"],
+      "matchFileNames": ["services/java/**/pom.xml", "utils/orchestrator/pom.xml"],
+      "matchPackageNames": [
+        "/^org\\.springframework\\.boot:/",
+        "io.quarkus.platform:quarkus-bom",
+        "io.quarkus.platform:quarkus-maven-plugin",
+        "io.quarkus:quarkus-maven-plugin",
+        "io.quarkus:quarkus-extension-processor",
+        "io.micronaut:micronaut-core-bom",
+        "io.micronaut:micronaut-inject-java",
+        "io.helidon:helidon-bom",
+        "org.zoomba-lang:spark-core",
+        "io.javalin:javalin",
+        "io.dropwizard:dropwizard-dependencies",
+        "io.vertx:vertx-stack-depchain",
+        "org.apache.pekko:pekko-http_3"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Go directives/toolchains follow GO_VERSION; Go library updates remain enabled.",
+      "matchManagers": ["gomod"],
+      "matchFileNames": ["services/go/**/go.mod", ".github/go-tools/go.mod"],
+      "matchDepTypes": ["golang"],
+      "enabled": false
+    },
+    {
+      "description": "Go/Python Docker tag versions follow the env ARG defaults; retain digest updates and other base images.",
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["services/go/**/Dockerfile", "services/python/django/**/Dockerfile"],
+      "matchPackageNames": ["golang", "python"],
+      "matchUpdateTypes": ["major", "minor", "patch", "pin"],
+      "enabled": false
+    },
+    {
+      "description": "Django inputs and generated locks follow DJANGO_VERSION, not independent pip updates.",
+      "matchManagers": ["pip_requirements", "pip-compile"],
+      "matchFileNames": ["services/python/django/**", ".github/requirements/**"],
+      "matchPackageNames": ["django"],
+      "enabled": false
+    },
+    {
       "description": "Let registry releases age before updating; do not apply this to Docker or action digests.",
       "matchDatasources": [
         "npm",
         "pypi",
         "maven",
         "go",
+        "golang-version",
         "rubygems"
       ],
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-required"
+    },
+    {
+      "description": "Let CPython releases age without delaying unrelated GitHub Action version updates.",
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": ["python/cpython"],
       "minimumReleaseAge": "3 days",
       "minimumReleaseAgeBehaviour": "timestamp-required"
     },

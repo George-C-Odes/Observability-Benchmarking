@@ -9,7 +9,7 @@ applyTo: "**"
 2. Check the working tree before editing and preserve unrelated user changes.
 3. Keep comparable benchmark targets equivalent in endpoint behavior, telemetry signals, service identity, and Compose resources.
 4. Keep benchmark services thin; reserve architectural layering for the dashboard and orchestrator.
-5. Treat orchestrator and CI/scanner-helper command execution, path handling, authentication, and container inputs as security-sensitive. For workflow/report changes or security-alert triage, apply `my-agent/.apm/skills/ci-report-safety/SKILL.md`.
+5. Treat command execution, path handling, authentication, container inputs, and HTTP/API URL construction as security-sensitive. For workflow/report changes, any HTTP/API request construction, or security-alert triage, apply `my-agent/.apm/skills/ci-report-safety/SKILL.md`, including section 7's request-safety completion gate. Require source-to-sink review and zero-request adversarial tests; report matching scanner results separately and never claim an open alert is fixed from tests alone.
 6. Edit a `*.template.md` source when one exists, then run `node scripts/render-readmes.mjs`.
 7. Keep runtime containers non-root and multi-stage, and keep GitHub Actions pinned to full commit SHAs.
 8. Run the cheapest relevant checks first. State exactly what ran and what remains unverified.

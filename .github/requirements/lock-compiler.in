@@ -1,0 +1,3 @@
+# Compiler executed before a privileged Renovate publication; lock every dependency.
+pip-tools==7.6.2
+

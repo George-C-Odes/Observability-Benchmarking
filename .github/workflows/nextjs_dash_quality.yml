@@ -14,6 +14,8 @@ on:
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+      - '.github/actions/setup-node/**'
+      - '.github/actions/setup-nextjs/**'
       - '.github/actions/upload-artifact/**'
   push:
     branches:
@@ -25,6 +27,8 @@ on:
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
+      - '.github/actions/setup-node/**'
+      - '.github/actions/setup-nextjs/**'
       - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
@@ -47,18 +51,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26.13.0'
-          cache: npm
-          cache-dependency-path: utils/nextjs-dash/package-lock.json
-
-      - name: Set up npm 12.2.1
-        run: npm install --global --ignore-scripts npm@12.2.1
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
+      - name: Set up dashboard
+        uses: ./.github/actions/setup-nextjs
 
       - name: Print tool versions
         id: versions

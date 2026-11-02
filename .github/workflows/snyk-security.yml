@@ -73,7 +73,7 @@ jobs:
 
       - name: Set up Go
         if: env.SNYK_TOKEN != ''
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: ./.github/actions/setup-go
         with:
           go-version-file: services/go/enhanced/go.mod
           cache-dependency-path: |
@@ -82,7 +82,7 @@ jobs:
 
       - name: Set up Node.js
         if: env.SNYK_TOKEN != ''
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node
         with:
           node-version: '26.13.0'
 

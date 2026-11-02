@@ -19,6 +19,8 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
+      - '.github/actions/setup-go/**'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
   push:
     branches:
@@ -29,6 +31,8 @@ on:
       - 'scripts/pages/report-helpers.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
+      - '.github/actions/setup-go/**'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
   schedule:
     # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
@@ -38,14 +42,25 @@ permissions:
   contents: read
 
 jobs:
-  # ── Enhanced module: full quality pipeline ─────────────────────────
   quality:
-    name: Enhanced — lint, vet & test
+    name: ${{ matrix.check_name }}
     runs-on: ubuntu-26.04
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module_dir: services/go/enhanced
+            check_name: Enhanced — lint, vet & test
+            report_title: Go Enhanced Service
+            artifact_name: quality-report-go
+          - module_dir: services/go/simple
+            check_name: Simple — lint, vet, test & build
+            report_title: Go Simple Service
+            artifact_name: quality-report-go-simple
     defaults:
       run:
-        working-directory: services/go/enhanced
+        working-directory: ${{ matrix.module_dir }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,18 +68,18 @@ jobs:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: ./.github/actions/setup-go
         with:
-          go-version-file: services/go/enhanced/go.mod
+          go-version-file: ${{ matrix.module_dir }}/go.mod
           cache-dependency-path: |
-            services/go/enhanced/go.sum
+            ${{ matrix.module_dir }}/go.sum
             .github/go-tools/go.sum
 
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.15.0
-          working-directory: services/go/enhanced
+          working-directory: ${{ matrix.module_dir }}
           # The action runs `golangci-lint run` by default after install.
           # We only want to install the binary here — the actual lint run
           # with JSON output happens in a later step so we can capture the
@@ -129,7 +144,7 @@ jobs:
 
       - name: Set up Node.js (for report generation)
         if: always() && !cancelled()
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: ./.github/actions/setup-node
         with:
           node-version: '22'
 
@@ -138,109 +153,15 @@ jobs:
         env:
           GOLANGCI_LINT_VERSION: ${{ steps.versions.outputs.golangci_lint }}
           GO_VERSION: ${{ steps.versions.outputs.go }}
-          REPORT_TITLE: Go Enhanced Service
+          REPORT_TITLE: ${{ matrix.report_title }}
         run: node ../../../scripts/pages/generate-go-quality-report.mjs
 
       - name: Upload quality report
         if: always() && !cancelled()
         uses: ./.github/actions/upload-artifact
         with:
-          name: quality-report-go
-          path: services/go/enhanced/quality-report/
-          retention-days: 30
-          if-no-files-found: warn
-
-  # ── Simple module: full quality pipeline ────────────────────────────
-  quality-simple:
-    name: Simple — lint, vet, test & build
-    runs-on: ubuntu-26.04
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: services/go/simple
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: services/go/simple/go.mod
-          cache-dependency-path: |
-            services/go/simple/go.sum
-            .github/go-tools/go.sum
-
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-        with:
-          version: v2.15.0
-          working-directory: services/go/simple
-          args: --help
-
-      - name: Print tool versions
-        id: versions
-        run: |
-          go_ver="$(go version | awk '{print $3}')"
-          lint_ver="$(golangci-lint version --short 2>&1 || echo unknown)"
-          echo "Go: $go_ver"
-          echo "golangci-lint: $lint_ver"
-          echo "go=$go_ver"           >> "$GITHUB_OUTPUT"
-          echo "golangci_lint=$lint_ver" >> "$GITHUB_OUTPUT"
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Check go.mod tidiness
-        run: |
-          go mod tidy -diff
-          git diff --exit-code go.mod go.sum || {
-            echo "::error::go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."
-            exit 1
-          }
-
-      - name: Vet
-        run: go vet ./...
-
-      - name: Lint (golangci-lint)
-        id: lint
-        run: golangci-lint run
-
-      - name: Unit tests
-        run: go test ./... -race -count=1
-
-      - name: Build check
-        run: go build ./cmd/server
-
-      - name: Govulncheck
-        continue-on-error: true
-        run: |
-          # Build the scanner from its dedicated module and checksum lock.
-          go -C "$GITHUB_WORKSPACE/.github/go-tools" build -mod=readonly \
-            -o "$RUNNER_TEMP/govulncheck" golang.org/x/vuln/cmd/govulncheck
-          "$RUNNER_TEMP/govulncheck" ./...
-
-      - name: Set up Node.js (for report generation)
-        if: always() && !cancelled()
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-
-      - name: Generate quality report
-        if: always() && !cancelled()
-        env:
-          GOLANGCI_LINT_VERSION: ${{ steps.versions.outputs.golangci_lint }}
-          GO_VERSION: ${{ steps.versions.outputs.go }}
-          REPORT_TITLE: Go Simple Service
-        run: node ../../../scripts/pages/generate-go-quality-report.mjs
-
-      - name: Upload quality report
-        if: always() && !cancelled()
-        uses: ./.github/actions/upload-artifact
-        with:
-          name: quality-report-go-simple
-          path: services/go/simple/quality-report/
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.module_dir }}/quality-report/
           retention-days: 30
           if-no-files-found: warn
 
