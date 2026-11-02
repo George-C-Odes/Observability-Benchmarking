@@ -41,6 +41,20 @@ export function runCompiler(command, args, workspace) {
   }
 }
 
+function regenerateDjangoLocks(version, workspace, run) {
+  for (const variant of ['WSGI', 'ASGI']) {
+    run('python', ['-m', 'piptools', 'compile', '--strip-extras', '--upgrade-package', 'django',
+      '--pip-args=--only-binary :all:', `--output-file=${root}/${variant}/requirements.txt`,
+      `${root}/${variant}/requirements.in`], workspace);
+  }
+  run('bash', ['.github/requirements/update-lock.sh'], workspace);
+  for (const file of djangoLocks) {
+    if (lockedDjangoVersion(readFileSync(path.join(workspace, file), 'utf8')) !== version) {
+      throw new Error(`Django lock regeneration did not propagate ${version}: ${file}`);
+    }
+  }
+}
+
 export function syncDjangoVersions({
   envPath = 'compose/.env', workspace = resolveRepoPath('.'), check = false, run = runCompiler,
 } = {}) {
@@ -61,19 +75,7 @@ export function syncDjangoVersions({
     for (const { filePath, original, content } of files) {
       if (original !== content) writeFileSync(filePath, content, 'utf8');
     }
-    if (staleLocks) {
-      for (const variant of ['WSGI', 'ASGI']) {
-        run('python', ['-m', 'piptools', 'compile', '--strip-extras', '--upgrade-package', 'django',
-          '--pip-args=--only-binary :all:', `--output-file=${root}/${variant}/requirements.txt`,
-          `${root}/${variant}/requirements.in`], workspace);
-      }
-      run('bash', ['.github/requirements/update-lock.sh'], workspace);
-      for (const file of djangoLocks) {
-        if (lockedDjangoVersion(readFileSync(path.join(workspace, file), 'utf8')) !== version) {
-          throw new Error(`Django lock regeneration did not propagate ${version}: ${file}`);
-        }
-      }
-    }
+    if (staleLocks) regenerateDjangoLocks(version, workspace, run);
   }
   return files.map(({ filePath, original }) => {
     const content = readFileSync(filePath, 'utf8');

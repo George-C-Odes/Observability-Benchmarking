@@ -77,6 +77,12 @@ test('only active version values may change, preserving local settings and comme
   assert.throws(() => validateVersionChange(env, updated.replace('HOST_REPO:', 'OTHER_REPO:')), /only active/);
   assert.throws(() => validateVersionChange(env, `${env}\nQUARKUS_VERSION: 9.0.1\n`), /one literal/);
   assert.throws(() => validateVersionChange(env, env.replace(/(^QUARKUS_VERSION:)[^\r\n]+/m, '$1 $(echo hacked)')), /one literal/);
+  for (const version of ['0.0.1', '9.0.1-RC_1']) {
+    assert.deepEqual(validateVersionChange(env, env.replace(/(^QUARKUS_VERSION:)[^\r\n]+/m, `$1 ${version}`)), ['QUARKUS_VERSION']);
+  }
+  for (const version of ['v9.0.1', '\u0669.0.1']) {
+    assert.throws(() => validateVersionChange(env, env.replace(/(^QUARKUS_VERSION:)[^\r\n]+/m, `$1 ${version}`)), /one literal/);
+  }
   for (const key of frameworkVersionKeys) {
     assert.throws(() => validateVersionChange(env, env.replace(new RegExp(`^${key}:.*\\r?\\n?`, 'm'), '')), /one literal/);
   }
@@ -310,13 +316,17 @@ test('hash-based no-op selection still rejects missing files, symlinks and chang
   assert.deepEqual(selectGeneratedUpdates([{ file: 'pom.xml', content: 'new' }], executable, executable), [{ file: 'pom.xml', content: 'new' }]);
 });
 
-test('repeat publication performs only PR/tree reads, with no blob downloads or writes', async (t) => {
+function publicationFixture(t, onWrite = (route) => assert.fail(`Unexpected request: ${route}`)) {
   setRepository(t);
   const originalTemp = process.env.RUNNER_TEMP;
+  const originalToken = process.env.RENOVATE_SYNC_TOKEN;
   process.env.RUNNER_TEMP = temporaryDirectory(t, 'framework-publish-');
+  process.env.RENOVATE_SYNC_TOKEN = 'synthetic-write-token';
   t.after(() => {
     if (originalTemp === undefined) delete process.env.RUNNER_TEMP;
     else process.env.RUNNER_TEMP = originalTemp;
+    if (originalToken === undefined) delete process.env.RENOVATE_SYNC_TOKEN;
+    else process.env.RENOVATE_SYNC_TOKEN = originalToken;
   });
   const state = { number: 424, baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40), ref: 'renovate/framework', changed: ['QUARKUS_VERSION'] };
   writeFileSync(path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'), JSON.stringify(state));
@@ -326,8 +336,8 @@ test('repeat publication performs only PR/tree reads, with no blob downloads or 
   const baseTreeSha = 'c'.repeat(40);
   const headTreeSha = 'd'.repeat(40);
   const mock = t.mock.method(globalThis, 'fetch', async (url, options) => {
-    assert.equal(options.method, 'GET');
     assert.equal(options.redirect, 'error');
+    assert.equal(options.headers.Authorization, options.method === 'GET' ? 'Bearer synthetic-test-token' : 'Bearer synthetic-write-token');
     const route = url.replace('https://api.github.com/repos/owner/repo/', '');
     let response;
     if (route === 'pulls/424') {
@@ -338,11 +348,77 @@ test('repeat publication performs only PR/tree reads, with no blob downloads or 
     else if (route === `git/commits/${state.headSha}`) response = { tree: { sha: headTreeSha } };
     else if (route === `git/trees/${baseTreeSha}?recursive=1`) response = { tree: [...base].map(([file, entry]) => ({ path: file, ...entry })) };
     else if (route === `git/trees/${headTreeSha}?recursive=1`) response = { tree: [...head].map(([file, entry]) => ({ path: file, ...entry })) };
-    else assert.fail(`Unexpected request: ${route}`);
+    else response = await onWrite(route, options);
     return new Response(JSON.stringify(response), { status: 200 });
   });
+  return { state, base, head, headTreeSha, mock };
+}
+
+test('repeat publication performs only PR/tree reads, with no blob downloads or writes', async (t) => {
+  const { mock } = publicationFixture(t);
   await publish('synthetic-test-token');
   assert.equal(mock.mock.callCount(), 5);
+});
+
+function markPendingUpdates(base, head) {
+  const files = ['services/java/quarkus/jvm/pom.xml', 'services/java/quarkus/native/pom.xml'];
+  for (const file of files) {
+    const entry = { ...base.get(file), sha: gitBlobSha('before synchronization'), mode: '100755' };
+    base.set(file, entry);
+    head.set(file, entry);
+  }
+  return files;
+}
+
+test('publication uploads blobs sequentially before creating the tree, commit and non-forced ref', async (t) => {
+  const writes = [];
+  const blobShas = ['e'.repeat(40), 'f'.repeat(40)];
+  const treeSha = '1'.repeat(40);
+  const commitSha = '2'.repeat(40);
+  let activeUploads = 0;
+  let completedUploads = 0;
+  const { state, base, head, headTreeSha } = publicationFixture(t, async (route, options) => {
+    const body = JSON.parse(options.body);
+    writes.push({ route, method: options.method, body });
+    if (route === 'git/blobs') {
+      assert.equal(++activeUploads, 1, 'Only one blob upload may be in flight');
+      await new Promise((resolve) => setImmediate(resolve));
+      activeUploads -= 1;
+      return { sha: blobShas[completedUploads++] };
+    }
+    assert.equal(completedUploads, 2, 'All uploads must finish before publication continues');
+    if (route === 'git/trees') return { sha: treeSha };
+    if (route === 'git/commits') return { sha: commitSha };
+    assert.equal(route, 'git/refs/heads/renovate%2Fframework');
+    return {};
+  });
+  const files = markPendingUpdates(base, head);
+  await publish('synthetic-test-token');
+  assert.deepEqual(writes, [
+    ...files.map((file) => ({ route: 'git/blobs', method: 'POST', body: {
+      content: Buffer.from(readFileSync(resolveRepoPath(file), 'utf8')).toString('base64'), encoding: 'base64',
+    } })),
+    { route: 'git/trees', method: 'POST', body: { base_tree: headTreeSha, tree: files.map((file, index) => ({
+      path: file, mode: '100755', type: 'blob', sha: blobShas[index],
+    })) } },
+    { route: 'git/commits', method: 'POST', body: {
+      message: 'chore: relay framework versions from compose/.env', tree: treeSha, parents: [state.headSha],
+      author: { name: 'github-actions[bot]', email: '41898282+github-actions[bot]@users.noreply.github.com' },
+    } },
+    { route: 'git/refs/heads/renovate%2Fframework', method: 'PATCH', body: { sha: commitSha, force: false } },
+  ]);
+});
+
+test('an invalid blob response stops subsequent uploads and publication', async (t) => {
+  const writes = [];
+  const { base, head, mock } = publicationFixture(t, (route) => {
+    writes.push(route);
+    return { sha: '../invalid-sha' };
+  });
+  markPendingUpdates(base, head);
+  await assert.rejects(publish('synthetic-test-token'), /full Git SHA/);
+  assert.deepEqual(writes, ['git/blobs']);
+  assert.equal(mock.mock.callCount(), 6);
 });
 
 test('Sonar version publication refuses unrelated PR edits to scanner scope or encoding', () => {

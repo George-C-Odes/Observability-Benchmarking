@@ -80,7 +80,7 @@ export function validateVersionChange(base, head) {
     for (const key of frameworkVersionKeys) {
       const pattern = new RegExp(String.raw`(^|\r?\n)(${key}:[ \t]*)(\S+)(?=[ \t]*(?:\r?\n|$))`, 'g');
       const matches = [...content.matchAll(pattern)];
-      if (matches.length !== 1 || !/^[0-9][A-Za-z0-9_.-]*$/.test(matches[0][3])) {
+      if (matches.length !== 1 || !/^\d[A-Za-z0-9_.-]*$/.test(matches[0][3])) {
         throw new Error(`Expected one literal framework version: ${key}`);
       }
       versions[key] = matches[0][3];
@@ -223,12 +223,12 @@ export async function publish(token) {
   // A PAT/App token, unlike GITHUB_TOKEN, triggers the normal path-scoped CI on the new commit.
   const writeToken = process.env.RENOVATE_SYNC_TOKEN;
   if (!writeToken) throw new Error('Configure RENOVATE_SYNC_TOKEN (contents: write, pull requests: read) so generated commits trigger CI');
-  const entries = [];
-  for (const { file, content } of updates) {
+  // Await each upload in order to avoid concurrent GitHub content-creation requests.
+  const entries = await Array.fromAsync(updates, async ({ file, content }) => {
     const blob = await api('createBlob', writeToken, { body: { content: Buffer.from(content).toString('base64'), encoding: 'base64' } });
     requireGitSha(blob.sha);
-    entries.push({ path: file, mode: baseTree.entries.get(file).mode, type: 'blob', sha: blob.sha });
-  }
+    return { path: file, mode: baseTree.entries.get(file).mode, type: 'blob', sha: blob.sha };
+  });
   const tree = await api('createTree', writeToken, { body: { base_tree: headTree.sha, tree: entries } });
   requireGitSha(tree.sha);
   const commit = await api('createCommit', writeToken, { body: {

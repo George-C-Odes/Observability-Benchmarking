@@ -76,6 +76,21 @@ test('regenerate runtime resolutions before central hashes and projections; repe
   assert.ok(syncDjangoVersions({ ...options, run: noCompiler }).every(({ changed }) => !changed));
 });
 
+test('regeneration rejects a stale version in any Django lock file', (t) => {
+  for (const staleFile of djangoLocks) {
+    const options = fixture(t);
+    const run = (command, _args, workspace) => {
+      if (command !== 'bash') return;
+      for (const file of djangoLocks) {
+        if (file !== staleFile) writeFileSync(path.join(workspace, file), 'django==7.0.1\n');
+      }
+    };
+    assert.throws(() => syncDjangoVersions({ ...options, run }), {
+      message: `Django lock regeneration did not propagate 7.0.1: ${staleFile}`,
+    });
+  }
+});
+
 test('input-only normalization does not change hashes or invoke Python', (t) => {
   const options = fixture(t, '6.1.2');
   const results = syncDjangoVersions({ ...options, run: () => assert.fail('no compiler needed') });
