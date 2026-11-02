@@ -196,14 +196,34 @@ class CoverageSummaryTests(unittest.TestCase):
     def test_java_combined_is_weighted_not_mean_of_percentages(self):
         self.java_report("reports/coverage-java-a/jacoco.xml", lines=(0, 1), branches=(0, 0))
         self.java_report("reports/coverage-java-b/jacoco.xml", lines=(9, 0), branches=(1, 0))
-        self.assertEqual(coverage.java_combined_summary(), 0)
+        self.assertIsNone(coverage.java_combined_summary())
         self.assertIn("| **Lines** | **1** | **9** | **10** | **10.0%** |", self.summary())
         self.assertIn("Aggregated from 2 module(s)", self.summary())
 
     def test_java_combined_no_reports_is_informational(self):
         with contextlib.redirect_stdout(io.StringIO()) as output:
-            self.assertEqual(coverage.java_combined_summary(), 0)
+            self.assertIsNone(coverage.java_combined_summary())
         self.assertIn("No JaCoCo reports", output.getvalue())
+        self.assertFalse(Path(self.env["GITHUB_STEP_SUMMARY"]).exists())
+
+    def test_cli_java_combined_exits_successfully_with_or_without_reports(self):
+        for has_report in (False, True):
+            with self.subTest(has_report=has_report):
+                if has_report:
+                    self.java_report("reports/coverage-java-a/jacoco.xml")
+                result = subprocess.run(
+                    [sys.executable, "-m", "coverage_summary", "java-combined"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                if has_report:
+                    self.assertIn("Aggregated from 1 module(s)", self.summary())
+                else:
+                    self.assertIn("No JaCoCo reports", result.stdout)
 
     def test_jacoco_standard_doctype_does_not_fetch_external_dtd(self):
         path = self.java_report()

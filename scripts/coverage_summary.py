@@ -286,7 +286,7 @@ def java_summary():
     return 0
 
 
-def java_combined_summary():
+def java_combined_summary() -> None:
     aggregate, modules = {}, []
     for report in sorted(Path("reports").glob("coverage-java-*/jacoco.xml")):
         counters = jacoco_counters(report)
@@ -298,7 +298,7 @@ def java_combined_summary():
         modules.append((report.parent.name.replace("coverage-java-", ""), lc, lm + lc, bc, bm + bc))
     if not aggregate:
         print("No JaCoCo reports found to aggregate")
-        return 0
+        return
     text = "\n---\n\n### 🔵 Combined Java Coverage (Codecov-comparable weighted average)\n\n"
     text += (
         "> This table mirrors Codecov's calculation: covered ÷ total "
@@ -319,7 +319,6 @@ def java_combined_summary():
             f"{bc} | {bt} | {percentage(bc, bt):.1f}% |\n"
         )
     append_summary(text + "\n</details>\n")
-    return 0
 
 
 def nextjs_summary():
