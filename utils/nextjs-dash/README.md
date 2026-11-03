@@ -159,13 +159,13 @@ Some environments terminate long-lived HTTP connections.
 
 ## Technology Stack
 
-- **Next.js**: v16.4.3
+- **Next.js**: v16.4.5
 - **React**: v19.3.1
 - **Material-UI (MUI)**: v9.5.0
 - **TypeScript**: v7.0.2
-- **Vitest / coverage-v8**: v5.0.5
-- **Oxlint**: v1.90.0
-- **Oxfmt**: v0.75.0
+- **Vitest / coverage-v8**: v5.1.0
+- **Oxlint**: v1.91.0
+- **Oxfmt**: v0.76.0
 - **Node.js**: v26.13.0
 
 ## Configuration
@@ -344,13 +344,21 @@ docker run -p 3001:3001 `
 Tests are split into two Vitest configurations to avoid running JSDOM for
 pure-Node tests:
 
-| Config                  | Environment | Scope                                                                             |
-| ----------------------- | ----------- | --------------------------------------------------------------------------------- |
-| `vitest.config.node.ts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        |
-| `vitest.config.dom.ts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` |
+| Config                   | Environment | Scope                                                                             |
+| ------------------------ | ----------- | --------------------------------------------------------------------------------- |
+| `vitest.config.node.mts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        |
+| `vitest.config.dom.mts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` |
 
-Both configs extend `vitest.config.shared.ts` for common resolve aliases,
+Both configs extend `vitest.config.shared.mts` for common resolve aliases,
 pool settings, and coverage excludes.
+
+The configs use `.mts` and explicit import extensions so Vite can load them as
+native ESM without changing the dashboard's package-wide module type.
+Per-file isolation stays explicitly enabled (`isolate: true`) because tests use
+module mocks and global state. Vitest's suggestion to use `isolate: false` is a
+performance estimate, not a correctness warning; disabling isolation would
+require a separate shared-state audit. `clearMocks` only clears mock call history,
+not module caches, mock implementations, or arbitrary globals.
 
 Vitest 5 clears mock call history before every test. The shared configuration
 sets `clearMocks: true` explicitly so tests cannot depend on calls made by an

@@ -1,7 +1,7 @@
 /**
  * Shared Vitest configuration options.
  *
- * Both `vitest.config.node.ts` and `vitest.config.dom.ts` spread from
+ * Both `vitest.config.node.mts` and `vitest.config.dom.mts` spread from
  * this base, removing duplication of resolve aliases, pool settings,
  * and common exclude patterns.
  */
@@ -40,6 +40,8 @@ export const sharedCoverageExclude: string[] = [
 export const sharedTestOptions = {
   globals: true as const,
   clearMocks: true,
+  // Keep module mocks and global state isolated between test files.
+  isolate: true,
   pool: 'threads' as const,
   fileParallelism: true,
   maxWorkers: 4,

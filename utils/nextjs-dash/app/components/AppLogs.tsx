@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -135,24 +135,28 @@ export default function AppLogs() {
     [appLogsConfig.serverMaxEntries],
   );
 
-  const fallbackSnapshot = useCallback(async () => {
-    try {
-      const res = await fetch('/api/logs');
-      const data = (await res.json()) as {
-        entries?: Array<{
-          ts: number;
-          level: UiLevel;
-          source: UiSource;
-          message: string;
-          meta?: unknown;
-        }>;
-      };
-      const incoming = Array.isArray(data?.entries) ? data.entries : [];
-      appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
-    } catch {
-      // ignore
-    }
-  }, [appendServerEntries]);
+  const fallbackSnapshot = useCallback(
+    async (signal: AbortSignal) => {
+      try {
+        const res = await fetch('/api/logs', { signal });
+        const data = (await res.json()) as {
+          entries?: Array<{
+            ts: number;
+            level: UiLevel;
+            source: UiSource;
+            message: string;
+            meta?: unknown;
+          }>;
+        };
+        if (signal.aborted) return;
+        const incoming = Array.isArray(data?.entries) ? data.entries : [];
+        appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
+      } catch {
+        // ignore
+      }
+    },
+    [appendServerEntries],
+  );
 
   const connectSse = useCallback((sinceTs?: number) => {
     const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
@@ -160,13 +164,13 @@ export default function AppLogs() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     let es: EventSource | null = null;
 
     // Load a snapshot asynchronously to avoid triggering react-hooks/set-state-in-effect.
     queueMicrotask(() => {
-      if (cancelled) return;
-      void fallbackSnapshot();
+      if (controller.signal.aborted) return;
+      void fallbackSnapshot(controller.signal);
     });
 
     const connect = () => {
@@ -178,13 +182,13 @@ export default function AppLogs() {
           // If stream connects, we can still refresh snapshot once to backfill any missed entries.
           // Run it asynchronously so state updates happen as a reaction to an external event.
           queueMicrotask(() => {
-            if (cancelled) return;
-            void fallbackSnapshot();
+            if (controller.signal.aborted) return;
+            void fallbackSnapshot(controller.signal);
           });
         };
 
         es.onmessage = (evt) => {
-          if (cancelled) return;
+          if (controller.signal.aborted) return;
           try {
             const parsed = JSON.parse(evt.data) as {
               ts: number;
@@ -213,14 +217,14 @@ export default function AppLogs() {
           es?.close();
           es = null;
           queueMicrotask(() => {
-            if (cancelled) return;
-            void fallbackSnapshot();
+            if (controller.signal.aborted) return;
+            void fallbackSnapshot(controller.signal);
           });
         };
       } catch {
         queueMicrotask(() => {
-          if (cancelled) return;
-          void fallbackSnapshot();
+          if (controller.signal.aborted) return;
+          void fallbackSnapshot(controller.signal);
         });
       }
     };
@@ -228,9 +232,8 @@ export default function AppLogs() {
     connect();
 
     return () => {
-      cancelled = true;
+      controller.abort();
       es?.close();
-      es = null;
     };
   }, [appendServerEntries, connectSse, fallbackSnapshot, pulse]);
 

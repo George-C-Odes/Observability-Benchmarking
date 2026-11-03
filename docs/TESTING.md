@@ -571,26 +571,32 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.4.3
+Next.js: 16.4.5
 React: 19.3.1
 TypeScript: 7.0.2
-Vitest: 5.0.5
-@vitest/coverage-v8: 5.0.5
-Oxlint: 1.90.0
-Oxfmt: 0.75.0
+Vitest: 5.1.0
+@vitest/coverage-v8: 5.1.0
+Oxlint: 1.91.0
+Oxfmt: 0.76.0
 ```
 
 #### Test Structure
 
 The dashboard uses a dual-environment Vitest configuration:
 
-| Config File               | Environment | Tests Covered                                            |
-|---------------------------|-------------|----------------------------------------------------------|
-| `vitest.config.node.ts`   | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`          |
-| `vitest.config.dom.ts`    | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*`    |
-| `vitest.config.shared.ts` | —           | Shared resolve aliases, pool settings, coverage excludes |
+| Config File                | Environment | Tests Covered                                            |
+|----------------------------|-------------|----------------------------------------------------------|
+| `vitest.config.node.mts`   | `node`      | `lib/**/*.test.{ts,tsx}`, `app/api/**/*.test.*`          |
+| `vitest.config.dom.mts`    | `jsdom`     | `app/components/**/*.test.*`, `app/hooks/**/*.test.*`    |
+| `vitest.config.shared.mts` | —           | Shared resolve aliases, pool settings, coverage excludes |
 
 The split keeps Node-only tests fast (no jsdom overhead) while React component and hook tests get a proper DOM environment via jsdom and React Testing Library.
+
+The `.mts` configs use explicit import extensions for Vite's native ESM loader,
+without changing the dashboard's package-wide module type. `isolate: true` stays
+explicit because tests use module mocks and global state. Vitest's suggestion to
+disable isolation is a performance estimate, not a correctness warning;
+`clearMocks` alone does not reset module caches, implementations, or globals.
 
 Vitest 5 clears mock call history before each test by default. The shared
 configuration keeps `clearMocks: true` explicit: tests must establish their own
@@ -1443,16 +1449,16 @@ consistently exceed 50% line coverage will be promoted to hard gate first.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.0.5](https://vitest.dev/) with the matching
+[Vitest 5.1.0](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
 source directories free of test code.
 
-| Config File             | Environment | Tests                                                                             | Coverage Scope (source)                                                  | Report Directory |
-|-------------------------|-------------|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------|------------------|
-| `vitest.config.node.ts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        | `lib/**`, `app/api/**`                                                   | `coverage/node/` |
-| `vitest.config.dom.ts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` | `app/components/**`, `app/hooks/**`, `app/theme.ts`, `app/Providers.tsx` | `coverage/dom/`  |
+| Config File              | Environment | Tests                                                                             | Coverage Scope (source)                                                  | Report Directory |
+|--------------------------|-------------|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------|------------------|
+| `vitest.config.node.mts` | `node`      | `__tests__/lib/**`, `__tests__/app/api/**`                                        | `lib/**`, `app/api/**`                                                   | `coverage/node/` |
+| `vitest.config.dom.mts`  | `jsdom`     | `__tests__/app/components/**`, `__tests__/app/hooks/**`, `__tests__/app/*.test.*` | `app/components/**`, `app/hooks/**`, `app/theme.ts`, `app/Providers.tsx` | `coverage/dom/`  |
 
 Each environment produces four report formats: **text** (console summary),
 **HTML** (browsable), **JSON** (machine-readable summary), and **LCOV**

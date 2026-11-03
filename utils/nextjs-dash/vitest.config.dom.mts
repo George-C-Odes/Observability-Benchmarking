@@ -1,5 +1,9 @@
 import { defineConfig } from 'vitest/config';
-import { sharedResolve, sharedTestOptions, sharedCoverageExclude } from './vitest.config.shared';
+import {
+  sharedResolve,
+  sharedTestOptions,
+  sharedCoverageExclude,
+} from './vitest.config.shared.mts';
 
 // DOM/UI test suite: component and hook tests that rely on React Testing Library + JSDOM.
 export default defineConfig({

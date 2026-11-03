@@ -3,6 +3,7 @@
     "target": "ES2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -27,6 +28,7 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
+    "**/*.mts",
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"

@@ -16,9 +16,11 @@ const clientLogsMock = vi.hoisted(() => ({
 
 vi.mock('@/lib/clientLogs', () => clientLogsMock);
 
+const appLogsConfigMock = vi.hoisted(() => ({ clientMaxEntries: 1000, serverMaxEntries: 2000 }));
+
 vi.mock('@/app/hooks/useAppLogsConfig', () => ({
   useAppLogsConfig: () => ({
-    config: { clientMaxEntries: 1000, serverMaxEntries: 2000 },
+    config: appLogsConfigMock,
     loading: false,
     error: null,
     refresh: async () => undefined,
@@ -38,6 +40,7 @@ describe('AppLogs', () => {
   let publishClientLogs: (entries: ClientEntry[]) => void;
 
   beforeEach(() => {
+    appLogsConfigMock.serverMaxEntries = 2000;
     MockEventSource.instances = [];
     globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
     clientLogsMock.subscribeClientLogs.mockImplementation(
@@ -119,15 +122,141 @@ describe('AppLogs', () => {
       .mockResolvedValueOnce(
         snapshotResponse([{ ts: 200, level: 'warn', source: 'server', message: 'fallback log' }]),
       );
-    render(<AppLogs />);
+    const { unmount } = render(<AppLogs />);
     await waitFor(() => expect(MockEventSource.instances).toHaveLength(1));
 
+    const eventSource = MockEventSource.instances[0];
     act(() => {
-      MockEventSource.instances[0].emitError();
+      eventSource.emitError();
     });
 
     expect(await screen.findByText('fallback log')).toBeInTheDocument();
-    expect(MockEventSource.instances[0].close).toHaveBeenCalledOnce();
+    unmount();
+    expect(eventSource.close).toHaveBeenCalledOnce();
+  });
+
+  it.each(['initial', 'open', 'error'] as const)(
+    'cancels the queued %s snapshot when unmounted',
+    async (trigger) => {
+      const { unmount } = render(<AppLogs />);
+      const eventSource = MockEventSource.instances[0];
+
+      act(() => {
+        if (trigger === 'open') eventSource.emitOpen();
+        if (trigger === 'error') eventSource.emitError();
+      });
+      unmount();
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(fetch).not.toHaveBeenCalled();
+      expect(eventSource.close).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(['initial', 'open', 'error'] as const)(
+    'aborts an in-flight %s snapshot when unmounted',
+    async (trigger) => {
+      vi.mocked(fetch).mockImplementation(() => new Promise<Response>(() => {}));
+      const { unmount } = render(<AppLogs />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        const eventSource = MockEventSource.instances[0];
+        if (trigger === 'open') eventSource.emitOpen();
+        if (trigger === 'error') eventSource.emitError();
+      });
+
+      expect(fetch).toHaveBeenCalledTimes(trigger === 'initial' ? 1 : 2);
+      const signals = vi.mocked(fetch).mock.calls.map(([, options]) => options?.signal);
+      for (const signal of signals) {
+        expect(signal).toBeDefined();
+        expect(signal?.aborted).toBe(false);
+      }
+
+      unmount();
+
+      for (const signal of signals) {
+        expect(signal?.aborted).toBe(true);
+      }
+    },
+  );
+
+  it.each(['fetch', 'body'] as const)(
+    'ignores a late snapshot after effect replacement while awaiting %s',
+    async (phase) => {
+      const entries = [{ ts: 100, level: 'info', source: 'server', message: 'stale snapshot' }];
+      const response = snapshotResponse(entries);
+      let resolvePending!: () => void;
+      if (phase === 'fetch') {
+        vi.mocked(fetch).mockReturnValueOnce(
+          new Promise<Response>((resolve) => {
+            resolvePending = () => resolve(response);
+          }),
+        );
+      } else {
+        vi.spyOn(response, 'json').mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              resolvePending = () => resolve({ entries });
+            }),
+        );
+        vi.mocked(fetch).mockResolvedValueOnce(response);
+      }
+
+      const { rerender } = render(<AppLogs />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      appLogsConfigMock.serverMaxEntries = 2001;
+      rerender(<AppLogs />);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(fetch).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        MockEventSource.instances[1].emitMessage(
+          JSON.stringify({ ts: 200, level: 'info', message: 'active log' }),
+        );
+        resolvePending();
+      });
+
+      expect(screen.queryByText('stale snapshot')).not.toBeInTheDocument();
+      expect(screen.getByText('active log')).toBeInTheDocument();
+    },
+  );
+
+  it('keeps the active Strict Mode connection independent of the cleaned-up connection', async () => {
+    const { unmount } = render(<AppLogs />, { reactStrictMode: true });
+    expect(MockEventSource.instances).toHaveLength(2);
+    const [closedSource, activeSource] = MockEventSource.instances;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(closedSource.close).toHaveBeenCalledOnce();
+    expect(activeSource.close).not.toHaveBeenCalled();
+
+    await act(async () => {
+      closedSource.emitOpen();
+      closedSource.emitMessage(JSON.stringify({ ts: 100, level: 'info', message: 'stale log' }));
+      activeSource.emitMessage(JSON.stringify({ ts: 200, level: 'info', message: 'active log' }));
+    });
+
+    expect(screen.queryByText('stale log')).not.toBeInTheDocument();
+    expect(screen.getByText('active log')).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledOnce();
+
+    unmount();
+    expect(closedSource.close).toHaveBeenCalledOnce();
+    expect(activeSource.close).toHaveBeenCalledOnce();
   });
 
   it('clears client and server logs through their owning boundaries', async () => {
