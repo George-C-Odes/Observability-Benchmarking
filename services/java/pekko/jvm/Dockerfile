@@ -14,8 +14,10 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG PEKKO_VERSION=1.3.0
+ARG PEKKO_VERSION=1.4.2
 ENV PEKKO_VERSION=${PEKKO_VERSION}
+ARG PEKKO_CORE_VERSION=1.7.1
+ENV PEKKO_CORE_VERSION=${PEKKO_CORE_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"
 ARG BUILD_UID=1000
@@ -36,6 +38,7 @@ RUN --mount=type=cache,id=maven-m2-pekko-jvm-${JAVA_RELEASE},target=/home/maven/
     mvn -v &&  \
     mvn -B -q -ntp \
       -Dpekko.version=${PEKKO_VERSION} \
+      -Dpekko.core.version=${PEKKO_CORE_VERSION} \
       -Dcheckstyle.skip=true \
       dependency:go-offline
 
@@ -46,6 +49,7 @@ COPY --link --chown=${BUILD_UID}:${BUILD_GID} pekko/jvm/src ./src
 RUN --mount=type=cache,id=maven-m2-pekko-jvm-${JAVA_RELEASE},target=/home/maven/.m2,uid=${BUILD_UID},gid=${BUILD_GID},mode=0775,sharing=locked \
     mvn -B -ntp -T 1C \
       -Dpekko.version=${PEKKO_VERSION} \
+      -Dpekko.core.version=${PEKKO_CORE_VERSION} \
       -Dmaven.compiler.release=${JAVA_RELEASE} \
       -Dcheckstyle.config.location=checkstyle.xml \
       -Dcheckstyle.suppressions.location=checkstyle-suppressions.xml \

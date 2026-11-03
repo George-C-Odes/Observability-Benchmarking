@@ -4,10 +4,11 @@ import path from 'node:path';
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { finishSync, readSyncFile, runSyncCli } from './sync-common.mjs';
 
-// Django images are tagged with the framework version, but built with Python's version.
+// Select the image tag version when build arguments use a different or additional version.
 const imageVersionOverrides = {
   'django-platform': 'DJANGO_VERSION',
   'django-reactive': 'DJANGO_VERSION',
+  'pekko-jvm': 'PEKKO_VERSION',
 };
 const versionNotice = '  <!-- Versions: compose/.env; refresh with node scripts/sync-build-img-runs.mjs -->';
 
@@ -41,6 +42,13 @@ function replaceTagVersion(tag, version) {
   return `${match[1]}:${version}_latest`;
 }
 
+function resolveImageVersionKey(imageTag, versionArgs) {
+  const imageName = imageTag.slice(0, imageTag.lastIndexOf(':'));
+  if (Object.hasOwn(imageVersionOverrides, imageName)) return imageVersionOverrides[imageName];
+  if (versionArgs.length === 1) return versionArgs[0].name;
+  throw new Error(`Ambiguous image version for ${imageName}; add an imageVersionOverrides entry`);
+}
+
 export function syncBuildImageXml(xml, variables) {
   // The cache-prune Shell Script configuration has no image or build arguments.
   if (!/<configuration\b[^>]*\btype="docker-deploy"/.test(xml)) return xml;
@@ -57,12 +65,7 @@ export function syncBuildImageXml(xml, variables) {
   if (versionArgs.length === 0 && imageTag.endsWith(':latest')) return xml;
   if (versionArgs.length === 0) throw new Error('Versioned image has no *_VERSION build argument');
 
-  const imageName = imageTag.slice(0, imageTag.lastIndexOf(':'));
-  const versionKey = Object.hasOwn(imageVersionOverrides, imageName)
-    ? imageVersionOverrides[imageName]
-    : versionArgs.length === 1 ? versionArgs[0].name : null;
-  if (!versionKey) throw new Error(`Ambiguous image version for ${imageName}; add an imageVersionOverrides entry`);
-
+  const versionKey = resolveImageVersionKey(imageTag, versionArgs);
   const imageVersion = readVersion(variables, versionKey);
   let updatedArgs = buildArgs;
   for (const { block, name } of args) {

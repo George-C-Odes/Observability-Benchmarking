@@ -11,7 +11,30 @@ import { temporaryDirectory } from './test-helpers.mjs';
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
   assert.deepEqual([...frameworkVersionKeys].sort(), Object.keys(variables).filter((key) => key.endsWith('_VERSION')).sort());
-  assert.equal(new Set(frameworkVersionKeys).size, 12);
+  assert.equal(new Set(frameworkVersionKeys).size, 13);
+});
+
+test('Pekko build wiring forwards independent HTTP and Core versions to Maven', () => {
+  const compose = readFileSync(resolveRepoPath('compose/docker-compose.yml'), 'utf8');
+  const service = compose.slice(compose.indexOf('\n  pekko-jvm:'), compose.indexOf('\n  go:'));
+  assert.match(service, /image: pekko-jvm:\$\{PEKKO_VERSION}_latest/);
+  const dockerfile = readFileSync(resolveRepoPath('services/java/pekko/jvm/Dockerfile'), 'utf8');
+  for (const [key, property] of [['PEKKO_VERSION', 'pekko.version'], ['PEKKO_CORE_VERSION', 'pekko.core.version']]) {
+    assert.ok(service.includes(`${key}: \${${key}}`), key);
+    assert.equal(dockerfile.split(`-D${property}=\${${key}}`).length - 1, 2, 'Offline resolution and packaging must use the same pins');
+  }
+  const pom = readFileSync(resolveRepoPath('services/java/pekko/jvm/pom.xml'), 'utf8');
+  for (const artifact of ['stream', 'slf4j']) {
+    assert.match(pom, new RegExp(`<artifactId>pekko-${artifact}_3</artifactId>\\s*<version>\\$\\{pekko\\.core\\.version}</version>`));
+  }
+});
+
+test('integration-test version reporting includes both Pekko release lines', () => {
+  const runner = readFileSync(resolveRepoPath('integration-tests/run-integration-tests.sh'), 'utf8');
+  const versions = runner.match(/load_versions\(\) \{[\s\S]*?for key in ([\s\S]*?); do/)[1];
+  for (const key of ['PEKKO_VERSION', 'PEKKO_CORE_VERSION']) {
+    assert.match(versions, new RegExp(`\\b${key}\\b`));
+  }
 });
 
 test('Python runtime default follows the env without changing action pins or caller overrides', () => {
@@ -118,11 +141,13 @@ test('Sonar classifies tracked non-Java tests and helpers without excluding prod
 
 test('generated allowlist includes all target classes, but never scripts or source templates', () => {
   const files = generatedFrameworkPaths();
+  assert.equal(new Set(files).size, files.length);
   for (const file of [
     'utils/orchestrator/pom.xml', '.github/actions/setup-python/action.yml', '.sonarcloud.properties',
     '.github/go-tools/go.mod', 'services/python/django/gunicorn/dependencies.lock',
     'README.md', 'services/java/quarkus/native/pom.xml', '.github/requirements/python-ci.txt',
     'services/java/vertx/jvm/README.md',
+    'services/java/pekko/jvm/README.md',
   ]) assert.ok(files.includes(file), file);
   assert.ok(files.some((file) => file.startsWith('.run/[build-img]')));
   assert.ok(files.every((file) => !file.includes('\\') && !file.includes('..') && !file.includes('.template.') && !file.startsWith('scripts/')));
@@ -149,6 +174,8 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const source = readFileSync(envPath, 'utf8')
     .replace(/^QUARKUS_VERSION:.*$/m, 'QUARKUS_VERSION: 9.0.1')
     .replace(/^VERTX_VERSION:.*$/m, 'VERTX_VERSION: 9.0.2')
+    .replace(/^PEKKO_VERSION:.*$/m, 'PEKKO_VERSION: 9.0.3')
+    .replace(/^PEKKO_CORE_VERSION:.*$/m, 'PEKKO_CORE_VERSION: 9.0.4')
     .replace(/^GO_VERSION:.*$/m, 'GO_VERSION: 1.99.0')
     .replace(/^PYTHON_VERSION:.*$/m, 'PYTHON_VERSION: 3.14.99');
   writeFileSync(envPath, source);
@@ -173,6 +200,21 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.match(vertxReadme, /\*\*Eclipse Vert\.x 9\.0\.2\*\*/);
   assert.match(vertxReadme, /--build-arg VERTX_VERSION=9\.0\.2/);
   assert.doesNotMatch(vertxReadme, /\{\{VERTX_VERSION}}/);
+  const pekkoPom = readFileSync(path.join(workspace, 'services/java/pekko/jvm/pom.xml'), 'utf8');
+  assert.match(pekkoPom, /<pekko.version>9\.0\.3<\/pekko.version>/);
+  assert.match(pekkoPom, /<pekko.core.version>9\.0\.4<\/pekko.core.version>/);
+  const pekkoDockerfile = readFileSync(path.join(workspace, 'services/java/pekko/jvm/Dockerfile'), 'utf8');
+  assert.match(pekkoDockerfile, /ARG PEKKO_VERSION=9\.0\.3/);
+  assert.match(pekkoDockerfile, /ARG PEKKO_CORE_VERSION=9\.0\.4/);
+  const pekkoBuild = readFileSync(path.join(workspace, '.run/[build-img] Pekko JVM.run.xml'), 'utf8');
+  assert.match(pekkoBuild, /name="imageTag" value="pekko-jvm:9\.0\.3_latest"/);
+  assert.match(pekkoBuild, /name="name" value="PEKKO_CORE_VERSION"\s*\/>\s*<option name="value" value="9\.0\.4"/);
+  for (const file of ['README.md', 'docs/benchmarking.md', 'docs/tools-technologies.md', 'services/java/pekko/jvm/README.md']) {
+    const content = readFileSync(path.join(workspace, file), 'utf8');
+    assert.match(content, /Pekko HTTP[^\r\n]*9\.0\.3/, file);
+    assert.match(content, /Pekko Core 9\.0\.4/, file);
+    assert.doesNotMatch(content, /\{\{PEKKO(?:_CORE)?_VERSION}}/, file);
+  }
   const generated = snapshot();
   assert.equal(run('--check').status, 0);
   const repeat = run();
