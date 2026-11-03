@@ -15,6 +15,7 @@ export const dockerfileVersions = [
   { key: 'DROPWIZARD_VERSION', modules: ['java/dropwizard/jvm'] },
   { key: 'VERTX_VERSION', modules: ['java/vertx/jvm'] },
   { key: 'PEKKO_VERSION', modules: ['java/pekko/jvm'] },
+  { key: 'PEKKO_CORE_VERSION', modules: ['java/pekko/jvm'] },
   { key: 'GO_VERSION', modules: ['go/enhanced', 'go/simple'] },
   { key: 'PYTHON_VERSION', modules: ['python/django/gunicorn/ASGI', 'python/django/gunicorn/WSGI'] },
 ];
@@ -35,12 +36,19 @@ export function syncDockerfileVersions({ envPath = 'compose/.env', servicesDirec
   const variables = parseColonEnv(readFileSync(resolveRepoPath(envPath), 'utf8'));
   const directory = resolveRepoPath(servicesDirectory);
   // Validate the entire inventory before writing any Dockerfile.
-  const results = dockerfileVersions.flatMap(({ key, modules }) => {
+  const updates = new Map();
+  for (const { key, modules } of dockerfileVersions) {
     const version = readLiteralVersion(variables, key);
-    return modules.map((module) => {
-      const filePath = path.join(directory, module, 'Dockerfile');
-      return readSyncFile(filePath, (existing) => syncDockerfileContent(existing, key, version), `${module}/Dockerfile`);
-    });
+    for (const module of modules) {
+      if (!updates.has(module)) updates.set(module, []);
+      updates.get(module).push({ key, version });
+    }
+  }
+  const results = [...updates].map(([module, defaults]) => {
+    const filePath = path.join(directory, module, 'Dockerfile');
+    return readSyncFile(filePath, (existing) => defaults.reduce(
+      (content, { key, version }) => syncDockerfileContent(content, key, version), existing,
+    ), `${module}/Dockerfile`);
   });
 
   return finishSync(results, {

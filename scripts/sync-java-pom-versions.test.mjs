@@ -19,9 +19,10 @@ test('every service mapping updates only its framework property and is repeatabl
       count += 1;
     }
   }
-  assert.equal(count, 17);
+  assert.equal(count, 18);
   assert.equal(javaFrameworkVersions.find(({ key }) => key === 'SPARK_VERSION').property, 'spark-core.version');
   assert.equal(javaFrameworkVersions.find(({ key }) => key === 'PEKKO_VERSION').property, 'pekko.version');
+  assert.equal(javaFrameworkVersions.find(({ key }) => key === 'PEKKO_CORE_VERSION').property, 'pekko.core.version');
 });
 
 test('comments, whitespace, CRLF and unrelated version properties are preserved', () => {
@@ -61,7 +62,8 @@ function fixture(t) {
     for (const module of modules) {
       const file = path.join(javaDirectory, module, 'pom.xml');
       mkdirSync(path.dirname(file), { recursive: true });
-      const xml = `<project>\r\n<properties><${property}>1.0.0</${property}><other.version>9.9.9</other.version></properties>\r\n</project>\r\n`;
+      const base = originals.get(file) ?? '<project>\r\n<properties><other.version>9.9.9</other.version></properties>\r\n</project>\r\n';
+      const xml = base.replace('</properties>', `<${property}>1.0.0</${property}></properties>`);
       writeFileSync(file, xml);
       originals.set(file, xml);
     }
@@ -78,13 +80,16 @@ test('check is read-only; all env mappings apply; repeat runs skip writes and un
   for (const [file, original] of originals) assert.equal(readFileSync(file, 'utf8'), original);
   const results = syncJavaPomVersions({ envPath, javaDirectory });
   assert.equal(results.length, 17);
+  assert.equal(new Set(results.map(({ filePath }) => filePath)).size, 17);
   assert.ok(results.every(({ changed }) => changed));
+  const expected = new Map(originals);
   for (const [index, { property, modules }] of javaFrameworkVersions.entries()) {
     for (const module of modules) {
       const file = path.join(javaDirectory, module, 'pom.xml');
-      assert.equal(readFileSync(file, 'utf8'), originals.get(file).replace(`<${property}>1.0.0`, `<${property}>91.${index}.5`));
+      expected.set(file, expected.get(file).replace(`<${property}>1.0.0`, `<${property}>91.${index}.5`));
     }
   }
+  for (const [file, content] of expected) assert.equal(readFileSync(file, 'utf8'), content);
   assert.equal(readFileSync(excluded, 'utf8'), '<project/>');
   const mtimes = results.map(({ filePath }) => statSync(filePath).mtimeMs);
   assert.ok(syncJavaPomVersions({ envPath, javaDirectory, check: true }).every(({ changed }) => !changed));
@@ -95,16 +100,41 @@ test('check is read-only; all env mappings apply; repeat runs skip writes and un
 test('missing or invalid env values prevent writes to every POM in the batch', (t) => {
   const { envPath, javaDirectory, originals } = fixture(t);
   const env = readFileSync(envPath, 'utf8');
-  for (const replacement of ['', 'PEKKO_VERSION: bad<xml>', 'PEKKO_VERSION: "1.0"']) {
-    writeFileSync(envPath, env.replace(/^PEKKO_VERSION:.*$/m, replacement));
-    assert.throws(() => syncJavaPomVersions({ envPath, javaDirectory }), /Missing or invalid version PEKKO_VERSION/);
-    for (const [file, original] of originals) assert.equal(readFileSync(file, 'utf8'), original);
+  for (const key of ['PEKKO_VERSION', 'PEKKO_CORE_VERSION']) {
+    for (const replacement of ['', `${key}: bad<xml>`, `${key}: "1.0"`]) {
+      writeFileSync(envPath, env.replace(new RegExp(`^${key}:.*$`, 'm'), replacement));
+      assert.throws(() => syncJavaPomVersions({ envPath, javaDirectory }), new RegExp(`Missing or invalid version ${key}`));
+      for (const [file, original] of originals) assert.equal(readFileSync(file, 'utf8'), original);
+    }
   }
+});
+
+test('a core-only version change preserves the HTTP version and every other POM', (t) => {
+  const options = fixture(t);
+  syncJavaPomVersions(options);
+  const snapshots = new Map([...options.originals.keys()].map((file) => [file, readFileSync(file, 'utf8')]));
+  writeFileSync(options.envPath, readFileSync(options.envPath, 'utf8').replace(/^PEKKO_CORE_VERSION:.*$/m, 'PEKKO_CORE_VERSION: 92.0.0'));
+  assert.throws(() => syncJavaPomVersions({ ...options, check: true }), /out of date/);
+  for (const [file, content] of snapshots) assert.equal(readFileSync(file, 'utf8'), content);
+  const changed = syncJavaPomVersions(options).filter(({ changed }) => changed);
+  const pekko = path.join(options.javaDirectory, 'pekko/jvm/pom.xml');
+  assert.deepEqual(changed.map(({ filePath }) => filePath), [pekko]);
+  for (const [file, content] of snapshots) {
+    assert.equal(readFileSync(file, 'utf8'), file === pekko
+      ? content.replace(/(<pekko.core.version>)[^<]+/, '$192.0.0') : content);
+  }
+  assert.ok(syncJavaPomVersions({ ...options, check: true }).every(({ changed }) => !changed));
 });
 
 test('a missing POM or malformed property prevents earlier POMs from being written', (t) => {
   const { envPath, javaDirectory, originals } = fixture(t);
   const last = path.join(javaDirectory, 'pekko/jvm/pom.xml');
+  writeFileSync(last, originals.get(last).replace(/<pekko.core.version>[^<]+<\/pekko.core.version>/, ''));
+  assert.throws(() => syncJavaPomVersions({ envPath, javaDirectory }), /pekko\/jvm\/pom.xml:.*pekko.core.version.*found 0/);
+  for (const [file, original] of originals) {
+    if (file !== last) assert.equal(readFileSync(file, 'utf8'), original);
+  }
+  assert.match(readFileSync(last, 'utf8'), /<pekko.version>1\.0\.0<\/pekko.version>/);
   writeFileSync(last, '<project><properties/></project>');
   assert.throws(() => syncJavaPomVersions({ envPath, javaDirectory }), /pekko\/jvm\/pom.xml:.*found 0/);
   rmSync(last);

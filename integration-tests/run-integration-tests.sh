@@ -304,7 +304,7 @@ finish() {
 load_versions() {
     local key value
     for key in QUARKUS_VERSION SPRING_BOOT_VERSION MICRONAUT_VERSION HELIDON_VERSION \
-        SPARK_VERSION JAVALIN_VERSION DROPWIZARD_VERSION VERTX_VERSION PEKKO_VERSION GO_VERSION DJANGO_VERSION; do
+        SPARK_VERSION JAVALIN_VERSION DROPWIZARD_VERSION VERTX_VERSION PEKKO_VERSION PEKKO_CORE_VERSION GO_VERSION DJANGO_VERSION; do
         if ! value=$(awk -v key="$key" '
             $0 ~ "^[[:space:]]*" key "[[:space:]]*:" {
                 sub(/^[^:]*:[[:space:]]*/, ""); sub(/[[:space:]]+#.*$/, ""); sub(/[[:space:]]+$/, ""); value=$0

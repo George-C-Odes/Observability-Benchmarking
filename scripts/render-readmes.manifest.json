@@ -12,6 +12,7 @@
     "services/java/helidon/README.template.md",
     "services/java/javalin/jvm/README.template.md",
     "services/java/micronaut/README.template.md",
+    "services/java/pekko/jvm/README.template.md",
     "services/java/quarkus/jvm/README.template.md",
     "services/java/quarkus/native/README.template.md",
     "services/java/spark/jvm/README.template.md",

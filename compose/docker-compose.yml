@@ -1537,6 +1537,7 @@ services:
       args:
         BUILDKIT_BUILD_NAME: pekko-jvm:${PEKKO_VERSION}_latest
         PEKKO_VERSION: ${PEKKO_VERSION}
+        PEKKO_CORE_VERSION: ${PEKKO_CORE_VERSION}
     container_name: pekko-jvm
     ports:
       - "8101:8080"

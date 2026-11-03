@@ -1,5 +1,7 @@
+<!-- Generated from services/java/pekko/jvm/README.template.md. Do not edit services/java/pekko/jvm/README.md directly. -->
+
 # Pekko JVM Service
-A fully reactive, high-throughput REST service implemented with **Pekko HTTP 1.3.0** on **Java 25**.
+A fully reactive, high-throughput REST service implemented with **Pekko HTTP 1.4.2** and **Pekko Core 1.7.1** on **Java 25**.
 This module provides a `/hello/reactive` endpoint for benchmarking Pekko HTTP's
 non-blocking I/O model. All request handling runs on the Pekko default dispatcher — no blocking,
 no virtual threads, no thread-per-request overhead.
@@ -25,8 +27,16 @@ Follows clean architecture / hexagonal principles:
 ## Configuration (env)
 - `SERVICE_PORT` (default `8080`)
 - `CACHE_SIZE` (default `50000`)
+### Build versions
+`compose/.env` is authoritative for both independently released Pekko components:
+- `PEKKO_VERSION` selects Pekko HTTP (`pekko.version`); image tags and `webengine.version` follow HTTP.
+- `PEKKO_CORE_VERSION` selects Core actor/stream/SLF4J modules (`pekko.core.version`).
+
+After changing either pin, run `node scripts/sync-framework-versions.mjs` (or IntelliJ **[doc] Render Updates**)
+to refresh literal Maven/Docker defaults, IDE build arguments, and documentation. Compose passes both pins as build arguments.
+Review HTTP/Core compatibility when changing release lines; the synchronizer does not resolve compatible pairs.
 ## Docker
-**Image**: `pekko-jvm:latest`
+**Image**: `pekko-jvm:1.4.2_latest`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|

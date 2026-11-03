@@ -396,7 +396,7 @@ mvn package -Pnative
 
 **Implementation Details**:
 - **Pekko HTTP {{PEKKO_VERSION}}** (latest stable)
-- **Pekko Core 1.4.0** (actor system + stream engine)
+- **Pekko Core {{PEKKO_CORE_VERSION}}** (actor system + stream engine)
 - Direct Pekko HTTP server
 - JVM build only (no native image support at this time)
 - jlink-optimised runtime image with distroless base
@@ -741,12 +741,12 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 
 **Comparison to Alternatives**:
 
-| Tool    | Type         | Coordinated Omission | Scripting |
-|---------|--------------|----------------------|-----------|
-| wrk2    | ✅ Fixed rate | ✅ Yes                | ✅ Lua     |
-| wrk     | ❌ Open loop  | ❌ No                 | ✅ Lua     |
-| ab      | ❌ Open loop  | ❌ No                 | ❌ No      |
-| Gatling | ✅ Fixed rate | ✅ Yes                | ✅ Scala   |
+| Tool    | Type          | Coordinated Omission | Scripting |
+|---------|---------------|----------------------|-----------|
+| wrk2    | ✅ Fixed rate | ✅ Yes               | ✅ Lua    |
+| wrk     | ❌ Open loop  | ❌ No                | ✅ Lua    |
+| ab      | ❌ Open loop  | ❌ No                | ❌ No     |
+| Gatling | ✅ Fixed rate | ✅ Yes               | ✅ Scala  |
 
 ### OpenTelemetry
 
