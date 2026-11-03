@@ -85,6 +85,14 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)PEKKO_CORE_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "org.apache.pekko:pekko-stream_3",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
       "matchStrings": ["(?:^|\\r?\\n)GO_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
       "depNameTemplate": "go",
       "datasourceTemplate": "golang-version",
@@ -145,7 +153,7 @@
       "ignoreUnstable": true
     },
     {
-      "description": "These Maven versions are generated from compose/.env; keep unrelated libraries/plugins and Pekko core independently managed.",
+      "description": "These Maven versions are generated from compose/.env; keep unrelated libraries/plugins independently managed.",
       "matchManagers": ["maven"],
       "matchFileNames": ["services/java/**/pom.xml", "utils/orchestrator/pom.xml"],
       "matchPackageNames": [
@@ -161,7 +169,9 @@
         "io.javalin:javalin",
         "io.dropwizard:dropwizard-dependencies",
         "io.vertx:vertx-stack-depchain",
-        "org.apache.pekko:pekko-http_3"
+        "org.apache.pekko:pekko-http_3",
+        "org.apache.pekko:pekko-stream_3",
+        "org.apache.pekko:pekko-slf4j_3"
       ],
       "enabled": false
     },

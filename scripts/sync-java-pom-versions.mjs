@@ -15,6 +15,7 @@ export const javaFrameworkVersions = [
   { key: 'DROPWIZARD_VERSION', property: 'dropwizard.version', modules: ['dropwizard/jvm'] },
   { key: 'VERTX_VERSION', property: 'vertx.version', modules: ['vertx/jvm'] },
   { key: 'PEKKO_VERSION', property: 'pekko.version', modules: ['pekko/jvm'] },
+  { key: 'PEKKO_CORE_VERSION', property: 'pekko.core.version', modules: ['pekko/jvm'] },
 ];
 
 export function syncJavaPomXml(xml, property, version) {
@@ -49,12 +50,19 @@ export function syncJavaPomVersions({ envPath = 'compose/.env', javaDirectory = 
   const directory = resolveRepoPath(javaDirectory);
 
   // Read and validate the whole batch before writing any POM.
-  const results = javaFrameworkVersions.flatMap(({ key, property, modules }) => {
+  const updates = new Map();
+  for (const { key, property, modules } of javaFrameworkVersions) {
     const version = readLiteralVersion(variables, key);
-    return modules.map((module) => {
-      const filePath = path.join(directory, module, 'pom.xml');
-      return readSyncFile(filePath, (existing) => syncJavaPomXml(existing, property, version), `${module}/pom.xml`);
-    });
+    for (const module of modules) {
+      if (!updates.has(module)) updates.set(module, []);
+      updates.get(module).push({ property, version });
+    }
+  }
+  const results = [...updates].map(([module, properties]) => {
+    const filePath = path.join(directory, module, 'pom.xml');
+    return readSyncFile(filePath, (existing) => properties.reduce(
+      (xml, { property, version }) => syncJavaPomXml(xml, property, version), existing,
+    ), `${module}/pom.xml`);
   });
 
   return finishSync(results, {

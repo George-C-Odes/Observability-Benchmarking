@@ -334,6 +334,8 @@ In IntelliJ, run **[gen] Sync Dockerfile Versions**, or **[doc] Render Updates**
 
 The script updates the Java framework `ARG ..._VERSION=...` defaults, `GO_VERSION` in both Go Dockerfiles, and `PYTHON_VERSION` in both Django Dockerfiles. Literal defaults keep direct Docker builds usable; Compose and IntelliJ can still override them with build arguments. Django itself is pinned in Python requirements, rather than a Dockerfile ARG.
 
+Pekko has two independent build pins: `PEKKO_VERSION` for HTTP and `PEKKO_CORE_VERSION` for Core actor/stream/SLF4J modules. Both defaults are updated together in its single Dockerfile and passed through to Maven.
+
 Only the listed framework/runtime defaults are managed. Other image and tooling pins (Java, Maven, OpenTelemetry agents, npm, YQ, and OS images), stage redeclarations, comments, and formatting are preserved. Missing files, missing or duplicate defaults, and missing or invalid env values fail validation before any Dockerfile is written. Unchanged files are not rewritten.
 
 Paths resolve from the repository root. Use `--env path/to/.env` for an alternate source. Extend `dockerfileVersions` in the script when adding a service. Synchronization is explicit: rerun it after editing `.env`.
@@ -361,10 +363,13 @@ The script uses the README renderer's `KEY: VALUE` parser and manages these prop
 | `DROPWIZARD_VERSION`  | `dropwizard.version`       | JVM                      |
 | `VERTX_VERSION`       | `vertx.version`            | JVM                      |
 | `PEKKO_VERSION`       | `pekko.version`            | JVM (HTTP version)       |
+| `PEKKO_CORE_VERSION`  | `pekko.core.version`       | JVM (actor/stream/SLF4J) |
 
 Change these versions in `compose/.env`, then synchronize; POMs keep literal values so direct Maven builds and IDE imports need no environment setup. Synchronization is explicit, so editing `.env` alone does not change a POM. Existing Docker builds continue passing version overrides through Maven `-D` arguments.
 
-Only the mapped property values are updated. Formatting, comments, dependency references, and other versions (including `pekko.core.version` and Micronaut integration versions) are preserved. The orchestrator POM is outside this inventory. Missing files, missing or duplicate property declarations, and missing or invalid env versions fail validation before any POM is written. Unchanged POMs are not rewritten.
+Only the mapped property values are updated. Formatting, comments, dependency references, and other versions (including Micronaut integration versions) are preserved. Multiple mapped properties in one POM are combined before writing, so both Pekko pins survive synchronization. The orchestrator POM is outside this inventory. Missing files, missing or duplicate property declarations, and missing or invalid env versions fail validation before any POM is written. Unchanged POMs are not rewritten.
+
+Pekko HTTP and Core have independent release lines. Renovate tracks their env pins via `pekko-http_3` and `pekko-stream_3` respectively; direct Maven updates of the generated HTTP/stream/SLF4J pins are disabled. The synchronizer relays explicit values, not a compatibility calculation; review HTTP/Core compatibility when changing release lines. The Pekko service README is generated from a template containing both env placeholders.
 
 Check for drift without writing files (exit code 1 when stale), use a different env file, or run the focused tests:
 
@@ -387,6 +392,8 @@ node scripts/sync-build-img-runs.mjs
 In IntelliJ, run **[gen] Sync Build Image Versions** to execute the same command.
 
 The script uses the same `KEY: VALUE` env parser as the README renderer. It updates every `*_VERSION` build argument, the image tag, and the version in `BUILDKIT_BUILD_NAME`. Django image tags and build names use `DJANGO_VERSION`; their Python build arguments use `PYTHON_VERSION`.
+
+Pekko image tags and build names continue to use the HTTP `PEKKO_VERSION`; both `PEKKO_VERSION` and `PEKKO_CORE_VERSION` are synchronized as independent build arguments.
 
 Docker connections, build contexts, Dockerfile paths, variant arguments, and shared build names are preserved. The three utility images tagged `latest` and the cache-prune command have no env-driven versions and are left unchanged. Other run configuration prefixes are excluded.
 

@@ -36,14 +36,14 @@ export function syncSonarPythonVersion(content, version) {
 }
 
 export function generatedFrameworkPaths() {
-  return [
+  return [...new Set([
     ...javaFrameworkVersions.flatMap(({ modules }) => modules.map((module) => `services/java/${module}/pom.xml`)),
     ...dockerfileVersions.flatMap(({ modules }) => modules.map((module) => `services/${module}/Dockerfile`)),
     ...goModules.map((module) => `${module}/go.mod`),
     ...readdirSync(resolveRepoPath('.run')).filter((file) => file.startsWith('[build-img]') && file.endsWith('.run.xml')).map((file) => `.run/${file}`),
     ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json').map((file) => deriveOutputPath(file).replaceAll('\\', '/')),
     ...djangoGeneratedFiles, controlPom, pythonAction, sonarConfig,
-  ];
+  ])];
 }
 
 export function syncFrameworkVersions({ envPath = 'compose/.env', check = false } = {}) {

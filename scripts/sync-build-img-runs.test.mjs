@@ -42,6 +42,18 @@ test('shared build names and Spring profile and virtual-thread arguments are pre
   assert.match(spring, /name="name" value="VIRTUAL_ENABLED"\s*\/>\s*<option name="value" value="true"/);
 });
 
+test('Pekko builds sync independent HTTP and Core pins while tags follow HTTP', () => {
+  const original = readRun('Pekko JVM');
+  const versions = { PEKKO_VERSION: '91.3.5', PEKKO_CORE_VERSION: '92.4.6' };
+  const actual = syncBuildImageXml(original, versions);
+  assert.equal(actual.split('value="pekko-jvm:91.3.5_latest"').length - 1, 2);
+  assert.match(actual, /name="name" value="PEKKO_VERSION"\s*\/>\s*<option name="value" value="91\.3\.5"/);
+  assert.match(actual, /name="name" value="PEKKO_CORE_VERSION"\s*\/>\s*<option name="value" value="92\.4\.6"/);
+  assert.equal(syncBuildImageXml(actual, versions), actual);
+  assert.equal(syncBuildImageXml(actual, { ...versions, PEKKO_CORE_VERSION: '93.0.0' }), actual.replace('value="92.4.6"', 'value="93.0.0"'));
+  assert.throws(() => syncBuildImageXml(original, { PEKKO_VERSION: '91.3.5' }), /PEKKO_CORE_VERSION/);
+});
+
 test('every versioned build configuration can be updated from env values', () => {
   const files = readdirSync(resolveRepoPath('.run')).filter((file) => file.startsWith('[build-img]') && file.endsWith('.run.xml'));
   let versionedCount = 0;

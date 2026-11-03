@@ -23,11 +23,12 @@ test('Renovate extracts each active env pin once with the correct registry coord
     DROPWIZARD_VERSION: ['maven', 'io.dropwizard:dropwizard-dependencies'],
     VERTX_VERSION: ['maven', 'io.vertx:vertx-stack-depchain'],
     PEKKO_VERSION: ['maven', 'org.apache.pekko:pekko-http_3'],
+    PEKKO_CORE_VERSION: ['maven', 'org.apache.pekko:pekko-stream_3'],
     GO_VERSION: ['golang-version', 'go'],
     PYTHON_VERSION: ['github-tags', 'python/cpython'],
     DJANGO_VERSION: ['pypi', 'django'],
   };
-  assert.equal(managers.length, 12);
+  assert.equal(managers.length, 13);
   const variables = parseColonEnv(env);
   for (const [key, [datasource, name]] of Object.entries(expected)) {
     const manager = managers.find(({ depNameTemplate }) => depNameTemplate === name);
@@ -51,12 +52,14 @@ test('only env-driven downstream versions are disabled; existing safeguards rema
   assert.ok(rules.every(({ matchManagers, matchFileNames }) => matchManagers.length && matchFileNames.length));
   const maven = rules.find(({ matchManagers }) => matchManagers.includes('maven'));
   assert.ok(maven.matchPackageNames.includes('org.apache.pekko:pekko-http_3'));
+  assert.ok(maven.matchPackageNames.includes('org.apache.pekko:pekko-stream_3'));
+  assert.ok(maven.matchPackageNames.includes('org.apache.pekko:pekko-slf4j_3'));
   assert.ok(maven.matchPackageNames.includes('io.quarkus:quarkus-extension-processor'));
   for (const variant of ['jvm', 'native']) {
     const pom = readFileSync(resolveRepoPath(`services/java/quarkus/${variant}/pom.xml`), 'utf8');
     assert.match(pom, /<groupId>io\.quarkus<\/groupId>\s*<artifactId>quarkus-extension-processor<\/artifactId>\s*<version>\$\{quarkus.platform.version}<\/version>/);
   }
-  assert.ok(!maven.matchPackageNames.some((pattern) => pattern.includes('pekko-stream') || pattern.includes('pekko-slf4j') || pattern.includes('micronaut-micrometer')));
+  assert.ok(!maven.matchPackageNames.some((pattern) => pattern.includes('micronaut-micrometer')));
   const go = rules.find(({ matchManagers }) => matchManagers.includes('gomod'));
   assert.deepEqual(go.matchDepTypes, ['golang']);
   const docker = rules.find(({ matchManagers }) => matchManagers.includes('dockerfile'));
@@ -87,6 +90,7 @@ test('only active version values may change, preserving local settings and comme
   const updated = env.replace(/(^QUARKUS_VERSION:)[^\r\n]+/m, '$1 9.0.1');
   assert.deepEqual(validateVersionChange(env, updated), ['QUARKUS_VERSION']);
   assert.deepEqual(validateVersionChange(env, env), []);
+  assert.deepEqual(validateVersionChange(env, env.replace(/^PEKKO_CORE_VERSION:.*$/m, 'PEKKO_CORE_VERSION: 9.0.1')), ['PEKKO_CORE_VERSION']);
   assert.throws(() => validateVersionChange(env, `${updated}\nORCH_API_KEY: another\n`), /only active/);
   assert.throws(() => validateVersionChange(env, updated.replace('HOST_REPO:', 'OTHER_REPO:')), /only active/);
   assert.throws(() => validateVersionChange(env, `${env}\nQUARKUS_VERSION: 9.0.1\n`), /one literal/);
