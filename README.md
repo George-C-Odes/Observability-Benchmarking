@@ -15,7 +15,7 @@
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.4-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.2.2-782A90.svg)](https://vertx.io/)
-[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.3.0-DB2777.svg)](https://pekko.apache.org/)
+[![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.4.2-DB2777.svg)](https://pekko.apache.org/)
 [![Go](https://img.shields.io/badge/Go-1.27.3-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.18-2F5D8C.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-6.1.2-8B2C3D.svg)](https://www.djangoproject.com/)
@@ -94,7 +94,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Javalin                    | 7.2.4    | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2    | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.2.2    | Reactive, event-driven applications on the JVM (Netty)               |
-| **Backend**       | Framework          | Pekko                      | 1.3.0    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
+| **Backend**       | Framework          | Pekko                      | 1.4.2    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.2    | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.4.3   | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1   | UI rendering layer                                                   |
@@ -210,7 +210,7 @@ If you’re searching for projects like this, these are the topics it covers:
 - **Vert.x**: 5.2.2
   - JVM build
     - Reactive (event-loop)
-- **Pekko**: 1.3.0
+- **Pekko**: 1.4.2
   - JVM build
     - Reactive (Pekko dispatcher)
 
@@ -476,7 +476,7 @@ The numbers below are a curated summary of a representative run.
 - Spark Java is blocking-only in its official latest version, with also virtual threads support via its Zoomba fork.
 - Dropwizard 5.x runs on Jetty 12 + Jersey 3; thread mode (platform or virtual) is selected at startup via `THREAD_MODE` env var. No reactive HTTP model.
 - Vert.x 5.x is a fully reactive, event-loop–based framework (Netty); only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design.
-- Pekko 1.3.0 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
+- Pekko 1.4.2 is a fully reactive HTTP toolkit running on the Pekko actor system's ForkJoin dispatcher; only the reactive endpoint is benchmarked — platform and virtual thread modes are N/A by design. The module uses direct Pekko HTTP.
 - Django 6.1.2 runs on CPython 3.13.18 behind Gunicorn. The platform module uses `gthread` (threaded WSGI) workers; the reactive module uses `UvicornWorker` (ASGI). Python's GIL limits true parallelism; throughput is significantly lower than JVM and Go implementations — included for cross-language comparison.
 - Reactive means true non-blocking HTTP pipelines (event loop and backpressure), not "blocking code wrapped in reactive types."
 - Native builds use GraalVM Native Image with framework-recommended settings.
@@ -517,7 +517,7 @@ The numbers below are a curated summary of a representative run.
 - **Javalin**: 7.2.4
 - **Dropwizard**: 5.0.2
 - **Vert.x**: 5.2.2
-- **Pekko**: 1.3.0 (Pekko Core 1.4.0)
+- **Pekko**: 1.4.2 (Pekko Core 1.4.0)
 - **Go**: 1.27.3 (Fiber v3.6.1)
 - **Python**: 3.13.18 (CPython)
 - **Django**: 6.1.2 (Gunicorn 26.2.0)

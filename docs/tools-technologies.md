@@ -373,7 +373,7 @@ mvn package -Pnative
 - No native image support in the community edition
 - Smaller enterprise adoption compared to Spring or Quarkus
 
-### Pekko 1.3.0
+### Pekko 1.4.2
 
 **Official Site**: [https://pekko.apache.org/](https://pekko.apache.org/) | [GitHub](https://github.com/apache/pekko-http)
 
@@ -395,7 +395,7 @@ mvn package -Pnative
 - We therefore pivoted the module from "Play" to "Pekko HTTP" to keep the benchmark fair and representative of what the underlying engine can actually deliver.
 
 **Implementation Details**:
-- **Pekko HTTP 1.3.0** (latest stable)
+- **Pekko HTTP 1.4.2** (latest stable)
 - **Pekko Core 1.4.0** (actor system + stream engine)
 - Direct Pekko HTTP server
 - JVM build only (no native image support at this time)
@@ -1011,7 +1011,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Javalin                    | 7.2.4    | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2    | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.2.2    | Reactive, event-driven applications on the JVM (Netty)               |
-| **Backend**       | Framework          | Pekko                      | 1.3.0    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
+| **Backend**       | Framework          | Pekko                      | 1.4.2    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.2    | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.4.3   | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1   | UI rendering layer                                                   |
