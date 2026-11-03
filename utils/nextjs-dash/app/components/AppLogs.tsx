@@ -135,24 +135,28 @@ export default function AppLogs() {
     [appLogsConfig.serverMaxEntries],
   );
 
-  const fallbackSnapshot = useCallback(async () => {
-    try {
-      const res = await fetch('/api/logs');
-      const data = (await res.json()) as {
-        entries?: Array<{
-          ts: number;
-          level: UiLevel;
-          source: UiSource;
-          message: string;
-          meta?: unknown;
-        }>;
-      };
-      const incoming = Array.isArray(data?.entries) ? data.entries : [];
-      appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
-    } catch {
-      // ignore
-    }
-  }, [appendServerEntries]);
+  const fallbackSnapshot = useCallback(
+    async (signal: AbortSignal) => {
+      try {
+        const res = await fetch('/api/logs', { signal });
+        const data = (await res.json()) as {
+          entries?: Array<{
+            ts: number;
+            level: UiLevel;
+            source: UiSource;
+            message: string;
+            meta?: unknown;
+          }>;
+        };
+        if (signal.aborted) return;
+        const incoming = Array.isArray(data?.entries) ? data.entries : [];
+        appendServerEntries(incoming.map((e) => ({ ...e, source: 'server' as const })));
+      } catch {
+        // ignore
+      }
+    },
+    [appendServerEntries],
+  );
 
   const connectSse = useCallback((sinceTs?: number) => {
     const url = sinceTs ? `/api/logs/stream?sinceTs=${sinceTs}` : '/api/logs/stream';
@@ -166,7 +170,7 @@ export default function AppLogs() {
     // Load a snapshot asynchronously to avoid triggering react-hooks/set-state-in-effect.
     queueMicrotask(() => {
       if (controller.signal.aborted) return;
-      void fallbackSnapshot();
+      void fallbackSnapshot(controller.signal);
     });
 
     const connect = () => {
@@ -179,7 +183,7 @@ export default function AppLogs() {
           // Run it asynchronously so state updates happen as a reaction to an external event.
           queueMicrotask(() => {
             if (controller.signal.aborted) return;
-            void fallbackSnapshot();
+            void fallbackSnapshot(controller.signal);
           });
         };
 
@@ -214,13 +218,13 @@ export default function AppLogs() {
           es = null;
           queueMicrotask(() => {
             if (controller.signal.aborted) return;
-            void fallbackSnapshot();
+            void fallbackSnapshot(controller.signal);
           });
         };
       } catch {
         queueMicrotask(() => {
           if (controller.signal.aborted) return;
-          void fallbackSnapshot();
+          void fallbackSnapshot(controller.signal);
         });
       }
     };
