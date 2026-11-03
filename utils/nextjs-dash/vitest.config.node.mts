@@ -1,5 +1,9 @@
 import { defineConfig } from 'vitest/config';
-import { sharedResolve, sharedTestOptions, sharedCoverageExclude } from './vitest.config.shared';
+import {
+  sharedResolve,
+  sharedTestOptions,
+  sharedCoverageExclude,
+} from './vitest.config.shared.mts';
 
 // Node test suite: pure library and API-route unit tests that do NOT need JSDOM.
 export default defineConfig({

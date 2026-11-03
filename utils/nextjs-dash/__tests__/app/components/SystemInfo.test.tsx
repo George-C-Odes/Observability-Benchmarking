@@ -14,7 +14,7 @@ describe('SystemInfo', () => {
       systemInfo: {
         nodejs: 'v26.13.0',
         npm: '12.2.1',
-        nextjs: '16.4.3',
+        nextjs: '16.4.5',
         react: '19.3.1',
         mui: '9.5.0',
         typescript: '6.0.3',

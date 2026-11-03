@@ -119,15 +119,65 @@ describe('AppLogs', () => {
       .mockResolvedValueOnce(
         snapshotResponse([{ ts: 200, level: 'warn', source: 'server', message: 'fallback log' }]),
       );
-    render(<AppLogs />);
+    const { unmount } = render(<AppLogs />);
     await waitFor(() => expect(MockEventSource.instances).toHaveLength(1));
 
+    const eventSource = MockEventSource.instances[0];
     act(() => {
-      MockEventSource.instances[0].emitError();
+      eventSource.emitError();
     });
 
     expect(await screen.findByText('fallback log')).toBeInTheDocument();
-    expect(MockEventSource.instances[0].close).toHaveBeenCalledOnce();
+    unmount();
+    expect(eventSource.close).toHaveBeenCalledOnce();
+  });
+
+  it.each(['initial', 'open', 'error'] as const)(
+    'cancels the queued %s snapshot when unmounted',
+    async (trigger) => {
+      const { unmount } = render(<AppLogs />);
+      const eventSource = MockEventSource.instances[0];
+
+      act(() => {
+        if (trigger === 'open') eventSource.emitOpen();
+        if (trigger === 'error') eventSource.emitError();
+      });
+      unmount();
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(fetch).not.toHaveBeenCalled();
+      expect(eventSource.close).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('keeps the active Strict Mode connection independent of the cleaned-up connection', async () => {
+    const { unmount } = render(<AppLogs />, { reactStrictMode: true });
+    expect(MockEventSource.instances).toHaveLength(2);
+    const [closedSource, activeSource] = MockEventSource.instances;
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(closedSource.close).toHaveBeenCalledOnce();
+    expect(activeSource.close).not.toHaveBeenCalled();
+
+    await act(async () => {
+      closedSource.emitOpen();
+      closedSource.emitMessage(JSON.stringify({ ts: 100, level: 'info', message: 'stale log' }));
+      activeSource.emitMessage(JSON.stringify({ ts: 200, level: 'info', message: 'active log' }));
+    });
+
+    expect(screen.queryByText('stale log')).not.toBeInTheDocument();
+    expect(screen.getByText('active log')).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledOnce();
+
+    unmount();
+    expect(closedSource.close).toHaveBeenCalledOnce();
+    expect(activeSource.close).toHaveBeenCalledOnce();
   });
 
   it('clears client and server logs through their owning boundaries', async () => {
