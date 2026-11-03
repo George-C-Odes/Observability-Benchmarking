@@ -122,6 +122,7 @@ test('generated allowlist includes all target classes, but never scripts or sour
     'utils/orchestrator/pom.xml', '.github/actions/setup-python/action.yml', '.sonarcloud.properties',
     '.github/go-tools/go.mod', 'services/python/django/gunicorn/dependencies.lock',
     'README.md', 'services/java/quarkus/native/pom.xml', '.github/requirements/python-ci.txt',
+    'services/java/vertx/jvm/README.md',
   ]) assert.ok(files.includes(file), file);
   assert.ok(files.some((file) => file.startsWith('.run/[build-img]')));
   assert.ok(files.every((file) => !file.includes('\\') && !file.includes('..') && !file.includes('.template.') && !file.startsWith('scripts/')));
@@ -147,6 +148,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const envPath = path.join(workspace, 'compose/.env');
   const source = readFileSync(envPath, 'utf8')
     .replace(/^QUARKUS_VERSION:.*$/m, 'QUARKUS_VERSION: 9.0.1')
+    .replace(/^VERTX_VERSION:.*$/m, 'VERTX_VERSION: 9.0.2')
     .replace(/^GO_VERSION:.*$/m, 'GO_VERSION: 1.99.0')
     .replace(/^PYTHON_VERSION:.*$/m, 'PYTHON_VERSION: 3.14.99');
   writeFileSync(envPath, source);
@@ -167,6 +169,10 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     readFileSync(resolveRepoPath('.sonarcloud.properties'), 'utf8').replace(/^sonar.python.version=.*$/m, 'sonar.python.version=3.14'));
   assert.match(readFileSync(path.join(workspace, 'services/python/django/gunicorn/WSGI/Dockerfile'), 'utf8'), /ARG PYTHON_VERSION=3\.14\.99/);
   assert.match(readFileSync(path.join(workspace, 'services/README.md'), 'utf8'), /9\.0\.1/);
+  const vertxReadme = readFileSync(path.join(workspace, 'services/java/vertx/jvm/README.md'), 'utf8');
+  assert.match(vertxReadme, /\*\*Eclipse Vert\.x 9\.0\.2\*\*/);
+  assert.match(vertxReadme, /--build-arg VERTX_VERSION=9\.0\.2/);
+  assert.doesNotMatch(vertxReadme, /\{\{VERTX_VERSION}}/);
   const generated = snapshot();
   assert.equal(run('--check').status, 0);
   const repeat = run();

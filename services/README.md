@@ -240,9 +240,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/vertx/jvm/Dockerfile `
-  -t vertx-jvm:5.1.7_latest `
-  --build-arg VERTX_VERSION=5.1.7 `
-  --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:5.1.7_latest `
+  -t vertx-jvm:5.2.2_latest `
+  --build-arg VERTX_VERSION=5.2.2 `
+  --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:5.2.2_latest `
   --load `
   services/java
 ```

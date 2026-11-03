@@ -882,7 +882,7 @@ Testing Framework Versions:
 - Spark: 3.0.5
 - Javalin: 7.2.4
 - Dropwizard: 5.0.2
-- Vert.x: 5.1.7
+- Vert.x: 5.2.2
 - Pekko: 1.3.0
 - Go: 1.27.3
 - Django: 6.1.2
