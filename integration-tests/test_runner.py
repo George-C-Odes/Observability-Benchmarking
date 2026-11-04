@@ -417,7 +417,7 @@ docker_capture() {
     if [[ $1 == context ]]; then DOCKER_OUTPUT='npipe:////./pipe/dockerDesktopLinuxEngine'
     else
         [[ $DOCKER_FALLBACK_CONTEXT == desktop-linux ]] || return 9
-        DOCKER_OUTPUT=29.9.2
+        DOCKER_OUTPUT=29.9.3
     fi
 }
 probe_docker
