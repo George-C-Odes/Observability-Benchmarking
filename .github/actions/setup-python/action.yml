@@ -5,7 +5,7 @@ inputs:
   python-version:
     description: Python version to install; defaults to the repository's CI version.
     required: false
-    default: '3.13.18'
+    default: '3.15.2'
   cache:
     description: Package manager whose dependencies should be cached (pip, pipenv, or poetry).
     required: false

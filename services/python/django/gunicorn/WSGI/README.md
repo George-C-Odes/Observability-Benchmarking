@@ -80,7 +80,7 @@ The development server starts on `http://127.0.0.1:8000/hello/platform`.
 docker buildx build `
   -f services/python/django/gunicorn/WSGI/Dockerfile `
   -t django-platform:6.1.2_latest `
-  --build-arg PYTHON_VERSION=3.13.18 `
+  --build-arg PYTHON_VERSION=3.15.2 `
   --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1.2_latest `
   --load `
   services/python/django
