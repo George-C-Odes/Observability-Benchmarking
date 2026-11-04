@@ -1,8 +1,8 @@
 """
 Django settings for the benchmarking hello service.
 
-Django 6.1.2 — ASGI mode, tuned for throughput benchmarks.
-https://docs.djangoproject.com/en/6.1.2/ref/settings/
+Django 6.1.3 — ASGI mode, tuned for throughput benchmarks.
+https://docs.djangoproject.com/en/6.1.3/ref/settings/
 """
 
 import os
