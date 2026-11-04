@@ -68,7 +68,7 @@ runs:
 
     - name: Initialize CodeQL
       if: ${{ inputs.phase == 'init' }}
-      uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+      uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
       with:
         languages: ${{ inputs.languages }}
         build-mode: ${{ inputs.build-mode }}
@@ -76,14 +76,14 @@ runs:
     # Honor callers that run analysis or uploads after an earlier step failed.
     - name: Perform CodeQL Analysis
       if: ${{ always() && steps.validate.outcome == 'success' && inputs.phase == 'analyze' }}
-      uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+      uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
       with:
         category: ${{ inputs.category }}
         output: ${{ inputs.output }}
 
     - name: Upload SARIF
       if: ${{ always() && steps.validate.outcome == 'success' && inputs.phase == 'upload-sarif' }}
-      uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+      uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
       with:
         sarif_file: ${{ inputs.sarif_file }}
         category: ${{ inputs.category }}
