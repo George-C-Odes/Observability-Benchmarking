@@ -288,7 +288,7 @@
             <plugin>
                 <groupId>io.micronaut.maven</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
-                <version>4.11.6</version>
+                <version>5.0.2</version>
             </plugin>
 
             <plugin>
