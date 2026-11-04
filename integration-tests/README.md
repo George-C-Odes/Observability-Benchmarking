@@ -185,7 +185,7 @@ The runner loads and prints framework versions from `compose/.env`:
 | Vert.x          | 5.2.2    |
 | Pekko           | 1.4.2    |
 | Go              | 1.27.3   |
-| Django          | 6.1.2    |
+| Django          | 6.1.3    |
 
 ## Service Port Mappings
 

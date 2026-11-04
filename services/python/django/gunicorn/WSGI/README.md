@@ -23,7 +23,7 @@ Health probes:
 
 ## Runtime model
 
-- Django 6.1.2 on WSGI
+- Django 6.1.3 on WSGI
 - Gunicorn `gthread`
 - Preloaded 50,000-entry shared cache via copy-on-write
 - OpenTelemetry SDK initialized per worker after fork
@@ -79,9 +79,9 @@ The development server starts on `http://127.0.0.1:8000/hello/platform`.
 ```powershell
 docker buildx build `
   -f services/python/django/gunicorn/WSGI/Dockerfile `
-  -t django-platform:6.1.2_latest `
+  -t django-platform:6.1.3_latest `
   --build-arg PYTHON_VERSION=3.13.18 `
-  --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1.2_latest `
+  --build-arg BUILDKIT_BUILD_NAME=django-platform:6.1.3_latest `
   --load `
   services/python/django
 ```
