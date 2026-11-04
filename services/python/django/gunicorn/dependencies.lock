@@ -150,8 +150,8 @@ pyroscope-otel==1.1.0 \
     --hash=sha256:a10accd2a60fa00a18445f8e95df91500630f8f6b177133693792785f57637e5
 setuptools==84.2.1 \
     --hash=sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2
-sqlparse==0.6.0 \
-    --hash=sha256:b861c0288ce2fa56209a9a6412d2e066ac664b3873b89c26c9d8415e8e32996f
+sqlparse==0.6.1 \
+    --hash=sha256:3be5a72d04c873d690d7c6dedd33d6fae2ef82759881ceec02fc2efd0cba564f
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
 tzdata==2026.6 \

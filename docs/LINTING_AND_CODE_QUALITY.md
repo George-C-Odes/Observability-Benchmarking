@@ -722,7 +722,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@1fc58d04a4d4374f921bdac573c3811c240f9c26` (# v4.39.2, SHA-pinned)
+- **CodeQL Action**: `github/codeql-action@33d7b85da1a04171e211befe2c739303b9a4c066` (# v4.39.3, SHA-pinned)
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
