@@ -77,7 +77,7 @@ RUN set -eux; \
       --output /workspace/out/jre
 
 # ------------ OTEL/PROFILING DEPS STAGE -----------------------
-FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS otel_deps
+FROM alpine:3.24.4@sha256:e2944c2947c8cabdd6b23a2ebcf8094a9f3d53ca9e0340edd065237ab74c18c0 AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=2.1.4
 ARG OTEL_JAVA_AGENT_VERSION=2.33.1

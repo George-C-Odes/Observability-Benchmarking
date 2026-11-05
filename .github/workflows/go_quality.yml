@@ -146,7 +146,7 @@ jobs:
         if: always() && !cancelled()
         uses: ./.github/actions/setup-node
         with:
-          node-version: '22'
+          node-version: '26'
 
       - name: Generate quality report
         if: always() && !cancelled()

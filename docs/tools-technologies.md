@@ -338,7 +338,7 @@ mvn package -Pnative
 - Heavier baseline than Spark or Javalin due to bundled subsystems
 - Smaller community momentum compared to Spring or Quarkus
 
-### Vert.x 5.2.2
+### Vert.x 5.2.3
 
 **Official Site**: [https://vertx.io/](https://vertx.io/) | [GitHub](https://github.com/eclipse-vertx/vert.x)
 
@@ -349,7 +349,7 @@ mvn package -Pnative
 - Lightweight — no CDI, no annotation scanning, no classpath magic; explicit wiring
 
 **Implementation Details**:
-- **Vert.x 5.2.2** (latest stable release)
+- **Vert.x 5.2.3** (latest stable release)
 - Fully reactive HTTP server on Netty event loops
 - JVM build only (no native image support at this time)
 - jlink-optimised runtime image with distroless base
@@ -1010,7 +1010,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.5    | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.4    | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2    | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
-| **Backend**       | Framework          | Vert.x                     | 5.2.2    | Reactive, event-driven applications on the JVM (Netty)               |
+| **Backend**       | Framework          | Vert.x                     | 5.2.3    | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.4.2    | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.3    | Python web framework (WSGI platform + ASGI reactive)                 |
 | **Frontend**      | Framework          | Next.js                    | 16.4.5   | SSR frontend and control dashboard                                   |
@@ -1026,18 +1026,18 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1   | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1    | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.2.8    | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.3.0    | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+      | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2       | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.9.3   | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0   | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.2.1   | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.3   | Python linting and code formatting                                   |
+| **Build**         | Package Manager    | npm                        | 12.2.2   | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.4   | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.91.0   | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.76.0   | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest   | Deterministic HTTP benchmarking                                      |
-| **Testing**       | Unit / Integration | JUnit                      | 5 / 6    | JVM unit and integration testing                                     |
+| **Testing**       | Unit / Integration | JUnit                      | 6.1.3    | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.1.0    | Frontend unit testing                                                |
 
 ---
