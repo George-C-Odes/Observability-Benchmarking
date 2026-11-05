@@ -58,55 +58,55 @@ The project implements a comprehensive testing strategy covering:
 ### Testing Stack
 
 **Java (Quarkus)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: RestAssured
 - Test Profile: `@QuarkusTest`
 - Metrics: Micrometer (OpenTelemetry SDK)
 
 **Java (Spring Boot)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: MockMvc (Tomcat), WebTestClient (Netty)
 - Test Context: `@SpringBootTest`
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Micronaut)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: Micronaut `@MicronautTest` + HTTP Client
 - Test Context: `@MicronautTest`
 - Metrics: Micrometer (OpenTelemetry)
 
 **Java (Helidon SE)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: Helidon WebClient / direct HTTP
 - Metrics: Micrometer (OpenTelemetry)
 
 **Java (Helidon MP)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: JAX-RS Client
 - Metrics: Micrometer (OpenTelemetry)
 
 **Java (Spark)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: Direct HTTP and unit tests
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Javalin)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: Direct HTTP and unit tests
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Dropwizard)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: JAX-RS resource testing
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
 **Java (Vert.x)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: Embedded Vert.x HTTP server + Java HttpClient
 - Metrics: Micrometer (OpenTelemetry)
 
 **Java (Pekko)**
-- Testing Framework: JUnit 5
+- Testing Framework: JUnit 6
 - HTTP Testing: Embedded Pekko HTTP server + Java HttpClient
 - Metrics: Micrometer (OpenTelemetry Java Agent)
 
