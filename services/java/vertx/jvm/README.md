@@ -2,7 +2,7 @@
 
 # Vert.x JVM Service
 
-A fully reactive, high-throughput REST service implemented with **Eclipse Vert.x 5.2.2** on **Java 25**.
+A fully reactive, high-throughput REST service implemented with **Eclipse Vert.x 5.2.3** on **Java 25**.
 
 This module provides a `/hello/reactive` endpoint for benchmarking Vert.x's event-loop-based
 non-blocking I/O model. All request handling runs on the Vert.x event loop — no blocking,
@@ -58,7 +58,7 @@ Follows clean architecture / hexagonal principles:
 docker buildx build `
   -f services/java/vertx/jvm/Dockerfile `
   -t vertx-jvm:latest `
-  --build-arg VERTX_VERSION=5.2.2 `
+  --build-arg VERTX_VERSION=5.2.3 `
   --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:latest `
   --load `
   services/java
