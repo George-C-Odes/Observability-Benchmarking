@@ -26,7 +26,7 @@
         <micronaut.test.version>5.2.0</micronaut.test.version>
         <micronaut.processing.incremental>true</micronaut.processing.incremental>
         <micronaut.processing.annotations>io.github.georgecodes.benchmarking.micronaut.*</micronaut.processing.annotations>
-        <micronaut.tracing.version>7.2.0</micronaut.tracing.version>
+        <micronaut.tracing.version>8.3.0</micronaut.tracing.version>
 
         <micrometer-jvm-extras.version>0.3.0</micrometer-jvm-extras.version>
 
