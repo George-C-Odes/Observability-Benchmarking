@@ -33,7 +33,7 @@ jobs:
       - name: Set up Node
         uses: ./.github/actions/setup-node
         with:
-          node-version: '24'
+          node-version: '26'
 
       - name: Validate Renovate version proposal
         id: proposal

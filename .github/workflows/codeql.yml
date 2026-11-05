@@ -298,7 +298,7 @@ jobs:
       - name: Set up Node.js
         uses: ./.github/actions/setup-node
         with:
-          node-version: '22'
+          node-version: '26'
 
       - name: Validate CodeQL workflow contract
         run: node --test scripts/pages/codeql-workflow.test.mjs
