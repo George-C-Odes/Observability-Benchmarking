@@ -138,7 +138,7 @@ memory: 2GB        # Maximum memory
 - Spark: 3.0.5
 - Javalin: 7.2.4
 - Dropwizard: 5.0.2
-- Vert.x: 5.2.2
+- Vert.x: 5.2.3
 - Pekko HTTP: 1.4.2 (Pekko Core 1.7.1)
 - Go: 1.27.3 with Fiber v3.6.1
 - Python: 3.13.18 (CPython)

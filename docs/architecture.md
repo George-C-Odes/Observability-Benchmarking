@@ -66,7 +66,7 @@ The Observability Benchmarking project is designed as a modular, cloud-native sy
 - Dropwizard 5.0.2 (JVM)
   - Platform threads
   - Virtual threads
-- Vert.x 5.2.2 (JVM)
+- Vert.x 5.2.3 (JVM)
   - Reactive (event-loop)
 - Pekko 1.4.2 (JVM)
   - Reactive (Pekko dispatcher)
