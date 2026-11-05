@@ -120,7 +120,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Quality**       | Linter             | Oxlint                     | 1.91.0                  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.76.0                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
-| **Testing**       | Unit / Integration | JUnit                      | 5 / 6                   | JVM unit and integration testing                                     |
+| **Testing**       | Unit / Integration | JUnit                      | 6.1.3                   | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.1.0                   | Frontend unit testing                                                |
 
 ### Why This Project?
