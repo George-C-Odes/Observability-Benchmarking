@@ -1026,14 +1026,14 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1   | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1    | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.2.8    | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 7.3.0    | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+      | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2       | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.9.3   | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0   | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.2.1   | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.3   | Python linting and code formatting                                   |
+| **Build**         | Package Manager    | npm                        | 12.2.2   | Frontend dependency management                                       |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.4   | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.91.0   | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.76.0   | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest   | Deterministic HTTP benchmarking                                      |

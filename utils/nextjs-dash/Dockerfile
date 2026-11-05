@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 ARG IMAGE_DEPS=node:26.13.0-alpine3.24@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
 ARG IMAGE_RUNTIME=node:26.13.0-alpine3.24@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94
-ARG NPM_VERSION=12.2.1
+ARG NPM_VERSION=12.2.2
 #ARG IMAGE_DEPS=node:26.13.0-bookworm-slim
 #ARG IMAGE_RUNTIME=node:26.13.0-bookworm-slim
 
