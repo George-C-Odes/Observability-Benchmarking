@@ -13,8 +13,8 @@ asgiref==3.13.0 \
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
     #   django
     #   opentelemetry-instrumentation-asgi
-cachetools==7.2.8 \
-    --hash=sha256:09b04a85741d0019b3fb7d02b7ee9933a422fa6923af92a0fd63b893b695830c
+cachetools==7.3.0 \
+    --hash=sha256:2105787c94619bde7072624fec0fe7b8a08bb7bf6c757c318f8925573c6f07c9
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
