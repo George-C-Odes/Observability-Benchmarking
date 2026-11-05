@@ -115,7 +115,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Tooling            | Docker CLI                 | 29.9.3                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.2.1                  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 12.2.2                  | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.17.3                  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.91.0                  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.76.0                  | Next.js dashboard formatting                                         |

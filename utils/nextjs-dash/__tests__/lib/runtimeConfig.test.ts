@@ -16,7 +16,7 @@ describe('runtimeConfig', () => {
       __OBS_DASH_CONFIG__: {
         systemInfo: {
           nodejs: 'v26.13.0',
-          npm: '12.2.1',
+          npm: '12.2.2',
           nextjs: '16.4.5',
           react: '19.3.1',
           mui: '9.5.0',
@@ -30,7 +30,7 @@ describe('runtimeConfig', () => {
     expect(getRuntimeConfig()).toEqual({
       systemInfo: {
         nodejs: 'v26.13.0',
-        npm: '12.2.1',
+        npm: '12.2.2',
         nextjs: '16.4.5',
         react: '19.3.1',
         mui: '9.5.0',
