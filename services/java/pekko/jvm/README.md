@@ -1,7 +1,7 @@
 <!-- Generated from services/java/pekko/jvm/README.template.md. Do not edit services/java/pekko/jvm/README.md directly. -->
 
 # Pekko JVM Service
-A fully reactive, high-throughput REST service implemented with **Pekko HTTP 1.4.2** and **Pekko Core 1.7.1** on **Java 25**.
+A fully reactive, high-throughput REST service implemented with **Pekko HTTP 1.4.2** and **Pekko Core 2.0.0** on **Java 25**.
 This module provides a `/hello/reactive` endpoint for benchmarking Pekko HTTP's
 non-blocking I/O model. All request handling runs on the Pekko default dispatcher — no blocking,
 no virtual threads, no thread-per-request overhead.

@@ -396,7 +396,7 @@ mvn package -Pnative
 
 **Implementation Details**:
 - **Pekko HTTP 1.4.2** (latest stable)
-- **Pekko Core 1.7.1** (actor system + stream engine)
+- **Pekko Core 2.0.0** (actor system + stream engine)
 - Direct Pekko HTTP server
 - JVM build only (no native image support at this time)
 - jlink-optimised runtime image with distroless base
