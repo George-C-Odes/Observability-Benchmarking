@@ -61,6 +61,10 @@ python -m pip install --require-hashes --only-binary=:all: \
 bash .github/requirements/update-lock.sh
 ```
 
+`update-lock.sh` first upgrades pip to 26.3 using the hash-pinned `pip.in`, then
+compiles both inventories and refreshes the Docker projections. Using the input
+for this bootstrap permits regeneration when the generated `pip.txt` is stale.
+
 To refresh the compiler itself, change `lock-compiler.in` if needed and run the
 following in a trusted Linux compiler environment. Review and commit both files;
 automatic Django updates intentionally leave this bootstrap lock unchanged.
@@ -117,12 +121,34 @@ directory, following the existing Django install/upgrade naming convention:
 
 | Configuration                                                           | Purpose                                                                                                                                  | Prerequisites                                                                  |
 |-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`[install] Python CI`](../../.run/%5Binstall%5D%20Python%20CI.run.xml) | Install hash-verified pip, pip-tools 7.6.2, and the tools from `build.in`, `coverage.in`, and `qodana.in`; finish with `pip check`.      | PowerShell 7 and Python 3.13 on `PATH`, preferably in an activated virtualenv. |
-| [`[upgrade] Python CI`](../../.run/%5Bupgrade%5D%20Python%20CI.run.xml) | Regenerate both locks with `update-lock.sh --upgrade` in a disposable Linux `python:3.13.18-alpine3.24` container using pip-tools 7.6.2. | PowerShell 7 and a running Docker daemon configured for Linux containers.      |
+| [`[install] Python CI`](../../.run/%5Binstall%5D%20Python%20CI.run.xml) | Install hash-verified pip, the compiler lock (pip-tools and its dependencies), and the tools from `build.in`, `coverage.in`, and `qodana.in`; finish with `pip check`. | PowerShell 7 and Python 3.13 on the IDE process's `PATH`, preferably from a virtualenv. |
+| [`[upgrade] Python CI`](../../.run/%5Bupgrade%5D%20Python%20CI.run.xml) | Regenerate both locks with `update-lock.sh --upgrade` in a disposable Linux `python:3.13.18-slim-bookworm` container using the hash-verified compiler lock. | PowerShell 7 and a running Docker daemon configured for Linux containers. |
 
-The install configuration targets the selected local `python` environment; it does
+Both configurations run `.github/requirements/python-ci.ps1` in a dedicated
+PowerShell process with `-NoProfile -NoExit -File` in IntelliJ's **Run** console.
+**Execute in terminal** is disabled: direct process launching avoids the Shell
+Script plugin's Bash-style path escaping when the IDE terminal uses PowerShell.
+Keep the interpreter as `pwsh` (resolved from `PATH`), rather than a project-relative
+path into `Program Files`. Do not add quotes or backslash escapes to the interpreter field.
+The script contains no `exit` statement, so the session stays open after success
+or failure. It prints the operation's exit code and retains it in `$LASTEXITCODE`;
+type `exit` when finished reviewing the output. Errors stop subsequent steps.
+The session remains active until you close it, even after the operation completes.
+If an existing IDE configuration still shows inline script text, reopen
+**Run | Edit Configurations** and select the shared configuration's script file.
+Confirm **Script options** is `-Action Install` or `-Action Upgrade` as appropriate;
+without this option PowerShell prompts for the mandatory action.
+The Debian-based upgrade image provides Bash; the Alpine image does not include it.
+
+Both operations explicitly upgrade to hash-verified pip 26.3 before installing
+the compiler. The container bootstraps from `pip.in`, and `update-lock.sh` also
+performs that bootstrap when invoked directly.
+
+The install configuration prints the interpreter path and version, rejects versions
+outside Python 3.13, and targets the `python` environment on the IDE process's `PATH`; it does
 not install Django or Pyroscope, nor regenerate locks. The upgrade configuration
-bind-mounts the checkout, so the generated files are written back to the repository;
+bind-mounts only `.github/requirements` and `services/python/django/gunicorn`, so
+the generated files are written back to the repository without exposing host Git metadata;
 it does not install anything into the host Python environment. Linux compilation
 is required for the full inventory, including Pyroscope; Git Bash with a Windows
 Python interpreter is not a substitute.
@@ -132,7 +158,14 @@ After changing source pins, run **`[upgrade] Python CI`**, then
 same upgrade can be run from PowerShell at the repository root:
 
 ```powershell
-docker run --rm --mount "type=bind,source=$($PWD.Path),target=/workspace" --workdir /workspace python:3.13.18-alpine3.24 bash -lc 'set -euo pipefail; python -m pip install pip-tools==7.6.2; bash .github/requirements/update-lock.sh --upgrade'
+pwsh -NoProfile -NoExit -File .github/requirements/python-ci.ps1 -Action Upgrade
+```
+
+When entering an absolute executable path manually in a PowerShell terminal, use
+the call operator and quote the path:
+
+```powershell
+& 'C:\Program Files\PowerShell\7\pwsh.exe' -NoProfile -NoExit -File '.github/requirements/python-ci.ps1' -Action Upgrade
 ```
 
 ## Exercise the shared CI installer
