@@ -142,6 +142,7 @@ db.sqlite3-journal
 *.bak
 *.orig
 *.ps1
+!/.github/requirements/python-ci.ps1
 
 # Qodana local output
 /.qodana/**

@@ -1023,7 +1023,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Metrics            | Mimir                      | 3.2.4    | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.4.3    | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2   | Unified telemetry collection pipelines                               |
-| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.67.0   | Manual metrics, logs, and traces instrumentation                     |
+| **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0   | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1   | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1    | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 7.3.0    | In-memory caching (Python)                                           |
@@ -1034,8 +1034,8 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | pip-compile                | Latest   | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.2   | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.17.4   | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.91.0   | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.76.0   | Next.js dashboard formatting                                         |
+| **Quality**       | Linter             | Oxlint                     | 1.92.0   | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.77.0   | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest   | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 6.1.3    | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.1.0    | Frontend unit testing                                                |
