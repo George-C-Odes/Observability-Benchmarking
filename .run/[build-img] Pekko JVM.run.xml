@@ -12,7 +12,7 @@
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="PEKKO_CORE_VERSION" />
-              <option name="value" value="1.7.1" />
+              <option name="value" value="2.0.0" />
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
