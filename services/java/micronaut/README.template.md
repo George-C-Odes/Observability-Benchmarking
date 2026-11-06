@@ -94,6 +94,8 @@ Both services embed the OpenTelemetry SDK; their Dockerfiles do not install an O
 
 `hello.request.count` is tagged by endpoint. HTTP and additional runtime metrics depend on enabled binders, Compose toggles, and runtime support. Filter Grafana queries by `service_name="micronaut-jvm"` or `service_name="micronaut-native"` when comparing variants. Native profiling and initialization constraints are covered in its [module guide](native/README.md).
 
+The OTel bridge normalizes `executor.queued` to the `tasks` unit for both Netty event loops and thread pools. This avoids duplicate instrument warnings caused by the Netty binder's missing unit while retaining both executor series and their `name` tags.
+
 ## Validation
 
 Run `mvn verify -B` from the affected module for Java tests, coverage, and configured checks. Shared tests cover controller routes/logging, service request flow and interrupt handling, cache configuration, sleep adapters, and metrics wiring. For interactive JVM development, run `mvn mn:run` from `services/java/micronaut/jvm`.
