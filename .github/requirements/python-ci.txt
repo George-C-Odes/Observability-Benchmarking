@@ -18,8 +18,8 @@ cachetools==7.3.0 \
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
-click==8.5.0 \
-    --hash=sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360
+click==8.5.1 \
+    --hash=sha256:8bb5376d2006950386f8c6427613334a2acadc5f559cb80e638d00b4df957e37
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   uvicorn
