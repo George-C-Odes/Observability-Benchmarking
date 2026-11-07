@@ -8,9 +8,9 @@ import { finishSync, readSyncFile, runSyncCli } from './sync-common.mjs';
 export const imageTagGeneratedPaths = ['compose/docker-compose.yml', 'compose/utils.yml'];
 
 export function syncComposeImageTags(content, variables) {
-  return content.replace(/^(\s*(?:image|BUILDKIT_BUILD_NAME):\s*)([a-z0-9-]+):([^\s#]+)([^\r\n]*)/gm,
-    (match, prefix, name, _tag, suffix) => imageDefinitions.some((entry) => entry.name === name)
-      ? `${prefix}${formatImageTag(name, variables)}${suffix}` : match);
+  return content.replace(/^([ \t]*(?:image|BUILDKIT_BUILD_NAME):[ \t]*)([a-z0-9-]+):[^\s#]+/gm,
+    (match, prefix, name) => imageDefinitions.some((entry) => entry.name === name)
+      ? `${prefix}${formatImageTag(name, variables)}` : match);
 }
 
 export function syncImageTags({ envPath = 'compose/.env', check = false } = {}) {

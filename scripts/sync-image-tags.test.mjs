@@ -49,3 +49,23 @@ test('Compose migration changes only managed image and build-name values, retain
   assert.equal(syncComposeImageTags(original, variables), expected);
   assert.equal(syncComposeImageTags(expected, variables), expected);
 });
+
+test('Compose migration preserves tag suffixes and does not match values across lines', () => {
+  const tag = formatImageTag('quarkus-jvm', variables);
+  for (const ending of ['\n', '\r\n']) {
+    for (const suffix of ['', '#comment', ' \t # comment']) {
+      const original = `\timage:\tquarkus-jvm:old${suffix}${ending}`;
+      assert.equal(syncComposeImageTags(original, variables), `\timage:\t${tag}${suffix}${ending}`);
+    }
+    const multiline = `image:${ending}quarkus-jvm:old${ending}`;
+    assert.equal(syncComposeImageTags(multiline, variables), multiline);
+  }
+});
+
+test('Compose migration handles long tags and nonmatching lines', () => {
+  const longValue = 'a'.repeat(100_000);
+  const unchanged = `    image: ${longValue}\n${' '.repeat(100_000)}other: old\n`;
+  const content = `${unchanged}    image: quarkus-jvm:${longValue} # keep\n`;
+  assert.equal(syncComposeImageTags(content, variables),
+    `${unchanged}    image: ${formatImageTag('quarkus-jvm', variables)} # keep\n`);
+});
