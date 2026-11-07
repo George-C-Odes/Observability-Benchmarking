@@ -12,6 +12,20 @@
   "customManagers": [
     {
       "customType": "regex",
+      "managerFilePatterns": [
+        "/^compose\\/\\.env$/"
+      ],
+      "matchStrings": [
+        "(?<nodeStart>^|\\r?\\n)(?<nodePrefix>NODE_MAJOR_VERSION:[ \\t]*)(?<nodeMajor>\\d+)(?<nodeBetween>[ \\t]*\\r?\\nNODE_MINOR_PATCH_VERSION:[ \\t]*)(?<nodeMinorPatch>\\d+\\.\\d+)(?<nodeEnd>[ \\t]*(?:\\r?\\n|$))"
+      ],
+      "currentValueTemplate": "{{{nodeMajor}}}.{{{nodeMinorPatch}}}",
+      "autoReplaceStringTemplate": "{{{nodeStart}}}{{{nodePrefix}}}{{{newMajor}}}{{{nodeBetween}}}{{{newMinor}}}.{{{newPatch}}}{{{nodeEnd}}}",
+      "depNameTemplate": "node",
+      "datasourceTemplate": "node-version",
+      "versioningTemplate": "node"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": ["/^compose\\/\\.env$/"],
       "matchStrings": ["(?:^|\\r?\\n)SPRING_BOOT_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
       "depNameTemplate": "org.springframework.boot:spring-boot-dependencies",
@@ -144,6 +158,67 @@
   ],
   "packageRules": [
     {
+      "description": "Node Docker tag versions follow the paired env pin; retain digest refreshes.",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchFileNames": [
+        "utils/nextjs-dash/Dockerfile"
+      ],
+      "matchPackageNames": [
+        "node"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch",
+        "pin"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Node CI versions are generated from compose/.env.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchFileNames": [
+        ".github/workflows/**",
+        ".github/actions/**"
+      ],
+      "matchDepNames": [
+        "node"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Locally built images follow the shared framework/runtime tag formatter.",
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchFileNames": [
+        "compose/docker-compose.yml",
+        "compose/utils.yml"
+      ],
+      "matchPackageNames": [
+        "/^spring-/",
+        "/^quarkus-/",
+        "/^micronaut-/",
+        "/^helidon-/",
+        "/^spark-/",
+        "/^javalin-/",
+        "/^dropwizard-/",
+        "vertx-jvm",
+        "pekko-jvm",
+        "go",
+        "go-simple",
+        "django-platform",
+        "django-reactive",
+        "nextjs-dash",
+        "orchestrator"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Framework/runtime PRs update only compose/.env; the Framework Version Sync workflow relays them before merge.",
       "matchManagers": ["custom.regex"],
       "matchFileNames": ["compose/.env"],
@@ -205,6 +280,7 @@
         "maven",
         "go",
         "golang-version",
+        "node-version",
         "rubygems"
       ],
       "minimumReleaseAge": "3 days",
@@ -223,6 +299,43 @@
         "major"
       ],
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Java/GraalVM versions are manually pinned in compose/.env; retain image digest refreshes.",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchFileNames": [
+        "services/java/**/Dockerfile",
+        "utils/orchestrator/Dockerfile"
+      ],
+      "matchPackageNames": [
+        "eclipse-temurin",
+        "amazoncorretto",
+        "container-registry.oracle.com/graalvm/native-image",
+        "ghcr.io/graalvm/native-image-community",
+        "gcr.io/distroless/java*"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch",
+        "pin"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "GraalVM SVM follows the manually managed Java runtime pin.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchFileNames": [
+        "services/java/helidon/mp/native/pom.xml"
+      ],
+      "matchPackageNames": [
+        "org.graalvm.nativeimage:svm"
+      ],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {

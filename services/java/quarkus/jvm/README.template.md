@@ -3,7 +3,7 @@
 # Quarkus JVM Service
 
 ## Overview
-A high-performance REST service implementation built with Quarkus {{QUARKUS_VERSION}} running on the Java Virtual Machine (JVM 25). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
+A high-performance REST service implementation built with Quarkus {{QUARKUS_VERSION}} running on the Java Virtual Machine (JVM {{JAVA_MAJOR_VERSION}}). This service supports three different thread models in a single deployment, making it ideal for benchmarking different concurrency approaches.
 
 ## Purpose
 - Benchmark Quarkus performance across platform threads, virtual threads, and reactive programming models
@@ -15,17 +15,17 @@ A high-performance REST service implementation built with Quarkus {{QUARKUS_VERS
 
 ### Framework & Runtime
 - **Framework**: Quarkus {{QUARKUS_VERSION}}
-- **Java Version**: Eclipse Temurin 25.0.4
+- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
 ### Docker
 
-**Image**: `quarkus-jvm:{{QUARKUS_VERSION}}_latest`
+**Image**: `{{QUARKUS_JVM_IMAGE}}`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 This Docker image uses a multi-stage build:
@@ -305,7 +305,7 @@ Tracks request count per endpoint.
 ## Building and Running
 
 ### Prerequisites
-- Java 25 (Eclipse Temurin recommended)
+- Java {{JAVA_MAJOR_VERSION}} (Eclipse Temurin recommended)
 - Maven 3.9+
 - Docker (for containerized deployment)
 
@@ -325,9 +325,9 @@ mvn clean package -DskipTests
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:{{QUARKUS_VERSION}}_latest `
+  -t {{QUARKUS_JVM_IMAGE}} `
   --build-arg QUARKUS_VERSION={{QUARKUS_VERSION}} `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:{{QUARKUS_VERSION}}_latest `
+  --build-arg BUILDKIT_BUILD_NAME={{QUARKUS_JVM_IMAGE}} `
   --load `
   services/java
 ```

@@ -192,7 +192,6 @@ Read:
 Contracts:
 
 - Actions are pinned to full commit SHAs with version comments.
-- `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` appears at workflow-level `env:` with the existing TODO comment.
 - Report upload artifact names are consumed by Pages/report assembly; rename with care.
 
 Validation (from the repository root):

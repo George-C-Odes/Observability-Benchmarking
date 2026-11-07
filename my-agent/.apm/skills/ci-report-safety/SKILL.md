@@ -11,7 +11,7 @@ Use for changes to `.github/workflows/**`, HTTP/API request construction (authen
 
 - Check GitHub expression context availability at the exact key. `runner` and `env` are not available in job-level `env`; derive runner paths in a step and export through `GITHUB_ENV`, or use a context permitted at that key. A successful YAML parse does not establish an executable workflow.
 - Run actionlint on changed workflows. Keep its version reproducible; if the validator lacks a supported runner label, verify the label separately and filter only that diagnostic. Do not hide expression or security errors to obtain a passing result.
-- Preserve full-SHA action pins, version comments, least privileges, checkout credential policy, and the single workflow-level Node 24 migration setting. A job timeout is not a local helper timeout.
+- Preserve full-SHA action pins, version comments, least privileges, and checkout credential policy. A job timeout is not a local helper timeout.
 - Trace scan, summary, upload, and Pages consumers together. Distinguish scanner failure, findings, coverage, and report availability. Do not add `continue-on-error` or loosen a gate merely to retain diagnostics; retain artifacts after failure using deliberate conditions and preserve the failure status.
 
 ## 2. Keep command, argument, and path safety separate

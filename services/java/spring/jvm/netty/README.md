@@ -16,7 +16,7 @@ A reactive REST service implementation built with Spring Boot 4.1.2 running on N
 ### Framework & Runtime
 - **Framework**: Spring Boot 4.1.2 + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
-- **Java Version**: Eclipse Temurin 25.0.4
+- **Java Version**: Eclipse Temurin 25.0.5.0.3
 - **JVM GC**: G1 Garbage Collector
 - **Concurrency Model**: Reactive (Project Reactor)
 
@@ -265,7 +265,7 @@ cd services/java/spring/jvm/netty
 ### Docker Build
 ```bash
 cd services/java/spring/jvm
-docker build --build-arg PROFILE=netty -t spring-jvm-netty:latest .
+docker build --build-arg PROFILE=netty -t spring-jvm-netty:4.1.2-java25 .
 ```
 
 ### Docker Compose

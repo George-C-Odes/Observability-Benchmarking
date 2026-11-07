@@ -17,7 +17,7 @@ A reactive REST service implementation built with Spring Boot {{SPRING_BOOT_VERS
 - **Framework**: Spring Boot {{SPRING_BOOT_VERSION}} + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
-- **Base Java**: 25.0.4
+- **Base Java**: {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
 - **Concurrency Model**: Reactive (Project Reactor)
 
 ### Endpoints
@@ -45,7 +45,7 @@ Handles requests using reactive programming model with Mono.
 # Build configuration
 native:compile
 -Dmaven.artifact.threads=16
--Dmaven.compiler.release=25
+-Dmaven.compiler.release={{JAVA_MAJOR_VERSION}}
 
 # GraalVM options are managed by Spring Native plugin
 ```
@@ -179,7 +179,7 @@ Native may not be best for:
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.4+ (Enterprise or Community)
+- GraalVM Native Image {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}+ (Enterprise or Community)
 - Maven 3.9+
 - Docker (for containerized build recommended)
 - 16GB+ RAM (for native compilation)
@@ -200,7 +200,7 @@ cd services/java/spring/native/netty
 cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=netty \
-  -t spring-native-netty:latest .
+  -t {{SPRING_NATIVE_NETTY_IMAGE}} .
 ```
 
 ### Docker Compose
@@ -225,7 +225,7 @@ docker compose --project-directory compose \
 ### Dockerfile Highlights
 ```dockerfile
 # Builder stage - GraalVM Native Image
-FROM container-registry.oracle.com/graalvm/native-image:25.0.4-ol9
+FROM container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9
 
 # Copy source from JVM build directory
 COPY jvm/netty/src ./netty/src

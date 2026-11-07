@@ -2,7 +2,7 @@
 
 # Vert.x JVM Service
 
-A fully reactive, high-throughput REST service implemented with **Eclipse Vert.x {{VERTX_VERSION}}** on **Java 25**.
+A fully reactive, high-throughput REST service implemented with **Eclipse Vert.x {{VERTX_VERSION}}** on **Java {{JAVA_MAJOR_VERSION}}**.
 
 This module provides a `/hello/reactive` endpoint for benchmarking Vert.x's event-loop-based
 non-blocking I/O model. All request handling runs on the Vert.x event loop — no blocking,
@@ -41,11 +41,11 @@ Follows clean architecture / hexagonal principles:
 
 ## Docker
 
-**Image**: `vertx-jvm:latest`
+**Image**: `{{VERTX_JVM_IMAGE}}`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
@@ -57,9 +57,9 @@ Follows clean architecture / hexagonal principles:
 ```powershell
 docker buildx build `
   -f services/java/vertx/jvm/Dockerfile `
-  -t vertx-jvm:latest `
+  -t {{VERTX_JVM_IMAGE}} `
   --build-arg VERTX_VERSION={{VERTX_VERSION}} `
-  --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME={{VERTX_JVM_IMAGE}} `
   --load `
   services/java
 ```

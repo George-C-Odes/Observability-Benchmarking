@@ -67,8 +67,8 @@ test('new wrappers preserve caller-selected execution and cache/upload defaults'
     assert.match(source, /if: \$\{\{ always\(\) }}/, `${name} must respect callers running after failure`);
   }
   const node = readYaml(join(githubDir, 'actions', 'setup-node', 'action.yml'));
-  assert.match(node, /node-version:\n[^\n]*\n {4}required: true/);
-  assert.doesNotMatch(node, /default:/, 'Node versions and caching must remain caller-selected');
+  assert.match(node, /node-version:\n[^\n]*\n {4}required: false\n {4}default: \'[\d.]+\'/);
+  assert.match(node, /cache:\n[^\n]*\n {4}required: false\n {2}cache-dependency-path:/, 'Cache selection remains caller-controlled');
   const go = readYaml(join(githubDir, 'actions', 'setup-go', 'action.yml'));
   assert.match(go, /cache:\n[^\n]*\n {4}required: false\n {4}default: 'true'/);
   const codecov = readYaml(join(githubDir, 'actions', 'codecov-upload', 'action.yml'));

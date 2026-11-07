@@ -134,7 +134,7 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
+Java: 25 (Amazon Corretto 25.0.5.0.3 or Eclipse Temurin 25.0.5.0.3)
 Maven: 3.9+
 Spring Boot: 4.1.2 (3.5.16 also supported)
 Quarkus: 3.40.1.1
@@ -474,8 +474,6 @@ The quality workflow does more than execute tests:
 1. Runs syntax checks, prints the Ruff version for visibility, then runs Ruff lint and format checks for the shared `common` package.
 2. Installs the shared package into each runtime module environment.
 3. Prints the Ruff version, runs module syntax checks, Ruff lint and format checks, `python manage.py check`, and the shared test suite.
-
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v7.1.0` is exercised on Node 24 ahead of GitHub's runtime migration.
 
 Use the following sequence when you want to reproduce the CI gates locally:
 

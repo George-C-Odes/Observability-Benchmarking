@@ -17,7 +17,7 @@ A REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} com
 - **Framework**: Spring Boot {{SPRING_BOOT_VERSION}} + Spring Web MVC
 - **Web Server**: Apache Tomcat (embedded)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
-- **Base Java**: 25.0.4
+- **Base Java**: {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
 - **Thread Models**: Platform OR Virtual (single mode per build)
 
 ### Endpoints
@@ -65,7 +65,7 @@ The build process:
 -Pnative
 native:compile
 -Dmaven.artifact.threads=16
--Dmaven.compiler.release=25
+-Dmaven.compiler.release={{JAVA_MAJOR_VERSION}}
 ```
 
 Spring Native plugin handles:
@@ -170,7 +170,7 @@ Same as JVM version:
 
 #### Virtual Threads Mode (Native)
 - **Build**: Set `VIRTUAL_ENABLED=true`
-- **Implementation**: Java 25 virtual threads in native
+- **Implementation**: Java {{JAVA_MAJOR_VERSION}} virtual threads in native
 - **Thread Naming**: `VirtualThread[#N]`
 - **Characteristics**: Lightweight threads in native binary
 
@@ -212,7 +212,7 @@ Consider JVM for:
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.4+ (Enterprise or Community)
+- GraalVM Native Image {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}+ (Enterprise or Community)
 - Maven 3.9+
 - Docker (for containerized build recommended)
 - 16GB+ RAM (for native compilation)
@@ -239,7 +239,7 @@ cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=tomcat \
   --build-arg VIRTUAL_ENABLED=false \
-  -t spring-native-tomcat-platform:latest .
+  -t {{SPRING_NATIVE_TOMCAT_PLATFORM_IMAGE}} .
 ```
 
 #### Virtual Threads
@@ -248,7 +248,7 @@ cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=tomcat \
   --build-arg VIRTUAL_ENABLED=true \
-  -t spring-native-tomcat-virtual:latest .
+  -t {{SPRING_NATIVE_TOMCAT_VIRTUAL_IMAGE}} .
 ```
 
 ### Docker Compose
@@ -286,10 +286,10 @@ docker compose --project-directory compose \
 ### Dockerfile Highlights
 ```dockerfile
 # Builder stage - GraalVM Native Image
-FROM container-registry.oracle.com/graalvm/native-image:25.0.4-ol9
+FROM container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9
 
 # Install yq for YAML manipulation
-RUN curl -L "https://github.com/mikefarah/yq/releases/download/v4.49.2/yq_linux_amd64" \
+RUN curl -L "https://github.com/mikefarah/yq/releases/download/v4.54.2/yq_linux_amd64" \
   -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
 # Copy sources

@@ -121,12 +121,12 @@ memory: 2GB        # Maximum memory
 ### Software Versions
 
 **Java**:
-- JDK: Eclipse Temurin 25.0.4
+- JDK: Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
 - JVM Options: `-XX:+UseG1GC -XX:MaxGCPauseMillis=100`
 - Heap: 512MB-1GB depending on implementation
 
 **Native**:
-- GraalVM: 25.0.4 (Oracle Enterprise edition)
+- GraalVM: {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}} (Oracle Enterprise edition)
 - GC: G1 (only available in Enterprise edition)
 - Build: Optimized for throughput (`-O3`)
 
@@ -148,7 +148,7 @@ memory: 2GB        # Maximum memory
 
 This repository is Apache-2.0 licensed.
 
-However, native builds may use Oracle GraalVM container images (for example: `container-registry.oracle.com/graalvm/native-image:25.0.4-ol9`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
+However, native builds may use Oracle GraalVM container images (for example: `container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9`). If you build or run those images, you are responsible for reviewing and complying with Oracle’s license terms.
 
 ## Workload Design
 

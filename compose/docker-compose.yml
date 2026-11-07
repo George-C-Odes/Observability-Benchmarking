@@ -1,3 +1,4 @@
+# Image tags: generated from version sources by node scripts/sync-framework-versions.mjs
 name: Observability-Benchmarking
 
 include:
@@ -227,12 +228,12 @@ x-common-properties: &common_properties
 services:
   spring-jvm-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_PLATFORM:-skip}"]
-    image: spring-jvm-tomcat-platform:${SPRING_BOOT_VERSION}_latest
+    image: spring-jvm-tomcat-platform:4.1.2-java25
     build:
       context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:${SPRING_BOOT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:4.1.2-java25
         PROFILE: tomcat
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
     container_name: spring-jvm-tomcat-platform
@@ -300,12 +301,12 @@ services:
 
   spring-jvm-tomcat-virtual:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_VIRTUAL:-skip}"]
-    image: spring-jvm-tomcat-virtual:${SPRING_BOOT_VERSION}_latest
+    image: spring-jvm-tomcat-virtual:4.1.2-java25
     build:
       context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:${SPRING_BOOT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:4.1.2-java25
         PROFILE: tomcat
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
     container_name: spring-jvm-tomcat-virtual
@@ -373,12 +374,12 @@ services:
 
   spring-jvm-netty:
     profiles: ["${DOCKER_PROF_SPRING_JVM_NETTY:-skip}"]
-    image: spring-jvm-netty:${SPRING_BOOT_VERSION}_latest
+    image: spring-jvm-netty:4.1.2-java25
     build:
       context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-jvm-netty:${SPRING_BOOT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spring-jvm-netty:4.1.2-java25
         PROFILE: netty
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
     container_name: spring-jvm-netty
@@ -442,12 +443,12 @@ services:
 
   spring-native-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_TOMCAT_PLATFORM:-skip}"]
-    image: spring-native-tomcat-platform:${SPRING_BOOT_VERSION}_latest
+    image: spring-native-tomcat-platform:4.1.2-java25
     build:
       context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-native-tomcat-platform:${SPRING_BOOT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spring-native-tomcat-platform:4.1.2-java25
         PROFILE: tomcat
         VIRTUAL_ENABLED: false
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
@@ -495,12 +496,12 @@ services:
 
   spring-native-tomcat-virtual:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_TOMCAT_VIRTUAL:-skip}"]
-    image: spring-native-tomcat-virtual:${SPRING_BOOT_VERSION}_latest
+    image: spring-native-tomcat-virtual:4.1.2-java25
     build:
       context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-native-tomcat-virtual:${SPRING_BOOT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spring-native-tomcat-virtual:4.1.2-java25
         PROFILE: tomcat
         VIRTUAL_ENABLED: true
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
@@ -548,12 +549,12 @@ services:
 
   spring-native-netty:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_NETTY:-skip}"]
-    image: spring-native-netty:${SPRING_BOOT_VERSION}_latest
+    image: spring-native-netty:4.1.2-java25
     build:
       context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-native-netty:${SPRING_BOOT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spring-native-netty:4.1.2-java25
         PROFILE: netty
         VIRTUAL_ENABLED: false
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
@@ -597,12 +598,12 @@ services:
 
   quarkus-jvm:
     profiles: ["${DOCKER_PROF_QUARKUS_JVM:-skip}"]
-    image: quarkus-jvm:${QUARKUS_VERSION}_latest
+    image: quarkus-jvm:3.40.1.1-java25
     build:
       context: ../services/java
       dockerfile: quarkus/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: quarkus-jvm:${QUARKUS_VERSION}_latest
+        BUILDKIT_BUILD_NAME: quarkus-jvm:3.40.1.1-java25
         QUARKUS_VERSION: ${QUARKUS_VERSION}
     container_name: quarkus-jvm
     ports:
@@ -672,12 +673,12 @@ services:
 
   quarkus-native:
     profiles: ["${DOCKER_PROF_QUARKUS_NATIVE:-skip}"]
-    image: quarkus-native:${QUARKUS_VERSION}_latest
+    image: quarkus-native:3.40.1.1-java25
     build:
       context: ../services/java
       dockerfile: quarkus/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: quarkus-native:${QUARKUS_VERSION}_latest
+        BUILDKIT_BUILD_NAME: quarkus-native:3.40.1.1-java25
         QUARKUS_VERSION: ${QUARKUS_VERSION}
     container_name: quarkus-native
     ports:
@@ -711,12 +712,12 @@ services:
 
   micronaut-jvm:
     profiles: ["${DOCKER_PROF_MICRONAUT_JVM:-skip}"]
-    image: micronaut-jvm:${MICRONAUT_VERSION}_latest
+    image: micronaut-jvm:5.2.22-java25
     build:
       context: ../services/java
       dockerfile: micronaut/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: micronaut-jvm:${MICRONAUT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: micronaut-jvm:5.2.22-java25
         MICRONAUT_VERSION: ${MICRONAUT_VERSION}
     container_name: micronaut-jvm
     ports:
@@ -771,12 +772,12 @@ services:
 
   micronaut-native:
     profiles: ["${DOCKER_PROF_MICRONAUT_NATIVE:-skip}"]
-    image: micronaut-native:${MICRONAUT_VERSION}_latest
+    image: micronaut-native:5.2.22-java25
     build:
       context: ../services/java
       dockerfile: micronaut/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: micronaut-native:${MICRONAUT_VERSION}_latest
+        BUILDKIT_BUILD_NAME: micronaut-native:5.2.22-java25
         MICRONAUT_VERSION: ${MICRONAUT_VERSION}
     container_name: micronaut-native
     ports:
@@ -836,12 +837,12 @@ services:
 
   helidon-se-jvm:
     profiles: ["${DOCKER_PROF_HELIDON_SE_JVM:-skip}"]
-    image: helidon-se-jvm:${HELIDON_VERSION}_latest
+    image: helidon-se-jvm:4.5.6-java25
     build:
       context: ../services/java
       dockerfile: helidon/se/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: helidon-se-jvm:${HELIDON_VERSION}_latest
+        BUILDKIT_BUILD_NAME: helidon-se-jvm:4.5.6-java25
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-se-jvm
     ports:
@@ -904,12 +905,12 @@ services:
 
   helidon-se-native:
     profiles: ["${DOCKER_PROF_HELIDON_SE_NATIVE:-skip}"]
-    image: helidon-se-native:${HELIDON_VERSION}_latest
+    image: helidon-se-native:4.5.6-java25
     build:
       context: ../services/java
       dockerfile: helidon/se/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: helidon-se-native:${HELIDON_VERSION}_latest
+        BUILDKIT_BUILD_NAME: helidon-se-native:4.5.6-java25
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-se-native
     ports:
@@ -950,12 +951,12 @@ services:
 
   helidon-mp-jvm:
     profiles: ["${DOCKER_PROF_HELIDON_MP_JVM:-skip}"]
-    image: helidon-mp-jvm:${HELIDON_VERSION}_latest
+    image: helidon-mp-jvm:4.5.6-java25
     build:
       context: ../services/java
       dockerfile: helidon/mp/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: helidon-mp-jvm:${HELIDON_VERSION}_latest
+        BUILDKIT_BUILD_NAME: helidon-mp-jvm:4.5.6-java25
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-mp-jvm
     ports:
@@ -1005,12 +1006,12 @@ services:
 
   helidon-mp-native:
     profiles: ["${DOCKER_PROF_HELIDON_MP_NATIVE:-skip}"]
-    image: helidon-mp-native:${HELIDON_VERSION}_latest
+    image: helidon-mp-native:4.5.6-java25
     build:
       context: ../services/java
       dockerfile: helidon/mp/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: helidon-mp-native:${HELIDON_VERSION}_latest
+        BUILDKIT_BUILD_NAME: helidon-mp-native:4.5.6-java25
         HELIDON_VERSION: ${HELIDON_VERSION}
     container_name: helidon-mp-native
     ports:
@@ -1051,12 +1052,12 @@ services:
 
   spark-jvm-platform:
     profiles: ["${DOCKER_PROF_SPARK_JVM_PLATFORM:-skip}"]
-    image: spark-jvm-platform:${SPARK_VERSION}_latest
+    image: spark-jvm-platform:3.0.5-java25
     build:
       context: ../services/java
       dockerfile: spark/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spark-jvm:${SPARK_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spark-jvm:3.0.5-java25
         SPARK_VERSION: ${SPARK_VERSION}
     container_name: spark-jvm-platform
     ports:
@@ -1121,12 +1122,12 @@ services:
 
   spark-jvm-virtual:
     profiles: ["${DOCKER_PROF_SPARK_JVM_VIRTUAL:-skip}"]
-    image: spark-jvm-virtual:${SPARK_VERSION}_latest
+    image: spark-jvm-virtual:3.0.5-java25
     build:
       context: ../services/java
       dockerfile: spark/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spark-jvm:${SPARK_VERSION}_latest
+        BUILDKIT_BUILD_NAME: spark-jvm:3.0.5-java25
         SPARK_VERSION: ${SPARK_VERSION}
     container_name: spark-jvm-virtual
     ports:
@@ -1192,12 +1193,12 @@ services:
 
   javalin-jvm-platform:
     profiles: ["${DOCKER_PROF_JAVALIN_JVM_PLATFORM:-skip}"]
-    image: javalin-jvm-platform:${JAVALIN_VERSION}_latest
+    image: javalin-jvm-platform:7.2.4-java25
     build:
       context: ../services/java
       dockerfile: javalin/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: javalin-jvm:${JAVALIN_VERSION}_latest
+        BUILDKIT_BUILD_NAME: javalin-jvm:7.2.4-java25
         JAVALIN_VERSION: ${JAVALIN_VERSION}
     container_name: javalin-jvm-platform
     ports:
@@ -1262,12 +1263,12 @@ services:
 
   javalin-jvm-virtual:
     profiles: ["${DOCKER_PROF_JAVALIN_JVM_VIRTUAL:-skip}"]
-    image: javalin-jvm-virtual:${JAVALIN_VERSION}_latest
+    image: javalin-jvm-virtual:7.2.4-java25
     build:
       context: ../services/java
       dockerfile: javalin/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: javalin-jvm:${JAVALIN_VERSION}_latest
+        BUILDKIT_BUILD_NAME: javalin-jvm:7.2.4-java25
         JAVALIN_VERSION: ${JAVALIN_VERSION}
     container_name: javalin-jvm-virtual
     ports:
@@ -1332,12 +1333,12 @@ services:
 
   dropwizard-jvm-platform:
     profiles: ["${DOCKER_PROF_DROPWIZARD_JVM_PLATFORM:-skip}"]
-    image: dropwizard-jvm-platform:${DROPWIZARD_VERSION}_latest
+    image: dropwizard-jvm-platform:5.0.2-java25
     build:
       context: ../services/java
       dockerfile: dropwizard/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: dropwizard-jvm:${DROPWIZARD_VERSION}_latest
+        BUILDKIT_BUILD_NAME: dropwizard-jvm:5.0.2-java25
         DROPWIZARD_VERSION: ${DROPWIZARD_VERSION}
     container_name: dropwizard-jvm-platform
     ports:
@@ -1400,12 +1401,12 @@ services:
 
   dropwizard-jvm-virtual:
     profiles: ["${DOCKER_PROF_DROPWIZARD_JVM_VIRTUAL:-skip}"]
-    image: dropwizard-jvm-virtual:${DROPWIZARD_VERSION}_latest
+    image: dropwizard-jvm-virtual:5.0.2-java25
     build:
       context: ../services/java
       dockerfile: dropwizard/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: dropwizard-jvm:${DROPWIZARD_VERSION}_latest
+        BUILDKIT_BUILD_NAME: dropwizard-jvm:5.0.2-java25
         DROPWIZARD_VERSION: ${DROPWIZARD_VERSION}
     container_name: dropwizard-jvm-virtual
     ports:
@@ -1468,12 +1469,12 @@ services:
 
   vertx-jvm:
     profiles: ["${DOCKER_PROF_VERTX_JVM:-skip}"]
-    image: vertx-jvm:${VERTX_VERSION}_latest
+    image: vertx-jvm:5.2.3-java25
     build:
       context: ../services/java
       dockerfile: vertx/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: vertx-jvm:${VERTX_VERSION}_latest
+        BUILDKIT_BUILD_NAME: vertx-jvm:5.2.3-java25
         VERTX_VERSION: ${VERTX_VERSION}
     container_name: vertx-jvm
     ports:
@@ -1530,12 +1531,12 @@ services:
 
   pekko-jvm:
     profiles: ["${DOCKER_PROF_PEKKO_JVM:-skip}"]
-    image: pekko-jvm:${PEKKO_VERSION}_latest
+    image: pekko-jvm:1.4.2-java25
     build:
       context: ../services/java
       dockerfile: pekko/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: pekko-jvm:${PEKKO_VERSION}_latest
+        BUILDKIT_BUILD_NAME: pekko-jvm:1.4.2-java25
         PEKKO_VERSION: ${PEKKO_VERSION}
         PEKKO_CORE_VERSION: ${PEKKO_CORE_VERSION}
     container_name: pekko-jvm
@@ -1592,12 +1593,12 @@ services:
 
   go:
     profiles: ["${DOCKER_PROF_GO:-skip}"]
-    image: go:${GO_VERSION}_latest
+    image: go:1.27.3
     build:
       context: ../services/go/enhanced
       dockerfile: Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: go:${GO_VERSION}_latest
+        BUILDKIT_BUILD_NAME: go:1.27.3
         GO_VERSION: ${GO_VERSION}
     container_name: go
     ports:
@@ -1642,12 +1643,12 @@ services:
 
   go-simple:
     profiles: ["${DOCKER_PROF_GO_SIMPLE:-skip}"]
-    image: go-simple:${GO_VERSION}_latest
+    image: go-simple:1.27.3
     build:
       context: ../services/go/simple
       dockerfile: Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: go-simple:${GO_VERSION}_latest
+        BUILDKIT_BUILD_NAME: go-simple:1.27.3
         GO_VERSION: ${GO_VERSION}
     container_name: go-simple
     ports:
@@ -1664,12 +1665,12 @@ services:
 
   django-platform:
     profiles: ["${DOCKER_PROF_DJANGO_PLATFORM:-skip}"]
-    image: django-platform:${DJANGO_VERSION}_latest
+    image: django-platform:6.1.3-python3.13
     build:
       context: ../services/python/django
       dockerfile: gunicorn/WSGI/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: django-platform:${DJANGO_VERSION}_latest
+        BUILDKIT_BUILD_NAME: django-platform:6.1.3-python3.13
         PYTHON_VERSION: ${PYTHON_VERSION}
     container_name: django-platform
     ports:
@@ -1722,12 +1723,12 @@ services:
 
   django-reactive:
     profiles: ["${DOCKER_PROF_DJANGO_REACTIVE:-skip}"]
-    image: django-reactive:${DJANGO_VERSION}_latest
+    image: django-reactive:6.1.3-python3.13
     build:
       context: ../services/python/django
       dockerfile: gunicorn/ASGI/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: django-reactive:${DJANGO_VERSION}_latest
+        BUILDKIT_BUILD_NAME: django-reactive:6.1.3-python3.13
         PYTHON_VERSION: ${PYTHON_VERSION}
     container_name: django-reactive
     ports:

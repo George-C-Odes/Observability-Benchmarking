@@ -15,13 +15,13 @@ A high-performance REST service implementation built with Quarkus 3.40.1.1 runni
 
 ### Framework & Runtime
 - **Framework**: Quarkus 3.40.1.1
-- **Java Version**: Eclipse Temurin 25.0.4
+- **Java Version**: Eclipse Temurin 25.0.5.0.3
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
 ### Docker
 
-**Image**: `quarkus-jvm:3.40.1.1_latest`
+**Image**: `quarkus-jvm:3.40.1.1-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -325,9 +325,9 @@ mvn clean package -DskipTests
 ```powershell
 docker buildx build `
   -f services/java/quarkus/jvm/Dockerfile `
-  -t quarkus-jvm:3.40.1.1_latest `
+  -t quarkus-jvm:3.40.1.1-java25 `
   --build-arg QUARKUS_VERSION=3.40.1.1 `
-  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.40.1.1_latest `
+  --build-arg BUILDKIT_BUILD_NAME=quarkus-jvm:3.40.1.1-java25 `
   --load `
   services/java
 ```

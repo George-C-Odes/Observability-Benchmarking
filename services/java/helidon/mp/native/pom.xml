@@ -11,6 +11,7 @@
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
+        <graalvm.version>25.0.5.0.3</graalvm.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <helidon.version>4.5.6</helidon.version>
         <caffeine.version>3.3.1</caffeine.version>
@@ -203,7 +204,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
-            <version>25.0.5</version>
+            <version>${graalvm.version}</version>
             <scope>provided</scope>
         </dependency>
 

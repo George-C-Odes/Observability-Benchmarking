@@ -10,14 +10,14 @@ import { temporaryDirectory } from './test-helpers.mjs';
 
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
-  assert.deepEqual([...frameworkVersionKeys].sort(), Object.keys(variables).filter((key) => key.endsWith('_VERSION')).sort());
-  assert.equal(new Set(frameworkVersionKeys).size, 13);
+  assert.deepEqual([...frameworkVersionKeys].sort(), Object.keys(variables).filter((key) => key.endsWith('_VERSION') && !key.startsWith('JAVA_')).sort());
+  assert.equal(new Set(frameworkVersionKeys).size, 15);
 });
 
 test('Pekko build wiring forwards independent HTTP and Core versions to Maven', () => {
   const compose = readFileSync(resolveRepoPath('compose/docker-compose.yml'), 'utf8');
   const service = compose.slice(compose.indexOf('\n  pekko-jvm:'), compose.indexOf('\n  go:'));
-  assert.match(service, /image: pekko-jvm:\$\{PEKKO_VERSION}_latest/);
+  assert.match(service, /image: pekko-jvm:[\d.]+-java\d+/);
   const dockerfile = readFileSync(resolveRepoPath('services/java/pekko/jvm/Dockerfile'), 'utf8');
   for (const [key, property] of [['PEKKO_VERSION', 'pekko.version'], ['PEKKO_CORE_VERSION', 'pekko.core.version']]) {
     assert.ok(service.includes(`${key}: \${${key}}`), key);
@@ -159,10 +159,10 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const scripts = [
     'sync-framework-versions.mjs', 'sync-django-versions.mjs', 'sync-java-pom-versions.mjs',
     'sync-dockerfile-versions.mjs', 'sync-go-mod-versions.mjs', 'sync-build-img-runs.mjs',
-    'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json',
+    'image-tags.mjs', 'sync-image-tags.mjs', 'sync-node-versions.mjs', 'sync-java-runtime-versions.mjs', 'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json',
   ];
   const files = [...new Set([
-    'compose/.env', ...generatedFrameworkPaths(), ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json'),
+    'compose/.env', 'utils/nextjs-dash/package.json', ...generatedFrameworkPaths(), ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json'),
     ...scripts.map((file) => `scripts/${file}`),
   ])];
   for (const file of files) {
@@ -172,10 +172,14 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   }
   const envPath = path.join(workspace, 'compose/.env');
   const source = readFileSync(envPath, 'utf8')
+    .replace(/^JAVA_MAJOR_VERSION:.*$/m, 'JAVA_MAJOR_VERSION: 26')
+    .replace(/^JAVA_MINOR_PATCH_VERSION:.*$/m, 'JAVA_MINOR_PATCH_VERSION: 1.2.3.4')
     .replace(/^QUARKUS_VERSION:.*$/m, 'QUARKUS_VERSION: 9.0.1')
     .replace(/^VERTX_VERSION:.*$/m, 'VERTX_VERSION: 9.0.2')
     .replace(/^PEKKO_VERSION:.*$/m, 'PEKKO_VERSION: 9.0.3')
     .replace(/^PEKKO_CORE_VERSION:.*$/m, 'PEKKO_CORE_VERSION: 9.0.4')
+    .replace(/^NODE_MAJOR_VERSION:.*$/m, 'NODE_MAJOR_VERSION: 28')
+    .replace(/^NODE_MINOR_PATCH_VERSION:.*$/m, 'NODE_MINOR_PATCH_VERSION: 1.2')
     .replace(/^GO_VERSION:.*$/m, 'GO_VERSION: 1.99.0')
     .replace(/^PYTHON_VERSION:.*$/m, 'PYTHON_VERSION: 3.14.99');
   writeFileSync(envPath, source);
@@ -207,7 +211,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.match(pekkoDockerfile, /ARG PEKKO_VERSION=9\.0\.3/);
   assert.match(pekkoDockerfile, /ARG PEKKO_CORE_VERSION=9\.0\.4/);
   const pekkoBuild = readFileSync(path.join(workspace, '.run/[build-img] Pekko JVM.run.xml'), 'utf8');
-  assert.match(pekkoBuild, /name="imageTag" value="pekko-jvm:9\.0\.3_latest"/);
+  assert.match(pekkoBuild, /name="imageTag" value="pekko-jvm:9\.0\.3-java26"/);
   assert.match(pekkoBuild, /name="name" value="PEKKO_CORE_VERSION"\s*\/>\s*<option name="value" value="9\.0\.4"/);
   for (const file of ['README.md', 'docs/benchmarking.md', 'docs/tools-technologies.md', 'services/java/pekko/jvm/README.md']) {
     const content = readFileSync(path.join(workspace, file), 'utf8');
@@ -215,6 +219,22 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     assert.match(content, /Pekko Core 9\.0\.4/, file);
     assert.doesNotMatch(content, /\{\{PEKKO(?:_CORE)?_VERSION}}/, file);
   }
+  for (const file of ['services/java/spring/native/netty/pom.xml', 'utils/orchestrator/pom.xml']) {
+    assert.match(readFileSync(path.join(workspace, file), 'utf8'), /<maven.compiler.release>26<\/maven.compiler.release>/);
+  }
+  const nativeDocker = readFileSync(path.join(workspace, 'services/java/quarkus/native/Dockerfile'), 'utf8');
+  assert.match(nativeDocker, /^ARG JAVA_RELEASE=26$/m);
+  assert.match(nativeDocker, /^ARG JAVA_MINOR_RELEASE=\.1\.2\.3\.4$/m);
+  assert.match(readFileSync(path.join(workspace, 'README.md'), 'utf8'), /Java-26\.1\.2\.3\.4/);
+  assert.match(readFileSync(path.join(workspace, 'docs/index.html'), 'utf8'), /native-image:26\.1\.2\.3\.4-ol9/);
+  assert.match(readFileSync(path.join(workspace, '.github/workflows/codeql.yml'), 'utf8'), /java-version: '26'/);
+  assert.match(readFileSync(path.join(workspace, 'qodana.yaml'), 'utf8'), /projectJDK: "26"/);
+  assert.match(readFileSync(path.join(workspace, '.idea/misc.xml'), 'utf8'), /languageLevel="JDK_26"/);
+  assert.match(readFileSync(path.join(workspace, 'services/java/helidon/mp/native/pom.xml'), 'utf8'), /<graalvm.version>26\.1\.2\.3\.4<\/graalvm.version>/);
+  assert.match(readFileSync(path.join(workspace, 'utils/nextjs-dash/Dockerfile'), 'utf8'), /node:28\.1\.2-alpine/);
+  assert.match(readFileSync(path.join(workspace, '.github/actions/setup-nextjs/action.yml'), 'utf8'), /default: '28\.1\.2'/);
+  assert.match(readFileSync(path.join(workspace, 'compose/utils.yml'), 'utf8'), /nextjs-dash:16\.4\.5-node28/);
+  assert.match(readFileSync(path.join(workspace, 'compose/docker-compose.yml'), 'utf8'), /django-platform:6\.1\.3-python3\.14/);
   const generated = snapshot();
   assert.equal(run('--check').status, 0);
   const repeat = run();

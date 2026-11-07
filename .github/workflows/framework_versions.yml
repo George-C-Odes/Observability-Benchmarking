@@ -21,8 +21,6 @@ jobs:
 
       - name: Set up Node
         uses: ./.github/actions/setup-node
-        with:
-          node-version: '26'
 
       - name: Set up Python
         uses: ./.github/actions/setup-python

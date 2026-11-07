@@ -2,7 +2,7 @@
 
 # Javalin JVM Service
 
-A lightweight, high-throughput REST service implemented with Javalin {{JAVALIN_VERSION}} on **Java 25**.
+A lightweight, high-throughput REST service implemented with Javalin {{JAVALIN_VERSION}} on **Java {{JAVA_MAJOR_VERSION}}**.
 
 This module mirrors the `/hello/*` contracts used by the existing Spring JVM and Spark JVM services.
 
@@ -48,11 +48,11 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 
 ## Docker
 
-**Image**: `javalin-jvm:latest`
+**Image**: `{{JAVALIN_JVM_IMAGE}}`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
@@ -64,9 +64,9 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm:latest `
+  -t {{JAVALIN_JVM_IMAGE}} `
   --build-arg JAVALIN_VERSION={{JAVALIN_VERSION}} `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME={{JAVALIN_JVM_IMAGE}} `
   --load `
   services/java
 ```

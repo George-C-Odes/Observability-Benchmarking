@@ -3,7 +3,7 @@
 # Spring Boot Netty JVM Service
 
 ## Overview
-A reactive REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} running on Netty web server (via Spring WebFlux) with the Java Virtual Machine (JVM 25). This service uses reactive programming with Project Reactor for non-blocking, event-driven request handling.
+A reactive REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} running on Netty web server (via Spring WebFlux) with the Java Virtual Machine (JVM {{JAVA_MAJOR_VERSION}}). This service uses reactive programming with Project Reactor for non-blocking, event-driven request handling.
 
 ## Purpose
 - Benchmark Spring Boot with reactive WebFlux stack on Netty
@@ -16,7 +16,7 @@ A reactive REST service implementation built with Spring Boot {{SPRING_BOOT_VERS
 ### Framework & Runtime
 - **Framework**: Spring Boot {{SPRING_BOOT_VERSION}} + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
-- **Java Version**: Eclipse Temurin 25.0.4
+- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
 - **JVM GC**: G1 Garbage Collector
 - **Concurrency Model**: Reactive (Project Reactor)
 
@@ -246,7 +246,7 @@ Tracks request count for the reactive endpoint.
 ## Building and Running
 
 ### Prerequisites
-- Java 25 (Eclipse Temurin recommended)
+- Java {{JAVA_MAJOR_VERSION}} (Eclipse Temurin recommended)
 - Maven 3.9+
 - Docker (for containerized deployment)
 
@@ -265,7 +265,7 @@ cd services/java/spring/jvm/netty
 ### Docker Build
 ```bash
 cd services/java/spring/jvm
-docker build --build-arg PROFILE=netty -t spring-jvm-netty:latest .
+docker build --build-arg PROFILE=netty -t {{SPRING_JVM_NETTY_IMAGE}} .
 ```
 
 ### Docker Compose

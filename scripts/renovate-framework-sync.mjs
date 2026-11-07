@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { resolveRepoPath } from './render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths } from './sync-framework-versions.mjs';
 
+import { readNodeVersion } from './sync-node-versions.mjs';
+
 const envFile = 'compose/.env';
 
 function matchesEntireString(value, pattern) {
@@ -86,6 +88,7 @@ export function validateVersionChange(base, head) {
       versions[key] = matches[0][3];
       masked = masked.replace(pattern, (_match, newline, prefix) => `${newline}${prefix}<version>`);
     }
+    readNodeVersion(versions);
     return { versions, masked };
   };
   const original = read(base);

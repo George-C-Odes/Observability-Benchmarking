@@ -28,7 +28,7 @@ test('Renovate extracts each active env pin once with the correct registry coord
     PYTHON_VERSION: ['github-tags', 'python/cpython'],
     DJANGO_VERSION: ['pypi', 'django'],
   };
-  assert.equal(managers.length, 13);
+  assert.equal(managers.length, 14);
   const variables = parseColonEnv(env);
   for (const [key, [datasource, name]] of Object.entries(expected)) {
     const manager = managers.find(({ depNameTemplate }) => depNameTemplate === name);
@@ -62,7 +62,7 @@ test('only env-driven downstream versions are disabled; existing safeguards rema
   assert.ok(!maven.matchPackageNames.some((pattern) => pattern.includes('micronaut-micrometer')));
   const go = rules.find(({ matchManagers }) => matchManagers.includes('gomod'));
   assert.deepEqual(go.matchDepTypes, ['golang']);
-  const docker = rules.find(({ matchManagers }) => matchManagers.includes('dockerfile'));
+  const docker = rules.find(({ matchPackageNames }) => matchPackageNames?.includes('golang'));
   assert.ok(!docker.matchUpdateTypes.includes('digest') && !docker.matchUpdateTypes.includes('pinDigest'));
   const source = config.packageRules.find(({ matchFileNames }) => matchFileNames?.includes('compose/.env'));
   assert.equal(source.rebaseWhen, 'behind-base-branch');
@@ -75,7 +75,7 @@ test('only env-driven downstream versions are disabled; existing safeguards rema
 test('release-age gates preserve registry policies and scope GitHub tags to CPython', () => {
   const ageRules = config.packageRules.filter(({ minimumReleaseAge }) => minimumReleaseAge !== undefined);
   const registry = ageRules.find(({ matchDatasources }) => matchDatasources?.includes('npm'));
-  assert.deepEqual(registry.matchDatasources, ['npm', 'pypi', 'maven', 'go', 'golang-version', 'rubygems']);
+  assert.deepEqual(registry.matchDatasources, ['npm', 'pypi', 'maven', 'go', 'golang-version', 'node-version', 'rubygems']);
   assert.equal(registry.minimumReleaseAge, '3 days');
   assert.equal(registry.minimumReleaseAgeBehaviour, 'timestamp-required');
   const githubTags = ageRules.filter(({ matchDatasources }) => matchDatasources?.includes('github-tags'));

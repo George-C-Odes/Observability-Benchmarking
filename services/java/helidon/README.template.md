@@ -13,7 +13,7 @@ The four services use **Helidon {{HELIDON_VERSION}}**. SE uses functional routin
 | [MP JVM](mp/jvm/README.md)       | `helidon-mp-jvm`                         | `8092`    | `/health/live`    |
 | [MP native](mp/native/README.md) | `helidon-mp-native`                      | `8093`    | `/health/live`    |
 
-Containers listen on port `8080`. Image tags follow `<service>:{{HELIDON_VERSION}}_latest`. The module READMEs describe only their implementation and runtime differences; the shared contracts and commands live here.
+Containers listen on port `8080`. Image tags follow `<service>:{{HELIDON_VERSION}}-java{{JAVA_MAJOR_VERSION}}`. The module READMEs describe only their implementation and runtime differences; the shared contracts and commands live here.
 
 ## Version source and updates
 
