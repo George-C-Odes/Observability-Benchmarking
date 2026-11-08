@@ -50,6 +50,34 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Install Qodana CLI
+        timeout-minutes: 10
+        shell: bash
+        env:
+          # Keep these aligned with common/cli.json in the pinned qodana-action.
+          QODANA_CLI_VERSION: '2026.2.2'
+          QODANA_CLI_SHA256: 'b1fc01fb5825f4c6382f9cedcfe97d4a8eeaaddc9f5384a3b5870ca63e231c6f'
+        run: |
+          download_qodana() {
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-delay 10 --retry-max-time 120 \
+              --connect-timeout 15 --max-time 120 \
+              --proto '=https' --proto-redir '=https' \
+              --header 'Accept: application/octet-stream' \
+              --output "$RUNNER_TEMP/qodana-cli.tar.gz" "$1"
+          }
+          if ! download_qodana "https://github.com/JetBrains/qodana-cli/releases/download/v${QODANA_CLI_VERSION}/qodana_linux_x86_64.tar.gz"; then
+            echo '::warning::Qodana CLI release download failed; trying the public release-asset API.'
+            # Fixed asset for v2026.2.2 linux_x86_64; update together with the pins.
+            # No credentials are sent; HTTPS redirects reach GitHub's asset CDN.
+            download_qodana 'https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/585558698'
+          fi
+          printf '%s  %s\n' "$QODANA_CLI_SHA256" "$RUNNER_TEMP/qodana-cli.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/qodana-cli"
+          tar -xzf "$RUNNER_TEMP/qodana-cli.tar.gz" -C "$RUNNER_TEMP/qodana-cli" qodana
+          chmod +x "$RUNNER_TEMP/qodana-cli/qodana"
+          echo "$RUNNER_TEMP/qodana-cli" >> "$GITHUB_PATH"
+
       - name: Prepare Qodana arguments
         id: qodana_args
         shell: bash
@@ -78,6 +106,7 @@ jobs:
           QODANA_ONLY_DIRECTORY: ${{ matrix.source_dir }}
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
+          use-installed-cli: true
           pr-mode: false
           use-caches: true
           # Prefer the default branch cache so PRs can reuse warm Qodana/Maven
