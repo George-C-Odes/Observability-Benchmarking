@@ -166,6 +166,10 @@ test('Go quality matrix preserves independent checks and Pages artifact contract
   const pages = readYaml(join(githubDir, 'workflows', 'pages.yml'));
   for (const entry of entries) assert.ok(pages.includes(`name: ${entry[4]}\n`));
   assert.equal((source.match(/uses: golangci\/golangci-lint-action@/g) ?? []).length, 1);
+  assert.match(source, /install-mode: none/);
+  assert.match(source, /install-only: true/);
+  assert.match(source, /node --test scripts\/golangci-lint-asset.test.mjs/);
+  assert.equal(source.split("- 'scripts/golangci-lint-asset*.mjs'").length - 1, 2);
 });
 
 test('coverage helper consumers trigger on helper changes and CI runs its unit tests', () => {

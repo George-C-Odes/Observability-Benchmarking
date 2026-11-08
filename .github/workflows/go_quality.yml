@@ -13,6 +13,7 @@ on:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/golangci-lint-asset*.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
       - '.github/actions/setup-go/**'
@@ -25,6 +26,7 @@ on:
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/golangci-lint-asset*.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
       - '.github/actions/setup-go/**'
@@ -71,18 +73,47 @@ jobs:
             ${{ matrix.module_dir }}/go.sum
             .github/go-tools/go.sum
 
+      - name: Test golangci-lint release lookup
+        working-directory: .
+        run: node --test scripts/golangci-lint-asset.test.mjs
+
+      - name: Download golangci-lint
+        timeout-minutes: 6
+        working-directory: .
+        shell: bash
+        env:
+          GOLANGCI_LINT_VERSION: '2.15.0'
+          GOLANGCI_LINT_SHA256: '9b7fe6a6bf6334b98decf8d86b11415ea7889afdabdd1959fdce23af2a9ebcea'
+        run: |
+          download_lint() {
+            curl --fail --silent --show-error --location \
+              --retry 2 --retry-delay 10 --retry-max-time 60 \
+              --connect-timeout 15 --max-time 60 \
+              --proto '=https' --proto-redir '=https' \
+              --header 'Accept: application/octet-stream' \
+              --output "$RUNNER_TEMP/golangci-lint.tar.gz" "$1"
+          }
+          archive="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64"
+          if ! download_lint "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${archive}.tar.gz"; then
+            echo '::warning::golangci-lint release download failed; trying the public release-asset API.'
+            asset_url="$(node scripts/golangci-lint-asset.mjs "$GOLANGCI_LINT_VERSION")"
+            download_lint "$asset_url"
+          fi
+          printf '%s  %s\n' "$GOLANGCI_LINT_SHA256" "$RUNNER_TEMP/golangci-lint.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/golangci-lint"
+          tar -xzf "$RUNNER_TEMP/golangci-lint.tar.gz" -C "$RUNNER_TEMP/golangci-lint" \
+            --strip-components=1 "$archive/golangci-lint"
+          chmod +x "$RUNNER_TEMP/golangci-lint/golangci-lint"
+          echo "$RUNNER_TEMP/golangci-lint" >> "$GITHUB_PATH"
+
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.15.0
+          install-mode: none
+          install-only: true
           working-directory: ${{ matrix.module_dir }}
-          # The action runs `golangci-lint run` by default after install.
-          # We only want to install the binary here — the actual lint run
-          # with JSON output happens in a later step so we can capture the
-          # report.  Passing --help makes the default invocation exit 0
-          # without linting (the documented workaround; v9 has no
-          # skip-run / install-only option).
-          args: --help
+          # Keep the action's lint cache; use the verified binary on PATH.
+          # The later lint step captures JSON output for the Pages report.
 
       - name: Print tool versions
         id: versions
