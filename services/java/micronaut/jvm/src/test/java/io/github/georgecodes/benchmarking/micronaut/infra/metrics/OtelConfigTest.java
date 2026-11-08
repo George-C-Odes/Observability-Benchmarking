@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +71,7 @@ class OtelConfigTest {
                     platform.register(registry);
                     netty.register(registry);
                 }
-                reader.forceFlush().join(10, java.util.concurrent.TimeUnit.SECONDS);
+                reader.forceFlush().join(10, TimeUnit.SECONDS);
                 var queues = exported.get().stream()
                     .filter(metric -> metric.getName().equals("executor.queued"))
                     .toList();
