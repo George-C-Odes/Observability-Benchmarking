@@ -320,7 +320,7 @@
       "matchPackageNames": [
         "eclipse-temurin",
         "amazoncorretto",
-        "container-registry.oracle.com/graalvm/native-image",
+        "container-registry-frankfurt.oracle.com/graalvm/native-image",
         "ghcr.io/graalvm/native-image-community",
         "gcr.io/distroless/java*"
       ],
