@@ -1,9 +1,5 @@
 name: Snyk Security
 
-env:
-  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 on:
   push:
     branches: [ "main" ]
@@ -83,8 +79,6 @@ jobs:
       - name: Set up Node.js
         if: env.SNYK_TOKEN != ''
         uses: ./.github/actions/setup-node
-        with:
-          node-version: '26.13.0'
 
       - name: Test Snyk scan runner
         if: env.SNYK_TOKEN != ''

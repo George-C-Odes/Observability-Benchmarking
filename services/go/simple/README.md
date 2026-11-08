@@ -58,8 +58,8 @@ go run ./cmd/server
 
 ```bash
 cd services/go/simple
-docker build -t go-simple:latest .
-docker run --rm -p 8080:8080 -e OTEL_EXPORTER_OTLP_ENDPOINT=alloy:4317 go-simple:latest
+docker build -t go-simple:1.27.3 .
+docker run --rm -p 8080:8080 -e OTEL_EXPORTER_OTLP_ENDPOINT=alloy:4317 go-simple:1.27.3
 ```
 
 ## Local quality checks

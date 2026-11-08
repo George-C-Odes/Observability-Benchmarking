@@ -159,7 +159,7 @@ Checkstyle-only setup.
 Build the orchestrator image from the repository root:
 
 ```bash
-docker buildx build --load -t orchestrator:latest -f utils/orchestrator/Dockerfile utils/orchestrator
+docker buildx build --load -t orchestrator:3.40.1.1-java25 -f utils/orchestrator/Dockerfile utils/orchestrator
 ```
 
 Start the orchestrator container (from the repository root):

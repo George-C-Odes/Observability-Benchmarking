@@ -56,7 +56,7 @@ for (const { script, description, files } of commands) {
     const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
     const envPath = path.join(directory, '.env');
     writeFileSync(envPath, Object.keys(variables).filter((key) => key.endsWith('_VERSION'))
-      .map((key) => `${key}: ${key === 'GO_VERSION' ? '1.99.0' : '91.3.5'}`).join('\n'));
+      .map((key) => `${key}: ${key.endsWith('_MAJOR_VERSION') ? '91' : key.endsWith('_MINOR_PATCH_VERSION') ? '3.5' : key === 'GO_VERSION' ? '1.99.0' : '91.3.5'}`).join('\n'));
     const readFiles = () => files.map((file) => readFileSync(resolveRepoPath(file), 'utf8'));
     const originals = readFiles();
     for (const args of [['--env', envPath, '--check'], ['--check', '--env', envPath]]) {

@@ -1,6 +1,10 @@
+<!-- render-readmes: preserve-tables -->
+
 # Observability Benchmarking Dashboard
 
 A Next.js-based dashboard UI for orchestrating and managing the Observability Benchmarking environment.
+
+Next.js versions come from `package.json`. Renovate PRs labeled `nextjs-version` relay the image tags into Compose, IDE build configurations, and generated documentation using trusted base scripts. The relay validates dependency-only manifest changes and the lockfile root without installing PR dependencies. For local dependency upgrades, run `node scripts/sync-nextjs-tags.mjs` from the repository root.
 
 ## Why it exists (the design reasoning)
 
@@ -316,7 +320,7 @@ Access the dashboard at [http://localhost:3001](http://localhost:3001)
 ### Option 2: Build the Docker image manually:
 
 ```bash
-docker buildx build --load -t nextjs-dash:latest -f utils/nextjs-dash/Dockerfile utils\nextjs-dash
+docker buildx build --load -t nextjs-dash:16.4.5-node26 -f utils/nextjs-dash/Dockerfile utils\nextjs-dash
 ```
 
 ### Option 3: Run the container:
@@ -327,7 +331,7 @@ macOS/Linux (bash):
 docker run -p 3001:3001 \
   -v $(pwd)/../compose/.env:/app/compose/.env \
   -v $(pwd)/../.run:/app/.run \
-  nextjs-dash:latest
+  nextjs-dash:16.4.5-node26
 ```
 
 Windows (PowerShell):
@@ -336,7 +340,7 @@ Windows (PowerShell):
 docker run -p 3001:3001 `
   -v "${PWD}\..\compose\.env:/app/compose/.env" `
   -v "${PWD}\..\.run:/app/.run" `
-  nextjs-dash:latest
+  nextjs-dash:16.4.5-node26
 ```
 
 ## Testing

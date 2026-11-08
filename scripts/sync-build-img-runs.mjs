@@ -2,14 +2,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
-import { finishSync, readSyncFile, runSyncCli } from './sync-common.mjs';
+import { formatImageTag, imageDefinitions, loadImageVariables } from './image-tags.mjs';
+import { finishSync, readLiteralVersion, readSyncFile, runSyncCli } from './sync-common.mjs';
 
-// Select the image tag version when build arguments use a different or additional version.
-const imageVersionOverrides = {
-  'django-platform': 'DJANGO_VERSION',
-  'django-reactive': 'DJANGO_VERSION',
-  'pekko-jvm': 'PEKKO_VERSION',
-};
 const versionNotice = '  <!-- Versions: compose/.env; refresh with node scripts/sync-build-img-runs.mjs -->';
 
 function findOption(xml, name) {
@@ -28,25 +23,9 @@ function setOption(xml, name, value) {
   return xml.replace(option, () => option.replace(/\bvalue="[^"]*"/, () => `value="${value}"`));
 }
 
-function readVersion(variables, key) {
-  const value = Object.hasOwn(variables, key) ? variables[key] : '';
-  if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(value) || `${value}_latest`.length > 128) {
-    throw new Error(`Missing or invalid version ${key} in the env file (expected an unquoted Docker tag version)`);
-  }
-  return value;
-}
-
-function replaceTagVersion(tag, version) {
-  const match = tag.match(/^(.+):[^:]*_latest$/);
-  if (!match) throw new Error(`Expected a versioned image tag ending in _latest: ${tag}`);
-  return `${match[1]}:${version}_latest`;
-}
-
-function resolveImageVersionKey(imageTag, versionArgs) {
-  const imageName = imageTag.slice(0, imageTag.lastIndexOf(':'));
-  if (Object.hasOwn(imageVersionOverrides, imageName)) return imageVersionOverrides[imageName];
-  if (versionArgs.length === 1) return versionArgs[0].name;
-  throw new Error(`Ambiguous image version for ${imageName}; add an imageVersionOverrides entry`);
+function replaceImageTag(tag, variables) {
+  const name = tag.slice(0, tag.lastIndexOf(':'));
+  return formatImageTag(name, variables);
 }
 
 export function syncBuildImageXml(xml, variables) {
@@ -60,21 +39,21 @@ export function syncBuildImageXml(xml, variables) {
   const buildArgs = xml.match(/<option\s+name="buildArgs">\s*<list>[\s\S]*?<\/list>\s*<\/option>/)?.[0];
   const args = [...(buildArgs ?? '').matchAll(/<DockerEnvVarImpl>[\s\S]*?<\/DockerEnvVarImpl>/g)]
     .map(([block]) => ({ block, name: findOption(block, 'name').value }));
-  const versionArgs = args.filter(({ name }) => name.endsWith('_VERSION'));
-
-  if (versionArgs.length === 0 && imageTag.endsWith(':latest')) return xml;
-  if (versionArgs.length === 0) throw new Error('Versioned image has no *_VERSION build argument');
-
-  const versionKey = resolveImageVersionKey(imageTag, versionArgs);
-  const imageVersion = readVersion(variables, versionKey);
+  const imageName = imageTag.slice(0, imageTag.lastIndexOf(':'));
+  if (!imageDefinitions.some(({ name }) => name === imageName)) {
+    if (imageName === 'wrk2' && imageTag === 'wrk2:latest') return xml;
+    throw new Error(`Unknown managed image: ${imageName}`);
+  }
+  const values = loadImageVariables(variables);
+  const updatedTag = replaceImageTag(imageTag, values);
   let updatedArgs = buildArgs;
   for (const { block, name } of args) {
     let value;
     if (name.endsWith('_VERSION')) {
-      value = readVersion(variables, name);
+      value = readLiteralVersion(values, name);
     } else if (name === 'BUILDKIT_BUILD_NAME') {
       // Some variants intentionally share a build name, such as spark-jvm.
-      value = replaceTagVersion(findOption(block, 'value').value, imageVersion);
+      value = replaceImageTag(findOption(block, 'value').value, values);
     } else {
       continue;
     }
@@ -82,7 +61,7 @@ export function syncBuildImageXml(xml, variables) {
   }
 
   let updated = xml.replace(buildArgs, () => updatedArgs);
-  updated = setOption(updated, 'imageTag', replaceTagVersion(imageTag, imageVersion));
+  updated = setOption(updated, 'imageTag', updatedTag);
   if (!updated.includes(versionNotice)) {
     const newline = updated.includes('\r\n') ? '\r\n' : '\n';
     updated = updated.replace(/<component\b[^>]*>/, (component) => `${component}${newline}${versionNotice}`);

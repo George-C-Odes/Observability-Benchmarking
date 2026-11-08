@@ -78,9 +78,9 @@ The development server starts on `http://127.0.0.1:8000/hello/reactive`.
 ```powershell
 docker buildx build `
   -f services/python/django/gunicorn/ASGI/Dockerfile `
-  -t django-reactive:{{DJANGO_VERSION}}_latest `
+  -t {{DJANGO_REACTIVE_IMAGE}} `
   --build-arg PYTHON_VERSION={{PYTHON_VERSION}} `
-  --build-arg BUILDKIT_BUILD_NAME=django-reactive:{{DJANGO_VERSION}}_latest `
+  --build-arg BUILDKIT_BUILD_NAME={{DJANGO_REACTIVE_IMAGE}} `
   --load `
   services/python/django
 ```

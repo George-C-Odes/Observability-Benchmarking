@@ -2,7 +2,7 @@
 
 # Spark JVM Service
 
-A lightweight, high-throughput REST service implemented with SparkJava (Zoomba fork) {{SPARK_VERSION}} on **Java 25**.
+A lightweight, high-throughput REST service implemented with SparkJava (Zoomba fork) {{SPARK_VERSION}} on **Java {{JAVA_MAJOR_VERSION}}**.
 
 This module mirrors the `/hello/*` contracts used by the existing Quarkus and Spring JVM services.
 
@@ -60,11 +60,11 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 
 ## Docker
 
-**Image**: `spark-jvm:latest`
+**Image**: `{{SPARK_JVM_IMAGE}}`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless
@@ -76,9 +76,9 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 ```powershell
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm:latest `
+  -t {{SPARK_JVM_IMAGE}} `
   --build-arg SPARK_VERSION={{SPARK_VERSION}} `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME={{SPARK_JVM_IMAGE}} `
   --load `
   services/java
 ```

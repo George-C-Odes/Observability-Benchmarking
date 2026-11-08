@@ -11,7 +11,7 @@ The JVM and native services use **Micronaut {{MICRONAUT_VERSION}}**, Netty, comp
 | [JVM](jvm/README.md)       | `micronaut-jvm`                          | `8088`    | `/health`       |
 | [Native](native/README.md) | `micronaut-native`                       | `8089`    | `/health`       |
 
-Containers listen on port `8080`. Image tags follow `<service>:{{MICRONAUT_VERSION}}_latest`. Module READMEs describe their runtime-specific packaging and troubleshooting; shared behavior and commands live here.
+Containers listen on port `8080`. Image tags follow `<service>:{{MICRONAUT_VERSION}}-java{{JAVA_MAJOR_VERSION}}`. Module READMEs describe their runtime-specific packaging and troubleshooting; shared behavior and commands live here.
 
 ## Version source and updates
 

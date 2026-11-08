@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
-[![Java](https://img.shields.io/badge/Java-25.0.4-ED8B00.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-{{JAVA_MAJOR_VERSION}}-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-{{SPRING_BOOT_VERSION}}-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-{{QUARKUS_VERSION}}-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-{{MICRONAUT_VERSION}}-1A1A2E.svg)](https://micronaut.io/)
@@ -79,12 +79,12 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 
 | Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.4                  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.4                  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | {{JAVA_MAJOR_VERSION}}                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.13.0                 | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | {{NODE_MAJOR_VERSION}}.{{NODE_MINOR_PATCH_VERSION}}                 | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -109,7 +109,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1                   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.3.0                   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 8.0.0                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.9.3                  | Image build and lifecycle management                                 |
@@ -170,7 +170,9 @@ If you’re searching for projects like this, these are the topics it covers:
 
 ### 🚀 REST Service Implementations
 
-#### Java (JDK 25 – Eclipse Temurin)
+The JVM target is Java {{JAVA_MAJOR_VERSION}}; its patch is determined by the pinned builder image (including the orchestrator’s jlink runtime). `JAVA_MINOR_PATCH_VERSION` selects the GraalVM native-image release suffix and does not select a Temurin patch. Refresh JVM builder digests independently when upgrading their JDK patch.
+
+#### Java (JDK {{JAVA_MAJOR_VERSION}} – Eclipse Temurin)
 - **Spring Boot {{SPRING_BOOT_VERSION}} (3.5.16 also supported)**
   - JVM builds
     - Platform threads
@@ -507,8 +509,8 @@ The numbers below are a curated summary of a representative run.
 - **Network**: Docker bridge network
 
 #### Software Versions
-- **Java JDK**: Eclipse Temurin 25.0.4
-- **Java Native**: GraalVM Enterprise 25.0.4-ol9
+- **Java JDK**: Eclipse Temurin {{JAVA_MAJOR_VERSION}}
+- **Java Native**: GraalVM Enterprise {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9
 - **Spring Boot**: {{SPRING_BOOT_VERSION}} (3.5.16 also supported)
 - **Quarkus**: {{QUARKUS_VERSION}}
 - **Micronaut**: {{MICRONAUT_VERSION}}
@@ -531,7 +533,7 @@ However, the environment pulls and builds **third-party container images and dep
 
 In particular:
 
-- Native builds may use the Oracle GraalVM container image `container-registry.oracle.com/graalvm/native-image:25.0.4-ol9`.
+- Native builds may use the Oracle GraalVM container image `container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9`.
 - If you build/run those images, **you are responsible** for reviewing and complying with Oracle’s applicable license terms.
 
 Nothing in this repository’s Apache-2.0 license changes the license terms of third-party dependencies or container base images.

@@ -16,7 +16,7 @@ A REST service implementation built with Spring Boot 4.1.2 running on Apache Tom
 ### Framework & Runtime
 - **Framework**: Spring Boot 4.1.2
 - **Web Server**: Apache Tomcat (embedded)
-- **Java Version**: Eclipse Temurin 25.0.4
+- **Java Version**: Eclipse Temurin 25 (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform OR Virtual (single mode per deployment)
 
@@ -291,7 +291,7 @@ cd services/java/spring/jvm/tomcat
 ### Docker Build
 ```bash
 cd services/java/spring/jvm
-docker build --build-arg PROFILE=tomcat -t spring-jvm-tomcat:latest .
+docker build --build-arg PROFILE=tomcat -t spring-jvm-tomcat:4.1.2-java25 .
 ```
 
 ### Docker Compose
