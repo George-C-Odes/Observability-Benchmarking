@@ -4,8 +4,11 @@ import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
+import { parseColonEnv } from '../render-readmes.mjs';
+
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const workflow = readFileSync(join(root, '.github/workflows/codeql.yml'), 'utf8').replaceAll('\r\n', '\n');
+const { JAVA_MAJOR_VERSION: javaMajor } = parseColonEnv(readFileSync(join(root, 'compose/.env'), 'utf8'));
 
 // Inspect the actual workflow, not a duplicate implementation of its build policy.
 function step(name) {
@@ -41,10 +44,14 @@ test('every matrix language initializes, analyzes and uploads without change-bas
 });
 
 test('Java setup and compilation depend only on the matrix language', () => {
-  for (const name of ['Set up JDK 25', 'Build Java modules']) {
+  assert.match(javaMajor, /^[1-9]\d*$/);
+  const setupName = `Set up JDK ${javaMajor}`;
+  for (const name of [setupName, 'Build Java modules']) {
     assert.match(step(name), /^ {8}if: matrix\.language == 'java-kotlin'\s*$/m);
   }
-  assert.match(step('Set up JDK 25'), /^ {10}cache: maven$/m);
+  const setup = step(setupName);
+  assert.match(setup, new RegExp(`^ {10}java-version: '${javaMajor}'$`, 'm'));
+  assert.match(setup, /^ {10}cache: maven$/m);
 });
 
 test('every language uses a verified local bundle and the wrapper forwards tools', () => {
