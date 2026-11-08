@@ -6,6 +6,14 @@ import { withApiRoute } from '@/lib/routeWrapper';
 import type { ApiRouteContext } from '@/lib/routeWrapper';
 import { getActiveRunId } from '@/lib/scriptRunnerRunState';
 
+async function cancelReader(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<void> {
+  try {
+    await reader.cancel();
+  } catch {
+    // Cancellation is best-effort, including when the upstream stream has failed.
+  }
+}
+
 /**
  * GET /api/orchestrator/events
  * Streams job events from the orchestrator using Server-Sent Events (SSE)
@@ -20,14 +28,11 @@ export const GET = withApiRoute(
     const preflight = searchParams.get('preflight');
     const runId = searchParams.get('runId');
     const requestId = ctx.requestId;
+    const correlationOptions = requestId ? { headers: { 'X-Request-Id': requestId } } : undefined;
 
     try {
       if (!jobId) {
-        return errorJson(
-          400,
-          { error: 'jobId is required' },
-          requestId ? { headers: { 'X-Request-Id': requestId } } : undefined,
-        );
+        return errorJson(400, { error: 'jobId is required' }, correlationOptions);
       }
 
       const activeRunId = getActiveRunId();
@@ -36,7 +41,7 @@ export const GET = withApiRoute(
         return errorJson(
           409,
           { error: 'stale_run', message: 'This SSE stream request is for a stale run.' },
-          requestId ? { headers: { 'X-Request-Id': requestId } } : undefined,
+          correlationOptions,
         );
       }
 
@@ -52,7 +57,7 @@ export const GET = withApiRoute(
           status: 204,
           headers: {
             'Cache-Control': 'no-store',
-            ...(requestId ? { 'X-Request-Id': requestId } : {}),
+            ...correlationOptions?.headers,
           },
         });
       }
@@ -82,7 +87,7 @@ export const GET = withApiRoute(
             jobId,
             details: bodyText,
           },
-          requestId ? { headers: { 'X-Request-Id': requestId } } : undefined,
+          correlationOptions,
         );
       }
 
@@ -119,11 +124,7 @@ export const GET = withApiRoute(
 
           const onAbort = () => {
             serverLogger.debug('SSE client disconnected; canceling upstream reader', { jobId });
-            try {
-              void reader.cancel();
-            } catch {
-              // ignore
-            }
+            void cancelReader(reader);
             safeClose();
           };
 
@@ -154,11 +155,7 @@ export const GET = withApiRoute(
             }
           } finally {
             request.signal.removeEventListener('abort', onAbort);
-            try {
-              void reader.cancel();
-            } catch {
-              // ignore
-            }
+            void cancelReader(reader);
             safeClose();
           }
         },
@@ -173,7 +170,7 @@ export const GET = withApiRoute(
           Expires: '0',
           'X-Accel-Buffering': 'no',
           Connection: 'keep-alive',
-          ...(requestId ? { 'X-Request-Id': requestId } : {}),
+          ...correlationOptions?.headers,
         },
       });
     } catch (error: unknown) {

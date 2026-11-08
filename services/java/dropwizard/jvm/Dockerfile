@@ -96,12 +96,12 @@ RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
     PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/${PYRO_ASSET}"; \
     PYRO_CACHE="/cache/${PYRO_ASSET%.jar}-${OTEL_PYROSCOPE_VERSION}.jar"; \
     if [ ! -f "$PYRO_CACHE" ]; then \
-      curl -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
+      curl --proto '=https' --proto-redir '=https' -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
     fi; \
     cp "$PYRO_CACHE" ./pyroscope-otel-extension.jar; \
     AGENT_CACHE="/cache/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar"; \
     if [ ! -f "$AGENT_CACHE" ]; then \
-      curl -fsSL --retry 5 --retry-all-errors -o "$AGENT_CACHE" "${OTEL_JAVA_AGENT_URL}"; \
+      curl --proto '=https' --proto-redir '=https' -fsSL --retry 5 --retry-all-errors -o "$AGENT_CACHE" "${OTEL_JAVA_AGENT_URL}"; \
     fi; \
     cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
 
