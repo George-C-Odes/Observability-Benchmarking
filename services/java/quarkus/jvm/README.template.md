@@ -15,7 +15,7 @@ A high-performance REST service implementation built with Quarkus {{QUARKUS_VERS
 
 ### Framework & Runtime
 - **Framework**: Quarkus {{QUARKUS_VERSION}}
-- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
+- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}} (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
