@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 
 # --- Stage 1: Build wrk2 ------------------------------------------------------
-FROM alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4 AS builder
+FROM alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS builder
 
 # Toolchain + dependencies for building wrk2
 RUN --mount=type=cache,target=/var/cache/apk \
@@ -50,7 +50,7 @@ RUN --mount=type=cache,target=/wrk2/obj \
     strip wrk
 
 # --- Stage 2: Minimal runtime -------------------------------------------------
-FROM alpine:3.24.4@sha256:93b41ef40b1677fce8fcc64ff4af09daddfacf5040afde618bc46c1e2d1cc7d4 as runtime
+FROM alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf as runtime
 
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add --no-cache \
