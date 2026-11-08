@@ -37,7 +37,7 @@ test('Renovate extracts one complete Node release and rewrites both fields for m
     const expression = new RegExp(manager.matchStrings[0], 'g');
     const matches = [...sample.matchAll(expression)];
     assert.equal(matches.length, 1);
-    assert.equal(render(manager.currentValueTemplate, matches[0].groups), '26.13.0');
+    assert.equal(render(manager.currentValueTemplate, matches[0].groups), readNodeVersion(parseColonEnv(sample)).full);
     for (const [newMajor, newMinor, newPatch] of [['28', '0', '0'], ['26', '13', '1']]) {
       const updated = sample.replace(expression, (...args) => render(manager.autoReplaceStringTemplate, { ...args.at(-1), newMajor, newMinor, newPatch }));
       assert.equal(readNodeVersion(parseColonEnv(updated)).full, `${newMajor}.${newMinor}.${newPatch}`);
