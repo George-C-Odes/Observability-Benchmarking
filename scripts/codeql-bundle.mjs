@@ -11,7 +11,15 @@ export async function resolveCodeqlBundle(actionSha, language, fetchImpl = fetch
     throw new Error('Invalid CodeQL action SHA or language');
   }
   async function json(url) {
-    const response = await fetchImpl(url, {
+    // S8476 review: defaults.bundleVersion -> release-tag URL -> this fetch.
+    // Both callers fix HTTPS origins and github/codeql-action resource paths;
+    // the action SHA is 40 hex digits, and the response-derived tag must equal
+    // codeql-bundle-v plus a numeric X.Y.Z version, then is component-encoded.
+    // Redirects are rejected and no credentials are sent. Boundary coverage:
+    // codeql-bundle.test.mjs rejects malicious inputs before further requests.
+    // User-approved 2026-11-08: NOSONAR suppresses all findings on this line.
+    // Re-review/remove if callers, scope, validation, encoding or redirects change.
+    const response = await fetchImpl(url, { // NOSONAR - reviewed S8476 false positive; rationale and line-wide scope above.
       method: 'GET', headers: { Accept: 'application/json' },
       redirect: 'error', signal: AbortSignal.timeout(30_000),
     });
@@ -39,7 +47,7 @@ export async function resolveCodeqlBundle(actionSha, language, fetchImpl = fetch
 }
 
 export function codeqlActionSha(wrapper) {
-  const refs = [...wrapper.matchAll(/uses: github\/codeql-action\/[a-z-]+@([^\s]+)/g)].map((match) => match[1]);
+  const refs = [...wrapper.matchAll(/uses: github\/codeql-action\/[a-z-]+@(\S+)/g)].map((match) => match[1]);
   if (refs.length !== 3 || new Set(refs).size !== 1) throw new Error('CodeQL action pins must agree');
   return refs[0];
 }
