@@ -8,6 +8,7 @@ on:
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
       - 'scripts/qodana-cli-asset*.mjs'
+      - 'scripts/github-release-asset*.mjs'
       - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -19,6 +20,7 @@ on:
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
       - 'scripts/qodana-cli-asset*.mjs'
+      - 'scripts/github-release-asset*.mjs'
       - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -53,7 +55,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - name: Test Qodana CLI release lookup
-        run: node --test scripts/qodana-cli-asset.test.mjs
+        run: node --test scripts/qodana-cli-asset.test.mjs scripts/github-release-asset.test.mjs
 
       - name: Install Qodana CLI
         timeout-minutes: 10

@@ -14,6 +14,7 @@ on:
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - 'scripts/golangci-lint-asset*.mjs'
+      - 'scripts/github-release-asset*.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
       - '.github/actions/setup-go/**'
@@ -27,6 +28,7 @@ on:
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
       - 'scripts/golangci-lint-asset*.mjs'
+      - 'scripts/github-release-asset*.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
       - '.github/actions/setup-go/**'
@@ -75,7 +77,7 @@ jobs:
 
       - name: Test golangci-lint release lookup
         working-directory: .
-        run: node --test scripts/golangci-lint-asset.test.mjs
+        run: node --test scripts/golangci-lint-asset.test.mjs scripts/github-release-asset.test.mjs
 
       - name: Download golangci-lint
         timeout-minutes: 6
