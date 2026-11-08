@@ -9,7 +9,7 @@ ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:08476c244888bfb42
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 #ARG IMAGE_RUNTIME=quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 # ------------ BUILD STAGE -----------------------
-FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
+FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
 #FROM ghcr.io/graalvm/native-image-community:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
 #FROM quay.io/quarkus/ubi9-quarkus-${DISTRIBUTION}-builder-image:jdk-${JAVA_RELEASE} AS builder
 ARG JAVA_RELEASE

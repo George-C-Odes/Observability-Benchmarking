@@ -6,7 +6,7 @@ ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:08476c244888bfb425bae1ae4dd7c17f093e972aab8426883d97f3c6f280f7c1
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 # ------------ BUILD STAGE -----------------------
-FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
+FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
 #FROM ghcr.io/graalvm/native-image-community:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
