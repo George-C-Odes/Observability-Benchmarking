@@ -6,7 +6,7 @@ import {
   type AppLogsRuntimeConfig,
 } from '@/lib/runtimeConfigTypes';
 
-export const GET = withApiRoute({ name: 'APP_LOGS_CONFIG_API' }, async function GET() {
+export const GET = withApiRoute({ name: 'APP_LOGS_CONFIG_API' }, function GET() {
   const payload: AppLogsRuntimeConfig = {
     clientMaxEntries: envNumber(
       'APP_LOGS_CLIENT_MAX_ENTRIES',
