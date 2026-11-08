@@ -130,8 +130,8 @@ go test ./... -race
 
 ### Docker
 ```bash
-docker build -t go:1.27.3_latest .
-docker run --rm -p 8080:8080 go:1.27.3_latest
+docker build -t go:1.27.3 .
+docker run --rm -p 8080:8080 go:1.27.3
 ```
 
 ---

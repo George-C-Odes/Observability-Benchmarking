@@ -23,6 +23,13 @@
     "services/java/vertx/jvm/README.template.md",
     "services/python/django/README.template.md",
     "services/python/django/gunicorn/ASGI/README.template.md",
-    "services/python/django/gunicorn/WSGI/README.template.md"
+    "services/python/django/gunicorn/WSGI/README.template.md",
+    "docs/SECURITY.template.md",
+    "docs/LINTING_AND_CODE_QUALITY.template.md",
+    "docs/index.template.html",
+    "services/java/dropwizard/jvm/README.template.md",
+    ".github/instructions/copilot-instructions.template.md",
+    "utils/nextjs-dash/README.template.md",
+    "utils/orchestrator/README.template.md"
   ]
 }

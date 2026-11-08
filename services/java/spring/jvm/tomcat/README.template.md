@@ -3,7 +3,7 @@
 # Spring Boot Tomcat JVM Service
 
 ## Overview
-A REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} running on Apache Tomcat embedded server with the Java Virtual Machine (JVM 25). This service can be configured to run in either platform thread mode or virtual thread mode, but only one mode per deployment.
+A REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} running on Apache Tomcat embedded server with the Java Virtual Machine (JVM {{JAVA_MAJOR_VERSION}}). This service can be configured to run in either platform thread mode or virtual thread mode, but only one mode per deployment.
 
 ## Purpose
 - Benchmark Spring Boot with Tomcat web server across different thread models
@@ -16,7 +16,7 @@ A REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} run
 ### Framework & Runtime
 - **Framework**: Spring Boot {{SPRING_BOOT_VERSION}}
 - **Web Server**: Apache Tomcat (embedded)
-- **Java Version**: Eclipse Temurin 25.0.4
+- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}} (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform OR Virtual (single mode per deployment)
 
@@ -267,7 +267,7 @@ Unlike Quarkus (which supports all modes in one deployment), Spring Tomcat requi
 ## Building and Running
 
 ### Prerequisites
-- Java 25 (Eclipse Temurin recommended)
+- Java {{JAVA_MAJOR_VERSION}} (Eclipse Temurin recommended)
 - Maven 3.9+
 - Docker (for containerized deployment)
 
@@ -291,7 +291,7 @@ cd services/java/spring/jvm/tomcat
 ### Docker Build
 ```bash
 cd services/java/spring/jvm
-docker build --build-arg PROFILE=tomcat -t spring-jvm-tomcat:latest .
+docker build --build-arg PROFILE=tomcat -t {{SPRING_JVM_TOMCAT_IMAGE}} .
 ```
 
 ### Docker Compose

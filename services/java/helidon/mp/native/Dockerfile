@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 ARG JAVA_RELEASE=25
-ARG JAVA_MINOR_RELEASE=.0.4
+ARG JAVA_MINOR_RELEASE=.0.5.0.3
 ARG BASE_BUILDER=ol9
 ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:08476c244888bfb425bae1ae4dd7c17f093e972aab8426883d97f3c6f280f7c1
 
 # ------------ BUILD STAGE -----------------------
-FROM container-registry.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
+FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow -Dorg.jboss.weld.executor.threadPoolType=FIXED_TIMEOUT -Dorg.jboss.weld.executor.threadPoolSize=1"

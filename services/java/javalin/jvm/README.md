@@ -48,7 +48,7 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 
 ## Docker
 
-**Image**: `javalin-jvm:latest`
+**Image**: `javalin-jvm:7.2.4-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -64,9 +64,9 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm:latest `
+  -t javalin-jvm:7.2.4-java25 `
   --build-arg JAVALIN_VERSION=7.2.4 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.4-java25 `
   --load `
   services/java
 ```

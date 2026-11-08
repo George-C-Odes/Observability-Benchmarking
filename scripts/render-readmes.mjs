@@ -3,6 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { imageTemplateVariables } from './image-tags.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
@@ -264,14 +266,17 @@ export function renderTemplates({ envPath, templatePaths, check = false }) {
 
   const absoluteEnvPath = resolveRepoPath(envPath);
   const envContent = readFileSync(absoluteEnvPath, 'utf8');
-  const variables = parseColonEnv(envContent);
+  const variables = imageTemplateVariables(parseColonEnv(envContent));
   const results = [];
 
   for (const templatePath of templatePaths) {
     const absoluteTemplatePath = resolveRepoPath(templatePath);
     const absoluteOutputPath = deriveOutputPath(absoluteTemplatePath);
     const templateContent = readFileSync(absoluteTemplatePath, 'utf8');
-    const renderedContent = realignMarkdownTables(renderTemplate(templateContent, variables));
+    const substituted = renderTemplate(templateContent, variables);
+    // Formatter-owned docs can retain their authored table style when pins occur outside tables.
+    const renderedContent = templateContent.includes('<!-- render-readmes: preserve-tables -->')
+      ? substituted : realignMarkdownTables(substituted);
 
     if (check) {
       const existingContent = readFileSync(absoluteOutputPath, 'utf8');

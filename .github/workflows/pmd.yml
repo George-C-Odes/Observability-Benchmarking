@@ -1,9 +1,5 @@
 name: pmd
 
-env:
-  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 on:
   push:
     branches: [ "main" ]
@@ -36,7 +32,7 @@ jobs:
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-26.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,16 +46,27 @@ jobs:
           distribution: 'temurin'
 
       - name: Install PMD
+        # Each source can use 600s of retries plus a final 600s transfer.
+        # Budget 40m for both sources and 5m for verification/extraction.
+        timeout-minutes: 45
         shell: bash
         env:
           PMD_VERSION: '7.29.0'
           PMD_SHA256: 'd27177c185b837fa57f097e482d1253468aa035379c5eb2671fa0a279109b179'
         run: |
           # Use the CLI because pmd/pmd-github-action still declares Node 20.
-          curl --fail --silent --show-error --location --retry 3 \
-            --proto '=https' --proto-redir '=https' \
-            --output "$RUNNER_TEMP/pmd.zip" \
-            "https://github.com/pmd/pmd/releases/download/pmd_releases/${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip"
+          download_pmd() {
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-delay 10 --retry-max-time 600 \
+              --connect-timeout 15 --max-time 600 \
+              --proto '=https' --proto-redir '=https' \
+              --output "$RUNNER_TEMP/pmd.zip" "$1"
+          }
+          # Match PMD's published URL: the slash belongs to the release tag.
+          if ! download_pmd "https://github.com/pmd/pmd/releases/download/pmd_releases%2F${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip"; then
+            echo '::warning::GitHub PMD download failed; trying the official SourceForge mirror.'
+            download_pmd "https://sourceforge.net/projects/pmd/files/pmd/${PMD_VERSION}/pmd-dist-${PMD_VERSION}-bin.zip/download"
+          fi
           printf '%s  %s\n' "$PMD_SHA256" "$RUNNER_TEMP/pmd.zip" | sha256sum --check --strict
           unzip -q "$RUNNER_TEMP/pmd.zip" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/pmd-bin-${PMD_VERSION}/bin" >> "$GITHUB_PATH"

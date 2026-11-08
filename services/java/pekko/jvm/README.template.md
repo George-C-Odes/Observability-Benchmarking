@@ -1,7 +1,7 @@
 <!-- Generated from services/java/pekko/jvm/README.template.md. Do not edit services/java/pekko/jvm/README.md directly. -->
 
 # Pekko JVM Service
-A fully reactive, high-throughput REST service implemented with **Pekko HTTP {{PEKKO_VERSION}}** and **Pekko Core {{PEKKO_CORE_VERSION}}** on **Java 25**.
+A fully reactive, high-throughput REST service implemented with **Pekko HTTP {{PEKKO_VERSION}}** and **Pekko Core {{PEKKO_CORE_VERSION}}** on **Java {{JAVA_MAJOR_VERSION}}**.
 This module provides a `/hello/reactive` endpoint for benchmarking Pekko HTTP's
 non-blocking I/O model. All request handling runs on the Pekko default dispatcher — no blocking,
 no virtual threads, no thread-per-request overhead.
@@ -36,11 +36,11 @@ After changing either pin, run `node scripts/sync-framework-versions.mjs` (or In
 to refresh literal Maven/Docker defaults, IDE build arguments, and documentation. Compose passes both pins as build arguments.
 Review HTTP/Core compatibility when changing release lines; the synchronizer does not resolve compatible pairs.
 ## Docker
-**Image**: `pekko-jvm:{{PEKKO_VERSION}}_latest`
+**Image**: `{{PEKKO_JVM_IMAGE}}`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.10.0-eclipse-temurin-25-noble`                      |
+| Build   | `maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 - Multi-stage build: Maven package → jlink (strips unused JDK modules) → distroless

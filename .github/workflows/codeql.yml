@@ -1,8 +1,6 @@
 name: CodeQL
 
 env:
-  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   # Acknowledge the April 2026 default: skip file-coverage computation on
   # PRs for faster analysis.  Coverage is still computed on push, schedule,
   # and workflow_dispatch runs that feed the hosted quality report.
@@ -20,6 +18,7 @@ on:
       - 'scripts/pages/codeql-workflow.test.mjs'
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/codeql-bundle*.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
       - '.github/actions/setup-node/**'
@@ -38,6 +37,7 @@ on:
       - 'scripts/pages/codeql-workflow.test.mjs'
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/codeql-bundle*.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
       - '.github/actions/setup-node/**'
@@ -95,7 +95,39 @@ jobs:
             services/java/**/jvm/**/pom.xml
             utils/orchestrator/pom.xml
 
+      - name: Resolve CodeQL bundle
+        id: bundle
+        timeout-minutes: 5
+        env:
+          CODEQL_LANGUAGE: ${{ matrix.language }}
+        run: |
+          node --test scripts/codeql-bundle.test.mjs
+          node scripts/codeql-bundle.mjs "$CODEQL_LANGUAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Download CodeQL bundle
+        timeout-minutes: 10
+        shell: bash
+        env:
+          BUNDLE_URL: ${{ steps.bundle.outputs.download_url }}
+          BUNDLE_API_URL: ${{ steps.bundle.outputs.api_url }}
+          BUNDLE_SHA256: ${{ steps.bundle.outputs.sha256 }}
+        run: |
+          download_bundle() {
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-delay 10 --retry-max-time 120 \
+              --connect-timeout 15 --max-time 120 \
+              --proto '=https' --proto-redir '=https' \
+              --header 'Accept: application/octet-stream' \
+              --output "$RUNNER_TEMP/codeql-bundle.tar.zst" "$1"
+          }
+          if ! download_bundle "$BUNDLE_URL"; then
+            echo '::warning::CodeQL bundle download failed; trying the public release-asset API.'
+            download_bundle "$BUNDLE_API_URL"
+          fi
+          printf '%s  %s\n' "$BUNDLE_SHA256" "$RUNNER_TEMP/codeql-bundle.tar.zst" | sha256sum --check --strict
+
       - name: Initialize CodeQL
+        id: codeql-init
         uses: ./.github/actions/codeql-action
         env:
           # Java manual builds cannot use overlay databases. Explicitly select
@@ -107,6 +139,7 @@ jobs:
           phase: init
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          tools: ${{ runner.temp }}/codeql-bundle.tar.zst
 
       # ----------------------------------------------------------------
       # Java manual build
@@ -220,7 +253,7 @@ jobs:
           done
 
       - name: Perform CodeQL Analysis
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.codeql-init.outcome == 'success'
         uses: ./.github/actions/codeql-action
         with:
           phase: analyze
@@ -297,8 +330,6 @@ jobs:
 
       - name: Set up Node.js
         uses: ./.github/actions/setup-node
-        with:
-          node-version: '26'
 
       - name: Validate CodeQL workflow contract
         run: node --test scripts/pages/codeql-workflow.test.mjs

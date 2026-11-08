@@ -293,17 +293,17 @@ python -m ruff format services/python/django/gunicorn/common services/python/dja
 ```powershell
 docker buildx build `
     -f services/python/django/gunicorn/WSGI/Dockerfile `
-    -t django-platform:{{DJANGO_VERSION}}_latest `
+    -t {{DJANGO_PLATFORM_IMAGE}} `
     --build-arg PYTHON_VERSION={{PYTHON_VERSION}} `
-    --build-arg BUILDKIT_BUILD_NAME=django-platform:{{DJANGO_VERSION}}_latest `
+    --build-arg BUILDKIT_BUILD_NAME={{DJANGO_PLATFORM_IMAGE}} `
     --load `
     services/python/django
 
 docker buildx build `
     -f services/python/django/gunicorn/ASGI/Dockerfile `
-    -t django-reactive:{{DJANGO_VERSION}}_latest `
+    -t {{DJANGO_REACTIVE_IMAGE}} `
     --build-arg PYTHON_VERSION={{PYTHON_VERSION}} `
-    --build-arg BUILDKIT_BUILD_NAME=django-reactive:{{DJANGO_VERSION}}_latest `
+    --build-arg BUILDKIT_BUILD_NAME={{DJANGO_REACTIVE_IMAGE}} `
     --load `
     services/python/django
 ```

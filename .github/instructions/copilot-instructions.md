@@ -160,10 +160,6 @@ Every benchmark target **must** export equivalent telemetry to be a fair compari
 - [ ] No new CodeQL alerts
 - [ ] Dependabot-managed dependencies are not pinned to outdated versions
 
-### Node 24 migration convention
-
-All workflows set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow-level `env:` (not job/step). Each occurrence is annotated with `# TODO(node24-migration)`. Do not duplicate this at inner scopes. The resulting Actions warnings are expected and informational.
-
 ### Action pinning
 
 All GitHub Actions are pinned to **full commit SHAs** (with version comments) for supply-chain hardening. Never pin to a mutable tag alone.
@@ -241,9 +237,7 @@ If a PR adds a new benchmark target, verify all of these:
 
 ### CI/CD-specific
 - Actions pinned to mutable tags instead of commit SHAs.
-- `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` duplicated at job/step level.
 - Qodana quality gate relaxed without a reviewed baseline SARIF.
-- New workflow missing the Node 24 migration env var.
 
 ### Documentation
 - Direct edits to a file that has a `.template.md` source.

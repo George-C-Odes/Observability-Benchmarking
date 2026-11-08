@@ -18,12 +18,13 @@ jobs:
       github.event.pull_request.user.login == 'renovate[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'renovate/') &&
-      contains(github.event.pull_request.labels.*.name, 'framework-version')
+      (contains(github.event.pull_request.labels.*.name, 'framework-version') ||
+       contains(github.event.pull_request.labels.*.name, 'nextjs-version'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       # Never check out or run PR code in this privileged event. Only regular
-      # branch blobs are read; base scripts validate the env-only version change.
+      # branch blobs are read; base scripts validate each version-only route.
       - name: Checkout trusted base
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -32,14 +33,22 @@ jobs:
 
       - name: Set up Node
         uses: ./.github/actions/setup-node
-        with:
-          node-version: '26'
 
       - name: Validate Renovate version proposal
+        if: contains(github.event.pull_request.labels.*.name, 'framework-version')
         id: proposal
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/renovate-framework-sync.mjs prepare
+
+      - name: Validate Renovate Next.js proposal
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
+          contains(github.event.pull_request.labels.*.name, 'nextjs-version')
+        id: nextjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/renovate-framework-sync.mjs prepare-nextjs
 
       - name: Select Python runtime
         if: steps.proposal.outputs.changed == 'true'
@@ -61,14 +70,19 @@ jobs:
             --constraint .github/requirements/lock-compiler.in
 
       - name: Relay versions and verify generated output
-        if: steps.proposal.outputs.changed == 'true'
+        if: steps.proposal.outputs.changed == 'true' || steps.nextjs.outputs.changed == 'true'
         run: |
-          node scripts/sync-framework-versions.mjs
-          node scripts/sync-framework-versions.mjs --check
-          python services/python/django/gunicorn/sync_build_locks.py --check
+          if [ '${{ steps.proposal.outputs.changed }}' = 'true' ]; then
+            node scripts/sync-framework-versions.mjs
+            node scripts/sync-framework-versions.mjs --check
+            python services/python/django/gunicorn/sync_build_locks.py --check
+          else
+            node scripts/sync-nextjs-tags.mjs
+            node scripts/sync-nextjs-tags.mjs --check
+          fi
 
       - name: Commit generated files to the PR
-        if: steps.proposal.outputs.changed == 'true'
+        if: steps.proposal.outputs.changed == 'true' || steps.nextjs.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           # Required to trigger the usual path-scoped CI on the generated commit.

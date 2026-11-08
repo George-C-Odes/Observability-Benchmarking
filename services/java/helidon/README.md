@@ -13,7 +13,7 @@ The four services use **Helidon 4.5.6**. SE uses functional routing; MP uses CDI
 | [MP JVM](mp/jvm/README.md)       | `helidon-mp-jvm`                         | `8092`    | `/health/live`    |
 | [MP native](mp/native/README.md) | `helidon-mp-native`                      | `8093`    | `/health/live`    |
 
-Containers listen on port `8080`. Image tags follow `<service>:4.5.6_latest`. The module READMEs describe only their implementation and runtime differences; the shared contracts and commands live here.
+Containers listen on port `8080`. Image tags follow `<service>:4.5.6-java25`. The module READMEs describe only their implementation and runtime differences; the shared contracts and commands live here.
 
 ## Version source and updates
 

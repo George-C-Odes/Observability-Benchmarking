@@ -41,7 +41,7 @@ Follows clean architecture / hexagonal principles:
 
 ## Docker
 
-**Image**: `vertx-jvm:latest`
+**Image**: `vertx-jvm:5.2.3-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -57,9 +57,9 @@ Follows clean architecture / hexagonal principles:
 ```powershell
 docker buildx build `
   -f services/java/vertx/jvm/Dockerfile `
-  -t vertx-jvm:latest `
+  -t vertx-jvm:5.2.3-java25 `
   --build-arg VERTX_VERSION=5.2.3 `
-  --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME=vertx-jvm:5.2.3-java25 `
   --load `
   services/java
 ```

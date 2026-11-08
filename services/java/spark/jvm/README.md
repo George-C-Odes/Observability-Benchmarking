@@ -60,7 +60,7 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 
 ## Docker
 
-**Image**: `spark-jvm:latest`
+**Image**: `spark-jvm:3.0.5-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -76,9 +76,9 @@ Jetty is tuned via Spark's built-in `threadPool(max, min, acceptQueueSize)` wiri
 ```powershell
 docker buildx build `
   -f services/java/spark/jvm/Dockerfile `
-  -t spark-jvm:latest `
+  -t spark-jvm:3.0.5-java25 `
   --build-arg SPARK_VERSION=3.0.5 `
-  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME=spark-jvm:3.0.5-java25 `
   --load `
   services/java
 ```

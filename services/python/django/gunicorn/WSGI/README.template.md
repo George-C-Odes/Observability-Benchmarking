@@ -79,9 +79,9 @@ The development server starts on `http://127.0.0.1:8000/hello/platform`.
 ```powershell
 docker buildx build `
   -f services/python/django/gunicorn/WSGI/Dockerfile `
-  -t django-platform:{{DJANGO_VERSION}}_latest `
+  -t {{DJANGO_PLATFORM_IMAGE}} `
   --build-arg PYTHON_VERSION={{PYTHON_VERSION}} `
-  --build-arg BUILDKIT_BUILD_NAME=django-platform:{{DJANGO_VERSION}}_latest `
+  --build-arg BUILDKIT_BUILD_NAME={{DJANGO_PLATFORM_IMAGE}} `
   --load `
   services/python/django
 ```

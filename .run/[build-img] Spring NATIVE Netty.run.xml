@@ -3,7 +3,7 @@
   <configuration default="false" name="[build-img] Spring NATIVE Netty" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>
-        <option name="imageTag" value="spring-native-netty:4.1.2_latest" />
+        <option name="imageTag" value="spring-native-netty:4.1.2-java25" />
         <option name="buildArgs">
           <list>
             <DockerEnvVarImpl>
@@ -20,7 +20,7 @@
             </DockerEnvVarImpl>
             <DockerEnvVarImpl>
               <option name="name" value="BUILDKIT_BUILD_NAME" />
-              <option name="value" value="spring-native-netty:4.1.2_latest" />
+              <option name="value" value="spring-native-netty:4.1.2-java25" />
             </DockerEnvVarImpl>
           </list>
         </option>
