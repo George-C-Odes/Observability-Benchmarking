@@ -105,6 +105,65 @@ test('dependency SARIF rejects incompatible metadata and invalid rule indexes', 
   assert.throws(() => mergeSnykSarif(conflict), /conflicting rule/);
 });
 
+test('dependency SARIF merges rule descriptions and properties without mutating the report', () => {
+  const raw = dependencySarif();
+  const first = raw.runs[0].tool.driver.rules[1];
+  const second = raw.runs[1].tool.driver.rules[0];
+  first.help.text = 'First help';
+  second.help.text = 'Second help';
+  second.shortDescription.markdown = 'Additional format';
+  second.fullDescription.text = 'Additional description';
+  second.properties.tags = ['security', 'dependencies'];
+  second.properties.precision = 'high';
+  second.name = 'Additional field';
+  const original = structuredClone(raw);
+  const rule = mergeSnykSarif(raw).runs[0].tool.driver.rules[1];
+  assert.deepEqual(rule.help, { text: 'First help\n\nSecond help',
+    markdown: 'Introduced through project-a\n\nIntroduced through project-b' });
+  assert.deepEqual(rule.shortDescription, { text: 'SNYK-B', markdown: 'Additional format' });
+  assert.equal(rule.fullDescription.text, 'Vulnerable dependency\n\nAdditional description');
+  assert.deepEqual(rule.properties, { tags: ['security', 'dependencies'],
+    'security-severity': '7.5', precision: 'high' });
+  assert.equal(rule.name, 'Additional field');
+  assert.deepEqual(raw, original);
+});
+
+test('dependency SARIF rejects conflicting rule fields and unsupported description formats', () => {
+  const field = dependencySarif();
+  field.runs[0].tool.driver.rules[1].name = 'First name';
+  field.runs[1].tool.driver.rules[0].name = 'Second name';
+  assert.throws(() => mergeSnykSarif(field), /conflicting rule SNYK-B name/);
+  const description = dependencySarif();
+  description.runs[0].tool.driver.rules[1].help.properties = { source: 'first' };
+  description.runs[1].tool.driver.rules[0].help.properties = { source: 'second' };
+  assert.throws(() => mergeSnykSarif(description), /conflicting rule SNYK-B help.properties/);
+});
+
+test('dependency SARIF preserves missing and sentinel rule indexes and validates both index forms', () => {
+  const raw = dependencySarif();
+  raw.runs[1].results = [{ message: { text: 'Unindexed' } },
+    { ruleIndex: -1, rule: { index: -1 } }, { rule: { id: 'SNYK-B' } }];
+  assert.deepEqual(mergeSnykSarif(raw).runs[0].results.slice(1), raw.runs[1].results);
+  for (const invalid of [-2, 2, 0.5, '0', null]) {
+    raw.runs[1].results = [{ ruleIndex: invalid }];
+    assert.throws(() => mergeSnykSarif(raw), /invalid rule index/);
+    raw.runs[1].results = [{ rule: { index: invalid } }];
+    assert.throws(() => mergeSnykSarif(raw), /invalid rule index/);
+  }
+});
+
+test('dependency SARIF validates artifact counts and preserves absent counts', () => {
+  const raw = dependencySarif();
+  for (const run of raw.runs) delete run.tool.driver.properties.artifactsScanned;
+  assert.deepEqual(mergeSnykSarif(raw).runs[0].tool.driver.properties, {});
+  raw.runs[0].tool.driver.properties.artifactsScanned = 0;
+  assert.equal(mergeSnykSarif(raw).runs[0].tool.driver.properties.artifactsScanned, 0);
+  for (const invalid of [-1, NaN, Infinity, '10', null]) {
+    raw.runs[0].tool.driver.properties.artifactsScanned = invalid;
+    assert.throws(() => mergeSnykSarif(raw), /invalid artifactsScanned count/);
+  }
+});
+
 test('scan arguments retain deep source coverage without skipping unresolved dependencies', () => {
   for (const mode of ['test', 'monitor']) {
     const args = scanArguments(mode);

@@ -632,6 +632,13 @@ test('npm regeneration isolates input/config/credentials and fails closed on too
   assert.equal(existsSync(directory), false);
 });
 
+test('npm regeneration rejects a mismatched packageManager pin before launching npm', (t) => {
+  const mock = t.mock.method(childProcess, 'spawnSync', () => assert.fail('Mismatched npm must not run'));
+  const manifest = JSON.stringify({ name: 'fixture', packageManager: 'npm@0.0.0' });
+  assert.throws(() => regenerateNextjsLock(manifest, '{}'), /Trusted npm version must match/);
+  assert.equal(mock.mock.callCount(), 0);
+});
+
 test('npm preparation rejects a tampered full lock before state/output/writes and accepts its trusted control', async (t) => {
   const blobs = new Map();
   const { state, base, head, mock } = publicationFixture(t, (route, options) => {
@@ -647,7 +654,12 @@ test('npm preparation rejects a tampered full lock before state/output/writes an
     blobs.set(sha, content);
     tree.set(file, { type: 'blob', mode: '100644', sha });
   };
-  const manifest = readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8');
+  const originalManifest = readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8');
+  const fixtureManifest = JSON.parse(originalManifest);
+  // npm is mocked here: test lock validation independently of the runner's npm
+  // version. The packageManager mismatch guard is exercised separately above.
+  delete fixtureManifest.packageManager;
+  const manifest = JSON.stringify(fixtureManifest);
   const trusted = readFileSync(resolveRepoPath('utils/nextjs-dash/package-lock.json'), 'utf8');
   for (const tree of [base, head]) {
     add(tree, 'compose/.env', env);
@@ -674,7 +686,7 @@ test('npm preparation rejects a tampered full lock before state/output/writes an
   await assert.rejects(prepare(event, 'synthetic-test-token', 'nextjs'), /Complete lockfile/);
   assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
   assert.equal(existsSync(output), false);
-  assert.equal(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8'), manifest);
+  assert.equal(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8'), originalManifest);
   add(head, 'utils/nextjs-dash/package-lock.json', trusted);
   await prepare(event, 'synthetic-test-token', 'nextjs');
   assert.deepEqual(JSON.parse(readFileSync(stateFile, 'utf8')).changed, []);
