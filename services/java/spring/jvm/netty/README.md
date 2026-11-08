@@ -16,7 +16,7 @@ A reactive REST service implementation built with Spring Boot 4.1.2 running on N
 ### Framework & Runtime
 - **Framework**: Spring Boot 4.1.2 + Spring WebFlux
 - **Web Server**: Netty (event-loop based)
-- **Java Version**: Eclipse Temurin 25.0.5.0.3
+- **Java Version**: Eclipse Temurin 25 (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
 - **Concurrency Model**: Reactive (Project Reactor)
 

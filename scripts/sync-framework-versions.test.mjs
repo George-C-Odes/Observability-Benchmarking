@@ -238,8 +238,10 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.match(readFileSync(path.join(workspace, 'services/java/helidon/mp/native/pom.xml'), 'utf8'), /<graalvm.version>26\.1\.2\.3\.4<\/graalvm.version>/);
   assert.match(readFileSync(path.join(workspace, 'utils/nextjs-dash/Dockerfile'), 'utf8'), /node:28\.1\.2-alpine/);
   assert.match(readFileSync(path.join(workspace, '.github/actions/setup-nextjs/action.yml'), 'utf8'), /default: '28\.1\.2'/);
-  assert.match(readFileSync(path.join(workspace, 'compose/utils.yml'), 'utf8'), /nextjs-dash:16\.4\.5-node28/);
-  assert.match(readFileSync(path.join(workspace, 'compose/docker-compose.yml'), 'utf8'), /django-platform:6\.1\.3-python3\.14/);
+  const nextVersion = JSON.parse(readFileSync(path.join(workspace, 'utils/nextjs-dash/package.json'), 'utf8')).dependencies.next;
+  const djangoVersion = parseColonEnv(source).DJANGO_VERSION;
+  assert.ok(readFileSync(path.join(workspace, 'compose/utils.yml'), 'utf8').includes(`nextjs-dash:${nextVersion}-node28`));
+  assert.ok(readFileSync(path.join(workspace, 'compose/docker-compose.yml'), 'utf8').includes(`django-platform:${djangoVersion}-python3.14`));
   const generated = snapshot();
   assert.equal(run('--check').status, 0);
   const repeat = run();
