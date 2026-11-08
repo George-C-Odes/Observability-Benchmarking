@@ -9,6 +9,7 @@ on:
       - '.github/workflows/qodana_code_quality.yml'
       - 'scripts/qodana-cli-asset*.mjs'
       - 'scripts/github-release-asset*.mjs'
+      - '.github/qodana-cli-lock.json'
       - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -21,6 +22,7 @@ on:
       - '.github/workflows/qodana_code_quality.yml'
       - 'scripts/qodana-cli-asset*.mjs'
       - 'scripts/github-release-asset*.mjs'
+      - '.github/qodana-cli-lock.json'
       - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -62,12 +64,14 @@ jobs:
         shell: bash
         env:
           # Pin the CLI independently; verify the archive before installing it.
+          # Refresh .github/qodana-cli-lock.json for offline asset lookup when
+          # bumping these pins. Other versions use bounded live metadata lookup.
           QODANA_CLI_VERSION: '2026.2.3'
           QODANA_CLI_SHA256: '86554e8ac62f65009245211baf56b184d0f57df86dbcddd54fbffcd6dc0cfe96'
         run: |
           download_qodana() {
             curl --fail --silent --show-error --location \
-              --retry 3 --retry-delay 10 --retry-max-time 120 \
+              --retry 3 --retry-all-errors --retry-delay 10 --retry-max-time 120 \
               --connect-timeout 15 --max-time 120 \
               --proto '=https' --proto-redir '=https' \
               --header 'Accept: application/octet-stream' \
@@ -76,7 +80,7 @@ jobs:
           if ! download_qodana "https://github.com/JetBrains/qodana-cli/releases/download/v${QODANA_CLI_VERSION}/qodana_linux_x86_64.tar.gz"; then
             echo '::warning::Qodana CLI release download failed; trying the public release-asset API.'
             # Resolve the exact version, never reuse an older release's asset ID.
-            asset_url="$(node scripts/qodana-cli-asset.mjs "$QODANA_CLI_VERSION")"
+            asset_url="$(node scripts/qodana-cli-asset.mjs "$QODANA_CLI_VERSION" "$QODANA_CLI_SHA256")"
             download_qodana "$asset_url"
           fi
           printf '%s  %s\n' "$QODANA_CLI_SHA256" "$RUNNER_TEMP/qodana-cli.tar.gz" | sha256sum --check --strict

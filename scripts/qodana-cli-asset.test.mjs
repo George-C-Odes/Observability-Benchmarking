@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { resolveQodanaAsset } from './qodana-cli-asset.mjs';
+import { assertReleaseMetadataRequest } from './test-helpers.mjs';
 
 const asset = (id) => ({ name: 'qodana_linux_x86_64.tar.gz', id });
 const release = (assets, tag_name = 'v2026.2.3') => ({ tag_name, assets });
@@ -17,10 +21,7 @@ test('each version resolves its own asset with fixed request scope and no creden
     assert.equal(url, `https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/${id}`);
     assert.equal(calls.length, 1);
     assert.equal(calls[0][0], `https://api.github.com/repos/JetBrains/qodana-cli/releases/tags/v${version}`);
-    assert.equal(calls[0][1].method, 'GET');
-    assert.equal(calls[0][1].redirect, 'error');
-    assert.deepEqual(calls[0][1].headers, { Accept: 'application/vnd.github+json' });
-    assert.ok(calls[0][1].signal instanceof AbortSignal);
+    assertReleaseMetadataRequest(calls[0][1]);
   }
 });
 
@@ -50,8 +51,52 @@ test('wrong releases, missing assets and ambiguous assets fail closed', async ()
 });
 
 test('HTTP, redirect, network and JSON failures remain failures', async () => {
-  await assert.rejects(resolveQodanaAsset('2026.2.3', async () => ({ ok: false, status: 504 })), /HTTP 504/);
+  await assert.rejects(resolveQodanaAsset('2026.2.3', async () => ({ ok: false, status: 504 }), { wait: async () => {}, warn: () => {} }), /HTTP 504/);
   await assert.rejects(resolveQodanaAsset('2026.2.3', async () => { throw new TypeError('redirect rejected'); }), /redirect rejected/);
   await assert.rejects(resolveQodanaAsset('2026.2.3', async () => { throw new Error('network failure'); }), /network failure/);
   await assert.rejects(resolveQodanaAsset('2026.2.3', async () => ({ ok: true, json: async () => { throw new SyntaxError('invalid JSON'); } })), /invalid JSON/);
+});
+
+const lock = JSON.parse(readFileSync(new URL('../.github/qodana-cli-lock.json', import.meta.url), 'utf8'));
+
+test('matching version and checksum resolve the locked asset with zero network requests', async () => {
+  let calls = 0;
+  const url = await resolveQodanaAsset(lock.version, async () => { calls += 1; throw new Error('network unavailable'); }, { lock, expectedSha256: lock.sha256 });
+  assert.equal(calls, 0);
+  assert.equal(url, `https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/${lock.assetId}`);
+});
+
+test('a version bump ignores the old asset ID and resolves the requested release', async () => {
+  let calls = 0;
+  const url = await resolveQodanaAsset('2026.2.4', async (url) => {
+    calls += 1;
+    assert.equal(url, 'https://api.github.com/repos/JetBrains/qodana-cli/releases/tags/v2026.2.4');
+    return response(release([asset(123)], 'v2026.2.4'));
+  }, { lock, expectedSha256: 'a'.repeat(64) });
+  assert.equal(calls, 1);
+  assert.equal(url, 'https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/123');
+});
+
+test('invalid lock fields or mismatched checksums fail before any request', async () => {
+  for (const options of [
+    { lock },
+    { lock, expectedSha256: 'a'.repeat(64) },
+    { lock, expectedSha256: `${lock.sha256}\n` },
+    ...[{ assetId: '../other' }, { assetId: 0 }, { repository: 'other/repo' }, { assetName: 'other.tar.gz' }].map((change) => ({ lock: { ...lock, ...change }, expectedSha256: lock.sha256 })),
+  ]) {
+    let calls = 0;
+    await assert.rejects(resolveQodanaAsset(lock.version, async () => { calls += 1; }, options));
+    assert.equal(calls, 0);
+  }
+});
+
+test('the production CLI uses the checked-in lock with network disabled', () => {
+  const preload = `data:text/javascript,${encodeURIComponent("globalThis.fetch = () => { throw new Error('unexpected network request'); };")}`;
+  const cli = fileURLToPath(new URL('./qodana-cli-asset.mjs', import.meta.url));
+  const result = spawnSync(process.execPath, ['--import', preload, cli, lock.version, lock.sha256], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, `https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/${lock.assetId}\n`);
+  const invalid = spawnSync(process.execPath, ['--import', preload, cli, lock.version, 'a'.repeat(64)], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(invalid.status, 1);
+  assert.equal(invalid.stdout, '');
 });

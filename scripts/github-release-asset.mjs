@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 // Only these reviewed tool profiles select repositories and asset names.
 const tools = new Map([
@@ -21,24 +22,49 @@ const tools = new Map([
   }],
 ]);
 
-export async function resolveReleaseAsset(tool, version, fetchImpl = fetch) {
+export async function resolveReleaseAsset(tool, version, fetchImpl = fetch, { wait = sleep, warn = console.error, lock, expectedSha256 } = {}) {
   const profile = tools.get(tool);
   if (!profile) throw new Error('Unsupported release asset tool');
   if (typeof version !== 'string' || version.trim() !== version || !profile.versionPattern.test(version)) {
     throw new Error(`Invalid ${profile.versionLabel} version`);
   }
+  if (expectedSha256 !== undefined && (typeof expectedSha256 !== 'string' || expectedSha256.trim() !== expectedSha256 || !/^[a-f0-9]{64}$/.test(expectedSha256))) {
+    throw new Error('Invalid expected release asset SHA-256');
+  }
   const tag = `v${version}`;
   const baseUrl = `https://api.github.com/repos/${profile.repository}/releases`;
-  const response = await fetchImpl(`${baseUrl}/tags/${encodeURIComponent(tag)}`, {
-    method: 'GET',
-    headers: { Accept: 'application/vnd.github+json' },
-    redirect: 'error',
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!response.ok) throw new Error(`${profile.label} release lookup failed: HTTP ${response.status}`);
-  const release = await response.json();
-  if (release?.tag_name !== tag || !Array.isArray(release.assets)) throw new Error(`Unexpected ${profile.label} release metadata`);
   const name = profile.assetName(version);
+  if (lock?.version === version) {
+    if (expectedSha256 === undefined || lock.repository !== profile.repository || lock.assetName !== name || lock.sha256 !== expectedSha256 || !Number.isSafeInteger(lock.assetId) || lock.assetId <= 0) {
+      throw new Error('Release asset lock does not match the pinned checksum or tool');
+    }
+    return `${baseUrl}/assets/${lock.assetId}`;
+  }
+  let release;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetchImpl(`${baseUrl}/tags/${encodeURIComponent(tag)}`, {
+        method: 'GET',
+        headers: { Accept: 'application/vnd.github+json' },
+        redirect: 'error',
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw Object.assign(new Error(`${profile.label} release lookup failed: HTTP ${response.status}`), { retryable: [408, 429, 500, 502, 503, 504].includes(response.status) });
+      }
+      release = await response.json();
+      break;
+    } catch (error) {
+      const codes = ['ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_SOCKET'];
+      const retryable = error?.retryable === true || ['TimeoutError', 'AbortError'].includes(error?.name) || codes.includes(error?.code) || codes.includes(error?.cause?.code);
+      if (!retryable || attempt === 3) throw error;
+      const delay = 2_000 * 2 ** (attempt - 1);
+      warn(`${profile.label} release lookup: transient failure on attempt ${attempt}/3; retrying in ${delay / 1000}s.`);
+      await wait(delay);
+    }
+  }
+  if (release?.tag_name !== tag || !Array.isArray(release.assets)) throw new Error(`Unexpected ${profile.label} release metadata`);
   const assets = release.assets.filter((asset) => asset?.name === name);
   if (assets.length !== 1 || !Number.isSafeInteger(assets[0].id) || assets[0].id <= 0) {
     throw new Error(`Missing, ambiguous or invalid ${profile.label} ${profile.platform} asset`);

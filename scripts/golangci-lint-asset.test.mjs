@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveGolangciLintAsset } from './golangci-lint-asset.mjs';
+import { assertReleaseMetadataRequest } from './test-helpers.mjs';
 
 const asset = (id, version = '2.15.0') => ({ name: `golangci-lint-${version}-linux-amd64.tar.gz`, id });
 const release = (assets, tag_name = 'v2.15.0') => ({ tag_name, assets });
@@ -19,10 +20,7 @@ test('version bumps resolve their own archive within the fixed repository', asyn
     assert.equal(url, `https://api.github.com/repos/golangci/golangci-lint/releases/assets/${id}`);
     assert.equal(calls.length, 1);
     assert.equal(calls[0][0], `https://api.github.com/repos/golangci/golangci-lint/releases/tags/v${version}`);
-    assert.equal(calls[0][1].method, 'GET');
-    assert.equal(calls[0][1].redirect, 'error');
-    assert.deepEqual(calls[0][1].headers, { Accept: 'application/vnd.github+json' });
-    assert.ok(calls[0][1].signal instanceof AbortSignal);
+    assertReleaseMetadataRequest(calls[0][1]);
   }
 });
 
