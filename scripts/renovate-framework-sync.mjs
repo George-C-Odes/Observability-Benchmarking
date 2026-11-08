@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
+import childProcess from 'node:child_process';
+import { isDeepStrictEqual } from 'node:util';
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,8 +15,7 @@ const envFile = 'compose/.env';
 const nextManifest = 'utils/nextjs-dash/package.json';
 const nextLock = 'utils/nextjs-dash/package-lock.json';
 
-// The npm route never installs dependencies or executes code from these blobs.
-export function validateNextjsChange(base, head, lock) {
+function validateNextjsManifest(base, head) {
   const original = JSON.parse(base);
   const proposed = JSON.parse(head);
   const masked = (manifest) => {
@@ -32,6 +34,13 @@ export function validateNextjsChange(base, head, lock) {
   if (!matchesEntireString(proposed.dependencies.next, /^\d+\.\d+\.\d+$/)) {
     throw new Error('Next.js must use a stable npm version without a range');
   }
+  return { original, proposed };
+}
+
+// expectedLock must be independently generated from the trusted base lock, never
+// from the proposal: npm can preserve malicious resolved/integrity fields.
+export function validateNextjsChange(base, head, lock, expectedLock) {
+  const { original, proposed } = validateNextjsManifest(base, head);
   const parsedLock = JSON.parse(lock);
   if (parsedLock.lockfileVersion !== 3 || parsedLock.name !== proposed.name
       || parsedLock.version !== proposed.version) throw new Error('Expected the dashboard npm lockfile');
@@ -40,7 +49,44 @@ export function validateNextjsChange(base, head, lock) {
       throw new Error('Lockfile root must match the proposed dependency versions');
     }
   }
+  if (!expectedLock || !isDeepStrictEqual(parsedLock, JSON.parse(expectedLock))) {
+    throw new Error('Complete lockfile must match trusted npm regeneration');
+  }
   return original.dependencies.next !== proposed.dependencies.next;
+}
+
+export function regenerateNextjsLock(manifest, baseLock) {
+  // Use the npm shipped with the trusted Node installation, never a PR binary
+  // or a Windows shell wrapper. The workflow checks out only the trusted base.
+  const nodeDirectory = path.dirname(realpathSync(process.execPath));
+  const npmCli = [path.join(nodeDirectory, 'bin/node_modules/npm/bin/npm-cli.js'),
+    path.join(nodeDirectory, 'node_modules/npm/bin/npm-cli.js'),
+    path.resolve(nodeDirectory, '../lib/node_modules/npm/bin/npm-cli.js')].find(existsSync);
+  if (!npmCli) throw new Error('Cannot locate npm in the trusted Node installation');
+  const npmVersion = JSON.parse(readFileSync(path.join(path.dirname(npmCli), '../package.json'), 'utf8')).version;
+  const packageManager = JSON.parse(manifest).packageManager;
+  if (packageManager && packageManager !== `npm@${npmVersion}`) {
+    throw new Error('Trusted npm version must match the dashboard packageManager pin');
+  }
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'renovate-nextjs-lock-'));
+  try {
+    writeFileSync(path.join(directory, 'package.json'), manifest);
+    writeFileSync(path.join(directory, 'package-lock.json'), baseLock);
+    for (const file of ['user.npmrc', 'global.npmrc']) writeFileSync(path.join(directory, file), '');
+    // Do not expose GitHub tokens, user npm config, or the shared npm cache.
+    const env = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot,
+      TEMP: directory, TMP: directory, HOME: directory, USERPROFILE: directory };
+    const result = childProcess.spawnSync(process.execPath, [npmCli, 'install', '--package-lock-only',
+      '--ignore-scripts', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org/',
+      '--update-notifier=false',
+      '--fetch-retries=0', '--fetch-timeout=60000', '--cache', path.join(directory, 'cache'),
+      '--userconfig', path.join(directory, 'user.npmrc'), '--globalconfig', path.join(directory, 'global.npmrc')],
+    { cwd: directory, env, encoding: 'utf8', timeout: 300_000, maxBuffer: 1024 * 1024, shell: false });
+    if (result.error || result.status !== 0) throw new Error('Trusted npm lockfile regeneration failed');
+    return readFileSync(path.join(directory, 'package-lock.json'), 'utf8');
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 }
 
 function matchesEntireString(value, pattern) {
@@ -236,18 +282,21 @@ export async function prepare(event, token, route = 'env') {
   const headEnv = await readBlob(headTree, envFile, token);
   let changed;
   let manifest;
+  const allowed = new Set(route === 'nextjs'
+    ? [nextManifest, nextLock, ...generatedNextjsPaths()]
+    : [envFile, ...generatedFrameworkPaths()]);
+  // Reject source/config edits before invoking npm or materializing PR data.
+  validateFrameworkTree(baseTree.entries, headTree.entries, allowed);
   if (route === 'nextjs') {
     if (baseEnv !== headEnv) throw new Error('npm relay may not change compose/.env');
     const original = await readBlob(baseTree, nextManifest, token);
     manifest = await readBlob(headTree, nextManifest, token);
     const lock = await readBlob(headTree, nextLock, token);
-    changed = validateNextjsChange(original, manifest, lock) ? ['NEXTJS_VERSION'] : [];
+    validateNextjsManifest(original, manifest);
+    const baseLock = await readBlob(baseTree, nextLock, token);
+    const expectedLock = regenerateNextjsLock(manifest, baseLock);
+    changed = validateNextjsChange(original, manifest, lock, expectedLock) ? ['NEXTJS_VERSION'] : [];
   } else changed = validateVersionChange(baseEnv, headEnv);
-  const allowed = new Set(route === 'nextjs'
-    ? [nextManifest, nextLock, ...generatedNextjsPaths()]
-    : [envFile, ...generatedFrameworkPaths()]);
-  // Compare complete trees rather than the paginated/truncated PR files endpoint.
-  validateFrameworkTree(baseTree.entries, headTree.entries, allowed);
   if (changed.length) {
     if (route === 'nextjs') writeFileSync(resolveRepoPath(nextManifest), manifest, 'utf8');
     else writeFileSync(resolveRepoPath(envFile), headEnv, 'utf8');

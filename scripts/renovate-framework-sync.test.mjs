@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import childProcess from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
-import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare, publish, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
+import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
 
@@ -482,9 +483,10 @@ test('npm relay accepts stable dependency-only updates and requires a matching l
   proposed.dependencies.next = '99.1.2';
   const lock = { name: proposed.name, version: proposed.version, lockfileVersion: 3, packages: { '': proposed } };
   const validate = (manifest = proposed, proposedLock = lock) => validateNextjsChange(
-    JSON.stringify(original), JSON.stringify(manifest), JSON.stringify(proposedLock));
+    JSON.stringify(original), JSON.stringify(manifest), JSON.stringify(proposedLock), JSON.stringify(lock));
   assert.equal(validate(), true);
   assert.equal(validateNextjsChange(JSON.stringify(original), JSON.stringify(original),
+    JSON.stringify({ ...lock, packages: { '': original } }),
     JSON.stringify({ ...lock, packages: { '': original } })), false);
   for (const edit of [
     (value) => { value.scripts.build = 'malicious command'; },
@@ -536,6 +538,7 @@ test('npm preparation rejects script changes before materializing PR data or iss
     assert.ok(content, route);
     return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
   });
+  for (const [file, entry] of head) base.set(file, entry);
   const add = (tree, file, content) => {
     const sha = gitBlobSha(content);
     blobs.set(sha, content);
@@ -548,6 +551,7 @@ test('npm preparation rejects script changes before materializing PR data or iss
   proposed.dependencies.next = '99.1.2';
   proposed.scripts.build = 'malicious command';
   add(base, file, original);
+  add(base, 'utils/nextjs-dash/package-lock.json', readFileSync(resolveRepoPath('utils/nextjs-dash/package-lock.json'), 'utf8'));
   add(head, file, JSON.stringify(proposed));
   add(head, 'utils/nextjs-dash/package-lock.json', JSON.stringify({
     name: proposed.name, version: proposed.version, lockfileVersion: 3, packages: { '': proposed },
@@ -555,5 +559,126 @@ test('npm preparation rejects script changes before materializing PR data or iss
   await assert.rejects(prepare({ number: state.number, pull_request: { base: { sha: state.baseSha } } },
     'synthetic-test-token', 'nextjs'), /Only existing npm/);
   assert.equal(readFileSync(resolveRepoPath(file), 'utf8'), original);
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
+});
+
+test('complete npm lock validation rejects transitive tampering and missing independent evidence', () => {
+  const manifest = readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8');
+  const trusted = readFileSync(resolveRepoPath('utils/nextjs-dash/package-lock.json'), 'utf8');
+  const packagePath = 'node_modules/react';
+  const validate = (lock, expected = trusted) => validateNextjsChange(manifest, manifest, JSON.stringify(lock), expected);
+  const edits = [
+    (lock) => { lock.packages[packagePath].resolved = 'https://evil.example/payload.tgz'; },
+    (lock) => { lock.packages[packagePath].resolved = 'https://registry.npmjs.org/other/-/other-1.0.0.tgz'; },
+    (lock) => { lock.packages[packagePath].integrity = 'sha512-attacker'; },
+    (lock) => { lock.packages[packagePath].version = '99.1.2'; },
+    (lock) => { delete lock.packages[packagePath]; },
+    (lock) => { lock.packages['node_modules/extra'] = { version: '1.0.0' }; },
+    (lock) => { lock.packages[packagePath] = { resolved: '../payload', link: true }; },
+    (lock) => { lock.packages[packagePath].dependencies = { extra: '1.0.0' }; },
+    (lock) => { lock.dependencies = { extra: { version: '1.0.0' } }; },
+  ];
+  for (const edit of edits) {
+    const lock = JSON.parse(trusted);
+    edit(lock);
+    assert.throws(() => validate(lock), /Complete lockfile/);
+  }
+  assert.throws(() => validate(JSON.parse(trusted), null), /Complete lockfile/);
+  // Formatting and object key order are not security-relevant differences.
+  const reordered = Object.fromEntries(Object.entries(JSON.parse(trusted)).reverse());
+  assert.equal(validate(reordered), false);
+});
+
+test('lock regeneration runs real npm without installing dependencies or executing scripts', (t) => {
+  const manifest = JSON.stringify({ name: 'relay-fixture', version: '1.0.0',
+    scripts: { preinstall: 'node -e "require(\'fs\').writeFileSync(\'script-ran\', \'unsafe\')"' } });
+  const lock = JSON.stringify({ name: 'relay-fixture', version: '1.0.0', lockfileVersion: 3,
+    requires: true, packages: { '': { name: 'relay-fixture', version: '1.0.0', hasInstallScript: true } } });
+  const spawn = childProcess.spawnSync;
+  t.mock.method(childProcess, 'spawnSync', (...args) => {
+    const result = spawn(...args);
+    assert.equal(existsSync(path.join(args[2].cwd, 'script-ran')), false);
+    assert.equal(existsSync(path.join(args[2].cwd, 'node_modules')), false);
+    return result;
+  });
+  const result = JSON.parse(regenerateNextjsLock(manifest, lock));
+  assert.equal(result.name, 'relay-fixture');
+  assert.equal(result.lockfileVersion, 3);
+});
+
+test('npm regeneration isolates input/config/credentials and fails closed on tool failure', (t) => {
+  const baseLock = '{"trusted":"base"}';
+  const manifest = '{"name":"fixture"}';
+  let directory;
+  const mock = t.mock.method(childProcess, 'spawnSync', (executable, args, options) => {
+    directory = options.cwd;
+    assert.equal(executable, process.execPath);
+    assert.equal(options.shell, false);
+    assert.equal(options.timeout, 300_000);
+    for (const flag of ['--package-lock-only', '--ignore-scripts', '--no-audit', '--no-fund',
+      '--registry=https://registry.npmjs.org/']) assert.ok(args.includes(flag));
+    assert.equal(readFileSync(path.join(directory, 'package-lock.json'), 'utf8'), baseLock);
+    assert.equal(readFileSync(path.join(directory, 'package.json'), 'utf8'), manifest);
+    assert.equal(readFileSync(path.join(directory, 'user.npmrc'), 'utf8'), '');
+    assert.equal(readFileSync(path.join(directory, 'global.npmrc'), 'utf8'), '');
+    assert.equal(options.env.GH_TOKEN, undefined);
+    assert.equal(options.env.RENOVATE_SYNC_TOKEN, undefined);
+    assert.equal(options.env.NPM_CONFIG_USERCONFIG, undefined);
+    assert.equal(existsSync(path.join(directory, 'node_modules')), false);
+    return { status: 1 };
+  });
+  assert.throws(() => regenerateNextjsLock(manifest, baseLock), /regeneration failed/);
+  assert.equal(mock.mock.callCount(), 1);
+  assert.equal(existsSync(directory), false);
+});
+
+test('npm preparation rejects a tampered full lock before state/output/writes and accepts its trusted control', async (t) => {
+  const blobs = new Map();
+  const { state, base, head, mock } = publicationFixture(t, (route, options) => {
+    assert.equal(options.method, 'GET');
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  });
+  base.clear();
+  head.clear();
+  const add = (tree, file, content) => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { type: 'blob', mode: '100644', sha });
+  };
+  const manifest = readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8');
+  const trusted = readFileSync(resolveRepoPath('utils/nextjs-dash/package-lock.json'), 'utf8');
+  for (const tree of [base, head]) {
+    add(tree, 'compose/.env', env);
+    add(tree, 'utils/nextjs-dash/package.json', manifest);
+    add(tree, 'utils/nextjs-dash/package-lock.json', trusted);
+  }
+  const tampered = JSON.parse(trusted);
+  tampered.packages['node_modules/react'].resolved = 'https://evil.example/payload.tgz';
+  add(head, 'utils/nextjs-dash/package-lock.json', JSON.stringify(tampered));
+  const npm = t.mock.method(childProcess, 'spawnSync', (_executable, _args, options) => {
+    assert.deepEqual(JSON.parse(readFileSync(path.join(options.cwd, 'package-lock.json'), 'utf8')), JSON.parse(trusted));
+    return { status: 0 }; // Unchanged manifest: trusted base lock is the expected result.
+  });
+  const stateFile = path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json');
+  const beforeState = readFileSync(stateFile, 'utf8');
+  const output = path.join(process.env.RUNNER_TEMP, 'output');
+  const originalOutput = process.env.GITHUB_OUTPUT;
+  process.env.GITHUB_OUTPUT = output;
+  t.after(() => {
+    if (originalOutput === undefined) delete process.env.GITHUB_OUTPUT;
+    else process.env.GITHUB_OUTPUT = originalOutput;
+  });
+  const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
+  await assert.rejects(prepare(event, 'synthetic-test-token', 'nextjs'), /Complete lockfile/);
+  assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
+  assert.equal(existsSync(output), false);
+  assert.equal(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8'), manifest);
+  add(head, 'utils/nextjs-dash/package-lock.json', trusted);
+  await prepare(event, 'synthetic-test-token', 'nextjs');
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, 'utf8')).changed, []);
+  assert.match(readFileSync(output, 'utf8'), /changed=false/);
+  assert.equal(npm.mock.callCount(), 2);
   assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
 });
