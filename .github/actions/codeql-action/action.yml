@@ -16,6 +16,9 @@ inputs:
     description: CodeQL build mode for initialization (none, autobuild, manual).
     required: false
     default: none
+  tools:
+    description: Optional local CodeQL bundle archive or upstream tools selector.
+    required: false
   category:
     description: Category for analysis or uploaded results. Omit to use the upstream default.
     required: false
@@ -72,6 +75,7 @@ runs:
       with:
         languages: ${{ inputs.languages }}
         build-mode: ${{ inputs.build-mode }}
+        tools: ${{ inputs.tools }}
 
     # Honor callers that run analysis or uploads after an earlier step failed.
     - name: Perform CodeQL Analysis

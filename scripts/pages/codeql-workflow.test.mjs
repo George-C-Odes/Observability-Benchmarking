@@ -47,6 +47,16 @@ test('Java setup and compilation depend only on the matrix language', () => {
   assert.match(step('Set up JDK 25'), /^[ ]{10}cache: maven$/m);
 });
 
+test('every language uses a verified local bundle and the wrapper forwards tools', () => {
+  assert.match(step('Resolve CodeQL bundle'), /node --test scripts\/codeql-bundle.test.mjs/);
+  assert.match(step('Resolve CodeQL bundle'), /CODEQL_LANGUAGE: \$\{\{ matrix.language }}/);
+  assert.match(step('Download CodeQL bundle'), /sha256sum --check --strict/);
+  assert.match(step('Initialize CodeQL'), /tools: \$\{\{ runner.temp }}\/codeql-bundle.tar.zst/);
+  const wrapper = readFileSync(join(root, '.github/actions/codeql-action/action.yml'), 'utf8');
+  assert.match(wrapper, /tools: \$\{\{ inputs.tools }}/);
+  assert.equal(workflow.split("- 'scripts/codeql-bundle*.mjs'").length - 1, 2);
+});
+
 test('fresh Java databases compile all JVM services plus the orchestrator, excluding native builds', () => {
   const build = step('Build Java modules');
   const registry = build.match(/SERVICE_MODULES=\(\s*([\s\S]*?)\s*\)/);
