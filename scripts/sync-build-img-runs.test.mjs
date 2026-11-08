@@ -59,6 +59,7 @@ test('Pekko builds sync independent HTTP and Core pins while tags follow HTTP', 
 
 test('every versioned build configuration can be updated from env values', () => {
   const files = readdirSync(resolveRepoPath('.run')).filter((file) => file.startsWith('[build-img]') && file.endsWith('.run.xml'));
+  const nextVersion = JSON.parse(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8')).dependencies.next;
   let versionedCount = 0;
   for (const file of files) {
     const original = readFileSync(resolveRepoPath(`.run/${file}`), 'utf8');
@@ -68,7 +69,7 @@ test('every versioned build configuration can be updated from env values', () =>
       continue;
     }
     versionedCount += 1;
-    const imageVersion = file.includes('Django') ? '92.4.6-python93.5' : file.includes('Next.js') ? '16.4.5-node28' : file.includes('Go') ? '91.3.5' : '91.3.5-java26';
+    const imageVersion = file.includes('Django') ? '92.4.6-python93.5' : file.includes('Next.js') ? `${nextVersion}-node${newVersions.NODE_MAJOR_VERSION}` : file.includes('Go') ? '91.3.5' : '91.3.5-java26';
     assert.ok(actual.includes(`:${imageVersion}"`), file);
     for (const [, key] of original.matchAll(/name="name" value="([A-Z_]+_VERSION)"/g)) {
       assert.ok(actual.includes(`<option name="value" value="${newVersions[key]}" />`), `${file}: ${key}`);
