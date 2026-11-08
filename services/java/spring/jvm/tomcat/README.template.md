@@ -16,7 +16,7 @@ A REST service implementation built with Spring Boot {{SPRING_BOOT_VERSION}} run
 ### Framework & Runtime
 - **Framework**: Spring Boot {{SPRING_BOOT_VERSION}}
 - **Web Server**: Apache Tomcat (embedded)
-- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
+- **Java Version**: Eclipse Temurin {{JAVA_MAJOR_VERSION}} (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform OR Virtual (single mode per deployment)
 
