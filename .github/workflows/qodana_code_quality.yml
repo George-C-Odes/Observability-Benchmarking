@@ -7,6 +7,7 @@ on:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
+      - 'scripts/qodana-cli-asset*.mjs'
       - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -17,6 +18,7 @@ on:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/qodana_code_quality.yml'
+      - 'scripts/qodana-cli-asset*.mjs'
       - '.github/actions/upload-artifact/**'
       - 'qodana.yaml'
       - '.qodana/baseline/**'
@@ -50,11 +52,14 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Test Qodana CLI release lookup
+        run: node --test scripts/qodana-cli-asset.test.mjs
+
       - name: Install Qodana CLI
         timeout-minutes: 10
         shell: bash
         env:
-          # Keep these aligned with common/cli.json in the pinned qodana-action.
+          # Pin the CLI independently; verify the archive before installing it.
           QODANA_CLI_VERSION: '2026.2.3'
           QODANA_CLI_SHA256: '86554e8ac62f65009245211baf56b184d0f57df86dbcddd54fbffcd6dc0cfe96'
         run: |
@@ -68,9 +73,9 @@ jobs:
           }
           if ! download_qodana "https://github.com/JetBrains/qodana-cli/releases/download/v${QODANA_CLI_VERSION}/qodana_linux_x86_64.tar.gz"; then
             echo '::warning::Qodana CLI release download failed; trying the public release-asset API.'
-            # Fixed asset for v2026.2.3 linux_x86_64; update together with the pins.
-            # No credentials are sent; HTTPS redirects reach GitHub's asset CDN.
-            download_qodana 'https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/585558698'
+            # Resolve the exact version, never reuse an older release's asset ID.
+            asset_url="$(node scripts/qodana-cli-asset.mjs "$QODANA_CLI_VERSION")"
+            download_qodana "$asset_url"
           fi
           printf '%s  %s\n' "$QODANA_CLI_SHA256" "$RUNNER_TEMP/qodana-cli.tar.gz" | sha256sum --check --strict
           mkdir -p "$RUNNER_TEMP/qodana-cli"
