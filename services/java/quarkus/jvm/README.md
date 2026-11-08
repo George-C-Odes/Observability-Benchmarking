@@ -15,7 +15,7 @@ A high-performance REST service implementation built with Quarkus 3.40.1.1 runni
 
 ### Framework & Runtime
 - **Framework**: Quarkus 3.40.1.1
-- **Java Version**: Eclipse Temurin 25.0.5.0.3
+- **Java Version**: Eclipse Temurin 25 (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
