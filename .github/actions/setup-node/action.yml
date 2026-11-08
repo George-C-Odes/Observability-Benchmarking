@@ -3,8 +3,9 @@ description: Set up Node.js using the repository's shared, pinned GitHub action.
 
 inputs:
   node-version:
-    description: Node.js version to install; callers select their required runtime.
-    required: true
+    description: Node.js version to install; defaults to the runtime pin from compose/.env.
+    required: false
+    default: '26.13.0'
   cache:
     description: Package manager whose dependencies should be cached (npm, yarn, or pnpm).
     required: false

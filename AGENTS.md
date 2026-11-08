@@ -34,7 +34,6 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 
 - Do not edit generated files directly when a template exists. Use `scripts/render-readmes.mjs` after template changes.
 - Keep GitHub Actions pinned to full commit SHAs with version comments.
-- Keep workflow-level `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` scoped at top-level `env:` only.
 - Runtime containers stay non-root and multi-stage; do not add build tools to final images.
 - Compose profile, CPU, memory, ulimit, health, and telemetry settings are part of benchmark fairness.
 - `service.name` and endpoint response semantics must remain stable across benchmark variants.
@@ -65,7 +64,7 @@ Use broader CI reasoning only after the focused path is clean or when shared con
 - Telemetry: `rg "otel|OpenTelemetry|service.name|OTEL_|Micrometer|Pyroscope" services compose config utils`
 - Generated docs: `rg "Generated from|render-readmes|template.md" README.md docs services integration-tests scripts`
 - Command execution/security: `rg "ProcessBuilder|CommandPolicy|WorkspacePathValidator|RequireOrchestratorAuth|BearerAuth" utils/orchestrator`
-- CI pinning: `rg "uses: [^@]+@[^0-9a-f]|FORCE_JAVASCRIPT_ACTIONS_TO_NODE24" .github/workflows`
+- CI pinning: `rg "uses: [^@]+@[^0-9a-f]" .github/workflows`
 
 ## Editing posture
 

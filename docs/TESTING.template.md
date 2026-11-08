@@ -134,13 +134,13 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto 25.0.4 or Eclipse Temurin 25.0.4)
+Java: {{JAVA_MAJOR_VERSION}} (Amazon Corretto or Eclipse Temurin; patch determined by the selected JDK image)
 Maven: 3.9+
 Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.16 also supported)
 Quarkus: {{QUARKUS_VERSION}}
 ```
 
-> **Important**: Java 25 is required. If you have a different version, use Docker builds (see below).
+> **Important**: Java {{JAVA_MAJOR_VERSION}} is required. If you have a different version, use Docker builds (see below).
 
 #### Test Structure
 
@@ -474,8 +474,6 @@ The quality workflow does more than execute tests:
 1. Runs syntax checks, prints the Ruff version for visibility, then runs Ruff lint and format checks for the shared `common` package.
 2. Installs the shared package into each runtime module environment.
 3. Prints the Ruff version, runs module syntax checks, Ruff lint and format checks, `python manage.py check`, and the shared test suite.
-
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` so `actions/setup-python@v7.1.0` is exercised on Node 24 ahead of GitHub's runtime migration.
 
 Use the following sequence when you want to reproduce the CI gates locally:
 
@@ -1783,10 +1781,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
-      - name: Set up Java 25
+      - name: Set up Java {{JAVA_MAJOR_VERSION}}
         uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
-          java-version: '25'
+          java-version: '{{JAVA_MAJOR_VERSION}}'
           distribution: 'corretto'
       
       - name: Test Quarkus JVM
@@ -1910,7 +1908,7 @@ cache:
 
 test:quarkus:
   stage: test
-  image: amazoncorretto:25
+  image: amazoncorretto:{{JAVA_MAJOR_VERSION}}
   script:
     - cd services/java/quarkus/jvm
     - mvn clean test
@@ -1921,7 +1919,7 @@ test:quarkus:
 
 test:spring-jvm-tomcat:
   stage: test
-  image: amazoncorretto:25
+  image: amazoncorretto:{{JAVA_MAJOR_VERSION}}
   script:
     - cd services/java/spring/jvm/tomcat
     - mvn clean test
@@ -1932,7 +1930,7 @@ test:spring-jvm-tomcat:
 
 test:spring-jvm-netty:
   stage: test
-  image: amazoncorretto:25
+  image: amazoncorretto:{{JAVA_MAJOR_VERSION}}
   script:
     - cd services/java/spring/jvm/netty
     - mvn clean test
@@ -2008,9 +2006,9 @@ build:docker:
 # Check Java version
 java -version
 
-# Install Java 25
-# - Amazon Corretto: https://docs.aws.amazon.com/corretto/latest/corretto-25-ug/downloads-list.html
-# - Eclipse Temurin: https://adoptium.net/temurin/releases/?version=25
+# Install Java {{JAVA_MAJOR_VERSION}}
+# - Amazon Corretto: https://docs.aws.amazon.com/corretto/latest/corretto-{{JAVA_MAJOR_VERSION}}-ug/downloads-list.html
+# - Eclipse Temurin: https://adoptium.net/temurin/releases/?version={{JAVA_MAJOR_VERSION}}
 
 # Or use Docker
 docker build --target builder -t test-image .

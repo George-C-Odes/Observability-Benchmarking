@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { resolveRepoPath } from './render-readmes.mjs';
+const repoRoot = fileURLToPath(new URL('../', import.meta.url));
 
 export function readLiteralVersion(variables, key) {
   const version = Object.hasOwn(variables, key) ? variables[key] : '';
@@ -34,7 +34,7 @@ export function finishSync(results, { check, description, scriptName, displayPat
   return results;
 }
 
-export function runSyncCli(moduleUrl, sync, label, displayPath = (filePath) => path.relative(resolveRepoPath('.'), filePath)) {
+export function runSyncCli(moduleUrl, sync, label, displayPath = (filePath) => path.relative(repoRoot, filePath)) {
   if (!process.argv[1] || path.resolve(process.argv[1]) !== fileURLToPath(moduleUrl)) return;
   try {
     let envPath = 'compose/.env';

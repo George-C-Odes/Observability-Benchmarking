@@ -804,7 +804,7 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 
 **Images Used**:
 - **gcr.io/distroless/base-debian13:nonroot**: Runtime Base for JVM Builds
-- **container-registry.oracle.com/graalvm/native-image:25**: Native builds
+- **container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}**: Native builds
 - **grafana/grafana**: Visualization
 - **grafana/loki**: Logs
 - **grafana/tempo**: Traces
@@ -815,12 +815,12 @@ wrk2 -t 8 -c 200 -d 180s -R 80000 --latency http://service:8080/hello/platform
 **Multi-stage Builds**:
 ```dockerfile
 # Stage 1: Build
-FROM maven:3.10.0-eclipse-temurin-25-noble AS builder
+FROM maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble AS builder
 COPY . .
 RUN mvn clean package
 
 # Stage 2: Runtime
-FROM gcr.io/distroless/java25-debian13:nonroot
+FROM gcr.io/distroless/java{{JAVA_MAJOR_VERSION}}-debian13:nonroot
 COPY --from=builder /target/app.jar /app.jar
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 ```
@@ -996,12 +996,12 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 
 | Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.4                  | Primary JVM runtime for backend services under benchmark             |
-| **Execution**     | Runtime            | GraalVM                    | 25.0.4                  | Native image compilation for startup and memory footprint benchmarks |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | {{JAVA_MAJOR_VERSION}}                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | GraalVM                    | {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
-| **Execution**     | Runtime            | Node.js                    | 26.13.0                 | Frontend tooling and SSR runtime                                     |
+| **Execution**     | Runtime            | Node.js                    | {{NODE_MAJOR_VERSION}}.{{NODE_MINOR_PATCH_VERSION}}                 | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | {{MICRONAUT_VERSION}}   | Compile-time optimized JVM microservices framework                   |
@@ -1026,7 +1026,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0                  | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1                   | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 7.3.0                   | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 8.0.0                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2                      | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.9.3                  | Image build and lifecycle management                                 |

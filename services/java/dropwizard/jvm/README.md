@@ -46,7 +46,7 @@ If the service is started in platform mode, `/hello/virtual` returns `500` and v
 
 ## Docker
 
-**Image**: `dropwizard-jvm:latest`
+**Image**: `dropwizard-jvm:5.0.2-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -62,9 +62,9 @@ If the service is started in platform mode, `/hello/virtual` returns `500` and v
 ```powershell
 docker buildx build `
   -f services/java/dropwizard/jvm/Dockerfile `
-  -t dropwizard-jvm:latest `
+  -t dropwizard-jvm:5.0.2-java25 `
   --build-arg DROPWIZARD_VERSION=5.0.2 `
-  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:latest `
+  --build-arg BUILDKIT_BUILD_NAME=dropwizard-jvm:5.0.2-java25 `
   --load `
   services/java
 ```

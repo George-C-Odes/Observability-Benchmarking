@@ -4,7 +4,12 @@ This directory contains small repository-level helper scripts.
 
 ## Current scripts
 
+- `image-tags.mjs` - shared framework/runtime image inventory and tag formatter
+- `sync-image-tags.mjs` - generates Compose image tags and build names
+- `sync-node-versions.mjs` - relays paired Node env pins to Docker and CI
 - `sync-framework-versions.mjs` - runs every env-driven synchronizer and README renderer, including orchestrator Quarkus, the shared Python CI version, and Sonar's Python language version
+- `sync-java-runtime-versions.mjs` - synchronizes manually managed Java/GraalVM runtime pins
+- `sync-java-runtime-versions.test.mjs` - validates Java version propagation and Renovate exclusion
 - `sync-framework-versions.test.mjs` - tests canonical inventories, Python CI/Sonar versions, and generated output scope
 - `sync-django-versions.mjs` - pins Django inputs from the env and regenerates runtime/CI/Docker locks when the version changes
 - `sync-django-versions.test.mjs` - offline tests for Django pinning and compiler/hash regeneration contracts
@@ -66,7 +71,7 @@ python -m unittest discover -s scripts -p test_coverage_summary.py -v
 
 ## Framework versions and Renovate
 
-`compose/.env` is authoritative for the twelve active `*_VERSION` values. Renovate's custom regex managers
+`compose/.env` is authoritative for the framework/runtime `*_VERSION` values managed by Renovate. Renovate's custom regex managers
 read this repository's colon-style syntax, ignore commented-out alternatives, and update the env value rather
 than independently changing its generated copies. Maven lookups use the actual service coordinates, including
 the Zoomba Spark fork, Micronaut **core** BOM, and Pekko **HTTP** (not its separately versioned core libraries).
@@ -74,7 +79,38 @@ Framework major upgrades still require Dependency Dashboard approval; automerge 
 registry releases still age for three days, except vulnerability alerts. Unrelated libraries, plugins, action pins,
 Docker digests, and independent tool versions remain managed normally.
 
+### Image tags and Node upgrades
+
+The shared formatter replaces `_latest` with a runtime line: Java images use
+`<framework-version>-java<major>`, Django uses `<django-version>-python<major.minor>`,
+and Go uses its full version without a suffix. The dashboard uses
+`<next-version>-node<major>`; Next.js keeps its `package.json` source of truth.
+The orchestrator uses its Quarkus version plus the Java major. `wrk2:latest` is unchanged.
+Compose image/build-name values, IDE build configurations, and documentation are generated
+by the combined command below. Run it after changing env pins or the dashboard's Next.js dependency.
+Services, container names, resource settings and telemetry identities remain authored.
+
+`NODE_MAJOR_VERSION` and `NODE_MINOR_PATCH_VERSION` form a single stable Node release.
+Keep their active lines adjacent, major first: Renovate extracts the pair as one dependency
+using its `node-version` datasource and updates both fields together. The existing guarded
+workflow accepts only these version values, generates Docker/CI/docs/tags from trusted base
+scripts, and commits the resulting files. Major upgrades retain Dependency Dashboard approval.
+CI workflows inherit the synchronized setup-action defaults, with explicit caller overrides still supported.
+Future Node upgrades do not need to rewrite workflow files or expand the sync token permissions.
+Downstream Node Docker version updates are disabled; digest refreshes remain enabled.
+When a Node release changes, the synchronizer drops a stale Docker digest rather than
+carrying it to a different tag; Renovate can then pin the digest for the new tag.
+
 ### One command for manual changes
+
+`JAVA_MAJOR_VERSION` and `JAVA_MINOR_PATCH_VERSION` also live in `compose/.env`.
+`JAVA_MINOR_PATCH_VERSION` accepts two to four dot-separated numeric components, for example
+`0.5`, `0.5.0`, or `0.5.0.3`. The full release prepends `JAVA_MAJOR_VERSION`.
+Java and GraalVM upgrades are manual: these two pins are excluded from Renovate extraction and its
+framework-upgrade validator. The combined sync relays them to compiler targets, native-image/SVM
+versions, Docker defaults, CI Java selections, IDE settings, and documentation. Docker
+`JAVA_MINOR_RELEASE` retains its leading dot, derived from the env minor.patch value. When the Java major changes,
+the orchestrator Maven builder digest must be refreshed for the new tag.
 
 After editing the env, run the same command used by **[doc] Render Updates** and Renovate:
 

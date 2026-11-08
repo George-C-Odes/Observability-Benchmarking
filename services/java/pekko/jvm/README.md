@@ -36,7 +36,7 @@ After changing either pin, run `node scripts/sync-framework-versions.mjs` (or In
 to refresh literal Maven/Docker defaults, IDE build arguments, and documentation. Compose passes both pins as build arguments.
 Review HTTP/Core compatibility when changing release lines; the synchronizer does not resolve compatible pairs.
 ## Docker
-**Image**: `pekko-jvm:1.4.2_latest`
+**Image**: `pekko-jvm:1.4.2-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|

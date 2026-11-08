@@ -1,9 +1,5 @@
 name: Django Python Quality
 
-env:
-  # TODO(node24-migration): Remove once GitHub's default action runtime is Node 24.
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 on:
   workflow_dispatch:
   pull_request:

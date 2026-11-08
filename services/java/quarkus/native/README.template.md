@@ -16,7 +16,7 @@ A high-performance REST service implementation built with Quarkus {{QUARKUS_VERS
 ### Framework & Runtime
 - **Framework**: Quarkus {{QUARKUS_VERSION}}
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
-- **Base Java**: 25.0.4
+- **Base Java**: {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
 - **GC**: G1 Garbage Collector (Enterprise only)
 - **Thread Models**: Platform, Virtual, and Reactive (all in one deployment)
 
@@ -208,7 +208,7 @@ Same as JVM version:
 ## Building and Running
 
 ### Prerequisites
-- GraalVM Native Image 25.0.4+ (Enterprise or Community)
+- GraalVM Native Image {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}+ (Enterprise or Community)
 - Maven 3.9+
 - Docker (for containerized build)
 - 16GB+ RAM (for native compilation)
@@ -224,14 +224,14 @@ cd services/java/quarkus/native
 ./mvnw verify -Dnative \
   -Dquarkus.profile=stage \
   -Dquarkus.native.native-image-xmx=9g \
-  -Dmaven.compiler.release=25
+  -Dmaven.compiler.release={{JAVA_MAJOR_VERSION}}
 ```
 
 ### Docker Build (Recommended)
 ```bash
 # Use multi-stage Dockerfile
 cd services/java/quarkus
-docker build -f native/Dockerfile -t quarkus-native:latest .
+docker build -f native/Dockerfile -t {{QUARKUS_NATIVE_IMAGE}} .
 
 # Builder stage: GraalVM Native Image compilation
 # Runner stage: Debian slim with native binary
@@ -262,7 +262,7 @@ docker compose --project-directory compose \
 ### Dockerfile Highlights
 ```dockerfile
 # Builder stage - GraalVM Native Image
-FROM container-registry.oracle.com/graalvm/native-image:25.0.4-ol9
+FROM container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9
 
 # Source code from JVM build (shared)
 COPY jvm/src /code/src

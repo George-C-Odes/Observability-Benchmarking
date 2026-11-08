@@ -6,10 +6,13 @@ import { syncBuildImageRuns } from './sync-build-img-runs.mjs';
 import { finishSync, readLiteralVersion, readSyncFile, runSyncCli } from './sync-common.mjs';
 import { djangoGeneratedFiles, syncDjangoVersions } from './sync-django-versions.mjs';
 import { dockerfileVersions, syncDockerfileVersions } from './sync-dockerfile-versions.mjs';
+import { imageTagGeneratedPaths, syncImageTags } from './sync-image-tags.mjs';
+import { nodeGeneratedPaths, nodeVersionKeys, syncNodeVersions } from './sync-node-versions.mjs';
 import { goModules, syncGoModVersions } from './sync-go-mod-versions.mjs';
+import { javaRuntimeGeneratedPaths, syncJavaRuntimeVersions } from './sync-java-runtime-versions.mjs';
 import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sync-java-pom-versions.mjs';
 
-export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION'];
+export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', ...nodeVersionKeys];
 const controlPom = 'utils/orchestrator/pom.xml';
 const pythonAction = '.github/actions/setup-python/action.yml';
 const sonarConfig = '.sonarcloud.properties';
@@ -42,8 +45,16 @@ export function generatedFrameworkPaths() {
     ...goModules.map((module) => `${module}/go.mod`),
     ...readdirSync(resolveRepoPath('.run')).filter((file) => file.startsWith('[build-img]') && file.endsWith('.run.xml')).map((file) => `.run/${file}`),
     ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json').map((file) => deriveOutputPath(file).replaceAll('\\', '/')),
-    ...djangoGeneratedFiles, controlPom, pythonAction, sonarConfig,
+    ...imageTagGeneratedPaths, ...nodeGeneratedPaths, ...javaRuntimeGeneratedPaths, ...djangoGeneratedFiles, controlPom, pythonAction, sonarConfig,
   ])];
+}
+
+export function generatedNextjsPaths() {
+  return generatedFrameworkPaths().filter((file) => file === 'compose/utils.yml'
+    || (file.startsWith('.run/') && readFileSync(resolveRepoPath(file), 'utf8').includes('nextjs-dash:'))
+    || loadManifestTemplatePaths('scripts/render-readmes.manifest.json').some((template) =>
+      deriveOutputPath(template).replaceAll('\\', '/') === file
+      && readFileSync(resolveRepoPath(template), 'utf8').includes('{{NEXTJS_DASH_IMAGE}}')));
 }
 
 export function syncFrameworkVersions({ envPath = 'compose/.env', check = false } = {}) {
@@ -59,8 +70,11 @@ export function syncFrameworkVersions({ envPath = 'compose/.env', check = false 
     ...syncJavaPomVersions({ envPath, check }),
     ...syncGoModVersions({ envPath, check }),
     ...syncDockerfileVersions({ envPath, check }),
+    ...syncNodeVersions({ envPath, check }),
+    ...syncImageTags({ envPath, check }),
     ...syncBuildImageRuns({ envPath, check }),
     ...finishSync(extra, { check, description: 'Control-plane/CI versions', scriptName: 'sync-framework-versions.mjs', displayPath: (file) => path.relative(resolveRepoPath('.'), file) }),
+    ...syncJavaRuntimeVersions({ envPath, check }),
   ];
   const templatePaths = loadManifestTemplatePaths('scripts/render-readmes.manifest.json');
   const before = new Map(templatePaths.map((file) => {

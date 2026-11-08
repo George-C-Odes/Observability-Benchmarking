@@ -91,21 +91,6 @@ For `services/java/**`, any Checkstyle violation still fails the build. For `uti
 
 ## Qodana Configuration (JVM Static Analysis)
 
-### GitHub Actions Node Runtime Migration Convention
-This repository sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at **workflow-level `env:`** in each workflow file so JavaScript-based actions are exercised on Node 24 ahead of GitHub's default runtime migration. The env var is not repeated at job or step level.
-
-The convention is applied in:
-
-- `.github/workflows/qodana_code_quality.yml`
-- `.github/workflows/pages.yml`
-- `.github/workflows/django_python_quality.yml`
-- `.github/workflows/nextjs_dash_quality.yml`
-- `.github/workflows/go_quality.yml`
-
-Each occurrence is annotated with `# TODO(node24-migration)` so they can be found and removed once GitHub's default runtime moves to Node 24.
-
-If GitHub still prints a warning saying an action targets Node 20 but is being forced to run on Node 24, that confirms the opt-in is active. The warning should disappear only after the action publisher updates the action metadata to native Node 24 support.
-
 ### Overview
 This repository also includes a [Qodana](https://www.jetbrains.com/qodana/) setup for deeper JVM static analysis based on IntelliJ inspections. Qodana complements the repository's Maven-side JVM quality gates rather than replacing them:
 
@@ -131,14 +116,6 @@ The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-c
 
 - **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
 - **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7.0.2` step. This is what the Pages workflow downloads to host the report.
-
-The workflow also sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration.
-
-GitHub will print an informational warning in the **Complete job** phase similar to:
-
-> Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: JetBrains/qodana-action@v2026.2.2.
-
-This warning **confirms the opt-in is working** — the action targets Node 20 in its published metadata, but our `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` setting successfully forces it to run on Node 24. The warning is purely informational and will disappear only after JetBrains republishes the action with native Node 24 support in its action metadata. No action is required on our side.
 
 It is triggered on:
 - manual dispatch
@@ -177,7 +154,7 @@ Important behavior:
 - if a push to `main` does not trigger the Qodana workflow, the previously published Pages-hosted Qodana report remains in place until the next successful `main` Qodana run refreshes it
 - if the Pages workflow resolves a Qodana run but one or both artifacts are missing or cannot be retrieved, the documentation site still deploys and the hosted Qodana landing page explains what was unavailable
 
-The Pages workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at workflow scope so GitHub-hosted JavaScript actions are exercised on Node 24 ahead of GitHub's runtime migration. All actions are pinned to full commit SHAs for supply-chain hardening (with version comments). The remaining official Pages actions still in use (`actions/configure-pages@v6`, `actions/upload-pages-artifact@v5`, and `actions/deploy-pages@v5.0.1`) are still published upstream with Node 20 metadata today, so GitHub may continue to print informational migration warnings for them until those actions are republished by their maintainers.
+All actions are pinned to full commit SHAs for supply-chain hardening (with version comments).
 
 Expected URL shape:
 
