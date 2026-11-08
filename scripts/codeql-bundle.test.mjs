@@ -193,7 +193,7 @@ test('the checked-in lock resolves all matrix languages without any network requ
     const result = await resolveCodeqlBundle(sha, language, async () => { calls += 1; throw new Error('network unavailable'); }, { lock });
     assert.equal(calls, 0);
     assert.match(result.sha256, /^[a-f0-9]{64}$/);
-    assert.match(result.api_url, /^https:\/\/api.github.com\/repos\/github\/codeql-action\/releases\/assets\/[0-9]+$/);
+    assert.match(result.api_url, /^https:\/\/api\.github\.com\/repos\/github\/codeql-action\/releases\/assets\/[0-9]+$/);
   }
 });
 
@@ -224,7 +224,7 @@ test('the actual CLI resolves each locked language and exits nonzero for invalid
   for (const language of ['java-kotlin', 'python', 'go', 'javascript-typescript']) {
     const result = spawnSync(process.execPath, [cli, language], { encoding: 'utf8', timeout: 5000 });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /^download_url=https:\/\/github.com\/github\/codeql-action\//);
+    assert.match(result.stdout, /^download_url=https:\/\/github\.com\/github\/codeql-action\//);
     assert.match(result.stdout, /\nsha256=[a-f0-9]{64}\n$/);
   }
   const invalid = spawnSync(process.execPath, [cli, '../python'], { encoding: 'utf8', timeout: 5000 });
