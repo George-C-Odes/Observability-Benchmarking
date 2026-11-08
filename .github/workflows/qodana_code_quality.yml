@@ -55,8 +55,8 @@ jobs:
         shell: bash
         env:
           # Keep these aligned with common/cli.json in the pinned qodana-action.
-          QODANA_CLI_VERSION: '2026.2.2'
-          QODANA_CLI_SHA256: 'b1fc01fb5825f4c6382f9cedcfe97d4a8eeaaddc9f5384a3b5870ca63e231c6f'
+          QODANA_CLI_VERSION: '2026.2.3'
+          QODANA_CLI_SHA256: '86554e8ac62f65009245211baf56b184d0f57df86dbcddd54fbffcd6dc0cfe96'
         run: |
           download_qodana() {
             curl --fail --silent --show-error --location \
@@ -68,7 +68,7 @@ jobs:
           }
           if ! download_qodana "https://github.com/JetBrains/qodana-cli/releases/download/v${QODANA_CLI_VERSION}/qodana_linux_x86_64.tar.gz"; then
             echo '::warning::Qodana CLI release download failed; trying the public release-asset API.'
-            # Fixed asset for v2026.2.2 linux_x86_64; update together with the pins.
+            # Fixed asset for v2026.2.3 linux_x86_64; update together with the pins.
             # No credentials are sent; HTTPS redirects reach GitHub's asset CDN.
             download_qodana 'https://api.github.com/repos/JetBrains/qodana-cli/releases/assets/585558698'
           fi
