@@ -71,12 +71,32 @@ test('extended suffixes propagate completely and can return to two components wi
   const extended = readJavaRuntimeVersion({ JAVA_MAJOR_VERSION: '25', JAVA_MINOR_PATCH_VERSION: '0.5.0.3' });
   for (const [file, original] of [
     ['services/java/quarkus/native/Dockerfile', 'ARG JAVA_RELEASE=25\nARG JAVA_MINOR_RELEASE=.0.5\n'],
-    ['utils/orchestrator/Dockerfile', 'ARG JAVA_RELEASE=25\n#ARG IMAGE_RUNTIME=amazoncorretto:25.0.5-al2023-headless\n'],
     ['services/java/helidon/mp/native/pom.xml', '<properties><maven.compiler.release>25</maven.compiler.release><graalvm.version>25.0.5</graalvm.version></properties>'],
   ]) {
     const updated = syncJavaRuntimeContent(original, file, extended);
-    assert.ok(updated.includes(file.endsWith('/pom.xml') ? '>25.0.5.0.3<' : file.includes('/native/') ? '=.0.5.0.3\n' : ':25.0.5.0.3-'), file);
+    assert.ok(updated.includes(file.endsWith('/pom.xml') ? '>25.0.5.0.3<' : '=.0.5.0.3\n'), file);
     assert.equal(syncJavaRuntimeContent(updated, file, extended), updated, file);
     assert.equal(syncJavaRuntimeContent(updated, file, current), original, file);
+  }
+});
+
+test('Corretto alternatives use only the Java major, preserve suffixes and follow later major upgrades', () => {
+  const current = readJavaRuntimeVersion({ JAVA_MAJOR_VERSION: '25', JAVA_MINOR_PATCH_VERSION: '0.5.0.3' });
+  const patch = readJavaRuntimeVersion({ JAVA_MAJOR_VERSION: '25', JAVA_MINOR_PATCH_VERSION: '0.6' });
+  const next = readJavaRuntimeVersion({ JAVA_MAJOR_VERSION: '26', JAVA_MINOR_PATCH_VERSION: '0.1' });
+  const file = 'utils/orchestrator/Dockerfile';
+  for (const tag of ['25', '25.0.5', '25.0.5.0', '25.0.5.0.3']) {
+    for (const suffix of ['', '-al2023-headless', '-alpine']) {
+      for (const newline of ['\n', '\r\n']) {
+        const original = `ARG JAVA_RELEASE=25${newline}#ARG IMAGE_RUNTIME=amazoncorretto:${tag}${suffix}${newline}`;
+        const expected = `ARG JAVA_RELEASE=25${newline}#ARG IMAGE_RUNTIME=amazoncorretto:25${suffix}${newline}`;
+        const updated = syncJavaRuntimeContent(original, file, current);
+        assert.equal(updated, expected);
+        assert.equal(syncJavaRuntimeContent(updated, file, current), expected);
+        assert.equal(syncJavaRuntimeContent(updated, file, patch), expected);
+        assert.equal(syncJavaRuntimeContent(updated, file, next),
+          `ARG JAVA_RELEASE=26${newline}#ARG IMAGE_RUNTIME=amazoncorretto:26${suffix}${newline}`);
+      }
+    }
   }
 });

@@ -47,7 +47,8 @@ export function syncJavaRuntimeContent(content, file, version) {
         if (match.startsWith(`${prefix}${major}${suffix}`)) return match;
         return `${prefix}${major}${suffix}`;
       })
-      .replace(/(amazoncorretto:)\d+(?:\.\d+){2,4}(?=[-\s"'@]|$)/g, `$1${full}`);
+      // Corretto selects its own JVM patch; the native-image release does not apply.
+      .replace(/(amazoncorretto:)\d+(?:\.\d+){0,4}(?=[-\s"'@]|$)/g, `$1${major}`);
   }
   if (file === 'qodana.yaml') {
     if (!/projectJDK: "\d+"/.test(content)) throw new Error('Missing Qodana project JDK');
