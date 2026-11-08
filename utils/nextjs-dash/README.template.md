@@ -4,6 +4,8 @@
 
 A Next.js-based dashboard UI for orchestrating and managing the Observability Benchmarking environment.
 
+Next.js versions come from `package.json`. Renovate PRs labeled `nextjs-version` relay the image tags into Compose, IDE build configurations, and generated documentation using trusted base scripts. The relay validates dependency-only manifest changes and the lockfile root without installing PR dependencies. For local dependency upgrades, run `node scripts/sync-nextjs-tags.mjs` from the repository root.
+
 ## Why it exists (the design reasoning)
 
 Benchmarking workflows are repetitive:

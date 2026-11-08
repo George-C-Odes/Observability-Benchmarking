@@ -4,8 +4,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
-import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, publish, selectGeneratedUpdates, validateFrameworkTree, validateVersionChange } from './renovate-framework-sync.mjs';
-import { frameworkVersionKeys, generatedFrameworkPaths } from './sync-framework-versions.mjs';
+import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare, publish, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
+import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
@@ -473,4 +473,87 @@ test('workflow executes only trusted base scripts, keeps credentials scoped, and
   assert.match(helper, /force: false/);
   assert.ok(helper.includes('parents: [state.headSha]'));
   assert.ok(helper.includes(config.gitIgnoredAuthors[0]));
+});
+
+
+test('npm relay accepts stable dependency-only updates and requires a matching lock root', () => {
+  const original = JSON.parse(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8'));
+  const proposed = structuredClone(original);
+  proposed.dependencies.next = '99.1.2';
+  const lock = { name: proposed.name, version: proposed.version, lockfileVersion: 3, packages: { '': proposed } };
+  const validate = (manifest = proposed, proposedLock = lock) => validateNextjsChange(
+    JSON.stringify(original), JSON.stringify(manifest), JSON.stringify(proposedLock));
+  assert.equal(validate(), true);
+  assert.equal(validateNextjsChange(JSON.stringify(original), JSON.stringify(original),
+    JSON.stringify({ ...lock, packages: { '': original } })), false);
+  for (const edit of [
+    (value) => { value.scripts.build = 'malicious command'; },
+    (value) => { value.packageManager = 'npm@99.0.0'; },
+    (value) => { value.dependencies.newPackage = '1.0.0'; },
+    (value) => { delete value.dependencies.react; },
+    ...['file:../evil', 'https://evil.example/x', '1.0.0\n', '$(command)', 'latest'].map(
+      (version) => (value) => { value.dependencies.next = version; }),
+  ]) {
+    const invalid = structuredClone(proposed);
+    edit(invalid);
+    assert.throws(() => validate(invalid), /Only existing|stable npm/);
+  }
+  assert.throws(() => validate(proposed, { ...lock, packages: { '': original } }), /Lockfile root/);
+  assert.throws(() => validate(proposed, { ...lock, lockfileVersion: 2 }), /dashboard npm lockfile/);
+});
+
+test('Next.js route allows only its manifests and generated tags, never env or source edits', () => {
+  const paths = generatedNextjsPaths();
+  assert.ok(paths.includes('compose/utils.yml'));
+  assert.ok(paths.some((file) => file.startsWith('.run/')));
+  assert.ok(paths.includes('utils/nextjs-dash/README.md'));
+  const allowed = new Set(['utils/nextjs-dash/package.json', 'utils/nextjs-dash/package-lock.json', ...paths]);
+  for (const file of ['compose/.env', 'scripts/tool.mjs', 'utils/nextjs-dash/app/page.tsx', '.github/workflows/framework_versions.yml']) {
+    const base = blobEntries([[file, 'original']]);
+    const head = blobEntries([[file, 'changed']]);
+    assert.throws(() => validateFrameworkTree(base, head, allowed), /Unexpected file/);
+  }
+  const configRule = config.packageRules.find(({ addLabels }) => addLabels?.includes('nextjs-version'));
+  assert.deepEqual(configRule.matchManagers, ['npm']);
+  assert.deepEqual(configRule.matchPackageNames, ['next']);
+});
+
+test('Next.js publication ignores unrelated pending framework outputs', async (t) => {
+  const { state, mock } = publicationFixture(t);
+  state.route = 'nextjs';
+  state.changed = ['NEXTJS_VERSION'];
+  writeFileSync(path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'), JSON.stringify(state));
+  await publish('synthetic-test-token');
+  assert.equal(mock.mock.callCount(), 5);
+});
+
+
+test('npm preparation rejects script changes before materializing PR data or issuing writes', async (t) => {
+  const blobs = new Map();
+  const { state, base, head, mock } = publicationFixture(t, (route, options) => {
+    assert.equal(options.method, 'GET');
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  });
+  const add = (tree, file, content) => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { type: 'blob', mode: '100644', sha });
+  };
+  for (const tree of [base, head]) add(tree, 'compose/.env', env);
+  const file = 'utils/nextjs-dash/package.json';
+  const original = readFileSync(resolveRepoPath(file), 'utf8');
+  const proposed = JSON.parse(original);
+  proposed.dependencies.next = '99.1.2';
+  proposed.scripts.build = 'malicious command';
+  add(base, file, original);
+  add(head, file, JSON.stringify(proposed));
+  add(head, 'utils/nextjs-dash/package-lock.json', JSON.stringify({
+    name: proposed.name, version: proposed.version, lockfileVersion: 3, packages: { '': proposed },
+  }));
+  await assert.rejects(prepare({ number: state.number, pull_request: { base: { sha: state.baseSha } } },
+    'synthetic-test-token', 'nextjs'), /Only existing npm/);
+  assert.equal(readFileSync(resolveRepoPath(file), 'utf8'), original);
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
 });

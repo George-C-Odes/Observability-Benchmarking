@@ -134,7 +134,7 @@ The project implements a comprehensive testing strategy covering:
 #### Version Requirements
 
 ```
-Java: 25 (Amazon Corretto {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}} or Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}})
+Java: {{JAVA_MAJOR_VERSION}} (Amazon Corretto or Eclipse Temurin; patch determined by the selected JDK image)
 Maven: 3.9+
 Spring Boot: {{SPRING_BOOT_VERSION}} (3.5.16 also supported)
 Quarkus: {{QUARKUS_VERSION}}

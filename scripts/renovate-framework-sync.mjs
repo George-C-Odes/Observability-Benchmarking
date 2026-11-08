@@ -4,11 +4,44 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { resolveRepoPath } from './render-readmes.mjs';
-import { frameworkVersionKeys, generatedFrameworkPaths } from './sync-framework-versions.mjs';
+import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 
 import { readNodeVersion } from './sync-node-versions.mjs';
 
 const envFile = 'compose/.env';
+const nextManifest = 'utils/nextjs-dash/package.json';
+const nextLock = 'utils/nextjs-dash/package-lock.json';
+
+// The npm route never installs dependencies or executes code from these blobs.
+export function validateNextjsChange(base, head, lock) {
+  const original = JSON.parse(base);
+  const proposed = JSON.parse(head);
+  const masked = (manifest) => {
+    const copy = structuredClone(manifest);
+    for (const section of ['dependencies', 'devDependencies']) {
+      for (const [name, version] of Object.entries(copy[section] ?? {})) {
+        if (!matchesEntireString(version, /^[~^]?\d+\.\d+\.\d+$/)) throw new Error('Expected a stable npm version');
+        copy[section][name] = '<version>';
+      }
+    }
+    return copy;
+  };
+  if (JSON.stringify(masked(original)) !== JSON.stringify(masked(proposed))) {
+    throw new Error('Only existing npm dependency versions may change');
+  }
+  if (!matchesEntireString(proposed.dependencies.next, /^\d+\.\d+\.\d+$/)) {
+    throw new Error('Next.js must use a stable npm version without a range');
+  }
+  const parsedLock = JSON.parse(lock);
+  if (parsedLock.lockfileVersion !== 3 || parsedLock.name !== proposed.name
+      || parsedLock.version !== proposed.version) throw new Error('Expected the dashboard npm lockfile');
+  for (const section of ['dependencies', 'devDependencies']) {
+    if (JSON.stringify(parsedLock.packages?.['']?.[section]) !== JSON.stringify(proposed[section])) {
+      throw new Error('Lockfile root must match the proposed dependency versions');
+    }
+  }
+  return original.dependencies.next !== proposed.dependencies.next;
+}
 
 function matchesEntireString(value, pattern) {
   return typeof value === 'string' && pattern.exec(value)?.[0] === value;
@@ -191,7 +224,8 @@ function statePath() {
   return path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json');
 }
 
-async function prepare(event, token) {
+export async function prepare(event, token, route = 'env') {
+  if (!['env', 'nextjs'].includes(route)) throw new Error('Unknown version relay route');
   const repository = process.env.GITHUB_REPOSITORY;
   const baseSha = event.pull_request.base.sha;
   const pr = await api('readPull', token, { identifier: event.number });
@@ -200,12 +234,25 @@ async function prepare(event, token) {
   const headTree = await readTree(pr.head.sha, token);
   const baseEnv = await readBlob(baseTree, envFile, token);
   const headEnv = await readBlob(headTree, envFile, token);
-  const changed = validateVersionChange(baseEnv, headEnv);
-  const allowed = new Set([envFile, ...generatedFrameworkPaths()]);
+  let changed;
+  let manifest;
+  if (route === 'nextjs') {
+    if (baseEnv !== headEnv) throw new Error('npm relay may not change compose/.env');
+    const original = await readBlob(baseTree, nextManifest, token);
+    manifest = await readBlob(headTree, nextManifest, token);
+    const lock = await readBlob(headTree, nextLock, token);
+    changed = validateNextjsChange(original, manifest, lock) ? ['NEXTJS_VERSION'] : [];
+  } else changed = validateVersionChange(baseEnv, headEnv);
+  const allowed = new Set(route === 'nextjs'
+    ? [nextManifest, nextLock, ...generatedNextjsPaths()]
+    : [envFile, ...generatedFrameworkPaths()]);
   // Compare complete trees rather than the paginated/truncated PR files endpoint.
   validateFrameworkTree(baseTree.entries, headTree.entries, allowed);
-  if (changed.length) writeFileSync(resolveRepoPath(envFile), headEnv, 'utf8');
-  writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, changed }));
+  if (changed.length) {
+    if (route === 'nextjs') writeFileSync(resolveRepoPath(nextManifest), manifest, 'utf8');
+    else writeFileSync(resolveRepoPath(envFile), headEnv, 'utf8');
+  }
+  writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, changed, route }));
   appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\ndjango=${changed.includes('DJANGO_VERSION')}\n`);
   console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No framework version changes');
 }
@@ -218,7 +265,7 @@ export async function publish(token) {
   if (pr.head.sha !== state.headSha || pr.head.ref !== state.ref) throw new Error('PR head changed during synchronization; rerun on the new revision');
   const baseTree = await readTree(state.baseSha, token);
   const headTree = await readTree(state.headSha, token);
-  const files = [...new Set(generatedFrameworkPaths())].map((file) => ({
+  const files = [...new Set(state.route === 'nextjs' ? generatedNextjsPaths() : generatedFrameworkPaths())].map((file) => ({
     file, content: readFileSync(resolveRepoPath(file), 'utf8'),
   }));
   const updates = selectGeneratedUpdates(files, baseTree.entries, headTree.entries);
@@ -235,7 +282,8 @@ export async function publish(token) {
   const tree = await api('createTree', writeToken, { body: { base_tree: headTree.sha, tree: entries } });
   requireGitSha(tree.sha);
   const commit = await api('createCommit', writeToken, { body: {
-    message: 'chore: relay framework versions from compose/.env', tree: tree.sha, parents: [state.headSha],
+    message: state.route === 'nextjs' ? 'chore: relay Next.js image tags from package.json'
+      : 'chore: relay framework versions from compose/.env', tree: tree.sha, parents: [state.headSha],
     author: { name: 'github-actions[bot]', email: '41898282+github-actions[bot]@users.noreply.github.com' },
   } });
   requireGitSha(commit.sha);
@@ -248,8 +296,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const mode = process.argv[2];
     const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
     if (mode === 'prepare') await prepare(event, process.env.GH_TOKEN);
+    else if (mode === 'prepare-nextjs') await prepare(event, process.env.GH_TOKEN, 'nextjs');
     else if (mode === 'publish') await publish(process.env.GH_TOKEN);
-    else throw new Error('Usage: node scripts/renovate-framework-sync.mjs prepare|publish');
+    else throw new Error('Usage: node scripts/renovate-framework-sync.mjs prepare|prepare-nextjs|publish');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

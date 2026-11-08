@@ -121,7 +121,7 @@ memory: 2GB        # Maximum memory
 ### Software Versions
 
 **Java**:
-- JDK: Eclipse Temurin {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}
+- JDK: Eclipse Temurin {{JAVA_MAJOR_VERSION}}
 - JVM Options: `-XX:+UseG1GC -XX:MaxGCPauseMillis=100`
 - Heap: 512MB-1GB depending on implementation
 

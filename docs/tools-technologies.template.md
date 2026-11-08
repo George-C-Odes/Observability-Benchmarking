@@ -996,7 +996,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 
 | Layer             | Category           | Technology                 | Version                 | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|-------------------------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}                  | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | {{JAVA_MAJOR_VERSION}}                  | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |

@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
-[![Java](https://img.shields.io/badge/Java-25.0.5.0.3-ED8B00.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-25-ED8B00.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.40.1.1-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-5.2.22-1A1A2E.svg)](https://micronaut.io/)
@@ -79,7 +79,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 
 | Layer             | Category           | Technology                 | Version    | Purpose / Role                                                       |
 |-------------------|--------------------|----------------------------|------------|----------------------------------------------------------------------|
-| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25.0.5.0.3 | Primary JVM runtime for backend services under benchmark             |
+| **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25         | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.5.0.3 | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | 1.27.3     | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18    | Interpreted runtime for Django benchmark services                    |
@@ -169,6 +169,8 @@ If you’re searching for projects like this, these are the topics it covers:
   - Built with Next.js 16.4.5 and Material-UI 9.5.0
 
 ### 🚀 REST Service Implementations
+
+The JVM target is Java 25; its patch is determined by the pinned builder image (including the orchestrator’s jlink runtime). `JAVA_MINOR_PATCH_VERSION` selects the GraalVM native-image release suffix and does not select a Temurin patch. Refresh JVM builder digests independently when upgrading their JDK patch.
 
 #### Java (JDK 25 – Eclipse Temurin)
 - **Spring Boot 4.1.2 (3.5.16 also supported)**
@@ -507,7 +509,7 @@ The numbers below are a curated summary of a representative run.
 - **Network**: Docker bridge network
 
 #### Software Versions
-- **Java JDK**: Eclipse Temurin 25.0.5.0.3
+- **Java JDK**: Eclipse Temurin 25
 - **Java Native**: GraalVM Enterprise 25.0.5.0.3-ol9
 - **Spring Boot**: 4.1.2 (3.5.16 also supported)
 - **Quarkus**: 3.40.1.1

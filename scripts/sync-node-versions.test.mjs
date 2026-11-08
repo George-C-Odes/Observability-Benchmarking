@@ -65,7 +65,10 @@ test('Node runtime inventory propagates a full release without changing action p
     if (file.endsWith('/Dockerfile')) {
       assert.match(updated, /node:28\.0\.1-alpine3\.24/);
       assert.doesNotMatch(updated, /node:28\.0\.1-[^\r\n]*@sha256:/);
-      assert.match(original, /node:[^\r\n]*@sha256:/);
+      const pinned = original.replace(/(node:\d+\.\d+\.\d+-[a-z0-9.-]+)(?:@sha256:[a-f0-9]+)?/g,
+        `$1@sha256:${'a'.repeat(64)}`);
+      assert.equal(syncNodeContent(pinned, file, current), pinned);
+      assert.doesNotMatch(syncNodeContent(pinned, file, next), /node:[^\r\n]*@sha256:/);
     } else {
       const actions = (content) => [...content.matchAll(/uses: [^\r\n]+/g)].map(([match]) => match);
       assert.deepEqual(actions(updated), actions(original));

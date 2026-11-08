@@ -63,7 +63,7 @@ If the service is started in platform mode, `/hello/virtual` returns `500` and v
 docker buildx build `
   -f services/java/dropwizard/jvm/Dockerfile `
   -t {{DROPWIZARD_JVM_IMAGE}} `
-  --build-arg DROPWIZARD_VERSION=5.0.2 `
+  --build-arg DROPWIZARD_VERSION={{DROPWIZARD_VERSION}} `
   --build-arg BUILDKIT_BUILD_NAME={{DROPWIZARD_JVM_IMAGE}} `
   --load `
   services/java

@@ -49,6 +49,14 @@ export function generatedFrameworkPaths() {
   ])];
 }
 
+export function generatedNextjsPaths() {
+  return generatedFrameworkPaths().filter((file) => file === 'compose/utils.yml'
+    || (file.startsWith('.run/') && readFileSync(resolveRepoPath(file), 'utf8').includes('nextjs-dash:'))
+    || loadManifestTemplatePaths('scripts/render-readmes.manifest.json').some((template) =>
+      deriveOutputPath(template).replaceAll('\\', '/') === file
+      && readFileSync(resolveRepoPath(template), 'utf8').includes('{{NEXTJS_DASH_IMAGE}}')));
+}
+
 export function syncFrameworkVersions({ envPath = 'compose/.env', check = false } = {}) {
   const variables = parseColonEnv(readFileSync(resolveRepoPath(envPath), 'utf8'));
   for (const key of frameworkVersionKeys) readLiteralVersion(variables, key);

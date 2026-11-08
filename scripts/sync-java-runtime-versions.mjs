@@ -41,7 +41,9 @@ export function syncJavaRuntimeContent(content, file, version) {
       .replace(/^(ARG JAVA_RELEASE=)\d+(\r?)$/gm, `$1${major}$2`)
       .replace(/^(ARG JAVA_MINOR_RELEASE=)\.\d+(?:\.\d+){1,3}(\r?)$/gm, `$1.${minorPatch}$2`)
       .replace(/(eclipse-temurin-)\d+(-noble)(?:@sha256:[a-f0-9]+)?/g, (match, prefix, suffix) => {
-        // A digest belongs to its tag; require an explicit refresh when changing the major.
+        // JAVA_MINOR_PATCH_VERSION selects the native-image release, not the Temurin patch.
+        // JVM patches (including jlink runtimes) are selected by the builder digest.
+        // A major change drops the digest; refresh it explicitly before benchmarking.
         if (match.startsWith(`${prefix}${major}${suffix}`)) return match;
         return `${prefix}${major}${suffix}`;
       })

@@ -158,6 +158,14 @@
   ],
   "packageRules": [
     {
+      "description": "Relay Next.js image tags using trusted base scripts.",
+      "matchManagers": ["npm"],
+      "matchFileNames": ["utils/nextjs-dash/package.json"],
+      "matchPackageNames": ["next"],
+      "addLabels": ["nextjs-version"],
+      "rebaseWhen": "behind-base-branch"
+    },
+    {
       "description": "Node Docker tag versions follow the paired env pin; retain digest refreshes.",
       "matchManagers": [
         "dockerfile"
