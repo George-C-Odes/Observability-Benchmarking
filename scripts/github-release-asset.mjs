@@ -22,6 +22,12 @@ const tools = new Map([
   }],
 ]);
 
+function validateReleaseAssetLock(lock, profile, name, expectedSha256) {
+  if (expectedSha256 === undefined || lock.repository !== profile.repository || lock.assetName !== name || lock.sha256 !== expectedSha256 || !Number.isSafeInteger(lock.assetId) || lock.assetId <= 0) {
+    throw new Error('Release asset lock does not match the pinned checksum or tool');
+  }
+}
+
 export async function resolveReleaseAsset(tool, version, fetchImpl = fetch, { wait = sleep, warn = console.error, lock, expectedSha256 } = {}) {
   const profile = tools.get(tool);
   if (!profile) throw new Error('Unsupported release asset tool');
@@ -35,9 +41,7 @@ export async function resolveReleaseAsset(tool, version, fetchImpl = fetch, { wa
   const baseUrl = `https://api.github.com/repos/${profile.repository}/releases`;
   const name = profile.assetName(version);
   if (lock?.version === version) {
-    if (expectedSha256 === undefined || lock.repository !== profile.repository || lock.assetName !== name || lock.sha256 !== expectedSha256 || !Number.isSafeInteger(lock.assetId) || lock.assetId <= 0) {
-      throw new Error('Release asset lock does not match the pinned checksum or tool');
-    }
+    validateReleaseAssetLock(lock, profile, name, expectedSha256);
     return `${baseUrl}/assets/${lock.assetId}`;
   }
   let release;
