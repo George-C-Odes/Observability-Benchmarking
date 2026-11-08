@@ -31,10 +31,10 @@ function jvmModules(directory) {
 }
 
 test('every matrix language initializes, analyzes and uploads without change-based skips', () => {
-  assert.doesNotMatch(step('Initialize CodeQL'), /^[ ]{8}if:/m);
-  for (const name of ['Perform CodeQL Analysis', 'Upload SARIF artifact']) {
-    assert.match(step(name), /^[ ]{8}if: always\(\) && !cancelled\(\)\s*$/m);
-  }
+  assert.doesNotMatch(step('Initialize CodeQL'), /^ {8}if:/m);
+  assert.match(step('Initialize CodeQL'), /id: codeql-init/);
+  assert.match(step('Perform CodeQL Analysis'), /^ {8}if: always\(\) && !cancelled\(\) && steps.codeql-init.outcome == 'success'\s*$/m);
+  assert.match(step('Upload SARIF artifact'), /^ {8}if: always\(\) && !cancelled\(\)\s*$/m);
   assert.doesNotMatch(workflow, /java-changes|has_modules|git diff/);
   assert.match(workflow, /language: java-kotlin\s+(?:#[^\n]*\n\s+)*build-mode: manual/);
   assert.match(step('Initialize CodeQL'), /CODEQL_OVERLAY_DATABASE_MODE:.*'none'/);
@@ -42,9 +42,9 @@ test('every matrix language initializes, analyzes and uploads without change-bas
 
 test('Java setup and compilation depend only on the matrix language', () => {
   for (const name of ['Set up JDK 25', 'Build Java modules']) {
-    assert.match(step(name), /^[ ]{8}if: matrix\.language == 'java-kotlin'\s*$/m);
+    assert.match(step(name), /^ {8}if: matrix\.language == 'java-kotlin'\s*$/m);
   }
-  assert.match(step('Set up JDK 25'), /^[ ]{10}cache: maven$/m);
+  assert.match(step('Set up JDK 25'), /^ {10}cache: maven$/m);
 });
 
 test('every language uses a verified local bundle and the wrapper forwards tools', () => {
@@ -80,11 +80,11 @@ test('CodeQL keeps its language category and per-language SARIF artifacts', () =
 
 test('optional build warnings use a zero-match-safe pattern and retain the report input path', () => {
   const download = step('Download build warnings');
-  assert.match(download, /^[ ]{10}pattern: codeql-build-warnings$/m);
-  assert.doesNotMatch(download, /^[ ]{10}name:/m);
-  assert.match(download, /^[ ]{10}path: \.codeql-build-warnings$/m);
-  assert.match(download, /^[ ]{10}merge-multiple: true$/m);
-  assert.match(step('Upload build warnings'), /^[ ]{10}name: codeql-build-warnings$/m);
+  assert.match(download, /^ {10}pattern: codeql-build-warnings$/m);
+  assert.doesNotMatch(download, /^ {10}name:/m);
+  assert.match(download, /^ {10}path: \.codeql-build-warnings$/m);
+  assert.match(download, /^ {10}merge-multiple: true$/m);
+  assert.match(step('Upload build warnings'), /^ {10}name: codeql-build-warnings$/m);
 });
 
 test('Java quality failures remain blocking only after analysis and artifact uploads', () => {

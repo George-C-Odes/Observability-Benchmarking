@@ -97,6 +97,7 @@ jobs:
 
       - name: Resolve CodeQL bundle
         id: bundle
+        timeout-minutes: 5
         env:
           CODEQL_LANGUAGE: ${{ matrix.language }}
         run: |
@@ -126,6 +127,7 @@ jobs:
           printf '%s  %s\n' "$BUNDLE_SHA256" "$RUNNER_TEMP/codeql-bundle.tar.zst" | sha256sum --check --strict
 
       - name: Initialize CodeQL
+        id: codeql-init
         uses: ./.github/actions/codeql-action
         env:
           # Java manual builds cannot use overlay databases. Explicitly select
@@ -251,7 +253,7 @@ jobs:
           done
 
       - name: Perform CodeQL Analysis
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.codeql-init.outcome == 'success'
         uses: ./.github/actions/codeql-action
         with:
           phase: analyze
