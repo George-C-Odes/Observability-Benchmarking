@@ -147,10 +147,6 @@ func (h *HelloHandler) Virtual(c fiber.Ctx) error {
 // parseHelloParams does zero-allocation query string parsing for the two
 // known parameters ("log" and "sleep"). It avoids url.ParseQuery entirely.
 func parseHelloParams(rawQuery []byte) (logEnabled bool, sleepSeconds int, err error) {
-	if len(rawQuery) == 0 {
-		return false, 0, nil
-	}
-
 	// Walk ampersand-separated pairs.
 	for len(rawQuery) > 0 {
 		var pair []byte
@@ -170,13 +166,9 @@ func parseHelloParams(rawQuery []byte) (logEnabled bool, sleepSeconds int, err e
 		val := pair[eqIdx+1:]
 
 		if bytesEqualString(key, "log") {
-			switch {
-			case bytesEqualString(val, "true") || bytesEqualString(val, "1"):
-				logEnabled = true
-			case bytesEqualString(val, "false") || bytesEqualString(val, "0") || len(val) == 0:
-				logEnabled = false
-			default:
-				return false, 0, fiber.NewError(fiber.StatusBadRequest, "invalid log value (expected true/false)")
+			logEnabled, err = parseLogParam(val)
+			if err != nil {
+				return false, 0, err
 			}
 		} else if bytesEqualString(key, "sleep") {
 			n, ok := parseNonNegInt(val)
@@ -187,6 +179,17 @@ func parseHelloParams(rawQuery []byte) (logEnabled bool, sleepSeconds int, err e
 		}
 	}
 	return logEnabled, sleepSeconds, nil
+}
+
+func parseLogParam(val []byte) (bool, error) {
+	switch {
+	case bytesEqualString(val, "true") || bytesEqualString(val, "1"):
+		return true, nil
+	case bytesEqualString(val, "false") || bytesEqualString(val, "0") || len(val) == 0:
+		return false, nil
+	default:
+		return false, fiber.NewError(fiber.StatusBadRequest, "invalid log value (expected true/false)")
+	}
 }
 
 func indexByte(b []byte, c byte) int {
