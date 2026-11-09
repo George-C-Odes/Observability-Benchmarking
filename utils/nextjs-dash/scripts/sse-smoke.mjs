@@ -8,7 +8,7 @@ function log(label, ...values) {
     ...values.map((value) =>
       (JSON.stringify(value) ?? 'null').replaceAll(
         /[\u007f-\u009f\u2028\u2029]/gu,
-        (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+        (character) => `\\u${character.codePointAt(0).toString(16).padStart(4, '0')}`,
       ),
     ),
   );
@@ -20,7 +20,7 @@ function dashboardBase(value) {
   if (
     /\s/u.test(value) ||
     [...value].some((character) => {
-      const code = character.charCodeAt(0);
+      const code = character.codePointAt(0);
       return code <= 31 || code === 127;
     })
   )

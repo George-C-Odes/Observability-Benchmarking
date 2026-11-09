@@ -12,16 +12,17 @@ ARG NPM_VERSION
 WORKDIR /app
 
 # Pin npm before any install step so the container build matches packageManager.
-RUN npm install -g npm@${NPM_VERSION}
+RUN npm install --ignore-scripts -g npm@${NPM_VERSION}
 
 # Copy only package manifests first for maximum layer-cache reuse.
 # This layer is invalidated ONLY when dependencies change.
 COPY package.json package-lock.json ./
 
+# Lifecycle scripts are unnecessary: the only install hook is macOS-only fsevents.
 # --prefer-offline:  use cached tarballs when available
 # --no-audit/--fund: skip non-essential network calls
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-  npm ci --prefer-offline --no-audit --fund=false
+  npm ci --ignore-scripts --prefer-offline --no-audit --fund=false
 
 # ------------ QUALITY GATE STAGE ----------------
 # Runs formatting, lint, typecheck, and tests. Gated: build won't proceed if this fails.

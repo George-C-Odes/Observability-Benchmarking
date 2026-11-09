@@ -7,54 +7,25 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
-  Collapse,
-  IconButton,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CodeIcon from '@mui/icons-material/Code';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import PendingIcon from '@mui/icons-material/Pending';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useJobRunner } from '@/app/hooks/useJobRunner';
 import { useScripts } from '@/app/hooks/useScripts';
 import type { Script } from '@/app/hooks/useScripts';
 import { createClientLogger } from '@/lib/clientLogger';
 import { ScriptSection } from './scripts/ScriptSection';
-import { InwardPulse } from './ui/InwardPulse';
 import { useTimedPulse } from '@/app/hooks/useTimedPulse';
+import { CurrentExecution } from './scripts/CurrentExecution';
+import { ExecutionLogs } from './scripts/ExecutionLogs';
 
 const clientLogger = createClientLogger('ScriptRunner');
-
-function formatTimestampHuman(iso?: string): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-}
 
 export default function ScriptRunner() {
   const { scripts, loading, error, refresh } = useScripts();
@@ -149,6 +120,8 @@ export default function ScriptRunner() {
   const envBlocked =
     envValidation !== null && (!envValidation.loaded || !envValidation.hostRepoSet);
   const envBlockedReason = 'HOST_REPO not set in .env';
+  const executeDisabled = executeBlocked || envBlocked;
+  const executeDisabledReason = envBlocked ? envBlockedReason : executeBlockedReason;
 
   useEffect(() => {
     if (!isRunning) return;
@@ -328,58 +301,6 @@ export default function ScriptRunner() {
 
   const byCategory = (cat: Script['category']) => scripts.filter((s) => s.category === cat);
 
-  const pageJob = lastJobStatus;
-  const pageStatusUi = (() => {
-    const st = pageJob?.status;
-    if (!st)
-      return { label: '—', color: 'default' as const, icon: <PendingIcon fontSize="small" /> };
-    if (st === 'SUCCEEDED')
-      return {
-        label: 'SUCCEEDED',
-        color: 'success' as const,
-        icon: <CheckCircleIcon fontSize="small" />,
-      };
-    if (st === 'FAILED')
-      return {
-        label: 'FAILED',
-        color: 'error' as const,
-        icon: <ErrorOutlineIcon fontSize="small" />,
-      };
-    if (st === 'CANCELED')
-      return { label: 'CANCELED', color: 'error' as const, icon: <CancelIcon fontSize="small" /> };
-    if (st === 'RUNNING')
-      return { label: 'RUNNING', color: 'warning' as const, icon: <CircularProgress size={14} /> };
-    if (st === 'QUEUED')
-      return { label: 'QUEUED', color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
-    return { label: st, color: 'warning' as const, icon: <PendingIcon fontSize="small" /> };
-  })();
-
-  const statusPulseColor = (() => {
-    if (pageStatusUi.color === 'success') return '#2e7d32';
-    if (pageStatusUi.color === 'error') return '#d32f2f';
-    if (pageStatusUi.color === 'warning') return '#ed6c02';
-    return '#90a4ae';
-  })();
-
-  const pageRuntimeText = (() => {
-    const startedAt = pageJob?.startedAt ?? pageJob?.createdAt;
-    if (!startedAt) return '—';
-    const startedAtMs = new Date(startedAt).getTime();
-    if (Number.isNaN(startedAtMs)) return '—';
-    const endMs = pageJob?.finishedAt ? new Date(pageJob.finishedAt).getTime() : runtimeNowMs;
-    const ms = Math.max(0, endMs - startedAtMs);
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    if (h > 0) return `${h}h ${m}m ${s}s`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-  })();
-
-  const pageLastLine =
-    pageJob?.lastLine ?? (eventLogs.length > 0 ? eventLogs[eventLogs.length - 1] : undefined);
-
   // Use the job runner's canonical title/label (matches banner). Avoid falling back to submittedRun here,
   // because it can be stale relative to restored job state.
   const jobTitleText = submittedRun?.label ?? lastLabel ?? '—';
@@ -471,22 +392,18 @@ export default function ScriptRunner() {
               value={freeTextCommand}
               onChange={(e) => setFreeTextCommand(e.target.value)}
               placeholder="e.g., docker compose --project-directory compose ps"
-              disabled={executing || executeBlocked || envBlocked}
+              disabled={executing || executeDisabled}
               variant="outlined"
               sx={{ mb: 2 }}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Tooltip
-                title={envBlocked ? envBlockedReason : executeBlockedReason}
-                arrow
-                disableHoverListener={!(executeBlocked || envBlocked)}
-              >
+              <Tooltip title={executeDisabledReason} arrow disableHoverListener={!executeDisabled}>
                 <span>
                   <Button
                     variant="contained"
                     startIcon={<PlayArrowIcon />}
                     onClick={executeFreeText}
-                    disabled={executing || executeBlocked || envBlocked || !freeTextCommand.trim()}
+                    disabled={executing || executeDisabled || !freeTextCommand.trim()}
                   >
                     Execute
                   </Button>
@@ -521,353 +438,43 @@ export default function ScriptRunner() {
         </Alert>
       )}
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: 2,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 260 }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TerminalIcon fontSize="small" /> Current Execution
-              </Typography>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Status:
-                </Typography>
-
-                <Box
-                  sx={{
-                    position: 'relative',
-                    display: 'inline-flex',
-                    borderRadius: 16,
-                  }}
-                >
-                  <InwardPulse
-                    active={terminalPulseOn}
-                    color={statusPulseColor}
-                    inset={12}
-                    borderRadius={22}
-                    durationMs={1000}
-                  />
-
-                  <Chip
-                    size="small"
-                    color={pageStatusUi.color}
-                    icon={pageStatusUi.icon}
-                    label={pageStatusUi.label}
-                    sx={{
-                      fontWeight: 'bold',
-                      '@keyframes logsPulse': {
-                        '0%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
-                        '35%': { boxShadow: '0 0 0 6px rgba(255,193,7,0.18)' },
-                        '100%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
-                      },
-                      animation: statusPulseOn ? 'logsPulse 650ms ease-in-out' : 'none',
-                    }}
-                  />
-                </Box>
-
-                {!sseConnected && Boolean(currentJobId) && !isTerminal && (
-                  <Tooltip title={sseLastError ?? 'Disconnected'}>
-                    <Chip
-                      size="small"
-                      icon={<LinkOffIcon fontSize="small" />}
-                      color="warning"
-                      variant="outlined"
-                      label="stream"
-                    />
-                  </Tooltip>
-                )}
-
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                  Reconnects:
-                </Typography>
-                <Chip
-                  size="small"
-                  label={String(reconnectCount)}
-                  variant={reconnectCount > 0 ? 'filled' : 'outlined'}
-                  color={reconnectCount > 0 ? 'warning' : 'default'}
-                  sx={{ fontWeight: 'bold' }}
-                />
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Title:
-                </Typography>
-
-                <Tooltip
-                  arrow
-                  placement="bottom-start"
-                  title={
-                    jobCommandText ? (
-                      <Box sx={{ maxWidth: 720 }}>
-                        <Box
-                          component="pre"
-                          sx={{
-                            m: 0,
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                          }}
-                        >
-                          {jobCommandText}
-                        </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.75 }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<ContentCopyIcon fontSize="small" />}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              void copyText(jobCommandText);
-                            }}
-                          >
-                            Copy
-                          </Button>
-                        </Box>
-                      </Box>
-                    ) : (
-                      'Command unavailable'
-                    )
-                  }
-                >
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={jobTitleText}
-                    sx={{
-                      maxWidth: 520,
-                      cursor: jobCommandText ? 'help' : 'default',
-                      '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-                    }}
-                  />
-                </Tooltip>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Job id:
-                </Typography>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={currentJobId ?? '—'}
-                  sx={{ fontFamily: 'monospace', maxWidth: 420 }}
-                />
-                <Tooltip title={currentJobId ? 'Copy job id' : 'No job id'}>
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={() => currentJobId && void copyText(currentJobId)}
-                      disabled={!currentJobId}
-                    >
-                      <ContentCopyIcon fontSize="inherit" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </Box>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 260, flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Runtime:
-                </Typography>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  icon={<AccessTimeIcon fontSize="small" />}
-                  label={
-                    pageJob?.finishedAt
-                      ? pageRuntimeText
-                      : isRunning
-                        ? `running… ${pageRuntimeText}`
-                        : '—'
-                  }
-                />
-
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                  Exit code:
-                </Typography>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={typeof pageJob?.exitCode === 'number' ? String(pageJob.exitCode) : '—'}
-                  color={
-                    pageJob?.status === 'SUCCEEDED'
-                      ? 'success'
-                      : pageJob?.status === 'FAILED'
-                        ? 'error'
-                        : 'default'
-                  }
-                />
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Started:
-                </Typography>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={formatTimestampHuman(pageJob?.startedAt ?? pageJob?.createdAt)}
-                />
-
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                  Finished:
-                </Typography>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={formatTimestampHuman(pageJob?.finishedAt)}
-                />
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Last output line:
-                </Typography>
-                <Box
-                  component="pre"
-                  sx={{
-                    m: 0,
-                    p: 1,
-                    borderRadius: 1,
-                    bgcolor: 'rgba(0,0,0,0.15)',
-                    fontFamily: 'monospace',
-                    fontSize: '0.8rem',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    maxHeight: 96,
-                    overflow: 'auto',
-                  }}
-                >
-                  {pageLastLine ?? '—'}
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
+      <CurrentExecution
+        lastJobStatus={lastJobStatus}
+        runtimeNowMs={runtimeNowMs}
+        eventLogs={eventLogs}
+        terminalPulseOn={terminalPulseOn}
+        statusPulseOn={statusPulseOn}
+        sseConnected={sseConnected}
+        currentJobId={currentJobId}
+        isTerminal={isTerminal}
+        sseLastError={sseLastError}
+        reconnectCount={reconnectCount}
+        jobCommandText={jobCommandText}
+        jobTitleText={jobTitleText}
+        copyText={copyText}
+        isRunning={isRunning}
+      />
 
       {hasAnyExecutionState && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ListAltIcon />
-                <Typography variant="h6">Execution Logs</Typography>
-                <Chip
-                  size="small"
-                  label={sseConnected ? 'SSE Connected' : 'SSE Disconnected'}
-                  color={sseConnected ? 'success' : 'default'}
-                  icon={
-                    sseConnected ? (
-                      <CheckCircleIcon fontSize="small" />
-                    ) : (
-                      <LinkOffIcon fontSize="small" />
-                    )
-                  }
-                  variant="outlined"
-                />
-                {showStreamIssueChip && (
-                  <Chip
-                    size="small"
-                    label={`Stream issue${reconnectCount ? ` (${reconnectCount})` : ''}`}
-                    color="warning"
-                    icon={<WarningAmberIcon fontSize="small" />}
-                    variant="outlined"
-                  />
-                )}
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Tooltip title="Reset execution state (clears logs, status, and active job)">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<ClearAllIcon />}
-                    onClick={() => {
-                      setMessage(null);
-                      setDismissedBannerKey(null);
-                      setSubmittedRun(null);
-                      reset();
-                      setShowEventLogs(false);
-                    }}
-                  >
-                    Clear
-                  </Button>
-                </Tooltip>
-
-                <Tooltip title={showEventLogs ? 'Hide execution logs' : 'Show execution logs'}>
-                  <Button
-                    size="small"
-                    variant={showEventLogs ? 'contained' : 'outlined'}
-                    startIcon={showEventLogs ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                    onClick={() => setShowEventLogs((v) => !v)}
-                    sx={{
-                      '@keyframes logsPulse': {
-                        '0%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
-                        '35%': { boxShadow: '0 0 0 6px rgba(255,193,7,0.18)' },
-                        '100%': { boxShadow: '0 0 0 rgba(255,193,7,0.0)' },
-                      },
-                      animation: statusPulseOn ? 'logsPulse 650ms ease-in-out' : 'none',
-                    }}
-                  >
-                    {showEventLogs ? 'Hide' : 'Show'}
-                  </Button>
-                </Tooltip>
-
-                <Tooltip title={`Keep last ${maxExecutionLogLines} lines`}>
-                  <Chip size="small" label={`${eventLogs.length} lines`} variant="outlined" />
-                </Tooltip>
-              </Box>
-            </Box>
-
-            <Collapse in={showEventLogs} timeout={250}>
-              <Box
-                ref={executionLogRef}
-                sx={{
-                  mt: 1,
-                  p: 1.5,
-                  borderRadius: 1,
-                  bgcolor: 'grey.900',
-                  color: 'grey.100',
-                  fontFamily:
-                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                  fontSize: 12,
-                  whiteSpace: 'pre-wrap',
-                  maxHeight: 280,
-                  overflowY: 'auto',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  transition: 'max-height 250ms ease',
-                }}
-              >
-                {eventLogs.join('\n') || '—'}
-              </Box>
-
-              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button size="small" variant="outlined" onClick={clearEventLogs} sx={{ mr: 1 }}>
-                  Clear Text
-                </Button>
-              </Box>
-            </Collapse>
-          </CardContent>
-        </Card>
+        <ExecutionLogs
+          sseConnected={sseConnected}
+          showStreamIssueChip={showStreamIssueChip}
+          reconnectCount={reconnectCount}
+          showEventLogs={showEventLogs}
+          statusPulseOn={statusPulseOn}
+          maxExecutionLogLines={maxExecutionLogLines}
+          eventLogs={eventLogs}
+          executionLogRef={executionLogRef}
+          clearEventLogs={clearEventLogs}
+          onReset={() => {
+            setMessage(null);
+            setDismissedBannerKey(null);
+            setSubmittedRun(null);
+            reset();
+            setShowEventLogs(false);
+          }}
+          onToggle={() => setShowEventLogs((v) => !v)}
+        />
       )}
 
       <ScriptSection
@@ -875,8 +482,8 @@ export default function ScriptRunner() {
         scripts={byCategory('build-img')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked || envBlocked}
-        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
+        executeDisabled={executeDisabled}
+        executeDisabledReason={executeDisabledReason}
         accentColor="primary.main"
         chipColor="primary"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
@@ -888,8 +495,8 @@ export default function ScriptRunner() {
         scripts={byCategory('multi-cont')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked || envBlocked}
-        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
+        executeDisabled={executeDisabled}
+        executeDisabledReason={executeDisabledReason}
         accentColor="secondary.main"
         chipColor="secondary"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
@@ -901,8 +508,8 @@ export default function ScriptRunner() {
         scripts={byCategory('single-cont')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked || envBlocked}
-        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
+        executeDisabled={executeDisabled}
+        executeDisabledReason={executeDisabledReason}
         accentColor="info.main"
         chipColor="info"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
@@ -914,8 +521,8 @@ export default function ScriptRunner() {
         scripts={byCategory('test')}
         executingName={executingName}
         copySuccessFor={copySuccess}
-        executeDisabled={executeBlocked || envBlocked}
-        executeDisabledReason={envBlocked ? envBlockedReason : executeBlockedReason}
+        executeDisabled={executeDisabled}
+        executeDisabledReason={executeDisabledReason}
         accentColor="success.main"
         chipColor="success"
         onCopyAction={(s) => void copyToClipboard(s.command, s.name)}
