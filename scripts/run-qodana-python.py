@@ -147,6 +147,19 @@ def run_bounded_command(command: list[str], log: TextIO, timeout: int) -> int:
         return 1
 
 
+def read_scan_output(output: TextIO | None, events: queue.Queue[str | Exception | None]) -> None:
+    """Forward output and reader failures, then signal that the pipe is closed."""
+    try:
+        if output is None:
+            raise RuntimeError("Docker output pipe was not created.")
+        for line in output:
+            events.put(line)
+    except (OSError, ValueError, RuntimeError) as error:
+        events.put(error)
+    finally:
+        events.put(None)
+
+
 def stream_scan(command: list[str], log: TextIO, timeout: float) -> int:
     """Bound the entire scan, including silent or continuously streaming stdout."""
     # Fixed Docker executable, validated image, argument vector, no shell.
@@ -160,18 +173,7 @@ def stream_scan(command: list[str], log: TextIO, timeout: float) -> int:
     )
     events: queue.Queue[str | Exception | None] = queue.Queue()
 
-    def read_output() -> None:
-        try:
-            if process.stdout is None:
-                raise RuntimeError("Docker output pipe was not created.")
-            for line in process.stdout:
-                events.put(line)
-        except (OSError, ValueError, RuntimeError) as error:
-            events.put(error)
-        finally:
-            events.put(None)
-
-    reader = threading.Thread(target=read_output, daemon=True)
+    reader = threading.Thread(target=read_scan_output, args=(process.stdout, events), daemon=True)
     deadline = time.monotonic() + timeout
     reader.start()
     try:

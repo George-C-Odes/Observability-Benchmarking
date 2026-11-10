@@ -92,8 +92,8 @@
 
         // compute available width for links (nav width minus logo and some padding)
         const navStyle = getComputedStyle(nav);
-        const navPaddingLeft = parseFloat(navStyle.paddingLeft) || 0;
-        const navPaddingRight = parseFloat(navStyle.paddingRight) || 0;
+        const navPaddingLeft = Number.parseFloat(navStyle.paddingLeft) || 0;
+        const navPaddingRight = Number.parseFloat(navStyle.paddingRight) || 0;
         const available = nav.clientWidth - logo.offsetWidth - navPaddingLeft - navPaddingRight - 24; // safety buffer
 
         // accumulate widths and move overflow items
