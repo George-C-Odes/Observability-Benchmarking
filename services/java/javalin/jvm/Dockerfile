@@ -94,7 +94,10 @@ RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
     set -eu; \
     # Validate both pins before any request or cache access. \
     for checksum in "$OTEL_PYROSCOPE_SHA256" "$OTEL_JAVA_AGENT_SHA256"; do \
-      case "$checksum" in ''|*[!0-9a-fA-F]*) echo "Invalid agent SHA-256" >&2; exit 1 ;; esac; \
+      case "$checksum" in \
+        ''|*[!0-9a-fA-F]*) echo "Invalid agent SHA-256" >&2; exit 1 ;; \
+        *) : ;; \
+      esac; \
       [ "${#checksum}" -eq 64 ] || { echo "Invalid agent SHA-256 length" >&2; exit 1; }; \
     done; \
     DOWNLOAD_TMP=; \
