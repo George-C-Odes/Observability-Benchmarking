@@ -125,7 +125,11 @@ export async function main(env = process.env) {
 
   const url = eventsUrl(base, JSON.parse(runText)?.jobId, runId);
   log('eventsUrl', url);
-  const events = await fetch(url, {
+  // Request-forgery false positive: the trusted local launcher selects the base;
+  // eventsUrl requires a UUID, encodes its path component, and fixes the endpoint.
+  // Query values use URLSearchParams; redirects are rejected below. Reassess if
+  // a launcher ever accepts a base URL from a remote request or API response.
+  const events = await fetch(url, { // NOSONAR -- validated UUID on a fixed events endpoint; see rationale above.
     redirect: 'error',
     headers: {
       accept: 'text/event-stream',
