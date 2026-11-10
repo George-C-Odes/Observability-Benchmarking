@@ -130,11 +130,13 @@ test('Sonar classifies tracked non-Java tests and helpers without excluding prod
     'services/python/django/gunicorn/common/src/obbench_django_common/views.py',
     'services/python/django/gunicorn/WSGI/src/manage.py', 'services/go/simple/cmd/server/main.go',
     'services/go/enhanced/internal/handlers/hello.go', 'utils/nextjs-dash/app/page.tsx',
+    'utils/orchestrator/scripts/direct-sse-smoke.mjs',
   ]) assert.equal(isTest(file), false, `Production path must not be a test: ${file}`);
   for (const file of tracked.stdout.split('\0').filter((file) => file.includes('/src/main/java/') && file.endsWith('.java'))) {
     assert.equal(isTest(file), false, `Java production path must not be a test: ${file}`);
   }
-  assert.ok(roots.every((root) => !root.startsWith('services/java') && !root.startsWith('utils/orchestrator')),
+  assert.ok(roots.every((root) => !root.startsWith('services/java')
+    && (!root.startsWith('utils/orchestrator') || root === 'utils/orchestrator/scripts')),
     'Java keeps automatic Maven/Gradle classification');
   assert.equal(syncSonarPythonVersion(config, '3.14.99'), config.replace(/^sonar.python.version=.*$/m, 'sonar.python.version=3.14'));
 });
