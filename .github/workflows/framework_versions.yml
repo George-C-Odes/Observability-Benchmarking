@@ -34,6 +34,9 @@ jobs:
       - name: Test version synchronization and Renovate routing
         run: node --test scripts/sync-*.test.mjs scripts/render-readmes.test.mjs scripts/renovate-framework-sync.test.mjs
 
+      - name: Test Java agent artifact integrity
+        run: node --test scripts/java-agent-integrity.test.mjs
+
       - name: Check framework version consistency
         run: |
           node scripts/sync-framework-versions.mjs --check
