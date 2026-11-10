@@ -77,7 +77,7 @@ describe('CurrentExecution', () => {
   it('handles missing and invalid timestamps and uses the latest streamed line', () => {
     const input = props();
     const { rerender } = render(<CurrentExecution {...input} />);
-    expect(screen.getByRole('button')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Copy job ID' })).toBeDisabled();
     expect(screen.queryByText('stream')).not.toBeInTheDocument();
     rerender(
       <CurrentExecution
@@ -96,7 +96,7 @@ describe('CurrentExecution', () => {
     const input = { ...props(), currentJobId: 'job-1', jobCommandText: 'docker compose build' };
     const { rerender } = render(<CurrentExecution {...input} />);
     expect(screen.getByText('stream')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy job ID' }));
     expect(input.copyText).toHaveBeenCalledWith('job-1');
     fireEvent.mouseOver(screen.getByText('Build images'));
     fireEvent.click(await screen.findByRole('button', { name: 'Copy' }));

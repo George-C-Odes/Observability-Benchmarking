@@ -255,7 +255,7 @@ describe('ScriptRunner', () => {
     setJobRunnerState({ currentJobId: 'job-copy' });
     renderScriptRunner();
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Copy job ID' }));
     });
     expect(writeText).toHaveBeenCalledWith('job-copy');
   });

@@ -248,6 +248,7 @@ export function CurrentExecution({
               <Tooltip title={currentJobId ? 'Copy job id' : 'No job id'}>
                 <span>
                   <IconButton
+                    aria-label="Copy job ID"
                     size="small"
                     onClick={() => currentJobId && void copyText(currentJobId)}
                     disabled={!currentJobId}
