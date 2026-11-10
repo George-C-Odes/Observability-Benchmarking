@@ -53,7 +53,7 @@ export const GET = withApiRoute(
       });
 
       if (preflight) {
-        return new NextResponse('', {
+        return new NextResponse(null, {
           status: 204,
           headers: {
             'Cache-Control': 'no-store',

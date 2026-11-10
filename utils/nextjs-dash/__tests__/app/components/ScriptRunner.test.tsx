@@ -129,11 +129,15 @@ vi.mock('@/app/components/scripts/ScriptSection', () => ({
     title,
     scripts,
     onExecuteAction,
+    onCopyAction,
+    copySuccessFor,
     executeDisabled,
   }: {
     title: string;
     scripts: Array<{ name: string; command: string }>;
     onExecuteAction: (s: { name: string; command: string }) => void;
+    onCopyAction: (s: { name: string; command: string }) => void;
+    copySuccessFor: string | null;
     executeDisabled?: boolean;
   }) => (
     <div data-testid={`section-${title}`}>
@@ -141,6 +145,9 @@ vi.mock('@/app/components/scripts/ScriptSection', () => ({
       {scripts.map((s) => (
         <div key={s.name} data-testid={`script-${s.name}`}>
           <span>{s.name}</span>
+          <button onClick={() => onCopyAction(s)}>
+            {copySuccessFor === s.name ? `Copied ${s.name}` : `Copy ${s.name}`}
+          </button>
           <button
             data-testid={`execute-${s.name}`}
             onClick={() => onExecuteAction(s)}
@@ -222,6 +229,109 @@ afterEach(() => {
 // ── Tests ─────────────────────────────────────────────────────────────
 
 describe('ScriptRunner', () => {
+  it('copies a script command and clears its success feedback after two seconds', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    try {
+      renderScriptRunner();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Copy Build All' }));
+      });
+      expect(writeText).toHaveBeenCalledWith('docker compose build');
+      expect(screen.getByRole('button', { name: 'Copied Build All' })).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(screen.getByRole('button', { name: 'Copy Build All' })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('copies the active job id through the clipboard boundary', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    setJobRunnerState({ currentJobId: 'job-copy' });
+    renderScriptRunner();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '' }));
+    });
+    expect(writeText).toHaveBeenCalledWith('job-copy');
+  });
+
+  it.each(['http', 'network'] as const)(
+    'blocks execution when environment validation fails with %s error',
+    async (failure) => {
+      const fetchMock = vi.mocked(fetch);
+      if (failure === 'http') fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
+      else fetchMock.mockRejectedValueOnce(new Error('offline'));
+      renderScriptRunner();
+      await waitFor(() => expect(screen.getByTestId('execute-Build All')).toBeDisabled());
+      expect(screen.getByRole('button', { name: 'Custom Command' })).toBeDisabled();
+      expect(mockRunCommand).not.toHaveBeenCalled();
+    },
+  );
+  it('toggles execution logs and clears their text without resetting the job', () => {
+    setJobRunnerState({ currentJobId: 'job-1', eventLogs: ['first', 'latest'] });
+    renderScriptRunner();
+    expect(screen.queryByText(/first\s+latest/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(screen.getByText(/first\s+latest/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Text' }));
+    expect(mockClearEventLogs).toHaveBeenCalledOnce();
+    expect(mockReset).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Hide' }));
+    expect(screen.queryByText(/first\s+latest/)).not.toBeInTheDocument();
+  });
+
+  it('keeps a dismissed banner hidden until the job status changes', () => {
+    setJobRunnerState({
+      currentJobId: 'job-1',
+      lastLabel: 'Build',
+      lastJobStatus: { jobId: 'job-1', status: 'RUNNING' },
+    });
+    const view = render(<ScriptRunner />);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    view.rerender(<ScriptRunner />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    setJobRunnerState({
+      currentJobId: 'job-1',
+      lastLabel: 'Build',
+      lastJobStatus: { jobId: 'job-1', status: 'SUCCEEDED' },
+    });
+    view.rerender(<ScriptRunner />);
+    expect(screen.getByRole('alert')).toHaveTextContent('"Build" completed successfully.');
+  });
+
+  it.each(['QUEUED', 'RUNNING'] as const)(
+    'prevents another submission while a job is %s',
+    (status) => {
+      setJobRunnerState({ currentJobId: 'job-1', lastJobStatus: { jobId: 'job-1', status } });
+      renderScriptRunner();
+      fireEvent.click(screen.getByTestId('execute-Build All'));
+      expect(screen.getByTestId('execute-Build All')).toBeDisabled();
+      expect(mockRunCommand).not.toHaveBeenCalled();
+      expect(mockReset).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects whitespace commands and clears canceled custom input', () => {
+    renderScriptRunner();
+    fireEvent.click(screen.getByRole('button', { name: 'Custom Command' }));
+    const input = screen.getByPlaceholderText(
+      'e.g., docker compose --project-directory compose ps',
+    );
+    fireEvent.change(input, { target: { value: '   ' } });
+    expect(screen.getByRole('button', { name: 'Execute' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Custom Command' }));
+    expect(
+      screen.getByPlaceholderText('e.g., docker compose --project-directory compose ps'),
+    ).toHaveValue('');
+    expect(mockRunCommand).not.toHaveBeenCalled();
+  });
   it('shows loading spinner when scripts are loading', () => {
     setScriptsState({ scripts: [], loading: true });
 
