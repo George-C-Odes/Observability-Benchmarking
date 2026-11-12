@@ -289,7 +289,7 @@ docker compose --project-directory compose \
 FROM container-registry-frankfurt.oracle.com/graalvm/native-image:{{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}-ol9
 
 # Install yq for YAML manipulation
-RUN curl -L "https://github.com/mikefarah/yq/releases/download/v4.54.2/yq_linux_amd64" \
+RUN curl -L "https://github.com/mikefarah/yq/releases/download/v4.54.3/yq_linux_amd64" \
   -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
 # Copy sources
