@@ -32,6 +32,9 @@ import org.jboss.logging.MDC;
 @ApplicationScoped
 public class JobManager {
 
+  /** MDC key used to propagate request correlation into asynchronous jobs. */
+  private static final String REQUEST_ID_MDC_KEY = "requestId";
+
   /** Compose CLI environment variable that enables Docker-based builds. */
   static final String COMPOSE_DOCKER_CLI_BUILD_ENV = "COMPOSE_DOCKER_CLI_BUILD";
 
@@ -161,7 +164,7 @@ public class JobManager {
     try (admission) {
       MDC.put("jobId", jobId.toString());
       if (requestId != null) {
-        MDC.put("requestId", requestId);
+        MDC.put(REQUEST_ID_MDC_KEY, requestId);
       }
 
       HeartbeatScheduler.Cancellable heartbeat = null;
@@ -193,7 +196,7 @@ public class JobManager {
           heartbeat.cancel();
         }
         MDC.remove("jobId");
-        MDC.remove("requestId");
+        MDC.remove(REQUEST_ID_MDC_KEY);
       }
     }
   }
@@ -226,7 +229,7 @@ public class JobManager {
    * @return the request id, or {@code null} when the submission did not originate from HTTP
    */
   private static String currentRequestId() {
-    Object requestId = MDC.get("requestId");
+    Object requestId = MDC.get(REQUEST_ID_MDC_KEY);
     return requestId == null ? null : String.valueOf(requestId);
   }
 

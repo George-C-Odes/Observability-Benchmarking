@@ -4,9 +4,30 @@ import builtins
 import os
 import sys
 import types
+from collections.abc import Iterator
+from contextlib import contextmanager
 from unittest import TestCase, mock
 
 from obbench_django_common.infrastructure import pyroscope_setup
+
+
+@contextmanager
+def _mock_span_processor_imports(provider: object) -> Iterator[mock.Mock]:
+    trace_module = types.SimpleNamespace(get_tracer_provider=mock.Mock(return_value=provider))
+    opentelemetry_module = types.ModuleType("opentelemetry")
+    opentelemetry_module.trace = trace_module
+    processor_constructor = mock.Mock(return_value="proc")
+    pyroscope_otel_module = types.SimpleNamespace(PyroscopeSpanProcessor=processor_constructor)
+    with mock.patch.dict(
+        sys.modules,
+        {
+            "opentelemetry": opentelemetry_module,
+            "opentelemetry.trace": trace_module,
+            "pyroscope.otel": pyroscope_otel_module,
+        },
+        clear=False,
+    ):
+        yield processor_constructor
 
 
 class PyroscopeSetupExtraTests(TestCase):
@@ -97,23 +118,8 @@ class PyroscopeSetupExtraTests(TestCase):
     def test_register_span_processor_prefers_real_provider(self) -> None:
         real_provider = mock.Mock()
         proxy_provider = types.SimpleNamespace(_real_provider=real_provider)
-        trace_module = types.SimpleNamespace(
-            get_tracer_provider=mock.Mock(return_value=proxy_provider)
-        )
-        pyroscope_otel_module = types.SimpleNamespace(
-            PyroscopeSpanProcessor=mock.Mock(return_value="proc")
-        )
 
-        with mock.patch.dict(
-            sys.modules,
-            {
-                "opentelemetry": types.ModuleType("opentelemetry"),
-                "opentelemetry.trace": trace_module,
-                "pyroscope.otel": pyroscope_otel_module,
-            },
-            clear=False,
-        ):
-            sys.modules["opentelemetry"].trace = trace_module
+        with _mock_span_processor_imports(proxy_provider):
             result = pyroscope_setup.register_span_processor()
 
         self.assertTrue(result)
@@ -125,29 +131,13 @@ class PyroscopeSetupExtraTests(TestCase):
                 _real_provider=types.SimpleNamespace(add_span_processor=invalid_adder),
                 add_span_processor=mock.Mock(),
             )
-            trace_module = types.SimpleNamespace(
-                get_tracer_provider=mock.Mock(return_value=provider)
-            )
-            opentelemetry_module = types.ModuleType("opentelemetry")
-            opentelemetry_module.trace = trace_module
-            pyroscope_otel_module = types.SimpleNamespace(
-                PyroscopeSpanProcessor=mock.Mock(return_value="proc")
-            )
             with (
-                self.subTest(invalid_adder=invalid_adder),
-                mock.patch.dict(
-                    sys.modules,
-                    {
-                        "opentelemetry": opentelemetry_module,
-                        "opentelemetry.trace": trace_module,
-                        "pyroscope.otel": pyroscope_otel_module,
-                    },
-                    clear=False,
-                ),
+                TestCase.subTest(self, invalid_adder=invalid_adder),
+                _mock_span_processor_imports(provider) as processor_constructor,
             ):
                 self.assertTrue(pyroscope_setup.register_span_processor())
             provider.add_span_processor.assert_called_once_with("proc")
-            pyroscope_otel_module.PyroscopeSpanProcessor.assert_called_once_with()
+            processor_constructor.assert_called_once_with()
 
     def test_register_span_processor_warns_when_neither_adder_is_callable(self) -> None:
         providers = (
@@ -158,27 +148,13 @@ class PyroscopeSetupExtraTests(TestCase):
             ),
         )
         for provider in providers:
-            trace_module = types.SimpleNamespace(
-                get_tracer_provider=mock.Mock(return_value=provider)
-            )
-            opentelemetry_module = types.ModuleType("opentelemetry")
-            opentelemetry_module.trace = trace_module
-            pyroscope_otel_module = types.SimpleNamespace(PyroscopeSpanProcessor=mock.Mock())
             with (
-                self.subTest(provider=provider),
-                mock.patch.dict(
-                    sys.modules,
-                    {
-                        "opentelemetry": opentelemetry_module,
-                        "opentelemetry.trace": trace_module,
-                        "pyroscope.otel": pyroscope_otel_module,
-                    },
-                    clear=False,
-                ),
+                TestCase.subTest(self, provider=provider),
+                _mock_span_processor_imports(provider) as processor_constructor,
                 self.assertLogs("hello", level="WARNING") as logs,
             ):
                 self.assertFalse(pyroscope_setup.register_span_processor())
-            pyroscope_otel_module.PyroscopeSpanProcessor.assert_not_called()
+            processor_constructor.assert_not_called()
             self.assertTrue(
                 any(
                     "could not register pyroscope span-processor" in message
@@ -193,44 +169,19 @@ class PyroscopeSetupExtraTests(TestCase):
             _real_provider=object(),
             add_span_processor=mock.Mock(),
         )
-        trace_module = types.SimpleNamespace(get_tracer_provider=mock.Mock(return_value=provider))
-        pyroscope_otel_module = types.SimpleNamespace(
-            PyroscopeSpanProcessor=mock.Mock(return_value="proc")
-        )
 
-        with mock.patch.dict(
-            sys.modules,
-            {
-                "opentelemetry": types.ModuleType("opentelemetry"),
-                "opentelemetry.trace": trace_module,
-                "pyroscope.otel": pyroscope_otel_module,
-            },
-            clear=False,
-        ):
-            sys.modules["opentelemetry"].trace = trace_module
+        with _mock_span_processor_imports(provider):
             result = pyroscope_setup.register_span_processor()
 
         self.assertTrue(result)
         provider.add_span_processor.assert_called_once_with("proc")
 
         provider_without_adder = types.SimpleNamespace(_real_provider=object())
-        trace_module = types.SimpleNamespace(
-            get_tracer_provider=mock.Mock(return_value=provider_without_adder)
-        )
 
         with (
-            mock.patch.dict(
-                sys.modules,
-                {
-                    "opentelemetry": types.ModuleType("opentelemetry"),
-                    "opentelemetry.trace": trace_module,
-                    "pyroscope.otel": pyroscope_otel_module,
-                },
-                clear=False,
-            ),
+            _mock_span_processor_imports(provider_without_adder),
             self.assertLogs("hello", level="WARNING") as logs,
         ):
-            sys.modules["opentelemetry"].trace = trace_module
             missing_result = pyroscope_setup.register_span_processor()
 
         self.assertFalse(missing_result)

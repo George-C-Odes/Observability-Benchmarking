@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 vi.mock('@mui/material', async () => {
   const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
@@ -221,6 +221,85 @@ beforeEach(() => {
 });
 
 describe('ServiceHealth', () => {
+  it('recovers a failed optimistic action by refreshing only the affected service', async () => {
+    vi.mocked(fetchJson)
+      .mockResolvedValueOnce({
+        services: [
+          { name: 'grafana', status: 'up' },
+          { name: 'loki', status: 'up' },
+        ],
+      })
+      .mockRejectedValueOnce(new Error('submit failed'))
+      .mockResolvedValueOnce({ services: [{ name: 'grafana', status: 'down', error: 'offline' }] });
+    await renderServiceHealth();
+    fireEvent.click(within(getServiceCard('grafana')).getByLabelText('Stop'));
+    expect(await screen.findByText('Failed to submit stop for grafana.')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(getServiceCard('grafana')).getByText('DOWN')).toBeInTheDocument(),
+    );
+    expect(within(getServiceCard('loki')).getByText('UP')).toBeInTheDocument();
+    expect(fetchJson).toHaveBeenLastCalledWith('/api/health?service=grafana');
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
+    expect(within(getServiceCard('grafana')).getByLabelText('Refresh')).toBeEnabled();
+  });
+
+  it('retains service data after an empty or failed individual refresh', async () => {
+    vi.mocked(fetchJson)
+      .mockResolvedValueOnce({ services: [{ name: 'grafana', status: 'UP' }] })
+      .mockResolvedValueOnce({ services: [] })
+      .mockRejectedValueOnce(new Error('offline'));
+    await renderServiceHealth();
+    const refresh = within(getServiceCard('grafana')).getByLabelText('Refresh');
+    for (let i = 0; i < 2; i++) {
+      await act(async () => {
+        fireEvent.click(refresh);
+      });
+      expect(refresh).toBeEnabled();
+      expect(within(getServiceCard('grafana')).getByText('UP')).toBeInTheDocument();
+    }
+    expect(fetchJson).toHaveBeenCalledTimes(3);
+  });
+
+  it('reports initial health failure and recovers on Refresh All', async () => {
+    vi.mocked(fetchJson)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ services: [{ name: 'loki', status: 'DOWN' }] });
+    render(<ServiceHealth />);
+    expect(
+      await screen.findByText('Failed to check service health (dashboard backend unreachable)'),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh All' }));
+    expect(await screen.findByText('loki')).toBeInTheDocument();
+    expect(screen.queryByText(/dashboard backend unreachable/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
+  });
+
+  it('ages the last-updated label and releases its interval on unmount', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      mockHealthResponse([]);
+      const view = render(<ServiceHealth />);
+      await act(async () => {});
+      const tick = vi.mocked(setInterval).mock.calls[0][0] as () => void;
+      expect(screen.getByTestId('overview-last-updated')).toHaveTextContent('Just now');
+      for (const [elapsed, label] of [
+        [6_000, '6s ago'],
+        [120_000, '2m ago'],
+        [7_200_000, '2h ago'],
+      ] as const) {
+        act(() => {
+          vi.setSystemTime(Date.parse('2026-01-01T00:00:00Z') + elapsed);
+          tick();
+        });
+        expect(screen.getByTestId('overview-last-updated')).toHaveTextContent(label);
+      }
+      view.unmount();
+      expect(clearInterval).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('shows overview counters (UP/DOWN/PENDING/TOTAL)', async () => {
     mockHealthResponse([
       { name: 'grafana', status: 'up', baseUrl: 'http://grafana:3000' },

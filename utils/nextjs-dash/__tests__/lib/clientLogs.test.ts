@@ -221,11 +221,25 @@ describe('clientLogs', () => {
       expect(latest[0].message).toBe('msg-7');
     });
 
-    it('ignores invalid values (zero, negative, Infinity)', () => {
-      setClientLogsMaxEntries(0);
-      setClientLogsMaxEntries(-1);
-      setClientLogsMaxEntries(Infinity);
-      // No crash — just a no-op.
+    it.each([0, -1, Infinity])('ignores invalid max entries: %s', (invalidMax) => {
+      setClientLogsMaxEntries(2);
+      installConsoleCapture();
+      console.log('a');
+      console.log('b');
+
+      let latest: ClientLogEntry[] = [];
+      const subscriber = vi.fn((entries: ClientLogEntry[]) => {
+        latest = entries;
+      });
+      subscribeClientLogs(subscriber);
+      subscriber.mockClear();
+
+      setClientLogsMaxEntries(invalidMax);
+      expect(subscriber).not.toHaveBeenCalled();
+      expect(latest.map((entry) => entry.message)).toEqual(['a', 'b']);
+
+      console.log('c');
+      expect(latest.map((entry) => entry.message)).toEqual(['b', 'c']);
     });
 
     it('enforces new max on subsequent appends', () => {

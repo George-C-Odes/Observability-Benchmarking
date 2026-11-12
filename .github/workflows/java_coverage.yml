@@ -10,6 +10,7 @@ on:
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - '.github/actions/setup-java/**'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
       - '.github/actions/codecov-upload/**'
@@ -23,6 +24,7 @@ on:
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - '.github/actions/setup-java/**'
+      - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
       - '.github/actions/codecov-upload/**'
@@ -80,6 +82,14 @@ jobs:
           cache-dependency-path: |
             services/java/**/jvm/**/pom.xml
             utils/orchestrator/pom.xml
+
+      - name: Set up Node for orchestrator smoke tests
+        if: matrix.name == 'orchestrator'
+        uses: ./.github/actions/setup-node
+
+      - name: Test orchestrator smoke request boundaries
+        if: matrix.name == 'orchestrator'
+        run: node --test utils/orchestrator/scripts/direct-sse-smoke.test.mjs
 
       - name: Run tests with coverage
         id: build

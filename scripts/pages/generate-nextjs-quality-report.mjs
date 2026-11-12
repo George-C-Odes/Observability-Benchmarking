@@ -86,6 +86,38 @@ export function displayPath(cwd, filename) {
   return path.replace(/^\.\//, '');
 }
 
+function oxlintLocation(item) {
+  const label = Array.isArray(item.labels)
+    ? item.labels.find((candidate) => candidate?.span && typeof candidate.span === 'object')
+    : undefined;
+  const span = label?.span || {};
+  return {
+    line: Number.isInteger(span.line) ? span.line : null,
+    column: Number.isInteger(span.column) ? span.column : null,
+    length: Number.isInteger(span.length) ? span.length : null,
+  };
+}
+
+function normalizeOxlintDiagnostic(item, index, reportWarnings) {
+  if (!item || typeof item !== 'object') {
+    reportWarnings.push(`Oxlint diagnostic ${index + 1} is malformed and was skipped.`);
+    return null;
+  }
+  if (typeof item.message !== 'string' || typeof item.filename !== 'string') {
+    reportWarnings.push(`Oxlint diagnostic ${index + 1} is missing required fields.`);
+  }
+  if (item.severity !== 'error' && item.severity !== 'warning') {
+    reportWarnings.push(`Oxlint diagnostic ${index + 1} has an unknown severity.`);
+  }
+  return {
+    filename: typeof item.filename === 'string' ? item.filename : '(unknown file)',
+    message: typeof item.message === 'string' ? item.message : '(missing message)',
+    ruleId: typeof item.code === 'string' ? item.code : null,
+    severity: item.severity === 'error' || item.severity === 'warning' ? item.severity : 'info',
+    ...oxlintLocation(item),
+  };
+}
+
 /** Parse the object emitted by Oxlint 1.82's JSON formatter. */
 export function parseOxlintReport(raw) {
   const reportWarnings = [];
@@ -127,29 +159,8 @@ export function parseOxlintReport(raw) {
 
   const diagnostics = [];
   for (const [index, item] of parsed.diagnostics.entries()) {
-    if (!item || typeof item !== 'object') {
-      reportWarnings.push(`Oxlint diagnostic ${index + 1} is malformed and was skipped.`);
-      continue;
-    }
-    const label = Array.isArray(item.labels)
-      ? item.labels.find((candidate) => candidate?.span && typeof candidate.span === 'object')
-      : undefined;
-    const span = label?.span || {};
-    if (typeof item.message !== 'string' || typeof item.filename !== 'string') {
-      reportWarnings.push(`Oxlint diagnostic ${index + 1} is missing required fields.`);
-    }
-    if (item.severity !== 'error' && item.severity !== 'warning') {
-      reportWarnings.push(`Oxlint diagnostic ${index + 1} has an unknown severity.`);
-    }
-    diagnostics.push({
-      filename: typeof item.filename === 'string' ? item.filename : '(unknown file)',
-      message: typeof item.message === 'string' ? item.message : '(missing message)',
-      ruleId: typeof item.code === 'string' ? item.code : null,
-      severity: item.severity === 'error' || item.severity === 'warning' ? item.severity : 'info',
-      line: Number.isInteger(span.line) ? span.line : null,
-      column: Number.isInteger(span.column) ? span.column : null,
-      length: Number.isInteger(span.length) ? span.length : null,
-    });
+    const diagnostic = normalizeOxlintDiagnostic(item, index, reportWarnings);
+    if (diagnostic) diagnostics.push(diagnostic);
   }
 
   const errorCount = diagnostics.filter((item) => item.severity === 'error').length;
@@ -282,6 +293,17 @@ function diagnosticsTable(cwd, diagnostics, type) {
     + `<tbody>${rows}</tbody></table></div>`;
 }
 
+function buildToolVersionMeta(env) {
+  const metaExtras = [];
+  if (env.NODE_VERSION || process.version) metaExtras.push(`Node ${esc(env.NODE_VERSION || process.version)}`);
+  if (env.NPM_VERSION) metaExtras.push(`npm ${esc(env.NPM_VERSION)}`);
+  if (env.OXFMT_VERSION) metaExtras.push(`Oxfmt ${esc(env.OXFMT_VERSION)}`);
+  if (env.OXLINT_VERSION) metaExtras.push(`Oxlint ${esc(env.OXLINT_VERSION)}`);
+  if (env.TYPESCRIPT_VERSION) metaExtras.push(`TypeScript ${esc(env.TYPESCRIPT_VERSION)}`);
+  if (env.VITEST_VERSION) metaExtras.push(`Vitest ${esc(env.VITEST_VERSION)}`);
+  return metaExtras;
+}
+
 /** Build report HTML without file-system side effects so fixtures can test it. */
 export function buildQualityReport({
   cwd,
@@ -318,19 +340,12 @@ export function buildQualityReport({
       + '</ul></section>'
     : '';
 
-  const metaExtras = [];
-  if (env.NODE_VERSION || process.version) metaExtras.push(`Node ${esc(env.NODE_VERSION || process.version)}`);
-  if (env.NPM_VERSION) metaExtras.push(`npm ${esc(env.NPM_VERSION)}`);
-  if (env.OXFMT_VERSION) metaExtras.push(`Oxfmt ${esc(env.OXFMT_VERSION)}`);
-  if (env.OXLINT_VERSION) metaExtras.push(`Oxlint ${esc(env.OXLINT_VERSION)}`);
-  if (env.TYPESCRIPT_VERSION) metaExtras.push(`TypeScript ${esc(env.TYPESCRIPT_VERSION)}`);
-  if (env.VITEST_VERSION) metaExtras.push(`Vitest ${esc(env.VITEST_VERSION)}`);
   const metaParts = buildMetaParts({
     repo: env.GITHUB_REPOSITORY || '',
     commitSha: env.GITHUB_SHA || 'local',
     runId: env.GITHUB_RUN_ID || '',
     timestamp,
-    extras: metaExtras,
+    extras: buildToolVersionMeta(env),
   });
 
   const body = [

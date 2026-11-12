@@ -6,7 +6,7 @@ import {
   type ScriptRunnerRuntimeConfig,
 } from '@/lib/runtimeConfigTypes';
 
-export const GET = withApiRoute({ name: 'SCRIPT_RUNNER_CONFIG_API' }, async function GET() {
+export const GET = withApiRoute({ name: 'SCRIPT_RUNNER_CONFIG_API' }, function GET() {
   const payload: ScriptRunnerRuntimeConfig = {
     maxExecutionLogLines: envNumber(
       'SCRIPT_RUNNER_EXEC_LOG_MAX_LINES',

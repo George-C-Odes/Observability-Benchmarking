@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
+# syntax=docker/dockerfile:1.29@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 ARG IMAGE_DEPS=node:26.13.0-alpine3.24@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216
 ARG IMAGE_RUNTIME=node:26.13.0-alpine3.24@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216
 ARG NPM_VERSION=12.2.2
@@ -12,16 +12,17 @@ ARG NPM_VERSION
 WORKDIR /app
 
 # Pin npm before any install step so the container build matches packageManager.
-RUN npm install -g npm@${NPM_VERSION}
+RUN npm install --ignore-scripts -g npm@${NPM_VERSION}
 
 # Copy only package manifests first for maximum layer-cache reuse.
 # This layer is invalidated ONLY when dependencies change.
 COPY package.json package-lock.json ./
 
+# Lifecycle scripts are unnecessary: the only install hook is macOS-only fsevents.
 # --prefer-offline:  use cached tarballs when available
 # --no-audit/--fund: skip non-essential network calls
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-  npm ci --prefer-offline --no-audit --fund=false
+  npm ci --ignore-scripts --prefer-offline --no-audit --fund=false
 
 # ------------ QUALITY GATE STAGE ----------------
 # Runs formatting, lint, typecheck, and tests. Gated: build won't proceed if this fails.
