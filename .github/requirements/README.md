@@ -196,5 +196,8 @@ fallback.
 
 The unmodified Qodana 2026.2 image also bundles `virtualenv` requiring
 `platformdirs>=4.4,<5` alongside `platformdirs==3.10.0`. `qodana.in` pins a
-compatible wheel in the shared inventory so `pip check` remains enabled. This
+compatible wheel in the shared inventory so `pip check` remains enabled. The updated
+image also bundles `pipenv==2026.10.6`, which requires `virtualenv>=21.14.9`,
+alongside `virtualenv==21.14.6`; the same input pins `virtualenv==21.14.9`
+to repair that mismatch through the hash-verified installer. This
 analyzer-only input is not installed by the Django test or Snyk jobs.

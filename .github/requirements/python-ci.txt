@@ -143,11 +143,19 @@ coverage==7.17.0 \
     --hash=sha256:f8bc2cd4c6aa58be1ca243fb8cddb6c3c42031fe4403991ad9cf2b3baed03d9f \
     --hash=sha256:fb5745048ee20f796b0e3ab61831049e749acff188563e2af32f58ede957ac1b
     # via -r .github/requirements/coverage.in
+distlib==0.4.4 \
+    --hash=sha256:cf09d55b1e85a89576b036aeb71550bfd68320f3f21761ca329eadadad918638
+    # via virtualenv
 django==6.1.3 \
     --hash=sha256:a0530e3fdac55d34ccc5893c36f6c57d7a7083064f3d414537e51473648b3290
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
+filelock==4.2.10 \
+    --hash=sha256:9479aaeb4db20b5a53e3da28493edd24720b66b8a0b84030aa56ccdf243d6857
+    # via
+    #   python-discovery
+    #   virtualenv
 googleapis-common-protos==1.76.0 \
     --hash=sha256:59e13344a9f3651aa201a03e2bee815a3bf43a4baf1f9ff8a9b62a840ce25fac
     # via
@@ -336,10 +344,13 @@ packaging==26.3 \
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
     #   opentelemetry-instrumentation
+    #   virtualenv
     #   wheel
 platformdirs==4.13.7 \
     --hash=sha256:47664602fbecad0a6efa561fb690d20dbc26875fe8aedf65ba362935df619bbb
-    # via -r .github/requirements/qodana.in
+    # via
+    #   -r .github/requirements/qodana.in
+    #   virtualenv
 protobuf==7.36.2 \
     --hash=sha256:89f23aa53c24553a2416fd4fd1ec06f74fa42b14b546d8883128813f775bbfd2 \
     --hash=sha256:912c1221170e16c08d1f086762f563dd61ff83c18b5fa6652952dfaded66f728 \
@@ -393,6 +404,9 @@ pyroscope-otel==1.1.0 \
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
+python-discovery==1.9.5 \
+    --hash=sha256:a1fae8fca11e4bc61e38491c2aafff29e430b3c5e272d51ae52fb895bc4c0fac
+    # via virtualenv
 ruff==0.17.4 \
     --hash=sha256:0d1f4848fd2ec0499be4046db9b7dfcc952666885f00233cc7033515282556a8 \
     --hash=sha256:13e781c3c5f663e7fba737eaaeb70dd943dd55171daf316afb25cd5268cfe0c7 \
@@ -438,6 +452,9 @@ tzdata==2026.6 \
 uvicorn==0.54.0 \
     --hash=sha256:505bdb0f318731d45f1f712071fc781a8981f6847a31c902c9f5e652d4f67faf
     # via -r services/python/django/gunicorn/ASGI/requirements.txt
+virtualenv==21.14.9 \
+    --hash=sha256:ac51744da66ae56ff814b087d65096c94de698ec520adc624b108b679655809b
+    # via -r .github/requirements/qodana.in
 wheel==0.48.0 \
     --hash=sha256:3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab
     # via -r .github/requirements/build.in
