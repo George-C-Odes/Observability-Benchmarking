@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest import mock
+from unittest import TestCase, mock
 
 from asgiref.sync import async_to_sync
 from django.test import RequestFactory, SimpleTestCase
@@ -84,7 +84,8 @@ class HealthViewTests(SimpleTestCase):
         factory = RequestFactory()
         for view in (views.healthz, views.readyz, views.livez):
             for method in ("GET", "HEAD"):
-                with self.subTest(view=view.__name__, method=method):
+                # Resolve the unittest method explicitly for Qodana's Django analysis.
+                with TestCase.subTest(self, view=view.__name__, method=method):
                     response = view(factory.generic(method, f"/{view.__name__}"))
                     self.assertEqual(200, response.status_code)
                     self.assertEqual(b"", response.content)
@@ -93,7 +94,7 @@ class HealthViewTests(SimpleTestCase):
         factory = RequestFactory()
         for view in (views.healthz, views.readyz, views.livez):
             for method in ("POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"):
-                with self.subTest(view=view.__name__, method=method):
+                with TestCase.subTest(self, view=view.__name__, method=method):
                     response = view(factory.generic(method, f"/{view.__name__}"))
                     self.assertEqual(405, response.status_code)
                     self.assertEqual("GET, HEAD", response["Allow"])
