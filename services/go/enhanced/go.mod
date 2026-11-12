@@ -6,7 +6,7 @@ require (
 	github.com/Yiling-J/theine-go v0.6.3
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/gofiber/contrib/v3/otel v1.3.3
-	github.com/gofiber/fiber/v3 v3.6.1
+	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/grafana/otel-profiling-go v0.7.0
 	github.com/grafana/pyroscope-go v1.4.3
 	github.com/maypok86/otter/v2 v2.4.0
@@ -43,7 +43,7 @@ require (
 	github.com/philhofer/fwd v1.2.1 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.77.0 // indirect
+	github.com/valyala/fasthttp v1.78.0 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib v1.47.0 // indirect
