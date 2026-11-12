@@ -305,7 +305,7 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 
 ```
 Go: 1.27.3+
-Fiber: v3.6.1
+Fiber: v3.7.0
 OpenTelemetry: Latest stable
 ```
 
