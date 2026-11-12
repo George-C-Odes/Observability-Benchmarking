@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
  *
  * Client can pass `sinceTs` to replay recent items.
  */
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sinceTsRaw = searchParams.get('sinceTs');
   const sinceTs = sinceTsRaw ? Number(sinceTsRaw) : undefined;

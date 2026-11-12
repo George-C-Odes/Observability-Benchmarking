@@ -24,7 +24,7 @@ function normalizeOutput(v: string | undefined, fallback: ServerLogOutput): Serv
  * GET /api/logging/config
  * Runtime logging configuration. Polled by the client.
  */
-export const GET = withApiRoute({ name: 'LOGGING_CONFIG_API' }, async function GET() {
+export const GET = withApiRoute({ name: 'LOGGING_CONFIG_API' }, function GET() {
   const payload: LoggingRuntimeConfig = {
     clientLogLevel: normalizeLevel(
       envString('NEXTJS_DASH_CLIENT_LOG_LEVEL', DEFAULT_LOGGING_RUNTIME_CONFIG.clientLogLevel),

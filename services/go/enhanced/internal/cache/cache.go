@@ -50,7 +50,10 @@ func New(size int, impl string) (Cache, error) {
 	}
 }
 
-const defaultTTL = 24 * time.Hour
+const (
+	defaultTTL       = 24 * time.Hour
+	cacheValuePrefix = "value-"
+)
 
 // ---------------------------
 // slice cache (baseline)
@@ -65,7 +68,7 @@ func newSliceCache(size int) *sliceCache {
 	values := make([]string, size+1)
 	// Pre-populate, descending to match the Java example, but order doesn't matter.
 	for i := size; i >= 1; i-- {
-		values[i] = "value-" + itoa(i)
+		values[i] = cacheValuePrefix + itoa(i)
 	}
 	return &sliceCache{size: size, values: values}
 }
@@ -131,7 +134,7 @@ func newMapCache(size int) *mapCache {
 	m := make(map[string]string, size)
 	for i := size; i >= 1; i-- {
 		k := itoa(i)
-		m[k] = "value-" + k
+		m[k] = cacheValuePrefix + k
 	}
 	return &mapCache{size: size, m: m}
 }
@@ -176,7 +179,7 @@ func newRistrettoCache(size int) (*ristrettoCache, error) {
 	const batchSize = 1000
 	for i := size; i >= 1; i-- {
 		k := itoa(i)
-		retrySetRistretto(rc, k, "value-"+k, 1, defaultTTL)
+		retrySetRistretto(rc, k, cacheValuePrefix+k, 1, defaultTTL)
 		if i%batchSize == 0 {
 			rc.Wait()
 		}
@@ -219,7 +222,7 @@ func newTheineCache(size int) (*theineCache, error) {
 	}
 	for i := size; i >= 1; i-- {
 		k := itoa(i)
-		_ = tc.SetWithTTL(k, "value-"+k, 1, defaultTTL)
+		_ = tc.SetWithTTL(k, cacheValuePrefix+k, 1, defaultTTL)
 	}
 	tc.Wait()
 	return &theineCache{size: size, c: tc}, nil
@@ -249,7 +252,7 @@ func newOtterCache(size int) (*otterCache, error) {
 	}
 	for i := size; i >= 1; i-- {
 		k := itoa(i)
-		oc.Set(k, "value-"+k)
+		oc.Set(k, cacheValuePrefix+k)
 	}
 	oc.CleanUp()
 	return &otterCache{size: size, c: oc}, nil
