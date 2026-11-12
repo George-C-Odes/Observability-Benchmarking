@@ -158,10 +158,10 @@
   ],
   "packageRules": [
     {
-      "description": "Relay Next.js image tags using trusted base scripts.",
+      "description": "Relay documented dashboard package versions and Next.js image tags using trusted base scripts.",
       "matchManagers": ["npm"],
       "matchFileNames": ["utils/nextjs-dash/package.json"],
-      "matchPackageNames": ["next"],
+      "matchPackageNames": ["next", "react", "@mui/material", "typescript", "vitest", "oxfmt", "oxlint"],
       "addLabels": ["nextjs-version"],
       "rebaseWhen": "behind-base-branch"
     },

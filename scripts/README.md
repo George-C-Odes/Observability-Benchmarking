@@ -87,7 +87,7 @@ and Go uses its full version without a suffix. The dashboard uses
 `<next-version>-node<major>`; Next.js keeps its `package.json` source of truth.
 The orchestrator uses its Quarkus version plus the Java major. `wrk2:latest` is unchanged.
 Compose image/build-name values, IDE build configurations, and documentation are generated
-by the combined command below. Run it after changing env pins or the dashboard's Next.js dependency.
+by the combined command below. Run it after changing env pins or the dashboard's documented package pins.
 Services, container names, resource settings and telemetry identities remain authored.
 
 `NODE_MAJOR_VERSION` and `NODE_MINOR_PATCH_VERSION` form a single stable Node release.
@@ -137,6 +137,11 @@ Git Bash with Windows Python cannot compile the Pyroscope-containing inventory. 
 [Python compiler setup](../.github/requirements/README.md#regenerate-or-upgrade-the-locks).
 
 ### Renovate PR synchronization
+
+Dashboard npm updates to `next`, `react`, `@mui/material`, `typescript`, `vitest`, `oxfmt`, or `oxlint`
+receive the existing `nextjs-version` label. The trusted relay detects the changed documentation pins,
+validates dependency-only manifest edits and the complete lockfile against independent npm regeneration,
+then regenerates the documentation and image tags. A non-Next.js update retains the existing image tag.
 
 1. Renovate proposes an env update and labels the PR `framework-version`.
 2. **Framework Version Sync** (`renovate_framework_sync.yml`) runs the **trusted base revision's** scripts.

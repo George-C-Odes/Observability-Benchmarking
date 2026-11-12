@@ -160,7 +160,7 @@ test('generated allowlist includes all target classes, but never scripts or sour
 test('complete CLI relays changed env values, detects drift read-only, and is repeatable', (t) => {
   const workspace = temporaryDirectory(t, 'framework-pipeline-');
   const scripts = [
-    'sync-nextjs-tags.mjs', 'sync-framework-versions.mjs', 'sync-django-versions.mjs', 'sync-java-pom-versions.mjs',
+    'renovate-framework-sync.mjs', 'sync-nextjs-tags.mjs', 'sync-framework-versions.mjs', 'sync-django-versions.mjs', 'sync-java-pom-versions.mjs',
     'sync-dockerfile-versions.mjs', 'sync-go-mod-versions.mjs', 'sync-build-img-runs.mjs',
     'image-tags.mjs', 'sync-image-tags.mjs', 'sync-node-versions.mjs', 'sync-java-runtime-versions.mjs', 'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json',
   ];
@@ -287,6 +287,87 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.equal(nextRun('--check').status, 0);
   assert.equal(nextRun().status, 0);
   assert.deepEqual(snapshot(), nextSnapshot);
+
+  // Exercise trusted proposal preparation in the isolated copy, then the same
+  // generator/check commands as the workflow. GitHub and npm are synthetic;
+  // their credential, request and full-lock safeguards have dedicated tests.
+  async function prepareReactUpdate() {
+    const assert = (await import('node:assert/strict')).default;
+    const childProcess = (await import('node:child_process')).default;
+    const { readFileSync, writeFileSync } = await import('node:fs');
+    const { prepare, gitBlobSha } = await import('./scripts/renovate-framework-sync.mjs');
+    const manifestPath = 'utils/nextjs-dash/package.json';
+    const lockPath = 'utils/nextjs-dash/package-lock.json';
+    const original = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    // npm is mocked independently of the runner's installed npm version.
+    delete original.packageManager;
+    const proposed = structuredClone(original);
+    proposed.dependencies.react = '99.3.4';
+    const baseLock = readFileSync(lockPath, 'utf8');
+    const expectedLock = JSON.parse(baseLock);
+    expectedLock.packages[''].dependencies = proposed.dependencies;
+    expectedLock.packages[''].devDependencies = proposed.devDependencies;
+    const blobs = new Map();
+    const tree = (manifest, lock) => ['compose/.env', manifestPath, lockPath].map((file) => {
+      const content = file === manifestPath ? JSON.stringify(manifest)
+        : file === lockPath ? lock : readFileSync(file, 'utf8');
+      const sha = gitBlobSha(content);
+      blobs.set(sha, content);
+      return { path: file, type: 'blob', mode: '100644', sha };
+    });
+    const baseTree = tree(original, baseLock);
+    const headTree = tree(proposed, JSON.stringify(expectedLock));
+    const baseSha = 'a'.repeat(40);
+    const headSha = 'b'.repeat(40);
+    const baseTreeSha = 'c'.repeat(40);
+    const headTreeSha = 'd'.repeat(40);
+    globalThis.fetch = async (url, options) => {
+      assert.equal(options.method, 'GET');
+      assert.equal(options.redirect, 'error');
+      let body;
+      const root = 'https://api.github.com/repos/owner/repo/';
+      if (url === `${root}pulls/424`) body = {
+        state: 'open', user: { login: 'renovate[bot]' },
+        base: { sha: baseSha, repo: { full_name: 'owner/repo' } },
+        head: { sha: headSha, ref: 'renovate/react', repo: { full_name: 'owner/repo' } },
+      };
+      else if (url === `${root}git/commits/${baseSha}`) body = { tree: { sha: baseTreeSha } };
+      else if (url === `${root}git/commits/${headSha}`) body = { tree: { sha: headTreeSha } };
+      else if (url === `${root}git/trees/${baseTreeSha}?recursive=1`) body = { tree: baseTree };
+      else if (url === `${root}git/trees/${headTreeSha}?recursive=1`) body = { tree: headTree };
+      else {
+        const content = blobs.get(url.slice(`${root}git/blobs/`.length));
+        assert.ok(content, url);
+        body = { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+      }
+      return new Response(JSON.stringify(body), { status: 200 });
+    };
+    childProcess.spawnSync = (_executable, _args, options) => {
+      assert.equal(readFileSync(`${options.cwd}/package-lock.json`, 'utf8'), baseLock);
+      assert.deepEqual(JSON.parse(readFileSync(`${options.cwd}/package.json`, 'utf8')), proposed);
+      writeFileSync(`${options.cwd}/package-lock.json`, JSON.stringify(expectedLock));
+      return { status: 0 };
+    };
+    await prepare({ number: 424, pull_request: { base: { sha: baseSha } } }, 'synthetic-test-token', 'nextjs');
+    const state = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/renovate-framework-sync.json`, 'utf8'));
+    assert.deepEqual(state.changed, ['REACT_VERSION']);
+    assert.match(readFileSync(process.env.GITHUB_OUTPUT, 'utf8'), /changed=true/);
+    assert.equal(JSON.parse(readFileSync(manifestPath, 'utf8')).dependencies.next, original.dependencies.next);
+  }
+  copyFileSync(resolveRepoPath('utils/nextjs-dash/package-lock.json'), path.join(workspace, 'utils/nextjs-dash/package-lock.json'));
+  const prepared = spawnSync(process.execPath, ['--input-type=module', '-e', `(${prepareReactUpdate.toString()})()`], {
+    cwd: workspace, encoding: 'utf8', timeout: 30_000,
+    env: { ...process.env, GITHUB_REPOSITORY: 'owner/repo', RUNNER_TEMP: workspace, GITHUB_OUTPUT: path.join(workspace, 'relay-output') },
+  });
+  assert.equal(prepared.status, 0, prepared.stderr);
+  assert.equal(nextRun('--check').status, 1, 'React-only proposal must cause documentation drift');
+  const regenerated = nextRun();
+  assert.equal(regenerated.status, 0, regenerated.stderr);
+  for (const file of ['README.md', 'docs/TESTING.md', 'utils/nextjs-dash/README.md']) {
+    assert.ok(readFileSync(path.join(workspace, file), 'utf8').includes('99.3.4'), file);
+  }
+  assert.equal(run('--check').status, 0, 'Full consistency check must pass after the npm relay');
+  assert.equal(readFileSync(path.join(workspace, 'compose/utils.yml'), 'utf8'), nextSnapshot[files.indexOf('compose/utils.yml')]);
 
 });
 

@@ -4,7 +4,7 @@
 
 A Next.js-based dashboard UI for orchestrating and managing the Observability Benchmarking environment.
 
-Next.js versions come from `package.json`. Renovate PRs labeled `nextjs-version` relay the image tags into Compose, IDE build configurations, and generated documentation using trusted base scripts. The relay validates dependency-only manifest changes and the lockfile root without installing PR dependencies. For local dependency upgrades, run `node scripts/sync-framework-versions.mjs` from the repository root. Documentation versions for Next.js, React, Material UI, TypeScript, Vitest, Oxfmt, and Oxlint are read from `package.json`; unit-test expectations and fixtures read the same manifest directly.
+Dashboard package versions come from `package.json`. Renovate updates to Next.js, React, Material UI, TypeScript, Vitest, Oxfmt, or Oxlint receive the existing `nextjs-version` label and regenerate documentation using trusted base scripts. Next.js updates also relay image tags into Compose and IDE build configurations. The relay validates dependency-only manifest changes and the complete lockfile against independent npm regeneration without installing PR dependencies. For local dependency upgrades, run `node scripts/sync-framework-versions.mjs` from the repository root. Documentation versions for these seven packages are read from `package.json`; unit-test expectations and fixtures read the same manifest directly.
 
 ## Why it exists (the design reasoning)
 

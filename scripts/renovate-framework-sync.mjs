@@ -10,6 +10,7 @@ import { resolveRepoPath } from './render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 
 import { readNodeVersion } from './sync-node-versions.mjs';
+import { dashboardPackageVersions, readDashboardPackageVersions } from './image-tags.mjs';
 
 const envFile = 'compose/.env';
 const nextManifest = 'utils/nextjs-dash/package.json';
@@ -34,6 +35,7 @@ function validateNextjsManifest(base, head) {
   if (!matchesEntireString(proposed.dependencies.next, /^\d+\.\d+\.\d+$/)) {
     throw new Error('Next.js must use a stable npm version without a range');
   }
+  readDashboardPackageVersions(proposed);
   return { original, proposed };
 }
 
@@ -52,7 +54,9 @@ export function validateNextjsChange(base, head, lock, expectedLock) {
   if (!expectedLock || !isDeepStrictEqual(parsedLock, JSON.parse(expectedLock))) {
     throw new Error('Complete lockfile must match trusted npm regeneration');
   }
-  return original.dependencies.next !== proposed.dependencies.next;
+  return dashboardPackageVersions
+    .filter(([_key, section, name]) => original[section][name] !== proposed[section][name])
+    .map(([key]) => key);
 }
 
 export function regenerateNextjsLock(manifest, baseLock) {
@@ -298,7 +302,7 @@ export async function prepare(event, token, route = 'env') {
     validateNextjsManifest(original, manifest);
     const baseLock = await readBlob(baseTree, nextLock, token);
     const expectedLock = regenerateNextjsLock(manifest, baseLock);
-    changed = validateNextjsChange(original, manifest, lock, expectedLock) ? ['NEXTJS_VERSION'] : [];
+    changed = validateNextjsChange(original, manifest, lock, expectedLock);
   } else changed = validateVersionChange(baseEnv, headEnv);
   if (changed.length) {
     if (route === 'nextjs') writeFileSync(resolveRepoPath(nextManifest), manifest, 'utf8');
