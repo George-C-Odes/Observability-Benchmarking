@@ -712,12 +712,12 @@ services:
 
   micronaut-jvm:
     profiles: ["${DOCKER_PROF_MICRONAUT_JVM:-skip}"]
-    image: micronaut-jvm:5.2.22-java25
+    image: micronaut-jvm:5.2.23-java25
     build:
       context: ../services/java
       dockerfile: micronaut/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: micronaut-jvm:5.2.22-java25
+        BUILDKIT_BUILD_NAME: micronaut-jvm:5.2.23-java25
         MICRONAUT_VERSION: ${MICRONAUT_VERSION}
     container_name: micronaut-jvm
     ports:
@@ -772,12 +772,12 @@ services:
 
   micronaut-native:
     profiles: ["${DOCKER_PROF_MICRONAUT_NATIVE:-skip}"]
-    image: micronaut-native:5.2.22-java25
+    image: micronaut-native:5.2.23-java25
     build:
       context: ../services/java
       dockerfile: micronaut/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: micronaut-native:5.2.22-java25
+        BUILDKIT_BUILD_NAME: micronaut-native:5.2.23-java25
         MICRONAUT_VERSION: ${MICRONAUT_VERSION}
     container_name: micronaut-native
     ports:
