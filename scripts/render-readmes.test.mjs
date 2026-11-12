@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 
@@ -126,39 +127,39 @@ function testGeneratedOutputRoundTrip() {
 }
 
 function testRenderTemplatesResolvesRelativeEnvPath() {
-  const repoTempDir = path.join(process.cwd(), 'scripts', '__tmp_render_readmes_tests');
+  const repoRoot = fileURLToPath(new URL('../', import.meta.url));
+  const repoTempDir = mkdtempSync(path.join(repoRoot, 'scripts', '__tmp_render_readmes_tests-'));
+  const envPath = path.join(repoTempDir, '.env');
   const templatePath = path.join(repoTempDir, 'relative-env.template.md');
   const outputPath = path.join(repoTempDir, 'relative-env.md');
+  const options = {
+    envPath: path.relative(repoRoot, envPath),
+    templatePaths: [path.relative(repoRoot, templatePath)],
+  };
 
   try {
-    mkdirSync(repoTempDir, { recursive: true });
+    // Keep fixture releases independent of Renovate-managed compose/.env pins.
+    writeFileSync(envPath, 'SPRING_BOOT_VERSION: 9.8.7\nQUARKUS_VERSION: 8.7.6.5\n', 'utf8');
     writeFileSync(templatePath, 'Spring {{SPRING_BOOT_VERSION}} / Quarkus {{QUARKUS_VERSION}}', 'utf8');
 
-    const results = renderTemplates({
-      envPath: path.join('compose', '.env'),
-      templatePaths: [path.join('scripts', '__tmp_render_readmes_tests', 'relative-env.template.md')],
-    });
+    const results = renderTemplates(options);
 
     assert.equal(results.length, 1);
-    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 4.1.2 / Quarkus 3.40.1.1');
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 9.8.7 / Quarkus 8.7.6.5');
+    assert.doesNotThrow(() => renderTemplates({ ...options, check: true }));
+
+    // An env-only upgrade must invalidate the output until it is regenerated.
+    writeFileSync(envPath, 'SPRING_BOOT_VERSION: 9.8.8\nQUARKUS_VERSION: 8.7.6.6\n', 'utf8');
+    assert.throws(
+      () => renderTemplates({ ...options, check: true }),
+      /Generated file is out of date/,
+    );
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 9.8.7 / Quarkus 8.7.6.5');
+    renderTemplates(options);
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 9.8.8 / Quarkus 8.7.6.6');
+    assert.doesNotThrow(() => renderTemplates({ ...options, check: true }));
   } finally {
-    try {
-      unlinkSync(templatePath);
-    } catch {
-      // Ignore cleanup errors if the file was never created.
-    }
-
-    try {
-      unlinkSync(outputPath);
-    } catch {
-      // Ignore cleanup errors if the file was never created.
-    }
-
-    try {
-      rmSync(repoTempDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors if the directory was already removed.
-    }
+    rmSync(repoTempDir, { recursive: true, force: true });
   }
 }
 

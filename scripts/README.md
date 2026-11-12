@@ -635,7 +635,7 @@ This means templates can live at any directory depth in the project as long as y
 Run the renderer tests from the repository root:
 
 ```powershell
-node .\scripts\render-readmes.test.mjs
+node --test scripts/render-readmes.test.mjs
 ```
 
 The tests currently cover:
@@ -647,6 +647,21 @@ The tests currently cover:
 - placeholder rendering
 - GitHub Actions `${{ ... }}` expressions staying intact next to README placeholders
 - `.template.md` -> output path derivation
+- relative env and template paths using an isolated env fixture
+- env-only upgrades (including four-component releases), stale-output rejection without writes, and successful regeneration
+
+Keep renderer unit tests independent of the live release pins in `compose/.env`: write synthetic
+versions to a temporary env file and assert those fixture values. Do not pair a read of the live env
+with hard-coded current versions; Renovate updates the env without updating test expectations.
+Tests that intentionally check repository consistency should derive expected versions from the
+authoritative env instead.
+
+The Framework Version Consistency workflow runs these tests on every pull request. To run its
+version synchronization and Renovate routing test step locally:
+
+```powershell
+node --test scripts/sync-*.test.mjs scripts/render-readmes.test.mjs scripts/renovate-framework-sync.test.mjs
+```
 
 ## Important caveats
 
