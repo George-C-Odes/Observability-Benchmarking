@@ -320,7 +320,7 @@ Access the dashboard at [http://localhost:3001](http://localhost:3001)
 ### Option 2: Build the Docker image manually:
 
 ```bash
-docker buildx build --load -t nextjs-dash:16.4.5-node26 -f utils/nextjs-dash/Dockerfile utils\nextjs-dash
+docker buildx build --load -t nextjs-dash:16.4.6-node26 -f utils/nextjs-dash/Dockerfile utils\nextjs-dash
 ```
 
 ### Option 3: Run the container:
@@ -331,7 +331,7 @@ macOS/Linux (bash):
 docker run -p 3001:3001 \
   -v $(pwd)/../compose/.env:/app/compose/.env \
   -v $(pwd)/../.run:/app/.run \
-  nextjs-dash:16.4.5-node26
+  nextjs-dash:16.4.6-node26
 ```
 
 Windows (PowerShell):
@@ -340,7 +340,7 @@ Windows (PowerShell):
 docker run -p 3001:3001 `
   -v "${PWD}\..\compose\.env:/app/compose/.env" `
   -v "${PWD}\..\.run:/app/.run" `
-  nextjs-dash:16.4.5-node26
+  nextjs-dash:16.4.6-node26
 ```
 
 ## Testing
