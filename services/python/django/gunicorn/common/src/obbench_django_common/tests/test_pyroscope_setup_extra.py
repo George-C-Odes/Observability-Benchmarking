@@ -134,7 +134,7 @@ class PyroscopeSetupExtraTests(TestCase):
                 PyroscopeSpanProcessor=mock.Mock(return_value="proc")
             )
             with (
-                self.subTest(invalid_adder=invalid_adder),
+                TestCase.subTest(self, invalid_adder=invalid_adder),
                 mock.patch.dict(
                     sys.modules,
                     {
@@ -165,7 +165,7 @@ class PyroscopeSetupExtraTests(TestCase):
             opentelemetry_module.trace = trace_module
             pyroscope_otel_module = types.SimpleNamespace(PyroscopeSpanProcessor=mock.Mock())
             with (
-                self.subTest(provider=provider),
+                TestCase.subTest(self, provider=provider),
                 mock.patch.dict(
                     sys.modules,
                     {

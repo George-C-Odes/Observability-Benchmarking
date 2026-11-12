@@ -173,7 +173,7 @@ class RuntimeEntrypointTests(TestCase):
     def test_manage_py_sets_settings_module_and_executes_cli_for_both_runtimes(self) -> None:
         for runtime in ("WSGI", "ASGI"):
             module_dir = self._runtime_dir(runtime)
-            with self.subTest(module_dir=module_dir.name):
+            with TestCase.subTest(self, module_dir=module_dir.name):
                 with (
                     mock.patch(
                         "django.core.management.execute_from_command_line"
@@ -276,7 +276,7 @@ class RuntimeEntrypointTests(TestCase):
 
     def test_gunicorn_configs_prepare_private_directories_only_on_starting(self) -> None:
         for runtime in ("WSGI", "ASGI"):
-            with self.subTest(runtime=runtime):
+            with TestCase.subTest(self, runtime=runtime):
                 with mock.patch(
                     "obbench_django_common.infrastructure.gunicorn_runtime.prepare_runtime_directories"
                 ) as prepare:
@@ -299,9 +299,7 @@ class RuntimeEntrypointTests(TestCase):
 
     def test_gunicorn_runtime_paths_can_be_overridden(self) -> None:
         for runtime in ("WSGI", "ASGI"):
-            # Qodana 2026.2 intermittently misses subTest inherited from unittest.TestCase.
-            # noinspection PyUnresolvedReferences
-            with self.subTest(runtime=runtime):
+            with TestCase.subTest(self, runtime=runtime):
                 namespace, _ = self._run_path(
                     self._runtime_dir(runtime) / "gunicorn.conf.py",
                     env={
