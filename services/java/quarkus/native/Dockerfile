@@ -1,11 +1,11 @@
-# syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
+# syntax=docker/dockerfile:1.29@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
 ARG JAVA_MINOR_RELEASE=.0.5.0.3
 ARG BASE_BUILDER=ol9
 #ARG DISTRIBUTION=mandrel
 #mandrel, graalvmce
-ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:08476c244888bfb425bae1ae4dd7c17f093e972aab8426883d97f3c6f280f7c1
+ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:cc66d222f0a7ec996b78a99fe76a969bc80b539a5016ad866c14d1949bc6d0ab
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 #ARG IMAGE_RUNTIME=quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 # ------------ BUILD STAGE -----------------------

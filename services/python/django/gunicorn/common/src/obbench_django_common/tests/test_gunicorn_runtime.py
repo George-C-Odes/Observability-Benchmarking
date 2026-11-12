@@ -17,7 +17,6 @@ class GunicornRuntimeTests(TestCase):
     socket: Path
 
     # unittest requires this lifecycle method's exact name.
-    # noinspection PyPep8Naming
     def setUp(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -33,7 +32,8 @@ class GunicornRuntimeTests(TestCase):
         self.prepare()
         self.prepare()
         for directory in (self.worker_dir, self.control_dir):
-            with self.subTest(directory=directory):
+            # Resolve the unittest method explicitly for Qodana's inherited-method analysis.
+            with TestCase.subTest(self, directory=directory):
                 info = directory.lstat()
                 self.assertTrue(stat.S_ISDIR(info.st_mode))
                 self.assertEqual(0o700, stat.S_IMODE(info.st_mode))
@@ -42,14 +42,14 @@ class GunicornRuntimeTests(TestCase):
 
     def test_rejects_relative_paths(self) -> None:
         for worker, socket in (("heartbeat", str(self.socket)), (str(self.worker_dir), "sock")):
-            with self.subTest(worker=worker, socket=socket):
+            with TestCase.subTest(self, worker=worker, socket=socket):
                 with self.assertRaises(ValueError):
                     prepare_runtime_directories(worker, socket)
 
     def test_rejects_publicly_accessible_directories_without_changing_permissions(self) -> None:
         for directory in (self.worker_dir, self.control_dir):
             for mode in (0o755, 0o770, 0o777):
-                with self.subTest(directory=directory, mode=mode):
+                with TestCase.subTest(self, directory=directory, mode=mode):
                     directory.mkdir(exist_ok=True)
                     directory.chmod(mode)
                     with self.assertRaises(PermissionError):
@@ -70,7 +70,7 @@ class GunicornRuntimeTests(TestCase):
         target = self.root / "target"
         target.mkdir(mode=0o700)
         for directory in (self.worker_dir, self.control_dir):
-            with self.subTest(directory=directory):
+            with TestCase.subTest(self, directory=directory):
                 directory.symlink_to(target, target_is_directory=True)
                 with self.assertRaises(PermissionError):
                     self.prepare()
@@ -79,7 +79,7 @@ class GunicornRuntimeTests(TestCase):
 
     def test_rejects_existing_files(self) -> None:
         for directory in (self.worker_dir, self.control_dir):
-            with self.subTest(directory=directory):
+            with TestCase.subTest(self, directory=directory):
                 directory.write_text("not a directory", encoding="utf-8")
                 with self.assertRaises(FileExistsError):
                     self.prepare()
