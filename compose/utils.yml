@@ -111,7 +111,7 @@ services:
     build:
       context: ../utils/orchestrator
       dockerfile: Dockerfile
-    image: orchestrator:3.40.1.1-java25
+    image: orchestrator:3.40.1.2-java25
     container_name: orchestrator
     ports:
       - "3002:3002"

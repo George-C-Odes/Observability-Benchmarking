@@ -598,12 +598,12 @@ services:
 
   quarkus-jvm:
     profiles: ["${DOCKER_PROF_QUARKUS_JVM:-skip}"]
-    image: quarkus-jvm:3.40.1.1-java25
+    image: quarkus-jvm:3.40.1.2-java25
     build:
       context: ../services/java
       dockerfile: quarkus/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: quarkus-jvm:3.40.1.1-java25
+        BUILDKIT_BUILD_NAME: quarkus-jvm:3.40.1.2-java25
         QUARKUS_VERSION: ${QUARKUS_VERSION}
     container_name: quarkus-jvm
     ports:
@@ -673,12 +673,12 @@ services:
 
   quarkus-native:
     profiles: ["${DOCKER_PROF_QUARKUS_NATIVE:-skip}"]
-    image: quarkus-native:3.40.1.1-java25
+    image: quarkus-native:3.40.1.2-java25
     build:
       context: ../services/java
       dockerfile: quarkus/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: quarkus-native:3.40.1.1-java25
+        BUILDKIT_BUILD_NAME: quarkus-native:3.40.1.2-java25
         QUARKUS_VERSION: ${QUARKUS_VERSION}
     container_name: quarkus-native
     ports:
