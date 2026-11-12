@@ -17,7 +17,6 @@ class GunicornRuntimeTests(TestCase):
     socket: Path
 
     # unittest requires this lifecycle method's exact name.
-    # noinspection PyPep8Naming
     def setUp(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
