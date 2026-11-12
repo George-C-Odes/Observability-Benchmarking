@@ -177,14 +177,14 @@ The runner loads and prints framework versions from `compose/.env`:
 |-----------------|----------|
 | Spring Boot     | 4.1.2    |
 | Quarkus         | 3.40.1.2 |
-| Micronaut       | 5.2.22   |
+| Micronaut       | 5.2.23   |
 | Helidon SE & MP | 4.5.6    |
 | Spark           | 3.0.5    |
 | Javalin         | 7.2.4    |
 | Dropwizard      | 5.0.2    |
 | Vert.x          | 5.2.3    |
 | Pekko           | 1.4.2    |
-| Go              | 1.27.3   |
+| Go              | 1.27.4   |
 | Django          | 6.1.3    |
 
 ## Service Port Mappings

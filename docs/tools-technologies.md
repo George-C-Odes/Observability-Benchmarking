@@ -140,7 +140,7 @@ mvn package -Pnative
 - Native build complexity
 - Reflection limitations in native mode
 
-### Micronaut 5.2.22
+### Micronaut 5.2.23
 
 **Official Site**: [https://micronaut.io/](https://micronaut.io/)
 
@@ -151,7 +151,7 @@ mvn package -Pnative
 - Provides all three concurrency modes for a well-rounded comparison
 
 **Implementation Details**:
-- **Micronaut 5.2.22** (latest stable)
+- **Micronaut 5.2.23** (latest stable)
 - **Micronaut HTTP Server** (Netty-based)
 - **GraalVM** for native compilation
 - Experimental `micronaut.server.netty.worker.threads` carrier-thread property for loom integration
@@ -998,13 +998,13 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 |-------------------|--------------------|----------------------------|------------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25         | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.5.0.3 | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.27.3     | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.27.4     | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18    | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0     | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.13.0    | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | 4.1.2      | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.2   | Cloud-native Java framework (JVM + native image focus)               |
-| **Backend**       | Framework          | Micronaut                  | 5.2.22     | Compile-time optimized JVM microservices framework                   |
+| **Backend**       | Framework          | Micronaut                  | 5.2.23     | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.6      | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.6      | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.5      | Minimal HTTP server (virtual-thread friendly)                        |
@@ -1013,11 +1013,11 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | 5.2.3      | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.4.2      | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | 6.1.3      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.4.5     | SSR frontend and control dashboard                                   |
+| **Frontend**      | Framework          | Next.js                    | 16.4.6     | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1     | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2      | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0      | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.3.0     | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.3.1     | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.9      | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1      | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.4      | Long-term metrics storage                                            |
@@ -1033,9 +1033,9 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.10.0     | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest     | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.2     | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.4     | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.92.0     | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.77.0     | Next.js dashboard formatting                                         |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.5     | Python linting and code formatting                                   |
+| **Quality**       | Linter             | Oxlint                     | 1.93.0     | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | 0.78.0     | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest     | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 6.1.3      | JVM unit and integration testing                                     |
 | **Testing**       | Frontend Testing   | Vitest                     | 5.1.0      | Frontend unit testing                                                |

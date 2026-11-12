@@ -120,9 +120,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/jvm/Dockerfile `
-  -t micronaut-jvm:5.2.22-java25 `
-  --build-arg MICRONAUT_VERSION=5.2.22 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.2.22-java25 `
+  -t micronaut-jvm:5.2.23-java25 `
+  --build-arg MICRONAUT_VERSION=5.2.23 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-jvm:5.2.23-java25 `
   --load `
   services/java
 ```
@@ -130,9 +130,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/micronaut/native/Dockerfile `
-  -t micronaut-native:5.2.22-java25 `
-  --build-arg MICRONAUT_VERSION=5.2.22 `
-  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.2.22-java25 `
+  -t micronaut-native:5.2.23-java25 `
+  --build-arg MICRONAUT_VERSION=5.2.23 `
+  --build-arg BUILDKIT_BUILD_NAME=micronaut-native:5.2.23-java25 `
   --load `
   services/java
 ```
@@ -260,9 +260,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/go/enhanced/Dockerfile `
-    -t go:1.27.3 `
-    --build-arg GO_VERSION=1.27.3 `
-    --build-arg BUILDKIT_BUILD_NAME=go:1.27.3 `
+    -t go:1.27.4 `
+    --build-arg GO_VERSION=1.27.4 `
+    --build-arg BUILDKIT_BUILD_NAME=go:1.27.4 `
     --load `
     services/go/enhanced
 ```

@@ -9,7 +9,7 @@ FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG MICRONAUT_VERSION=5.2.22
+ARG MICRONAUT_VERSION=5.2.23
 ENV MICRONAUT_VERSION=${MICRONAUT_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV HOME=/home/maven

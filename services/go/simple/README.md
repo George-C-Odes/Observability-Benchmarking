@@ -9,8 +9,8 @@ metrics and traces, making it a useful baseline beside the richer
 
 ## Runtime
 
-- **Language**: Go 1.27.3
-- **HTTP framework**: Fiber v3.6.1
+- **Language**: Go 1.27.4
+- **HTTP framework**: Fiber v3.7.0
 - **Telemetry**: OpenTelemetry OTLP/gRPC for metrics and traces
 - **Cache model**: in-memory `map[int]int`, pre-populated at startup
 
@@ -58,8 +58,8 @@ go run ./cmd/server
 
 ```bash
 cd services/go/simple
-docker build -t go-simple:1.27.3 .
-docker run --rm -p 8080:8080 -e OTEL_EXPORTER_OTLP_ENDPOINT=alloy:4317 go-simple:1.27.3
+docker build -t go-simple:1.27.4 .
+docker run --rm -p 8080:8080 -e OTEL_EXPORTER_OTLP_ENDPOINT=alloy:4317 go-simple:1.27.4
 ```
 
 ## Local quality checks

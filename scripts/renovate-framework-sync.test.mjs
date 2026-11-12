@@ -8,6 +8,7 @@ import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
+import { dashboardPackageVersions } from './image-tags.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
 const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
@@ -484,10 +485,10 @@ test('npm relay accepts stable dependency-only updates and requires a matching l
   const lock = { name: proposed.name, version: proposed.version, lockfileVersion: 3, packages: { '': proposed } };
   const validate = (manifest = proposed, proposedLock = lock) => validateNextjsChange(
     JSON.stringify(original), JSON.stringify(manifest), JSON.stringify(proposedLock), JSON.stringify(lock));
-  assert.equal(validate(), true);
-  assert.equal(validateNextjsChange(JSON.stringify(original), JSON.stringify(original),
+  assert.deepEqual(validate(), ['NEXTJS_VERSION']);
+  assert.deepEqual(validateNextjsChange(JSON.stringify(original), JSON.stringify(original),
     JSON.stringify({ ...lock, packages: { '': original } }),
-    JSON.stringify({ ...lock, packages: { '': original } })), false);
+    JSON.stringify({ ...lock, packages: { '': original } })), []);
   for (const edit of [
     (value) => { value.scripts.build = 'malicious command'; },
     (value) => { value.packageManager = 'npm@99.0.0'; },
@@ -504,11 +505,35 @@ test('npm relay accepts stable dependency-only updates and requires a matching l
   assert.throws(() => validate(proposed, { ...lock, lockfileVersion: 2 }), /dashboard npm lockfile/);
 });
 
-test('Next.js route allows only its manifests and generated tags, never env or source edits', () => {
+test('npm relay detects each documented pin, combined changes, and unrelated dependency no-ops', () => {
+  const original = JSON.parse(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8'));
+  const validate = (proposed) => {
+    const lock = JSON.stringify({ name: proposed.name, version: proposed.version, lockfileVersion: 3, packages: { '': proposed } });
+    return validateNextjsChange(JSON.stringify(original), JSON.stringify(proposed), lock, lock);
+  };
+  const combined = structuredClone(original);
+  for (const [key, section, name] of dashboardPackageVersions) {
+    const proposed = structuredClone(original);
+    proposed[section][name] = '99.1.2';
+    combined[section][name] = proposed[section][name];
+    assert.deepEqual(validate(proposed), [key], name);
+    proposed[section][name] = '^99.1.2';
+    assert.throws(() => validate(proposed), /stable npm|stable exact/, name);
+  }
+  assert.deepEqual(validate(combined), dashboardPackageVersions.map(([key]) => key));
+  const unrelated = structuredClone(original);
+  unrelated.dependencies['@emotion/react'] = '99.1.2';
+  assert.deepEqual(validate(unrelated), []);
+});
+
+test('Next.js route allows only its manifests and generated docs/tags, never env or source edits', () => {
   const paths = generatedNextjsPaths();
   assert.ok(paths.includes('compose/utils.yml'));
   assert.ok(paths.some((file) => file.startsWith('.run/')));
   assert.ok(paths.includes('utils/nextjs-dash/README.md'));
+  for (const file of ['docs/TESTING.md', 'docs/LINTING_AND_CODE_QUALITY.md', '.github/instructions/copilot-instructions.md']) {
+    assert.ok(paths.includes(file), file);
+  }
   const allowed = new Set(['utils/nextjs-dash/package.json', 'utils/nextjs-dash/package-lock.json', ...paths]);
   for (const file of ['compose/.env', 'scripts/tool.mjs', 'utils/nextjs-dash/app/page.tsx', '.github/workflows/framework_versions.yml']) {
     const base = blobEntries([[file, 'original']]);
@@ -517,7 +542,8 @@ test('Next.js route allows only its manifests and generated tags, never env or s
   }
   const configRule = config.packageRules.find(({ addLabels }) => addLabels?.includes('nextjs-version'));
   assert.deepEqual(configRule.matchManagers, ['npm']);
-  assert.deepEqual(configRule.matchPackageNames, ['next']);
+  assert.deepEqual(configRule.matchFileNames, ['utils/nextjs-dash/package.json']);
+  assert.deepEqual(configRule.matchPackageNames, dashboardPackageVersions.map(([_key, _section, name]) => name));
 });
 
 test('Next.js publication ignores unrelated pending framework outputs', async (t) => {
@@ -586,7 +612,7 @@ test('complete npm lock validation rejects transitive tampering and missing inde
   assert.throws(() => validate(JSON.parse(trusted), null), /Complete lockfile/);
   // Formatting and object key order are not security-relevant differences.
   const reordered = Object.fromEntries(Object.entries(JSON.parse(trusted)).reverse());
-  assert.equal(validate(reordered), false);
+  assert.deepEqual(validate(reordered), []);
 });
 
 test('lock regeneration runs real npm without installing dependencies or executing scripts', (t) => {

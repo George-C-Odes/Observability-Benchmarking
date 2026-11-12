@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.29-labs@sha256:36366b12c1dffb228bb25e9feffb73707b93388f084f4927d2b7686dba29e76a
-ARG GO_VERSION=1.27.3
+ARG GO_VERSION=1.27.4
 ARG BASE_BUILDER=alpine3.24
 
 # ------------ BUILD STAGE -----------------------

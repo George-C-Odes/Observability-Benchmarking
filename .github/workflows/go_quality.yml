@@ -155,7 +155,6 @@ jobs:
         run: go build ./cmd/server
 
       - name: Govulncheck
-        continue-on-error: true
         run: |
           # Build the scanner from its dedicated module and checksum lock.
           go -C "$GITHUB_WORKSPACE/.github/go-tools" build -mod=readonly \

@@ -35,7 +35,7 @@ Example:
 ## Quick start (local)
 
 ### Prerequisites
-- Go **1.27.3** (repository toolchain)
+- Go **1.27.4** (repository toolchain)
 - Docker (optional)
 
 ### Run
@@ -130,8 +130,8 @@ go test ./... -race
 
 ### Docker
 ```bash
-docker build -t go:1.27.3 .
-docker run --rm -p 8080:8080 go:1.27.3
+docker build -t go:1.27.4 .
+docker run --rm -p 8080:8080 go:1.27.4
 ```
 
 ---

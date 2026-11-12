@@ -530,7 +530,7 @@ The workflow in `.github/workflows/go_quality.yml` covers both Go modules in par
 3. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
 4. **go test** — unit tests with race detector (`-race`)
 5. **go build** — compilation smoke test
-6. **govulncheck** — non-blocking vulnerability scan for visibility in CI
+6. **govulncheck** — required vulnerability scan; findings or scanner failures fail the job
 
 **Simple** (`quality-simple` job) — full quality pipeline:
 
@@ -539,7 +539,7 @@ The workflow in `.github/workflows/go_quality.yml` covers both Go modules in par
 3. **golangci-lint run** — aggregated lint with `.golangci.yml` configuration
 4. **go test** — unit tests with race detector (`-race`)
 5. **go build** — compilation smoke test
-6. **govulncheck** — non-blocking vulnerability scan for visibility in CI
+6. **govulncheck** — required vulnerability scan; findings or scanner failures fail the job
 
 The workflow is triggered on:
 - manual dispatch
@@ -710,10 +710,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.77.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.92.0** — checks the module root with warnings denied.
-3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.1.0** — runs separate Node and jsdom suites.
+1. **Oxfmt {{OXFMT_VERSION}}** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint {{OXLINT_VERSION}}** — checks the module root with warnings denied.
+3. **TypeScript {{TYPESCRIPT_VERSION}}** — runs the native strict checker through the supported `tsc --noEmit` command.
+4. **Vitest {{VITEST_VERSION}}** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.
@@ -747,7 +747,7 @@ writes changes, while `npm run format:check` only verifies the current tree.
 - `"moduleResolution": "bundler"`
 - `"jsx": "react-jsx"`
 
-The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files. With `typescript@7.0.2`, `tsc` invokes the stable native checker.
+The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files. With `typescript@{{TYPESCRIPT_VERSION}}`, `tsc` invokes the stable native checker.
 
 #### Running Quality Checks Locally
 
@@ -911,7 +911,7 @@ A separate Django coverage workflow (`.github/workflows/django_python_coverage.y
 
 The Next.js dashboard has its own quality workflow (`.github/workflows/nextjs_dash_quality.yml`) that enforces Oxfmt checking, zero-warning Oxlint, TypeScript 7 native strict-mode checking, Vitest 5 Node and DOM suites, report-generator tests, and a production build smoke test on every matching push and pull request.
 
-The Go quality workflow (`.github/workflows/go_quality.yml`) now covers both Go modules — `services/go/enhanced` and `services/go/simple` — with the same full pipeline: dependency download, `go mod tidy` verification, `go vet`, `golangci-lint run`, unit tests with race detection, a build smoke test, and a non-blocking `govulncheck` scan. Both jobs also generate Pages-hosted HTML quality report artifacts (`quality-report-go` and `quality-report-go-simple`).
+The Go quality workflow (`.github/workflows/go_quality.yml`) now covers both Go modules — `services/go/enhanced` and `services/go/simple` — with the same full pipeline: dependency download, `go mod tidy` verification, `go vet`, `golangci-lint run`, unit tests with race detection, a build smoke test, and a required `govulncheck` scan. Both jobs also generate Pages-hosted HTML quality report artifacts (`quality-report-go` and `quality-report-go-simple`), including when the vulnerability scan fails. These HTML reports contain golangci-lint findings; vulnerability findings remain in the Govulncheck step logs and CI annotations.
 
 GitHub CodeQL (`.github/workflows/codeql.yml`) provides automated security vulnerability detection across all four languages (Java/Kotlin, Python, Go, JavaScript/TypeScript) on every push, PR, and weekly schedule. SARIF results are uploaded to GitHub's Security tab, and a combined HTML report is published to GitHub Pages.
 
