@@ -100,7 +100,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Library            | React                      | {{REACT_VERSION}}                  | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | {{TYPESCRIPT_VERSION}}                   | Native checker and type-safe dashboard development                   |
 | **Frontend**      | UI Library         | Material UI (MUI)          | {{MUI_VERSION}}                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.3.0                  | Metrics, logs, traces dashboards                                     |
+| **Observability** | Visualization      | Grafana                    | 13.3.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.9                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1                   | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.4                   | Long-term metrics storage                                            |
