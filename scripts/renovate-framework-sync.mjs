@@ -82,7 +82,10 @@ export function regenerateNextjsLock(manifest, baseLock) {
       '--fetch-retries=0', '--fetch-timeout=60000', '--cache', path.join(directory, 'cache'),
       '--userconfig', path.join(directory, 'user.npmrc'), '--globalconfig', path.join(directory, 'global.npmrc')],
     { cwd: directory, env, encoding: 'utf8', timeout: 300_000, maxBuffer: 1024 * 1024, shell: false });
-    if (result.error || result.status !== 0) throw new Error('Trusted npm lockfile regeneration failed');
+    if (result.error || result.status !== 0) {
+      const detail = result.error?.code ?? (result.signal ? `signal ${result.signal}` : `exit ${result.status}`);
+      throw new Error(`Trusted npm lockfile regeneration failed (${detail})`);
+    }
     return readFileSync(path.join(directory, 'package-lock.json'), 'utf8');
   } finally {
     rmSync(directory, { recursive: true, force: true });
