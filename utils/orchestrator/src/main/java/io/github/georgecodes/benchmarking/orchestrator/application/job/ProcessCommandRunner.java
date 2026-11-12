@@ -76,8 +76,10 @@ public class ProcessCommandRunner implements CommandRunner {
                   t.setDaemon(true);
                   return t;
                 }))) {
-      Future<?> outF = streams.submit(() -> streamLines(p.getInputStream(), "stdout", serialSink));
-      Future<?> errF = streams.submit(() -> streamLines(p.getErrorStream(), "stderr", serialSink));
+      Future<Void> outF =
+          streams.submit(() -> streamLines(p.getInputStream(), "stdout", serialSink));
+      Future<Void> errF =
+          streams.submit(() -> streamLines(p.getErrorStream(), "stderr", serialSink));
 
       int exit = p.waitFor();
       outF.get(10, TimeUnit.SECONDS);
@@ -179,8 +181,8 @@ public class ProcessCommandRunner implements CommandRunner {
      * @param task the task to submit
      * @return the future representing the submitted task
      */
-    Future<?> submit(Runnable task) {
-      return delegate.submit(task);
+    Future<Void> submit(Runnable task) {
+      return delegate.submit(task, null);
     }
 
     /** Interrupts the wrapped executor and waits briefly for stream tasks to stop. */

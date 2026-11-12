@@ -89,14 +89,14 @@ function getInitialTab(): number {
   // Prefer the value injected pre-hydration to prevent initial render mismatch.
   const attr = document.documentElement.dataset.dashboardTab;
   if (attr) {
-    const parsed = parseInt(attr, 10);
+    const parsed = Number.parseInt(attr, 10);
     if (!Number.isNaN(parsed)) return parsed;
   }
 
   try {
     const saved = localStorage.getItem('dashboardTab');
     if (!saved) return 0;
-    const parsed = parseInt(saved, 10);
+    const parsed = Number.parseInt(saved, 10);
     return Number.isNaN(parsed) ? 0 : parsed;
   } catch {
     return 0;

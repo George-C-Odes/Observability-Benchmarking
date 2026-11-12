@@ -12,48 +12,61 @@ from pathlib import Path
 
 def check_payload(kind, payload, service, since, trace_id=""):
     if kind == "mimir":
-        if payload.get("status") == "success":
-            for series in payload.get("data", {}).get("result", []):
-                if series.get("metric", {}).get("service_name") != service:
-                    continue
-                for timestamp, value in series.get("values", []):
-                    if float(timestamp) >= float(since) and math.isfinite(float(value)):
-                        return
-        raise ValueError("no fresh metric samples for " + service)
+        return check_mimir(payload, service, since)
     if kind == "loki":
-        if payload.get("status") == "success":
-            for stream in payload.get("data", {}).get("result", []):
-                if stream.get("stream", {}).get("service_name") == service and any(
-                    int(row[0]) >= int(since) * 10**9
-                    for row in stream.get("values", [])
-                ):
-                    return
-        raise ValueError("no fresh log entries for " + service)
+        return check_loki(payload, service, since)
     if kind == "tempo":
-        # Tempo JSON has used both batches and resourceSpans envelopes.
-        for batch in payload.get("batches", payload.get("resourceSpans", [])):
-            attributes = batch.get("resource", {}).get("attributes", [])
-            if not any(
-                attr.get("key") == "service.name"
-                and attr.get("value", {}).get("stringValue") == service
-                for attr in attributes
-            ):
-                continue
-            scopes = batch.get(
-                "scopeSpans", batch.get("instrumentationLibrarySpans", [])
-            )
-            for scope in scopes:
-                for span in scope.get("spans", []):
-                    candidate = span.get("traceId", "")
-                    if not re.fullmatch(r"[0-9a-fA-F]{32}", candidate):
-                        candidate = base64.b64decode(candidate, validate=True).hex()
-                    if (
-                        candidate.lower() == trace_id
-                        and int(span.get("startTimeUnixNano", 0)) >= int(since) * 10**9
-                    ):
-                        return
-        raise ValueError("no matching fresh service span for trace " + trace_id)
+        return check_tempo(payload, service, since, trace_id)
     raise ValueError("unknown payload type: " + kind)
+
+
+def check_mimir(payload, service, since):
+    if payload.get("status") == "success":
+        for series in payload.get("data", {}).get("result", []):
+            if series.get("metric", {}).get("service_name") != service:
+                continue
+            for timestamp, value in series.get("values", []):
+                if float(timestamp) >= float(since) and math.isfinite(float(value)):
+                    return
+    raise ValueError("no fresh metric samples for " + service)
+
+
+def check_loki(payload, service, since):
+    if payload.get("status") == "success":
+        for stream in payload.get("data", {}).get("result", []):
+            if stream.get("stream", {}).get("service_name") == service and any(
+                int(row[0]) >= int(since) * 10**9 for row in stream.get("values", [])
+            ):
+                return
+    raise ValueError("no fresh log entries for " + service)
+
+
+def span_matches_trace(span, since, trace_id):
+    candidate = span.get("traceId", "")
+    if not re.fullmatch(r"[0-9a-fA-F]{32}", candidate):
+        candidate = base64.b64decode(candidate, validate=True).hex()
+    return (
+        candidate.lower() == trace_id
+        and int(span.get("startTimeUnixNano", 0)) >= int(since) * 10**9
+    )
+
+
+def check_tempo(payload, service, since, trace_id):
+    # Tempo JSON has used both batches and resourceSpans envelopes.
+    for batch in payload.get("batches", payload.get("resourceSpans", [])):
+        attributes = batch.get("resource", {}).get("attributes", [])
+        if not any(
+            attr.get("key") == "service.name"
+            and attr.get("value", {}).get("stringValue") == service
+            for attr in attributes
+        ):
+            continue
+        scopes = batch.get("scopeSpans", batch.get("instrumentationLibrarySpans", []))
+        for scope in scopes:
+            for span in scope.get("spans", []):
+                if span_matches_trace(span, since, trace_id):
+                    return
+    raise ValueError("no matching fresh service span for trace " + trace_id)
 
 
 def check_wrk(output):

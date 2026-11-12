@@ -36,5 +36,7 @@ typescript-output.txt
 # Temp / scratch
 .tmp
 
-# SSE smoke scripts (dev-only tooling, not part of the app)
-scripts
+# Include the SSE smoke helper for quality-stage request-boundary tests.
+# The builder copies only app/lib/public, so scripts stay out of the runtime image.
+scripts/*
+!scripts/sse-smoke.mjs

@@ -185,35 +185,8 @@ type cgroupCPUInfo struct {
 }
 
 func parseCgroupCPU(cpuMaxRaw, quotaRawV1, periodRawV1 string) cgroupCPUInfo {
-	cpuMaxRaw = strings.TrimSpace(cpuMaxRaw)
-	if cpuMaxRaw != "" {
-		parts := strings.Fields(cpuMaxRaw)
-		if len(parts) == 2 {
-			period, pErr := strconv.ParseInt(parts[1], 10, 64)
-			if parts[0] == "max" && pErr == nil && period > 0 {
-				return cgroupCPUInfo{
-					Source:         "cgv2",
-					QuotaUS:        -1,
-					PeriodUS:       period,
-					QuotaDivPeriod: "unlimited",
-					CPUs:           "unlimited",
-					HasQuotaPeriod: true,
-				}
-			}
-
-			quota, qErr := strconv.ParseInt(parts[0], 10, 64)
-			if qErr == nil && pErr == nil && quota > 0 && period > 0 {
-				r := toFixed2(float64(quota) / float64(period))
-				return cgroupCPUInfo{
-					Source:         "cgv2",
-					QuotaUS:        quota,
-					PeriodUS:       period,
-					QuotaDivPeriod: r,
-					CPUs:           r,
-					HasQuotaPeriod: true,
-				}
-			}
-		}
+	if info := parseCgroupV2CPU(cpuMaxRaw); info.HasQuotaPeriod {
+		return info
 	}
 
 	// cgroup v1: quota/period
@@ -246,6 +219,38 @@ func parseCgroupCPU(cpuMaxRaw, quotaRawV1, periodRawV1 string) cgroupCPUInfo {
 		}
 	}
 
+	return cgroupCPUInfo{}
+}
+
+func parseCgroupV2CPU(raw string) cgroupCPUInfo {
+	parts := strings.Fields(raw)
+	if len(parts) != 2 {
+		return cgroupCPUInfo{}
+	}
+	period, pErr := strconv.ParseInt(parts[1], 10, 64)
+	if parts[0] == "max" && pErr == nil && period > 0 {
+		return cgroupCPUInfo{
+			Source:         "cgv2",
+			QuotaUS:        -1,
+			PeriodUS:       period,
+			QuotaDivPeriod: "unlimited",
+			CPUs:           "unlimited",
+			HasQuotaPeriod: true,
+		}
+	}
+
+	quota, qErr := strconv.ParseInt(parts[0], 10, 64)
+	if qErr == nil && pErr == nil && quota > 0 && period > 0 {
+		r := toFixed2(float64(quota) / float64(period))
+		return cgroupCPUInfo{
+			Source:         "cgv2",
+			QuotaUS:        quota,
+			PeriodUS:       period,
+			QuotaDivPeriod: r,
+			CPUs:           r,
+			HasQuotaPeriod: true,
+		}
+	}
 	return cgroupCPUInfo{}
 }
 

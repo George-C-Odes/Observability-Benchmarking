@@ -12,7 +12,7 @@ import { getActiveRunId } from '@/lib/scriptRunnerRunState';
  */
 export const GET = withApiRoute(
   { name: 'ORCH_EVENTS_META_API' },
-  async function GET(request: NextRequest, ctx: ApiRouteContext) {
+  function GET(request: NextRequest, ctx: ApiRouteContext) {
     const serverLogger = createScopedServerLogger('ORCH_EVENTS_META_API');
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get('jobId');

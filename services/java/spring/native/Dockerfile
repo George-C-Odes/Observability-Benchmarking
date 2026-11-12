@@ -26,7 +26,7 @@ ENV NATIVE_IMAGE_OPTS="-J-Xmx${NATIVE_IMAGE_MAX_HEAP}"
 
 ARG YQ_VERSION=4.54.2
 RUN microdnf install -y curl && microdnf clean all && \
-    curl -L "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
+    curl --proto '=https' --proto-redir '=https' -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
       -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq
 

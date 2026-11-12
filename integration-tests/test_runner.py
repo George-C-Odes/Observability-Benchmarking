@@ -479,6 +479,31 @@ run_test invalid telemetry go poll_until 90 http_probe http://mock 200 ''
 [[ $TEST_ATTEMPTS == 1 && $FAIL_REASON == 'Non-retryable failure:'* && $TESTS_FAILED == 1 ]]
 """)
 
+    def test_http_errors_preserve_retry_classification(self):
+        self.shell("""
+curl() { printf '%s' "$status"; }
+for status in 400 401 403 405 422; do
+    if http_probe http://mock 200 ''; then exit 9; fi
+    [[ $PROBE_FATAL == true ]]
+done
+for status in 404 408 429 500 503; do
+    if http_probe http://mock 200 ''; then exit 9; fi
+    [[ $PROBE_FATAL == false ]]
+done
+""")
+
+    def test_unknown_telemetry_backend_fails_before_requests_or_validation(self):
+        self.shell("""
+http_probe() { touch "$TEMP_DIR/http-called"; return 0; }
+unexpected_python() { touch "$TEMP_DIR/python-called"; return 0; }
+PYTHON=unexpected_python
+HTTP_BODY='stale response'
+if poll_until 90 probe_telemetry unknown go 100 trace marker; then exit 9; fi
+[[ $TEST_ATTEMPTS == 1 && $PROBE_FATAL == true ]]
+[[ $FAIL_REASON == 'Non-retryable failure: Unsupported telemetry backend: unknown' ]]
+[[ ! -e "$TEMP_DIR/http-called" && ! -e "$TEMP_DIR/python-called" ]]
+""")
+
     def test_all_telemetry_requests_are_seeded_before_polling(self):
         self.shell("""
 mapfile -t SERVICES < "$SCRIPT_DIR/services.txt"

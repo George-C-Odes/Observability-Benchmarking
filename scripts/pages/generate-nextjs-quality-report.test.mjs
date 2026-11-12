@@ -48,6 +48,48 @@ test('normalizes Windows and POSIX paths relative to the dashboard root', () => 
   );
 });
 
+test('retains Oxlint validation warnings and normalizes incomplete diagnostics', () => {
+  const result = parseOxlintReport(JSON.stringify({
+    diagnostics: [
+      null,
+      {
+        labels: [null, { span: 'invalid' }, { span: { line: 2, column: '3', length: 4 } }],
+      },
+      { filename: 'app/page.tsx', message: 'Warning', severity: 'warning', labels: {} },
+    ],
+  }));
+
+  assert.equal(result.pass, false);
+  assert.equal(result.errorCount, 0);
+  assert.equal(result.warningCount, 1);
+  assert.equal(result.numberOfFiles, 2);
+  assert.deepEqual(result.reportWarnings, [
+    'Oxlint diagnostic 1 is malformed and was skipped.',
+    'Oxlint diagnostic 2 is missing required fields.',
+    'Oxlint diagnostic 2 has an unknown severity.',
+  ]);
+  assert.deepEqual(result.diagnostics, [
+    {
+      filename: '(unknown file)',
+      message: '(missing message)',
+      ruleId: null,
+      severity: 'info',
+      line: 2,
+      column: null,
+      length: 4,
+    },
+    {
+      filename: 'app/page.tsx',
+      message: 'Warning',
+      ruleId: null,
+      severity: 'warning',
+      line: null,
+      column: null,
+      length: null,
+    },
+  ]);
+});
+
 test('retains multiline TypeScript diagnostics', () => {
   const result = parseTypeScriptDiagnostics(fixture('typescript-multiline.txt'));
   assert.equal(result.errorCount, 1);

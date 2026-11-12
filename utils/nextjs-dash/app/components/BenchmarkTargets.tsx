@@ -27,41 +27,47 @@ const clientLogger = createClientLogger('BenchmarkTargets');
 /**
  * The master list of all known benchmark endpoints.
  * This is the superset; the targets file is a subset of these.
+ *
+ * HTTP is intentional for synthetic /hello/* traffic between trusted Docker services
+ * in local benchmark deployments, without credentials or sensitive payloads.
+ * TLS would change the measured workload. The user-approved NOSONAR exceptions
+ * below address S5332, but suppress all Sonar findings on each annotated line.
+ * Reassess if targets cross untrusted networks or carry credentials or sensitive data.
  */
 const ALL_ENDPOINTS: readonly string[] = [
-  'http://spring-jvm-tomcat-platform:8080/hello/platform',
-  'http://spring-jvm-tomcat-virtual:8080/hello/virtual',
-  'http://spring-jvm-netty:8080/hello/reactive',
-  'http://spring-native-tomcat-platform:8080/hello/platform',
-  'http://spring-native-tomcat-virtual:8080/hello/virtual',
-  'http://spring-native-netty:8080/hello/reactive',
-  'http://quarkus-jvm:8080/hello/platform',
-  'http://quarkus-jvm:8080/hello/virtual',
-  'http://quarkus-jvm:8080/hello/reactive',
-  'http://quarkus-native:8080/hello/platform',
-  'http://quarkus-native:8080/hello/virtual',
-  'http://quarkus-native:8080/hello/reactive',
-  'http://micronaut-jvm:8080/hello/platform',
-  'http://micronaut-jvm:8080/hello/virtual',
-  'http://micronaut-jvm:8080/hello/reactive',
-  'http://micronaut-native:8080/hello/platform',
-  'http://micronaut-native:8080/hello/virtual',
-  'http://micronaut-native:8080/hello/reactive',
-  'http://helidon-se-jvm:8080/hello/virtual',
-  'http://helidon-se-native:8080/hello/virtual',
-  'http://helidon-mp-jvm:8080/hello/virtual',
-  'http://helidon-mp-native:8080/hello/virtual',
-  'http://spark-jvm-platform:8080/hello/platform',
-  'http://spark-jvm-virtual:8080/hello/virtual',
-  'http://javalin-jvm-platform:8080/hello/platform',
-  'http://javalin-jvm-virtual:8080/hello/virtual',
-  'http://dropwizard-jvm-platform:8080/hello/platform',
-  'http://dropwizard-jvm-virtual:8080/hello/virtual',
-  'http://vertx-jvm:8080/hello/reactive',
-  'http://pekko-jvm:8080/hello/reactive',
-  'http://go:8080/hello/virtual',
-  'http://django-platform:8080/hello/platform',
-  'http://django-reactive:8080/hello/reactive',
+  'http://spring-jvm-tomcat-platform:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://spring-jvm-tomcat-virtual:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://spring-jvm-netty:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://spring-native-tomcat-platform:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://spring-native-tomcat-virtual:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://spring-native-netty:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://quarkus-jvm:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://quarkus-jvm:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://quarkus-jvm:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://quarkus-native:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://quarkus-native:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://quarkus-native:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://micronaut-jvm:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://micronaut-jvm:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://micronaut-jvm:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://micronaut-native:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://micronaut-native:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://micronaut-native:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://helidon-se-jvm:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://helidon-se-native:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://helidon-mp-jvm:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://helidon-mp-native:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://spark-jvm-platform:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://spark-jvm-virtual:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://javalin-jvm-platform:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://javalin-jvm-virtual:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://dropwizard-jvm-platform:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://dropwizard-jvm-virtual:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://vertx-jvm:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://pekko-jvm:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
+  'http://go:8080/hello/virtual', // NOSONAR -- intentional benchmark HTTP.
+  'http://django-platform:8080/hello/platform', // NOSONAR -- intentional benchmark HTTP.
+  'http://django-reactive:8080/hello/reactive', // NOSONAR -- intentional benchmark HTTP.
 ] as const;
 
 /**

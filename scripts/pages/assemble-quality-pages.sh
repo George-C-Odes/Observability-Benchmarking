@@ -158,6 +158,10 @@ case "$services_status" in
     services_item_text='services-java report availability could not be determined for the resolved run.'
     services_item_html='<li>services-java report availability could not be determined for the resolved run.</li>'
     ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
+    ;;
 esac
 
 case "$orchestrator_status" in
@@ -176,6 +180,10 @@ case "$orchestrator_status" in
   undetermined)
     orchestrator_item_text='orchestrator report availability could not be determined for the resolved run.'
     orchestrator_item_html='<li>orchestrator report availability could not be determined for the resolved run.</li>'
+    ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
     ;;
 esac
 
@@ -201,6 +209,10 @@ case "$nextjs_status" in
   undetermined)
     nextjs_item_text='nextjs-dash quality report availability could not be determined for the resolved run.'
     nextjs_item_html='<li>nextjs-dash quality report availability could not be determined for the resolved run.</li>'
+    ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
     ;;
 esac
 
@@ -234,6 +246,10 @@ case "$django_python_status" in
     django_python_item_text='django-python quality report availability could not be determined for the resolved run.'
     django_python_item_html='<li>django-python quality report availability could not be determined for the resolved run.</li>'
     ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
+    ;;
 esac
 
 if [[ -n "${DJANGO_PYTHON_QUALITY_RUN_ID:-}" ]]; then
@@ -265,6 +281,10 @@ case "$go_status" in
   undetermined)
     go_item_text='go quality report availability could not be determined for the resolved run.'
     go_item_html='<li>go quality report availability could not be determined for the resolved run.</li>'
+    ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
     ;;
 esac
 
@@ -298,6 +318,10 @@ case "$go_simple_status" in
     go_simple_item_text='go-simple quality report availability could not be determined for the resolved run.'
     go_simple_item_html='<li>go-simple quality report availability could not be determined for the resolved run.</li>'
     ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
+    ;;
 esac
 
 if [[ -n "${GO_SIMPLE_QUALITY_RUN_ID:-}" ]]; then
@@ -329,6 +353,10 @@ case "$codeql_status" in
   undetermined)
     codeql_item_text='codeql security and quality report availability could not be determined for the resolved run.'
     codeql_item_html='<li>codeql security &amp; quality report availability could not be determined for the resolved run.</li>'
+    ;;
+  *)
+    # Keep the fallback message for not-applicable or unexpected statuses.
+    :
     ;;
 esac
 

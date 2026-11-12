@@ -15,10 +15,10 @@ import { resolve, relative } from 'node:path';
 /** Escape HTML special characters. */
 export function esc(s) {
   return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 /** Return ✅ or ❌ for pass/fail status. */

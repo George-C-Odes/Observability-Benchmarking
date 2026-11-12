@@ -13,7 +13,7 @@ interface LogEntryResponse {
  * GET /api/logs?sinceTs=...
  * Returns buffered Next.js server logs.
  */
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const sinceTsRaw = searchParams.get('sinceTs');
   const sinceTs = sinceTsRaw ? Number(sinceTsRaw) : undefined;
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ entries: entries as LogEntryResponse[] });
 }
 
-export async function DELETE() {
+export function DELETE() {
   getServerLogBuffer().clear();
   return NextResponse.json({ ok: true });
 }

@@ -41,7 +41,10 @@ http_probe() {
     fi
     if ! contains "$statuses" "$HTTP_STATUS"; then
         FAIL_REASON="${url}: expected HTTP ${statuses}, got ${HTTP_STATUS}; body: ${HTTP_BODY:0:1000}"
-        case $HTTP_STATUS in 400|401|403|405|422) PROBE_FATAL=true ;; esac
+        case $HTTP_STATUS in
+            400|401|403|405|422) PROBE_FATAL=true ;;
+            *) PROBE_FATAL=false ;;
+        esac
         return 1
     fi
     if [[ $HTTP_BODY != *"$expected"* ]]; then
@@ -230,6 +233,11 @@ probe_telemetry() {
             if [[ -n ${TEMPO_TENANT_ID:-} ]]; then headers=(--header "X-Scope-OrgID: $TEMPO_TENANT_ID"); fi
             http_probe "${TEMPO_URL}/api/traces/${trace_id}" 200 '' \
                 --header 'Accept: application/json' "${headers[@]}" || return 1
+            ;;
+        *)
+            FAIL_REASON="Unsupported telemetry backend: ${kind}"
+            PROBE_FATAL=true
+            return 1
             ;;
     esac
     if check_error=$("$PYTHON" "$SCRIPT_DIR/results.py" check "$kind" "$service" "$since" "$trace_id" \

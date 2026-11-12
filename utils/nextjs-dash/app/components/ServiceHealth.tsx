@@ -52,6 +52,48 @@ type ServiceMessage = {
   service?: string;
 };
 
+function ServiceResponseData({ service }: { service: ServiceHealth }) {
+  return (
+    <Box sx={{ mt: 0.5, minWidth: 0 }}>
+      {service.baseUrl && <DataRow label="Base URL" value={service.baseUrl} />}
+
+      {typeof service.responseTime === 'number' && (
+        <DataRow label="Response" value={`${service.responseTime}ms`} />
+      )}
+
+      {service.error && <DataRow label="Error" value={service.error} color="error" />}
+
+      {service.body !== undefined && (
+        <DataRow
+          label="Body"
+          color="secondary"
+          value={
+            <Tooltip
+              title={
+                <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', maxWidth: 500 }}>
+                  {typeof service.body === 'string'
+                    ? service.body
+                    : JSON.stringify(service.body, null, 2)}
+                </Box>
+              }
+              placement="bottom-start"
+            >
+              <Typography
+                component="span"
+                variant="caption"
+                color="text.secondary"
+                sx={{ cursor: 'help', lineHeight: 1.2 }}
+              >
+                Response body (hover)
+              </Typography>
+            </Tooltip>
+          }
+        />
+      )}
+    </Box>
+  );
+}
+
 function toPending(next: ServiceHealth): ServiceHealth {
   return {
     ...next,
@@ -500,44 +542,7 @@ export default function ServiceHealth() {
                 <Chip label={statusUI.label} color={statusUI.color} size="small" />
               </Box>
 
-              {/* Response data directly below Status (aligned with action rows) */}
-              <Box sx={{ mt: 0.5, minWidth: 0 }}>
-                {service.baseUrl && <DataRow label="Base URL" value={service.baseUrl} />}
-
-                {typeof service.responseTime === 'number' && (
-                  <DataRow label="Response" value={`${service.responseTime}ms`} />
-                )}
-
-                {service.error && <DataRow label="Error" value={service.error} color="error" />}
-
-                {service.body !== undefined && (
-                  <DataRow
-                    label="Body"
-                    color="secondary"
-                    value={
-                      <Tooltip
-                        title={
-                          <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', maxWidth: 500 }}>
-                            {typeof service.body === 'string'
-                              ? service.body
-                              : JSON.stringify(service.body, null, 2)}
-                          </Box>
-                        }
-                        placement="bottom-start"
-                      >
-                        <Typography
-                          component="span"
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ cursor: 'help', lineHeight: 1.2 }}
-                        >
-                          Response body (hover)
-                        </Typography>
-                      </Tooltip>
-                    }
-                  />
-                )}
-              </Box>
+              <ServiceResponseData service={service} />
             </Box>
 
             {/* Actions section (stacks below on xs, right column on md+) */}
