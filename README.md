@@ -16,7 +16,7 @@
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.2.3-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.4.2-DB2777.svg)](https://pekko.apache.org/)
-[![Go](https://img.shields.io/badge/Go-1.27.3-38BDF8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.27.4-38BDF8.svg)](https://golang.org/)
 [![Python](https://img.shields.io/badge/Python-3.13.18-2F5D8C.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-6.1.3-8B2C3D.svg)](https://www.djangoproject.com/)
 [![pages-build-deployment](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages/pages-build-deployment)
@@ -81,7 +81,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 |-------------------|--------------------|----------------------------|------------|----------------------------------------------------------------------|
 | **Execution**     | Runtime            | Java (Eclipse Temurin)     | 25         | Primary JVM runtime for backend services under benchmark             |
 | **Execution**     | Runtime            | GraalVM                    | 25.0.5.0.3 | Native image compilation for startup and memory footprint benchmarks |
-| **Execution**     | Runtime            | Go                         | 1.27.3     | High-performance baseline services for comparison                    |
+| **Execution**     | Runtime            | Go                         | 1.27.4     | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18    | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 26.2.0     | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.13.0    | Frontend tooling and SSR runtime                                     |
@@ -216,7 +216,7 @@ The JVM target is Java 25; its patch is determined by the pinned builder image (
   - JVM build
     - Reactive (Pekko dispatcher)
 
-#### Go (1.27.3)
+#### Go (1.27.4)
 - Fiber framework integration
 - Full observability setup
 
@@ -520,7 +520,7 @@ The numbers below are a curated summary of a representative run.
 - **Dropwizard**: 5.0.2
 - **Vert.x**: 5.2.3
 - **Pekko HTTP**: 1.4.2 (Pekko Core 1.7.1)
-- **Go**: 1.27.3 (Fiber v3.7.0)
+- **Go**: 1.27.4 (Fiber v3.7.0)
 - **Python**: 3.13.18 (CPython)
 - **Django**: 6.1.3 (Gunicorn 26.2.0)
 - **Garbage Collector**: G1GC (all Java implementations)

@@ -260,9 +260,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/go/enhanced/Dockerfile `
-    -t go:1.27.3 `
-    --build-arg GO_VERSION=1.27.3 `
-    --build-arg BUILDKIT_BUILD_NAME=go:1.27.3 `
+    -t go:1.27.4 `
+    --build-arg GO_VERSION=1.27.4 `
+    --build-arg BUILDKIT_BUILD_NAME=go:1.27.4 `
     --load `
     services/go/enhanced
 ```

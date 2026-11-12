@@ -1593,12 +1593,12 @@ services:
 
   go:
     profiles: ["${DOCKER_PROF_GO:-skip}"]
-    image: go:1.27.3
+    image: go:1.27.4
     build:
       context: ../services/go/enhanced
       dockerfile: Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: go:1.27.3
+        BUILDKIT_BUILD_NAME: go:1.27.4
         GO_VERSION: ${GO_VERSION}
     container_name: go
     ports:
@@ -1643,12 +1643,12 @@ services:
 
   go-simple:
     profiles: ["${DOCKER_PROF_GO_SIMPLE:-skip}"]
-    image: go-simple:1.27.3
+    image: go-simple:1.27.4
     build:
       context: ../services/go/simple
       dockerfile: Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: go-simple:1.27.3
+        BUILDKIT_BUILD_NAME: go-simple:1.27.4
         GO_VERSION: ${GO_VERSION}
     container_name: go-simple
     ports:
