@@ -3,4 +3,5 @@
 platformdirs==4.13.7
 # The updated 2026.2 image bundles pipenv requiring virtualenv>=21.14.9,
 # alongside virtualenv 21.14.6. Keep pip check enabled by repairing the pair.
-virtualenv==21.14.9
+# 21.14.13 also fixes GHSA-cx6f-vjhg-g3cc and GHSA-4f8h-vr72-p32c.
+virtualenv==21.14.13

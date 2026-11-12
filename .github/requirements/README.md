@@ -198,6 +198,8 @@ The unmodified Qodana 2026.2 image also bundles `virtualenv` requiring
 `platformdirs>=4.4,<5` alongside `platformdirs==3.10.0`. `qodana.in` pins a
 compatible wheel in the shared inventory so `pip check` remains enabled. The updated
 image also bundles `pipenv==2026.10.6`, which requires `virtualenv>=21.14.9`,
-alongside `virtualenv==21.14.6`; the same input pins `virtualenv==21.14.9`
-to repair that mismatch through the hash-verified installer. This
+alongside `virtualenv==21.14.6`; the same input pins `virtualenv==21.14.13`
+to repair that mismatch through the hash-verified installer and include the fixes for
+[GHSA-cx6f-vjhg-g3cc](https://github.com/advisories/GHSA-cx6f-vjhg-g3cc) and
+[GHSA-4f8h-vr72-p32c](https://github.com/advisories/GHSA-4f8h-vr72-p32c). This
 analyzer-only input is not installed by the Django test or Snyk jobs.
