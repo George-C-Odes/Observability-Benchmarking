@@ -11,6 +11,7 @@ import { nodeGeneratedPaths, nodeVersionKeys, syncNodeVersions } from './sync-no
 import { goModules, syncGoModVersions } from './sync-go-mod-versions.mjs';
 import { javaRuntimeGeneratedPaths, syncJavaRuntimeVersions } from './sync-java-runtime-versions.mjs';
 import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sync-java-pom-versions.mjs';
+import { dashboardPackageVersions } from './image-tags.mjs';
 
 export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', ...nodeVersionKeys];
 const controlPom = 'utils/orchestrator/pom.xml';
@@ -54,7 +55,8 @@ export function generatedNextjsPaths() {
     || (file.startsWith('.run/') && readFileSync(resolveRepoPath(file), 'utf8').includes('nextjs-dash:'))
     || loadManifestTemplatePaths('scripts/render-readmes.manifest.json').some((template) =>
       deriveOutputPath(template).replaceAll('\\', '/') === file
-      && readFileSync(resolveRepoPath(template), 'utf8').includes('{{NEXTJS_DASH_IMAGE}}')));
+      && ['NEXTJS_DASH_IMAGE', ...dashboardPackageVersions.map(([key]) => key)].some((key) =>
+        readFileSync(resolveRepoPath(template), 'utf8').includes(`{{${key}}}`))));
 }
 
 export function syncFrameworkVersions({ envPath = 'compose/.env', check = false } = {}) {

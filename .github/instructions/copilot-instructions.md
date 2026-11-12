@@ -86,9 +86,9 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 
 ### 3.4 TypeScript / Next.js (dashboard)
 
-- Next.js 16.4.5, React 19.3.1, MUI 9.5.0, TypeScript 7.0.2 native checker.
+- Next.js 16.4.6, React 19.3.1, MUI 9.5.0, TypeScript 7.0.2 native checker.
 - Tests: Vitest 5.1.0 with separate DOM and Node configs.
-- Lint and format: Oxlint 1.92.0 (`.oxlintrc.json`) and Oxfmt 0.77.0 (`.oxfmtrc.json`).
+- Lint and format: Oxlint 1.93.0 (`.oxlintrc.json`) and Oxfmt 0.78.0 (`.oxfmtrc.json`).
 - Quality: `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm run test:fast`; CI also runs the production build and report tests.
 
 ---

@@ -44,10 +44,31 @@ export function formatImageTag(name, variables) {
   return `${name}:${tag}`;
 }
 
+export const dashboardPackageVersions = [
+  ['NEXTJS_VERSION', 'dependencies', 'next'],
+  ['REACT_VERSION', 'dependencies', 'react'],
+  ['MUI_VERSION', 'dependencies', '@mui/material'],
+  ['TYPESCRIPT_VERSION', 'devDependencies', 'typescript'],
+  ['VITEST_VERSION', 'devDependencies', 'vitest'],
+  ['OXFMT_VERSION', 'devDependencies', 'oxfmt'],
+  ['OXLINT_VERSION', 'devDependencies', 'oxlint'],
+];
+
+export function readDashboardPackageVersions(manifest) {
+  return Object.fromEntries(dashboardPackageVersions.map(([key, section, name]) => {
+    const version = manifest?.[section]?.[name];
+    const match = typeof version === 'string' && /^\d+\.\d+\.\d+$/.exec(version);
+    if (!match || match[0] !== version) {
+      throw new Error(`Expected a stable exact version for ${name} in utils/nextjs-dash/package.json`);
+    }
+    return [key, version];
+  }));
+}
+
 export function loadImageVariables(variables) {
-  // Next.js retains its existing package.json source of truth; never duplicate its pin in the env.
+  // Dashboard package pins retain their package.json source of truth, separate from the env.
   const manifest = JSON.parse(readFileSync(new URL('../utils/nextjs-dash/package.json', import.meta.url), 'utf8'));
-  return { ...variables, NEXTJS_VERSION: manifest.dependencies.next };
+  return { ...variables, ...readDashboardPackageVersions(manifest) };
 }
 
 export function imageTemplateVariables(variables) {

@@ -15,7 +15,7 @@ services:
     build:
       context: ../utils/nextjs-dash
       dockerfile: Dockerfile
-    image: nextjs-dash:16.4.5-node26
+    image: nextjs-dash:16.4.6-node26
     container_name: nextjs-dash
     ports:
       - "3001:3001"

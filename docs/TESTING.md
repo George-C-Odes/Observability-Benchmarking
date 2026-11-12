@@ -569,13 +569,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.4.5
+Next.js: 16.4.6
 React: 19.3.1
 TypeScript: 7.0.2
 Vitest: 5.1.0
 @vitest/coverage-v8: 5.1.0
-Oxlint: 1.92.0
-Oxfmt: 0.77.0
+Oxlint: 1.93.0
+Oxfmt: 0.78.0
 ```
 
 #### Test Structure

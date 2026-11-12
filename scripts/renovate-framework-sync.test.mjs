@@ -509,6 +509,9 @@ test('Next.js route allows only its manifests and generated tags, never env or s
   assert.ok(paths.includes('compose/utils.yml'));
   assert.ok(paths.some((file) => file.startsWith('.run/')));
   assert.ok(paths.includes('utils/nextjs-dash/README.md'));
+  for (const file of ['docs/TESTING.md', 'docs/LINTING_AND_CODE_QUALITY.md', '.github/instructions/copilot-instructions.md']) {
+    assert.ok(paths.includes(file), file);
+  }
   const allowed = new Set(['utils/nextjs-dash/package.json', 'utils/nextjs-dash/package-lock.json', ...paths]);
   for (const file of ['compose/.env', 'scripts/tool.mjs', 'utils/nextjs-dash/app/page.tsx', '.github/workflows/framework_versions.yml']) {
     const base = blobEntries([[file, 'original']]);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('@mui/material', async () => {
   const actual = await vi.importActual<typeof import('@mui/material')>('@mui/material');
@@ -222,6 +222,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -229,6 +231,67 @@ afterEach(() => {
 // ── Tests ─────────────────────────────────────────────────────────────
 
 describe('ScriptRunner', () => {
+  it.each([
+    ['script', 'Copy Build All', 'docker compose build'],
+    ['job', 'Copy job ID', 'job-copy'],
+  ])('cancels %s clipboard feedback when unmounted', async (_kind, button, text) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    setJobRunnerState({ currentJobId: 'job-copy' });
+    const view = render(<ScriptRunner />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: button }));
+    });
+    expect(writeText).toHaveBeenCalledWith(text);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    view.unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not schedule feedback when a clipboard write finishes after unmount', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    let finishCopy!: () => void;
+    const writeText = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCopy = resolve;
+        }),
+    );
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const view = render(<ScriptRunner />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Build All' }));
+    expect(writeText).toHaveBeenCalledOnce();
+    view.unmount();
+    await act(async () => {
+      finishCopy();
+    });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('keeps feedback visible for two seconds after the latest script copy', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+    renderScriptRunner();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copy Build All' }));
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copied Build All' }));
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByRole('button', { name: 'Copied Build All' })).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByRole('button', { name: 'Copy Build All' })).toBeInTheDocument();
+  });
+
   it('copies a script command and clears its success feedback after two seconds', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const writeText = vi.fn().mockResolvedValue(undefined);

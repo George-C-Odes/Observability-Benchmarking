@@ -710,10 +710,10 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.77.0** — verifies deterministic formatting with `oxfmt --check .`.
-2. **Oxlint 1.92.0** — checks the module root with warnings denied.
-3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
-4. **Vitest 5.1.0** — runs separate Node and jsdom suites.
+1. **Oxfmt {{OXFMT_VERSION}}** — verifies deterministic formatting with `oxfmt --check .`.
+2. **Oxlint {{OXLINT_VERSION}}** — checks the module root with warnings denied.
+3. **TypeScript {{TYPESCRIPT_VERSION}}** — runs the native strict checker through the supported `tsc --noEmit` command.
+4. **Vitest {{VITEST_VERSION}}** — runs separate Node and jsdom suites.
 5. **Production build** — runs `next build` as a smoke test for import and configuration regressions.
 
 The CI workflow runs for matching pushes and pull requests, weekly, and on manual dispatch.
@@ -747,7 +747,7 @@ writes changes, while `npm run format:check` only verifies the current tree.
 - `"moduleResolution": "bundler"`
 - `"jsx": "react-jsx"`
 
-The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files. With `typescript@7.0.2`, `tsc` invokes the stable native checker.
+The `npm run typecheck` script runs `tsc --noEmit` to catch type errors without producing output files. With `typescript@{{TYPESCRIPT_VERSION}}`, `tsc` invokes the stable native checker.
 
 #### Running Quality Checks Locally
 

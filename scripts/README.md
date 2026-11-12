@@ -112,7 +112,7 @@ versions, Docker defaults, CI Java selections, IDE settings, and documentation. 
 `JAVA_MINOR_RELEASE` retains its leading dot, derived from the env minor.patch value. When the Java major changes,
 the orchestrator Maven builder digest must be refreshed for the new tag.
 
-After editing the env, run the same command used by **[doc] Render Updates** and Renovate:
+After editing the env or dashboard package pins, run the same command used by **[doc] Render Updates** and Renovate:
 
 ```powershell
 node scripts/sync-framework-versions.mjs
@@ -121,7 +121,7 @@ node scripts/sync-framework-versions.mjs --check
 
 This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
 Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django requirement inputs and locks, the shared
-Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Direct builds retain literal defaults. Individual
+Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Dashboard documentation reads exact `next`, `react`, `@mui/material`, `typescript`, `vitest`, `oxfmt`, and `oxlint` versions from `utils/nextjs-dash/package.json`; dashboard unit-test expectations and fixtures import that manifest directly. Direct builds retain literal defaults. Individual
 synchronizers remain available; use the combined command for a complete update. `--env` selects another env
 source and `--check` never writes or downloads dependencies. Changes do not run automatically just by editing
 the env. The combined operation is not transactional: after a compiler or filesystem failure, inspect the diff,

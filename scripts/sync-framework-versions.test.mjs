@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { loadManifestTemplatePaths, parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, syncPythonDefault, syncSonarPythonVersion } from './sync-framework-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
+import { dashboardPackageVersions } from './image-tags.mjs';
 
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
@@ -186,6 +187,15 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     .replace(/^GO_VERSION:.*$/m, 'GO_VERSION: 1.99.0')
     .replace(/^PYTHON_VERSION:.*$/m, 'PYTHON_VERSION: 3.14.99');
   writeFileSync(envPath, source);
+  const dashboardManifestPath = path.join(workspace, 'utils/nextjs-dash/package.json');
+  const dashboardManifest = JSON.parse(readFileSync(dashboardManifestPath, 'utf8'));
+  const dashboardVersions = {};
+  for (const [index, [key, section, name]] of dashboardPackageVersions.entries()) {
+    dashboardVersions[key] = `99.2.${index}`;
+    dashboardManifest[section][name] = dashboardVersions[key];
+  }
+  const dashboardSource = JSON.stringify(dashboardManifest);
+  writeFileSync(dashboardManifestPath, dashboardSource);
   const snapshot = () => files.map((file) => readFileSync(path.join(workspace, file), 'utf8'));
   const before = snapshot();
   const run = (...args) => spawnSync(process.execPath, [path.join(workspace, 'scripts/sync-framework-versions.mjs'), ...args], { cwd: workspace, encoding: 'utf8', timeout: 30_000 });
@@ -195,6 +205,12 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const result = run();
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(envPath, 'utf8'), source);
+  assert.equal(readFileSync(dashboardManifestPath, 'utf8'), dashboardSource);
+  for (const file of ['README.md', 'docs/tools-technologies.md', 'utils/nextjs-dash/README.md', '.github/instructions/copilot-instructions.md']) {
+    const content = readFileSync(path.join(workspace, file), 'utf8');
+    for (const version of Object.values(dashboardVersions)) assert.ok(content.includes(version), `${file}: ${version}`);
+    assert.doesNotMatch(content, /\{\{(?:NEXTJS|REACT|MUI|TYPESCRIPT|VITEST|OXFMT|OXLINT)_VERSION}}/);
+  }
   assert.match(readFileSync(path.join(workspace, 'utils/orchestrator/pom.xml'), 'utf8'), /<quarkus.platform.version>9\.0\.1/);
   assert.match(readFileSync(path.join(workspace, 'services/java/quarkus/native/pom.xml'), 'utf8'), /<quarkus.platform.version>9\.0\.1/);
   assert.match(readFileSync(path.join(workspace, '.github/go-tools/go.mod'), 'utf8'), /^go 1\.99\.0/m);
