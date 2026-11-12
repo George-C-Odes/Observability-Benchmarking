@@ -52,7 +52,7 @@ const SERVICES = [
  * GET /api/service-actions/config
  * Runtime service-action feature flags. Polled by the client.
  */
-export const GET = withApiRoute({ name: 'SERVICE_ACTIONS_CONFIG_API' }, async function GET() {
+export const GET = withApiRoute({ name: 'SERVICE_ACTIONS_CONFIG_API' }, function GET() {
   const enabled: Record<string, boolean> = { ...DEFAULT_SERVICE_ACTIONS_RUNTIME_CONFIG.enabled };
 
   for (const s of SERVICES) {

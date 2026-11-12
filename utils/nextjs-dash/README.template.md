@@ -419,6 +419,8 @@ These are lightweight scripts to validate the SSE pipeline end-to-end.
 
 Both default to `docker compose version` as the command and can be controlled via env vars.
 
+For the dashboard smoke script, set `NEXTJS_DASH_BASE_URL` only from trusted local configuration. It accepts an HTTP(S) server and optional proxy prefix, without credentials, query strings, fragments, or whitespace. Requests reject redirects, submitted job IDs must be UUIDs, and response diagnostics escape control characters. Its request and logging regression tests run in the dashboard's Node test suite.
+
 Example (PowerShell):
 
 ```powershell

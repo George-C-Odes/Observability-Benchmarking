@@ -84,6 +84,10 @@ FROM alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0
 
 ARG OTEL_PYROSCOPE_VERSION=2.1.4
 ARG OTEL_JAVA_AGENT_VERSION=2.33.1
+# Reviewed release asset digests from the GitHub releases API for these versions.
+# Update version/URL/filename overrides together with their matching SHA-256.
+ARG OTEL_PYROSCOPE_SHA256=c91cc1b4df86633179eede381ed9df181ba100794632534b5f114661440ef075
+ARG OTEL_JAVA_AGENT_SHA256=e43a270df53c6f423e0ab157be9c27ccc01d5dc3232e162fe54777573db2f149
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 
@@ -91,22 +95,40 @@ RUN apk add --no-cache ca-certificates curl
 WORKDIR /out
 
 RUN --mount=type=cache,id=otel-deps,target=/cache,sharing=locked \
-    set -e; \
+    set -eu; \
+    # Validate both pins before any request or cache access. \
+    for checksum in "$OTEL_PYROSCOPE_SHA256" "$OTEL_JAVA_AGENT_SHA256"; do \
+      case "$checksum" in \
+        ''|*[!0-9a-fA-F]*) echo "Invalid agent SHA-256" >&2; exit 1 ;; \
+        *) : ;; \
+      esac; \
+      [ "${#checksum}" -eq 64 ] || { echo "Invalid agent SHA-256 length" >&2; exit 1; }; \
+    done; \
+    DOWNLOAD_TMP=; \
+    trap 'if [ -n "$DOWNLOAD_TMP" ]; then rm -f "$DOWNLOAD_TMP"; fi' EXIT; \
+    trap 'exit 1' HUP INT TERM; \
+    fetch_verified() { \
+      DOWNLOAD_URL=$1; DOWNLOAD_CACHE=$2; DOWNLOAD_SHA256=$3; DOWNLOAD_OUTPUT=$4; \
+      if [ ! -f "$DOWNLOAD_CACHE" ]; then \
+        DOWNLOAD_TMP=$(mktemp "${DOWNLOAD_CACHE}.tmp.XXXXXX"); \
+        curl --proto '=https' --proto-redir '=https' -fsSL --retry 5 --retry-all-errors -o "$DOWNLOAD_TMP" "$DOWNLOAD_URL"; \
+        printf '%s  %s\n' "$DOWNLOAD_SHA256" "$DOWNLOAD_TMP" | sha256sum -c -; \
+        mv "$DOWNLOAD_TMP" "$DOWNLOAD_CACHE"; \
+        DOWNLOAD_TMP=; \
+      fi; \
+      cp "$DOWNLOAD_CACHE" "$DOWNLOAD_OUTPUT"; \
+      # Verify the actual output bytes, including on cache hits. \
+      printf '%s  %s\n' "$DOWNLOAD_SHA256" "$DOWNLOAD_OUTPUT" | sha256sum -c -; \
+    }; \
     case "${OTEL_PYROSCOPE_VERSION}" in \
       0.*|1.*) PYRO_ASSET="pyroscope-otel.jar" ;; \
       *)       PYRO_ASSET="pyroscope-otel-javaagent-extension.jar" ;; \
     esac; \
     PYRO_URL="https://github.com/grafana/otel-profiling-java/releases/download/v${OTEL_PYROSCOPE_VERSION}/${PYRO_ASSET}"; \
-    PYRO_CACHE="/cache/${PYRO_ASSET%.jar}-${OTEL_PYROSCOPE_VERSION}.jar"; \
-    if [ ! -f "$PYRO_CACHE" ]; then \
-      curl -fsSL --retry 5 --retry-all-errors -o "$PYRO_CACHE" "$PYRO_URL"; \
-    fi; \
-    cp "$PYRO_CACHE" ./pyroscope-otel-extension.jar; \
-    AGENT_CACHE="/cache/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar"; \
-    if [ ! -f "$AGENT_CACHE" ]; then \
-      curl -fsSL --retry 5 --retry-all-errors -o "$AGENT_CACHE" "${OTEL_JAVA_AGENT_URL}"; \
-    fi; \
-    cp "$AGENT_CACHE" ./opentelemetry-javaagent.jar
+    PYRO_CACHE="/cache/${PYRO_ASSET%.jar}-${OTEL_PYROSCOPE_VERSION}-${OTEL_PYROSCOPE_SHA256}.jar"; \
+    fetch_verified "$PYRO_URL" "$PYRO_CACHE" "$OTEL_PYROSCOPE_SHA256" ./pyroscope-otel-extension.jar; \
+    AGENT_CACHE="/cache/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}-${OTEL_JAVA_AGENT_SHA256}.jar"; \
+    fetch_verified "$OTEL_JAVA_AGENT_URL" "$AGENT_CACHE" "$OTEL_JAVA_AGENT_SHA256" ./opentelemetry-javaagent.jar
 
 #-----------------------  RUNTIME STAGE -----------------------
 # Use a minimal distroless base — the jlink JRE is self-contained

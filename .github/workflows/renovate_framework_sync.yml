@@ -34,6 +34,20 @@ jobs:
       - name: Set up Node
         uses: ./.github/actions/setup-node
 
+      - name: Install trusted npm for lock validation
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
+          contains(github.event.pull_request.labels.*.name, 'nextjs-version')
+        working-directory: utils/nextjs-dash
+        # This manifest is from the trusted base checkout, before reading PR data.
+        run: |
+          package_manager="$(node -p "require('./package.json').packageManager")"
+          if [[ ! "$package_manager" =~ ^npm@[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::Dashboard packageManager must pin an exact npm version.'
+            exit 1
+          fi
+          npm install --global --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org/ "$package_manager"
+
       - name: Validate Renovate version proposal
         if: contains(github.event.pull_request.labels.*.name, 'framework-version')
         id: proposal

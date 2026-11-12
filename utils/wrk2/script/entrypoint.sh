@@ -13,7 +13,7 @@ print_common_vars summary
 READY_PID=""
 stop() {
   echo "[wrk2] shutdown requested" >&2
-  if [ -n "${READY_PID}" ] && kill -0 "${READY_PID}" 2>/dev/null; then
+  if [[ -n "${READY_PID}" ]] && kill -0 "${READY_PID}" 2>/dev/null; then
     kill "${READY_PID}" 2>/dev/null || true
     wait "${READY_PID}" 2>/dev/null || true
   fi
@@ -35,17 +35,17 @@ fi
 EXIT_AFTER_AUTORUN="${WRK_EXIT_AFTER_AUTORUN:-false}"
 
 # If configured to auto-run benchmarks on container start, do so.
-if [ "${WRK_AUTORUN:-true}" = "true" ]; then
+if [[ "${WRK_AUTORUN:-true}" = "true" ]]; then
   set +e
   WRK_PRINT_CONFIG=false "${SCRIPT_DIR}/benchmark.sh"
   bench_rc=$?
   set -e
 
   # Optional mode: stop the container after autorun finishes.
-  if [ "${EXIT_AFTER_AUTORUN}" = "true" ]; then
+  if [[ "${EXIT_AFTER_AUTORUN}" = "true" ]]; then
     echo "[wrk2] WRK_EXIT_AFTER_AUTORUN=true; stopping container after autorun" >&2
 
-    if [ -n "${READY_PID}" ] && kill -0 "${READY_PID}" 2>/dev/null; then
+    if [[ -n "${READY_PID}" ]] && kill -0 "${READY_PID}" 2>/dev/null; then
       kill "${READY_PID}" 2>/dev/null || true
       wait "${READY_PID}" 2>/dev/null || true
     fi
