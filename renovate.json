@@ -131,6 +131,14 @@
     },
     {
       "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)GUNICORN_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "gunicorn",
+      "datasourceTemplate": "pypi",
+      "versioningTemplate": "pep440"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": ["/^services\\/python\\/django\\/qodana\\.yaml$/"],
       "matchStrings": [
         "linter:\\s+(?<depName>jetbrains/qodana-python-community):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]+)"
@@ -274,10 +282,10 @@
       "enabled": false
     },
     {
-      "description": "Django inputs and generated locks follow DJANGO_VERSION, not independent pip updates.",
+      "description": "Django and Gunicorn inputs and generated locks follow compose/.env, not independent pip updates.",
       "matchManagers": ["pip_requirements", "pip-compile"],
       "matchFileNames": ["services/python/django/**", ".github/requirements/**"],
-      "matchPackageNames": ["django"],
+      "matchPackageNames": ["django", "gunicorn"],
       "enabled": false
     },
     {

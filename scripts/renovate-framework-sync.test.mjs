@@ -29,8 +29,9 @@ test('Renovate extracts each active env pin once with the correct registry coord
     GO_VERSION: ['golang-version', 'go'],
     PYTHON_VERSION: ['github-tags', 'python/cpython'],
     DJANGO_VERSION: ['pypi', 'django'],
+    GUNICORN_VERSION: ['pypi', 'gunicorn'],
   };
-  assert.equal(managers.length, 14);
+  assert.equal(managers.length, 15);
   const variables = parseColonEnv(env);
   for (const [key, [datasource, name]] of Object.entries(expected)) {
     const manager = managers.find(({ depNameTemplate }) => depNameTemplate === name);
@@ -719,4 +720,19 @@ test('npm preparation rejects a tampered full lock before state/output/writes an
   assert.match(readFileSync(output, 'utf8'), /changed=false/);
   assert.equal(npm.mock.callCount(), 2);
   assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
+});
+
+
+test('Gunicorn updates use the framework route and install the hashed lock compiler', () => {
+  const proposed = env.replace(/^GUNICORN_VERSION:[^\r\n]+/m, 'GUNICORN_VERSION: 28.0.0');
+  assert.deepEqual(validateVersionChange(env, proposed), ['GUNICORN_VERSION']);
+  const rule = config.packageRules.find(({ matchPackageNames, matchManagers }) =>
+    matchManagers?.includes('pip_requirements') && matchPackageNames?.includes('gunicorn'));
+  assert.equal(rule.enabled, false);
+  assert.ok(rule.matchManagers.includes('pip-compile'));
+  const script = readFileSync(resolveRepoPath('scripts/renovate-framework-sync.mjs'), 'utf8');
+  assert.ok(script.includes("python_locks=${changed.some((key) => ['DJANGO_VERSION', 'GUNICORN_VERSION'].includes(key))}"));
+  const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
+  assert.match(workflow, /if: steps\.proposal\.outputs\.python_locks == 'true'/);
+  assert.ok(workflow.includes('--requirement .github/requirements/lock-compiler.txt'));
 });

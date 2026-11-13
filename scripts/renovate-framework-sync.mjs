@@ -309,7 +309,7 @@ export async function prepare(event, token, route = 'env') {
     else writeFileSync(resolveRepoPath(envFile), headEnv, 'utf8');
   }
   writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, changed, route }));
-  appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\ndjango=${changed.includes('DJANGO_VERSION')}\n`);
+  appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${changed.some((key) => ['DJANGO_VERSION', 'GUNICORN_VERSION'].includes(key))}\n`);
   console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No framework version changes');
 }
 

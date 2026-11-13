@@ -2,6 +2,8 @@
 
 # Django Reactive — Benchmarking Service
 
+Gunicorn 27.0.1 is pinned from `compose/.env` and relayed to both runtime requirements and the shared CI locks.
+
 ASGI / Gunicorn + UvicornWorker Django module for the Observability Benchmarking suite.
 
 ## Module layout

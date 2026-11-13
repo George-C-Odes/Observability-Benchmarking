@@ -41,11 +41,11 @@ dependencies. Workflow steps do not upgrade pip independently.
 
 ## Regenerate or upgrade the locks
 
-**Django framework updates:** change `DJANGO_VERSION` in `compose/.env`, then run
+**Django/Gunicorn framework updates:** change `DJANGO_VERSION` or `GUNICORN_VERSION` in `compose/.env`, then run
 `node scripts/sync-framework-versions.mjs` in the Linux compiler environment described below.
-It synchronizes both exact Django input pins, regenerates the runtime resolutions, and invokes
+It synchronizes the exact Django and Gunicorn pins in both runtime inputs, regenerates the runtime resolutions, and invokes
 `update-lock.sh` for the verified CI inventory and Docker projections. Renovate follows this same
-source-of-truth flow; do not independently upgrade Django in generated requirements or hashes.
+source-of-truth flow; do not independently upgrade Django or Gunicorn in generated requirements or hashes.
 Use `node scripts/sync-framework-versions.mjs --check` to check the complete version contract.
 
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
@@ -67,7 +67,7 @@ for this bootstrap permits regeneration when the generated `pip.txt` is stale.
 
 To refresh the compiler itself, change `lock-compiler.in` if needed and run the
 following in a trusted Linux compiler environment. Review and commit both files;
-automatic Django updates intentionally leave this bootstrap lock unchanged.
+automatic Django/Gunicorn updates intentionally leave this bootstrap lock unchanged.
 
 ```bash
 python -m piptools compile --generate-hashes --allow-unsafe --strip-extras \
@@ -96,7 +96,7 @@ requirements, constrained by these hashes, and bootstraps the same verified pip.
 `==` pins: change the corresponding inputs first. When upgrading Django, regenerate
 its runtime/development requirements before regenerating the CI inventory.
 
-Existing runtime pins remain the installation contract; Django's framework pin is relayed
+Existing runtime pins remain the installation contract; Django and Gunicorn framework pins are relayed
 from `compose/.env`, and the hash inventory does not replace those files. Keep generated hashes out of the runtime requirements so
 local development can continue installing them alongside the repository package.
 Review and commit the changed inputs, CI locks, and Docker projections together.

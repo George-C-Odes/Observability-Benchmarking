@@ -2,6 +2,8 @@
 
 # Django Platform — Benchmarking Service
 
+Gunicorn {{GUNICORN_VERSION}} is pinned from `compose/.env` and relayed to both runtime requirements and the shared CI locks.
+
 WSGI / Gunicorn `gthread` Django module for the Observability Benchmarking suite.
 
 ## Module layout

@@ -13,7 +13,7 @@ import { javaRuntimeGeneratedPaths, syncJavaRuntimeVersions } from './sync-java-
 import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sync-java-pom-versions.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 
-export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', ...nodeVersionKeys];
+export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', 'GUNICORN_VERSION', ...nodeVersionKeys];
 const controlPom = 'utils/orchestrator/pom.xml';
 const pythonAction = '.github/actions/setup-python/action.yml';
 const sonarConfig = '.sonarcloud.properties';

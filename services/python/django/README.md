@@ -2,6 +2,8 @@
 
 # Django Benchmark Modules
 
+Gunicorn 27.0.1 is pinned from `compose/.env` and relayed to both runtime requirements and the shared CI locks.
+
 Django 6.1.3 benchmark implementations use Python 3.13.18 and are organized under a common Gunicorn-oriented layout.
 
 ## Structure

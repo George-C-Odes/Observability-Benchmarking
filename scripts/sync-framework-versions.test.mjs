@@ -12,7 +12,7 @@ import { dashboardPackageVersions } from './image-tags.mjs';
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
   assert.deepEqual([...frameworkVersionKeys].sort(), Object.keys(variables).filter((key) => key.endsWith('_VERSION') && !key.startsWith('JAVA_')).sort());
-  assert.equal(new Set(frameworkVersionKeys).size, 15);
+  assert.equal(new Set(frameworkVersionKeys).size, 16);
 });
 
 test('Pekko build wiring forwards independent HTTP and Core versions to Maven', () => {
