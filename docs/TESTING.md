@@ -304,8 +304,8 @@ Build and test with Docker to ensure the correct Java version. Docker builds run
 #### Version Requirements
 
 ```
-Go: 1.27.3+
-Fiber: v3.6.1
+Go: 1.27.4+
+Fiber: v3.7.0
 OpenTelemetry: Latest stable
 ```
 
@@ -569,13 +569,13 @@ python -m coverage report -m
 
 ```
 Node.js: 22.12+
-Next.js: 16.4.5
+Next.js: 16.4.6
 React: 19.3.1
 TypeScript: 7.0.2
 Vitest: 5.1.0
 @vitest/coverage-v8: 5.1.0
-Oxlint: 1.92.0
-Oxfmt: 0.77.0
+Oxlint: 1.93.0
+Oxfmt: 0.78.0
 ```
 
 #### Test Structure
@@ -881,14 +881,14 @@ Integration Test Suite
 Testing Framework Versions:
 - Spring Boot: 4.1.2
 - Quarkus: 3.40.1.2
-- Micronaut: 5.2.22
+- Micronaut: 5.2.23
 - Helidon: 4.5.6
 - Spark: 3.0.5
 - Javalin: 7.2.4
 - Dropwizard: 5.0.2
 - Vert.x: 5.2.3
 - Pekko: 1.4.2
-- Go: 1.27.3
+- Go: 1.27.4
 - Django: 6.1.3
 
 ==========================================
@@ -1298,7 +1298,7 @@ sleep 10
 
 **Go Service**:
 ```
-2025-12-16T10:30:00.123Z Runtime version: go1.27.3 | Build version: go1.27.3
+2025-12-16T10:30:00.123Z Runtime version: go1.27.4 | Build version: go1.27.4
 2025-12-16T10:30:00.456Z Server started on :8080
 ```
 
@@ -1814,10 +1814,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       
-      - name: Set up Go 1.27.3
+      - name: Set up Go 1.27.4
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.27.3'
+          go-version: '1.27.4'
       
       - name: Test Go Service
         run: |
@@ -1869,7 +1869,7 @@ jobs:
           - { name: quarkus-jvm, context: services, dockerfile: services/java/quarkus/jvm/Dockerfile, version: "3.40.1.2" }
           - { name: spring-jvm-tomcat, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: tomcat, version: "4.1.2" }
           - { name: spring-jvm-netty, context: services, dockerfile: services/java/spring/jvm/Dockerfile, profile: netty, version: "4.1.2" }
-          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.3" }
+          - { name: go, context: services/go/enhanced, dockerfile: services/go/enhanced/Dockerfile, version: "1.27.4" }
     
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1941,7 +1941,7 @@ test:spring-jvm-netty:
 
 test:go:
   stage: test
-  image: golang:1.27.3
+  image: golang:1.27.4
   script:
     - cd services/go/enhanced
     - go mod download

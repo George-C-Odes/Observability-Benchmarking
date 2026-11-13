@@ -1013,11 +1013,11 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Backend**       | Framework          | Vert.x                     | {{VERTX_VERSION}}       | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | {{PEKKO_VERSION}}       | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
 | **Backend**       | Framework          | Django                     | {{DJANGO_VERSION}}      | Python web framework (WSGI platform + ASGI reactive)                 |
-| **Frontend**      | Framework          | Next.js                    | 16.4.5                  | SSR frontend and control dashboard                                   |
-| **Frontend**      | Library            | React                      | 19.3.1                  | UI rendering layer                                                   |
-| **Frontend**      | Language           | TypeScript                 | 7.0.2                   | Native checker and type-safe dashboard development                   |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0                   | Component library and theming                                        |
-| **Observability** | Visualization      | Grafana                    | 13.3.0                  | Metrics, logs, traces dashboards                                     |
+| **Frontend**      | Framework          | Next.js                    | {{NEXTJS_VERSION}}                  | SSR frontend and control dashboard                                   |
+| **Frontend**      | Library            | React                      | {{REACT_VERSION}}                  | UI rendering layer                                                   |
+| **Frontend**      | Language           | TypeScript                 | {{TYPESCRIPT_VERSION}}                   | Native checker and type-safe dashboard development                   |
+| **Frontend**      | UI Library         | Material UI (MUI)          | {{MUI_VERSION}}                   | Component library and theming                                        |
+| **Observability** | Visualization      | Grafana                    | 13.3.1                  | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.9                   | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1                   | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.4                   | Long-term metrics storage                                            |
@@ -1033,12 +1033,12 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.10.0                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.2                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.4                  | Python linting and code formatting                                   |
-| **Quality**       | Linter             | Oxlint                     | 1.92.0                  | Next.js dashboard static analysis                                    |
-| **Quality**       | Formatter          | Oxfmt                      | 0.77.0                  | Next.js dashboard formatting                                         |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.5                  | Python linting and code formatting                                   |
+| **Quality**       | Linter             | Oxlint                     | {{OXLINT_VERSION}}                  | Next.js dashboard static analysis                                    |
+| **Quality**       | Formatter          | Oxfmt                      | {{OXFMT_VERSION}}                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
 | **Testing**       | Unit / Integration | JUnit                      | 6.1.3                   | JVM unit and integration testing                                     |
-| **Testing**       | Frontend Testing   | Vitest                     | 5.1.0                   | Frontend unit testing                                                |
+| **Testing**       | Frontend Testing   | Vitest                     | {{VITEST_VERSION}}                   | Frontend unit testing                                                |
 
 ---
 

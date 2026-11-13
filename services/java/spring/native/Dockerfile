@@ -3,7 +3,7 @@ ARG JAVA_RELEASE=25
 #(J21 crashes on virtual threads)
 ARG JAVA_MINOR_RELEASE=.0.5.0.3
 ARG BASE_BUILDER=ol9
-ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:cc66d222f0a7ec996b78a99fe76a969bc80b539a5016ad866c14d1949bc6d0ab
+ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 # ------------ BUILD STAGE -----------------------
 FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder
@@ -24,7 +24,7 @@ ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artif
 ARG NATIVE_IMAGE_MAX_HEAP=8g
 ENV NATIVE_IMAGE_OPTS="-J-Xmx${NATIVE_IMAGE_MAX_HEAP}"
 
-ARG YQ_VERSION=4.54.2
+ARG YQ_VERSION=4.54.3
 RUN microdnf install -y curl && microdnf clean all && \
     curl --proto '=https' --proto-redir '=https' -fsSL "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
       -o /usr/local/bin/yq && \

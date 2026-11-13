@@ -2,6 +2,8 @@
 
 This directory is a Microsoft Agent Package Manager (APM) project containing portable, repository-specific agent primitives.
 
+Use APM CLI **0.35.1** for this package. Check the active executable with `apm --version` before refreshing or validating generated state.
+
 ## Source of truth
 
 - `apm.yml` defines package metadata, targets, and dependencies.
@@ -45,6 +47,10 @@ After changing dependencies, regenerate the lockfile before validating:
 apm lock
 apm install --frozen
 ```
+
+After upgrading the APM CLI, run `apm install` to reconcile local deployment hashes, then rerun the validation sequence above. Keep the audited dependency commits pinned; `--update` and `--refresh` are for intentional upstream dependency changes.
+
+APM preserves the CLI version recorded in an existing lockfile. To refresh that metadata, copy `apm.yml` and `.apm/` into a clean temporary directory and run `apm install` there. Compare the generated lockfile with this package's lockfile before copying it back: dependency commits, content hashes, and deployment paths must match the expected sources. Rerun the validation sequence in this directory. Keep the existing lockfile until the replacement is ready; removing it in place can cause APM to skip existing deployments as unmanaged files.
 
 If `apm install --frozen` reports new local deployments missing from the lockfile, run `apm install` without `--update`/`--refresh`, inspect the generated lock diff for unchanged upstream pins, then rerun the full validation sequence. Preserve any locally modified deployments APM skips; do not use `--force` to bypass ownership or security checks. Record such skips, and validate the authored primitives in a clean temporary deployment if necessary.
 

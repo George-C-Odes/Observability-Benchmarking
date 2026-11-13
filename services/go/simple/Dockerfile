@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.29-labs@sha256:36366b12c1dffb228bb25e9feffb73707b93388f084f4927d2b7686dba29e76a
-ARG GO_VERSION=1.27.3
+ARG GO_VERSION=1.27.4
 ARG BASE_BUILDER=alpine3.24
 
 # ------------ BUILD STAGE -----------------------
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       -o /out/app ./cmd/server
 
 # ------------ RUNTIME STAGE ----------------------
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
 
 WORKDIR /
 COPY --from=builder /out/app /app

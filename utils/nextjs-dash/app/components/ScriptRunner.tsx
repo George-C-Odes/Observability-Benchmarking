@@ -60,6 +60,18 @@ export default function ScriptRunner() {
 
   const executionLogRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  const copyFeedbackTimeoutRef = useRef<number | null>(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (copyFeedbackTimeoutRef.current !== null) {
+        window.clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const { on: statusPulseOn } = useTimedPulse({
     durationMs: 650,
@@ -129,25 +141,30 @@ export default function ScriptRunner() {
     return () => window.clearInterval(id);
   }, [isRunning]);
 
-  const copyToClipboard = useCallback(async (text: string, scriptName: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopySuccess(scriptName);
-      setTimeout(() => setCopySuccess(null), 2000);
-    } catch (err) {
-      clientLogger.error('Failed to copy to clipboard', err);
-    }
-  }, []);
+  const copyToClipboard = useCallback(
+    async (text: string, scriptName: string, durationMs = 2000) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        if (!mountedRef.current) return;
+        if (copyFeedbackTimeoutRef.current !== null) {
+          window.clearTimeout(copyFeedbackTimeoutRef.current);
+        }
+        setCopySuccess(scriptName);
+        copyFeedbackTimeoutRef.current = window.setTimeout(() => {
+          copyFeedbackTimeoutRef.current = null;
+          setCopySuccess(null);
+        }, durationMs);
+      } catch (err) {
+        clientLogger.error('Failed to copy to clipboard', err);
+      }
+    },
+    [],
+  );
 
-  const copyText = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopySuccess('job');
-      setTimeout(() => setCopySuccess(null), 1000);
-    } catch (err) {
-      clientLogger.error('Failed to copy to clipboard', err);
-    }
-  }, []);
+  const copyText = useCallback(
+    (text: string) => copyToClipboard(text, 'job', 1000),
+    [copyToClipboard],
+  );
 
   const handleRefresh = async () => {
     setMessage(null);
@@ -211,13 +228,14 @@ export default function ScriptRunner() {
   };
 
   useEffect(() => {
+    const resetTimeout = window.setTimeout(() => setShowStreamIssueChip(false), 0);
     const t = window.setTimeout(() => {
       setShowStreamIssueChip(Boolean(sseLastError) && !isTerminal && Boolean(currentJobId));
     }, 500);
 
     return () => {
       window.clearTimeout(t);
-      window.setTimeout(() => setShowStreamIssueChip(false), 0);
+      window.clearTimeout(resetTimeout);
     };
   }, [sseLastError, isTerminal, currentJobId]);
 

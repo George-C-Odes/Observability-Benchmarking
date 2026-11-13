@@ -1,3 +1,4 @@
+import packageJson from '@/package.json';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@/__tests__/_helpers/mockScopedServerLogger';
 
@@ -7,10 +8,6 @@ vi.mock('child_process', () => ({
 
 import { exec } from 'child_process';
 import { GET } from '@/app/api/system/route';
-
-const packageJson = require('../../../../package.json') as {
-  devDependencies?: Record<string, string>;
-};
 
 describe('/api/system route', () => {
   beforeEach(() => {
@@ -35,9 +32,9 @@ describe('/api/system route', () => {
     expect(body.platform).toBe(process.platform);
     expect(body.arch).toBe(process.arch);
     expect(body.npm).toBe('12.2.2');
-    expect(body.nextjs).toBe('16.4.5');
-    expect(body.react).toBe('19.3.1');
-    expect(body.mui).toBe('9.5.0');
+    expect(body.nextjs).toBe(packageJson.dependencies.next);
+    expect(body.react).toBe(packageJson.dependencies.react);
+    expect(body.mui).toBe(packageJson.dependencies['@mui/material']);
     expect(body.typescript).toBe(packageJson.devDependencies?.typescript);
   });
 

@@ -1,3 +1,4 @@
+import packageJson from '@/package.json';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { getRuntimeConfig } from '@/lib/runtimeConfig';
@@ -17,10 +18,10 @@ describe('runtimeConfig', () => {
         systemInfo: {
           nodejs: 'v26.13.0',
           npm: '12.2.2',
-          nextjs: '16.4.5',
-          react: '19.3.1',
-          mui: '9.5.0',
-          typescript: '6.0.3',
+          nextjs: packageJson.dependencies.next,
+          react: packageJson.dependencies.react,
+          mui: packageJson.dependencies['@mui/material'],
+          typescript: packageJson.devDependencies.typescript,
           platform: 'win32',
           arch: 'x64',
         },
@@ -31,10 +32,10 @@ describe('runtimeConfig', () => {
       systemInfo: {
         nodejs: 'v26.13.0',
         npm: '12.2.2',
-        nextjs: '16.4.5',
-        react: '19.3.1',
-        mui: '9.5.0',
-        typescript: '6.0.3',
+        nextjs: packageJson.dependencies.next,
+        react: packageJson.dependencies.react,
+        mui: packageJson.dependencies['@mui/material'],
+        typescript: packageJson.devDependencies.typescript,
         platform: 'win32',
         arch: 'x64',
       },

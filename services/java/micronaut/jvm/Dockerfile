@@ -3,7 +3,7 @@ ARG MAVEN_RELEASE=3.10.0
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:7fe4df6a4413adf5889960d345a28b4574aea0872ea47684c7244c8d88027dca
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:a08d9054afbaf1af9b90fd02cdc7b32236319b5376d374505a41548d42b0c5db
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------
@@ -14,7 +14,7 @@ ARG JAVA_ARGS
 ENV JAVA_ARGS=${JAVA_ARGS}
 ENV JAVA_TOOL_OPTIONS=${JAVA_ARGS}
 ENV LANGUAGE='en_US:en'
-ARG MICRONAUT_VERSION=5.2.22
+ARG MICRONAUT_VERSION=5.2.23
 ENV MICRONAUT_VERSION=${MICRONAUT_VERSION}
 ENV HOME=/home/maven
 ENV MAVEN_OPTS="-Duser.home=${HOME} -Dmaven.repo.local=${HOME}/.m2 -Dmaven.artifact.threads=16"

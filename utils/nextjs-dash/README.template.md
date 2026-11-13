@@ -4,7 +4,7 @@
 
 A Next.js-based dashboard UI for orchestrating and managing the Observability Benchmarking environment.
 
-Next.js versions come from `package.json`. Renovate PRs labeled `nextjs-version` relay the image tags into Compose, IDE build configurations, and generated documentation using trusted base scripts. The relay validates dependency-only manifest changes and the lockfile root without installing PR dependencies. For local dependency upgrades, run `node scripts/sync-nextjs-tags.mjs` from the repository root.
+Dashboard package versions come from `package.json`. Renovate updates to Next.js, React, Material UI, TypeScript, Vitest, Oxfmt, or Oxlint receive the existing `nextjs-version` label and regenerate documentation using trusted base scripts. Next.js updates also relay image tags into Compose and IDE build configurations. The relay validates dependency-only manifest changes and the complete lockfile against independent npm regeneration without installing PR dependencies. For local dependency upgrades, run `node scripts/sync-framework-versions.mjs` from the repository root. Documentation versions for these seven packages are read from `package.json`; unit-test expectations and fixtures read the same manifest directly.
 
 ## Why it exists (the design reasoning)
 
@@ -163,13 +163,13 @@ Some environments terminate long-lived HTTP connections.
 
 ## Technology Stack
 
-- **Next.js**: v16.4.5
-- **React**: v19.3.1
-- **Material-UI (MUI)**: v9.5.0
-- **TypeScript**: v7.0.2
-- **Vitest / coverage-v8**: v5.1.0
-- **Oxlint**: v1.92.0
-- **Oxfmt**: v0.77.0
+- **Next.js**: v{{NEXTJS_VERSION}}
+- **React**: v{{REACT_VERSION}}
+- **Material-UI (MUI)**: v{{MUI_VERSION}}
+- **TypeScript**: v{{TYPESCRIPT_VERSION}}
+- **Vitest / coverage-v8**: v{{VITEST_VERSION}}
+- **Oxlint**: v{{OXLINT_VERSION}}
+- **Oxfmt**: v{{OXFMT_VERSION}}
 - **Node.js**: v{{NODE_MAJOR_VERSION}}.{{NODE_MINOR_PATCH_VERSION}}
 
 ## Configuration

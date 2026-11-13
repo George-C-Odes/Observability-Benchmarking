@@ -2,11 +2,28 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { formatImageTag, imageDefinitions, loadImageVariables } from './image-tags.mjs';
+import { dashboardPackageVersions, formatImageTag, imageDefinitions, loadImageVariables, readDashboardPackageVersions } from './image-tags.mjs';
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { syncComposeImageTags } from './sync-image-tags.mjs';
 
 const variables = loadImageVariables(parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8')));
+
+test('dashboard documentation variables come from all seven exact package pins', () => {
+  const manifest = JSON.parse(readFileSync(resolveRepoPath('utils/nextjs-dash/package.json'), 'utf8'));
+  assert.equal(dashboardPackageVersions.length, 7);
+  const expected = {};
+  for (const [key, section, name] of dashboardPackageVersions) {
+    expected[key] = manifest[section][name];
+    assert.equal(variables[key], expected[key]);
+    for (const invalid of [undefined, null, 123, '^1.2.3', '~1.2.3', 'latest', '1.2', '1.2.3-beta.1', '1.2.3\n']) {
+      const malformed = structuredClone(manifest);
+      malformed[section][name] = invalid;
+      assert.throws(() => readDashboardPackageVersions(malformed), /stable exact version/);
+    }
+  }
+  assert.deepEqual(readDashboardPackageVersions(manifest), expected);
+  assert.throws(() => readDashboardPackageVersions({}), /stable exact version/);
+});
 
 test('every IDE image matches its Compose service and shared build name', () => {
   const compose = ['compose/docker-compose.yml', 'compose/utils.yml'].map((file) => readFileSync(resolveRepoPath(file), 'utf8')).join('\n');
