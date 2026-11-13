@@ -23,11 +23,23 @@ test('Node upgrades are strictly parsed and accepted without authorizing Java or
   }
 });
 
-test('Renovate extracts one complete Node release and rewrites both fields for major and patch upgrades', () => {
+test('Renovate rewrites one complete Node release while preserving separators accepted by the sync validator', () => {
   const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
   const manager = config.customManagers.find(({ datasourceTemplate }) => datasourceTemplate === 'node-version');
   assert.equal(manager.depNameTemplate, 'node');
+  // The inner replacements emit a literal $1 (via $$) for the outer
+  // replacements to restore each key's original whitespace prefix.
   const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
+  const whitespaceSamples = [];
+  for (const newline of ['\n', '\r\n']) {
+    for (const majorSpace of ['', ' ', '   ', '\t', ' \t ']) {
+      for (const minorSpace of ['', ' ', '   ', '\t', ' \t ']) {
+        whitespaceSamples.push(env.replace(/\r?\n/g, newline)
+          .replace(/^(NODE_MAJOR_VERSION:)[ \t]*/m, `$1${majorSpace}`)
+          .replace(/^(NODE_MINOR_PATCH_VERSION:)[ \t]*/m, `$1${minorSpace}`));
+      }
+    }
+  }
   // Evaluate the small field/replace subset used here, with Renovate's update
   // context. Arbitrary regex captures are available only during extraction.
   const render = (template, fields) => template.replace(/\{\{\{([\s\S]*?)}}}/g, (_match, expression) => {
@@ -54,7 +66,7 @@ test('Renovate extracts one complete Node release and rewrites both fields for m
     assert.equal(index, tokens.length);
     return result;
   });
-  for (const sample of [env, env.replaceAll('\n', '\r\n'), '#NODE_MAJOR_VERSION: 20\n#NODE_MINOR_PATCH_VERSION: 0.0\nNODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0\n', 'NODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0']) {
+  for (const sample of [...whitespaceSamples, '#NODE_MAJOR_VERSION: 20\n#NODE_MINOR_PATCH_VERSION: 0.0\nNODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0\n', 'NODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0']) {
     const expression = new RegExp(manager.matchStrings[0], 'g');
     const matches = [...sample.matchAll(expression)];
     assert.equal(matches.length, 1);
@@ -66,8 +78,11 @@ test('Renovate extracts one complete Node release and rewrites both fields for m
       const extracted = [...updated.matchAll(new RegExp(manager.matchStrings[0], 'g'))];
       assert.equal(extracted.length, 1);
       assert.equal(render(manager.currentValueTemplate, extracted[0].groups), newValue);
-      const masked = (value) => value.replace(/^(NODE_(?:MAJOR|MINOR_PATCH)_VERSION: )[^\r\n]+/gm, '$1<version>');
+      const masked = (value) => value.replace(/^(NODE_(?:MAJOR|MINOR_PATCH)_VERSION:[ \t]*)[0-9]+(?:[.][0-9]+)*/gm, '$1<version>');
       assert.equal(masked(updated), masked(sample));
+      if (whitespaceSamples.includes(sample)) {
+        assert.ok(validateVersionChange(sample, updated).every((key) => key.startsWith('NODE_')));
+      }
     }
   }
   const rule = config.packageRules.find(({ description }) => description.startsWith('Node Docker tag'));
