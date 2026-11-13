@@ -227,8 +227,8 @@ grpcio==1.85.1 \
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt
     #   opentelemetry-exporter-otlp-proto-grpc
-gunicorn==26.2.0 \
-    --hash=sha256:bd249d0b3f7972f7432f0a6b6ff3b3ee2d129f70cd1ff6c09a9dd9e29a2b88e3
+gunicorn==27.0.1 \
+    --hash=sha256:378b26b9a38adcf4592f28828233c1716acc55e833ea06bf48719782efaa0d10
     # via
     #   -r services/python/django/gunicorn/ASGI/requirements.txt
     #   -r services/python/django/gunicorn/WSGI/requirements.txt

@@ -2,6 +2,8 @@
 
 # Django Benchmark Modules
 
+Gunicorn {{GUNICORN_VERSION}} is pinned from `compose/.env` and relayed to both runtime requirements and the shared CI locks.
+
 Django {{DJANGO_VERSION}} benchmark implementations use Python {{PYTHON_VERSION}} and are organized under a common Gunicorn-oriented layout.
 
 ## Structure

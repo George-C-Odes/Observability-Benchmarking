@@ -11,8 +11,8 @@ This directory contains small repository-level helper scripts.
 - `sync-java-runtime-versions.mjs` - synchronizes manually managed Java/GraalVM runtime pins
 - `sync-java-runtime-versions.test.mjs` - validates Java version propagation and Renovate exclusion
 - `sync-framework-versions.test.mjs` - tests canonical inventories, Python CI/Sonar versions, and generated output scope
-- `sync-django-versions.mjs` - pins Django inputs from the env and regenerates runtime/CI/Docker locks when the version changes
-- `sync-django-versions.test.mjs` - offline tests for Django pinning and compiler/hash regeneration contracts
+- `sync-django-versions.mjs` - pins Django and Gunicorn inputs from the env and regenerates runtime/CI/Docker locks when the version changes
+- `sync-django-versions.test.mjs` - offline tests for Django/Gunicorn pinning and compiler/hash regeneration contracts
 - `renovate-framework-sync.mjs` - validates Renovate PR data and publishes only trusted generated output without checking out PR code
 - `renovate-framework-sync.test.mjs` - tests Renovate extraction, downstream exclusions, env-only edits, fork/mode guards, and repeat publication
 - `render-readmes.mjs` - renders generated README files from `.template.md` sources using values from `compose/.env`
@@ -120,19 +120,20 @@ node scripts/sync-framework-versions.mjs --check
 ```
 
 This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
-Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django requirement inputs and locks, the shared
+Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django/Gunicorn requirement inputs and locks, the shared
 Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Dashboard documentation reads exact `next`, `react`, `@mui/material`, `typescript`, `vitest`, `oxfmt`, and `oxlint` versions from `utils/nextjs-dash/package.json`; dashboard unit-test expectations and fixtures import that manifest directly. Direct builds retain literal defaults. Individual
 synchronizers remain available; use the combined command for a complete update. `--env` selects another env
 source and `--check` never writes or downloads dependencies. Changes do not run automatically just by editing
 the env. The combined operation is not transactional: after a compiler or filesystem failure, inspect the diff,
 resolve the error, rerun, and commit only after check mode passes.
 
-Django's two `requirements.in` files use **exact** `DJANGO_VERSION` pins. If Django locks already match, no
-compiler is needed. When Django changes, use **Linux**, Python matching `PYTHON_VERSION`, and pip-tools **7.6.2**
+Django's two `requirements.in` files use **exact** `DJANGO_VERSION` and `GUNICORN_VERSION` pins.
+Renovate tracks Gunicorn through PyPI as a framework upgrade; independent requirement updates are disabled.
+If both pins match the locks, no compiler is needed. When either changes, use **Linux**, Python matching `PYTHON_VERSION`, and pip-tools **7.6.2**
 in a compiler virtualenv. The helper checks the compiler before updating inputs, resolves both runtime locks
-with a targeted Django upgrade, then runs `.github/requirements/update-lock.sh` to regenerate the hash inventory
+with targeted upgrades for the changed framework packages, then runs `.github/requirements/update-lock.sh` to regenerate the hash inventory
 and Docker projections. Existing hashes are never relabeled for a different release, and there is no unhashed
-runtime install fallback. Windows users must run a Django version change in a Linux environment/container;
+runtime install fallback. Windows users must run Django or Gunicorn version changes in a Linux environment/container;
 Git Bash with Windows Python cannot compile the Pyroscope-containing inventory. See
 [Python compiler setup](../.github/requirements/README.md#regenerate-or-upgrade-the-locks).
 
@@ -373,7 +374,7 @@ node --test scripts/sync-dockerfile-versions.test.mjs
 
 In IntelliJ, run **[gen] Sync Dockerfile Versions**, or **[doc] Render Updates** to synchronize POMs, Go modules, Dockerfiles, documentation, and build image configurations together.
 
-The script updates the Java framework `ARG ..._VERSION=...` defaults, `GO_VERSION` in both Go Dockerfiles, and `PYTHON_VERSION` in both Django Dockerfiles. Literal defaults keep direct Docker builds usable; Compose and IntelliJ can still override them with build arguments. Django itself is pinned in Python requirements, rather than a Dockerfile ARG.
+The script updates the Java framework `ARG ..._VERSION=...` defaults, `GO_VERSION` in both Go Dockerfiles, and `PYTHON_VERSION` in both Django Dockerfiles. Literal defaults keep direct Docker builds usable; Compose and IntelliJ can still override them with build arguments. Django and Gunicorn are pinned in Python requirements, rather than a Dockerfile ARG.
 
 Pekko has two independent build pins: `PEKKO_VERSION` for HTTP and `PEKKO_CORE_VERSION` for Core actor/stream/SLF4J modules. Both defaults are updated together in its single Dockerfile and passed through to Maven.
 
