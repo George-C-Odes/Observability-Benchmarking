@@ -19,7 +19,7 @@
         "(?<nodeStart>^|\\r?\\n)(?<nodePrefix>NODE_MAJOR_VERSION:[ \\t]*)(?<nodeMajor>\\d+)(?<nodeBetween>[ \\t]*\\r?\\nNODE_MINOR_PATCH_VERSION:[ \\t]*)(?<nodeMinorPatch>\\d+\\.\\d+)(?<nodeEnd>[ \\t]*(?:\\r?\\n|$))"
       ],
       "currentValueTemplate": "{{{nodeMajor}}}.{{{nodeMinorPatch}}}",
-      "autoReplaceStringTemplate": "{{{nodeStart}}}{{{nodePrefix}}}{{{newMajor}}}{{{nodeBetween}}}{{{newMinor}}}.{{{newPatch}}}{{{nodeEnd}}}",
+      "autoReplaceStringTemplate": "{{{replace 'NODE_MAJOR_VERSION:[ \\t]*[0-9]+' (replace '^([0-9]+)[.].*$' 'NODE_MAJOR_VERSION: $1' newValue) (replace 'NODE_MINOR_PATCH_VERSION:[ \\t]*[0-9]+[.][0-9]+' (replace '^[0-9]+[.]' 'NODE_MINOR_PATCH_VERSION: ' newValue) replaceString)}}}",
       "depNameTemplate": "node",
       "datasourceTemplate": "node-version",
       "versioningTemplate": "node"
