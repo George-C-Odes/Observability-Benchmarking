@@ -69,7 +69,7 @@ services:
 
   loki:
     profiles: ["${DOCKER_PROF_LOKI:-skip}"]
-    image: grafana/loki:3.7.9
+    image: grafana/loki:3.7.10
     container_name: loki
     volumes:
       - ${HOST_REPO}/data/loki:/loki
@@ -83,7 +83,7 @@ services:
 
   mimir:
     profiles: ["${DOCKER_PROF_MIMIR:-skip}"]
-    image: grafana/mimir:3.2.4
+    image: grafana/mimir:3.2.5
     container_name: mimir
     volumes:
       - ${HOST_REPO}/config/mimir:/etc/mimir-config
