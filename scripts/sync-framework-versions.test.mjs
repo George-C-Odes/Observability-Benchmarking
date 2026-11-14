@@ -206,6 +206,16 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(envPath, 'utf8'), source);
   assert.equal(readFileSync(dashboardManifestPath, 'utf8'), dashboardSource);
+  for (const file of ['utils/nextjs-dash/__tests__/app/components/SystemInfo.test.tsx',
+    'utils/nextjs-dash/__tests__/lib/runtimeConfig.test.ts', 'utils/nextjs-dash/__tests__/lib/systemInfo.test.ts']) {
+    const original = readFileSync(resolveRepoPath(file), 'utf8');
+    const updated = readFileSync(path.join(workspace, file), 'utf8');
+    assert.equal(updated, original.replace(/(nodejs: 'v|node\/v)\d+\.\d+\.\d+/g,
+      (_match, prefix) => `${prefix}28.1.2`), file);
+  }
+  const dashboardReadme = readFileSync(path.join(workspace, 'utils/nextjs-dash/README.md'), 'utf8');
+  assert.match(dashboardReadme, /- Node.js 28\.1\.2/);
+  assert.match(dashboardReadme, /\*\*Node.js\*\*: v28\.1\.2/);
   for (const file of ['README.md', 'docs/tools-technologies.md', 'utils/nextjs-dash/README.md', '.github/instructions/copilot-instructions.md']) {
     const content = readFileSync(path.join(workspace, file), 'utf8');
     for (const version of Object.values(dashboardVersions)) assert.ok(content.includes(version), `${file}: ${version}`);
