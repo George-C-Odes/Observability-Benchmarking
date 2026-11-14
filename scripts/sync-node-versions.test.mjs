@@ -23,26 +23,66 @@ test('Node upgrades are strictly parsed and accepted without authorizing Java or
   }
 });
 
-test('Renovate extracts one complete Node release and rewrites both fields for major and patch upgrades', () => {
+test('Renovate rewrites one complete Node release while preserving separators accepted by the sync validator', () => {
   const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
   const manager = config.customManagers.find(({ datasourceTemplate }) => datasourceTemplate === 'node-version');
   assert.equal(manager.depNameTemplate, 'node');
+  // The inner replacements emit a literal $1 (via $$) for the outer
+  // replacements to restore each key's original whitespace prefix.
   const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
-  // These templates contain only direct field substitutions, no helper expressions.
-  const render = (template, fields) => template.replace(/\{\{\{(\w+)}}}/g, (_match, key) => {
-    assert.ok(Object.hasOwn(fields, key), key);
-    return fields[key];
+  const whitespaceSamples = [];
+  for (const newline of ['\n', '\r\n']) {
+    for (const majorSpace of ['', ' ', '   ', '\t', ' \t ']) {
+      for (const minorSpace of ['', ' ', '   ', '\t', ' \t ']) {
+        whitespaceSamples.push(env.replace(/\r?\n/g, newline)
+          .replace(/^(NODE_MAJOR_VERSION:)[ \t]*/m, `$1${majorSpace}`)
+          .replace(/^(NODE_MINOR_PATCH_VERSION:)[ \t]*/m, `$1${minorSpace}`));
+      }
+    }
+  }
+  // Evaluate the small field/replace subset used here, with Renovate's update
+  // context. Arbitrary regex captures are available only during extraction.
+  const render = (template, fields) => template.replace(/\{\{\{([\s\S]*?)}}}/g, (_match, expression) => {
+    const tokens = expression.match(/\(|\)|'[^']*'|[A-Za-z]\w*/g);
+    let index = 0;
+    const value = () => {
+      const token = tokens[index++];
+      if (token === '(') {
+        const result = replace();
+        assert.equal(tokens[index++], ')');
+        return result;
+      }
+      if (token.startsWith("'")) return token.slice(1, -1);
+      assert.ok(Object.hasOwn(fields, token), `Unsupported template field: ${token}`);
+      return fields[token];
+    };
+    const replace = () => {
+      assert.equal(tokens[index++], 'replace');
+      const pattern = value();
+      const replacement = value();
+      return value().replace(new RegExp(pattern, 'g'), replacement);
+    };
+    const result = tokens[0] === 'replace' ? replace() : value();
+    assert.equal(index, tokens.length);
+    return result;
   });
-  for (const sample of [env, env.replaceAll('\n', '\r\n'), '#NODE_MAJOR_VERSION: 20\n#NODE_MINOR_PATCH_VERSION: 0.0\nNODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0\n']) {
+  for (const sample of [...whitespaceSamples, '#NODE_MAJOR_VERSION: 20\n#NODE_MINOR_PATCH_VERSION: 0.0\nNODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0\n', 'NODE_MAJOR_VERSION: 26\nNODE_MINOR_PATCH_VERSION: 13.0']) {
     const expression = new RegExp(manager.matchStrings[0], 'g');
     const matches = [...sample.matchAll(expression)];
     assert.equal(matches.length, 1);
     assert.equal(render(manager.currentValueTemplate, matches[0].groups), readNodeVersion(parseColonEnv(sample)).full);
-    for (const [newMajor, newMinor, newPatch] of [['28', '0', '0'], ['26', '13', '1']]) {
-      const updated = sample.replace(expression, (...args) => render(manager.autoReplaceStringTemplate, { ...args.at(-1), newMajor, newMinor, newPatch }));
+    for (const [newMajor, newMinor, newPatch] of [['28', '0', '0'], ['26', '14', '0'], ['26', '13', '1']]) {
+      const newValue = `${newMajor}.${newMinor}.${newPatch}`;
+      const updated = sample.replace(expression, (replaceString) => render(manager.autoReplaceStringTemplate, { replaceString, newValue }));
       assert.equal(readNodeVersion(parseColonEnv(updated)).full, `${newMajor}.${newMinor}.${newPatch}`);
-      const masked = (value) => value.replace(/^(NODE_(?:MAJOR|MINOR_PATCH)_VERSION: )[^\r\n]+/gm, '$1<version>');
+      const extracted = [...updated.matchAll(new RegExp(manager.matchStrings[0], 'g'))];
+      assert.equal(extracted.length, 1);
+      assert.equal(render(manager.currentValueTemplate, extracted[0].groups), newValue);
+      const masked = (value) => value.replace(/^(NODE_(?:MAJOR|MINOR_PATCH)_VERSION:[ \t]*)[0-9]+(?:[.][0-9]+)*/gm, '$1<version>');
       assert.equal(masked(updated), masked(sample));
+      if (whitespaceSamples.includes(sample)) {
+        assert.ok(validateVersionChange(sample, updated).every((key) => key.startsWith('NODE_')));
+      }
     }
   }
   const rule = config.packageRules.find(({ description }) => description.startsWith('Node Docker tag'));
