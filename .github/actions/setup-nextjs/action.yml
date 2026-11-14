@@ -5,7 +5,7 @@ inputs:
   node-version:
     description: Node.js runtime for the dashboard's quality and coverage jobs.
     required: false
-    default: '26.13.0'
+    default: '26.13.1'
 
 runs:
   using: composite

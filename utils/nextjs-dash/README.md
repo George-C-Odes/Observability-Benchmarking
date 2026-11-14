@@ -78,7 +78,7 @@ This is best when working on the UI itself.
 
 Prereqs:
 
-- Node.js 26.13.0
+- Node.js 26.13.1
 - npm
 
 ```bash
@@ -172,7 +172,7 @@ Some environments terminate long-lived HTTP connections.
 - **Vitest / coverage-v8**: v5.1.0
 - **Oxlint**: v1.93.0
 - **Oxfmt**: v0.78.0
-- **Node.js**: v26.13.0
+- **Node.js**: v26.13.1
 
 ## Configuration
 
@@ -244,7 +244,7 @@ Types/defaults are centralized in `lib/runtimeConfigTypes.ts` to avoid drift bet
 
 ### Prerequisites
 
-- Node.js 26.13.0
+- Node.js 26.13.1
 - npm 12.2.2
 
 ### Local Development

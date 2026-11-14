@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.29@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
-ARG IMAGE_DEPS=node:26.13.0-alpine3.24@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216
-ARG IMAGE_RUNTIME=node:26.13.0-alpine3.24@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216
+ARG IMAGE_DEPS=node:26.13.1-alpine3.24
+ARG IMAGE_RUNTIME=node:26.13.1-alpine3.24
 ARG NPM_VERSION=12.2.2
-#ARG IMAGE_DEPS=node:26.13.0-bookworm-slim
-#ARG IMAGE_RUNTIME=node:26.13.0-bookworm-slim
+#ARG IMAGE_DEPS=node:26.13.1-bookworm-slim
+#ARG IMAGE_RUNTIME=node:26.13.1-bookworm-slim
 
 # ------------ DEPS STAGE -----------------------
 # Installs ALL dependencies (prod + dev) for build & test.
