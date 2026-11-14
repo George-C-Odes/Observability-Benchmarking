@@ -83,7 +83,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | GraalVM                    | {{JAVA_MAJOR_VERSION}}.{{JAVA_MINOR_PATCH_VERSION}}                  | Native image compilation for startup and memory footprint benchmarks |
 | **Execution**     | Runtime            | Go                         | {{GO_VERSION}}          | High-performance baseline services for comparison                    |
 | **Execution**     | Runtime            | Python (CPython)           | {{PYTHON_VERSION}}      | Interpreted runtime for Django benchmark services                    |
-| **Execution**     | Server             | Gunicorn                   | 26.2.0                  | Production WSGI/ASGI process manager for Django benchmark services   |
+| **Execution**     | Server             | Gunicorn                   | {{GUNICORN_VERSION}}                  | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | {{NODE_MAJOR_VERSION}}.{{NODE_MINOR_PATCH_VERSION}}                 | Frontend tooling and SSR runtime                                     |
 | **Backend**       | Framework          | Spring Boot                | {{SPRING_BOOT_VERSION}} | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | {{QUARKUS_VERSION}}     | Cloud-native Java framework (JVM + native image focus)               |
@@ -522,7 +522,7 @@ The numbers below are a curated summary of a representative run.
 - **Pekko HTTP**: {{PEKKO_VERSION}} (Pekko Core {{PEKKO_CORE_VERSION}})
 - **Go**: {{GO_VERSION}} (Fiber v3.7.0)
 - **Python**: {{PYTHON_VERSION}} (CPython)
-- **Django**: {{DJANGO_VERSION}} (Gunicorn 26.2.0)
+- **Django**: {{DJANGO_VERSION}} (Gunicorn {{GUNICORN_VERSION}})
 - **Garbage Collector**: G1GC (all Java implementations)
 
 ## 🔒 Legal and license notes (read this)

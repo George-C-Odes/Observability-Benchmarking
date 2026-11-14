@@ -7,6 +7,32 @@ import { fileURLToPath } from 'node:url';
 
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 
+test('documented Gunicorn versions follow the env pin across all registered templates', () => {
+  const repoRoot = fileURLToPath(new URL('../', import.meta.url));
+  const variables = parseColonEnv(readFileSync(path.join(repoRoot, 'compose/.env'), 'utf8'));
+  const templates = loadManifestTemplatePaths('scripts/render-readmes.manifest.json');
+  const versionedDocs = [
+    'README.template.md', 'docs/benchmarking.template.md', 'docs/tools-technologies.template.md',
+    'services/python/django/README.template.md',
+    'services/python/django/gunicorn/ASGI/README.template.md',
+    'services/python/django/gunicorn/WSGI/README.template.md',
+  ];
+  for (const file of templates) {
+    const content = readFileSync(path.join(repoRoot, file), 'utf8');
+    assert.doesNotMatch(content, /Gunicorn[^\r\n]*\b\d+\.\d+\.\d+\b/, file);
+    if (!versionedDocs.includes(file)) continue;
+    const lines = content.split(/\r?\n/).filter((line) => line.includes('{{GUNICORN_VERSION}}'));
+    assert.ok(lines.length > 0, file);
+    for (const version of [variables.GUNICORN_VERSION, '28.9.3']) {
+      for (const line of lines) {
+        const rendered = renderTemplate(line, { ...variables, GUNICORN_VERSION: version });
+        assert.ok(rendered.includes(version), file);
+        assert.doesNotMatch(rendered, /\{\{GUNICORN_VERSION}}/, file);
+      }
+    }
+  }
+});
+
 function testParseColonEnv() {
   const env = parseColonEnv(`
 # Commented values must be ignored
