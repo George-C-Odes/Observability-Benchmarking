@@ -14,17 +14,20 @@ function resetGlobalState() {
 }
 
 describe('clientLogs', () => {
+  const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+    debug: console.debug,
+  };
   beforeEach(() => {
     resetGlobalState();
     vi.restoreAllMocks();
   });
 
   afterEach(() => {
-    // Restore console if capture was installed.
-    const c = console as { __nextjsDashRestore__?: () => void };
-    if (typeof c.__nextjsDashRestore__ === 'function') {
-      c.__nextjsDashRestore__();
-    }
+    vi.restoreAllMocks();
+    Object.assign(console, originalConsole);
     resetGlobalState();
   });
 

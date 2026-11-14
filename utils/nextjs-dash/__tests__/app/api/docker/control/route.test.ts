@@ -18,6 +18,28 @@ function makeRequest(body: unknown): Request {
 }
 
 describe('/api/docker/control', () => {
+  it.each([undefined, 42, '   '])(
+    'rejects invalid service %s without submitting',
+    async (service) => {
+      const res = await POST(makeRequest({ service, action: 'start' }) as never);
+      expect(res.status).toBe(400);
+      expect(submitCommand).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects unknown actions without submitting', async () => {
+    const res = await POST(makeRequest({ service: 'grafana', action: 'destroy' }) as never);
+    expect(res.status).toBe(400);
+    expect(submitCommand).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 for malformed JSON without submitting', async () => {
+    const res = await POST(
+      new Request('http://localhost/api/docker/control', { method: 'POST', body: '{' }) as never,
+    );
+    expect(res.status).toBe(500);
+    expect(submitCommand).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

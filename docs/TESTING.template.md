@@ -642,11 +642,12 @@ The CI workflow (`.github/workflows/nextjs_dash_quality.yml`) runs the full qual
 ```bash
 npm run format:check  # Oxfmt non-mutating format gate
 npm run lint          # Oxlint with warnings denied
-npm run typecheck     # TypeScript 7 native checker: tsc --noEmit
-npm run test:node     # Vitest node environment
-npm run test:dom      # Vitest jsdom environment
+npm run typecheck     # Generate Next.js route types, then tsc --noEmit
+npm run test:coverage:node # Vitest node environment with coverage
+npm run test:coverage:dom  # Isolated VM workers with jsdom and coverage
+npm run test:coverage:check # Combined weighted coverage gate
 node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
-npm run build         # Next.js production build smoke test
+npm run build:compile # Compile after explicit gates; local npm run build includes verify
 ```
 
 **Test Coverage**:
@@ -1415,7 +1416,7 @@ Local builds enforce the same thresholds:
 | Module | Local command (from the module directory) | Gate |
 |---|---|---|
 | Java JVM services and orchestrator | `mvn clean verify` | Native JaCoCo line/branch check during `verify` |
-| Next.js dashboard | `npm run build` | Both coverage suites and the module gate run in `prebuild` |
+| Next.js dashboard | `npm run build` | Formatting, lint, route type generation, strict typecheck, both coverage suites, and the module gate run in `prebuild` |
 | Go services | `make build` or `make coverage` | Fresh race-enabled coverage and the shared statement gate |
 | Django WSGI / ASGI / common | `make build` or `make coverage` | Fresh runtime coverage and separately scoped shared-package checks |
 
@@ -1508,9 +1509,10 @@ npm run test:coverage:dom
 
 #### CI workflow
 
-The **Next.js Dashboard Coverage** GitHub Actions workflow
-(`.github/workflows/nextjs_dash_coverage.yml`) runs on every PR and push to
-`main` that touches `utils/nextjs-dash/**`. It:
+The **Next.js Dashboard Quality** GitHub Actions workflow
+(`.github/workflows/nextjs_dash_quality.yml`) runs on every matching PR and push to
+`main`. Coverage is collected once in the same checkout as the quality checks and
+production compilation; the former duplicate coverage workflow has been consolidated. It:
 
 - Installs dependencies with `npm ci` (deterministic, cache-friendly).
 - Runs coverage for both Node and DOM environments sequentially, collecting DOM

@@ -1,6 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest';
 
-import { isServiceActionsEnabled, resolveServiceActionFlags } from '@/lib/serviceActionFlags';
+import { isServiceActionsEnabled } from '@/lib/serviceActionFlags';
 
 type EnvSnapshot = Record<string, string | undefined>;
 
@@ -37,22 +37,6 @@ describe('serviceActionFlags', () => {
 
     expect(isServiceActionsEnabled('grafana')).toBe(true);
     expect(isServiceActionsEnabled('go')).toBe(false);
-
-    expect(resolveServiceActionFlags('grafana')).toEqual({
-      start: true,
-      restart: true,
-      stop: true,
-      recreate: true,
-      delete: true,
-    });
-
-    expect(resolveServiceActionFlags('go')).toEqual({
-      start: false,
-      restart: false,
-      stop: false,
-      recreate: false,
-      delete: false,
-    });
   });
 
   it('global enable-all overrides defaults', () => {

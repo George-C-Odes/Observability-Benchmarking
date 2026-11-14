@@ -4,7 +4,6 @@ vi.mock('@/lib/config', () => ({
   orchestratorConfig: {
     url: 'http://orchestrator:3002',
     apiKey: 'secret-token',
-    timeout: 60000,
   },
 }));
 
@@ -22,6 +21,31 @@ import {
 } from '@/lib/orchestratorClient';
 
 describe('orchestratorClient HTTP helpers', () => {
+  it('reports GET failures with the upstream status and body', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('unavailable', { status: 503 }));
+    await expect(getEnvFile()).rejects.toThrow(
+      'Orchestrator GET /v1/env failed (503): unavailable',
+    );
+  });
+
+  it('omits optional run IDs and request IDs when absent', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(
+        async () => new Response(JSON.stringify({ jobId: 'job-1', status: 'RUNNING' })),
+      );
+    await submitCommandWithRunId('docker compose ps', null);
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      'http://orchestrator:3002/v1/run',
+      expect.objectContaining({ body: JSON.stringify({ command: 'docker compose ps' }) }),
+    );
+    await getJobStatusWithRunId('job-1', null);
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, 'http://orchestrator:3002/v1/jobs/job-1', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+  });
   beforeEach(() => {
     vi.restoreAllMocks();
   });

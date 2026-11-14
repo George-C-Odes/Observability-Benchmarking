@@ -76,7 +76,3 @@ export function createClientLogger(scope: string): ClientLogger {
     error: (...args: unknown[]) => write('error', prefix, args),
   };
 }
-
-// A default logger for quick one-offs.
-// (Intentionally not exported to avoid unused-export linting/typecheck noise.)
-// const clientLogger = createClientLogger('app');

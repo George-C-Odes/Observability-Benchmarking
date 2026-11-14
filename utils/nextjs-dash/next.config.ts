@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   // The TypeScript 7 native checker (formerly `tsgo`) runs in the dedicated
-  // quality-gate stage of the Docker build and locally via `npm run typecheck`.
+  // quality-gate stage of Docker/CI and in the mandatory local prebuild check.
   // Skipping it here avoids repeating the strict check during `next build`.
   typescript: { ignoreBuildErrors: true },
 };

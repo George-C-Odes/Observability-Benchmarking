@@ -12,10 +12,6 @@ export function withRequestContext<T>(fn: () => T, requestId?: string): T {
   return als.run(ctx, fn);
 }
 
-export function getRequestContext(): RequestContext | undefined {
-  return als.getStore();
-}
-
 export function getRequestId(): string | undefined {
   return als.getStore()?.requestId;
 }

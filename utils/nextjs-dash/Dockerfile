@@ -34,22 +34,22 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PATH=/app/node_modules/.bin:$PATH
 
 # Run the module-owned quality scripts in the same order as CI.
-# The build machine has 16 cores — use them.
+# Worker settings live in the shared Vitest configs.
 # A sentinel file is written on success so the builder stage can depend on it.
 RUN npm run format:check && \
     npm run lint && \
     npm run typecheck && \
-    npm run test:coverage:node -- --maxWorkers=12 && \
-    npm run test:coverage:dom -- --maxWorkers=12 && \
+    npm run test:coverage:node && \
+    npm run test:coverage:dom && \
     npm run test:coverage:check && \
     touch /tmp/.quality-ok
 
 # ------------ BUILD STAGE -----------------------
 # Produces the Next.js standalone output.
 # The COPY from quality creates a build-graph dependency edge so BuildKit
-# will ALWAYS execute the quality stage before reaching the build.
+# gates completion of the builder and every final runtime image.
+# Compilation can run in parallel and stay cached after test-only edits.
 FROM deps AS builder
-COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok
 
 # Copy config files first (changes rarely → good cache hit rate)
 COPY --link package.json next.config.ts tsconfig.json ./
@@ -71,6 +71,9 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Cache both the Next.js incremental build cache and the webpack cache
 RUN --mount=type=cache,target=/app/.next/cache \
   ./node_modules/.bin/next build
+
+# Mandatory gate: the builder cannot complete until quality succeeds.
+COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok
 
 # ------------ RUNTIME STAGE ---------------------
 FROM ${IMAGE_RUNTIME} AS runner
@@ -94,7 +97,7 @@ COPY --link --chown=1001:1001 --from=builder /app/.next/standalone ./
 COPY --link --chown=1001:1001 --from=builder /app/.next/static ./.next/static
 
 # Make common writable paths exist (supports running with read-only rootfs + tmpfs mounts)
-RUN mkdir -p /app/.next/cache /tmp && chown -R nodejs:nodejs /app /tmp
+RUN mkdir -p /app/.next/cache /tmp && chown nodejs:nodejs /app /app/.next /app/.next/cache /tmp
 
 USER nodejs
 

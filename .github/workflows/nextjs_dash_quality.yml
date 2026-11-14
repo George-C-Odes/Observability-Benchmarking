@@ -5,6 +5,12 @@ on:
   pull_request:
     paths:
       - 'utils/nextjs-dash/**'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
+      - 'scripts/coverage_summary.py'
+      - 'scripts/test_coverage_summary.py'
+      - '.github/actions/codecov-upload/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
       - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
       - 'scripts/pages/fixtures/nextjs-quality/**'
@@ -18,6 +24,12 @@ on:
       - main
     paths:
       - 'utils/nextjs-dash/**'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
+      - 'scripts/coverage_summary.py'
+      - 'scripts/test_coverage_summary.py'
+      - '.github/actions/codecov-upload/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
       - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
       - 'scripts/pages/fixtures/nextjs-quality/**'
@@ -30,6 +42,10 @@ on:
     # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
     - cron: '15 6 * * 1'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -38,6 +54,10 @@ jobs:
     name: Format, lint, typecheck & test
     runs-on: ubuntu-26.04
     timeout-minutes: 15
+    outputs:
+      coverage_node: ${{ steps.coverage_node.outcome }}
+      coverage_dom: ${{ steps.coverage_dom.outcome }}
+      coverage_gate: ${{ steps.coverage_gate.outcome }}
     defaults:
       run:
         working-directory: utils/nextjs-dash
@@ -84,8 +104,76 @@ jobs:
       - name: Quality report tests
         run: node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
 
-      - name: Production build with hard coverage gate
-        run: npm run build
+      # ── Node-environment coverage (lib, API routes) ──────────────────
+      - name: Coverage – Node environment
+        id: coverage_node
+        run: npm run test:coverage:node
+
+      # ── DOM-environment coverage (components, hooks) ─────────────────
+      - name: Coverage – DOM environment
+        id: coverage_dom
+        if: always() && !cancelled() && steps.coverage_node.outcome != 'skipped'
+        run: npm run test:coverage:dom
+
+      # ── Generate GitHub Step Summary ─────────────────────────────────
+      - name: Enforce dashboard coverage thresholds
+        id: coverage_gate
+        if: always() && !cancelled()
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" nextjs-dash
+
+      - name: Generate coverage summary
+        if: always() && !cancelled()
+        env:
+          NODE_OUTCOME: ${{ steps.coverage_node.outcome }}
+          DOM_OUTCOME: ${{ steps.coverage_dom.outcome }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" nextjs
+
+      # ── Upload HTML coverage reports as artifacts ────────────────────
+      - name: Upload Node coverage report
+        if: always() && !cancelled()
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: coverage-nextjs-dash-node
+          path: utils/nextjs-dash/coverage/node/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload DOM coverage report
+        if: always() && !cancelled()
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: coverage-nextjs-dash-dom
+          path: utils/nextjs-dash/coverage/dom/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ── Codecov upload ───────────────────────────────────────────────
+      # Upload both LCOV reports with a dedicated flag so Codecov can
+      # attribute coverage to the dashboard component.
+      #
+      # Flag naming: nextjs-dash (consistent with the component id in
+      # codecov.yml).  See codecov.yml at the repo root for flag → path
+      # mappings and component definitions.
+      - name: Upload to Codecov (Node)
+        if: always() && !cancelled() && steps.coverage_node.outcome == 'success'
+        uses: ./.github/actions/codecov-upload
+        with:
+          files: utils/nextjs-dash/coverage/node/lcov.info
+          flags: nextjs-dash-node
+          name: nextjs-dash-node
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload to Codecov (DOM)
+        if: always() && !cancelled() && steps.coverage_dom.outcome == 'success'
+        uses: ./.github/actions/codecov-upload
+        with:
+          files: utils/nextjs-dash/coverage/dom/lcov.info
+          flags: nextjs-dash-dom
+          name: nextjs-dash-dom
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Production build after required quality and coverage gates
+        run: npm run build:compile
 
       # ------------------------------------------------------------------
       # Quality report: generate HTML from Oxfmt, Oxlint, and TypeScript 7
@@ -130,3 +218,21 @@ jobs:
           path: utils/nextjs-dash/quality-report/
           retention-days: 30
           if-no-files-found: warn
+
+  # Keep the existing coverage check name without repeating setup or tests.
+  coverage:
+    name: Dashboard Coverage
+    needs: quality
+    if: always() && !cancelled()
+    runs-on: ubuntu-26.04
+    timeout-minutes: 2
+    steps:
+      - name: Require successful coverage evidence from this run
+        env:
+          NODE_OUTCOME: ${{ needs.quality.outputs.coverage_node }}
+          DOM_OUTCOME: ${{ needs.quality.outputs.coverage_dom }}
+          GATE_OUTCOME: ${{ needs.quality.outputs.coverage_gate }}
+        run: |
+          test "$NODE_OUTCOME" = success
+          test "$DOM_OUTCOME" = success
+          test "$GATE_OUTCOME" = success

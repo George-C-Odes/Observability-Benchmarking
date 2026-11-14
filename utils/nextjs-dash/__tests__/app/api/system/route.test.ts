@@ -1,56 +1,29 @@
 import packageJson from '@/package.json';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import '@/__tests__/_helpers/mockScopedServerLogger';
-
-vi.mock('child_process', () => ({
-  exec: vi.fn(),
-}));
-
-import { exec } from 'child_process';
 import { GET } from '@/app/api/system/route';
+import { collectServerSystemInfo } from '@/lib/serverSystemInfo';
 
-describe('/api/system route', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+afterEach(() => vi.unstubAllEnvs());
 
-  it('returns server and package metadata when npm version lookup succeeds', async () => {
-    vi.mocked(exec).mockImplementation(((
-      command: string,
-      callback: (error: Error | null, result: { stdout: string; stderr: string }) => void,
-    ) => {
-      expect(command).toBe('npm --version');
-      callback(null, { stdout: '10.9.3\n', stderr: '' });
-      return {} as never;
-    }) as never);
-
+describe('/api/system shared server metadata', () => {
+  it('returns the metadata shared by the root layout and API', async () => {
     const res = await GET(new Request('http://localhost/api/system') as never);
     expect(res.status).toBe(200);
-
-    const body = await res.json();
-    expect(body.nodejs).toBe(process.version);
-    expect(body.platform).toBe(process.platform);
-    expect(body.arch).toBe(process.arch);
-    expect(body.npm).toBe('12.2.2');
-    expect(body.nextjs).toBe(packageJson.dependencies.next);
-    expect(body.react).toBe(packageJson.dependencies.react);
-    expect(body.mui).toBe(packageJson.dependencies['@mui/material']);
-    expect(body.typescript).toBe(packageJson.devDependencies?.typescript);
+    expect(await res.json()).toEqual(collectServerSystemInfo());
+    expect(collectServerSystemInfo()).toEqual({
+      nodejs: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      npm: packageJson.packageManager.slice(4),
+      nextjs: packageJson.dependencies.next,
+      react: packageJson.dependencies.react,
+      mui: packageJson.dependencies['@mui/material'],
+      typescript: packageJson.devDependencies.typescript,
+    });
   });
-
-  it('falls back to N/A when npm version lookup fails', async () => {
-    vi.mocked(exec).mockImplementation(((
-      _command: string,
-      callback: (error: Error | null, result: { stdout: string; stderr: string }) => void,
-    ) => {
-      callback(new Error('npm missing'), { stdout: '', stderr: 'no npm' });
-      return {} as never;
-    }) as never);
-
-    const res = await GET(new Request('http://localhost/api/system') as never);
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.npm).toBe('12.2.2');
+  it('uses the pinned package manager version when the launcher reports another version', () => {
+    vi.stubEnv('npm_config_user_agent', 'npm/1.0.0 node/v26 linux x64');
+    expect(collectServerSystemInfo().npm).toBe(packageJson.packageManager.slice(4));
   });
 });
