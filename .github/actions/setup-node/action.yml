@@ -5,7 +5,7 @@ inputs:
   node-version:
     description: Node.js version to install; defaults to the runtime pin from compose/.env.
     required: false
-    default: '26.13.0'
+    default: '26.13.1'
   cache:
     description: Package manager whose dependencies should be cached (npm, yarn, or pnpm).
     required: false
