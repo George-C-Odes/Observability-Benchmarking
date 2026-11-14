@@ -33,7 +33,7 @@ class LocalCoverageTests(unittest.TestCase):
             self.assertEqual(len(limits), 2)
             for limit in limits:
                 metric = limit.findtext("m:counter", namespaces=ns).lower()
-                self.assertEqual(
+                self.assertAlmostEqual(
                     float(limit.findtext("m:minimum", namespaces=ns)) * 100,
                     module["thresholds"]["lines" if metric == "line" else "branches"],
                 )
