@@ -7,13 +7,15 @@ from decimal import Decimal
 
 from coverage_gate import CONFIG, ROOT, load_modules
 
+ORCHESTRATOR_PATH = "utils/orchestrator"
+
 
 def jacoco_check(module, indent):
     lines = Decimal(str(module["thresholds"]["lines"])) / 100
     branches = Decimal(str(module["thresholds"]["branches"])) / 100
     data_file = (
         "\n    <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>"
-        if module["path"] == "utils/orchestrator"
+        if module["path"] == ORCHESTRATOR_PATH
         else ""
     )
     text = f"""<execution>
@@ -44,7 +46,7 @@ def jacoco_check(module, indent):
   </configuration>
 </execution>"""
     # Service POMs use four-space nesting; the orchestrator uses two.
-    width = 2 if module["path"] == "utils/orchestrator" else 4
+    width = 2 if module["path"] == ORCHESTRATOR_PATH else 4
     if width == 2:
         text = text.replace("  <phase>verify</phase>\n", "").replace(
             "  </goals>\n", "  </goals>\n  <phase>verify</phase>\n"
@@ -64,7 +66,7 @@ def render_pom(source, module):
     match = re.search(
         r"<plugin>\s*<groupId>org.jacoco</groupId>(?:(?!</plugin>).)*</plugin>",
         source,
-        re.S,
+        re.DOTALL,
     )
     if not match:
         raise ValueError(f"Missing JaCoCo plugin: {module['path']}")
@@ -73,12 +75,12 @@ def render_pom(source, module):
         r"(?m)^[ \t]*<execution>\s*<id>coverage-check</id>(?:(?!</execution>).)*</execution>\n",
         "",
         plugin,
-        flags=re.S,
+        flags=re.DOTALL,
     )
     end = re.search(r"(?m)^([ \t]*)</executions>", plugin)
     if not end:
         raise ValueError("Missing JaCoCo executions")
-    indent = end[1] + ("  " if module["path"] == "utils/orchestrator" else "    ")
+    indent = end[1] + ("  " if module["path"] == ORCHESTRATOR_PATH else "    ")
     plugin = (
         plugin[: end.start()] + jacoco_check(module, indent) + plugin[end.start() :]
     )

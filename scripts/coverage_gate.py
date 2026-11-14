@@ -30,6 +30,10 @@ def unique_object(pairs):
 
 
 def read_json(path):
+    """Read a report/config selected by a trusted local or CI launcher.
+
+    CLI paths are filesystem selectors, not a sandbox for remote/LLM input.
+    """
     return json.loads(
         Path(path).read_text(encoding="utf-8"), object_pairs_hook=unique_object
     )
@@ -71,51 +75,50 @@ def add_metrics(results):
     return total
 
 
-def measurements(module, root, report=None):
-    kind, directory = module["format"], root / module["path"]
-    if report is not None and kind != "python":
-        raise ValueError("--report is only supported for Python runtime reports")
-    if kind == "java":
-        counters = jacoco_counters(directory / "target/site/jacoco/jacoco.xml")
-        result = {}
-        for metric, counter in (("lines", "LINE"), ("branches", "BRANCH")):
-            missed, covered = counters[counter]
-            result[metric] = pair(covered, count(missed) + count(covered))
-        return result
-    if kind == "nextjs":
-        # Both suites are mandatory. Their source scopes must be disjoint.
-        results, files = [], set()
-        for environment in ("node", "dom"):
-            data = read_json(
-                directory / f"coverage/{environment}/coverage-summary.json"
-            )
-            names = set(data) - {"total"}
-            if not names or files.intersection(names):
-                raise ValueError("Missing or overlapping dashboard source coverage")
-            files.update(names)
-            metrics = json_metrics(data["total"])
-            if metrics["lines"][1] == 0:
-                raise ValueError(f"Empty dashboard {environment} coverage")
-            if add_metrics(json_metrics(data[name]) for name in names) != metrics:
-                raise ValueError(
-                    f"Inconsistent dashboard {environment} coverage totals"
-                )
-            results.append(metrics)
-        return add_metrics(results)
-    if kind == "python":
-        data = read_json(report or directory / "coverage-summary.json")
-        if data["meta"]["branch_coverage"] is not True:
-            raise ValueError("Python report must contain branch coverage")
-        results = []
-        for filename, info in data["files"].items():
-            source = Path(filename)
-            if not source.is_absolute():
-                source = root / source
-            if source.resolve().is_relative_to(directory.resolve()):
-                results.append(json_metrics(info["summary"], python=True))
-        if not results:
-            raise ValueError(f"No Python coverage for {module['path']}")
-        return add_metrics(results)
+def java_measurements(directory):
+    counters = jacoco_counters(directory / "target/site/jacoco/jacoco.xml")
+    result = {}
+    for metric, counter in (("lines", "LINE"), ("branches", "BRANCH")):
+        missed, covered = counters[counter]
+        result[metric] = pair(covered, count(missed) + count(covered))
+    return result
+
+
+def nextjs_measurements(directory):
+    # Both suites are mandatory. Their source scopes must be disjoint.
+    results, files = [], set()
+    for environment in ("node", "dom"):
+        data = read_json(directory / f"coverage/{environment}/coverage-summary.json")
+        names = set(data) - {"total"}
+        if not names or files.intersection(names):
+            raise ValueError("Missing or overlapping dashboard source coverage")
+        files.update(names)
+        metrics = json_metrics(data["total"])
+        if metrics["lines"][1] == 0:
+            raise ValueError(f"Empty dashboard {environment} coverage")
+        if add_metrics(json_metrics(data[name]) for name in names) != metrics:
+            raise ValueError(f"Inconsistent dashboard {environment} coverage totals")
+        results.append(metrics)
+    return add_metrics(results)
+
+
+def python_measurements(module, root, directory, report):
+    data = read_json(report or directory / "coverage-summary.json")
+    if data["meta"]["branch_coverage"] is not True:
+        raise ValueError("Python report must contain branch coverage")
+    results = []
+    for filename, info in data["files"].items():
+        source = Path(filename)
+        if not source.is_absolute():
+            source = root / source
+        if source.resolve().is_relative_to(directory.resolve()):
+            results.append(json_metrics(info["summary"], python=True))
+    if not results:
+        raise ValueError(f"No Python coverage for {module['path']}")
+    return add_metrics(results)
+
+
+def go_measurements(directory):
     # Go records statement-weighted blocks; it does not measure branches/lines.
     rows = (directory / "coverage.out").read_text(encoding="utf-8").splitlines()
     if not rows or rows[0] not in {"mode: atomic", "mode: count", "mode: set"}:
@@ -133,6 +136,40 @@ def measurements(module, root, report=None):
     return {"statements": pair(covered, total)}
 
 
+def measurements(module, root, report=None):
+    kind, directory = module["format"], root / module["path"]
+    if report is not None and kind != "python":
+        raise ValueError("--report is only supported for Python runtime reports")
+    if kind == "python":
+        return python_measurements(module, root, directory, report)
+    readers = {
+        "java": java_measurements,
+        "nextjs": nextjs_measurements,
+        "go": go_measurements,
+    }
+    return readers[kind](directory)
+
+
+def validate_threshold(name, threshold):
+    if type(threshold) not in (int, float) or not Decimal(str(threshold)).is_finite():
+        raise ValueError(f"Invalid threshold for {name}")
+    if not 0 <= threshold <= 100:
+        raise ValueError(f"Threshold outside 0..100 for {name}")
+
+
+def validate_module(name, module):
+    if not re.fullmatch(r"[a-z0-9-]+", name):
+        raise ValueError("Invalid module name")
+    kind = module["format"]
+    if kind not in METRICS or set(module["thresholds"]) != METRICS[kind]:
+        raise ValueError(f"Invalid coverage metrics for {name}")
+    path = Path(module["path"])
+    if path.is_absolute() or ".." in path.parts or not path.parts:
+        raise ValueError(f"Invalid module path for {name}")
+    for threshold in module["thresholds"].values():
+        validate_threshold(name, threshold)
+
+
 def load_modules(path):
     config = read_json(path)
     if (
@@ -143,22 +180,7 @@ def load_modules(path):
         raise ValueError("Invalid coverage configuration")
     modules = config["modules"]
     for name, module in modules.items():
-        if not re.fullmatch(r"[a-z0-9-]+", name):
-            raise ValueError("Invalid module name")
-        kind = module["format"]
-        if kind not in METRICS or set(module["thresholds"]) != METRICS[kind]:
-            raise ValueError(f"Invalid coverage metrics for {name}")
-        path = Path(module["path"])
-        if path.is_absolute() or ".." in path.parts or not path.parts:
-            raise ValueError(f"Invalid module path for {name}")
-        for threshold in module["thresholds"].values():
-            if (
-                type(threshold) not in (int, float)
-                or not Decimal(str(threshold)).is_finite()
-            ):
-                raise ValueError(f"Invalid threshold for {name}")
-            if not 0 <= threshold <= 100:
-                raise ValueError(f"Threshold outside 0..100 for {name}")
+        validate_module(name, module)
     return modules
 
 

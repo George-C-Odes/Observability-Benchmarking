@@ -21,6 +21,23 @@ function counters(data) {
   );
 }
 
+function addReportTotals(report, summary, names, environment, totals) {
+  for (const metric of ['lines', 'branches']) {
+    let covered = 0n;
+    let total = 0n;
+    for (const name of names) {
+      const values = counters(report[name])[metric];
+      covered += BigInt(values.covered);
+      total += BigInt(values.total);
+    }
+    if (covered !== BigInt(summary[metric].covered) || total !== BigInt(summary[metric].total)) {
+      throw new Error(`Inconsistent ${environment} ${metric} totals`);
+    }
+    totals[metric].covered += covered;
+    totals[metric].total += total;
+  }
+}
+
 export function checkCoverage(root = moduleRoot) {
   const policy = JSON.parse(readFileSync(path.join(root, 'coverage-policy.json'), 'utf8'));
   const totals = { lines: { covered: 0n, total: 0n }, branches: { covered: 0n, total: 0n } };
@@ -35,20 +52,7 @@ export function checkCoverage(root = moduleRoot) {
       throw new Error(`Empty or overlapping ${environment} coverage`);
     }
     for (const name of names) files.add(name);
-    for (const metric of ['lines', 'branches']) {
-      let covered = 0n;
-      let total = 0n;
-      for (const name of names) {
-        const values = counters(report[name])[metric];
-        covered += BigInt(values.covered);
-        total += BigInt(values.total);
-      }
-      if (covered !== BigInt(summary[metric].covered) || total !== BigInt(summary[metric].total)) {
-        throw new Error(`Inconsistent ${environment} ${metric} totals`);
-      }
-      totals[metric].covered += covered;
-      totals[metric].total += total;
-    }
+    addReportTotals(report, summary, names, environment, totals);
   }
   let passed = true;
   for (const metric of ['lines', 'branches']) {
