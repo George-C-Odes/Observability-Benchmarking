@@ -65,6 +65,47 @@ class _FakeCache(CachePort):
 
 
 class BootTests(TestCase):
+    def test_gunicorn_master_preloads_service_but_defers_sdk_until_worker_start(self) -> None:
+        boot.reset_boot_state()
+        self.addCleanup(boot.reset_boot_state)
+        with mock.patch.dict(os.environ, {"CACHE_SIZE": "3"}):
+            cfg = AppConfig()
+        cache = _FakeCache()
+        with (
+            mock.patch.dict(sys.modules, {"gunicorn": SimpleNamespace()}),
+            mock.patch.object(boot, "load_config", return_value=cfg),
+            mock.patch.object(boot, "create_cache", return_value=cache) as create_cache,
+            mock.patch.object(boot, "instrument_observability_app") as instrument_app,
+            mock.patch.object(boot, "init_observability") as init_observability,
+        ):
+            boot.on_startup()
+            service = boot.get_hello_service()
+            self.assertIs(service, boot.get_hello_service())
+            self.assertIs(cfg, boot.get_app_config())
+            self.assertIs(cache, boot.get_boot_state_snapshot().cache)
+            create_cache.assert_called_once_with(3, cfg.cache_impl)
+            instrument_app.assert_called_once_with()
+            init_observability.assert_not_called()
+
+            boot.post_fork_init()
+
+        init_observability.assert_called_once_with()
+        self.assertIs(service, boot.get_hello_service())
+
+    def test_config_getter_initializes_once_when_called_before_service_getter(self) -> None:
+        boot.reset_boot_state()
+        self.addCleanup(boot.reset_boot_state)
+        cfg = AppConfig()
+
+        def fake_startup() -> None:
+            boot.replace_boot_state(config=cfg)
+
+        with mock.patch.object(boot, "on_startup", side_effect=fake_startup) as on_startup:
+            self.assertIs(cfg, boot.get_app_config())
+            self.assertIs(cfg, boot.get_app_config())
+
+        on_startup.assert_called_once_with()
+
     def test_on_startup_returns_immediately_when_already_booted(self) -> None:
         boot.reset_boot_state()
         self.addCleanup(boot.reset_boot_state)
@@ -194,8 +235,43 @@ class RuntimeEntrypointTests(TestCase):
             return real_import(name, *args, **kwargs)
 
         with mock.patch("builtins.__import__", side_effect=fake_import):
-            with self.assertRaisesRegex(ImportError, "Couldn't import Django"):
-                self._run_path(self._runtime_dir("WSGI") / "manage.py", run_name="__main__")
+            for runtime in ("WSGI", "ASGI"):
+                with TestCase.subTest(self, runtime=runtime):
+                    with self.assertRaisesRegex(ImportError, "Couldn't import Django") as error:
+                        self._run_path(
+                            self._runtime_dir(runtime) / "manage.py", run_name="__main__"
+                        )
+                    self.assertIsInstance(error.exception.__cause__, ImportError)
+
+    def test_importing_management_script_does_not_run_cli_or_set_settings(self) -> None:
+        for runtime in ("WSGI", "ASGI"):
+            with TestCase.subTest(self, runtime=runtime):
+                with mock.patch("django.core.management.execute_from_command_line") as execute:
+                    namespace, environment = self._run_path(
+                        self._runtime_dir(runtime) / "manage.py"
+                    )
+                execute.assert_not_called()
+                self.assertNotIn("DJANGO_SETTINGS_MODULE", environment)
+                self.assertTrue(callable(namespace["main"]))
+
+    def test_gunicorn_reuse_port_accepts_boolean_values_and_defaults_on_invalid_input(self) -> None:
+        for runtime, prefix in (("WSGI", "DJANGO_PLATFORM"), ("ASGI", "DJANGO_REACTIVE")):
+            for raw, expected in (
+                ("true", True),
+                ("  YES  ", True),
+                ("1", True),
+                ("false", False),
+                (" NO ", False),
+                ("0", False),
+                ("", True),
+                ("invalid", True),
+            ):
+                with TestCase.subTest(self, runtime=runtime, raw=raw):
+                    namespace, _ = self._run_path(
+                        self._runtime_dir(runtime) / "gunicorn.conf.py",
+                        env={f"{prefix}_REUSE_PORT": raw},
+                    )
+                    self.assertIs(expected, namespace["reuse_port"])
 
     def test_wsgi_entrypoint_sets_defaults_and_exports_application(self) -> None:
         sentinel = object()

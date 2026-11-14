@@ -96,7 +96,7 @@ make coverage
   - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
   - uploads `coverage.out` and `coverage.html`
   - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
-  - enforces the current simple-module statement threshold of **30%**
+  - enforces the simple-module statement threshold of **90%**
 - **Codecov flag**: `go-simple`
   - mapped in the repository root `codecov.yml` to `services/go/simple/`
 
@@ -115,6 +115,8 @@ The unit tests cover:
 - port resolution from `PORT`
 - boot logging
 - `runWithContext` success path and boot failure paths
+- entry-point completion and metric-provider shutdown
+- real listener failure when the configured address is already in use
 - OTLP provider initialization behavior
 
 If your local Windows Go toolchain has filesystem-permission issues with the
