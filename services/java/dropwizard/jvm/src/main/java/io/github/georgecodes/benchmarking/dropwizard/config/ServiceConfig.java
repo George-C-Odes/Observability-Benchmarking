@@ -1,6 +1,8 @@
 package io.github.georgecodes.benchmarking.dropwizard.config;
 
 import java.util.Locale;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Centralized service configuration (env-driven).
@@ -43,14 +45,19 @@ public record ServiceConfig(
     }
 
     public static ServiceConfig fromEnvironment() {
-        int port = parseInt(getEnv("SERVICE_PORT"), 8080);
-        ThreadMode mode = ThreadMode.fromEnv(getEnv("THREAD_MODE"));
-        long cacheSize = parseLong(getEnv("CACHE_SIZE"), 50000L);
+        return fromEnvironment(ServiceConfig::getEnv);
+    }
 
-        int maxThreads = parseInt(getEnv("JETTY_MAX_THREADS"), 0);
-        int minThreads = parseInt(getEnv("JETTY_MIN_THREADS"), 0);
-        int acceptQueueSize = parseInt(getEnv("JETTY_ACCEPT_QUEUE_SIZE"), 10000);
-        long idleTimeoutMs = parseLong(getEnv("JETTY_IDLE_TIMEOUT_MS"), 60000L);
+    static ServiceConfig fromEnvironment(Function<String, String> environmentProvider) {
+        Objects.requireNonNull(environmentProvider, "environmentProvider");
+        int port = parseInt(environmentProvider.apply("SERVICE_PORT"), 8080);
+        ThreadMode mode = ThreadMode.fromEnv(environmentProvider.apply("THREAD_MODE"));
+        long cacheSize = parseLong(environmentProvider.apply("CACHE_SIZE"), 50000L);
+
+        int maxThreads = parseInt(environmentProvider.apply("JETTY_MAX_THREADS"), 0);
+        int minThreads = parseInt(environmentProvider.apply("JETTY_MIN_THREADS"), 0);
+        int acceptQueueSize = parseInt(environmentProvider.apply("JETTY_ACCEPT_QUEUE_SIZE"), 10000);
+        long idleTimeoutMs = parseLong(environmentProvider.apply("JETTY_IDLE_TIMEOUT_MS"), 60000L);
 
         return new ServiceConfig(
             port,
