@@ -108,11 +108,9 @@ test('dashboard setup reuses Node setup and the manifest npm pin without lifecyc
   assert.doesNotMatch(source, /always\(\)/, 'Install steps must not run after failed setup');
   const manifest = JSON.parse(readFileSync(new URL('../utils/nextjs-dash/package.json', import.meta.url), 'utf8'));
   assert.match(manifest.packageManager, /^npm@\d+\.\d+\.\d+$/);
-  for (const name of ['nextjs_dash_quality', 'nextjs_dash_coverage']) {
-    const workflow = readYaml(join(githubDir, 'workflows', `${name}.yml`));
-    assert.ok(references(workflow).includes('./.github/actions/setup-nextjs'));
-    assert.doesNotMatch(workflow, /npm install --global|npm ci/);
-  }
+  const workflow = readYaml(join(githubDir, 'workflows', 'nextjs_dash_quality.yml'));
+  assert.ok(references(workflow).includes('./.github/actions/setup-nextjs'));
+  assert.doesNotMatch(workflow, /npm install --global|npm ci/);
 });
 
 test('dashboard setup rejects invalid npm pins before invoking npm', (t) => {
@@ -175,7 +173,7 @@ test('Go quality matrix preserves independent checks and Pages artifact contract
 test('coverage helper consumers trigger on helper changes and CI runs its unit tests', () => {
   for (const [workflow, formats] of [
     ['django_python_coverage', ['python']], ['go_coverage', ['go']],
-    ['java_coverage', ['java']], ['nextjs_dash_coverage', ['nextjs']],
+    ['java_coverage', ['java']], ['nextjs_dash_quality', ['nextjs']],
   ]) {
     const source = readYaml(join(githubDir, 'workflows', `${workflow}.yml`));
     for (const format of formats) assert.ok(source.includes(`coverage_summary.py" ${format}\n`));
@@ -199,8 +197,8 @@ test('Qodana fallback uses the version and checksum lock and bounded archive ret
 
 // Threshold enforcement stays inside each module job; report uploads survive failures.
 test('all coverage jobs enforce hard module gates without review or artifact aggregation', () => {
-  for (const workflow of ['java', 'go', 'django_python', 'nextjs_dash']) {
-    const source = readYaml(join(githubDir, 'workflows', `${workflow}_coverage.yml`));
+  for (const workflow of ['java_coverage', 'go_coverage', 'django_python_coverage', 'nextjs_dash_quality']) {
+    const source = readYaml(join(githubDir, 'workflows', `${workflow}.yml`));
     assert.match(source, /run: python3 "\$GITHUB_WORKSPACE\/scripts\/coverage_gate\.py"/);
     assert.doesNotMatch(source, /coverage-review|coverage-gate-review|coverage-verdict|continue-on-error|coverage-status/);
     assert.doesNotMatch(source, /download-artifact/);
@@ -209,8 +207,30 @@ test('all coverage jobs enforce hard module gates without review or artifact agg
   }
   const django = readYaml(join(githubDir, 'workflows', 'django_python_coverage.yml'));
   assert.match(django, /django-common --report/);
-  const dashboard = readYaml(join(githubDir, 'workflows', 'nextjs_dash_coverage.yml'));
+  const dashboard = readYaml(join(githubDir, 'workflows', 'nextjs_dash_quality.yml'));
   assert.match(dashboard, /id: coverage_dom\n +if: always\(\) && !cancelled\(\)/);
+});
+
+test('dashboard quality collects coverage once and preserves the required coverage check', () => {
+  const source = readYaml(join(githubDir, 'workflows', 'nextjs_dash_quality.yml'));
+  const quality = /^ {2}quality:\n([\s\S]*?)(?=^ {2}coverage:)/m.exec(source)?.[1];
+  const coverage = /^ {2}coverage:\n([\s\S]*)/m.exec(source)?.[1];
+  assert.ok(quality, 'Quality job must own coverage collection and the build');
+  assert.ok(coverage, 'Dashboard Coverage must remain a required evidence check');
+  for (const environment of ['node', 'dom']) {
+    assert.equal((source.match(new RegExp(`run: npm run test:coverage:${environment}\\n`, 'g')) ?? []).length, 1);
+    assert.ok(quality.includes(`coverage_${environment}: \${{ steps.coverage_${environment}.outcome }}`));
+  }
+  assert.match(quality, /coverage_gate: \$\{\{ steps.coverage_gate.outcome }}/);
+  assert.match(quality, /id: coverage_gate\n +if: always\(\) && !cancelled\(\)\n +run: python3 "\$GITHUB_WORKSPACE\/scripts\/coverage_gate.py" nextjs-dash/);
+  assert.match(quality, /run: npm run build:compile\n/);
+  assert.ok(quality.indexOf('run: npm run build:compile') > quality.indexOf('id: coverage_gate'));
+  assert.match(coverage, /name: Dashboard Coverage\n +needs: quality\n +if: always\(\) && !cancelled\(\)/);
+  for (const [variable, output] of [['NODE', 'node'], ['DOM', 'dom'], ['GATE', 'gate']]) {
+    assert.ok(coverage.includes(`${variable}_OUTCOME: \${{ needs.quality.outputs.coverage_${output} }}`));
+    assert.ok(coverage.includes(`test "$${variable}_OUTCOME" = success`));
+  }
+  assert.doesNotMatch(coverage, /uses:|npm run|continue-on-error/);
 });
 
 test('coverage policy inventory matches the application workflow matrices', () => {
@@ -233,7 +253,11 @@ test('coverage policy inventory matches the application workflow matrices', () =
 test('local build entry points enforce coverage and Docker retains its gate dependency', () => {
   const read = (relative) => readFileSync(new URL(`../${relative}`, import.meta.url), 'utf8');
   const dashboard = JSON.parse(read('utils/nextjs-dash/package.json'));
-  assert.equal(dashboard.scripts.prebuild, 'npm run test:coverage');
+  assert.equal(dashboard.scripts.prebuild, 'npm run verify');
+  assert.equal(dashboard.scripts.verify, 'npm run check && npm run test:coverage');
+  assert.equal(dashboard.scripts.check, 'npm run format:check && npm run lint && npm run typecheck');
+  assert.equal(dashboard.scripts.build, 'next build');
+  assert.equal(dashboard.scripts['build:compile'], 'next build');
   assert.match(dashboard.scripts['test:coverage'], /test:coverage:node && npm run test:coverage:dom && npm run test:coverage:check/);
   assert.equal(dashboard.scripts['test:coverage:check'], 'node scripts/coverage-gate.mjs');
   for (const module of ['enhanced', 'simple']) {
@@ -251,6 +275,7 @@ test('local build entry points enforce coverage and Docker retains its gate depe
   assert.match(docker, /COPY --from=quality \/tmp\/\.quality-ok \/tmp\/\.quality-ok/);
   assert.match(read('utils/nextjs-dash/.dockerignore'), /!scripts\/coverage-gate\.mjs/);
   const workflow = readYaml(join(githubDir, 'workflows', 'nextjs_dash_quality.yml'));
-  assert.match(workflow, /run: npm run build/);
+  assert.match(workflow, /run: npm run build:compile\n/);
+  assert.doesNotMatch(workflow, /run: npm run (?:build|verify|test:coverage)\n/);
   assert.doesNotMatch(workflow, /run: npm run test:(node|dom)\n/);
 });
