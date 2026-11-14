@@ -1,6 +1,7 @@
 package io.github.georgecodes.benchmarking.helidon.se.infra.metrics;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -147,8 +148,8 @@ class OtelConfigEdgeCasesTest {
     void blankGlobalProtocolFallsBackToDefault() {
         String environmentProtocol = System.getenv(OtelConfig.OTLP_PROTOCOL_ENV);
         String signalProtocol = System.getenv("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
-        org.junit.jupiter.api.Assumptions.assumeTrue(environmentProtocol == null || environmentProtocol.isBlank());
-        org.junit.jupiter.api.Assumptions.assumeTrue(signalProtocol == null || signalProtocol.isBlank());
+        Assumptions.assumeTrue(environmentProtocol == null || environmentProtocol.isBlank());
+        Assumptions.assumeTrue(signalProtocol == null || signalProtocol.isBlank());
         System.setProperty(OtelConfig.OTLP_PROTOCOL_PROPERTY, " ");
 
         assertEquals(OtelConfig.DEFAULT_OTLP_PROTOCOL, OtelConfig.resolveProtocol("traces"));
