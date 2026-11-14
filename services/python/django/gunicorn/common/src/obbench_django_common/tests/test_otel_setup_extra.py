@@ -232,8 +232,13 @@ class OTelSetupExtraTests(TestCase):
         # Proxy/no-op providers may have no shutdown API when SDK setup was skipped.
         for missing in ("traces", "metrics", "logs", "all"):
             with TestCase.subTest(self, missing=missing):
+                shutdown_providers = {
+                    name: mock.Mock()
+                    for name in ("traces", "metrics", "logs")
+                    if missing not in (name, "all")
+                }
                 providers = {
-                    name: object() if missing in (name, "all") else mock.Mock()
+                    name: shutdown_providers.get(name, object())
                     for name in ("traces", "metrics", "logs")
                 }
                 with (
@@ -244,9 +249,8 @@ class OTelSetupExtraTests(TestCase):
                         "opentelemetry.metrics.get_meter_provider",
                         return_value=providers["metrics"],
                     ),
-                    mock.patch.object(
-                        otel_setup,
-                        "import_module",
+                    mock.patch(
+                        "obbench_django_common.infrastructure.otel_setup.import_module",
                         return_value=types.SimpleNamespace(
                             get_logger_provider=mock.Mock(return_value=providers["logs"])
                         ),
@@ -254,6 +258,5 @@ class OTelSetupExtraTests(TestCase):
                 ):
                     otel_setup.shutdown_sdk()
 
-                for name, provider in providers.items():
-                    if missing not in (name, "all"):
-                        provider.shutdown.assert_called_once_with()
+                for provider in shutdown_providers.values():
+                    provider.shutdown.assert_called_once_with()

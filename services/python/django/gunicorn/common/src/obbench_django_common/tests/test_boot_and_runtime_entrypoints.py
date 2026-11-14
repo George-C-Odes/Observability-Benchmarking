@@ -73,8 +73,10 @@ class BootTests(TestCase):
         cache = _FakeCache()
         with (
             mock.patch.dict(sys.modules, {"gunicorn": SimpleNamespace()}),
-            mock.patch.object(boot, "load_config", return_value=cfg),
-            mock.patch.object(boot, "create_cache", return_value=cache) as create_cache,
+            mock.patch("obbench_django_common.infrastructure.boot.load_config", return_value=cfg),
+            mock.patch(
+                "obbench_django_common.infrastructure.boot.create_cache", return_value=cache
+            ) as create_cache,
             mock.patch.object(boot, "instrument_observability_app") as instrument_app,
             mock.patch.object(boot, "init_observability") as init_observability,
         ):
