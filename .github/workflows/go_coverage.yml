@@ -6,24 +6,32 @@ on:
     paths:
       - 'services/go/**'
       - '.github/workflows/go_coverage.yml'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - '.github/actions/setup-go/**'
       - '.github/actions/codecov-upload/**'
       - '.github/actions/upload-artifact/**'
-      - '.github/actions/download-artifact/**'
   push:
     branches:
       - main
     paths:
       - 'services/go/**'
       - '.github/workflows/go_coverage.yml'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - '.github/actions/setup-go/**'
       - '.github/actions/codecov-upload/**'
       - '.github/actions/upload-artifact/**'
-      - '.github/actions/download-artifact/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -57,8 +65,7 @@ jobs:
         with:
           go-version-file: ${{ matrix.module_dir }}/go.mod
           cache-dependency-path: |
-            services/go/enhanced/go.sum
-            services/go/simple/go.sum
+            ${{ matrix.module_dir }}/go.sum
 
       - name: Download dependencies
         run: go mod download
@@ -79,6 +86,12 @@ jobs:
             -covermode=atomic
 
       # ── Parse coverage and write GitHub Step Summary ──────────────
+      - name: Enforce module coverage thresholds
+        if: always() && !cancelled()
+        env:
+          MODULE_NAME: ${{ matrix.name }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME"
+
       - name: Generate coverage summary
         if: always() && !cancelled()
         env:
@@ -134,97 +147,3 @@ jobs:
           flags: ${{ matrix.name }}
           name: ${{ matrix.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
-
-  # ── Coverage Gate ─────────────────────────────────────────────────
-  # Enforces minimum statement-coverage thresholds for each Go module.
-  # Thresholds are intentionally conservative — tighten as test suites grow.
-  coverage-gate:
-    name: Coverage Gate
-    needs: [coverage]
-    if: always() && !cancelled()
-    runs-on: ubuntu-26.04
-    timeout-minutes: 5
-    env:
-      THRESHOLD_GO_ENHANCED: 85
-      THRESHOLD_GO_SIMPLE: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: ./.github/actions/setup-go
-        with:
-          go-version-file: services/go/enhanced/go.mod
-          cache-dependency-path: |
-            services/go/enhanced/go.sum
-            services/go/simple/go.sum
-
-      - name: Download enhanced coverage
-        uses: ./.github/actions/download-artifact
-        with:
-          name: coverage-go-enhanced
-          path: .coverage/enhanced
-        continue-on-error: true
-
-      - name: Download simple coverage
-        uses: ./.github/actions/download-artifact
-        with:
-          name: coverage-go-simple
-          path: .coverage/simple
-        continue-on-error: true
-
-      - name: Enforce coverage thresholds
-        shell: bash
-        env:
-          COVERAGE_RESULT: ${{ needs.coverage.result }}
-        run: |
-          set -euo pipefail
-          failed=0
-          if [[ "$COVERAGE_RESULT" != "success" ]]; then
-            echo "::error::Coverage jobs did not all succeed ($COVERAGE_RESULT)."
-            failed=1
-          fi
-
-          check_coverage() {
-            local name="$1" module_dir="$2" file="$3" threshold="$4" pct pct_int
-            if [[ ! -f "$file" ]]; then
-              echo "::error::Coverage file not found for $name: $file"
-              failed=1
-              return
-            fi
-            # Profiles contain module-relative import paths (hello/...). Resolve
-            # them from the matching module, not the repository root.
-            if ! pct="$(cd "$module_dir" && go tool cover -func="$GITHUB_WORKSPACE/$file")"; then
-              echo "::error::Could not read coverage for $name"
-              failed=1
-              return
-            fi
-            # Extract total coverage from the last line of `go tool cover -func`
-            pct="$(printf '%s\n' "$pct" | tail -1 | awk '{print $NF}' | tr -d '%')"
-            if [[ ! "$pct" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-              echo "::error::Could not parse coverage for $name"
-              failed=1
-              return
-            fi
-            # Compare as integers (truncate decimals)
-            pct_int="${pct%%.*}"
-            echo "$name coverage: ${pct}% (threshold: ${threshold}%)"
-            if (( pct_int < threshold )); then
-              echo "::error::$name coverage ${pct}% is below the ${threshold}% threshold"
-              failed=1
-            fi
-          }
-
-          # upload-artifact roots each report at its module directory, so the
-          # downloaded artifact contains coverage.out directly (no module prefix).
-          check_coverage "go-enhanced" "services/go/enhanced" ".coverage/enhanced/coverage.out" "$THRESHOLD_GO_ENHANCED"
-          check_coverage "go-simple"   "services/go/simple"   ".coverage/simple/coverage.out"   "$THRESHOLD_GO_SIMPLE"
-
-          if (( failed )); then
-            echo ""
-            echo "::error::One or more Go modules failed the coverage gate."
-            exit 1
-          fi
-          echo "All Go modules passed coverage thresholds."

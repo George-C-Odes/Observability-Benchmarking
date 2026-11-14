@@ -28,6 +28,17 @@ jobs:
       - name: Validate shared GitHub actions
         run: node --test scripts/github-actions.test.mjs
 
+      - name: Check native coverage policy synchronization
+        run: python scripts/sync_coverage_thresholds.py --check
+
+      - name: Test local coverage integration
+        run: |
+          python -m unittest discover -s scripts -p test_local_coverage.py -v
+          node --test utils/nextjs-dash/scripts/coverage-gate.test.mjs
+
+      - name: Test hard coverage gates
+        run: python -m unittest discover -s scripts -p test_coverage_gate.py -v
+
       - name: Test coverage summary helpers
         run: python -m unittest discover -s scripts -p test_coverage_summary.py -v
 

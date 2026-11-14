@@ -1,6 +1,10 @@
 SHELL := /bin/sh
+PYTHON ?= python
 
-.PHONY: test lint coverage run
+.PHONY: build test lint coverage run
+
+build: coverage
+	go build ./cmd/server
 
 run:
 	go run ./cmd/server
@@ -16,3 +20,4 @@ coverage:
 	go tool cover -func=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 
+	$(PYTHON) ../../../scripts/coverage_gate.py go-simple

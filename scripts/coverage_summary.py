@@ -1,4 +1,4 @@
-"""Render CI coverage summaries; format-specific quality gates remain unchanged."""
+"""Render CI coverage summaries; coverage_gate.py enforces module thresholds."""
 
 import argparse
 import json
@@ -109,11 +109,17 @@ def python_summary():
     files = data.get("files", {})
     if files:
         text += "<details>\n<summary>Per-file breakdown</summary>\n\n"
-        text += "| File | Statements | Covered | Branches | Covered branches | Coverage |\n"
-        text += "|------|-----------:|--------:|---------:|-----------------:|---------:|\n"
+        text += (
+            "| File | Statements | Covered | Branches | Covered branches | Coverage |\n"
+        )
+        text += (
+            "|------|-----------:|--------:|---------:|-----------------:|---------:|\n"
+        )
         for path in sorted(files):
             info = files[path].get("summary", {})
-            path = normalize_python_path(path, module, os.environ.get("GITHUB_WORKSPACE", ""))
+            path = normalize_python_path(
+                path, module, os.environ.get("GITHUB_WORKSPACE", "")
+            )
             text += (
                 f"| `{path}` | {int(info.get('num_statements', 0))} | "
                 f"{int(info.get('covered_lines', 0))} | "
@@ -173,7 +179,15 @@ def go_summary():
     text = f"### 📊 Coverage: {name}\n\n**{badge}**\n\n"
     text += (
         table(
-            [("Statements", covered, total - covered, total, f"{percentage(covered, total):.1f}%")],
+            [
+                (
+                    "Statements",
+                    covered,
+                    total - covered,
+                    total,
+                    f"{percentage(covered, total):.1f}%",
+                )
+            ],
             bold=True,
         )
         + "\n"
@@ -208,9 +222,11 @@ def jacoco_counters(path):
         nonlocal depth
         depth += 1
         if depth == 2 and name == "counter":
+            if attributes.get("type") in counters:
+                raise ValueError("Duplicate JaCoCo report counter")
             counters[attributes.get("type")] = (
-                int(attributes.get("missed", "0")),
-                int(attributes.get("covered", "0")),
+                int(attributes["missed"]),
+                int(attributes["covered"]),
             )
 
     def end(_name):
@@ -247,8 +263,6 @@ def java_summary():
         os.environ[key] for key in ("MODULE_NAME", "MODULE_DIR", "BUILD_OUTCOME")
     )
     report = f"{module}/target/site/jacoco/jacoco.xml"
-    Path("coverage-status").mkdir(exist_ok=True)
-    status_file = Path("coverage-status/status.txt")
     if not Path(report).is_file():
         if outcome == "success":
             print(f"::error::Build succeeded but JaCoCo report not found at {report}")
@@ -256,69 +270,21 @@ def java_summary():
                 f"### ❌ Coverage: {name}\n\nBuild succeeded but no JaCoCo report was "
                 "generated. Check JaCoCo plugin configuration.\n"
             )
-            status_file.write_text("report_missing", encoding="utf-8")
             return 1
         print(f"::warning::JaCoCo report not found at {report}")
         append_summary(
             f"### ⚠️ Coverage: {name}\n\nNo JaCoCo report was generated. Tests may "
             "have been skipped or failed before the report phase.\n"
         )
-        status_file.write_text("build_failure", encoding="utf-8")
         return 0
     counters = jacoco_counters(report)
-    line_m, line_c = counters.get("LINE", (0, 0))
-    branch_m, branch_c = counters.get("BRANCH", (0, 0))
-    line_ratio = line_c / (line_m + line_c) if line_m + line_c else 0.0
-    branch_ratio = branch_c / (branch_m + branch_c) if branch_m + branch_c else 0.0
-    if outcome != "success":
-        status, badge = "build_failure", "❌ Build failed"
-    elif line_ratio >= 0.15 and branch_ratio >= 0.10:
-        status, badge = "pass", "✅ Thresholds passed"
-    else:
-        status, badge = "threshold_violation", "⚠️ Coverage below threshold — review required"
+    badge = "✅ Build passed" if outcome == "success" else "❌ Build failed"
     append_summary(
-        f"### 📊 Coverage: {name}\n\n**{badge}** · Minimum: 15% line, 10% branch\n\n"
+        f"### 📊 Coverage: {name}\n\n**{badge}**\n\n"
         + jacoco_table(counters)
         + f"\n> Report generated from `{report}`\n"
     )
-    status_file.write_text(status, encoding="utf-8")
-    # Threshold violations are reviewable; only a missing report after success fails.
     return 0
-
-
-def java_combined_summary() -> None:
-    aggregate, modules = {}, []
-    for report in sorted(Path("reports").glob("coverage-java-*/jacoco.xml")):
-        counters = jacoco_counters(report)
-        for kind, (missed, covered) in counters.items():
-            prev_m, prev_c = aggregate.get(kind, (0, 0))
-            aggregate[kind] = (prev_m + missed, prev_c + covered)
-        lm, lc = counters.get("LINE", (0, 0))
-        bm, bc = counters.get("BRANCH", (0, 0))
-        modules.append((report.parent.name.replace("coverage-java-", ""), lc, lm + lc, bc, bm + bc))
-    if not aggregate:
-        print("No JaCoCo reports found to aggregate")
-        return
-    text = "\n---\n\n### 🔵 Combined Java Coverage (Codecov-comparable weighted average)\n\n"
-    text += (
-        "> This table mirrors Codecov's calculation: covered ÷ total "
-        "summed across all Java modules.\n\n"
-    )
-    text += jacoco_table(aggregate, bold=True)
-    text += f"\n*Aggregated from {len(modules)} module(s)*\n\n"
-    text += "<details>\n<summary>Per-module breakdown (lines / branches)</summary>\n\n"
-    text += (
-        "| Module | Lines Covered | Lines Total | Line % | "
-        "Branch Covered | Branch Total | Branch % |\n"
-        "|--------|-------------:|------------:|-------:|"
-        "---------------:|-------------:|---------:|\n"
-    )
-    for module, lc, lt, bc, bt in modules:
-        text += (
-            f"| {module} | {lc} | {lt} | {percentage(lc, lt):.1f}% | "
-            f"{bc} | {bt} | {percentage(bc, bt):.1f}% |\n"
-        )
-    append_summary(text + "\n</details>\n")
 
 
 def nextjs_summary():
@@ -329,7 +295,9 @@ def nextjs_summary():
     else:
         failed = [
             label
-            for label, outcome in zip(("Node tests", "DOM tests"), outcomes, strict=True)
+            for label, outcome in zip(
+                ("Node tests", "DOM tests"), outcomes, strict=True
+            )
             if outcome != "success"
         ]
         text += f"**⚠️ Issues detected**: {', '.join(failed)} did not succeed\n\n"
@@ -350,7 +318,13 @@ def nextjs_summary():
             info = total.get(metric, {})
             covered, count = info.get("covered", 0), info.get("total", 0)
             rows.append(
-                (metric.capitalize(), covered, count - covered, count, f"{info.get('pct', 0)}%")
+                (
+                    metric.capitalize(),
+                    covered,
+                    count - covered,
+                    count,
+                    f"{info.get('pct', 0)}%",
+                )
             )
         text += f"#### {label}\n\n" + table(rows) + "\n"
     if totals:
@@ -382,7 +356,6 @@ def main():
         "python": python_summary,
         "go": go_summary,
         "java": java_summary,
-        "java-combined": java_combined_summary,
         "nextjs": nextjs_summary,
     }
     parser = argparse.ArgumentParser(description=__doc__)

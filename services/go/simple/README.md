@@ -126,3 +126,11 @@ workflows run on Linux and remain the source of truth.
 - [Fiber documentation](https://docs.gofiber.io/)
 - [OpenTelemetry Go](https://opentelemetry.io/docs/languages/go/)
 - [Go modules](https://go.dev/ref/mod)
+
+## Local coverage gate
+
+`make build` runs race-enabled tests with coverage, enforces this module's statement
+threshold from `scripts/coverage-thresholds.json`, and then builds the server.
+`make coverage` enforces the same gate without compiling the server. Python 3 and
+a CGO-capable C toolchain are required; use `make PYTHON=python3 build` where needed.
+Native Go does not measure branch coverage.

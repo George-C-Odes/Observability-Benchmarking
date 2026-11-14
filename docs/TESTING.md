@@ -1393,56 +1393,76 @@ runs on every PR and push to `main` that touches `services/java/**` or
 - Uploads the full HTML and XML report as an artifact named
   `coverage-java-{module}` (retained for 30 days).
 
-#### Threshold strategy
+#### Hard per-module gates
 
-Coverage thresholds are enforced via the `jacoco:check` Maven goal, bound to
-the `verify` phase in all 12 modules. Current thresholds are uniform:
+`scripts/coverage-thresholds.json` is the single coverage policy for the 18 application
+modules: 11 JVM services, the Java orchestrator, two Go services, two Django runtimes,
+the shared Django package, and the Next.js dashboard. Every module declares its own
+thresholds. Java, Python, and the dashboard require **90% lines and 90% branches**;
+Go requires **90% statements**, because native Go coverage does not measure branches
+or executable lines. Native Java variants share application sources with the JVM
+variants; coverage is collected by JVM tests, not native-image instrumentation.
 
-| Metric | Minimum |
-|--------|--------:|
-| Line   |     15% |
-| Branch |     10% |
+Each module job runs `scripts/coverage_gate.py` after generating its reports. A
+threshold violation, missing report, malformed counter, or empty executable-line
+report fails that job. Comparisons use exact counts without rounding percentages.
+A valid report with zero branches has no branch obligations and is reported as
+`n/a (0 total)`; missing branch instrumentation/counters is an error.
+There are no approval environments, overrides, verdict jobs, or status artifacts.
 
-These conservative starting thresholds are intentionally set well below the
-actual coverage of all modules to avoid false-positive build failures while the
-baseline stabilizes. All 12 modules set `<haltOnFailure>false</haltOnFailure>` in
-their `jacoco:check` configuration, so threshold violations are **logged as
-warnings** but do **not** fail `mvn verify` — locally or in CI. The CI workflow's
-Python parser evaluates thresholds independently and writes each module's status
-(`pass`, `threshold_violation`, `build_failure`, or `report_missing`) to a small
-status artifact.
+Local builds enforce the same thresholds:
 
-A **Coverage Verdict** job downloads all status artifacts and classifies the
-aggregate result. It also downloads all per-module JaCoCo XML reports and
-computes a **combined weighted average** (covered ÷ total summed across all
-modules) that mirrors Codecov's methodology. This aggregate row appears as a
-highlighted section in the Step Summary, providing an apples-to-apples
-comparison with the Codecov dashboard without leaving the GitHub UI. A
-collapsible per-module breakdown shows line and branch coverage for each module.
+| Module                             | Local command (from the module directory) | Gate                                                               |
+|------------------------------------|-------------------------------------------|--------------------------------------------------------------------|
+| Java JVM services and orchestrator | `mvn clean verify`                        | Native JaCoCo line/branch check during `verify`                    |
+| Next.js dashboard                  | `npm run build`                           | Both coverage suites and the module gate run in `prebuild`         |
+| Go services                        | `make build` or `make coverage`           | Fresh race-enabled coverage and the shared statement gate          |
+| Django WSGI / ASGI / common        | `make build` or `make coverage`           | Fresh runtime coverage and separately scoped shared-package checks |
 
-Two **Coverage Gate** jobs (same display name for branch
-protection) then act on the verdict:
+The dashboard's `npm run test:coverage` also enforces its gate without compiling Next.js.
+Individual Node/DOM coverage commands collect one suite; the complete module gate
+requires both. Its Docker quality stage enforces the same policy before the builder
+invokes Next.js, so tests run once and stay outside the final image.
+Go and Django Makefiles accept `PYTHON=python3` if that is the local interpreter name.
+Django requires its runtime requirements, the installed common package, and `coverage`;
+Go's race-enabled target requires CGO and a C compiler. Django is interpreted: its
+`build` target validates coverage without producing a native binary. Raw `go build`
+and Python packaging tools do not execute tests or coverage hooks; use the gated Make
+entry points for local validation. Maven's `package` phase also precedes the `verify`
+gate. Native Java images continue to rely on their corresponding JVM coverage.
 
-| Verdict           | Trigger                                                  | Gate behaviour                                       |
-|-------------------|----------------------------------------------------------|------------------------------------------------------|
-| **pass**          | All builds passed, all reports exist, all thresholds met | Auto-passes ✅                                       |
-| **review_needed** | Builds passed but ≥ 1 module is below threshold          | Requires `coverage-review` environment approval ⏳   |
-| **hard_fail**     | ≥ 1 build/test failure **or** missing JaCoCo report      | Hard-fails ❌ — **cannot** be overridden by reviewer |
+Change a module's `thresholds` entry in `scripts/coverage-thresholds.json`, then run:
 
-> **One-time setup (repo owner):**
-> Settings → Environments → New environment `coverage-review` → Required
-> reviewers → add team or individuals.  Then add **Coverage Gate** as a required
-> status check in Settings → Branches → Branch protection rules.
+```bash
+python scripts/sync_coverage_thresholds.py
+python scripts/sync_coverage_thresholds.py --check
+```
 
-| Stage       | Behaviour                                                             | Status  |
-|-------------|-----------------------------------------------------------------------|---------|
-| Report-only | Coverage numbers in Step Summary + artifacts; no failure              | Done    |
-| Review gate | `haltOnFailure=false` in Maven; CI evaluates + gates on verdict       | Current |
-| Hard gate   | Remove `haltOnFailure=false`; `jacoco:check` fails the build directly | Future  |
+This synchronizes native JaCoCo checks and the dashboard's generated
+`coverage-policy.json`. The dashboard build needs only Node, not Python or files
+outside its Docker context. CI rejects stale generated limits. The Python CI checker
+remains a second check of the source policy, including missing report validation;
+local Maven and Node consume the synchronized policy through their native tools.
+The checkers use no third-party dependencies and never execute report content.
 
-**Tightening roadmap**: once baselines are collected from 2–3 CI runs, thresholds
-will be raised per-module to ~5% below their observed coverage. Modules that
-consistently exceed 50% line coverage will be promoted to hard gate first.
+The dashboard gate requires both Node and DOM reports and sums their line/branch
+counts over disjoint source scopes. Django gates the runtime wrapper and shared
+package independently from the same report in each runtime job; shared coverage
+cannot hide an under-covered runtime. Existing source inclusion/exclusion rules are
+preserved. Coverage does not claim to include the dashboard's uninstrumented async
+Server Components, third-party tools, or vendored wrk2 code.
+
+Report summaries and artifacts are still retained after failures. Codecov is
+informational and its availability cannot override the local gate. Coverage workflows
+cancel superseded runs on the same ref; Java/Go dependency caches use the corresponding
+module's dependency manifest rather than a key shared across all matrix jobs.
+
+When migrating branch protection, remove the obsolete `Coverage Gate` required check.
+Use the module checks (`Coverage (<module>)` and `Dashboard Coverage`) with rules that
+account for the workflows' path filters. Requiring a path-filtered workflow on unrelated
+changes leaves a missing check pending; a repository-wide required policy needs an
+unconditional dispatcher. The unused `coverage-review` environment can be deleted in
+GitHub settings. Repository settings are separate from these workflow files.
 
 ### Next.js Dashboard — Vitest + v8
 
@@ -1493,7 +1513,9 @@ The **Next.js Dashboard Coverage** GitHub Actions workflow
 `main` that touches `utils/nextjs-dash/**`. It:
 
 - Installs dependencies with `npm ci` (deterministic, cache-friendly).
-- Runs coverage for both Node and DOM environments sequentially.
+- Runs coverage for both Node and DOM environments sequentially, collecting DOM
+  evidence even when Node tests fail.
+- Enforces the configured dashboard line and branch thresholds from both reports.
 - Parses the Vitest JSON coverage summaries and writes a coverage table to
   the **GitHub Step Summary** (lines, statements, functions, branches for
   each environment).
@@ -1552,9 +1574,8 @@ of the GitHub-native Step Summary and artifact uploads described above. It adds:
 > for interactive exploration.
 
 Codecov is **informational only** — its status checks are set to
-`informational: true` and never block merges. The existing three-tier Coverage
-Gate (`pass` / `review_needed` / `hard_fail`) in `java_coverage.yml` remains
-the sole enforcement mechanism.
+`informational: true`. Each module job enforces its configured hard thresholds
+through `scripts/coverage_gate.py`, independently of Codecov.
 
 #### Configuration
 
@@ -1708,8 +1729,9 @@ that touches `services/go/**`. It:
 | `go/enhanced` | 2          | Tests for cache and handler packages; uses noop OTel providers               |
 | `go/simple`   | 1          | Tests in `cmd/server`; covers route, bootstrap, env parsing, and error paths |
 
-The `coverage-gate` job currently enforces a **30%** minimum statement threshold
-for `go-simple` and **40%** for `go-enhanced`.
+Each Go matrix job enforces its own **90% statement** minimum from
+`scripts/coverage-thresholds.json`. Branch coverage is unsupported by the native tool
+and is not inferred from statement blocks.
 
 ### Python — coverage.py
 
@@ -1752,13 +1774,14 @@ The **Django Python Coverage** GitHub Actions workflow
 `main` that touches `services/python/**`. It:
 
 - runs the shared Django test suite under `coverage.py` for both runtimes in a matrix (`django-platform` and `django-reactive`)
+- fails each runtime job unless both its own code and the shared Django package
+  meet their separately configured line and branch thresholds
 - writes a GitHub Step Summary table with statement and branch coverage, plus a per-file breakdown
 - uploads `.coverage`, JSON, XML, text, and HTML artifacts for each runtime
 - uploads `coverage.xml` to Codecov with flags `python-django-platform` and `python-django-reactive`
 
-In local verification after the runtime-entrypoint tests were added, coverage
-was comfortably above the target in both legs: **95%** for WSGI and **94%** for
-ASGI.
+The runtime and shared-package thresholds are evaluated separately for lines and
+branches; a combined coverage.py percentage is not used to satisfy either gate.
 
 ## CI/CD Integration
 

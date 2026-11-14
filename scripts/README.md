@@ -38,7 +38,9 @@ This directory contains small repository-level helper scripts.
 - `test_qodana_python.py` - tests scan isolation, coverage, and report path validation
 - `github-actions.test.mjs` - tests action pin centralization, nested action triggers, dashboard setup, and Go report contracts
 - `coverage_summary.py` - shared coverage tables and format-specific coverage.py, Go, JaCoCo, and Vitest summaries
-- `test_coverage_summary.py` - tests coverage totals, failure/missing-report behavior, Java statuses, and XML entity rejection
+- `coverage_gate.py` / `coverage-thresholds.json` - shared hard coverage policy and enforcement
+- `test_coverage_gate.py` - exact boundaries, independent module scopes, invalid/missing evidence
+- `test_coverage_summary.py` - tests coverage totals, failure/missing-report behavior, reporting, and XML entity rejection
 
 The synchronizers keep their format-specific transformations and inventories separate. Each reads and validates its
 entire inventory before passing the proposed changes to the shared check/write handler. Check mode never writes;
@@ -54,19 +56,32 @@ Go Quality uses one matrix pipeline with independent legs (`fail-fast: false`). 
 existing check display names, module caches, report titles, and `quality-report-go` / `quality-report-go-simple`
 artifact names; Pages still downloads those exact names.
 
-Coverage workflows call `coverage_summary.py` with `python`, `go`, `java`, `java-combined`, or `nextjs`.
-Each mode retains its workflow environment inputs and working directory. Shared tables do not replace
-format-specific metrics or gates: missing reports after successful Python/Go tests or Java builds fail,
-Java threshold violations remain reviewable through status artifacts, and missing Next.js reports remain
-informational. Weighted totals sum counters rather than averaging percentages. The JaCoCo reader accepts
-its standard external DTD declaration without fetching it and rejects entity definitions. Go's optional
-function detail uses a fixed argument list without a shell and has a 30-second timeout; timeouts fail.
+`coverage-thresholds.json` defines independent hard thresholds for all 18 application modules.
+Java (including the orchestrator), the dashboard, and Python require 90% lines and 90% branches.
+Go requires 90% statements; native Go coverage does not measure branches or lines.
+`coverage_gate.py <module> [<module> ...]` enforces this policy in each module job without
+third-party dependencies. Missing/malformed reports, invalid counts/configuration, and
+under-covered modules exit nonzero. No manual coverage override remains. See
+[the coverage policy](../docs/TESTING.md#hard-per-module-gates) for module scope and local commands.
 
-The unconditional Framework Version Consistency workflow runs both contract suites:
+`coverage_summary.py` renders format-specific tables independently of policy. It accepts the
+standard JaCoCo external DTD declaration without fetching it and rejects entity definitions.
+Go function detail uses a fixed argument list without a shell and a 30-second timeout.
+Existing artifact names and Codecov flags are preserved; uploads run after gate failures.
+
+`sync_coverage_thresholds.py` renders native JaCoCo checks and the dashboard's local
+policy from the JSON source; `--check` rejects drift. `django_coverage.py` provides
+portable local collection and gating for the Django Make targets. Go Make targets
+use the shared checker; dashboard npm builds use its module-local Node counterpart.
+See the coverage policy for local build commands and prerequisites.
+
+The unconditional Framework Version Consistency workflow checks synchronization and runs the contract suites:
 
 ```powershell
 node --test scripts/github-actions.test.mjs
-python -m unittest discover -s scripts -p test_coverage_summary.py -v
+python -m unittest discover -s scripts -p "test_coverage*.py" -v
+python -m unittest discover -s scripts -p test_local_coverage.py -v
+node --test utils/nextjs-dash/scripts/coverage-gate.test.mjs
 ```
 
 ## Framework versions and Renovate

@@ -451,3 +451,11 @@ node ..\orchestrator\scripts\direct-sse-smoke.mjs
 ## License
 
 Apache License 2.0 (same as parent project)
+
+## Local coverage gate
+
+`npm run build` first runs both coverage suites and enforces the configured line and
+branch thresholds. `npm run test:coverage` applies the same gate without compiling.
+The Docker quality stage also enforces coverage before building. Limits come from
+`scripts/coverage-thresholds.json`; run `python scripts/sync_coverage_thresholds.py`
+from the repository root after changing them. See [the coverage policy](../../docs/TESTING.md#hard-per-module-gates).

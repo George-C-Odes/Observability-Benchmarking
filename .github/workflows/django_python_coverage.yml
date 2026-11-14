@@ -11,6 +11,9 @@ on:
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/codecov-upload/**'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - 'codecov.yml'
@@ -25,9 +28,16 @@ on:
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/codecov-upload/**'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - 'codecov.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -104,6 +114,12 @@ jobs:
           test -f "${COVERAGE_OUTPUT_DIR}/coverage.xml"
           test -f "${COVERAGE_OUTPUT_DIR}/coverage-summary.json"
           test -f "${COVERAGE_FILE}"
+
+      - name: Enforce runtime and shared-package coverage thresholds
+        if: always() && !cancelled()
+        env:
+          MODULE_NAME: ${{ matrix.summary_name }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME" django-common --report "${COVERAGE_OUTPUT_DIR}/coverage-summary.json"
 
       - name: Generate coverage summary
         if: always() && !cancelled()
