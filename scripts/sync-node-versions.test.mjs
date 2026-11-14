@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { validateVersionChange } from './renovate-framework-sync.mjs';
-import { nodeGeneratedPaths, readNodeVersion, syncNodeContent } from './sync-node-versions.mjs';
+import { nodeGeneratedPaths, nodeTestPaths, readNodeVersion, syncNodeContent } from './sync-node-versions.mjs';
 
 test('Node upgrades are strictly parsed and accepted without authorizing Java or other env edits', () => {
   const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
@@ -94,6 +94,8 @@ test('Node runtime inventory propagates a full release without changing action p
   const current = readNodeVersion(parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8')));
   const next = { major: '28', minorPatch: '0.1', full: '28.0.1' };
   assert.ok(nodeGeneratedPaths.includes('.github/actions/setup-node/action.yml'));
+  assert.equal(nodeTestPaths.length, 3);
+  assert.ok(nodeTestPaths.every((file) => nodeGeneratedPaths.includes(file)));
   assert.ok(nodeGeneratedPaths.every((file) => !file.startsWith('.github/workflows/')));
   for (const file of nodeGeneratedPaths) {
     const original = readFileSync(resolveRepoPath(file), 'utf8');
@@ -102,7 +104,12 @@ test('Node runtime inventory propagates a full release without changing action p
     assert.notEqual(updated, original, file);
     assert.equal(syncNodeContent(updated, file, next), updated, file);
     assert.equal(syncNodeContent(original.replaceAll('\n', '\r\n'), file, next), updated.replaceAll('\n', '\r\n'), file);
-    if (file.endsWith('/Dockerfile')) {
+    if (nodeTestPaths.includes(file)) {
+      const mask = (content) => content.replace(/(nodejs: 'v|node\/v)\d+\.\d+\.\d+/g, '$1<version>');
+      assert.equal(mask(updated), mask(original), file);
+      assert.ok(updated.includes(`v${next.full}`), file);
+      assert.throws(() => syncNodeContent(mask(original), file, next), /Missing Node version fixture/);
+    } else if (file.endsWith('/Dockerfile')) {
       assert.match(updated, /node:28\.0\.1-alpine3\.24/);
       assert.doesNotMatch(updated, /node:28\.0\.1-[^\r\n]*@sha256:/);
       const pinned = original.replace(/(node:\d+\.\d+\.\d+-[a-z0-9.-]+)(?:@sha256:[a-f0-9]+)?/g,
