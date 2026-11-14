@@ -309,3 +309,11 @@ docker buildx build `
     --load `
     services/python/django
 ```
+
+## Local coverage gate
+
+Run `make build` or `make coverage` from `gunicorn/WSGI`, `gunicorn/ASGI`, or
+`gunicorn/common` after installing the runtime requirements, common package, and
+`coverage`. The runtime targets gate their wrapper and shared package separately;
+the common target checks its code under both runtimes. Thresholds come from
+`scripts/coverage-thresholds.json`. Use `PYTHON=python3` if needed.

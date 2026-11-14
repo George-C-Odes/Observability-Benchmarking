@@ -39,8 +39,9 @@ ENV PATH=/app/node_modules/.bin:$PATH
 RUN npm run format:check && \
     npm run lint && \
     npm run typecheck && \
-    npm run test:node -- --maxWorkers=12 && \
-    npm run test:dom -- --maxWorkers=12 && \
+    npm run test:coverage:node -- --maxWorkers=12 && \
+    npm run test:coverage:dom -- --maxWorkers=12 && \
+    npm run test:coverage:check && \
     touch /tmp/.quality-ok
 
 # ------------ BUILD STAGE -----------------------
@@ -65,9 +66,11 @@ ENV PATH=/app/node_modules/.bin:$PATH
 # Give Next.js more heap headroom on 16-core builders
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+# Coverage already passed in the quality stage. Invoke Next directly here; the
+# local npm build lifecycle also collects coverage and requires the test sources.
 # Cache both the Next.js incremental build cache and the webpack cache
 RUN --mount=type=cache,target=/app/.next/cache \
-  npm run build
+  ./node_modules/.bin/next build
 
 # ------------ RUNTIME STAGE ---------------------
 FROM ${IMAGE_RUNTIME} AS runner

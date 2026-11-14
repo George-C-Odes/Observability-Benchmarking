@@ -112,10 +112,8 @@
                 </configuration>
             </plugin>
 
-            <!-- JaCoCo code coverage — report + advisory threshold check.
-                 haltOnFailure=false: violations are logged but do not fail
-                 the build locally or in CI. CI evaluates thresholds
-                 independently in the GitHub Step Summary. -->
+            <!-- JaCoCo instrumentation, reports and hard local/CI checks. Limits are configured
+                 in scripts/coverage-thresholds.json and enforced by coverage_gate.py. -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -141,13 +139,13 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>check</id>
+                        <id>coverage-check</id>
                         <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
                         <configuration>
-                            <haltOnFailure>false</haltOnFailure>
+                            <haltOnFailure>true</haltOnFailure>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
@@ -155,12 +153,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.15</minimum>
+                                            <minimum>0.9</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.10</minimum>
+                                            <minimum>0.9</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

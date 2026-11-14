@@ -7,12 +7,16 @@ on:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/java_coverage.yml'
+      - 'scripts/sync_coverage_thresholds.py'
+      - 'scripts/test_local_coverage.py'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - '.github/actions/setup-java/**'
       - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
-      - '.github/actions/download-artifact/**'
       - '.github/actions/codecov-upload/**'
   push:
     branches:
@@ -21,13 +25,21 @@ on:
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/java_coverage.yml'
+      - 'scripts/sync_coverage_thresholds.py'
+      - 'scripts/test_local_coverage.py'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
       - 'scripts/coverage_summary.py'
       - 'scripts/test_coverage_summary.py'
       - '.github/actions/setup-java/**'
       - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
-      - '.github/actions/download-artifact/**'
       - '.github/actions/codecov-upload/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -80,8 +92,7 @@ jobs:
           java-version: '25'
           cache: maven
           cache-dependency-path: |
-            services/java/**/jvm/**/pom.xml
-            utils/orchestrator/pom.xml
+            ${{ matrix.module_dir }}/pom.xml
 
       - name: Set up Node for orchestrator smoke tests
         if: matrix.name == 'orchestrator'
@@ -97,6 +108,12 @@ jobs:
         run: mvn verify -B -q -Dcheckstyle.skip=true
 
       # ── Parse JaCoCo XML and write GitHub Step Summary ──
+      - name: Enforce module coverage thresholds
+        if: always() && !cancelled()
+        env:
+          MODULE_NAME: ${{ matrix.name }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME"
+
       - name: Generate coverage summary
         if: always() && !cancelled()
         env:
@@ -104,15 +121,6 @@ jobs:
           MODULE_DIR: ${{ matrix.module_dir }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" java
-
-      - name: Upload threshold status
-        if: always() && !cancelled()
-        uses: ./.github/actions/upload-artifact
-        with:
-          name: coverage-status-${{ matrix.name }}
-          path: coverage-status/
-          retention-days: 1
-          if-no-files-found: warn
 
       - name: Upload coverage report
         if: always() && !cancelled()
@@ -141,119 +149,10 @@ jobs:
       # the `token:` input and add `permissions: id-token: write` to
       # this workflow.
       - name: Upload to Codecov
-        if: always() && !cancelled() && steps.build.outcome == 'success'
+        if: always() && !cancelled() && hashFiles(format('{0}/target/site/jacoco/jacoco.xml', matrix.module_dir)) != ''
         uses: ./.github/actions/codecov-upload
         with:
           files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml
           flags: java-${{ matrix.name }}
           name: java-${{ matrix.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
-
-  # ── Verdict aggregation ─────────────────────────────────────────────
-  # Determines why the matrix failed (if it did) by inspecting
-  # needs.coverage.result and the per-leg status artifacts.
-  #
-  # Possible verdicts:
-  #   pass           – all builds passed, all reports exist, all thresholds met
-  #   review_needed  – builds passed but ≥1 module is below threshold
-  #   hard_fail      – ≥1 build/test failure or missing JaCoCo report
-  coverage-verdict:
-    timeout-minutes: 10
-    name: Coverage Verdict
-    needs: coverage
-    if: always() && !cancelled()
-    runs-on: ubuntu-26.04
-    outputs:
-      verdict: ${{ steps.check.outputs.verdict }}
-    steps:
-      - name: Checkout
-        if: needs.coverage.result == 'success'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Download threshold status files
-        if: needs.coverage.result == 'success'
-        uses: ./.github/actions/download-artifact
-        with:
-          pattern: coverage-status-*
-          path: statuses/
-
-      - name: Download coverage reports
-        if: needs.coverage.result == 'success'
-        uses: ./.github/actions/download-artifact
-        with:
-          pattern: coverage-java-*
-          path: reports/
-
-      # ── Combined weighted average (Codecov-comparable) ───────────
-      - name: Generate combined coverage summary
-        if: needs.coverage.result == 'success'
-        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" java-combined
-
-      - name: Determine verdict
-        id: check
-        run: |
-          # Build/test failure or missing report → hard fail (not approvable)
-          if [[ "${{ needs.coverage.result }}" != "success" ]]; then
-            echo "verdict=hard_fail" >> "$GITHUB_OUTPUT"
-            echo "::error::One or more modules had build/test failures or missing JaCoCo reports"
-            exit 0
-          fi
-
-          # All builds passed, all reports exist — check threshold statuses
-          verdict=pass
-          for f in statuses/coverage-status-*/status.txt; do
-            if [[ -f "$f" ]]; then
-              status=$(cat "$f")
-              if [[ "$status" == "threshold_violation" ]]; then
-                verdict=review_needed
-                module=$(basename "$(dirname "$f")" | sed 's/^coverage-status-//')
-                echo "::warning::Coverage below threshold: $module"
-              fi
-            fi
-          done
-          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
-
-  # ── Approval gate ──────────────────────────────────────────────────
-  # Two mutually-exclusive jobs share the display name "Coverage Gate"
-  # so a single branch-protection required check covers all outcomes:
-  #
-  #  • pass           → coverage-gate auto-passes (no environment)
-  #  • hard_fail      → coverage-gate hard-fails (exit 1, NOT approvable)
-  #  • review_needed  → coverage-gate-review requires 'coverage-review'
-  #                     environment approval before passing
-  #
-  # One-time setup (repo owner):
-  #   Settings → Environments → New environment "coverage-review"
-  #   → Required reviewers → add team or individuals.
-  #   Then add "Coverage Gate" as a required status check in
-  #   Settings → Branches → Branch protection rules.
-  coverage-gate:
-    timeout-minutes: 10
-    name: Coverage Gate
-    needs: coverage-verdict
-    if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict != 'review_needed'
-    runs-on: ubuntu-26.04
-    steps:
-      - name: Gate result
-        run: |
-          verdict="${{ needs.coverage-verdict.outputs.verdict }}"
-          if [[ "$verdict" == "pass" ]]; then
-            echo "✅ All coverage thresholds met"
-          else
-            echo "::error::Build/test failure or missing JaCoCo report — cannot be overridden by coverage review"
-            exit 1
-          fi
-
-  coverage-gate-review:
-    timeout-minutes: 10
-    name: Coverage Gate
-    needs: coverage-verdict
-    if: always() && !cancelled() && needs.coverage-verdict.outputs.verdict == 'review_needed'
-    runs-on: ubuntu-26.04
-    environment: coverage-review
-    steps:
-      - name: Gate result
-        run: echo "::notice::Coverage threshold violations reviewed and approved."
-

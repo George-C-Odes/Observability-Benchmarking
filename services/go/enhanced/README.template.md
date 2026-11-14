@@ -238,3 +238,11 @@ internal/logging/           # slog helpers + trace correlation
 internal/cache/             # cache implementations (slice/map)
 internal/handlers/          # HTTP handlers + unit tests
 ```
+
+## Local coverage gate
+
+`make build` runs race-enabled tests with coverage, enforces this module's statement
+threshold from `scripts/coverage-thresholds.json`, and then builds the server.
+`make coverage` enforces the same gate without compiling the server. Python 3 and
+a CGO-capable C toolchain are required; use `make PYTHON=python3 build` where needed.
+Native Go does not measure branch coverage.

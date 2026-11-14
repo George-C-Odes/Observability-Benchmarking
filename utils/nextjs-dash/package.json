@@ -5,6 +5,7 @@
   "packageManager": "npm@12.2.2",
   "scripts": {
     "dev": "next dev -p 3001",
+    "prebuild": "npm run test:coverage",
     "build": "next build",
     "start": "next start -p 3001 -H 0.0.0.0",
     "format": "oxfmt --write .",
@@ -16,7 +17,8 @@
     "test:dom": "vitest run -c vitest.config.dom.mts",
     "test:fast": "vitest run -c vitest.config.node.mts --bail=1 && vitest run -c vitest.config.dom.mts --bail=1",
     "test:watch": "vitest -c vitest.config.dom.mts",
-    "test:coverage": "vitest run -c vitest.config.node.mts --coverage && vitest run -c vitest.config.dom.mts --coverage",
+    "test:coverage": "npm run test:coverage:node && npm run test:coverage:dom && npm run test:coverage:check",
+    "test:coverage:check": "node scripts/coverage-gate.mjs",
     "test:coverage:node": "vitest run -c vitest.config.node.mts --coverage",
     "test:coverage:dom": "vitest run -c vitest.config.dom.mts --coverage"
   },

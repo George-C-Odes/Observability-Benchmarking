@@ -81,16 +81,10 @@ jobs:
       - name: Typecheck (TypeScript 7 native checker)
         run: npm run typecheck
 
-      - name: Unit tests – Node environment
-        run: npm run test:node
-
-      - name: Unit tests – DOM environment (jsdom)
-        run: npm run test:dom
-
       - name: Quality report tests
         run: node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
 
-      - name: Production build smoke test
+      - name: Production build with hard coverage gate
         run: npm run build
 
       # ------------------------------------------------------------------
