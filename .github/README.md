@@ -1,0 +1,89 @@
+# GitHub automation
+
+## Responsibilities and execution
+
+Workflows own triggers, job dependencies, permissions and deployment. Composite
+actions own tool setup, locked installation, caching and uploads. Tested scripts
+own report selection, diagnostics capture and quality policy. Keep those boundaries
+explicit rather than introducing a universal workflow with conditional behavior.
+
+- **Workflow Quality** runs on every PR and merge queue: actionlint 1.7.12,
+  ShellCheck 0.11.0, hash-locked zizmor 1.32.0, workflow contracts and Pages/API
+  boundary tests. Its `Workflow policy` check can be required without path skips.
+- **Framework Version Consistency** checks generated versions and coverage policy.
+- **Go Coverage / Django Python Coverage** own the only race-enabled Go and Django
+  test executions per variant, including weekly runs. Quality workflows own lint,
+  format, static analysis, builds and Django system checks. Existing job names are
+  preserved to avoid invalidating branch protection configuration.
+- **Java Coverage / CodeQL** share the JVM inventory derived from
+  `scripts/coverage-thresholds.json` via `scripts/java-modules.mjs`. Qodana discovers
+  Maven modules, including native projects, under its configured source tree.
+- **Next.js Dashboard Quality** captures diagnostics and exit status during each
+  original check, then collects coverage and builds once. Failed or missing checker
+  execution cannot produce a passing quality report.
+
+PR concurrency cancels superseded runs. Main scans, Renovate synchronization and
+Pages publishing finish their active run. Language matrices retain `fail-fast: false`.
+
+## Caches and pins
+
+The cache composite centralizes the upstream action SHA. Maven, Go, pip and npm
+caches remain selected by their setup actions. Next.js caches only `.next/cache`,
+keyed by OS, architecture, Node, lockfile, configuration and source. No credentials,
+complete dependency installs or security-analysis databases are added to caches.
+
+Snyk CLI is explicitly version-pinned; the JVM Qodana image is digest-pinned in
+both configuration fields. Update both image fields together. Validator archives
+have checked-in SHA-256 digests in `scripts/install-workflow-tools.sh`; zizmor's
+standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
+from official release metadata when upgrading. Dependabot version updates have a
+seven-day cooldown; this does not delay Dependabot security updates.
+
+## Pages publication
+
+`scripts/pages/report-catalog.json` maps five producers to seven stable report
+URLs. All producers accept success and failure in live and staging. The workflow
+selects one trusted main commit for every job; branch artifacts are data and are
+never executed by the publisher. Fork sources are excluded. Report collection
+runs in parallel with the documentation build, with at most five collection jobs.
+
+Compiled Jekyll output is cached by documentation and build-workflow content.
+Only docs/publisher changes trigger a direct push rebuild; completed quality
+workflows still refresh reports. Short-lived collection artifacts feed a single
+assembly and deployment stage. The assembly records availability, conclusion,
+run ID and analyzed SHA, and rejects report symlinks.
+
+The resolver selects the newest-created eligible run, not the run that most
+recently finished or triggered Pages. It checks at most five pages of 100 runs.
+API errors and lookup-limit exhaustion are explicit unavailable states, never
+clean assessments. Requests have fixed repository-scoped operations, component
+validation/encoding, redirect rejection, 20-second attempt deadlines and up to
+three transient retries. Missing artifacts do not select older green reports.
+
+The two `dangerous-triggers` zizmor exceptions are local to Pages' `workflow_run`
+and Renovate's `pull_request_target`. Their comments explain trusted-source
+checkout and publication constraints. Reassess them if execution refs, token
+scope, artifact handling or version-only publication change. No audit rule is
+disabled globally.
+
+## Repository settings and rollout
+
+Repository rulesets, secret values and environment approvals live in GitHub,
+not these files. Deploy and observe the new workflows before requiring a new
+check, so an unavailable check cannot block every PR.
+
+1. Require `Workflow policy` and the existing framework consistency check.
+2. Inspect existing required language checks before changing them. A workflow
+   skipped by `paths` remains pending if required: retain path-aware rules or move
+   routing inside an always-triggered workflow before requiring those checks
+   globally. Merge-queue triggers are enabled in all PR validation workflows.
+3. Retain protected main, reviewed workflow changes, least-privilege Actions
+   defaults, fork-run approval policy and the protected `github-pages` environment.
+4. Confirm required scanner secrets are configured. An absent Snyk token remains
+   an explicit skip; findings remain non-blocking by the existing project policy.
+5. Confirm `RENOVATE_SYNC_TOKEN` is repository-scoped with only the documented
+   publication permissions; it remains restricted to the publication step.
+
+No ruleset, secret, environment or repository setting is changed by editing this
+directory. Fresh hosted scans and cache timing/hit measurements are required to
+confirm production behavior and quantify performance changes.

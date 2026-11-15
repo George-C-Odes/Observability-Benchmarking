@@ -1,0 +1,19 @@
+[
+  { "id": "qodana", "workflow": "qodana_code_quality.yml", "name": "Qodana", "pattern": "qodana-report-*", "reports": [
+    { "artifact": "qodana-report-services-java", "path": "services-java", "title": "Java services" },
+    { "artifact": "qodana-report-orchestrator", "path": "orchestrator", "title": "Orchestrator" }
+  ] },
+  { "id": "nextjs", "workflow": "nextjs_dash_quality.yml", "name": "Next.js Dashboard Quality", "pattern": "quality-report-nextjs-dash", "reports": [
+    { "artifact": "quality-report-nextjs-dash", "path": "nextjs-dash", "title": "Next.js dashboard" }
+  ] },
+  { "id": "django", "workflow": "django_python_quality.yml", "name": "Django Python Quality", "pattern": "qodana-report-django-python", "reports": [
+    { "artifact": "qodana-report-django-python", "path": "django-python", "title": "Django Python" }
+  ] },
+  { "id": "go", "workflow": "go_quality.yml", "name": "Go Quality", "pattern": "quality-report-go*", "reports": [
+    { "artifact": "quality-report-go", "path": "go", "title": "Go enhanced" },
+    { "artifact": "quality-report-go-simple", "path": "go-simple", "title": "Go simple" }
+  ] },
+  { "id": "codeql", "workflow": "codeql.yml", "name": "CodeQL", "pattern": "quality-report-codeql", "reports": [
+    { "artifact": "quality-report-codeql", "path": "codeql", "title": "CodeQL" }
+  ] }
+]

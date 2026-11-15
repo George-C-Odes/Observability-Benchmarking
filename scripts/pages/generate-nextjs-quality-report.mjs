@@ -310,12 +310,21 @@ export function buildQualityReport({
   oxlintRaw,
   oxfmtRaw,
   typescriptRaw,
+  execution = null,
   env = process.env,
   timestamp = new Date().toISOString(),
 }) {
   const oxlint = parseOxlintReport(oxlintRaw);
   const oxfmt = parseOxfmtOutput(oxfmtRaw);
   const typescript = parseTypeScriptDiagnostics(typescriptRaw);
+  if (execution) {
+    for (const [name, result] of [['format', oxfmt], ['lint', oxlint], ['typecheck', typescript]]) {
+      if (execution[name]?.exitCode !== 0) {
+        result.pass = false;
+        result.reportWarnings.push(`${name} did not complete successfully (exit ${execution[name]?.exitCode ?? 'unknown'}).`);
+      }
+    }
+  }
   const reportWarnings = [
     ...oxfmt.reportWarnings,
     ...oxlint.reportWarnings,
@@ -392,8 +401,13 @@ export function buildQualityReport({
 }
 
 export function generateQualityReport(cwd = process.cwd(), env = process.env) {
+  const execution = Object.fromEntries(['format', 'lint', 'typecheck'].map((name) => {
+    try { return [name, JSON.parse(readOptionalFile(cwd, `${name}-status.json`))]; }
+    catch { return [name, null]; }
+  }));
   const { html, summary } = buildQualityReport({
     cwd,
+    execution,
     oxlintRaw: readOptionalFile(cwd, 'oxlint-report.json'),
     oxfmtRaw: readOptionalFile(cwd, 'oxfmt-output.txt'),
     typescriptRaw: readOptionalFile(cwd, 'typescript-output.txt'),

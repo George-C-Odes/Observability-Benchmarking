@@ -7,6 +7,7 @@ name: Go Quality
 #     build, govulncheck, hosted HTML report).
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
@@ -37,6 +38,10 @@ on:
   schedule:
     # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
     - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -148,8 +153,7 @@ jobs:
           # to stdout and JSON to golangci-lint-report.json in a single pass.
           golangci-lint run
 
-      - name: Unit tests
-        run: go test ./... -race -count=1
+      # Go Coverage owns the race-enabled test run and hard coverage gate.
 
       - name: Build check
         run: go build ./cmd/server

@@ -14,6 +14,21 @@ import {
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = (name) => readFileSync(resolve(here, 'fixtures/nextjs-quality', name), 'utf8');
 
+test('execution failure or missing status cannot turn clean diagnostics into a pass', () => {
+  const baseline = {
+    cwd: '/workspace/dashboard', oxlintRaw: fixture('oxlint-clean.json'),
+    oxfmtRaw: 'OXFMT_EXIT_CODE=0\n', typescriptRaw: '', env: {},
+  };
+  for (const tool of ['format', 'lint', 'typecheck']) {
+    for (const status of [null, { exitCode: 1 }, { exitCode: 2 }]) {
+      const execution = { format: { exitCode: 0 }, lint: { exitCode: 0 }, typecheck: { exitCode: 0 }, [tool]: status };
+      const report = buildQualityReport({ ...baseline, execution });
+      assert.equal(report.summary.overallPass, false);
+      assert.ok(report.summary.reportWarnings.some((warning) => warning.startsWith(tool)));
+    }
+  }
+});
+
 test('parses clean Oxlint 1.82 JSON output', () => {
   const result = parseOxlintReport(fixture('oxlint-clean.json'));
   assert.equal(result.pass, true);

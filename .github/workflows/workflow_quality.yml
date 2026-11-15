@@ -1,0 +1,44 @@
+name: Workflow Quality
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: Workflow policy
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+      - name: Set up Python
+        uses: ./.github/actions/setup-python
+      - name: Install pinned workflow validators
+        run: |
+          bash scripts/install-workflow-tools.sh
+          python -m pip install --require-hashes --only-binary=:all: --no-deps -r .github/requirements/workflow-lint.txt
+      - name: Validate workflow expressions and embedded shell
+        # actionlint 1.7.12 predates this officially supported hosted image.
+        # Filter only this exact label diagnostic; retain all other errors.
+        run: actionlint -ignore 'label "ubuntu-26\.04" is unknown\.'
+      - name: Check standalone workflow shell
+        run: shellcheck scripts/install-workflow-tools.sh .github/actions/install-python-dependencies/install.sh
+      - name: Audit workflow security
+        run: zizmor --offline --min-severity medium .github
+      - name: Test workflow and publication contracts
+        run: node --test scripts/github-actions.test.mjs scripts/workflow-policy.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs

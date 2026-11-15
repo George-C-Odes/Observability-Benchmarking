@@ -1,10 +1,11 @@
 name: pmd
 
 on:
+  merge_group:
   push:
     branches: [ "main" ]
     paths:
-      - 'utils/**'
+      - 'utils/orchestrator/**/*.java'
       - '.github/workflows/pmd.yml'
       - '.github/actions/setup-java/**'
       - '.github/actions/codeql-action/**'
@@ -12,7 +13,7 @@ on:
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'utils/**'
+      - 'utils/orchestrator/**/*.java'
       - '.github/workflows/pmd.yml'
       - '.github/actions/setup-java/**'
       - '.github/actions/codeql-action/**'
@@ -20,6 +21,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '29 23 * * 6'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -76,7 +81,7 @@ jobs:
         run: |
           # PMD fails by default on violations and analysis errors.
           pmd check \
-            --dir utils \
+            --dir utils/orchestrator/src \
             --rulesets rulesets/java/quickstart.xml \
             --format sarif \
             --report-file pmd-report.sarif

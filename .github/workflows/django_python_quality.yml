@@ -1,6 +1,7 @@
 name: Django Python Quality
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
@@ -25,6 +26,10 @@ on:
   schedule:
     # Weekly scan — Monday at 06:30 UTC (staggered after Next.js at 06:15).
     - cron: '30 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -84,7 +89,6 @@ jobs:
 
   modules:
     name: Django module checks (${{ matrix.module_name }})
-    needs: common
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     env:
@@ -139,8 +143,7 @@ jobs:
       - name: Django system checks
         run: python manage.py check
 
-      - name: Unit tests
-        run: python manage.py test obbench_django_common.tests --verbosity=2
+      # Django Python Coverage owns tests for both runtime variants.
 
   qodana:
     name: Qodana Python (Django)

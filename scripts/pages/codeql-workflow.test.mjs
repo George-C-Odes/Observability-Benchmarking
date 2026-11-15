@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { parseColonEnv } from '../render-readmes.mjs';
+import { modules } from '../java-modules.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const workflow = readFileSync(join(root, '.github/workflows/codeql.yml'), 'utf8').replaceAll('\r\n', '\n');
@@ -66,15 +67,14 @@ test('every language uses a verified local bundle and the wrapper forwards tools
 
 test('fresh Java databases compile all JVM services plus the orchestrator, excluding native builds', () => {
   const build = step('Build Java modules');
-  const registry = build.match(/SERVICE_MODULES=\(\s*([\s\S]*?)\s*\)/);
-  assert.ok(registry, 'Missing service module registry');
-  const declared = registry[1].trim().split(/\s+/);
+  assert.match(build, /node scripts\/java-modules.mjs --paths > "\$RUNNER_TEMP\/codeql-java-modules"/);
+  assert.match(build, /mapfile -t build_modules < "\$RUNNER_TEMP\/codeql-java-modules"/);
+  const declared = modules.map((module) => module.module_dir);
   const expected = jvmModules(join(root, 'services/java'));
   assert.ok(expected.length > 0);
   assert.ok(existsSync(join(root, 'utils/orchestrator/pom.xml')));
-  assert.deepEqual([...declared, 'utils/orchestrator'].sort(), [...expected, 'utils/orchestrator'].sort());
-  assert.ok(build.includes('build_modules=( "${SERVICE_MODULES[@]}" utils/orchestrator )'));
-  assert.equal((build.match(/build_modules=/g) || []).length, 1, 'Do not narrow the registry by changed paths');
+  assert.deepEqual(declared.sort(), [...expected, 'utils/orchestrator'].sort());
+  assert.equal((build.match(/mapfile -t build_modules/g) || []).length, 1, 'Do not narrow the registry by changed paths');
   assert.equal(build.split('for mod_dir in "${build_modules[@]}"; do').length - 1, 2);
   assert.match(build, /mvn -f "\$mod_dir\/pom\.xml" compile/);
 });

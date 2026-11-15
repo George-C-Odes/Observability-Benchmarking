@@ -1,7 +1,10 @@
 name: Django Python Coverage
 
 on:
+  merge_group:
   workflow_dispatch:
+  schedule:
+    - cron: '30 6 * * 1'
   pull_request:
     paths:
       - 'services/python/**'
@@ -37,7 +40,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -135,6 +138,7 @@ jobs:
         uses: ./.github/actions/upload-artifact
         with:
           name: coverage-${{ matrix.codecov_flag }}
+          include-hidden-files: 'true'
           path: |
             ${{ github.workspace }}/${{ matrix.module_dir }}/.coverage
             ${{ github.workspace }}/${{ matrix.module_dir }}/coverage-summary.json
