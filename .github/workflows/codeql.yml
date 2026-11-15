@@ -106,6 +106,15 @@ jobs:
             services/java/**/jvm/**/pom.xml
             utils/orchestrator/pom.xml
 
+      # Install the toolchain before init adds its Go tracing wrapper to PATH.
+      # Running setup-go afterwards bypasses extraction even if go build succeeds.
+      - name: Set up Go
+        if: matrix.language == 'go'
+        uses: ./.github/actions/setup-go
+        with:
+          go-version-file: services/go/enhanced/go.mod
+          cache-dependency-path: services/go/**/go.sum
+
       - name: Resolve CodeQL bundle
         id: bundle
         timeout-minutes: 5
@@ -240,13 +249,6 @@ jobs:
       # Go has multiple independent modules under services/go/ with no
       # root-level go.mod, so autobuild cannot discover them.  Build each
       # module explicitly so CodeQL extracts all Go source correctly.
-      - name: Set up Go
-        if: matrix.language == 'go'
-        uses: ./.github/actions/setup-go
-        with:
-          go-version-file: services/go/enhanced/go.mod
-          cache-dependency-path: services/go/**/go.sum
-
       - name: Build Go modules
         if: matrix.language == 'go'
         shell: bash

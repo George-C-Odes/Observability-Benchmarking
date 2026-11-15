@@ -55,6 +55,21 @@ test('Java setup and compilation depend only on the matrix language', () => {
   assert.match(setup, /^ {10}cache: maven$/m);
 });
 
+test('Go setup precedes CodeQL initialization so manual builds use its tracing wrapper', () => {
+  const setup = step('Set up Go');
+  assert.match(setup, /^ {8}if: matrix\.language == 'go'$/m);
+  assert.match(setup, /uses: \.\/\.github\/actions\/setup-go/);
+  assert.match(setup, /go-version-file: services\/go\/enhanced\/go.mod/);
+  assert.match(setup, /cache-dependency-path: services\/go\/\*\*\/go.sum/);
+  const init = workflow.indexOf('      - name: Initialize CodeQL\n');
+  const build = workflow.indexOf('      - name: Build Go modules\n');
+  const analyze = workflow.indexOf('      - name: Perform CodeQL Analysis\n');
+  assert.ok(workflow.indexOf('      - name: Set up Go\n') < init, 'setup-go must not replace the tracing wrapper after init');
+  assert.ok(init < build && build < analyze, 'Manual Go builds must run inside the initialized tracing session');
+  assert.doesNotMatch(workflow.slice(init, analyze), /uses: .*actions\/setup-go/);
+  assert.equal((workflow.match(/uses: \.\/\.github\/actions\/setup-go/g) || []).length, 1);
+});
+
 test('every language uses a verified local bundle and the wrapper forwards tools', () => {
   assert.match(step('Resolve CodeQL bundle'), /node --test scripts\/codeql-bundle.test.mjs/);
   assert.match(step('Resolve CodeQL bundle'), /CODEQL_LANGUAGE: \$\{\{ matrix.language }}/);
