@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -249,18 +250,22 @@ func TestRunWithContext(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func TestMainReturnsAfterListenerCompletes(t *testing.T) {
 	setEnv(t, "PORT", new("9094"))
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	listenerCalled := false
 
 	withRunHooks(
 		t,
 		func(context.Context) (*sdkmetric.MeterProvider, error) {
-			return sdkmetric.NewMeterProvider(), nil
+			return mp, nil
 		},
 		func(context.Context) (*sdktrace.TracerProvider, error) {
 			return sdktrace.NewTracerProvider(), nil
 		},
 		func(app *fiber.App, gotPort string) error {
+			listenerCalled = true
 			if gotPort != ":9094" {
 				t.Fatalf("expected port %q, got %q", ":9094", gotPort)
 			}
@@ -275,8 +280,24 @@ func TestRun(t *testing.T) {
 		},
 	)
 
-	if err := run(); err != nil {
-		t.Fatalf("run: %v", err)
+	main()
+	if !listenerCalled {
+		t.Fatal("main returned without starting the listener")
+	}
+	if err := reader.Shutdown(context.Background()); !errors.Is(err, sdkmetric.ErrReaderShutdown) {
+		t.Fatalf("main did not shut down the meter provider: %v", err)
+	}
+}
+
+func TestAppListenerReturnsBindError(t *testing.T) {
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve port: %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	app := newTestApp(t)
+	if err := appListener(app, listener.Addr().String()); err == nil {
+		t.Fatal("expected an error when the listen address is already in use")
 	}
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { envNumber, envBool, envString } from '@/lib/env';
+import { envNumber, envString } from '@/lib/env';
 
 describe('env helpers', () => {
   const saved = { ...process.env };
@@ -7,7 +7,6 @@ describe('env helpers', () => {
   beforeEach(() => {
     delete process.env.TEST_NUM;
     delete process.env.TEST_FALLBACK;
-    delete process.env.TEST_BOOL;
     delete process.env.TEST_STR;
     delete process.env.TEST_STR_FALLBACK;
   });
@@ -50,34 +49,6 @@ describe('env helpers', () => {
       process.env.TEST_FALLBACK = '99';
       expect(envNumber('TEST_NUM', 42, { fallbackName: 'TEST_FALLBACK' })).toBe(99);
     });
-  });
-
-  describe('envBool', () => {
-    it('returns default when env var is missing', () => {
-      expect(envBool('TEST_BOOL')).toBe(false);
-      expect(envBool('TEST_BOOL', true)).toBe(true);
-    });
-
-    it('returns default when env var is empty string', () => {
-      process.env.TEST_BOOL = '';
-      expect(envBool('TEST_BOOL', true)).toBe(true);
-    });
-
-    it.each(['true', '1', 'yes', 'y', 'on', 'TRUE', 'Yes', 'ON'])(
-      'returns true for truthy value "%s"',
-      (val) => {
-        process.env.TEST_BOOL = val;
-        expect(envBool('TEST_BOOL')).toBe(true);
-      },
-    );
-
-    it.each(['false', '0', 'no', 'n', 'off', 'whatever'])(
-      'returns false for non-truthy value "%s"',
-      (val) => {
-        process.env.TEST_BOOL = val;
-        expect(envBool('TEST_BOOL')).toBe(false);
-      },
-    );
   });
 
   describe('envString', () => {

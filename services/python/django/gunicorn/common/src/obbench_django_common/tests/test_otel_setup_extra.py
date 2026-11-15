@@ -225,3 +225,38 @@ class OTelSetupExtraTests(TestCase):
         tracer_provider.shutdown.assert_called_once_with()
         meter_provider.shutdown.assert_called_once_with()
         logger_provider.shutdown.assert_called_once_with()
+
+    def test_shutdown_accepts_providers_without_shutdown_and_still_closes_other_providers(
+        self,
+    ) -> None:
+        # Proxy/no-op providers may have no shutdown API when SDK setup was skipped.
+        for missing in ("traces", "metrics", "logs", "all"):
+            with TestCase.subTest(self, missing=missing):
+                shutdown_providers = {
+                    name: mock.Mock()
+                    for name in ("traces", "metrics", "logs")
+                    if missing not in (name, "all")
+                }
+                providers = {
+                    name: shutdown_providers.get(name, object())
+                    for name in ("traces", "metrics", "logs")
+                }
+                with (
+                    mock.patch(
+                        "opentelemetry.trace.get_tracer_provider", return_value=providers["traces"]
+                    ),
+                    mock.patch(
+                        "opentelemetry.metrics.get_meter_provider",
+                        return_value=providers["metrics"],
+                    ),
+                    mock.patch(
+                        "obbench_django_common.infrastructure.otel_setup.import_module",
+                        return_value=types.SimpleNamespace(
+                            get_logger_provider=mock.Mock(return_value=providers["logs"])
+                        ),
+                    ),
+                ):
+                    otel_setup.shutdown_sdk()
+
+                for provider in shutdown_providers.values():
+                    provider.shutdown.assert_called_once_with()

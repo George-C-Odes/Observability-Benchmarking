@@ -15,6 +15,29 @@ import * as runState from '@/lib/scriptRunnerRunState';
 import { POST } from '@/app/api/orchestrator/submit/route';
 
 describe('/api/orchestrator/submit route', () => {
+  it('rejects malformed JSON without submitting a command', async () => {
+    const res = await POST(
+      new NextRequest('http://localhost/api/orchestrator/submit', { method: 'POST', body: '{' }),
+    );
+    expect(res.status).toBe(400);
+    expect(orch.submitCommandWithRunId).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [new Error('upstream unavailable'), 'upstream unavailable'],
+    ['unexpected response', 'unexpected response'],
+    [null, 'Orchestrator submit failed.'],
+  ])('maps unexpected submit failures to 502 (%s)', async (failure, message) => {
+    vi.mocked(orch.submitCommandWithRunId).mockRejectedValue(failure);
+    const res = await POST(
+      new NextRequest('http://localhost/api/orchestrator/submit', {
+        method: 'POST',
+        body: JSON.stringify({ command: 'docker compose ps' }),
+      }),
+    );
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'orchestrator_submit_failed', message });
+  });
   beforeEach(() => {
     vi.resetAllMocks();
   });

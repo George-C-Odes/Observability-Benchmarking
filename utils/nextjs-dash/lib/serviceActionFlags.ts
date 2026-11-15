@@ -1,11 +1,3 @@
-type ServiceActionFlags = {
-  start: boolean;
-  restart: boolean;
-  stop: boolean;
-  recreate: boolean;
-  delete: boolean;
-};
-
 function envBool(name: string, fallback: boolean): boolean {
   const raw = (process.env[name] ?? '').trim().toLowerCase();
   if (raw === 'true' || raw === '1' || raw === 'yes' || raw === 'y') return true;
@@ -38,15 +30,4 @@ export function isServiceActionsEnabled(serviceName: string): boolean {
   // e.g. GO_ACTIONS_ENABLE, SPRING_JVM_TOMCAT_PLATFORM_ACTIONS_ENABLE, etc.
   const key = `${serviceName.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_ACTIONS_ENABLE`;
   return envBool(key, defaultEnabled);
-}
-
-export function resolveServiceActionFlags(serviceName: string): ServiceActionFlags {
-  const enabled = isServiceActionsEnabled(serviceName);
-  return {
-    start: enabled,
-    restart: enabled,
-    stop: enabled,
-    recreate: enabled,
-    delete: enabled,
-  };
 }

@@ -82,7 +82,11 @@ class CoverageSummaryTests(unittest.TestCase):
         )
 
     def test_missing_reports_fail_only_after_success(self):
-        for handler in (coverage.python_summary, coverage.go_summary, coverage.java_summary):
+        for handler in (
+            coverage.python_summary,
+            coverage.go_summary,
+            coverage.java_summary,
+        ):
             for outcome, expected in (
                 ("success", 1),
                 ("failure", 0),
@@ -90,12 +94,11 @@ class CoverageSummaryTests(unittest.TestCase):
                 ("cancelled", 0),
             ):
                 with self.subTest(format=handler.__name__, outcome=outcome):
-                    with patch.dict(os.environ, TEST_OUTCOME=outcome, BUILD_OUTCOME=outcome):
+                    with patch.dict(
+                        os.environ, TEST_OUTCOME=outcome, BUILD_OUTCOME=outcome
+                    ):
                         with contextlib.redirect_stdout(io.StringIO()):
                             self.assertEqual(handler(), expected)
-                    if handler == coverage.java_summary:
-                        status = Path("coverage-status/status.txt").read_text()
-                        self.assertEqual(status, "report_missing" if expected else "build_failure")
 
     def test_python_statement_branch_totals_and_paths(self):
         info = {
@@ -109,7 +112,8 @@ class CoverageSummaryTests(unittest.TestCase):
             "percent_covered": 66.6667,
         }
         self.write(
-            "coverage.json", json.dumps({"totals": info, "files": {"main.py": {"summary": info}}})
+            "coverage.json",
+            json.dumps({"totals": info, "files": {"main.py": {"summary": info}}}),
         )
         self.assertEqual(coverage.python_summary(), 0)
         text = self.summary()
@@ -131,10 +135,12 @@ class CoverageSummaryTests(unittest.TestCase):
             normalize("../common/a.py", "services/example", ""), "services/common/a.py"
         )
         self.assertEqual(
-            normalize("services/common/a.py", "services/example", ""), "services/common/a.py"
+            normalize("services/common/a.py", "services/example", ""),
+            "services/common/a.py",
         )
         self.assertEqual(
-            normalize(str(self.root / "a.py"), "services/example", str(self.root)), "a.py"
+            normalize(str(self.root / "a.py"), "services/example", str(self.root)),
+            "a.py",
         )
         self.assertEqual(
             normalize("dir\\a.py", "services/example", ""), "services/example/dir/a.py"
@@ -147,7 +153,9 @@ class CoverageSummaryTests(unittest.TestCase):
             "invalid\nhello/b.go:1.1,1.9 2 1\n",
         )
         with patch.object(
-            coverage.subprocess, "run", return_value=SimpleNamespace(stdout="func detail\n")
+            coverage.subprocess,
+            "run",
+            return_value=SimpleNamespace(stdout="func detail\n"),
         ) as run:
             self.assertEqual(coverage.go_summary(), 0)
         run.assert_called_once_with(
@@ -164,7 +172,9 @@ class CoverageSummaryTests(unittest.TestCase):
 
     def test_go_empty_profile_and_unavailable_optional_detail(self):
         self.write("coverage.out", "mode: atomic\n")
-        with patch.object(coverage.subprocess, "run", return_value=SimpleNamespace(stdout="")):
+        with patch.object(
+            coverage.subprocess, "run", return_value=SimpleNamespace(stdout="")
+        ):
             self.assertEqual(coverage.go_summary(), 0)
         self.assertIn("**0.0%**", self.summary())
         self.assertNotIn("Function-level detail", self.summary())
@@ -177,53 +187,13 @@ class CoverageSummaryTests(unittest.TestCase):
             with self.assertRaises(subprocess.TimeoutExpired):
                 coverage.go_summary()
 
-    def test_java_statuses_and_root_counters(self):
-        cases = [
-            ((85, 15), (90, 10), "success", "pass"),
-            ((86, 14), (90, 10), "success", "threshold_violation"),
-            ((85, 15), (91, 9), "success", "threshold_violation"),
-            ((0, 0), (0, 0), "success", "threshold_violation"),
-            ((0, 100), (0, 100), "failure", "build_failure"),
-        ]
-        for lines, branches, outcome, expected in cases:
-            with self.subTest(status=expected, lines=lines, branches=branches):
-                self.java_report(lines=lines, branches=branches)
-                with patch.dict(os.environ, BUILD_OUTCOME=outcome):
-                    self.assertEqual(coverage.java_summary(), 0)
-                self.assertEqual(Path("coverage-status/status.txt").read_text(), expected)
+    def test_java_summary_renders_root_counters_without_threshold_policy(self):
+        self.java_report()
+        self.assertEqual(coverage.java_summary(), 0)
+        self.assertIn("15.0%", self.summary())
         self.assertNotIn("999", self.summary())
-
-    def test_java_combined_is_weighted_not_mean_of_percentages(self):
-        self.java_report("reports/coverage-java-a/jacoco.xml", lines=(0, 1), branches=(0, 0))
-        self.java_report("reports/coverage-java-b/jacoco.xml", lines=(9, 0), branches=(1, 0))
-        self.assertIsNone(coverage.java_combined_summary())
-        self.assertIn("| **Lines** | **1** | **9** | **10** | **10.0%** |", self.summary())
-        self.assertIn("Aggregated from 2 module(s)", self.summary())
-
-    def test_java_combined_no_reports_is_informational(self):
-        with contextlib.redirect_stdout(io.StringIO()) as output:
-            self.assertIsNone(coverage.java_combined_summary())
-        self.assertIn("No JaCoCo reports", output.getvalue())
-        self.assertFalse(Path(self.env["GITHUB_STEP_SUMMARY"]).exists())
-
-    def test_cli_java_combined_exits_successfully_with_or_without_reports(self):
-        for has_report in (False, True):
-            with self.subTest(has_report=has_report):
-                if has_report:
-                    self.java_report("reports/coverage-java-a/jacoco.xml")
-                result = subprocess.run(
-                    [sys.executable, "-m", "coverage_summary", "java-combined"],
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    timeout=10,
-                    check=False,
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                if has_report:
-                    self.assertIn("Aggregated from 1 module(s)", self.summary())
-                else:
-                    self.assertIn("No JaCoCo reports", result.stdout)
+        self.assertNotIn("threshold", self.summary())
+        self.assertFalse(Path("coverage-status").exists())
 
     def test_jacoco_standard_doctype_does_not_fetch_external_dtd(self):
         path = self.java_report()
@@ -233,14 +203,18 @@ class CoverageSummaryTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertEqual(coverage.java_summary(), 0)
-        self.assertEqual(Path("coverage-status/status.txt").read_text(), "pass")
+        self.assertFalse(Path("coverage-status").exists())
 
     def test_jacoco_rejects_entity_definitions(self):
         secret = self.write("secret.txt", "SYNTHETIC-SECRET-NOT-FOR-REPORTS")
-        for entity in ('<!ENTITY data "expanded">', f'<!ENTITY data SYSTEM "{secret.as_uri()}">'):
+        for entity in (
+            '<!ENTITY data "expanded">',
+            f'<!ENTITY data SYSTEM "{secret.as_uri()}">',
+        ):
             with self.subTest(entity=entity):
                 path = self.write(
-                    "entities.xml", f"<!DOCTYPE report [{entity}]><report>&data;</report>"
+                    "entities.xml",
+                    f"<!DOCTYPE report [{entity}]><report>&data;</report>",
                 )
                 with self.assertRaisesRegex(ValueError, "Entities are not permitted"):
                     coverage.jacoco_counters(path)

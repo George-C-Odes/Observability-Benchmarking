@@ -1,0 +1,4 @@
+# Standalone Rust executable wheels; no Python dependencies. Linux CI / Windows local QA.
+zizmor==1.32.0 \
+    --hash=sha256:84a6acb975accc13408786a2bd274b572537ca19c933ebbc13e78f3988562071 \
+    --hash=sha256:9cd1dd7734042f40ca0faa2a31fb4e9033dede620d996af2f903744b8f04fca9

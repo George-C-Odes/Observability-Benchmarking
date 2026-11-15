@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "modules": {
+    "spring-tomcat": {
+      "format": "java",
+      "path": "services/java/spring/jvm/tomcat",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "spring-netty": {
+      "format": "java",
+      "path": "services/java/spring/jvm/netty",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "quarkus-jvm": {
+      "format": "java",
+      "path": "services/java/quarkus/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "micronaut-jvm": {
+      "format": "java",
+      "path": "services/java/micronaut/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "helidon-se-jvm": {
+      "format": "java",
+      "path": "services/java/helidon/se/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "helidon-mp-jvm": {
+      "format": "java",
+      "path": "services/java/helidon/mp/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "spark-jvm": {
+      "format": "java",
+      "path": "services/java/spark/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "javalin-jvm": {
+      "format": "java",
+      "path": "services/java/javalin/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "dropwizard-jvm": {
+      "format": "java",
+      "path": "services/java/dropwizard/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "vertx-jvm": {
+      "format": "java",
+      "path": "services/java/vertx/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "pekko-jvm": {
+      "format": "java",
+      "path": "services/java/pekko/jvm",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "orchestrator": {
+      "format": "java",
+      "path": "utils/orchestrator",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "go-enhanced": {
+      "format": "go",
+      "path": "services/go/enhanced",
+      "thresholds": {
+        "statements": 90
+      }
+    },
+    "go-simple": {
+      "format": "go",
+      "path": "services/go/simple",
+      "thresholds": {
+        "statements": 90
+      }
+    },
+    "django-platform": {
+      "format": "python",
+      "path": "services/python/django/gunicorn/WSGI",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "django-reactive": {
+      "format": "python",
+      "path": "services/python/django/gunicorn/ASGI",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "django-common": {
+      "format": "python",
+      "path": "services/python/django/gunicorn/common/src/obbench_django_common",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    },
+    "nextjs-dash": {
+      "format": "nextjs",
+      "path": "utils/nextjs-dash",
+      "thresholds": {
+        "lines": 90,
+        "branches": 90
+      }
+    }
+  }
+}

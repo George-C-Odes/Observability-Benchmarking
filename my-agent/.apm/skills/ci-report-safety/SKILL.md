@@ -14,6 +14,12 @@ Use for changes to `.github/workflows/**`, HTTP/API request construction (authen
 - Preserve full-SHA action pins, version comments, least privileges, and checkout credential policy. A job timeout is not a local helper timeout.
 - Trace scan, summary, upload, and Pages consumers together. Distinguish scanner failure, findings, coverage, and report availability. Do not add `continue-on-error` or loosen a gate merely to retain diagnostics; retain artifacts after failure using deliberate conditions and preserve the failure status.
 
+### Privileged event checkout gate
+
+- In `workflow_run` or other privileged event consumers, use a literal trusted `refs/heads/main` checkout in every executable job. Never check out the triggering branch, fork SHA, or artifact-supplied revision. A same-repository run filter is defense in depth, not authorization to execute a feature branch.
+- For Pages, compare each checkout's commit with the inventory's trusted commit before running repository code or local actions; fail closed if main moved between jobs. Keep the deploy job isolated from repository execution. A computed checkout ref can obscure provenance for reviewers and analyzers even when its producer is trusted.
+- Extend `scripts/workflow-policy.test.mjs` whenever this wiring changes. Preserve the explicit checkout and revision-comparison assertions alongside actionlint/zizmor checks.
+
 ## 2. Keep command, argument, and path safety separate
 
 - Use a trusted executable and argument vector without a shell. Verify the executable type: Windows batch wrappers can invoke a shell despite `shell=False`. `shutil.which()` locates an executable; it does not make an attacker-controlled `PATH` trustworthy.
@@ -22,6 +28,11 @@ Use for changes to `.github/workflows/**`, HTTP/API request construction (authen
 - Treat CLI paths and environment roots according to the real launcher: trusted local/CI configuration is different from remote/LLM input or an elevated process. State the assumption explicitly; do not imply that all CLI/environment values are inherently trusted.
 - `Path.resolve()` is canonicalization, not authorization. Validate against a root selected independently of lower-trust input, then use the validated path for I/O. A caller-controlled "allowed root" defeats containment. `tempfile.gettempdir()` also considers environment values.
 - Before reading config or copying a subtree, validate the source root and intermediate components, not only descendants after copying. Reject symlink/junction redirection below the trusted root. Test redirected roots, parents, descendants, and no out-of-bound side effects. Pre-I/O checks do not promise race safety on hostile shared writable storage; isolate storage or use race-resistant operations when that threat model applies.
+
+### Fixed quality-output gate
+
+- `scripts/capture-check.mjs` derives the dashboard root from its trusted module location. Do not reintroduce CLI, environment, or working-directory selection of output roots. Keep operation and output names fixed, validate package bin containment, and reject symlink/junction redirection before reads, execution, or output writes. This assumes an isolated trusted workspace; pre-I/O checks do not protect against concurrent hostile filesystem mutation.
+- Add adversarial tests at the actual write/execute boundary: traversal/absolute modes, redirected roots and package parents, malicious manifest bins, and existing output symlinks. Rejected inputs must produce zero checker invocations and no outside changes. Use disposable module/workspace fixtures rather than adding a production root override for tests.
 
 ## 3. Bound the full subprocess lifecycle
 
@@ -70,6 +81,13 @@ Use for changes to `.github/workflows/**`, HTTP/API request construction (authen
 - Inline suppression requires informed user authorization, not just a justification comment. Verify the language/analyzer's actual suppression syntax and scope in current documentation: JavaScript's documented `NOSONAR` is line-wide, and writing a rule ID in the explanation does not make it rule-specific. Explain that a shared request sink can lose other current/future findings. If the user explicitly accepts that trade-off, keep the exception on the smallest reported line, document the issue/flow, runtime protections, tests, approval and reassessment conditions, and verify a fresh matching scan. Prefer an issue-specific false-positive disposition when available. The user-approved S8476 exception at `renovate-framework-sync.mjs`'s shared fetch is not authorization to copy it to new clients or weaken tests/rules globally.
 - Scanner settings are a separate trust boundary. Confirm the analysis method and supported properties in current documentation; Qodana settings do not configure Sonar. For automatic analysis use `.sonarcloud.properties`, relay `sonar.python.version` as X.Y from the stable X.Y.Z env pin, and retain explicit UTF-8. Preserve scope and rule settings when synchronizing versions. Obtain the named file/line from encoding logs before converting files or adding exclusions; a clean local UTF-8 audit or an explicit encoding setting does not prove the remote warning has cleared.
 - Guidance and passing mocks cannot guarantee prevention. Report request tests, workflow enforcement, latest scanner results, authorized triage (if any), and remaining gaps separately. Never label a still-open alert fixed or silently dismiss it to finish an agent task.
+
+## Keep helper quality checks enforceable
+
+- Keep each function's cognitive complexity at or below 15. Extract cohesive operations such as provenance validation, report copying, API routing, execution evidence, or rendering; preserve failure status and report semantics while doing so. Do not move branches merely to hide a finding or disable analysis.
+- For report/capture or Qodana project-helper edits, run `npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund`, `npm run check --prefix scripts/quality`, and `npm test --prefix scripts/quality`, then the nearest helper tests. The pinned gate checks the report/capture helpers and `scripts/qodana-project.mjs`; add new helpers to `scripts/quality/check.mjs` as they are introduced. It is enforced in the unfiltered Workflow Quality job on PRs and merge queues.
+- Supply an explicit comparator for JavaScript `sort` and `toSorted`: numeric subtraction for numbers, `localeCompare` for strings. Sort copies when comparing inventories so callers' arrays remain unchanged. Test reordered equal inventories and missing, stale, or duplicate entries; preserve fail-closed behavior. Sonar S2871 motivated this contract. The local syntax rule enforces comparator presence without type services; do not merely enable a type-dependent lint rule that silently skips plain JavaScript. Add rejecting and accepting lint fixtures when extending the gate, and verify the affected production helper is in its file list.
+- Avoid control-character regex ranges; use explicit character comparisons when validating branch metadata, and preserve rejection tests. The local gate enforces `no-control-regex`. Guidance and local lint do not establish remote SonarCloud clearance; verify a fresh matching analysis separately.
 
 ## Validation evidence
 

@@ -273,11 +273,13 @@ npm run typecheck     # TypeScript 7 native checker in strict no-emit mode
 npm run test:fast     # Node and DOM suites, stopping at the first failure
 npm test              # complete Node and DOM suites
 npm run test:coverage # both suites with v8 coverage reports
-npm run build         # production build smoke test
+npm run check         # format, lint, route type generation, and strict typecheck
+npm run verify        # check plus both coverage suites and the coverage gate
+npm run build         # verify, then compile the production app
 ```
 
 TypeScript 7 uses the stable native checker formerly called `tsgo`. The supported
-stable command is `tsc`, so `npm run typecheck` invokes `tsc --noEmit`; no preview
+stable command is `tsc`, so `npm run typecheck` invokes `next typegen` followed by `tsc --noEmit`; no preview
 compiler package or command shim is required.
 
 ### Building for Production
@@ -293,21 +295,21 @@ The dashboard is designed to run in a Docker container alongside the observabili
 
 ### Docker build pipeline
 
-The Dockerfile uses a four-stage multi-stage build optimized for 16-core build machines:
+The Dockerfile uses a four-stage multi-stage build with separately cached compilation and mandatory validation:
 
 | Stage       | Purpose                                                            | Cache strategy                                                                 |
 | ----------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | **deps**    | `npm ci` (prod + dev)                                              | npm tarball cache mount (`/root/.npm`)                                         |
-| **quality** | Oxfmt check → Oxlint → TypeScript 7 → Vitest (Node) → Vitest (DOM) | Runs module scripts on every build; tests use `--maxWorkers=12`                |
+| **quality** | Oxfmt check → Oxlint → TypeScript 7 → Vitest (Node) → Vitest (DOM) | Uses shared worker limits; DOM tests use isolated VM workers                   |
 | **builder** | `next build` (standalone output)                                   | `.next/cache` mount; `typescript.ignoreBuildErrors` avoids redundant typecheck |
 | **runner**  | Minimal Alpine image with standalone output                        | Layer cache (static assets rarely change)                                      |
 
 Key design decisions:
 
-- **Quality gates the build**: `builder` depends on `quality` via a sentinel file (`COPY --from=quality /tmp/.quality-ok`). BuildKit won't start the build stage until lint/typecheck/tests pass.
+- **Quality gates the build**: `builder` depends on `quality` via a sentinel file (`COPY --from=quality /tmp/.quality-ok`). The sentinel is copied after compilation so BuildKit can schedule compilation and quality independently. The builder and final image cannot complete until both succeed; test-only changes can reuse compiled layers.
 - **Test files excluded by convention**: all tests live under `__tests__/`, which is never `COPY`'d into the builder stage, so they don't bloat the standalone output.
 - **Config-before-source COPY split**: `package.json` + `next.config.ts` + `tsconfig.json` are copied before `app/` + `lib/` for better layer cache hit rate.
-- **Skip quality for fast iteration**: temporarily comment out the `COPY --from=quality /tmp/.quality-ok /tmp/.quality-ok` line in the Dockerfile, then run `docker buildx build --target builder .` to build without lint/typecheck/tests during development.
+- **One CI validation run**: `Next.js Dashboard Quality` owns formatting, lint, typecheck, Node/DOM coverage, threshold enforcement, report artifacts, Codecov uploads, and compilation for the same checkout. It invokes `build:compile` only after explicit validation, avoiding the local `prebuild` lifecycle repeating coverage. Local `npm run build` always runs `verify` first.
 
 ### Option 1: Use Docker Compose (Recommended for local development)
 
@@ -357,6 +359,28 @@ pure-Node tests:
 
 Both configs extend `vitest.config.shared.mts` for common resolve aliases,
 pool settings, and coverage excludes.
+
+The default `vitest.config.mts` references both projects, so editor tests, `npm test`,
+`test:fast`, and watch mode use the same Node/DOM boundaries. Coverage runs still
+produce disjoint `coverage/node` and `coverage/dom` reports for the weighted gate.
+The DOM project uses `vmThreads` with four workers and per-file isolation. In a
+Windows comparison of the same 209-test suite with coverage and four workers,
+threads took 126.5 seconds and VM threads took 28.6 seconds. Both produced
+identical coverage counters. Earlier exploratory runs without coverage took
+32.5 seconds with four VM workers and 31.5 seconds with eight, so four remains
+the conservative default. CI hardware may differ.
+
+Job event parsing/state and persistence live under `lib/jobRunner/`; HTTP and
+EventSource operations are supplied through a narrow transport. `useJobEventStream`
+owns reconnection and stream cleanup, while `useJobRunner` coordinates execution.
+Service-health normalization lives in `lib/serviceHealthModel.ts`, fixed API
+operations in `lib/serviceHealthClient.ts`, and React coordination in
+`useServiceHealth`. Views consume those results. Pure behavior runs in Node tests.
+
+Server configuration and the shared metadata collector use the `server-only`
+marker. Browser views use same-origin dashboard endpoints and never import the
+orchestrator's URL/key configuration. Layout and `/api/system` share metadata
+assembly without launching an npm subprocess.
 
 The configs use `.mts` and explicit import extensions so Vite can load them as
 native ESM without changing the dashboard's package-wide module type.
@@ -451,3 +475,11 @@ node ..\orchestrator\scripts\direct-sse-smoke.mjs
 ## License
 
 Apache License 2.0 (same as parent project)
+
+## Local coverage gate
+
+`npm run build` first runs both coverage suites and enforces the configured line and
+branch thresholds. `npm run test:coverage` applies the same gate without compiling.
+The Docker quality stage also enforces coverage before building. Limits come from
+`scripts/coverage-thresholds.json`; run `python scripts/sync_coverage_thresholds.py`
+from the repository root after changing them. See [the coverage policy](../../docs/TESTING.md#hard-per-module-gates).

@@ -96,7 +96,7 @@ make coverage
   - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
   - uploads `coverage.out` and `coverage.html`
   - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
-  - enforces the current simple-module statement threshold of **30%**
+  - enforces the simple-module statement threshold of **90%**
 - **Codecov flag**: `go-simple`
   - mapped in the repository root `codecov.yml` to `services/go/simple/`
 
@@ -115,6 +115,8 @@ The unit tests cover:
 - port resolution from `PORT`
 - boot logging
 - `runWithContext` success path and boot failure paths
+- entry-point completion and metric-provider shutdown
+- real listener failure when the configured address is already in use
 - OTLP provider initialization behavior
 
 If your local Windows Go toolchain has filesystem-permission issues with the
@@ -126,3 +128,12 @@ workflows run on Linux and remain the source of truth.
 - [Fiber documentation](https://docs.gofiber.io/)
 - [OpenTelemetry Go](https://opentelemetry.io/docs/languages/go/)
 - [Go modules](https://go.dev/ref/mod)
+
+## Local coverage gate
+
+`make build` runs race-enabled tests with coverage, enforces this module's statement
+threshold from `scripts/coverage-thresholds.json`, and then builds the server at
+`bin/server`. The ignored `bin/` directory keeps binaries outside source audits.
+`make coverage` enforces the same gate without compiling the server. Python 3 and
+a CGO-capable C toolchain are required; use `make PYTHON=python3 build` where needed.
+Native Go does not measure branch coverage.

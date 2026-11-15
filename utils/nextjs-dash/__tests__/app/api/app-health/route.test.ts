@@ -5,6 +5,12 @@ import '@/__tests__/_helpers/mockScopedServerLogger';
 import { GET } from '@/app/api/app-health/route';
 
 describe('/api/app-health route', () => {
+  it('reports orchestrator DOWN for an unsuccessful readiness response', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 503 }));
+    const res = await GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ checks: { api: 'UP', orchestrator: 'DOWN' } });
+  });
   beforeEach(() => {
     vi.restoreAllMocks();
   });

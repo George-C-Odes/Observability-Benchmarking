@@ -19,6 +19,8 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export const sharedResolve = {
   alias: {
     '@': dirname,
+    // Next enforces this marker during bundling; unit tests execute server modules directly.
+    'server-only': path.resolve(dirname, 'node_modules/next/dist/compiled/server-only/empty.js'),
     // MUI 9 imports this subpath without a file extension. Node's ESM loader no
     // longer resolves the package's directory entry during Vitest runs, so point
     // directly at the shipped ESM module.

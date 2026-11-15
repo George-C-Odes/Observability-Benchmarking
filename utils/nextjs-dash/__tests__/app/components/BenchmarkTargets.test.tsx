@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 
 vi.mock(
   '@/lib/clientLogger',
@@ -100,6 +101,64 @@ function installFetchMock() {
 }
 
 describe('BenchmarkTargets', () => {
+  it('toggles a group on and off and can remove an individual selection', async () => {
+    fetchState.urls = [];
+    render(<BenchmarkTargets />);
+    await waitForSelectedCount('0 / 33 selected');
+    fireEvent.click(screen.getByRole('button', { name: 'Quarkus' }));
+    await waitForSelectedCount('6 / 33 selected');
+    fireEvent.click(screen.getByRole('button', { name: 'Quarkus' }));
+    await waitForSelectedCount('0 / 33 selected');
+    fireEvent.click(screen.getByRole('button', { name: 'go / virtual' }));
+    await waitForSelectedCount('1 / 33 selected');
+    fireEvent.click(screen.getByRole('button', { name: 'go / virtual' }));
+    await waitForSelectedCount('0 / 33 selected');
+    expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled();
+  });
+
+  it('reloads persisted targets after local selection changes', async () => {
+    await renderBenchmarkTargetsAndWaitForInitialLoad();
+    fireEvent.click(screen.getByRole('button', { name: 'None' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+    await waitForSelectedCount('2 / 33 selected');
+    expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled();
+  });
+
+  it('shows a save error when the network rejects the request', async () => {
+    await renderBenchmarkTargetsAndWaitForInitialLoad();
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+    fireEvent.click(screen.getByRole('button', { name: 'None' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(await screen.findByText('Failed to save benchmark targets')).toBeInTheDocument();
+  });
+
+  it.each([true, false])(
+    'ignores a stale initial load after effect restart (success=%s)',
+    async (success) => {
+      let finish!: (response: Response) => void;
+      let fail!: (error: Error) => void;
+      vi.spyOn(globalThis, 'fetch').mockReturnValueOnce(
+        new Promise((resolve, reject) => {
+          finish = resolve;
+          fail = reject;
+        }),
+      );
+      render(
+        <StrictMode>
+          <BenchmarkTargets />
+        </StrictMode>,
+      );
+      await waitForSelectedCount('2 / 33 selected');
+      await act(async () => {
+        if (success)
+          finish(new Response(JSON.stringify({ urls: ['http://go:8080/hello/virtual'] })));
+        else fail(new Error('offline'));
+      });
+      expect(screen.getByText(countMatcher('2 / 33 selected'))).toBeInTheDocument();
+      expect(screen.queryByText('Failed to load benchmark targets')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled();
+    },
+  );
   beforeEach(() => {
     vi.clearAllMocks();
     fetchState.urls = ['http://quarkus-jvm:8080/hello/platform', 'http://go:8080/hello/virtual'];

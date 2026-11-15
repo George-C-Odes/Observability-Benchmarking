@@ -15,6 +15,27 @@ import * as runState from '@/lib/scriptRunnerRunState';
 import { GET } from '@/app/api/orchestrator/status/route';
 
 describe('/api/orchestrator/status route', () => {
+  it.each([new Error('offline'), 'offline', null])(
+    'returns 500 for unexpected upstream failure %s',
+    async (failure) => {
+      vi.mocked(orch.getJobStatusWithRunId).mockRejectedValue(failure);
+      const res = await GET(
+        new NextRequest('http://localhost/api/orchestrator/status?jobId=job-1'),
+      );
+      expect(res.status).toBe(500);
+      expect(await res.json()).toHaveProperty('error');
+    },
+  );
+
+  it('permits a caller run when there is no active run', async () => {
+    vi.mocked(runState.getActiveRunId).mockReturnValue(null);
+    vi.mocked(orch.getJobStatusWithRunId).mockResolvedValue({ jobId: 'job-1', status: 'RUNNING' });
+    const res = await GET(
+      new NextRequest('http://localhost/api/orchestrator/status?jobId=job-1&runId=run-1'),
+    );
+    expect(res.status).toBe(200);
+    expect(orch.getJobStatusWithRunId).toHaveBeenCalledWith('job-1', 'run-1', null);
+  });
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(runState.getActiveRunId).mockReturnValue('run-active');

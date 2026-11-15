@@ -3,6 +3,7 @@
  * Provides reusable methods for common operations following DRY principle.
  */
 
+import 'server-only';
 import { orchestratorConfig } from './config';
 
 /**
@@ -167,34 +168,4 @@ export async function getBenchmarkTargets(): Promise<BenchmarkTargetsContent> {
  */
 export async function updateBenchmarkTargets(urls: string[]): Promise<void> {
   await orchestratorPost('/v1/benchmark-targets', { urls });
-}
-
-/**
- * @deprecated Validation should live in the Quarkus orchestrator. Kept only as a very small
- * safety net to avoid sending obviously invalid requests.
- */
-export function validateCommand(command: unknown): string {
-  if (typeof command !== 'string') {
-    throw new Error('Command must be a string');
-  }
-  const trimmed = command.trim();
-  if (!trimmed) {
-    throw new Error('Command must be a non-empty string');
-  }
-  return trimmed;
-}
-
-/**
- * @deprecated Validation should live in the Quarkus orchestrator. Kept only as a very small
- * safety net to avoid sending obviously invalid requests.
- */
-export function validateJobId(jobId: unknown): string {
-  if (typeof jobId !== 'string') {
-    throw new Error('jobId must be a string');
-  }
-  const trimmed = jobId.trim();
-  if (!trimmed) {
-    throw new Error('jobId must be a non-empty string');
-  }
-  return trimmed;
 }

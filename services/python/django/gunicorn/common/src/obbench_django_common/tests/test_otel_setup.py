@@ -191,9 +191,26 @@ class OTelSetupLifecycleTests(TestCase):
             mock.patch.object(otel_setup, "apply_logging_instrumentor") as logging_inst,
         ):
             otel_setup.instrument_app()
+            otel_setup.instrument_app()
 
         django_inst.assert_called_once_with()
         logging_inst.assert_called_once_with()
+
+    def test_logging_instrumentation_failure_preserves_django_instrumentation(self) -> None:
+        self.enable_otel_for_test()
+        with (
+            mock.patch.object(otel_setup, "apply_django_instrumentor") as django_inst,
+            mock.patch.object(
+                otel_setup, "apply_logging_instrumentor", side_effect=ImportError("unavailable")
+            ),
+            self.assertLogs("hello", level="DEBUG") as logs,
+        ):
+            otel_setup.instrument_app()
+
+        django_inst.assert_called_once_with()
+        self.assertTrue(
+            any("LoggingInstrumentor unavailable" in message for message in logs.output)
+        )
 
     def test_instrument_app_continues_when_django_instrumentor_fails(self) -> None:
         self.enable_otel_for_test()

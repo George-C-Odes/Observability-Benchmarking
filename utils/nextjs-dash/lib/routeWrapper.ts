@@ -18,8 +18,6 @@ type Handler<TResponse> = (
 
 type WrapOpts = {
   name: string;
-  // If true, avoid logging request body/params etc. Not used yet, but easy to extend.
-  sensitive?: boolean;
 };
 
 /**

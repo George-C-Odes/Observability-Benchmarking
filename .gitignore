@@ -55,6 +55,9 @@ yarn-error.log*
 /utils/nextjs-dash/oxfmt-output.txt
 /utils/nextjs-dash/oxlint-report.json
 /utils/nextjs-dash/typescript-output.txt
+/utils/nextjs-dash/format-status.json
+/utils/nextjs-dash/lint-status.json
+/utils/nextjs-dash/typecheck-status.json
 
 # Go Enhanced CI quality report artifacts
 /services/go/enhanced/quality-report/

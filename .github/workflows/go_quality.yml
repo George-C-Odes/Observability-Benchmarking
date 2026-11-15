@@ -7,9 +7,13 @@ name: Go Quality
 #     build, govulncheck, hosted HTML report).
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
@@ -24,6 +28,9 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
@@ -37,6 +44,10 @@ on:
   schedule:
     # Weekly scan — Monday at 06:00 UTC (staggered after CodeQL at 05:30).
     - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -66,8 +77,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: go_quality.yml
 
       - name: Set up Go
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-go
         with:
           go-version-file: ${{ matrix.module_dir }}/go.mod
@@ -76,10 +95,12 @@ jobs:
             .github/go-tools/go.sum
 
       - name: Test golangci-lint release lookup
+        if: steps.scope.outputs.run == 'true'
         working-directory: .
         run: node --test scripts/golangci-lint-asset.test.mjs scripts/github-release-asset.test.mjs
 
       - name: Download golangci-lint
+        if: steps.scope.outputs.run == 'true'
         timeout-minutes: 6
         working-directory: .
         shell: bash
@@ -109,6 +130,7 @@ jobs:
           echo "$RUNNER_TEMP/golangci-lint" >> "$GITHUB_PATH"
 
       - name: Install golangci-lint
+        if: steps.scope.outputs.run == 'true'
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           install-mode: none
@@ -118,6 +140,7 @@ jobs:
           # The later lint step captures JSON output for the Pages report.
 
       - name: Print tool versions
+        if: steps.scope.outputs.run == 'true'
         id: versions
         run: |
           go_ver="$(go version | awk '{print $3}')"
@@ -128,9 +151,11 @@ jobs:
           echo "golangci_lint=$lint_ver" >> "$GITHUB_OUTPUT"
 
       - name: Download dependencies
+        if: steps.scope.outputs.run == 'true'
         run: go mod download
 
       - name: Check go.mod tidiness
+        if: steps.scope.outputs.run == 'true'
         run: |
           go mod tidy -diff
           git diff --exit-code go.mod go.sum || {
@@ -139,22 +164,25 @@ jobs:
           }
 
       - name: Vet
+        if: steps.scope.outputs.run == 'true'
         run: go vet ./...
 
       - name: Lint (golangci-lint)
+        if: steps.scope.outputs.run == 'true'
         id: lint
         run: |
           # The config file (.golangci.yml) writes both colored-line-number
           # to stdout and JSON to golangci-lint-report.json in a single pass.
           golangci-lint run
 
-      - name: Unit tests
-        run: go test ./... -race -count=1
+      # Go Coverage owns the race-enabled test run and hard coverage gate.
 
       - name: Build check
-        run: go build ./cmd/server
+        if: steps.scope.outputs.run == 'true'
+        run: go build ./...
 
       - name: Govulncheck
+        if: steps.scope.outputs.run == 'true'
         run: |
           # Build the scanner from its dedicated module and checksum lock.
           go -C "$GITHUB_WORKSPACE/.github/go-tools" build -mod=readonly \
@@ -171,11 +199,11 @@ jobs:
 
 
       - name: Set up Node.js (for report generation)
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-node
 
       - name: Generate quality report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           GOLANGCI_LINT_VERSION: ${{ steps.versions.outputs.golangci_lint }}
           GO_VERSION: ${{ steps.versions.outputs.go }}
@@ -183,7 +211,7 @@ jobs:
         run: node ../../../scripts/pages/generate-go-quality-report.mjs
 
       - name: Upload quality report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.artifact_name }}

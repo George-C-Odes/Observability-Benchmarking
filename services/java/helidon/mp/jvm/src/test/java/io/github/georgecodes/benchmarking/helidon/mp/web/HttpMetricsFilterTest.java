@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.helidon.mp.web;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import org.junit.jupiter.api.AfterEach;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class HttpMetricsFilterTest {
@@ -75,6 +77,48 @@ class HttpMetricsFilterTest {
 
         assertNotNull(okTimer);
         assertNotNull(uncommonTimer);
+    }
+
+    @Test
+    void disabledResponseFilterDoesNotRecordAnExistingSample() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        Metrics.addRegistry(registry);
+        try {
+            RequestContextHandler request = new RequestContextHandler("GET");
+            new HttpMetricsFilter(true).filter(request.proxy());
+            assertNotNull(request.sampleProperty());
+
+            new HttpMetricsFilter(false).filter(request.proxy(), responseContext(200));
+
+            assertEquals(0, registry.getMeters().size());
+        } finally {
+            Metrics.removeRegistry(registry);
+            registry.close();
+        }
+    }
+
+    @Test
+    void recordsStatusBoundariesAndReusesTimerForRepeatedRequests() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        Metrics.addRegistry(registry);
+        try {
+            HttpMetricsFilter filter = new HttpMetricsFilter(true);
+            for (int status : new int[]{99, 100, 599, 600}) {
+                for (int i = 0; i < 2; i++) {
+                    RequestContextHandler request = new RequestContextHandler("GET");
+                    filter.filter(request.proxy());
+                    filter.filter(request.proxy(), responseContext(status));
+                }
+                Timer timer = registry.get("http.server.requests")
+                        .tags("method", "GET", "uri", "/hello/virtual", "status", String.valueOf(status))
+                        .timer();
+                assertEquals(2, timer.count());
+            }
+            assertEquals(4, registry.getMeters().size());
+        } finally {
+            Metrics.removeRegistry(registry);
+            registry.close();
+        }
     }
 
     private static ContainerResponseContext responseContext(int status) {

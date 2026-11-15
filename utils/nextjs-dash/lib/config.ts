@@ -1,3 +1,4 @@
+import 'server-only';
 import { envString } from '@/lib/env';
 
 /**
@@ -11,7 +12,6 @@ import { envString } from '@/lib/env';
 export const orchestratorConfig = {
   url: envString('ORCH_URL', 'http://localhost:3002'),
   apiKey: envString('ORCH_API_KEY', 'change-me'),
-  timeout: 60000, // 60 seconds
 } as const;
 
 // Script runner config is runtime (see /api/script-runner/config). Keeping server-side config here

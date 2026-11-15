@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
@@ -8,6 +8,15 @@ import { loadManifestTemplatePaths, parseColonEnv, resolveRepoPath } from './ren
 import { frameworkVersionKeys, generatedFrameworkPaths, syncPythonDefault, syncSonarPythonVersion } from './sync-framework-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
+
+function repositoryFiles() {
+  const result = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
+    cwd: resolveRepoPath('.'), encoding: 'utf8', timeout: 30_000,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  // Audit new source too, while allowing files deleted in the working tree.
+  return [...new Set(result.stdout.split('\0').filter((file) => file && existsSync(resolveRepoPath(file))))];
+}
 
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
@@ -74,13 +83,12 @@ test('Sonar excludes only verified binary images and all other tracked files are
   const exclusions = matches[0][1].split(',');
   assert.deepEqual(exclusions, ['**/*.png', '**/*.ico'], 'Do not exclude source files or entire directories');
   const excluded = (file) => exclusions.some((pattern) => path.posix.matchesGlob(file, pattern));
-  const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: resolveRepoPath('.'), encoding: 'utf8', timeout: 30_000 });
-  assert.equal(tracked.status, 0, tracked.stderr);
+  const tracked = repositoryFiles();
   const decoder = new TextDecoder('utf-8', { fatal: true });
   const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const icoSignature = Buffer.from([0x00, 0x00, 0x01, 0x00]);
   let images = 0;
-  for (const file of tracked.stdout.split('\0').filter(Boolean)) {
+  for (const file of tracked) {
     const bytes = readFileSync(resolveRepoPath(file));
     if (excluded(file)) {
       const signature = file.endsWith('.png') ? pngSignature : icoSignature;
@@ -116,9 +124,8 @@ test('Sonar classifies tracked non-Java tests and helpers without excluding prod
   }
   const isTest = (file) => roots.some((root) => file === root || file.startsWith(`${root}/`))
     && patterns.some((pattern) => path.posix.matchesGlob(file, pattern));
-  const tracked = spawnSync('git', ['ls-files', '-z'], { cwd: resolveRepoPath('.'), encoding: 'utf8', timeout: 30_000 });
-  assert.equal(tracked.status, 0, tracked.stderr);
-  const tests = tracked.stdout.split('\0').filter((file) => file.endsWith('.test.mjs') || file.endsWith('_test.go')
+  const tracked = repositoryFiles();
+  const tests = tracked.filter((file) => file.endsWith('.test.mjs') || file.endsWith('_test.go')
     || (file.endsWith('.py') && (path.posix.basename(file).startsWith('test_') || file.includes('/tests/')))
     || file.startsWith('utils/nextjs-dash/__tests__/'));
   assert.ok(tests.length > 50, 'Verify a nonempty multi-language inventory');
@@ -131,9 +138,10 @@ test('Sonar classifies tracked non-Java tests and helpers without excluding prod
     'services/python/django/gunicorn/common/src/obbench_django_common/views.py',
     'services/python/django/gunicorn/WSGI/src/manage.py', 'services/go/simple/cmd/server/main.go',
     'services/go/enhanced/internal/handlers/hello.go', 'utils/nextjs-dash/app/page.tsx',
+    'utils/nextjs-dash/scripts/coverage-gate.mjs', 'utils/nextjs-dash/scripts/sse-smoke.mjs',
     'utils/orchestrator/scripts/direct-sse-smoke.mjs',
   ]) assert.equal(isTest(file), false, `Production path must not be a test: ${file}`);
-  for (const file of tracked.stdout.split('\0').filter((file) => file.includes('/src/main/java/') && file.endsWith('.java'))) {
+  for (const file of tracked.filter((file) => file.includes('/src/main/java/') && file.endsWith('.java'))) {
     assert.equal(isTest(file), false, `Java production path must not be a test: ${file}`);
   }
   assert.ok(roots.every((root) => !root.startsWith('services/java')

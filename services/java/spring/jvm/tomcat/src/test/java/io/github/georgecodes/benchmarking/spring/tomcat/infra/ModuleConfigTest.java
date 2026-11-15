@@ -2,7 +2,9 @@ package io.github.georgecodes.benchmarking.spring.tomcat.infra;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.ApplicationArguments;
@@ -14,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
 
 class ModuleConfigTest {
 
@@ -85,6 +88,37 @@ class ModuleConfigTest {
 
         assertDoesNotThrow(() -> moduleConfig.processThreadMetrics().bindTo(registry));
         assertThat(registry.getMeters()).hasSize(meterCount);
+    }
+
+    @Test
+    void processThreadMetricsProvidesFallbackWhenNativeBinderRegistersNoGauge() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        try (var ignored = mockConstruction(ProcessThreadMetrics.class)) {
+            // Simulate platforms where the native binder cannot supply process.threads.
+            moduleConfig.processThreadMetrics().bindTo(registry);
+
+            Gauge gauge = registry.get("process.threads").gauge();
+            assertThat(gauge.value()).isPositive();
+            assertThat(gauge.getId().getDescription()).isEqualTo("The number of process threads");
+        } finally {
+            registry.close();
+        }
+    }
+
+    @Test
+    void processThreadMetricsPreservesExistingGauge() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        try (var ignored = mockConstruction(ProcessThreadMetrics.class)) {
+            Gauge existing = Gauge.builder("process.threads", () -> 42).register(registry);
+
+            moduleConfig.processThreadMetrics().bindTo(registry);
+
+            assertThat(registry.get("process.threads").gauge()).isSameAs(existing);
+            assertThat(existing.value()).isEqualTo(42);
+            assertThat(registry.getMeters()).hasSize(1);
+        } finally {
+            registry.close();
+        }
     }
 
     @Test

@@ -10,6 +10,7 @@
 name: 'Dependency review'
 
 on:
+  merge_group:
   pull_request:
     branches: [ "main" ]
 
@@ -19,6 +20,10 @@ on:
 #   contents: write
 #
 # https://docs.github.com/en/enterprise-cloud@latest/code-security/supply-chain-security/understanding-your-software-supply-chain/using-the-dependency-submission-api
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions: {}
 
 jobs:

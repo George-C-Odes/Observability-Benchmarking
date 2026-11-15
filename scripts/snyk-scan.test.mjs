@@ -370,7 +370,8 @@ test('workflow keeps required scans gated and snapshots restricted to trusted ma
   assert.match(workflow, /scan_completed "\$CODE_RESULT" "\$CODE_OUTCOME"/);
   assert.match(workflow, /scan_completed "\$TEST_RESULT" "\$TEST_OUTCOME"/);
   assert.match(workflow, /"\$MONITOR_OUTCOME" == "failure"/);
-  assert.match(workflow, /node --test scripts\/snyk-scan\.test\.mjs scripts\/snyk-report\.test\.mjs/);
+  const validation = readFileSync(new URL('../.github/workflows/workflow_quality.yml', import.meta.url), 'utf8');
+  assert.match(validation, /scripts\/snyk-scan\.test\.mjs scripts\/snyk-report\.test\.mjs/);
   assert.ok(!workflow.includes('echo "::error::Snyk reported findings or incomplete scans.'));
   assert.match(workflow, /\| Scan \| Result \| Step outcome \|/);
 });
@@ -398,7 +399,7 @@ test('workflow scan steps normalize only findings and the gate warns without hid
   const root = fixtureRoot(t, 'snyk-gate-');
   const summaryPath = new URL('summary', root);
   const defaults = {
-    SNYK_TOKEN: 'test-token', CODE_RESULT: 'clean', CODE_OUTCOME: 'success',
+    SNYK_ENABLED: 'true', CODE_RESULT: 'clean', CODE_OUTCOME: 'success',
     TEST_RESULT: 'clean', TEST_OUTCOME: 'success', MONITOR_RESULT: '', MONITOR_OUTCOME: 'skipped',
     GITHUB_STEP_SUMMARY: fileURLToPath(summaryPath).replace(/\\/g, '/'),
   };
@@ -424,7 +425,7 @@ test('workflow scan steps normalize only findings and the gate warns without hid
   }
   cases.push({ env: { CODE_RESULT: 'findings', TEST_RESULT: 'error', TEST_OUTCOME: 'failure' },
     status: 1, summary: '**Blocked:**' });
-  cases.push({ env: { SNYK_TOKEN: '', CODE_RESULT: '', CODE_OUTCOME: 'skipped',
+  cases.push({ env: { SNYK_ENABLED: 'false', CODE_RESULT: '', CODE_OUTCOME: 'skipped',
     TEST_RESULT: '', TEST_OUTCOME: 'skipped' }, status: 0, summary: 'Snyk scans skipped' });
   for (const scenario of cases) {
     writeFileSync(summaryPath, '');

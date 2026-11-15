@@ -21,13 +21,6 @@ export function envNumber(
   return Number.isFinite(n) && n >= min ? n : defaultValue;
 }
 
-export function envBool(name: string, defaultValue = false): boolean {
-  const raw = process.env[name];
-  if (raw == null || raw === '') return defaultValue;
-  const v = raw.toLowerCase();
-  return v === 'true' || v === '1' || v === 'yes' || v === 'y' || v === 'on';
-}
-
 export function envString(
   name: string,
   defaultValue: string,

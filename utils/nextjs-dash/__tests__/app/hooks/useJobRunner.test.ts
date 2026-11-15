@@ -31,6 +31,123 @@ afterEach(() => {
 });
 
 describe('useJobRunner', () => {
+  it('uses an injected transport and closes its stream and timers on unmount', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const source = new MockEventSource('/injected');
+    const transport = {
+      submitJobCommand: vi.fn().mockResolvedValue({ success: true, jobId: 'job-injected' }),
+      checkStreamMeta: vi.fn(),
+      openEventStream: vi.fn(() => ({
+        source: source as unknown as EventSource,
+        url: '/injected',
+      })),
+    };
+    const { result, unmount } = renderHook(() => useJobRunner(transport));
+    await act(async () => {
+      await result.current.runCommand('echo hi', 'Injected');
+    });
+    act(() => source.emitOpen());
+    expect(result.current.sseConnected).toBe(true);
+    expect(transport.submitJobCommand).toHaveBeenCalledWith(
+      'echo hi',
+      'Injected',
+      expect.any(String),
+      expect.any(String),
+    );
+    expect(transport.openEventStream).toHaveBeenCalledWith(
+      'job-injected',
+      expect.any(String),
+      expect.any(Number),
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    unmount();
+    expect(source.close).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it.each(['{', 'null', '42', '{}', '{"jobId":" "}'])(
+    'ignores invalid persisted state (%s)',
+    (stored) => {
+      sessionStorage.setItem('scriptRunner.activeJob.v2', stored);
+      const { result } = renderHook(() => useJobRunner());
+      expect(result.current.currentJobId).toBeNull();
+      expect(MockEventSource.instances).toHaveLength(0);
+    },
+  );
+
+  it('restores a minimal persisted job with defaults', async () => {
+    vi.useFakeTimers();
+    sessionStorage.setItem('scriptRunner.activeJob.v2', JSON.stringify({ jobId: ' job-minimal ' }));
+    const { result } = renderHook(() => useJobRunner());
+    await act(async () => {
+      vi.advanceTimersByTime(0);
+    });
+    expect(result.current.currentJobId).toBe('job-minimal');
+    expect(result.current.lastCommand).toBeNull();
+    expect(result.current.lastLabel).toBeNull();
+    expect(result.current.reconnectCount).toBe(0);
+    expect(MockEventSource.instances[0].url).toContain('jobId=job-minimal');
+    expect(MockEventSource.instances[0].url).not.toContain('runId=');
+  });
+
+  it.each(['FAILED', 'CANCELED'] as const)(
+    'applies %s summaries and preserves the server title and last line',
+    async (status) => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ jobId: 'job-summary' })),
+      );
+      const { result } = renderHook(() => useJobRunner());
+      await act(async () => {
+        await result.current.runCommand('echo hi');
+      });
+      await act(async () => {
+        MockEventSource.instances[0].emitMessage(
+          JSON.stringify({
+            type: 'terminalSummary',
+            jobStatus: status,
+            title: ' Server title ',
+            lastLine: 'final output',
+            exitCode: 1,
+          }),
+        );
+      });
+      expect(result.current.lastJobStatus).toMatchObject({
+        status,
+        title: 'Server title',
+        lastLine: 'final output',
+        exitCode: 1,
+      });
+    },
+  );
+
+  it('ignores empty, unknown and invalid status events while accepting queued jobs', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ jobId: 'job-events' })),
+    );
+    const { result } = renderHook(() => useJobRunner());
+    await act(async () => {
+      await result.current.runCommand('echo hi');
+    });
+    const es = MockEventSource.instances[0];
+    await act(async () => {
+      es.emitMessage(JSON.stringify({ type: 'summary', jobStatus: 'QUEUED' }));
+    });
+    expect(result.current.lastJobStatus?.status).toBe('QUEUED');
+    act(() => result.current.clearEventLogs());
+    await act(async () => {
+      for (const event of [
+        '',
+        '{}',
+        '{"type":"summary","jobStatus":"INVALID"}',
+        '{"type":"status"}',
+        '{"type":"status","message":" "}',
+        '{"type":"log"}',
+      ])
+        es.emitMessage(event);
+    });
+    expect(result.current.lastJobStatus?.status).toBe('QUEUED');
+    expect(result.current.eventLogs).toEqual(['']);
+  });
   it('submits a job, opens SSE, and updates status from SSE summary events', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -278,7 +395,7 @@ describe('useJobRunner', () => {
 
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining('/api/orchestrator/events/meta?jobId=job-reconnect'),
-        { cache: 'no-store' },
+        { cache: 'no-store', redirect: 'error' },
       );
       expect(result.current.sseLastError).toBe('SSE connection error');
       expect(result.current.reconnectCount).toBe(1);

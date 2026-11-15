@@ -10,6 +10,8 @@ export default defineConfig({
   resolve: sharedResolve,
   test: {
     ...sharedTestOptions,
+    name: 'dom',
+    pool: 'vmThreads',
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     server: {

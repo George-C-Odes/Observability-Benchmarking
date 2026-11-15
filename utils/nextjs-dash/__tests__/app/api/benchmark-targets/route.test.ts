@@ -12,6 +12,20 @@ import * as orch from '@/lib/orchestratorClient';
 import { GET, POST } from '@/app/api/benchmark-targets/route';
 
 describe('/api/benchmark-targets route', () => {
+  it.each([{ urls: [42] }, { urls: [''] }])(
+    'rejects invalid target entries ($urls) before updating upstream',
+    async ({ urls }) => {
+      const res = await POST(
+        new NextRequest('http://localhost/api/benchmark-targets', {
+          method: 'POST',
+          body: JSON.stringify({ urls }),
+        }),
+      );
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'urls must be an array of non-empty strings' });
+      expect(orch.updateBenchmarkTargets).not.toHaveBeenCalled();
+    },
+  );
   beforeEach(() => {
     vi.resetAllMocks();
   });

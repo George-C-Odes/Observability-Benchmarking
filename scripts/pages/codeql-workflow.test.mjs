@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 import { parseColonEnv } from '../render-readmes.mjs';
+import { modules } from '../java-modules.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const workflow = readFileSync(join(root, '.github/workflows/codeql.yml'), 'utf8').replaceAll('\r\n', '\n');
@@ -54,6 +55,21 @@ test('Java setup and compilation depend only on the matrix language', () => {
   assert.match(setup, /^ {10}cache: maven$/m);
 });
 
+test('Go setup precedes CodeQL initialization so manual builds use its tracing wrapper', () => {
+  const setup = step('Set up Go');
+  assert.match(setup, /^ {8}if: matrix\.language == 'go'$/m);
+  assert.match(setup, /uses: \.\/\.github\/actions\/setup-go/);
+  assert.match(setup, /go-version-file: services\/go\/enhanced\/go.mod/);
+  assert.match(setup, /cache-dependency-path: services\/go\/\*\*\/go.sum/);
+  const init = workflow.indexOf('      - name: Initialize CodeQL\n');
+  const build = workflow.indexOf('      - name: Build Go modules\n');
+  const analyze = workflow.indexOf('      - name: Perform CodeQL Analysis\n');
+  assert.ok(workflow.indexOf('      - name: Set up Go\n') < init, 'setup-go must not replace the tracing wrapper after init');
+  assert.ok(init < build && build < analyze, 'Manual Go builds must run inside the initialized tracing session');
+  assert.doesNotMatch(workflow.slice(init, analyze), /uses: .*actions\/setup-go/);
+  assert.equal((workflow.match(/uses: \.\/\.github\/actions\/setup-go/g) || []).length, 1);
+});
+
 test('every language uses a verified local bundle and the wrapper forwards tools', () => {
   assert.match(step('Resolve CodeQL bundle'), /node --test scripts\/codeql-bundle.test.mjs/);
   assert.match(step('Resolve CodeQL bundle'), /CODEQL_LANGUAGE: \$\{\{ matrix.language }}/);
@@ -66,15 +82,14 @@ test('every language uses a verified local bundle and the wrapper forwards tools
 
 test('fresh Java databases compile all JVM services plus the orchestrator, excluding native builds', () => {
   const build = step('Build Java modules');
-  const registry = build.match(/SERVICE_MODULES=\(\s*([\s\S]*?)\s*\)/);
-  assert.ok(registry, 'Missing service module registry');
-  const declared = registry[1].trim().split(/\s+/);
+  assert.match(build, /node scripts\/java-modules.mjs --paths > "\$RUNNER_TEMP\/codeql-java-modules"/);
+  assert.match(build, /mapfile -t build_modules < "\$RUNNER_TEMP\/codeql-java-modules"/);
+  const declared = modules.map((module) => module.module_dir);
   const expected = jvmModules(join(root, 'services/java'));
   assert.ok(expected.length > 0);
   assert.ok(existsSync(join(root, 'utils/orchestrator/pom.xml')));
-  assert.deepEqual([...declared, 'utils/orchestrator'].sort(), [...expected, 'utils/orchestrator'].sort());
-  assert.ok(build.includes('build_modules=( "${SERVICE_MODULES[@]}" utils/orchestrator )'));
-  assert.equal((build.match(/build_modules=/g) || []).length, 1, 'Do not narrow the registry by changed paths');
+  assert.deepEqual(declared.sort(), [...expected, 'utils/orchestrator'].sort());
+  assert.equal((build.match(/mapfile -t build_modules/g) || []).length, 1, 'Do not narrow the registry by changed paths');
   assert.equal(build.split('for mod_dir in "${build_modules[@]}"; do').length - 1, 2);
   assert.match(build, /mvn -f "\$mod_dir\/pom\.xml" compile/);
 });

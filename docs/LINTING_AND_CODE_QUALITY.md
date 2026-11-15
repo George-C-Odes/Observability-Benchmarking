@@ -335,6 +335,15 @@ Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all
 
 The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatting verification) on all Django paths.
 
+One `Django common checks` job installs Ruff once and checks the common, WSGI and
+ASGI source trees together. Each tree retains its own `pyproject.toml` settings;
+CI helpers use the shared configuration explicitly. Formatting and helper checks
+still run after lint failures when tool installation succeeded. Runtime dependencies
+and system checks belong to the two coverage jobs: Django's default test runner
+performs the system checks before executing tests. Separate CI `compileall` and
+`manage.py check` invocations are unnecessary. Lock freshness is enforced once in
+Framework Version Consistency; the common job retains the projection unit tests.
+
 ### Qodana Python Community (Django Static Analysis)
 
 In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2026.2`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
@@ -470,8 +479,9 @@ python -m ruff format --check .
 
 ### Additional Django quality checks
 
-The Django CI workflow also performs syntax validation and Django system checks.
-The workflow prints the Ruff version before each lint/format step for visibility:
+Ruff performs syntax validation in CI, and the coverage test runners perform Django
+system checks. The workflow prints the Ruff version once. For targeted local
+diagnosis, these individual commands remain available:
 
 ```bash
 # Shared package syntax check
@@ -605,14 +615,14 @@ make coverage
 
 The Pages workflow resolves the Go quality report source independently of other report sources:
 
-- When triggered by the `Go Quality` workflow, the triggering run is used for the Go report and the latest successful runs for Qodana, Next.js, and Django Python are resolved via API
-- When triggered by any other workflow or by push/manual dispatch, the latest successful `Go Quality` run on `main` is resolved via API
+- Every producer uses its newest-created eligible same-repository run, including failures. An older scan finishing late cannot replace newer evidence.
+- Live reports use `main`; shared staging uses non-main branches. Missing reports remain explicitly unavailable.
 
 Scripts involved:
-- `scripts/pages/resolve-source.sh` — generic parameterized resolver for any quality workflow run (accepts `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` env vars)
+- `scripts/pages/github-reports.mjs` — bounded authenticated GitHub requests and freshness selection, using `report-catalog.json` for fixed producer definitions
 - `scripts/pages/generate-go-quality-report.mjs` — generates the HTML report from golangci-lint JSON output
 - `scripts/pages/report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators
-- `scripts/pages/assemble-quality-pages.sh` — assembles all quality report scopes (Qodana JVM, Django Python, Go, Next.js, CodeQL) into the Pages site
+- `scripts/pages/assemble-reports.mjs` — validates collection provenance and assembles live/staging reports with explicit availability, conclusion and analyzed SHA
 
 ## CodeQL Configuration (Security & Quality Analysis)
 
@@ -824,34 +834,32 @@ The landing page at `quality/` now links to all seven scopes:
 - `quality/nextjs-dash/` — Oxlint + Oxfmt + TypeScript 7 (free alternative)
 - `quality/codeql/` — CodeQL (semantic security and quality analysis)
 
-The report is always generated (even when earlier quality steps fail) so that the hosted report captures the current state of the code. Live Next.js reports use successful runs on `main`. Qodana, Django Python Quality, Go Quality, and CodeQL also accept failed runs because they retain available reports after quality-gate failures (`if: always() && !cancelled()`). All these workflows accept success or failure in shared non-main staging; cancelled/skipped runs are not selected.
+The report is generated after failures from diagnostics captured during the original
+checks. `scripts/capture-check.mjs` preserves checker exit status without repeating
+formatting, linting or typechecking. Missing or failed execution is not a pass.
 
-#### Pages Integration for the Next.js Quality Report
+#### Pages integration
 
-The Pages workflow resolves the Next.js quality report source independently of the Qodana source:
+All five producers accept successful and failed runs for live `main` and shared
+non-main staging. Cancelled/skipped runs and fork sources are excluded. Selection
+uses creation order, so delayed older scans cannot overwrite newer evidence.
+Missing artifacts and API failures produce explicit unavailable states.
 
-- A matching `workflow_run` supplies its triggering run when its branch, conclusion, and source repository satisfy the requested scope's policy.
-- Other report sources, and all sources for push/manual dispatch, use the latest completed API run with an accepted conclusion in the requested branch scope.
-- Live sources use `main`; shared staging uses non-main branches. Django accepts success or failure in both scopes, so a failed main scan can refresh its own live report or be selected during another workflow's Pages publish.
+The publisher resolves one trusted main commit and uses it for every checkout;
+report revisions are metadata, never executable publisher source. Collection
+runs in parallel with the documentation build. Jekyll output is cached by docs
+and workflow content. Assembly publishes all seven existing paths and records
+availability, workflow conclusion, run ID and analyzed SHA. Deployment alone
+receives `pages: write` and `id-token: write`.
 
-Missing or unusable selected artifacts produce an unavailable report status rather than silently substituting an older successful scan.
+`scripts/pages/report-catalog.json` defines producers, workflow names, artifacts
+and report paths. `github-reports.mjs` implements validated, repository-scoped
+requests with redirect rejection, deadlines and bounded retries. `assemble-reports.mjs`
+rejects redirected report trees and builds both report indexes. Run
+`node --test scripts/pages/*.test.mjs` for request and publication regression tests.
 
-The Pages publisher always checks out `main` for the site, scripts, and local actions,
-with persisted Git credentials disabled. Report revisions are metadata only; their
-source code is never executed by the publisher. Both triggering runs and API-selected
-runs must have a source repository matching this repository, so fork reports are
-excluded from live and staging publishing. The build job has read permissions only;
-`pages: write` and `id-token: write` are reserved for the deployment job.
-
-Manual dispatch refreshes both `/quality/` and `/stage/quality/` using the same
-report-selection rules as automatic publishing. The former `source_ref` input has
-been removed: publishing branch reports does not require checking out branch code.
-Run the resolver regression tests with `node --test scripts/pages/resolve-source.test.mjs`.
-
-Scripts involved:
-- `scripts/pages/resolve-source.sh` — generic parameterized resolver; each Pages step supplies `RESOLVE_WORKFLOW_NAME`, `RESOLVE_WORKFLOW_FILE`, and `RESOLVE_ACCEPTED` (Qodana, Django Python Quality, Go Quality, and CodeQL accept `success,failure`; Next.js accepts `success` live and `success,failure` in staging)
-- `scripts/pages/report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators
-- `scripts/pages/assemble-quality-pages.sh` — assembles all quality report scopes (Qodana JVM, Django Python, Go, Next.js, CodeQL) into the Pages site
+See [GitHub automation](../.github/README.md) for tool pins, test ownership, cache
+policy, scoped trigger exceptions and repository-setting rollout requirements.
 
 ### Documentation
 All public classes and methods should include:

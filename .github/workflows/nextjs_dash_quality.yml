@@ -1,34 +1,63 @@
 name: Next.js Dashboard Quality
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'utils/nextjs-dash/**'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
+      - 'scripts/coverage_summary.py'
+      - 'scripts/test_coverage_summary.py'
+      - '.github/actions/codecov-upload/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
       - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/capture-check.mjs'
+      - 'scripts/capture-check.test.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
       - '.github/actions/setup-node/**'
       - '.github/actions/setup-nextjs/**'
       - '.github/actions/upload-artifact/**'
+      - '.github/actions/cache/**'
   push:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'utils/nextjs-dash/**'
+      - 'scripts/coverage_gate.py'
+      - 'scripts/coverage-thresholds.json'
+      - 'scripts/test_coverage_gate.py'
+      - 'scripts/coverage_summary.py'
+      - 'scripts/test_coverage_summary.py'
+      - '.github/actions/codecov-upload/**'
       - 'scripts/pages/generate-nextjs-quality-report.mjs'
       - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/capture-check.mjs'
+      - 'scripts/capture-check.test.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
       - '.github/actions/setup-node/**'
       - '.github/actions/setup-nextjs/**'
       - '.github/actions/upload-artifact/**'
+      - '.github/actions/cache/**'
   schedule:
     # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
     - cron: '15 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -38,6 +67,11 @@ jobs:
     name: Format, lint, typecheck & test
     runs-on: ubuntu-26.04
     timeout-minutes: 15
+    outputs:
+      scope: ${{ steps.scope.outputs.run }}
+      coverage_node: ${{ steps.coverage_node.outcome }}
+      coverage_dom: ${{ steps.coverage_dom.outcome }}
+      coverage_gate: ${{ steps.coverage_gate.outcome }}
     defaults:
       run:
         working-directory: utils/nextjs-dash
@@ -46,11 +80,20 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: nextjs_dash_quality.yml
 
       - name: Set up dashboard
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-nextjs
 
       - name: Print tool versions
+        if: steps.scope.outputs.run == 'true'
         id: versions
         run: |
           node_ver="$(node --version)"
@@ -65,33 +108,112 @@ jobs:
           echo "Oxfmt $oxfmt_ver"
           echo "TypeScript $typescript_ver"
           echo "Vitest $vitest_ver"
-          echo "node=$node_ver"               >> "$GITHUB_OUTPUT"
-          echo "npm=$npm_ver"                 >> "$GITHUB_OUTPUT"
-          echo "oxlint=$oxlint_ver"           >> "$GITHUB_OUTPUT"
-          echo "oxfmt=$oxfmt_ver"             >> "$GITHUB_OUTPUT"
-          echo "typescript=$typescript_ver"   >> "$GITHUB_OUTPUT"
-          echo "vitest=$vitest_ver"           >> "$GITHUB_OUTPUT"
+          {
+            echo "node=$node_ver"
+            echo "npm=$npm_ver"
+            echo "oxlint=$oxlint_ver"
+            echo "oxfmt=$oxfmt_ver"
+            echo "typescript=$typescript_ver"
+            echo "vitest=$vitest_ver"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check formatting (Oxfmt)
-        run: npm run format:check
+        if: steps.scope.outputs.run == 'true'
+        run: node ../../scripts/capture-check.mjs format
 
       - name: Lint (Oxlint)
-        run: npm run lint
+        if: (always() && !cancelled() && steps.versions.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: node ../../scripts/capture-check.mjs lint
 
       - name: Typecheck (TypeScript 7 native checker)
-        run: npm run typecheck
-
-      - name: Unit tests – Node environment
-        run: npm run test:node
-
-      - name: Unit tests – DOM environment (jsdom)
-        run: npm run test:dom
+        if: (always() && !cancelled() && steps.versions.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: node ../../scripts/capture-check.mjs typecheck
 
       - name: Quality report tests
+        if: steps.scope.outputs.run == 'true'
         run: node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
 
-      - name: Production build smoke test
-        run: npm run build
+      # ── Node-environment coverage (lib, API routes) ──────────────────
+      - name: Coverage – Node environment
+        if: steps.scope.outputs.run == 'true'
+        id: coverage_node
+        run: npm run test:coverage:node
+
+      # ── DOM-environment coverage (components, hooks) ─────────────────
+      - name: Coverage – DOM environment
+        id: coverage_dom
+        if: (always() && !cancelled() && steps.coverage_node.outcome != 'skipped') && steps.scope.outputs.run == 'true'
+        run: npm run test:coverage:dom
+
+      # ── Generate GitHub Step Summary ─────────────────────────────────
+      - name: Enforce dashboard coverage thresholds
+        id: coverage_gate
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" nextjs-dash
+
+      - name: Generate coverage summary
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
+        env:
+          NODE_OUTCOME: ${{ steps.coverage_node.outcome }}
+          DOM_OUTCOME: ${{ steps.coverage_dom.outcome }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" nextjs
+
+      # ── Upload HTML coverage reports as artifacts ────────────────────
+      - name: Upload Node coverage report
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: coverage-nextjs-dash-node
+          path: utils/nextjs-dash/coverage/node/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload DOM coverage report
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: coverage-nextjs-dash-dom
+          path: utils/nextjs-dash/coverage/dom/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ── Codecov upload ───────────────────────────────────────────────
+      # Upload both LCOV reports with a dedicated flag so Codecov can
+      # attribute coverage to the dashboard component.
+      #
+      # Flag naming: nextjs-dash (consistent with the component id in
+      # codecov.yml).  See codecov.yml at the repo root for flag → path
+      # mappings and component definitions.
+      - name: Upload to Codecov (Node)
+        if: (always() && !cancelled() && steps.coverage_node.outcome == 'success') && steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/codecov-upload
+        with:
+          files: utils/nextjs-dash/coverage/node/lcov.info
+          flags: nextjs-dash-node
+          name: nextjs-dash-node
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload to Codecov (DOM)
+        if: (always() && !cancelled() && steps.coverage_dom.outcome == 'success') && steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/codecov-upload
+        with:
+          files: utils/nextjs-dash/coverage/dom/lcov.info
+          flags: nextjs-dash-dom
+          name: nextjs-dash-dom
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Restore Next.js compiler cache
+        if: steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/cache
+        with:
+          path: utils/nextjs-dash/.next/cache
+          key: nextjs-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.node }}-${{ hashFiles('utils/nextjs-dash/package-lock.json', 'utils/nextjs-dash/next.config.*', 'utils/nextjs-dash/tsconfig.json') }}-${{ hashFiles('utils/nextjs-dash/app/**', 'utils/nextjs-dash/lib/**', 'utils/nextjs-dash/public/**') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.node }}-${{ hashFiles('utils/nextjs-dash/package-lock.json', 'utils/nextjs-dash/next.config.*', 'utils/nextjs-dash/tsconfig.json') }}-
+
+      - name: Production build after required quality and coverage gates
+        if: steps.scope.outputs.run == 'true'
+        run: npm run build:compile
 
       # ------------------------------------------------------------------
       # Quality report: generate HTML from Oxfmt, Oxlint, and TypeScript 7
@@ -100,25 +222,8 @@ jobs:
       # produces a downloadable report artifact.
       # ------------------------------------------------------------------
 
-      - name: Capture Oxfmt diagnostics
-        if: always() && !cancelled()
-        run: |
-          set +e
-          ./node_modules/.bin/oxfmt --check . > oxfmt-output.txt 2>&1
-          status=$?
-          printf '\nOXFMT_EXIT_CODE=%s\n' "$status" >> oxfmt-output.txt
-          exit 0
-
-      - name: Generate Oxlint JSON report
-        if: always() && !cancelled()
-        run: ./node_modules/.bin/oxlint --format json . > oxlint-report.json || true
-
-      - name: Capture TypeScript diagnostics
-        if: always() && !cancelled()
-        run: ./node_modules/.bin/tsc --noEmit > typescript-output.txt 2>&1 || true
-
       - name: Generate quality report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           OXLINT_VERSION: ${{ steps.versions.outputs.oxlint }}
           OXFMT_VERSION: ${{ steps.versions.outputs.oxfmt }}
@@ -129,10 +234,29 @@ jobs:
         run: node ../../scripts/pages/generate-nextjs-quality-report.mjs
 
       - name: Upload quality report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: quality-report-nextjs-dash
           path: utils/nextjs-dash/quality-report/
           retention-days: 30
           if-no-files-found: warn
+
+  # Keep the existing coverage check name without repeating setup or tests.
+  coverage:
+    name: Dashboard Coverage
+    needs: quality
+    if: always() && !cancelled()
+    runs-on: ubuntu-26.04
+    timeout-minutes: 2
+    steps:
+      - name: Require successful coverage evidence from this run
+        if: needs.quality.outputs.scope != 'false'
+        env:
+          NODE_OUTCOME: ${{ needs.quality.outputs.coverage_node }}
+          DOM_OUTCOME: ${{ needs.quality.outputs.coverage_dom }}
+          GATE_OUTCOME: ${{ needs.quality.outputs.coverage_gate }}
+        run: |
+          test "$NODE_OUTCOME" = success
+          test "$DOM_OUTCOME" = success
+          test "$GATE_OUTCOME" = success

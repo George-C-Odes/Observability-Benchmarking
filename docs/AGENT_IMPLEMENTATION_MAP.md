@@ -203,6 +203,17 @@ python -m ruff check --config services/python/django/gunicorn/common/pyproject.t
 python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
 ```
 
+For Pages/report-capture helpers or `scripts/qodana-project.mjs`, also run:
+
+```bash
+npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
+npm run check --prefix scripts/quality
+npm test --prefix scripts/quality
+node --test scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/workflow-policy.test.mjs
+```
+
+The gate enforces cognitive complexity <= 15, rejects control-character regexes, and requires explicit `sort`/`toSorted` comparators in the covered report/capture helpers and Qodana project helper. Add new helpers to its file list and test both rejected and accepted lint examples. For Qodana project changes, run `node --test scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs`; preserve order-independent inventory equality, input arrays, and rejection of missing, stale, or duplicate entries. Pages checkout-policy tests enforce literal main refs and revision consistency; capture tests exercise traversal and filesystem redirection. These run in the unfiltered Workflow Quality job. Fresh SonarCloud analysis is still needed to confirm warning clearance.
+
 Run only checks relevant to the changed helper. If actionlint is unavailable, use a verified pinned installation or record the blocker; a YAML-only check is not a substitute. Record the validator version and any narrowly justified runner-label exclusion, without suppressing expression/security diagnostics.
 
 For Django staging, mount, interpreter/bootstrap, or scan/report lifecycle changes, follow the local scan commands in `scripts/README.md` and verify fresh coverage, exported HTML/SARIF, sanitized provenance, and container removal. Use an empty results directory at the documented runner/OS temp location. Run Linux checks for symlink behavior skipped on Windows; do not weaken locked installs to make local validation pass. A summary rerun against old SARIF validates only the summary, not the modified scanner. Template edits require a selected render/check and inspection of the generated diff.

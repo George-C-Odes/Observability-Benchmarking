@@ -14,8 +14,8 @@ codecov:
     wait_for_ci: true
 
 # ── Coverage status checks ────────────────────────────────────────────
-# Informational only — the existing Coverage Gate job in java_coverage.yml
-# handles enforcement.  Codecov status checks appear on PRs but never
+# Informational only — each module job enforces scripts/coverage-thresholds.json
+# through scripts/coverage_gate.py.  Codecov status checks appear on PRs but never
 # block merges.
 coverage:
   status:
