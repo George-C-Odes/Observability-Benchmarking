@@ -30,9 +30,6 @@ jobs:
       - name: Set up Python
         uses: ./.github/actions/setup-python
 
-      - name: Validate shared GitHub actions
-        run: node --test scripts/github-actions.test.mjs
-
       - name: Check native coverage policy synchronization
         run: python scripts/sync_coverage_thresholds.py --check
 

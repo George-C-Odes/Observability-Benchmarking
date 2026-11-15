@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/java_coverage.yml'
@@ -24,6 +27,9 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/java/**'
       - 'utils/orchestrator/**'
       - '.github/workflows/java_coverage.yml'
@@ -79,8 +85,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: java_coverage.yml
 
       - name: Set up JDK 25
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-java
         with:
           distribution: temurin
@@ -90,27 +104,28 @@ jobs:
             ${{ matrix.module_dir }}/pom.xml
 
       - name: Set up Node for orchestrator smoke tests
-        if: matrix.name == 'orchestrator'
+        if: (matrix.name == 'orchestrator') && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-node
 
       - name: Test orchestrator smoke request boundaries
-        if: matrix.name == 'orchestrator'
+        if: (matrix.name == 'orchestrator') && steps.scope.outputs.run == 'true'
         run: node --test utils/orchestrator/scripts/direct-sse-smoke.test.mjs
 
       - name: Run tests with coverage
+        if: steps.scope.outputs.run == 'true'
         id: build
         working-directory: ${{ matrix.module_dir }}
         run: mvn verify -B -q -Dcheckstyle.skip=true
 
       # ── Parse JaCoCo XML and write GitHub Step Summary ──
       - name: Enforce module coverage thresholds
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.name }}
         run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME"
 
       - name: Generate coverage summary
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.name }}
           MODULE_DIR: ${{ matrix.module_dir }}
@@ -118,7 +133,7 @@ jobs:
         run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" java
 
       - name: Upload coverage report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: coverage-java-${{ matrix.name }}
@@ -144,7 +159,7 @@ jobs:
       # the `token:` input and add `permissions: id-token: write` to
       # this workflow.
       - name: Upload to Codecov
-        if: always() && !cancelled() && hashFiles(format('{0}/target/site/jacoco/jacoco.xml', matrix.module_dir)) != ''
+        if: (always() && !cancelled() && hashFiles(format('{0}/target/site/jacoco/jacoco.xml', matrix.module_dir)) != '') && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/codecov-upload
         with:
           files: ${{ matrix.module_dir }}/target/site/jacoco/jacoco.xml

@@ -216,17 +216,16 @@ jobs:
           # SARIF upload.
           java_quality_failed=0
           modules_failed=0
+          modules_checked=0
           build_warnings=()
           for mod_dir in "${build_modules[@]}"; do
-            if [[ "$mod_dir" == "utils/orchestrator" ]]; then
-              echo "::group::Maven quality $mod_dir"
-              quality_cmd=(mvn -f "$mod_dir/pom.xml" -DskipTests verify -B)
-              warning_message="Maven quality checks failed in $mod_dir"
-            else
-              echo "::group::Checkstyle $mod_dir"
-              quality_cmd=(mvn -f "$mod_dir/pom.xml" checkstyle:check -B)
-              warning_message="Checkstyle violations found in $mod_dir"
-            fi
+            # Java Coverage owns the orchestrator's full quality-profile verify.
+            # Keep extraction above complete without repeating PMD/SpotBugs here.
+            [[ "$mod_dir" != "utils/orchestrator" ]] || continue
+            modules_checked=$((modules_checked + 1))
+            echo "::group::Checkstyle $mod_dir"
+            quality_cmd=(mvn -f "$mod_dir/pom.xml" checkstyle:check -B)
+            warning_message="Checkstyle violations found in $mod_dir"
 
             if ! "${quality_cmd[@]}"; then
               echo "::warning::$warning_message"
@@ -242,7 +241,7 @@ jobs:
           # jq is pre-installed on GitHub-hosted runners and handles all
           # JSON escaping automatically.
           jq -n \
-            --argjson checked "${#build_modules[@]}" \
+            --argjson checked "$modules_checked" \
             --argjson failed "$modules_failed" \
             --args '{modulesChecked: $checked, modulesFailed: $failed, warnings: $ARGS.positional}' \
             -- "${build_warnings[@]+"${build_warnings[@]}"}" > codeql-build-warnings.json

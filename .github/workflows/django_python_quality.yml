@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/setup-python/**'
@@ -16,6 +19,9 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/setup-python/**'
@@ -44,7 +50,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: django_python_quality.yml
+
       - name: Set up Python
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-python
         with:
           cache: pip
@@ -56,6 +70,7 @@ jobs:
             services/python/django/gunicorn/ASGI/requirements-dev.txt
 
       - name: Install dependencies
+        if: steps.scope.outputs.run == 'true'
         id: dependencies
         uses: ./.github/actions/install-python-dependencies
         with:
@@ -66,32 +81,34 @@ jobs:
             services/python/django/gunicorn/ASGI/requirements-dev.txt
 
       - name: Print Ruff version
+        if: steps.scope.outputs.run == 'true'
         run: python -m ruff --version
 
       # Ruff discovers each tree's own pyproject.toml, retaining its import roots
       # and reviewed file exceptions. It also rejects invalid Python syntax.
       - name: Lint Django sources
+        if: steps.scope.outputs.run == 'true'
         run: python -m ruff check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 
       - name: Check Django formatting
-        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: python -m ruff format --check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 
       # Framework Version Consistency owns sync_build_locks.py --check.
       - name: Test Docker dependency lock projection
-        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
 
       - name: Test Qodana helpers
-        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: python -m unittest discover -s scripts -p test_qodana_python.py -v
 
       - name: Lint CI helpers
-        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
 
       - name: Check CI helper formatting
-        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
 
   qodana:
@@ -106,26 +123,35 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Provenance reads only HEAD, branch and remote; no history is needed.
-          fetch-depth: 1
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+          # Full history is used only for the merge-group scope comparison.
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: django_python_quality.yml
 
       - name: Set results directory
+        if: steps.scope.outputs.run == 'true'
         run: echo "RESULTS_DIR=$RUNNER_TEMP/qodana-python/results" >> "$GITHUB_ENV"
 
       - name: Set up Python
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-python
 
       - name: Qodana Python Community Scan
+        if: steps.scope.outputs.run == 'true'
         run: python scripts/run-qodana-python.py --results-dir "$RESULTS_DIR"
 
       - name: Verify inspection coverage and publish summary
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         run: python scripts/qodana-python-report.py "$RESULTS_DIR" >> "$GITHUB_STEP_SUMMARY"
 
       # Explicit upload of the HTML report directory so the Pages workflow
       # can download and host it alongside the JVM and Next.js reports.
       - name: Upload Qodana HTML report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: qodana-report-django-python
@@ -134,7 +160,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Qodana diagnostics
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: qodana-diagnostics-django-python

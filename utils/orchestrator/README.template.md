@@ -151,6 +151,9 @@ Checkstyle-only setup.
 
 - `mvn validate` runs the custom public-API Javadoc checker, Spotless, PMD, and CPD.
 - `mvn verify` additionally runs the test suite, JaCoCo reporting/checks, and SpotBugs.
+- These checks belong to the literal `quality` profile, active by default. Scanner
+  bootstrap builds use `-P!quality` to compile symbols without repeating the checks;
+  Java Coverage runs the full profile before merge.
 - The rest of the Java service modules under `services/java/**` still use their shared Checkstyle
   setup for now.
 

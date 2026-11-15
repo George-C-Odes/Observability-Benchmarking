@@ -18,6 +18,9 @@ explicit rather than introducing a universal workflow with conditional behavior.
 - **Java Coverage / CodeQL** share the JVM inventory derived from
   `scripts/coverage-thresholds.json` via `scripts/java-modules.mjs`. Qodana discovers
   Maven modules, including native projects, under its configured source tree.
+  Java Coverage owns the orchestrator's complete Maven quality profile; CodeQL and
+  Qodana compile its symbols with that profile disabled. CodeQL retains its service
+  Checkstyle pass and compiles every JVM module for security extraction.
 - **Java Qodana** starts on every PR and merge group, then selects affected scopes
   with a bounded local Git diff. Unchanged scopes keep their existing successful
   check names without downloading or running the analyzer. Source, POM, resources
@@ -26,12 +29,24 @@ explicit rather than introducing a universal workflow with conditional behavior.
   Missing diff evidence selects both scopes. Main, manual and weekly runs analyze
   both scopes to retain complete paired Pages reports. A skipped PR scope has no
   fresh report artifact; report availability must not be interpreted as coverage.
+  Each scan filters the IDE Maven import inventory to its selected scope, verifying
+  that every scoped POM remains present. Other IDE settings and inspection thresholds
+  remain intact. Bootstrap uses Maven bundled in the digest-pinned analyzer image,
+  avoiding an additional wrapper JAR download.
 - **Next.js Dashboard Quality** captures diagnostics and exit status during each
   original check, then collects coverage and builds once. Failed or missing checker
   execution cannot produce a passing quality report.
 
 PR concurrency cancels superseded runs. Main scans, Renovate synchronization and
 Pages publishing finish their active run. Language matrices retain `fail-fast: false`.
+
+Java/Go/Django coverage, Go/Django/dashboard quality and PMD use the shared
+`workflow-scope` action inside merge-group jobs. It reuses each workflow's existing
+positive `push.paths` globs; unsupported rules or unavailable Git diffs run all checks.
+Unrelated groups retain job names while skipping tool installation, execution and
+uploads. PR path filtering remains unchanged for these workflows. CodeQL retains all
+language categories on every triggered run. Dashboard Coverage skips its evidence
+assertions only when its producer explicitly reports an unaffected scope.
 
 ### Django jobs
 
@@ -60,11 +75,17 @@ Snyk CLI is explicitly version-pinned; the JVM Qodana image is digest-pinned in
 both configuration fields. Update both image fields together. Validator archives
 have checked-in SHA-256 digests in `scripts/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
-from official release metadata when upgrading. Dependabot version updates have a
-seven-day cooldown; this does not delay Dependabot security updates.
+from official release metadata when upgrading. Renovate owns routine dependency
+version PRs, including grouped CodeQL action pins. Dependabot's version PR limit is
+zero for every configured ecosystem; its separate security-update channel remains
+available. Existing Renovate vulnerability alerts are also retained.
+
+PMD caches its downloaded ZIP by version, digest, OS and architecture. Cached bytes
+are checked against SHA-256 before extraction on every run. Installation is bounded
+to six minutes; analysis has a separate five-minute limit within a fifteen-minute job.
 
 Java Qodana caches have separate service/orchestrator namespaces, keyed by OS,
-architecture, analyzer/profile, Maven descriptors and wrapper inputs. Their restore
+architecture, analyzer/profile, scoped IDE inventory and Maven descriptors. Their restore
 prefix omits the branch ref so PRs can find compatible default-branch caches;
 only default-branch runs save them. The first run after a key change is cold.
 See [the workflow review](WORKFLOW_REVIEW.md) for measured Java startup costs,
@@ -72,7 +93,8 @@ remaining priorities and rollout checks.
 
 Django and Snyk pip cache keys enumerate their consumed inputs, excluding unrelated
 workflow-validator and documentation changes. Python Qodana checks out only one
-commit; its provenance helper needs no history. Its analyzer remains isolated with
+commit except for merge-group routing; its provenance helper needs no history.
+Its analyzer remains isolated with
 fresh caches: reviewed run [43743627995](https://github.com/George-C-Odes/Observability-Benchmarking/actions/runs/43743627995)
 spent about 20 seconds pulling the image and about 9 seconds bootstrapping packages,
 with project opening/indexing dominating the remainder. Persistent scanner caching

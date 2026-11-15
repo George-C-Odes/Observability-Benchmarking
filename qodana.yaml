@@ -121,16 +121,18 @@ bootstrap: |
   # same location that project configuration later reads.
   MAVEN_REPO_LOCAL=/data/cache/.m2/repository
   MAVEN_SETTINGS=/data/project/.qodana/baseline/qodana-settings.xml
-  FALLBACK_MVNW=/data/project/services/java/quarkus/native/mvnw
-
-  if command -v mvn >/dev/null 2>&1; then
+  # This path is verified in the digest-pinned image. It uses the same Maven
+  # distribution as IDE import and avoids a separate wrapper JAR download.
+  BUNDLED_MVN=/opt/idea/plugins/maven-plugin/lib/maven3/bin/mvn
+  if [ -x "$BUNDLED_MVN" ]; then
+    MVN_BIN=$BUNDLED_MVN
+  elif command -v mvn >/dev/null 2>&1; then
     MVN_BIN=$(command -v mvn)
   else
-    MVN_BIN=$FALLBACK_MVNW
-    if [ ! -x "$MVN_BIN" ]; then
-      chmod +x "$MVN_BIN"
-    fi
+    echo 'Qodana bootstrap: no Maven distribution available in the analyzer image' >&2
+    exit 1
   fi
+  echo "Qodana bootstrap: using $MVN_BIN"
 
   detect_only_directory() {
     if [ -n "${QODANA_ONLY_DIRECTORY:-}" ]; then
@@ -171,10 +173,16 @@ bootstrap: |
     fi
 
     echo "Qodana bootstrap: compiling $label (local repository: $MAVEN_REPO_LOCAL)"
+    # Java Coverage owns the orchestrator's ordinary quality profile. Bootstrap
+    # needs compiled main/test symbols, matching CodeQL's extraction-only build.
+    set --
+    if [ "$label" = utils/orchestrator/pom.xml ]; then
+      set -- '-P!quality'
+    fi
     if [ -f "$MAVEN_SETTINGS" ]; then
-      "$MVN_BIN" -B -q -s "$MAVEN_SETTINGS" -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" test-compile
+      "$MVN_BIN" -B -q -s "$MAVEN_SETTINGS" -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" "$@" test-compile
     else
-      "$MVN_BIN" -B -q -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" test-compile
+      "$MVN_BIN" -B -q -DskipTests -Dmaven.repo.local="$MAVEN_REPO_LOCAL" -f "$pom" "$@" test-compile
     fi
   }
 

@@ -16,6 +16,8 @@ on:
       - '.github/workflows/qodana_code_quality.yml'
       - 'scripts/qodana-cli-asset*.mjs'
       - 'scripts/qodana-scopes*.mjs'
+      - 'scripts/changed-paths*.mjs'
+      - 'scripts/qodana-project*.mjs'
       - 'scripts/github-release-asset*.mjs'
       - '.github/qodana-cli-lock.json'
       - '.github/actions/upload-artifact/**'
@@ -138,6 +140,11 @@ jobs:
           fi
 
           echo "args=$args" >> "$GITHUB_OUTPUT"
+      - name: Scope Maven project import
+        if: env.SCAN_ENABLED == 'true'
+        env:
+          SOURCE_DIR: ${{ matrix.source_dir }}
+        run: node scripts/qodana-project.mjs "$SOURCE_DIR"
       - name: Qodana Scan
         if: env.SCAN_ENABLED == 'true'
         uses: JetBrains/qodana-action@3e8d76ff0e0241618abd808682f426afe84bab3f # v2026.2.2

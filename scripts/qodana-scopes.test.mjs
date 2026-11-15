@@ -25,7 +25,8 @@ test('shared scanner changes invalidate both scopes; reviewed baselines select o
   for (const path of ['qodana.yaml', '.qodana/baseline/qodana-settings.xml', '.github/workflows/qodana_code_quality.yml', '.github/qodana-cli-lock.json', 'scripts/qodana-scopes.test.mjs', 'scripts/github-release-asset.mjs', '.github/actions/upload-artifact/action.yml']) {
     assert.deepEqual(selectScopes([path]), both, path);
   }
-  for (const path of ['.idea/misc.xml', 'services/java/quarkus/native/mvnw', 'services/java/quarkus/native/.mvn/wrapper/maven-wrapper.properties']) assert.deepEqual(selectScopes([path]), both);
+  for (const path of ['.idea/misc.xml', 'scripts/qodana-project.mjs', 'scripts/changed-paths.mjs']) assert.deepEqual(selectScopes([path]), both);
+  assert.deepEqual(selectScopes(['services/java/quarkus/native/mvnw']), { ...none, 'services-java': true });
   for (const name of Object.keys(both)) assert.deepEqual(selectScopes([`.qodana/baseline/${name}.sarif.json`]), { ...none, [name]: true });
 });
 

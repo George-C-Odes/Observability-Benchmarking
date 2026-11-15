@@ -7,6 +7,9 @@ on:
     - cron: '30 6 * * 1'
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/python/**'
       - '.github/workflows/django_python_coverage.yml'
       - '.github/actions/setup-python/**'
@@ -24,6 +27,9 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/python/**'
       - '.github/workflows/django_python_coverage.yml'
       - '.github/actions/setup-python/**'
@@ -73,8 +79,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: django_python_coverage.yml
 
       - name: Set up Python
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-python
         with:
           cache: pip
@@ -88,6 +102,7 @@ jobs:
             ${{ matrix.module_dir }}/requirements.txt
 
       - name: Install dependencies
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/install-python-dependencies
         with:
           requirements: |
@@ -99,6 +114,7 @@ jobs:
       # Django's default test runner performs system checks before the tests.
       # Keep those checks inside this installed runtime; do not run them twice.
       - name: Run tests with coverage
+        if: steps.scope.outputs.run == 'true'
         id: test
         run: |
           python -m coverage run \
@@ -108,7 +124,7 @@ jobs:
             ${{ matrix.module_dir }}/manage.py test obbench_django_common.tests --verbosity=2
 
       - name: Generate coverage reports
-        if: always() && !cancelled() && steps.test.outcome == 'success'
+        if: (always() && !cancelled() && steps.test.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: |
           python -m coverage json -o "${COVERAGE_OUTPUT_DIR}/coverage-summary.json" --pretty-print
           python -m coverage xml -o "${COVERAGE_OUTPUT_DIR}/coverage.xml"
@@ -116,20 +132,20 @@ jobs:
           python -m coverage report -m > "${COVERAGE_OUTPUT_DIR}/coverage-report.txt"
 
       - name: Verify generated coverage files
-        if: always() && !cancelled() && steps.test.outcome == 'success'
+        if: (always() && !cancelled() && steps.test.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: |
           test -f "${COVERAGE_OUTPUT_DIR}/coverage.xml"
           test -f "${COVERAGE_OUTPUT_DIR}/coverage-summary.json"
           test -f "${COVERAGE_FILE}"
 
       - name: Enforce runtime and shared-package coverage thresholds
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.summary_name }}
         run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME" django-common --report "${COVERAGE_OUTPUT_DIR}/coverage-summary.json"
 
       - name: Generate coverage summary
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.summary_name }}
           MODULE_DIR: ${{ matrix.module_dir }}
@@ -138,7 +154,7 @@ jobs:
         run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" python
 
       - name: Upload coverage report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: coverage-${{ matrix.codecov_flag }}
@@ -153,7 +169,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload to Codecov
-        if: always() && !cancelled() && steps.test.outcome == 'success'
+        if: (always() && !cancelled() && steps.test.outcome == 'success') && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/codecov-upload
         with:
           files: ${{ github.workspace }}/${{ matrix.module_dir }}/coverage.xml

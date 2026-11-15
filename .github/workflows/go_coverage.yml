@@ -7,6 +7,9 @@ on:
     - cron: '0 6 * * 1'
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/go/**'
       - '.github/workflows/go_coverage.yml'
       - 'scripts/coverage_gate.py'
@@ -21,6 +24,9 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/go/**'
       - '.github/workflows/go_coverage.yml'
       - 'scripts/coverage_gate.py'
@@ -62,8 +68,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: go_coverage.yml
 
       - name: Set up Go
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-go
         with:
           go-version-file: ${{ matrix.module_dir }}/go.mod
@@ -71,9 +85,11 @@ jobs:
             ${{ matrix.module_dir }}/go.sum
 
       - name: Download dependencies
+        if: steps.scope.outputs.run == 'true'
         run: go mod download
 
       - name: Check go.mod tidiness
+        if: steps.scope.outputs.run == 'true'
         run: |
           go mod tidy -diff
           git diff --exit-code go.mod go.sum || {
@@ -82,6 +98,7 @@ jobs:
           }
 
       - name: Run tests with coverage
+        if: steps.scope.outputs.run == 'true'
         id: test
         run: |
           go test ./... -race -count=1 \
@@ -90,13 +107,13 @@ jobs:
 
       # ── Parse coverage and write GitHub Step Summary ──────────────
       - name: Enforce module coverage thresholds
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.name }}
         run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME"
 
       - name: Generate coverage summary
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.name }}
           MODULE_DIR: ${{ matrix.module_dir }}
@@ -105,12 +122,12 @@ jobs:
 
       # ── Generate HTML coverage report ────────────────────────────
       - name: Generate HTML coverage report
-        if: always() && !cancelled() && steps.test.outcome == 'success'
+        if: (always() && !cancelled() && steps.test.outcome == 'success') && steps.scope.outputs.run == 'true'
         run: go tool cover -html=coverage.out -o coverage.html
 
       # ── Upload coverage artifacts ────────────────────────────────
       - name: Upload coverage report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: coverage-${{ matrix.name }}
@@ -127,7 +144,7 @@ jobs:
       # cmd/server/main.go").  This step rewrites the prefix so
       # Codecov can match coverage data to source files.
       - name: Fix coverage paths for Codecov
-        if: always() && !cancelled() && steps.test.outcome == 'success'
+        if: (always() && !cancelled() && steps.test.outcome == 'success') && steps.scope.outputs.run == 'true'
         env:
           MODULE_DIR: ${{ matrix.module_dir }}
         run: |
@@ -143,7 +160,7 @@ jobs:
       # See codecov.yml at the repo root for flag → path mappings
       # and component definitions.
       - name: Upload to Codecov
-        if: always() && !cancelled() && steps.test.outcome == 'success'
+        if: (always() && !cancelled() && steps.test.outcome == 'success') && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/codecov-upload
         with:
           files: ${{ matrix.module_dir }}/coverage-codecov.out

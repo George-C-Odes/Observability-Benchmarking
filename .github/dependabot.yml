@@ -1,10 +1,11 @@
-# Keep GitHub Actions, Ruby gems, and Python packages up to date.
+# Renovate owns routine version updates; Dependabot retains security updates.
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
 version: 2
 updates:
   # GitHub Actions
   - package-ecosystem: github-actions
     directory: /
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -25,6 +26,7 @@ updates:
   # Ruby / Jekyll (docs site)
   - package-ecosystem: bundler
     directory: /docs
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -35,6 +37,7 @@ updates:
   # Python / Django services
   - package-ecosystem: pip
     directory: /services/python/django/gunicorn/WSGI
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -44,6 +47,7 @@ updates:
 
   - package-ecosystem: pip
     directory: /services/python/django/gunicorn/ASGI
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -54,6 +58,7 @@ updates:
   # Node.js / Next.js dashboard
   - package-ecosystem: npm
     directory: /utils/nextjs-dash
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -64,6 +69,7 @@ updates:
   # Go / Enhanced service
   - package-ecosystem: gomod
     directory: /services/go/enhanced
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -74,6 +80,7 @@ updates:
   # Go / Simple service
   - package-ecosystem: gomod
     directory: /services/go/simple
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:
@@ -84,6 +91,7 @@ updates:
   # Go CI tools (scanner and its transitive build dependencies)
   - package-ecosystem: gomod
     directory: /.github/go-tools
+    open-pull-requests-limit: 0 # Security updates use a separate limit.
     cooldown:
       default-days: 7
     schedule:

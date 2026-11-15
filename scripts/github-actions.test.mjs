@@ -211,7 +211,7 @@ test('all coverage jobs enforce hard module gates without review or artifact agg
   const django = readYaml(join(githubDir, 'workflows', 'django_python_coverage.yml'));
   assert.match(django, /django-common --report/);
   const dashboard = readYaml(join(githubDir, 'workflows', 'nextjs_dash_quality.yml'));
-  assert.match(dashboard, /id: coverage_dom\n +if: always\(\) && !cancelled\(\)/);
+  assert.match(dashboard, /id: coverage_dom\n +if: \(always\(\) && !cancelled\(\)/);
 });
 
 test('dashboard quality collects coverage once and preserves the required coverage check', () => {
@@ -225,7 +225,7 @@ test('dashboard quality collects coverage once and preserves the required covera
     assert.ok(quality.includes(`coverage_${environment}: \${{ steps.coverage_${environment}.outcome }}`));
   }
   assert.match(quality, /coverage_gate: \$\{\{ steps.coverage_gate.outcome }}/);
-  assert.match(quality, /id: coverage_gate\n +if: always\(\) && !cancelled\(\)\n +run: python3 "\$GITHUB_WORKSPACE\/scripts\/coverage_gate.py" nextjs-dash/);
+  assert.match(quality, /id: coverage_gate\n +if: \(always\(\) && !cancelled\(\)\) && steps.scope.outputs.run == 'true'\n +run: python3 "\$GITHUB_WORKSPACE\/scripts\/coverage_gate.py" nextjs-dash/);
   assert.match(quality, /run: npm run build:compile\n/);
   assert.ok(quality.indexOf('run: npm run build:compile') > quality.indexOf('id: coverage_gate'));
   assert.match(coverage, /name: Dashboard Coverage\n +needs: quality\n +if: always\(\) && !cancelled\(\)/);

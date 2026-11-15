@@ -61,7 +61,7 @@ test('Django quality has one Ruff installation and independent semantic analysis
   assert.match(workflow('framework_versions'), /python services\/python\/django\/gunicorn\/sync_build_locks\.py --check/);
   const qodana = quality.split('\n  qodana:\n')[1];
   assert.doesNotMatch(qodana, /^ +needs:/m);
-  assert.match(qodana, /fetch-depth: 1/);
+  assert.match(qodana, /fetch-depth: \$\{\{ github.event_name == 'merge_group' && '0' \|\| '1' }}/);
 });
 
 test('Django runtime environments install coverage without Ruff or repeated system checks', () => {
