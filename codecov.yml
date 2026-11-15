@@ -84,7 +84,7 @@ flags:
     paths: [utils/orchestrator/]
     carryforward: true
 
-  # ── Next.js dashboard (uploaded by nextjs_dash_coverage.yml) ─────────
+  # ── Next.js dashboard (uploaded by nextjs_dash_quality.yml) ──────────
   nextjs-dash-node:
     paths: [utils/nextjs-dash/lib/, utils/nextjs-dash/app/api/]
     carryforward: true

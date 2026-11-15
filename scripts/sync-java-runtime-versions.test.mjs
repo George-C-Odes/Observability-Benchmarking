@@ -39,12 +39,18 @@ test('runtime inventory is synchronized, changes both release components, preser
 });
 
 test('changing an image Java tag drops its stale digest; patch updates retain the existing digest', () => {
-  const content = readFileSync(resolveRepoPath('utils/orchestrator/Dockerfile'), 'utf8');
-  const patch = syncJavaRuntimeContent(content, 'utils/orchestrator/Dockerfile', { major: '25', minorPatch: '0.5', full: '25.0.5' });
-  assert.match(patch, /eclipse-temurin-25-noble@sha256:[a-f0-9]+/);
-  const major = syncJavaRuntimeContent(content, 'utils/orchestrator/Dockerfile', { major: '26', minorPatch: '0.1', full: '26.0.1' });
-  assert.match(major, /eclipse-temurin-26-noble\r?\n/);
-  assert.doesNotMatch(major, /eclipse-temurin-26-noble@sha256/);
+  // Renovate can leave the real builder tag temporarily unpinned after an update.
+  // Fixed fixtures exercise both cases independently of the repository's images.
+  for (const digest of ['', `@sha256:${'a'.repeat(64)}`]) {
+    for (const newline of ['\n', '\r\n']) {
+      const builder = 'ARG IMAGE_BUILDER=maven:3.10.1-eclipse-temurin-';
+      const content = `${builder}25-noble${digest}${newline}ARG JAVA_RELEASE=25${newline}`;
+      const patch = syncJavaRuntimeContent(content, 'utils/orchestrator/Dockerfile', { major: '25', minorPatch: '0.5', full: '25.0.5' });
+      assert.equal(patch, content, 'A patch update preserves the existing builder, with or without a digest');
+      const major = syncJavaRuntimeContent(content, 'utils/orchestrator/Dockerfile', { major: '26', minorPatch: '0.1', full: '26.0.1' });
+      assert.equal(major, `${builder}26-noble${newline}ARG JAVA_RELEASE=26${newline}`);
+    }
+  }
 });
 
 test('Renovate never extracts or authorizes edits to the manually managed Java env pins', () => {
