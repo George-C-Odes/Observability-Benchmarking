@@ -61,6 +61,7 @@ export function useJobEventStream({
   const eventSourceRef = useRef<EventSource | null>(null);
   const expectedSseCloseRef = useRef(false);
   const activeSseJobIdRef = useRef<string | null>(null);
+  const streamSessionRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const sseAutoCloseTimerRef = useRef<number | null>(null);
 
@@ -79,6 +80,7 @@ export function useJobEventStream({
   }, []);
 
   const closeEventSource = useCallback(() => {
+    streamSessionRef.current += 1;
     expectedSseCloseRef.current = true;
     clearTimers();
     eventSourceRef.current?.close();
@@ -89,9 +91,13 @@ export function useJobEventStream({
 
   useEffect(
     () => () => {
+      streamSessionRef.current += 1;
+      activeSseJobIdRef.current = null;
+      scheduleReconnectRef.current = null;
       clearTimers();
       expectedSseCloseRef.current = true;
       eventSourceRef.current?.close();
+      eventSourceRef.current = null;
     },
     [clearTimers],
   );
@@ -124,9 +130,15 @@ export function useJobEventStream({
   );
 
   const handleStreamError = useCallback(
-    async (jobId: string, generation: number) => {
+    async (jobId: string, generation: number, session: number) => {
       const meta = await transport.checkStreamMeta(jobId, runIdRef.current);
-      if (jobGenerationRef.current !== generation) return;
+      if (
+        streamSessionRef.current !== session ||
+        jobGenerationRef.current !== generation ||
+        activeSseJobIdRef.current !== jobId ||
+        terminalAppliedByJobRef.current.has(jobId)
+      )
+        return;
 
       if (!meta.ok && meta.status > 0) {
         const failure = classifyMetaFailure(meta.status, meta.txt);
@@ -150,6 +162,7 @@ export function useJobEventStream({
       try {
         clearTimers();
         closeEventSource();
+        const session = streamSessionRef.current;
         expectedSseCloseRef.current = false;
         activeSseJobIdRef.current = jobId;
 
@@ -163,6 +176,7 @@ export function useJobEventStream({
         let reconnectAttempt = 0;
 
         scheduleReconnectRef.current = () => {
+          if (streamSessionRef.current !== session) return;
           if (terminalAppliedByJobRef.current.has(jobId)) return;
           reconnectAttempt += 1;
           setReconnectCount((c) => c + 1);
@@ -170,6 +184,7 @@ export function useJobEventStream({
           const delayMs = computeReconnectDelay(reconnectAttempt);
 
           reconnectTimerRef.current = window.setTimeout(() => {
+            if (streamSessionRef.current !== session) return;
             if (jobGenerationRef.current !== generation) return;
             if (activeSseJobIdRef.current !== jobId) return;
             connect();
@@ -177,6 +192,7 @@ export function useJobEventStream({
         };
 
         const connect = () => {
+          if (streamSessionRef.current !== session) return;
           if (jobGenerationRef.current !== generation) return;
           if (activeSseJobIdRef.current !== jobId) return;
           if (terminalAppliedByJobRef.current.has(jobId)) return;
@@ -189,7 +205,7 @@ export function useJobEventStream({
           eventSourceRef.current = es;
 
           es.onopen = () => {
-            if (jobGenerationRef.current !== generation) {
+            if (streamSessionRef.current !== session || jobGenerationRef.current !== generation) {
               es.close();
               return;
             }
@@ -210,8 +226,7 @@ export function useJobEventStream({
           };
 
           es.onmessage = (event) => {
-            if (jobGenerationRef.current !== generation) {
-              expectedSseCloseRef.current = true;
+            if (streamSessionRef.current !== session || jobGenerationRef.current !== generation) {
               es.close();
               return;
             }
@@ -258,8 +273,7 @@ export function useJobEventStream({
           };
 
           es.onerror = () => {
-            if (jobGenerationRef.current !== generation) {
-              expectedSseCloseRef.current = true;
+            if (streamSessionRef.current !== session || jobGenerationRef.current !== generation) {
               es.close();
               if (eventSourceRef.current === es) eventSourceRef.current = null;
               return;
@@ -273,13 +287,14 @@ export function useJobEventStream({
             setSseConnected(false);
             sseConnectedRef.current = false;
 
-            void handleStreamError(jobId, generation);
+            void handleStreamError(jobId, generation, session);
           };
         };
 
         connect();
 
         sseAutoCloseTimerRef.current = window.setTimeout(() => {
+          if (streamSessionRef.current !== session) return;
           if (jobGenerationRef.current !== generation) return;
           if (terminalAppliedByJobRef.current.has(jobId)) return;
 

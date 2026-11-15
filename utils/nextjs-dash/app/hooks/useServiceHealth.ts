@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useServiceActionsConfig } from './useServiceActionsConfig';
 import { useTimedPulse } from './useTimedPulse';
 import {
@@ -15,7 +15,11 @@ import { serviceHealthClient, type ServiceHealthClient } from '@/lib/serviceHeal
 export function useServiceHealth(client: ServiceHealthClient = serviceHealthClient) {
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<Set<string>>(new Set());
+  const requestVersionRef = useRef(0);
+  const allRequestVersionRef = useRef(0);
+  const serviceRequestVersionsRef = useRef(new Map<string, number>());
+  const pendingRefreshesRef = useRef(new Map<string, number>());
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [message, setMessage] = useState<ServiceMessage | null>(null);
 
@@ -71,29 +75,58 @@ export function useServiceHealth(client: ServiceHealthClient = serviceHealthClie
     return `${rel} · ${exact}`;
   }, [lastUpdatedAt, nowMs]);
 
+  const applyAllServices = useCallback(
+    (nextServices: ServiceHealth[], version: number) => {
+      if (allRequestVersionRef.current !== version) return;
+      setServices((previous) => {
+        // Preserve services with a newer individual request, even if omitted by this list.
+        const hasNewerRead = (name: string) =>
+          (serviceRequestVersionsRef.current.get(name) ?? 0) > version;
+        return [
+          ...nextServices.filter((service) => !hasNewerRead(service.name)),
+          ...previous.filter((service) => hasNewerRead(service.name)),
+        ].sort(byName);
+      });
+      markUpdated();
+    },
+    [markUpdated],
+  );
+
   const fetchAllServices = useCallback(async () => {
+    const version = ++requestVersionRef.current;
+    allRequestVersionRef.current = version;
     setLoading(true);
     setMessage(null);
     try {
-      setServices(await client.readAll());
-      markUpdated();
+      applyAllServices(await client.readAll(), version);
     } catch {
+      if (allRequestVersionRef.current !== version) return;
       setMessage({
         type: 'error',
         text: 'Failed to check service health (dashboard backend unreachable)',
       });
     } finally {
-      setLoading(false);
+      if (allRequestVersionRef.current === version) setLoading(false);
     }
-  }, [markUpdated, client]);
+  }, [applyAllServices, client]);
 
   const refreshService = useCallback(
     async (serviceName: string) => {
-      setRefreshing(serviceName);
+      const version = ++requestVersionRef.current;
+      serviceRequestVersionsRef.current.set(serviceName, version);
+      pendingRefreshesRef.current.set(
+        serviceName,
+        (pendingRefreshesRef.current.get(serviceName) ?? 0) + 1,
+      );
+      setRefreshing((previous) => new Set(previous).add(serviceName));
       try {
         const single = await client.readOne(serviceName);
 
-        if (single) {
+        if (
+          single &&
+          allRequestVersionRef.current < version &&
+          serviceRequestVersionsRef.current.get(serviceName) === version
+        ) {
           setServices((prev) =>
             prev.map((s) => (s.name === serviceName ? single : s)).sort(byName),
           );
@@ -102,7 +135,17 @@ export function useServiceHealth(client: ServiceHealthClient = serviceHealthClie
       } catch {
         // ignore
       } finally {
-        setRefreshing(null);
+        const remaining = (pendingRefreshesRef.current.get(serviceName) ?? 1) - 1;
+        if (remaining > 0) {
+          pendingRefreshesRef.current.set(serviceName, remaining);
+        } else {
+          pendingRefreshesRef.current.delete(serviceName);
+          setRefreshing((previous) => {
+            const next = new Set(previous);
+            next.delete(serviceName);
+            return next;
+          });
+        }
       }
     },
     [markUpdated, client],
@@ -145,22 +188,23 @@ export function useServiceHealth(client: ServiceHealthClient = serviceHealthClie
 
   useEffect(() => {
     let cancelled = false;
+    const version = ++requestVersionRef.current;
+    allRequestVersionRef.current = version;
 
     const loadInitialServices = async () => {
       try {
         const nextServices = await client.readAll();
         if (cancelled) return;
 
-        setServices(nextServices);
-        markUpdated();
+        applyAllServices(nextServices, version);
       } catch {
-        if (cancelled) return;
+        if (cancelled || allRequestVersionRef.current !== version) return;
         setMessage({
           type: 'error',
           text: 'Failed to check service health (dashboard backend unreachable)',
         });
       } finally {
-        if (!cancelled) {
+        if (!cancelled && allRequestVersionRef.current === version) {
           setLoading(false);
         }
       }
@@ -171,7 +215,7 @@ export function useServiceHealth(client: ServiceHealthClient = serviceHealthClie
     return () => {
       cancelled = true;
     };
-  }, [markUpdated, client]);
+  }, [applyAllServices, client]);
 
   const groupedServices = useMemo(() => {
     const observability = services

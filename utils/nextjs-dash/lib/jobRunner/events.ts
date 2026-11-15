@@ -100,7 +100,7 @@ export function processSseEvent(raw: string, jobId: string, callbacks: SseEventC
   if (!parsed) return;
 
   const evJobId = normalizeJobId(parsed.jobId);
-  if (evJobId && evJobId !== jobId) return;
+  if (Object.hasOwn(parsed, 'jobId') && (!evJobId || evJobId !== jobId)) return;
 
   if (typeof parsed.requestId === 'string' && parsed.requestId.trim()) {
     callbacks.onRequestId(parsed.requestId);

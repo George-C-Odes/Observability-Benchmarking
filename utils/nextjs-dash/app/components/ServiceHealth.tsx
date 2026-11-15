@@ -127,7 +127,7 @@ export default function ServiceHealth() {
 
   const renderServiceCard = (service: ServiceHealthData) => {
     const statusUI = getStatusUI(service.status);
-    const isBusy = refreshing === service.name || submitting === service.name;
+    const isBusy = refreshing.has(service.name) || submitting === service.name;
 
     const canStart = service.status === 'down';
     const canManageContainer = service.status === 'up';
@@ -278,7 +278,7 @@ export default function ServiceHealth() {
                 onClick={() => refreshService(service.name)}
                 disabled={isBusy}
                 icon={
-                  refreshing === service.name ? (
+                  refreshing.has(service.name) ? (
                     <CircularProgress size={18} />
                   ) : (
                     <RefreshIcon fontSize="small" />

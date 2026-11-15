@@ -87,6 +87,26 @@ describe('job event handling', () => {
       ['[status] RUNNING'],
     ]);
   });
+  it.each(['other.job', '../job-1', '', ' ', null, 42, 'job-1\n', 'other-job'])(
+    'rejects explicitly invalid or mismatched event job ID %j before any dispatch',
+    (jobId) => {
+      const handlers = callbacks();
+      for (const type of ['terminalSummary', 'summary', 'log', 'status']) {
+        processSseEvent(
+          JSON.stringify({
+            type,
+            jobId,
+            jobStatus: 'SUCCEEDED',
+            requestId: 'rid',
+            message: 'hello',
+          }),
+          'job-1',
+          handlers,
+        );
+      }
+      for (const handler of Object.values(handlers)) expect(handler).not.toHaveBeenCalled();
+    },
+  );
   it('keeps terminal state against late events and ignores a previous job', () => {
     const completed: JobStatus = { jobId: 'job-1', status: 'SUCCEEDED' };
     const running: JobStatus = { jobId: 'job-1', status: 'RUNNING' };
