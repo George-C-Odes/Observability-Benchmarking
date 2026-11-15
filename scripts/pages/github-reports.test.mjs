@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { reportClient, resolveReport, catalog } from './github-reports.mjs';
+import { reportClient, resolveReport, collectionPlan } from './github-reports.mjs';
 
 const repository = 'example/benchmark';
 const sha = 'a'.repeat(40);
@@ -11,8 +11,15 @@ function resolver(runs, options = {}) {
 }
 
 test('all catalog producers publish the latest failure instead of older green runs', async () => {
-  for (const { id } of catalog) {
-    const result = await resolver([run({ conclusion: 'failure', run_number: 4, id: 456 }), run()], { producer: id });
+  for (const entry of collectionPlan) {
+    const runs = [run({ conclusion: 'failure', run_number: 4, id: 456 }), run()];
+    const result = await resolver(runs, { producer: entry.producer, report: entry.report,
+      fetchImpl: async (url) => {
+        const body = url.includes('/jobs?')
+          ? { jobs: entry.reports.map((report) => ({ name: report.job, conclusion: 'failure', steps: [] })) }
+          : { workflow_runs: runs };
+        return { ok: true, json: async () => body };
+      } });
     assert.equal(result.run_id, '456');
     assert.equal(result.conclusion, 'failure');
   }
@@ -97,4 +104,121 @@ test('control characters in response branches never select a report', async () =
     const result = await resolver([run({ head_branch: `feature${character}branch` })], { scope: 'stage' });
     assert.equal(result.status, 'no matching run');
   }
+});
+
+function qodanaJob(scope, skipped = false, overrides = {}) {
+  return { name: `Qodana (${scope})`, conclusion: 'success', steps: [
+    { name: 'Record unaffected scope', conclusion: skipped ? 'success' : 'skipped' },
+    { name: 'Qodana Scan', conclusion: skipped ? 'skipped' : 'success' },
+  ], ...overrides };
+}
+
+function scopedResolver(runs, jobs, options = {}) {
+  const calls = [];
+  const fetchImpl = async (url, request) => {
+    calls.push({ url, request });
+    const match = /\/runs\/([0-9]+)\/jobs\?/.exec(url);
+    return { ok: true, json: async () => match ? { jobs: jobs[match[1]] } : { workflow_runs: runs } };
+  };
+  return { calls, resolve: (artifact) => resolveReport({ repository, token: 'synthetic-token',
+    producer: 'qodana', scope: 'stage', report: artifact, fetchImpl, ...options }) };
+}
+
+test('Qodana collection plan has separate source/download contracts without changing report URLs', () => {
+  const plans = collectionPlan.filter((entry) => entry.producer === 'qodana');
+  assert.equal(plans.length, 2);
+  assert.deepEqual(plans.map((entry) => entry.id), ['qodana-services-java', 'qodana-orchestrator']);
+  for (const entry of plans) {
+    assert.equal(entry.pattern, entry.report);
+    assert.equal(entry.reports.length, 1);
+    assert.equal(entry.reports[0].artifact, entry.report);
+  }
+});
+
+test('documentation-only and one-scope PRs retain each Qodana report from its latest attempted scan', async () => {
+  const runs = [run({ id: 4, run_number: 4, head_branch: 'docs' }),
+    run({ id: 3, run_number: 3, head_branch: 'orchestrator-only' }),
+    run({ id: 2, run_number: 2, head_branch: 'services-only' }),
+    run({ id: 1, run_number: 1, head_branch: 'all-scopes' })];
+  const jobs = {
+    4: [qodanaJob('services-java', true), qodanaJob('orchestrator', true)],
+    3: [qodanaJob('services-java', true), qodanaJob('orchestrator')],
+    2: [qodanaJob('services-java'), qodanaJob('orchestrator', true)],
+    1: [qodanaJob('services-java'), qodanaJob('orchestrator')],
+  };
+  const { resolve, calls } = scopedResolver(runs, jobs);
+  assert.equal((await resolve('qodana-report-services-java')).run_id, '2');
+  assert.equal((await resolve('qodana-report-orchestrator')).run_id, '3');
+  for (const { url, request } of calls.filter((call) => call.url.includes('/jobs?'))) {
+    assert.match(url, /^https:\/\/api\.github\.com\/repos\/example\/benchmark\/actions\/runs\/[234]\/jobs\?per_page=100&page=1&filter=latest$/);
+    assert.equal(request.method, 'GET');
+    assert.equal(request.redirect, 'error');
+    assert.equal(request.headers.Authorization, 'Bearer synthetic-token');
+    assert.ok(request.signal instanceof AbortSignal);
+  }
+});
+
+test('scan, startup and missing-evidence failures never fall back to older green Qodana reports', async () => {
+  const runs = [run({ id: 4, run_number: 4, head_branch: 'feature', conclusion: 'failure' }),
+    run({ id: 1, run_number: 1, head_branch: 'older' })];
+  for (const steps of [
+    [{ name: 'Qodana Scan', conclusion: 'failure' }],
+    [{ name: 'Checkout', conclusion: 'failure' }, { name: 'Qodana Scan', conclusion: 'skipped' }],
+    [{ name: 'Record unaffected scope', conclusion: 'success' }, { name: 'Qodana Scan', conclusion: 'failure' }],
+    [],
+  ]) {
+    const { resolve, calls } = scopedResolver(runs, { 4: [qodanaJob('services-java', false, { conclusion: 'failure', steps })] });
+    const selected = await resolve('qodana-report-services-java');
+    assert.equal(selected.run_id, '4');
+    assert.equal(selected.conclusion, 'failure');
+    assert.equal(selected.status, 'resolved');
+    assert.equal(calls.length, 2);
+  }
+  const { resolve } = scopedResolver(runs, { 4: [] });
+  assert.equal((await resolve('qodana-report-orchestrator')).status, 'scope evidence unavailable');
+});
+
+test('legacy Qodana jobs remain eligible and job pagination is bounded', async () => {
+  const runs = [run({ head_branch: 'feature' })];
+  const legacy = scopedResolver(runs, { 123: [{ name: 'Qodana (orchestrator)', conclusion: 'success', steps: [{ name: 'Qodana Scan', conclusion: 'success' }] }] });
+  assert.equal((await legacy.resolve('qodana-report-orchestrator')).run_id, '123');
+  const pages = [];
+  const selected = await scopedResolver(runs, {}, { fetchImpl: async (url) => {
+    if (!url.includes('/jobs?')) return { ok: true, json: async () => ({ workflow_runs: runs }) };
+    const page = new URL(url).searchParams.get('page');
+    pages.push(page);
+    return { ok: true, json: async () => ({ jobs: page === '1' ? Array.from({ length: 100 }, () => ({ name: 'other job' })) : [qodanaJob('orchestrator')] }) };
+  } }).resolve('qodana-report-orchestrator');
+  assert.equal(selected.run_id, '123');
+  assert.deepEqual(pages, ['1', '2']);
+});
+
+test('invalid reports, run IDs and alternate job routes cannot issue requests', async () => {
+  let calls = 0;
+  const fetchImpl = async () => { calls++; throw new Error('Must not fetch'); };
+  for (const report of [undefined, '../qodana-report-orchestrator', 'qodana-report-orchestrator\n', 'unknown']) {
+    await assert.rejects(resolveReport({ repository, producer: 'qodana', scope: 'stage', report, fetchImpl }), /Invalid/);
+  }
+  const client = reportClient(repository, 'synthetic-token', { fetchImpl });
+  for (const id of ['../123', '123\n', '123?x', '%2e%2e', '1/jobs']) await assert.rejects(client.request('jobs', id), /Invalid/);
+  assert.equal(calls, 0);
+  for (const id of ['../123', '123\n', '123?x', '%2e%2e']) {
+    let requests = 0;
+    await assert.rejects(resolveReport({ repository, producer: 'qodana', scope: 'stage', report: 'qodana-report-orchestrator',
+      fetchImpl: async () => { requests++; return { ok: true, json: async () => ({ workflow_runs: [run({ id, head_branch: 'feature' })] }) }; } }), /Malformed/);
+    assert.equal(requests, 1, 'Invalid response-derived IDs must never reach a jobs request');
+  }
+});
+
+test('total lookup deadline bounds runs, jobs, retries and per-attempt requests', async () => {
+  let time = 0;
+  const requests = [];
+  const client = reportClient(repository, 'synthetic-token', { now: () => time, fetchImpl: async (url, request) => {
+    requests.push({ url, request });
+    time = 240_000;
+    return { ok: true, json: async () => ({ workflow_runs: [] }) };
+  } });
+  await client.request('runs', 'qodana');
+  await assert.rejects(client.request('jobs', '123'), /lookup failed/);
+  assert.equal(requests.length, 1);
 });

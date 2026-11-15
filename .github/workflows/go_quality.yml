@@ -179,7 +179,7 @@ jobs:
 
       - name: Build check
         if: steps.scope.outputs.run == 'true'
-        run: go build ./cmd/server
+        run: go build ./...
 
       - name: Govulncheck
         if: steps.scope.outputs.run == 'true'

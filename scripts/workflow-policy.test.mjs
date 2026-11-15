@@ -103,6 +103,10 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
   assert.match(pages, /head_repository.full_name == github.repository/);
   assert.match(pages, /needs: \[inventory, docs, collect]/);
   assert.match(pages, /max-parallel: 5/);
+  assert.match(pages, /REPORT_PRODUCER: \$\{\{ matrix.producer.producer }}/);
+  assert.match(pages, /REPORT_ARTIFACT: \$\{\{ matrix.producer.report }}/);
+  assert.match(pages, /pattern: \$\{\{ matrix.producer.pattern }}/);
+  assert.match(pages, /run-id: \$\{\{ steps.source.outputs.run_id }}/);
   for (const producer of catalog) {
     assert.ok(pages.includes(producer.name));
     const source = workflow(producer.workflow.replace('.yml', ''));

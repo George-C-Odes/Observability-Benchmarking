@@ -127,7 +127,8 @@ jobs:
         id: source
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          REPORT_PRODUCER: ${{ matrix.producer.id }}
+          REPORT_PRODUCER: ${{ matrix.producer.producer }}
+          REPORT_ARTIFACT: ${{ matrix.producer.report }}
           REPORT_SCOPE: ${{ matrix.scope }}
         run: node scripts/pages/github-reports.mjs collect
       - name: Download producer reports

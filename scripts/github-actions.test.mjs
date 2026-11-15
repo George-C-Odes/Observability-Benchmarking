@@ -266,8 +266,11 @@ test('local build entry points enforce coverage and Docker retains its gate depe
   for (const module of ['enhanced', 'simple']) {
     const make = read(`services/go/${module}/Makefile`);
     assert.match(make, /build: coverage\n\tgo build/);
+    assert.match(make, /go build -o bin\/server \.\/cmd\/server/);
+    assert.match(read(`services/go/${module}/.gitignore`), /^bin\/$/m);
     assert.ok(make.includes(`coverage_gate.py go-${module}`));
   }
+  assert.match(readYaml(join(githubDir, 'workflows/go_quality.yml')), /run: go build \.\/\.\.\./);
   for (const [directory, module] of [['WSGI', 'django-platform'], ['ASGI', 'django-reactive'], ['common', 'django-common']]) {
     const make = read(`services/python/django/gunicorn/${directory}/Makefile`);
     assert.match(make, /build: coverage/);

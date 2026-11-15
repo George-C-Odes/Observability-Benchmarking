@@ -108,7 +108,9 @@ cannot be reused for the analyzer's different Python environment.
 URLs. All producers accept success and failure in live and staging. The workflow
 selects one trusted main commit for every job; branch artifacts are data and are
 never executed by the publisher. Fork sources are excluded. Report collection
-runs in parallel with the documentation build, with at most five collection jobs.
+runs in parallel with the documentation build, with at most five concurrent jobs.
+Qodana has one collection entry per scan scope, allowing services and orchestrator
+reports to retain independent run IDs, commits and download outcomes.
 
 Compiled Jekyll output is cached by documentation and build-workflow content.
 Only docs/publisher changes trigger a direct push rebuild; completed quality
@@ -116,8 +118,13 @@ workflows still refresh reports. Short-lived collection artifacts feed a single
 assembly and deployment stage. The assembly records availability, conclusion,
 run ID and analyzed SHA, and rejects report symlinks.
 
-The resolver selects the newest-created eligible run, not the run that most
-recently finished or triggered Pages. It checks at most five pages of 100 runs.
+The resolver selects the newest-created eligible scan for each report, not the run
+that most recently finished or triggered Pages. For Qodana it skips a run only when
+the matching job explicitly records an unaffected scope and a skipped scan. Failed
+scans, failed startup and missing scope evidence never fall back to older green
+reports. Legacy jobs without scope routing remain eligible. The resolver checks at
+most five pages of 100 runs and five pages of jobs per candidate; a shared four-minute
+lookup deadline bounds the complete selection including retries.
 API errors and lookup-limit exhaustion are explicit unavailable states, never
 clean assessments. Requests have fixed repository-scoped operations, component
 validation/encoding, redirect rejection, 20-second attempt deadlines and up to

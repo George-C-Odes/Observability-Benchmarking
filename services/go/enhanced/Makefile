@@ -4,7 +4,7 @@ PYTHON ?= python
 .PHONY: build test lint coverage run
 
 build: coverage
-	go build ./cmd/server
+	go build -o bin/server ./cmd/server
 
 run:
 	go run ./cmd/server

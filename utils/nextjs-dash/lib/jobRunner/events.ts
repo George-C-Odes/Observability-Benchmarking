@@ -5,7 +5,7 @@ type SseMessageData = {
   type?: string;
   stream?: string;
   message?: string;
-  jobId?: string;
+  jobId?: string | null;
   jobStatus?: string;
   createdAt?: string;
   startedAt?: string;
@@ -100,7 +100,8 @@ export function processSseEvent(raw: string, jobId: string, callbacks: SseEventC
   if (!parsed) return;
 
   const evJobId = normalizeJobId(parsed.jobId);
-  if (Object.hasOwn(parsed, 'jobId') && (!evJobId || evJobId !== jobId)) return;
+  // Log/status events use null for an ID already established by the stream URL.
+  if (parsed.jobId != null && (!evJobId || evJobId !== jobId)) return;
 
   if (typeof parsed.requestId === 'string' && parsed.requestId.trim()) {
     callbacks.onRequestId(parsed.requestId);

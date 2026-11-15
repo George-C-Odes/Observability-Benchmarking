@@ -1,7 +1,7 @@
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { catalog, validateRun } from './github-reports.mjs';
+import { collectionPlan, validateRun } from './github-reports.mjs';
 import { esc, htmlPage } from './report-helpers.mjs';
 
 function safeTree(directory) {
@@ -28,7 +28,7 @@ function readSource(collection, producer, scope, repository) {
   if (!existsSync(collection)) return { status: 'collection unavailable' };
   safeTree(collection);
   const source = JSON.parse(readFileSync(join(collection, 'source.json'), 'utf8'));
-  if (source.scope !== scope || source.producer !== producer.id) throw new Error('Report provenance mismatch');
+  if (source.scope !== scope || source.producer !== producer.producer || source.report !== producer.report) throw new Error('Report provenance mismatch');
   const run = { id: source.run_id, run_number: 1, head_sha: source.head_sha, conclusion: source.conclusion,
     head_branch: scope === 'live' ? 'main' : 'stage', head_repository: { full_name: repository } };
   if (source.run_id && !validateRun(run, repository, scope)) throw new Error('Invalid report provenance');
@@ -47,6 +47,7 @@ function copyReport(directory, destination) {
 }
 
 function reportStatus(source, directory, destination) {
+  if (source.status && source.status !== 'resolved') return source.status;
   if (!source.run_id) return source.status;
   if (source.download === 'failure') return 'download failed';
   if (source.download !== 'success' || !existsSync(directory)) return 'report missing';
@@ -71,13 +72,13 @@ export function assembleReports(site, collections, repository) {
     const destination = join(site, scope === 'live' ? 'quality' : 'stage/quality');
     mkdirSync(destination, { recursive: true });
     const rows = [];
-    for (const producer of catalog) {
+    for (const producer of collectionPlan) {
       const collection = join(collections, `collection-${scope}-${producer.id}`);
       const source = readSource(collection, producer, scope, repository);
       for (const report of producer.reports) rows.push(reportRow(report, collection, destination, source));
     }
     const body = `<h1>${scope === 'live' ? 'Main' : 'Shared staging'} quality reports</h1>
-<p>Latest eligible runs by creation order. Failed scans remain visible. Staging combines the latest runs from repository branches.</p>
+<p>Latest eligible scan for each report by creation order. Unaffected Qodana scopes retain their previous scan. Failed scans remain visible. Staging combines the latest runs from repository branches.</p>
 <table><thead><tr><th>Report</th><th>Availability</th><th>Workflow conclusion</th><th>Run</th><th>Analyzed commit</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     writeFileSync(join(destination, 'index.html'), htmlPage({ title: 'Quality reports', body }));
   }
