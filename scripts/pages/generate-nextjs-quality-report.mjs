@@ -304,6 +304,24 @@ function buildToolVersionMeta(env) {
   return metaExtras;
 }
 
+function applyExecutionStatus(execution, results) {
+  if (!execution) return;
+  for (const [name, result] of Object.entries(results)) {
+    if (execution[name]?.exitCode === 0) continue;
+    result.pass = false;
+    result.reportWarnings.push(`${name} did not complete successfully (exit ${execution[name]?.exitCode ?? 'unknown'}).`);
+  }
+}
+
+function emptyToolSection(raw, tool, success) {
+  if (raw === null) return `<p class="muted">${tool} file was not found.</p>`;
+  return `<p class="empty-state">${success}</p>`;
+}
+
+function passLabel(pass) { return pass ? 'Pass' : 'Fail'; }
+function passClass(pass) { return pass ? 'status-pass' : 'status-fail'; }
+function warningCount(count) { return count ? `, ${count} warnings` : ''; }
+
 /** Build report HTML without file-system side effects so fixtures can test it. */
 export function buildQualityReport({
   cwd,
@@ -317,14 +335,7 @@ export function buildQualityReport({
   const oxlint = parseOxlintReport(oxlintRaw);
   const oxfmt = parseOxfmtOutput(oxfmtRaw);
   const typescript = parseTypeScriptDiagnostics(typescriptRaw);
-  if (execution) {
-    for (const [name, result] of [['format', oxfmt], ['lint', oxlint], ['typecheck', typescript]]) {
-      if (execution[name]?.exitCode !== 0) {
-        result.pass = false;
-        result.reportWarnings.push(`${name} did not complete successfully (exit ${execution[name]?.exitCode ?? 'unknown'}).`);
-      }
-    }
-  }
+  applyExecutionStatus(execution, { format: oxfmt, lint: oxlint, typecheck: typescript });
   const reportWarnings = [
     ...oxfmt.reportWarnings,
     ...oxlint.reportWarnings,
@@ -335,14 +346,10 @@ export function buildQualityReport({
   const oxlintSection = diagnosticsTable(cwd, oxlint.diagnostics, 'oxlint')
     || '<p class="empty-state">No Oxlint findings \u2014 all checks passed.</p>';
   const typescriptSection = diagnosticsTable(cwd, typescript.diagnostics, 'typescript')
-    || (typescriptRaw === null
-      ? '<p class="muted">TypeScript diagnostics file was not found.</p>'
-      : '<p class="empty-state">No TypeScript diagnostics \u2014 all checks passed.</p>');
+    || emptyToolSection(typescriptRaw, 'TypeScript diagnostics', 'No TypeScript diagnostics \u2014 all checks passed.');
   const oxfmtSection = oxfmt.output
     ? `<pre class="tool-output">${esc(oxfmt.output)}</pre>`
-    : (oxfmtRaw === null
-      ? '<p class="muted">Oxfmt output file was not found.</p>'
-      : '<p class="empty-state">No formatting differences \u2014 all checks passed.</p>');
+    : emptyToolSection(oxfmtRaw, 'Oxfmt output', 'No formatting differences \u2014 all checks passed.');
   const warningSection = reportWarnings.length > 0
     ? '<section class="report-warnings"><h2>Report-generation warnings</h2><ul>'
       + reportWarnings.map((warning) => `<li>${esc(warning)}</li>`).join('')
@@ -362,10 +369,10 @@ export function buildQualityReport({
     '  <p class="subtitle">Oxlint static analysis, Oxfmt formatting, and TypeScript 7 native strict-mode checking.</p>',
     warningSection,
     '  <div class="summary-grid">',
-    `    <div class="card"><div class="card-title">Overall</div><div class="card-value ${overallPass ? 'status-pass' : 'status-fail'}">${statusIcon(overallPass)} ${overallPass ? 'Pass' : 'Fail'}</div></div>`,
-    `    <div class="card"><div class="card-title">Oxfmt</div><div class="card-value ${oxfmt.pass ? 'status-pass' : 'status-fail'}">${statusIcon(oxfmt.pass)} ${oxfmt.pass ? 'Pass' : 'Fail'}</div><div class="card-detail">Deterministic formatting check</div></div>`,
-    `    <div class="card"><div class="card-title">Oxlint</div><div class="card-value ${oxlint.pass ? 'status-pass' : 'status-fail'}">${statusIcon(oxlint.pass)} ${oxlint.errorCount} errors, ${oxlint.warningCount} warnings</div><div class="card-detail">${oxlint.numberOfFiles} files analyzed</div></div>`,
-    `    <div class="card"><div class="card-title">TypeScript 7</div><div class="card-value ${typescript.pass ? 'status-pass' : 'status-fail'}">${statusIcon(typescript.pass)} ${typescript.errorCount} errors${typescript.warningCount ? `, ${typescript.warningCount} warnings` : ''}</div><div class="card-detail">Native strict checker (tsc --noEmit)</div></div>`,
+    `    <div class="card"><div class="card-title">Overall</div><div class="card-value ${passClass(overallPass)}">${statusIcon(overallPass)} ${passLabel(overallPass)}</div></div>`,
+    `    <div class="card"><div class="card-title">Oxfmt</div><div class="card-value ${passClass(oxfmt.pass)}">${statusIcon(oxfmt.pass)} ${passLabel(oxfmt.pass)}</div><div class="card-detail">Deterministic formatting check</div></div>`,
+    `    <div class="card"><div class="card-title">Oxlint</div><div class="card-value ${passClass(oxlint.pass)}">${statusIcon(oxlint.pass)} ${oxlint.errorCount} errors, ${oxlint.warningCount} warnings</div><div class="card-detail">${oxlint.numberOfFiles} files analyzed</div></div>`,
+    `    <div class="card"><div class="card-title">TypeScript 7</div><div class="card-value ${passClass(typescript.pass)}">${statusIcon(typescript.pass)} ${typescript.errorCount} errors${warningCount(typescript.warningCount)}</div><div class="card-detail">Native strict checker (tsc --noEmit)</div></div>`,
     '  </div>',
     '  <h2>Oxfmt Check</h2>',
     `  ${oxfmtSection}`,

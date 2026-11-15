@@ -38,6 +38,8 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 - Compose profile, CPU, memory, ulimit, health, and telemetry settings are part of benchmark fairness.
 - `service.name` and endpoint response semantics must remain stable across benchmark variants.
 - The orchestrator executes commands; treat command validation, path validation, and auth filters as security-sensitive.
+- Pages privileged event consumers execute literal trusted main checkouts and verify the inventory revision before repository code; artifacts remain data.
+- Report/capture changes require the pinned complexity/control-regex gate (`npm run check --prefix scripts/quality`) and boundary tests; see the CI/report safety skill.
 - Scanner/report and authenticated API helpers cross command, filesystem, container, URL, and credential trust boundaries; apply the CI/report safety skill before changing them or triaging their alerts.
 - For any HTTP request construction, complete the skill's request-safety gate: trace lower-trust inputs to the client, enforce origin/resource scope, and test zero requests for malicious input. Report fresh matching scanner evidence separately; passing tests do not clear an open Sonar alert.
 

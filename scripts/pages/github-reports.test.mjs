@@ -90,3 +90,11 @@ test('malicious response identifiers never reach subsequent download operations'
     await assert.rejects(resolver([run({ head_sha: malicious })]), /Malformed/);
   }
 });
+
+
+test('control characters in response branches never select a report', async () => {
+  for (const character of ['\r', '\n', String.fromCodePoint(0)]) {
+    const result = await resolver([run({ head_branch: `feature${character}branch` })], { scope: 'stage' });
+    assert.equal(result.status, 'no matching run');
+  }
+});

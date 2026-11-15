@@ -26,6 +26,12 @@ jobs:
           persist-credentials: false
       - name: Set up Node
         uses: ./.github/actions/setup-node
+      - name: Install pinned report-script validators
+        run: npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
+      - name: Check report-script complexity and control characters
+        run: |
+          npm run check --prefix scripts/quality
+          npm test --prefix scripts/quality
       - name: Set up Python
         uses: ./.github/actions/setup-python
       - name: Install pinned workflow validators

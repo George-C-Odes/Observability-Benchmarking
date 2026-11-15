@@ -58,10 +58,16 @@ jobs:
       contents: read
     steps:
       - name: Checkout trusted site source
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.inventory.outputs.source_sha }}
+          ref: refs/heads/main
           persist-credentials: false
+      - name: Verify trusted source revision
+        env:
+          EXPECTED_SHA: ${{ needs.inventory.outputs.source_sha }}
+          CHECKED_OUT_SHA: ${{ steps.checkout.outputs.commit }}
+        run: test "$CHECKED_OUT_SHA" = "$EXPECTED_SHA"
       - name: Restore compiled documentation
         id: site-cache
         uses: ./.github/actions/cache
@@ -107,10 +113,16 @@ jobs:
         producer: ${{ fromJSON(needs.inventory.outputs.producers) }}
     steps:
       - name: Checkout trusted site source
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.inventory.outputs.source_sha }}
+          ref: refs/heads/main
           persist-credentials: false
+      - name: Verify trusted source revision
+        env:
+          EXPECTED_SHA: ${{ needs.inventory.outputs.source_sha }}
+          CHECKED_OUT_SHA: ${{ steps.checkout.outputs.commit }}
+        run: test "$CHECKED_OUT_SHA" = "$EXPECTED_SHA"
       - name: Resolve freshest eligible source
         id: source
         env:
@@ -150,10 +162,16 @@ jobs:
       contents: read
     steps:
       - name: Checkout trusted site source
+        id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.inventory.outputs.source_sha }}
+          ref: refs/heads/main
           persist-credentials: false
+      - name: Verify trusted source revision
+        env:
+          EXPECTED_SHA: ${{ needs.inventory.outputs.source_sha }}
+          CHECKED_OUT_SHA: ${{ steps.checkout.outputs.commit }}
+        run: test "$CHECKED_OUT_SHA" = "$EXPECTED_SHA"
       - name: Download compiled documentation
         uses: ./.github/actions/download-artifact
         with:

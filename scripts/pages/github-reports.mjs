@@ -14,6 +14,16 @@ function repositoryParts(repository) {
   return parts;
 }
 
+function reportRoute(operation, value) {
+  if (operation === 'runs') {
+    const producer = catalog.find((entry) => entry.id === value);
+    if (!producer) throw new Error('Invalid report producer');
+    return `/actions/workflows/${encodeURIComponent(producer.workflow)}/runs`;
+  }
+  if (operation === 'artifacts' && identifier(String(value))) return `/actions/runs/${encodeURIComponent(String(value))}/artifacts`;
+  throw new Error('Invalid report operation');
+}
+
 // Request-safety gate: repository/token come from the trusted Actions launcher;
 // producer/scope are fixed catalog operations. API run IDs/SHAs remain untrusted.
 // Only GET list-runs/list-artifacts within this repository on api.github.com are
@@ -24,14 +34,7 @@ export function reportClient(repository, token, { fetchImpl = fetch, wait = slee
   const prefix = `https://api.github.com/repos/${parts.map(encodeURIComponent).join('/')}`;
   async function request(operation, value, page = 1) {
     if (!Number.isInteger(page) || page < 1 || page > 5) throw new Error('Invalid page');
-    let route;
-    if (operation === 'runs') {
-      const producer = catalog.find((entry) => entry.id === value);
-      if (!producer) throw new Error('Invalid report producer');
-      route = `/actions/workflows/${encodeURIComponent(producer.workflow)}/runs`;
-    } else if (operation === 'artifacts' && identifier(String(value))) {
-      route = `/actions/runs/${encodeURIComponent(String(value))}/artifacts`;
-    } else throw new Error('Invalid report operation');
+    const route = reportRoute(operation, value);
     const query = new URLSearchParams({ per_page: '100', page: String(page) });
     if (operation === 'runs') query.set('status', 'completed');
     const url = `${prefix}${route}?${query}`;
@@ -61,7 +64,7 @@ export function validateRun(run, repository, scope) {
   if (!['live', 'stage'].includes(scope)) throw new Error('Invalid report scope');
   if (!run || run.head_repository?.full_name !== repository || !['success', 'failure'].includes(run.conclusion)) return false;
   const branch = run.head_branch;
-  if (typeof branch !== 'string' || !branch || /[\r\n\x00]/.test(branch)) return false;
+  if (typeof branch !== 'string' || !branch || ['\r', '\n', String.fromCodePoint(0)].some((character) => branch.includes(character))) return false;
   if ((scope === 'live') !== (branch === 'main')) return false;
   if (!identifier(String(run.id)) || !sha(run.head_sha) || !Number.isSafeInteger(run.run_number) || run.run_number < 1) throw new Error('Malformed report run');
   return true;

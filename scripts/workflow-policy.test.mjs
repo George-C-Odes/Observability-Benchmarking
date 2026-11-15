@@ -53,8 +53,12 @@ test('coverage inventory supplies both JVM consumers without changing module ide
 
 test('Pages preserves its trust boundary and producer catalog contracts', () => {
   const pages = workflow('pages');
-  assert.equal((pages.match(/ref: refs\/heads\/main/g) || []).length, 1);
-  assert.equal((pages.match(/ref: \$\{\{ needs.inventory.outputs.source_sha }}/g) || []).length, 3);
+  assert.equal((pages.match(/ref: refs\/heads\/main/g) || []).length, 4);
+  assert.equal((pages.match(/ref: \$\{\{ needs.inventory.outputs.source_sha }}/g) || []).length, 0);
+  assert.deepEqual([...pages.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), Array(4).fill('refs/heads/main'));
+  assert.equal((pages.match(/EXPECTED_SHA: \$\{\{ needs.inventory.outputs.source_sha }}/g) || []).length, 3);
+  assert.equal((pages.match(/CHECKED_OUT_SHA: \$\{\{ steps.checkout.outputs.commit }}/g) || []).length, 3);
+  assert.equal((pages.match(/run: test "\$CHECKED_OUT_SHA" = "\$EXPECTED_SHA"/g) || []).length, 3);
   assert.match(pages, /head_repository.full_name == github.repository/);
   assert.match(pages, /needs: \[inventory, docs, collect]/);
   assert.match(pages, /max-parallel: 5/);
@@ -70,7 +74,7 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
 test('unfiltered validation enforces shell, security, request-boundary and Pages tests', () => {
   const source = workflow('workflow_quality');
   assert.doesNotMatch(source, /^ +paths:/m);
-  for (const tool of ['actionlint', 'shellcheck', 'zizmor', 'scripts/pages/*.test.mjs']) assert.ok(source.includes(tool));
+  for (const tool of ['actionlint', 'shellcheck', 'zizmor', 'scripts/pages/*.test.mjs', 'npm run check --prefix scripts/quality', 'npm test --prefix scripts/quality']) assert.ok(source.includes(tool));
   assert.match(source, /--require-hashes/);
   const snyk = workflow('snyk-security');
   assert.match(snyk, /snyk-version: v\d+\.\d+\.\d+/);
