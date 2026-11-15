@@ -189,7 +189,9 @@ test('coverage helper consumers trigger on helper changes and CI runs its unit t
 
 test('Qodana fallback uses the version and checksum lock and bounded archive retries', () => {
   const source = readYaml(join(githubDir, 'workflows', 'qodana_code_quality.yml'));
-  assert.equal(source.split("- '.github/qodana-cli-lock.json'").length - 1, 2);
+  assert.equal(source.split("- '.github/qodana-cli-lock.json'").length - 1, 1);
+  assert.match(source, /pull_request:\n {2}push:/);
+  assert.match(source, /run: node scripts\/qodana-scopes.mjs/);
   assert.ok(source.includes('node scripts/qodana-cli-asset.mjs "$QODANA_CLI_VERSION" "$QODANA_CLI_SHA256"'));
   assert.match(source, /--retry 3 --retry-all-errors --retry-delay 10 --retry-max-time 120/);
   assert.match(source, /sha256sum --check --strict/);

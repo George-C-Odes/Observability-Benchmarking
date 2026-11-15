@@ -122,3 +122,25 @@ test('unfiltered validation enforces shell, security, request-boundary and Pages
   assert.doesNotMatch(snyk, /^ {6}SNYK_TOKEN:/m, 'Token must not be job-wide');
   assert.match(readFileSync(join(root, 'qodana.yaml'), 'utf8'), /qodana-jvm-community:\S+@sha256:[a-f0-9]{64}/);
 });
+
+test('Qodana routes scopes without dropping check names or weakening full analysis', () => {
+  const source = workflow('qodana_code_quality');
+  assert.match(source, /pull_request:\n {2}push:/);
+  assert.match(source, /qodana:\n +needs: changes\n +if: always\(\) && !cancelled\(\)/);
+  assert.match(source, /SCAN_ENABLED: \$\{\{ needs.changes.outputs\[matrix.name\] }}/);
+  assert.match(source, /name: Require valid scope selection\n +if: env.SCAN_ENABLED != 'true' && env.SCAN_ENABLED != 'false'\n +run: exit 1/);
+  for (const name of ['services-java', 'orchestrator']) assert.ok(source.includes(`- name: ${name}`));
+  for (const step of ['Checkout', 'Test Qodana CLI release lookup', 'Install Qodana CLI', 'Prepare Qodana arguments', 'Qodana Scan']) {
+    assert.ok(source.includes(`- name: ${step}\n        if: env.SCAN_ENABLED == 'true'`), step);
+  }
+  assert.match(source, /if: always\(\) && !cancelled\(\) && env.SCAN_ENABLED == 'true'/);
+  for (const key of ['primary-cache-key', 'additional-cache-key']) {
+    const line = source.split('\n').find((line) => line.trimStart().startsWith(`${key}:`));
+    for (const input of ['matrix.name', 'qodana.yaml', 'pom.xml', 'runner.arch']) assert.ok(line.includes(input));
+    assert.ok(!line.includes('github.ref'), 'PRs must be able to restore matching main caches');
+  }
+  assert.match(source, /cache-default-branch-only: true/);
+  assert.match(source, /pr-mode: false/);
+  assert.match(source, /env-vars-to-linter: QODANA_ONLY_DIRECTORY,JAVA_TOOL_OPTIONS/);
+  assert.ok(workflow('workflow_quality').includes('scripts/qodana-scopes.test.mjs'));
+});

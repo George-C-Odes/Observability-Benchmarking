@@ -18,6 +18,14 @@ explicit rather than introducing a universal workflow with conditional behavior.
 - **Java Coverage / CodeQL** share the JVM inventory derived from
   `scripts/coverage-thresholds.json` via `scripts/java-modules.mjs`. Qodana discovers
   Maven modules, including native projects, under its configured source tree.
+- **Java Qodana** starts on every PR and merge group, then selects affected scopes
+  with a bounded local Git diff. Unchanged scopes keep their existing successful
+  check names without downloading or running the analyzer. Source, POM, resources
+  and scanner configuration remain analysis inputs; Markdown alone under either
+  source tree does not.
+  Missing diff evidence selects both scopes. Main, manual and weekly runs analyze
+  both scopes to retain complete paired Pages reports. A skipped PR scope has no
+  fresh report artifact; report availability must not be interpreted as coverage.
 - **Next.js Dashboard Quality** captures diagnostics and exit status during each
   original check, then collects coverage and builds once. Failed or missing checker
   execution cannot produce a passing quality report.
@@ -54,6 +62,13 @@ have checked-in SHA-256 digests in `scripts/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
 from official release metadata when upgrading. Dependabot version updates have a
 seven-day cooldown; this does not delay Dependabot security updates.
+
+Java Qodana caches have separate service/orchestrator namespaces, keyed by OS,
+architecture, analyzer/profile, Maven descriptors and wrapper inputs. Their restore
+prefix omits the branch ref so PRs can find compatible default-branch caches;
+only default-branch runs save them. The first run after a key change is cold.
+See [the workflow review](WORKFLOW_REVIEW.md) for measured Java startup costs,
+remaining priorities and rollout checks.
 
 Django and Snyk pip cache keys enumerate their consumed inputs, excluding unrelated
 workflow-validator and documentation changes. Python Qodana checks out only one
