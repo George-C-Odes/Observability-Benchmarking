@@ -25,7 +25,7 @@ A high-performance REST service implementation built with Quarkus {{QUARKUS_VERS
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
-| Build   | `maven:3.10.0-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
+| Build   | `maven:{{MAVEN_VERSION}}-eclipse-temurin-{{JAVA_MAJOR_VERSION}}-noble`                      |
 | Runtime | `gcr.io/distroless/base-debian13:nonroot` + jlink custom JRE |
 
 This Docker image uses a multi-stage build:

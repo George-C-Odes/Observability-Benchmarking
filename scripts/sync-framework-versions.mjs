@@ -12,8 +12,9 @@ import { goModules, syncGoModVersions } from './sync-go-mod-versions.mjs';
 import { javaRuntimeGeneratedPaths, syncJavaRuntimeVersions } from './sync-java-runtime-versions.mjs';
 import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sync-java-pom-versions.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
+import { mavenGeneratedPaths, readMavenVersion, syncMavenVersions } from './sync-maven-versions.mjs';
 
-export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', 'GUNICORN_VERSION', ...nodeVersionKeys];
+export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', 'GUNICORN_VERSION', 'MAVEN_VERSION', ...nodeVersionKeys];
 const controlPom = 'utils/orchestrator/pom.xml';
 const pythonAction = '.github/actions/setup-python/action.yml';
 const sonarConfig = '.sonarcloud.properties';
@@ -46,7 +47,7 @@ export function generatedFrameworkPaths() {
     ...goModules.map((module) => `${module}/go.mod`),
     ...readdirSync(resolveRepoPath('.run')).filter((file) => file.startsWith('[build-img]') && file.endsWith('.run.xml')).map((file) => `.run/${file}`),
     ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json').map((file) => deriveOutputPath(file).replaceAll('\\', '/')),
-    ...imageTagGeneratedPaths, ...nodeGeneratedPaths, ...javaRuntimeGeneratedPaths, ...djangoGeneratedFiles, controlPom, pythonAction, sonarConfig,
+    ...imageTagGeneratedPaths, ...nodeGeneratedPaths, ...javaRuntimeGeneratedPaths, ...mavenGeneratedPaths, ...djangoGeneratedFiles, controlPom, pythonAction, sonarConfig,
   ])];
 }
 
@@ -62,12 +63,14 @@ export function generatedNextjsPaths() {
 export function syncFrameworkVersions({ envPath = 'compose/.env', check = false } = {}) {
   const variables = parseColonEnv(readFileSync(resolveRepoPath(envPath), 'utf8'));
   for (const key of frameworkVersionKeys) readLiteralVersion(variables, key);
+  readMavenVersion(variables);
   const extra = [
     readSyncFile(resolveRepoPath(controlPom), (content) => syncJavaPomXml(content, 'quarkus.platform.version', variables.QUARKUS_VERSION), controlPom),
     readSyncFile(resolveRepoPath(pythonAction), (content) => syncPythonDefault(content, variables.PYTHON_VERSION), pythonAction),
     readSyncFile(resolveRepoPath(sonarConfig), (content) => syncSonarPythonVersion(content, variables.PYTHON_VERSION), sonarConfig),
   ];
   const results = [
+    ...syncMavenVersions({ envPath, check }),
     ...syncDjangoVersions({ envPath, check }),
     ...syncJavaPomVersions({ envPath, check }),
     ...syncGoModVersions({ envPath, check }),

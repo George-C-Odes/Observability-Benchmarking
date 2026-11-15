@@ -9,6 +9,7 @@ This directory contains small repository-level helper scripts.
 - `sync-node-versions.mjs` - relays paired Node env pins to Docker and CI
 - `sync-framework-versions.mjs` - runs every env-driven synchronizer and README renderer, including orchestrator Quarkus, the shared Python CI version, and Sonar's Python language version
 - `sync-java-runtime-versions.mjs` - synchronizes manually managed Java/GraalVM runtime pins
+- `sync-maven-versions.mjs` - relays `MAVEN_VERSION` to JVM builder defaults, native wrapper distributions, and the orchestrator builder; a changed builder tag drops its stale digest
 - `sync-java-runtime-versions.test.mjs` - validates Java version propagation and Renovate exclusion
 - `sync-framework-versions.test.mjs` - tests canonical inventories, Python CI/Sonar versions, and generated output scope
 - `sync-django-versions.mjs` - pins Django and Gunicorn inputs from the env and regenerates runtime/CI/Docker locks when the version changes
@@ -100,6 +101,11 @@ the Zoomba Spark fork, Micronaut **core** BOM, and Pekko **HTTP** (not its separ
 Framework major upgrades still require Dependency Dashboard approval; automerge remains disabled. Stable
 registry releases still age for three days, except vulnerability alerts. Unrelated libraries, plugins, action pins,
 Docker digests, and independent tool versions remain managed normally.
+
+`MAVEN_VERSION` also follows this relay. Change it in `compose/.env` and run
+`node scripts/sync-framework-versions.mjs` to update the build inputs and generated documentation.
+The Maven Wrapper implementation version remains independently managed. Builder digests are preserved
+when the Maven tag is unchanged; refresh the digest after changing the release before benchmarking.
 
 ### Image tags and Node upgrades
 

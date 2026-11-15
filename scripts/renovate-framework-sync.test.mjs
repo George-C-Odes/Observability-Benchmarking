@@ -16,6 +16,7 @@ const managers = config.customManagers.filter((manager) => manager.managerFilePa
 
 test('Renovate extracts each active env pin once with the correct registry coordinates', () => {
   const expected = {
+    MAVEN_VERSION: ['maven', 'org.apache.maven:apache-maven'],
     SPRING_BOOT_VERSION: ['maven', 'org.springframework.boot:spring-boot-dependencies'],
     QUARKUS_VERSION: ['maven', 'io.quarkus.platform:quarkus-bom'],
     MICRONAUT_VERSION: ['maven', 'io.micronaut:micronaut-core-bom'],
@@ -31,7 +32,7 @@ test('Renovate extracts each active env pin once with the correct registry coord
     DJANGO_VERSION: ['pypi', 'django'],
     GUNICORN_VERSION: ['pypi', 'gunicorn'],
   };
-  assert.equal(managers.length, 15);
+  assert.equal(managers.length, 16);
   const variables = parseColonEnv(env);
   for (const [key, [datasource, name]] of Object.entries(expected)) {
     const manager = managers.find(({ depNameTemplate }) => depNameTemplate === name);
