@@ -11,3 +11,15 @@ test('the quality gate rejects excessive cognitive complexity and control regexe
   const [simple] = await linter.lintText('function example(a) { if (a) return a; return null; }', { filePath: 'scripts/example.mjs' });
   assert.equal(simple.errorCount, 0);
 });
+
+test('the quality gate requires explicit sort comparators without type services', async () => {
+  const linter = scriptLinter();
+  for (const expression of ['values.sort()', 'values.toSorted()', "values['sort']()", "values['toSorted']()", 'values?.sort()']) {
+    const [result] = await linter.lintText(expression, { filePath: 'scripts/example.mjs' });
+    assert.ok(result.messages.some((message) => message.ruleId === 'no-restricted-syntax'), expression);
+  }
+  for (const expression of ['values.sort((a, b) => a.localeCompare(b))', 'values.toSorted((a, b) => a - b)']) {
+    const [result] = await linter.lintText(expression, { filePath: 'scripts/example.mjs' });
+    assert.equal(result.errorCount, 0, expression);
+  }
+});

@@ -27,6 +27,18 @@ test('missing, stale, duplicate, unsupported or entity-based inventories fail cl
   assert.throws(() => projectForScope(xml, [], '../outside'));
 });
 
+test('inventory comparison ignores discovery order without mutating inputs or accepting mismatches', () => {
+  const poms = entries.filter((path) => path.startsWith('services/java/')).map((path) => `$PROJECT_DIR$/${path}`);
+  const reversed = [...poms].reverse();
+  const before = [...reversed];
+  assert.equal(projectForScope(xml, reversed, 'services/java'), projectForScope(xml, poms, 'services/java'));
+  assert.deepEqual(reversed, before);
+  for (const invalid of [poms.slice(1), [poms[0], poms[0]], [...poms, poms[0]],
+    [poms[0], '$PROJECT_DIR$/services/java/stale/pom.xml']]) {
+    assert.throws(() => projectForScope(xml, invalid, 'services/java'), /Maven inventory differs/);
+  }
+});
+
 test('filesystem inventory ignores build outputs and rejects omissions before writing', (t) => {
   const root = temporaryDirectory(t, 'qodana-project-');
   mkdirSync(join(root, '.idea'));

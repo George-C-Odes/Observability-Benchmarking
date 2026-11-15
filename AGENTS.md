@@ -39,7 +39,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 - `service.name` and endpoint response semantics must remain stable across benchmark variants.
 - The orchestrator executes commands; treat command validation, path validation, and auth filters as security-sensitive.
 - Pages privileged event consumers execute literal trusted main checkouts and verify the inventory revision before repository code; artifacts remain data.
-- Report/capture changes require the pinned complexity/control-regex gate (`npm run check --prefix scripts/quality`) and boundary tests; see the CI/report safety skill.
+- Report/capture and Qodana project-helper changes require the pinned complexity/control-regex/explicit-sort gate (`npm run check --prefix scripts/quality`) and boundary tests; see the CI/report safety skill. Supply an explicit comparator for JavaScript `sort`/`toSorted` calls.
 - Scanner/report and authenticated API helpers cross command, filesystem, container, URL, and credential trust boundaries; apply the CI/report safety skill before changing them or triaging their alerts.
 - For any HTTP request construction, complete the skill's request-safety gate: trace lower-trust inputs to the client, enforce origin/resource scope, and test zero requests for malicious input. Report fresh matching scanner evidence separately; passing tests do not clear an open Sonar alert.
 
@@ -55,6 +55,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | Django `WSGI` or `ASGI` runtime                      | Install common package, then `python manage.py check` and `python manage.py test obbench_django_common.tests --verbosity=2`   |
 | `.github/workflows/**`                               | Run actionlint on changed workflows; YAML parsing alone does not validate expression contexts (see the CI recipe)             |
 | Django Qodana helpers                                | `python -m unittest discover -s scripts -p test_qodana_python.py`; helper Ruff checks and scan verification per the CI recipe |
+| Qodana Maven project helper                          | `npm run check --prefix scripts/quality`, `npm test --prefix scripts/quality`, `node --test scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs` |
 | Template docs                                        | `node scripts/render-readmes.mjs` and inspect the generated diff                                                              |
 | `my-agent/**`                                        | `apm install --frozen`, `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`      |
 

@@ -26,7 +26,8 @@ export function projectForScope(xml, poms, scope) {
   const selected = entries.filter((match) => match[1].startsWith(`$PROJECT_DIR$/${scope}/`));
   const values = selected.map((match) => match[1]);
   if (values.length === 0 || new Set(values).size !== values.length ||
-    JSON.stringify([...values].sort()) !== JSON.stringify([...poms].sort())) throw new Error('Maven inventory differs from scoped POMs');
+    JSON.stringify([...values].sort((a, b) => a.localeCompare(b))) !==
+    JSON.stringify([...poms].sort((a, b) => a.localeCompare(b)))) throw new Error('Maven inventory differs from scoped POMs');
   const replacement = entries.filter((match) => !values.includes(match[1])).reduce((text, match) => text.replace(match[0], ''), content);
   const component = components[0][0].replace(lists[0][0], lists[0][0].replace(content, replacement));
   return xml.replace(components[0][0], component);
