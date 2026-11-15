@@ -12,6 +12,14 @@
   "customManagers": [
     {
       "customType": "regex",
+      "managerFilePatterns": ["/^compose\\/\\.env$/"],
+      "matchStrings": ["(?:^|\\r?\\n)MAVEN_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
+      "depNameTemplate": "org.apache.maven:apache-maven",
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": [
         "/^compose\\/\\.env$/"
       ],
@@ -165,6 +173,21 @@
     "my-agent/apm_modules/**"
   ],
   "packageRules": [
+    {
+      "description": "Maven distributions follow compose/.env; retain independent wrapper tooling updates.",
+      "matchManagers": ["maven-wrapper"],
+      "matchFileNames": ["services/java/**/.mvn/wrapper/maven-wrapper.properties"],
+      "matchPackageNames": ["org.apache.maven:apache-maven"],
+      "enabled": false
+    },
+    {
+      "description": "Maven builder tags follow compose/.env; retain digest refreshes.",
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["services/java/**/Dockerfile", "utils/orchestrator/Dockerfile"],
+      "matchPackageNames": ["maven"],
+      "matchUpdateTypes": ["major", "minor", "patch", "pin"],
+      "enabled": false
+    },
     {
       "description": "Keep all CodeQL subactions on one revision, matching the shared wrapper contract.",
       "matchManagers": ["github-actions"],

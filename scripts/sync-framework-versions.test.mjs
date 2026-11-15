@@ -21,7 +21,7 @@ function repositoryFiles() {
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
   assert.deepEqual([...frameworkVersionKeys].sort(), Object.keys(variables).filter((key) => key.endsWith('_VERSION') && !key.startsWith('JAVA_')).sort());
-  assert.equal(new Set(frameworkVersionKeys).size, 16);
+  assert.equal(new Set(frameworkVersionKeys).size, 17);
 });
 
 test('Pekko build wiring forwards independent HTTP and Core versions to Maven', () => {
@@ -169,7 +169,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const workspace = temporaryDirectory(t, 'framework-pipeline-');
   const scripts = [
     'renovate-framework-sync.mjs', 'sync-nextjs-tags.mjs', 'sync-framework-versions.mjs', 'sync-django-versions.mjs', 'sync-java-pom-versions.mjs',
-    'sync-dockerfile-versions.mjs', 'sync-go-mod-versions.mjs', 'sync-build-img-runs.mjs',
+    'sync-dockerfile-versions.mjs', 'sync-go-mod-versions.mjs', 'sync-build-img-runs.mjs', 'sync-maven-versions.mjs',
     'image-tags.mjs', 'sync-image-tags.mjs', 'sync-node-versions.mjs', 'sync-java-runtime-versions.mjs', 'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json',
   ];
   const files = [...new Set([
@@ -193,6 +193,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     .replace(/^NODE_MAJOR_VERSION:.*$/m, 'NODE_MAJOR_VERSION: 28')
     .replace(/^NODE_MINOR_PATCH_VERSION:.*$/m, 'NODE_MINOR_PATCH_VERSION: 1.2')
     .replace(/^GO_VERSION:.*$/m, 'GO_VERSION: 1.99.0')
+    .replace(/^MAVEN_VERSION:.*$/m, 'MAVEN_VERSION: 3.99.1')
     .replace(/^PYTHON_VERSION:.*$/m, 'PYTHON_VERSION: 3.14.99');
   writeFileSync(envPath, source);
   const dashboardManifestPath = path.join(workspace, 'utils/nextjs-dash/package.json');
@@ -213,6 +214,10 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const result = run();
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(envPath, 'utf8'), source);
+  assert.match(readFileSync(path.join(workspace, 'services/java/spring/jvm/Dockerfile'), 'utf8'), /^ARG MAVEN_RELEASE=3\.99\.1$/m);
+  assert.match(readFileSync(path.join(workspace, 'services/java/quarkus/native/.mvn/wrapper/maven-wrapper.properties'), 'utf8'), /apache-maven\/3\.99\.1\/apache-maven-3\.99\.1-bin.zip/);
+  assert.match(readFileSync(path.join(workspace, 'utils/orchestrator/Dockerfile'), 'utf8'), /maven:3\.99\.1-eclipse-temurin-26-noble\r?\n/);
+  assert.match(readFileSync(path.join(workspace, 'README.md'), 'utf8'), /Maven\s*\| 3\.99\.1/);
   assert.equal(readFileSync(dashboardManifestPath, 'utf8'), dashboardSource);
   for (const file of ['utils/nextjs-dash/__tests__/app/components/SystemInfo.test.tsx',
     'utils/nextjs-dash/__tests__/lib/runtimeConfig.test.ts', 'utils/nextjs-dash/__tests__/lib/systemInfo.test.ts']) {
