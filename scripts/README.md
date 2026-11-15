@@ -64,6 +64,13 @@ third-party dependencies. Missing/malformed reports, invalid counts/configuratio
 under-covered modules exit nonzero. No manual coverage override remains. See
 [the coverage policy](../docs/TESTING.md#hard-per-module-gates) for module scope and local commands.
 
+The gate confines config and report reads to the selected workspace after resolving symlinks
+and junctions. `--root` may select this checkout or a directory inside it; `--config` and
+`--report` must resolve inside that workspace. Absolute in-workspace paths remain supported,
+including a Django runtime report used to check the shared package. Run the helper in an
+isolated checkout: these pre-read checks do not protect against concurrent hostile filesystem
+changes or make a modified copy of the executable trustworthy.
+
 `coverage_summary.py` renders format-specific tables independently of policy. It accepts the
 standard JaCoCo external DTD declaration without fetching it and rejects entity definitions.
 Go function detail uses a fixed argument list without a shell and a 30-second timeout.

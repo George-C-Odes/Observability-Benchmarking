@@ -29,13 +29,18 @@ def unique_object(pairs):
     return result
 
 
-def read_json(path):
-    """Read a report/config selected by a trusted local or CI launcher.
+def workspace_path(path, root):
+    """Authorize the resolved I/O target, including symlink/junction targets."""
+    resolved = Path(path).resolve()
+    if not resolved.is_relative_to(Path(root).resolve()):
+        raise ValueError("Coverage path must remain inside the workspace")
+    return resolved
 
-    CLI paths are filesystem selectors, not a sandbox for remote/LLM input.
-    """
+
+def read_json(path, root=ROOT):
     return json.loads(
-        Path(path).read_text(encoding="utf-8"), object_pairs_hook=unique_object
+        workspace_path(path, root).read_text(encoding="utf-8"),
+        object_pairs_hook=unique_object,
     )
 
 
@@ -75,8 +80,10 @@ def add_metrics(results):
     return total
 
 
-def java_measurements(directory):
-    counters = jacoco_counters(directory / "target/site/jacoco/jacoco.xml")
+def java_measurements(directory, root):
+    counters = jacoco_counters(
+        workspace_path(directory / "target/site/jacoco/jacoco.xml", root)
+    )
     result = {}
     for metric, counter in (("lines", "LINE"), ("branches", "BRANCH")):
         missed, covered = counters[counter]
@@ -84,11 +91,13 @@ def java_measurements(directory):
     return result
 
 
-def nextjs_measurements(directory):
+def nextjs_measurements(directory, root):
     # Both suites are mandatory. Their source scopes must be disjoint.
     results, files = [], set()
     for environment in ("node", "dom"):
-        data = read_json(directory / f"coverage/{environment}/coverage-summary.json")
+        data = read_json(
+            directory / f"coverage/{environment}/coverage-summary.json", root
+        )
         names = set(data) - {"total"}
         if not names or files.intersection(names):
             raise ValueError("Missing or overlapping dashboard source coverage")
@@ -103,7 +112,7 @@ def nextjs_measurements(directory):
 
 
 def python_measurements(module, root, directory, report):
-    data = read_json(report or directory / "coverage-summary.json")
+    data = read_json(report or directory / "coverage-summary.json", root)
     if data["meta"]["branch_coverage"] is not True:
         raise ValueError("Python report must contain branch coverage")
     results = []
@@ -118,9 +127,13 @@ def python_measurements(module, root, directory, report):
     return add_metrics(results)
 
 
-def go_measurements(directory):
+def go_measurements(directory, root):
     # Go records statement-weighted blocks; it does not measure branches/lines.
-    rows = (directory / "coverage.out").read_text(encoding="utf-8").splitlines()
+    rows = (
+        workspace_path(directory / "coverage.out", root)
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
     if not rows or rows[0] not in {"mode: atomic", "mode: count", "mode: set"}:
         raise ValueError("Invalid Go coverage header")
     covered = total = 0
@@ -137,7 +150,8 @@ def go_measurements(directory):
 
 
 def measurements(module, root, report=None):
-    kind, directory = module["format"], root / module["path"]
+    kind = module["format"]
+    directory = workspace_path(root / module["path"], root)
     if report is not None and kind != "python":
         raise ValueError("--report is only supported for Python runtime reports")
     if kind == "python":
@@ -147,7 +161,7 @@ def measurements(module, root, report=None):
         "nextjs": nextjs_measurements,
         "go": go_measurements,
     }
-    return readers[kind](directory)
+    return readers[kind](directory, root)
 
 
 def validate_threshold(name, threshold):
@@ -170,8 +184,8 @@ def validate_module(name, module):
         validate_threshold(name, threshold)
 
 
-def load_modules(path):
-    config = read_json(path)
+def load_modules(path, root=ROOT):
+    config = read_json(path, root)
     if (
         type(config["version"]) is not int
         or config["version"] != 1
@@ -216,15 +230,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("modules", nargs="+")
     parser.add_argument("--config", type=Path, default=CONFIG)
-    parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument(
+        "--root", type=Path, default=ROOT, help="Workspace inside this checkout"
+    )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     try:
-        modules = load_modules(args.config)
+        root = workspace_path(args.root, ROOT)
+        modules = load_modules(args.config, root)
         failed = 0
         for name in args.modules:
             try:
-                failed |= check(name, modules[name], args.root, args.report)
+                failed |= check(name, modules[name], root, args.report)
             except (OSError, ValueError, KeyError, TypeError, ExpatError) as error:
                 print(f"::error::Coverage gate {name}: {error}")
                 failed = 1

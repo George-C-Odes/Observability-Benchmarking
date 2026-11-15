@@ -19,7 +19,7 @@ SCRIPT = str(Path(gate.__file__).resolve())
 
 class CoverageGateTests(unittest.TestCase):
     def setUp(self):
-        temporary = tempfile.TemporaryDirectory()
+        temporary = tempfile.TemporaryDirectory(dir=gate.ROOT)
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
         self.modules = {
@@ -132,8 +132,10 @@ class CoverageGateTests(unittest.TestCase):
             "<broken>",
             "<report/>",
             '<report><counter type="LINE" covered="-1" missed="101"/></report>',
-            '<report><counter type="LINE" covered="100" missed="0"/>'
-            '<counter type="LINE" covered="100" missed="0"/></report>',
+            (
+                '<report><counter type="LINE" covered="100" missed="0"/>'
+                '<counter type="LINE" covered="100" missed="0"/></report>'
+            ),
             '<report><counter type="LINE" covered="100"/></report>',
         ):
             with self.subTest(content=content):
@@ -274,6 +276,52 @@ class CoverageGateTests(unittest.TestCase):
         for name, module in modules.items():
             self.assertTrue(module["thresholds"], name)
             self.assertEqual(set(module["thresholds"].values()), {90}, name)
+
+    def test_config_and_report_escapes_fail_before_reading(self):
+        for path in (self.root.parent / "outside.json", self.root / "../outside.json"):
+            with self.subTest(path=path), patch.object(Path, "read_text") as read:
+                with self.assertRaises(ValueError):
+                    gate.load_modules(path, self.root)
+                with self.assertRaises(ValueError):
+                    self.run_check("python", path)
+                read.assert_not_called()
+
+    def test_cli_cannot_select_a_root_outside_the_checkout(self):
+        with (
+            tempfile.TemporaryDirectory() as outside,
+            patch.object(sys, "argv", [SCRIPT, "python", "--root", outside]),
+            patch.object(Path, "read_text") as read,
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(gate.main(), 1)
+            read.assert_not_called()
+
+    def test_module_directory_escape_fails_before_reading(self):
+        for kind in self.modules:
+            self.modules[kind]["path"] = "../outside"
+            with self.subTest(kind=kind), patch.object(Path, "read_text") as read:
+                with self.assertRaises(ValueError):
+                    self.run_check(kind)
+                read.assert_not_called()
+
+    def test_redirected_reports_and_parents_fail_before_reading(self):
+        with tempfile.TemporaryDirectory() as outside:
+            target = Path(outside)
+            redirected = self.root / "redirected"
+            try:
+                redirected.symlink_to(target, target_is_directory=True)
+                (self.root / "config.json").symlink_to(target / "config.json")
+            except OSError as error:
+                self.skipTest(f"Symlink creation unavailable: {error}")
+            with patch.object(Path, "read_text") as read:
+                for path in (self.root / "config.json", redirected / "report.json"):
+                    with self.subTest(path=path), self.assertRaises(ValueError):
+                        gate.read_json(path, self.root)
+                for kind in self.modules:
+                    self.modules[kind]["path"] = "redirected"
+                    with self.subTest(kind=kind), self.assertRaises(ValueError):
+                        self.run_check(kind)
+                read.assert_not_called()
 
     def test_cli_writes_gate_result_to_summary(self):
         self.java()

@@ -3,7 +3,7 @@ import { errorFromUnknown, okJson } from '@/lib/apiResponses';
 import { withApiRoute } from '@/lib/routeWrapper';
 import { collectServerSystemInfo } from '@/lib/serverSystemInfo';
 
-export const GET = withApiRoute({ name: 'SYSTEM_API' }, async function GET() {
+export const GET = withApiRoute({ name: 'SYSTEM_API' }, function GET() {
   const serverLogger = createScopedServerLogger('SYSTEM_API');
   try {
     const systemInfo = collectServerSystemInfo();

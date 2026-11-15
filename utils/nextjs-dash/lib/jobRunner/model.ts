@@ -19,7 +19,10 @@ export type RunResult = {
 export function normalizeJobId(jobId: unknown): string | null {
   if (
     typeof jobId !== 'string' ||
-    Array.from(jobId).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
+    Array.from(jobId).some((char) => {
+      const codePoint = char.codePointAt(0)!;
+      return codePoint < 32 || codePoint === 127;
+    })
   )
     return null;
   const trimmed = jobId.trim();
