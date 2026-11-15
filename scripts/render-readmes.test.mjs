@@ -7,6 +7,29 @@ import { fileURLToPath } from 'node:url';
 
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 
+test('README workflow badges link to current workflows with matching names', () => {
+  const repoRoot = fileURLToPath(new URL('../', import.meta.url));
+  const source = readFileSync(path.join(repoRoot, 'README.template.md'), 'utf8');
+  const prefix = 'https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/';
+  const badges = [...source.matchAll(/\[!\[([^\]]+)\]\(([^)]+)\)\]\(([^)]+)\)/g)]
+    .filter(([, , image]) => image.startsWith(prefix));
+  assert.ok(badges.length > 0);
+  for (const [, label, image, target] of badges) {
+    assert.ok(target.startsWith(prefix), label);
+    const workflow = target.slice(prefix.length);
+    assert.equal(new URL(image).pathname, `${new URL(target).pathname}/badge.svg`, label);
+    // GitHub manages this built-in Pages workflow outside the repository.
+    if (workflow === 'pages/pages-build-deployment') {
+      assert.equal(label, 'pages-build-deployment');
+      continue;
+    }
+    assert.match(workflow, /^[a-z0-9_-]+\.yml$/, label);
+    const content = readFileSync(path.join(repoRoot, '.github/workflows', workflow), 'utf8');
+    const name = /^name: (.+)\r?$/m.exec(content)?.[1];
+    assert.ok([label, `'${label}'`, `"${label}"`].includes(name), workflow);
+  }
+});
+
 test('documented Gunicorn versions follow the env pin across all registered templates', () => {
   const repoRoot = fileURLToPath(new URL('../', import.meta.url));
   const variables = parseColonEnv(readFileSync(path.join(repoRoot, 'compose/.env'), 'utf8'));
