@@ -75,7 +75,13 @@ export function captureCheck(mode, { run = spawnSync, timeout = 300_000, stdout 
   }
   if (mode === 'format') output += `\nOXFMT_EXIT_CODE=${status}\n`;
   writeFileSync(outputPath, output);
-  writeFileSync(statusPath, JSON.stringify({ exitCode: status }));
+  // Reviewed S8707: argv[2] must be an own key of checks before any I/O.
+  // Only format/lint/typecheck status names reach the module-derived dashboard;
+  // checkedPath rejects escapes and link redirection. The CLI cannot select a root.
+  // User-authorized 2026-11-15; this directive is line-wide, not rule-specific.
+  // Re-review if inputs, roots, checks or workspace isolation change. Evidence:
+  // scripts/quality/sonar-exceptions.md and capture-check.test.mjs.
+  writeFileSync(statusPath, JSON.stringify({ exitCode: status })); // NOSONAR - reviewed S8707 false positive; fixed-root allowlisted operation.
   return status;
 }
 

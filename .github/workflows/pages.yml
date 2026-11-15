@@ -59,7 +59,7 @@ jobs:
     steps:
       - name: Checkout trusted site source
         id: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; NOSONAR - reviewed S7631: trusted main, never fork code; scripts/quality/sonar-exceptions.md
         with:
           ref: refs/heads/main
           persist-credentials: false
@@ -114,7 +114,7 @@ jobs:
     steps:
       - name: Checkout trusted site source
         id: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; NOSONAR - reviewed S7631: trusted main, never fork code; scripts/quality/sonar-exceptions.md
         with:
           ref: refs/heads/main
           persist-credentials: false
@@ -163,7 +163,7 @@ jobs:
     steps:
       - name: Checkout trusted site source
         id: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; NOSONAR - reviewed S7631: trusted main, never fork code; scripts/quality/sonar-exceptions.md
         with:
           ref: refs/heads/main
           persist-credentials: false
