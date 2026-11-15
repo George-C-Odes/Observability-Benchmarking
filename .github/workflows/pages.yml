@@ -152,6 +152,8 @@ jobs:
         with:
           name: collection-${{ matrix.scope }}-${{ matrix.producer.id }}
           path: .collected/
+          # The staging directory is hidden, including its required source.json.
+          include-hidden-files: 'true'
           retention-days: 1
           if-no-files-found: error
 

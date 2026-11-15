@@ -1,5 +1,8 @@
 # GitHub automation
 
+Keep this guide named `AUTOMATION.md`: GitHub gives `.github/README.md` precedence
+over the repository's root `README.md` on its landing page.
+
 ## Responsibilities and execution
 
 Workflows own triggers, job dependencies, permissions and deployment. Composite

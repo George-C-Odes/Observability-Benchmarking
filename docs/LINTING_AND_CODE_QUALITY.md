@@ -858,7 +858,7 @@ requests with redirect rejection, deadlines and bounded retries. `assemble-repor
 rejects redirected report trees and builds both report indexes. Run
 `node --test scripts/pages/*.test.mjs` for request and publication regression tests.
 
-See [GitHub automation](../.github/README.md) for tool pins, test ownership, cache
+See [GitHub automation](../.github/AUTOMATION.md) for tool pins, test ownership, cache
 policy, scoped trigger exceptions and repository-setting rollout requirements.
 
 ### Documentation

@@ -116,6 +116,23 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
   }
 });
 
+test('Pages uploads the hidden report collection and retains missing-file failures', () => {
+  const pages = workflow('pages');
+  const upload = pages.split('      - name: Upload report collection\n')[1]?.split('\n  build:')[0];
+  assert.ok(upload, 'Collection upload step must exist');
+  assert.match(upload, /uses: \.\/\.github\/actions\/upload-artifact/);
+  assert.match(upload, /path: \.collected\//);
+  assert.match(upload, /include-hidden-files: 'true'/);
+  assert.match(upload, /if-no-files-found: error/);
+});
+
+test('the repository landing page uses the root README', () => {
+  assert.ok(existsSync(join(root, 'README.md')));
+  assert.ok(!readdirSync(join(root, '.github')).some((name) => /^readme(?:\.|$)/i.test(name)),
+    'A .github README takes precedence over the root README');
+  assert.ok(existsSync(join(root, '.github/AUTOMATION.md')));
+});
+
 test('unfiltered validation enforces shell, security, request-boundary and Pages tests', () => {
   const source = workflow('workflow_quality');
   assert.doesNotMatch(source, /^ +paths:/m);
