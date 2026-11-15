@@ -145,8 +145,14 @@ pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.t
 
 The Django GitHub Actions setup is split into two workflows:
 
-- `.github/workflows/django_python_quality.yml` — shared/package syntax checks, Ruff lint and format checks, Django system checks, unit tests, and Qodana
-- `.github/workflows/django_python_coverage.yml` — per-runtime `coverage.py` runs, GitHub Step Summary tables, artifacts, and Codecov upload
+- `.github/workflows/django_python_quality.yml` — one Ruff/helper job covering common, WSGI and ASGI sources, plus an independent Qodana job
+- `.github/workflows/django_python_coverage.yml` — one `coverage.py` test run per runtime, including Django system checks, hard coverage gates, GitHub Step Summary tables, artifacts, and Codecov upload
+
+Quality installs Ruff once without runtime dependencies. Coverage installs only the
+selected runtime, common package, build tools and coverage; it does not install
+Ruff. The default Django test runner performs system checks, so CI does not repeat
+`manage.py check`. Ruff also validates Python syntax, replacing separate CI
+`compileall` passes. Local commands below remain available for targeted diagnosis.
 
 The shared Django test suite now covers both runtime modules plus the thin runtime entrypoints (`manage.py`, `hello_project/*.py`) and Gunicorn hook/config helpers.
 

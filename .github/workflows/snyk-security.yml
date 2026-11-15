@@ -67,7 +67,9 @@ jobs:
         with:
           cache: pip
           cache-dependency-path: |
-            .github/requirements/**
+            .github/requirements/pip.in
+            .github/requirements/pip.txt
+            .github/requirements/python-ci.txt
             services/python/django/gunicorn/*/requirements.txt
 
       - name: Set up Go

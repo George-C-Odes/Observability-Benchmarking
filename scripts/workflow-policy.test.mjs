@@ -45,6 +45,46 @@ test('coverage is the single Go/Django test owner, including weekly scans', () =
   assert.match(workflow('django_python_coverage'), /include-hidden-files: 'true'/);
 });
 
+test('Django quality has one Ruff installation and independent semantic analysis', () => {
+  const quality = workflow('django_python_quality');
+  assert.deepEqual([...quality.matchAll(/^ {2}([a-z]+):$/gm)].map((match) => match[1])
+    .filter((name) => ['common', 'modules', 'qodana'].includes(name)), ['common', 'qodana']);
+  assert.equal((quality.match(/uses: \.\/\.github\/actions\/install-python-dependencies/g) || []).length, 1);
+  assert.doesNotMatch(quality, /local-project:|compileall|run: .*manage\.py|requirements\.txt/);
+  for (const operation of ['check', 'format --check']) {
+    assert.ok(quality.includes(`python -m ruff ${operation} services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI`));
+  }
+  for (const runtime of ['WSGI', 'ASGI']) assert.ok(quality.includes(`${runtime}/requirements-dev.txt`));
+  assert.match(quality, /test_sync_build_locks\.py/);
+  assert.match(quality, /test_qodana_python\.py/);
+  assert.doesNotMatch(quality, /^ +run: .*sync_build_locks\.py --check/m);
+  assert.match(workflow('framework_versions'), /python services\/python\/django\/gunicorn\/sync_build_locks\.py --check/);
+  const qodana = quality.split('\n  qodana:\n')[1];
+  assert.doesNotMatch(qodana, /^ +needs:/m);
+  assert.match(qodana, /fetch-depth: 1/);
+});
+
+test('Django runtime environments install coverage without Ruff or repeated system checks', () => {
+  const coverage = workflow('django_python_coverage');
+  assert.doesNotMatch(coverage, /requirements-dev\.txt|ruff|compileall|manage\.py[" ]+check/);
+  assert.equal((coverage.match(/manage\.py test obbench_django_common\.tests/g) || []).length, 1);
+  assert.match(coverage, /default test runner performs system checks/);
+  assert.match(coverage, /\.github\/requirements\/coverage\.in/);
+  for (const runtime of ['WSGI', 'ASGI']) assert.ok(coverage.includes(`module_dir: services/python/django/gunicorn/${runtime}`));
+});
+
+test('pip cache keys track consumed locks rather than unrelated workflow requirements', () => {
+  for (const name of ['django_python_quality', 'django_python_coverage', 'snyk-security']) {
+    const source = workflow(name);
+    const blocks = [...source.matchAll(/cache: pip\n +cache-dependency-path: \|\n((?: +[^\n]+\n)+?)(?=\n| {6}- name:)/g)];
+    assert.ok(blocks.length > 0, `${name}: pip caching must remain enabled`);
+    for (const [, block] of blocks) {
+      assert.ok(!block.includes('.github/requirements/**'), name);
+      for (const file of ['pip.in', 'pip.txt', 'python-ci.txt']) assert.ok(block.includes(`.github/requirements/${file}`), `${name}: ${file}`);
+    }
+  }
+});
+
 test('coverage inventory supplies both JVM consumers without changing module identities', () => {
   for (const module of modules) assert.ok(existsSync(join(root, module.module_dir, 'pom.xml')));
   assert.match(workflow('java_coverage'), /matrix: \$\{\{ fromJSON\(needs.inventory.outputs.matrix\) }}/);

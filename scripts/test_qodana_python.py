@@ -528,6 +528,44 @@ class SourceBoundaryTests(unittest.TestCase):
 
 
 class ProvenanceTests(unittest.TestCase):
+    def test_shallow_detached_checkout_retains_revision_and_sanitized_remote(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "source"
+            checkout = Path(temporary) / "checkout"
+            git = runner.executable("git")
+
+            def command(*arguments):
+                return subprocess.check_output(  # noqa: S603
+                    [git, *arguments], stderr=subprocess.DEVNULL, text=True, timeout=30
+                ).strip()
+
+            command("init", "--initial-branch=main", str(source))
+            command("-C", str(source), "config", "user.name", "CI fixture")
+            command("-C", str(source), "config", "user.email", "ci@example.invalid")
+            for content in ("first", "second"):
+                (source / "source.txt").write_text(content, encoding="utf-8")
+                command("-C", str(source), "add", "source.txt")
+                command("-C", str(source), "commit", "-m", "fixture")
+            revision = command("-C", str(source), "rev-parse", "HEAD")
+            command("clone", "--no-local", "--depth=1", source.as_uri(), str(checkout))
+            command("-C", str(checkout), "checkout", "--detach", "HEAD")
+            command(
+                "-C",
+                str(checkout),
+                "remote",
+                "set-url",
+                "origin",
+                "https://fixture:synthetic-token@example.invalid/org/repo?token=secret#fragment",
+            )
+            self.assertEqual(
+                "true", command("-C", str(checkout), "rev-parse", "--is-shallow-repository")
+            )
+            self.assertEqual("1", command("-C", str(checkout), "rev-list", "--count", "HEAD"))
+            self.assertEqual(
+                {"revisionId": revision, "repositoryUri": "https://example.invalid/org/repo"},
+                runner.git_provenance(checkout),
+            )
+
     def test_remote_uri_drops_credentials_query_and_fragment(self):
         cases = (
             (

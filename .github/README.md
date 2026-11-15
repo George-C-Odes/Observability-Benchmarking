@@ -13,8 +13,8 @@ explicit rather than introducing a universal workflow with conditional behavior.
 - **Framework Version Consistency** checks generated versions and coverage policy.
 - **Go Coverage / Django Python Coverage** own the only race-enabled Go and Django
   test executions per variant, including weekly runs. Quality workflows own lint,
-  format, static analysis, builds and Django system checks. Existing job names are
-  preserved to avoid invalidating branch protection configuration.
+  format, static analysis and builds. Django system checks run inside its default
+  test runner during coverage, without a second management-command invocation.
 - **Java Coverage / CodeQL** share the JVM inventory derived from
   `scripts/coverage-thresholds.json` via `scripts/java-modules.mjs`. Qodana discovers
   Maven modules, including native projects, under its configured source tree.
@@ -24,6 +24,22 @@ explicit rather than introducing a universal workflow with conditional behavior.
 
 PR concurrency cancels superseded runs. Main scans, Renovate synchronization and
 Pages publishing finish their active run. Language matrices retain `fail-fast: false`.
+
+### Django jobs
+
+The Django pipeline has four independent jobs: one Ruff/helper job, two runtime
+coverage jobs, and Qodana. The retained `Django common checks` job now checks all
+three source trees using their own Ruff configurations and installs Ruff once.
+The former `Django module checks (django-platform)` and
+`Django module checks (django-reactive)` jobs are retired; remove those names from
+any custom required-check settings. Coverage check names and Qodana artifact names
+are unchanged.
+
+Coverage installs no Ruff, and the quality job installs no Django runtime.
+Framework Version Consistency owns the dependency-lock freshness check; the common
+quality job owns its projection tests. Ruff validates syntax, so CI no longer
+performs overlapping `compileall` passes. Failed lint does not suppress formatting
+or helper diagnostics after a successful tool install.
 
 ## Caches and pins
 
@@ -38,6 +54,16 @@ have checked-in SHA-256 digests in `scripts/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
 from official release metadata when upgrading. Dependabot version updates have a
 seven-day cooldown; this does not delay Dependabot security updates.
+
+Django and Snyk pip cache keys enumerate their consumed inputs, excluding unrelated
+workflow-validator and documentation changes. Python Qodana checks out only one
+commit; its provenance helper needs no history. Its analyzer remains isolated with
+fresh caches: reviewed run [43743627995](https://github.com/George-C-Odes/Observability-Benchmarking/actions/runs/43743627995)
+spent about 20 seconds pulling the image and about 9 seconds bootstrapping packages,
+with project opening/indexing dominating the remainder. Persistent scanner caching
+needs a measured cold/warm comparison including cache-transfer cost and image,
+inspection-profile and dependency invalidation before adoption. Runtime virtualenvs
+cannot be reused for the analyzer's different Python environment.
 
 ## Pages publication
 

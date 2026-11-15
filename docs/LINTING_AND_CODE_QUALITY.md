@@ -335,6 +335,15 @@ Python services (Django) use [Ruff](https://docs.astral.sh/ruff/) as a fast, all
 
 The CI workflow runs both `ruff check` (lint) and `ruff format --check` (formatting verification) on all Django paths.
 
+One `Django common checks` job installs Ruff once and checks the common, WSGI and
+ASGI source trees together. Each tree retains its own `pyproject.toml` settings;
+CI helpers use the shared configuration explicitly. Formatting and helper checks
+still run after lint failures when tool installation succeeded. Runtime dependencies
+and system checks belong to the two coverage jobs: Django's default test runner
+performs the system checks before executing tests. Separate CI `compileall` and
+`manage.py check` invocations are unnecessary. Lock freshness is enforced once in
+Framework Version Consistency; the common job retains the projection unit tests.
+
 ### Qodana Python Community (Django Static Analysis)
 
 In addition to Ruff, the Django CI workflow runs [Qodana Python Community](https://www.jetbrains.com/qodana/) (`jetbrains/qodana-python-community:2026.2`) for deeper static analysis based on PyCharm Community inspections. This complements Ruff:
@@ -470,8 +479,9 @@ python -m ruff format --check .
 
 ### Additional Django quality checks
 
-The Django CI workflow also performs syntax validation and Django system checks.
-The workflow prints the Ruff version before each lint/format step for visibility:
+Ruff performs syntax validation in CI, and the coverage test runners perform Django
+system checks. The workflow prints the Ruff version once. For targeted local
+diagnosis, these individual commands remain available:
 
 ```bash
 # Shared package syntax check

@@ -79,21 +79,25 @@ jobs:
         with:
           cache: pip
           cache-dependency-path: |
-            .github/requirements/**
+            .github/requirements/pip.in
+            .github/requirements/pip.txt
+            .github/requirements/python-ci.txt
+            .github/requirements/build.in
+            .github/requirements/coverage.in
             services/python/django/gunicorn/common/pyproject.toml
             ${{ matrix.module_dir }}/requirements.txt
-            ${{ matrix.module_dir }}/requirements-dev.txt
 
       - name: Install dependencies
         uses: ./.github/actions/install-python-dependencies
         with:
           requirements: |
             ${{ matrix.module_dir }}/requirements.txt
-            ${{ matrix.module_dir }}/requirements-dev.txt
             .github/requirements/coverage.in
           local-project: services/python/django/gunicorn/common
           editable: 'true'
 
+      # Django's default test runner performs system checks before the tests.
+      # Keep those checks inside this installed runtime; do not run them twice.
       - name: Run tests with coverage
         id: test
         run: |
