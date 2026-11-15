@@ -131,6 +131,7 @@ test('Sonar classifies tracked non-Java tests and helpers without excluding prod
     'services/python/django/gunicorn/common/src/obbench_django_common/views.py',
     'services/python/django/gunicorn/WSGI/src/manage.py', 'services/go/simple/cmd/server/main.go',
     'services/go/enhanced/internal/handlers/hello.go', 'utils/nextjs-dash/app/page.tsx',
+    'utils/nextjs-dash/scripts/coverage-gate.mjs', 'utils/nextjs-dash/scripts/sse-smoke.mjs',
     'utils/orchestrator/scripts/direct-sse-smoke.mjs',
   ]) assert.equal(isTest(file), false, `Production path must not be a test: ${file}`);
   for (const file of tracked.stdout.split('\0').filter((file) => file.includes('/src/main/java/') && file.endsWith('.java'))) {

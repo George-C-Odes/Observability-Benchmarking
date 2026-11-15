@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -117,6 +118,12 @@ class OtelConfigEdgeCasesTest {
 
     @Test
     void httpOnlySignalsDoNotSelectGrpcSender() {
+        // Signal environment settings take precedence over the global system property.
+        for (String signal : List.of("TRACES", "METRICS", "LOGS")) {
+            String variable = "OTEL_EXPORTER_OTLP_" + signal + "_PROTOCOL";
+            String protocol = System.getenv(variable);
+            Assumptions.assumeTrue(protocol == null || protocol.isBlank(), variable + " must be unset or blank");
+        }
         System.setProperty(OtelConfig.OTLP_PROTOCOL_PROPERTY, " HTTP/PROTOBUF ");
         OtelConfig.configureGrpcSenderProvider();
         assertNull(System.getProperty(OtelConfig.GRPC_SENDER_PROVIDER_PROPERTY));
@@ -133,6 +140,9 @@ class OtelConfigEdgeCasesTest {
 
     @Test
     void blankSenderFallsBackToOkHttpAndBlankSignalProtocolFallsBackToGlobal() {
+        String signalProtocol = System.getenv("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL");
+        Assumptions.assumeTrue(signalProtocol == null || signalProtocol.isBlank(),
+                "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL must be unset or blank");
         System.setProperty(OtelConfig.OTLP_PROTOCOL_PROPERTY, " GRPC ");
         System.setProperty("otel.exporter.otlp.traces.protocol", " ");
         System.setProperty(OtelConfig.GRPC_SENDER_PROVIDER_PROPERTY, " ");
