@@ -14,11 +14,11 @@ environment approvals, secret scopes and organization policy were not inspected.
 | High performance | Either Java scope starts both scans; Markdown beneath either tree triggers analysis; merge groups bypass PR path filters. | Fixed: always-triggered PR workflow with internal scope routing, stable matrix check names and explicit skip summaries. Missing/failed diff evidence runs both scopes. |
 | Medium correctness | Docker mode does not inherit arbitrary step environment values automatically. The scope environment variable had a `/proc` command-line fallback in the bootstrap. | Fixed: explicitly forward `QODANA_ONLY_DIRECTORY` and `JAVA_TOOL_OPTIONS` through the pinned action's supported input. |
 | Medium freshness | JVM Qodana had no periodic run, unlike the other major analyzers. | Added a staggered weekly complete run; manual and main runs also produce both reports. |
-| Medium performance | CodeQL compiles all 12 JVM projects serially, then invokes another quality pass. The orchestrator's `verify` overlaps its separate coverage job. | Follow-up: measure phase times, then separate ownership of ordinary quality gates from security extraction. Preserve full Java extraction and SARIF categories. |
-| Medium efficiency | Every language workflow's `merge_group` currently starts its full matrix, even for unrelated changes. | Qodana fixed first. Extend tested routing to coverage/quality workflows after inventorying required checks. CodeQL needs separate treatment because language-category consistency is intentional. |
-| Medium policy | Snyk findings intentionally warn rather than fail, and an absent token skips scanning successfully. | Existing documented policy retained. Decide whether a complete dependency/security scan must become required before describing Snyk as an enforcement gate. |
-| Medium performance | PMD permits 45 minutes for installation in a 60-minute job; each of two download sources can consume long retry budgets. | Follow-up: use measured bounded download budgets and a checksum-keyed verified archive cache if download latency warrants it. Preserve scan failures and diagnostic uploads. |
-| Low duplication | `scripts/github-actions.test.mjs` runs in both always-on validation workflows. Go `tidy` runs in both coverage and quality, and standalone `vet` overlaps enabled golangci-lint vet analysis. | Consolidate ownership only where independent check semantics remain useful. Avoid installing another runtime or adding a serial dependency just to remove a short check. |
+| Medium performance | CodeQL compiles all 12 JVM projects serially, then invokes another quality pass. The orchestrator's `verify` overlaps its separate coverage job. | Removed the repeated orchestrator quality pass from CodeQL and Qodana bootstrap. Java Coverage still runs full `verify` with the default quality profile. Full security extraction and service Checkstyle gates remain. |
+| Medium efficiency | Language workflows start their full matrices on unrelated merge groups. | Added tested internal routing to Java/Go/Django coverage, Go/Django/dashboard quality and PMD. Existing job names remain. CodeQL intentionally retains complete language-category analysis. |
+| Accepted policy | Snyk findings intentionally warn rather than fail, and an absent token skips scanning successfully. | The user confirmed the existing warning-only findings policy meets enforcement requirements. Retained it without changes. |
+| Medium performance | PMD permitted 45 minutes for installation in a 60-minute job. | Added a version/digest/OS/architecture archive cache, reverified before extraction. Install is limited to six minutes, analysis to five, within a fifteen-minute job. |
+| Low duplication | `scripts/github-actions.test.mjs` ran in both always-on validation workflows. Go `tidy` runs in both coverage and quality, and standalone `vet` overlaps enabled golangci-lint vet analysis. | Shared-action tests now run once in Workflow Quality. Kept Go's small independent checks and existing check names; removing those does not address the observed scanner bottleneck. |
 | Low noise | Go quality job names/comments still mention tests although coverage owns their execution. | Retain names until required-check settings are inventoried; update display names and rulesets together later. |
 
 ## Java Qodana evidence
@@ -104,9 +104,12 @@ Remaining operational checks:
   Same-repository PR execution still assumes trusted collaborators; scope scanner and
   publication credentials accordingly. Prefer narrowly installed GitHub App tokens
   over a long-lived publication PAT when operationally practical.
-- Review overlap between Renovate and Dependabot for GitHub Actions, npm, Python and
-  Go. Both are configured; actual enabled server-side managers were not verified.
-  Assign one update owner per ecosystem to avoid duplicate PRs and scan churn.
+- Renovate owns routine version updates, with CodeQL action pins grouped to preserve
+  the shared wrapper's single-revision contract. Every Dependabot ecosystem has
+  `open-pull-requests-limit: 0`, retaining its separate security-update channel.
+  GitHub documents this security-only configuration [here](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/manage-your-dependency-security/customizing-dependabot-security-prs).
+  Existing Renovate vulnerability alerts are retained. Server-side app settings and
+  already-open duplicate PRs were not changed.
 - Cache transfer and eviction can exceed savings. Measure Maven cache duplication
   across 12 coverage legs and scanner bundle downloads before adding broad caches.
   Keep untrusted cache scopes separate from privileged publication.
@@ -134,3 +137,110 @@ Production speedup, Docker environment forwarding, fork behavior, cache warming 
 Qodana inspection equivalence still require fresh hosted runs. Tests and static
 workflow validation do not clear remote scanner alerts. No repository settings,
 alert dispositions or secret values were changed.
+
+## Follow-up implementation
+
+The follow-up adds a thirteenth composite action, `workflow-scope`, for seven
+language/quality workflows. It runs after checkout inside the existing jobs, so
+their names remain stable without requiring ruleset changes. Only merge-group
+execution is narrowed. It reads each workflow's existing positive push globs;
+unsupported YAML/glob syntax or unavailable Git evidence runs complete checks.
+There is no independent duplicate path manifest or PR-files API pagination limit.
+Checkout and small routing costs remain on unrelated merge groups; installation,
+builds, tests, scanners and uploads are skipped. PR filters are unchanged outside
+Qodana. Existing deferred evidence checks retain failure behavior when a scope runs.
+
+The [reported orchestrator failure](https://github.com/George-C-Odes/Observability-Benchmarking/actions/runs/43748734828/job/132917764772)
+occurred before analysis: the downloaded Maven wrapper launcher could not load
+`org.apache.maven.wrapper.MavenWrapperMain`. Inspection of the exact pinned image
+found bundled Maven 3.9.16 at
+`/opt/idea/plugins/maven-plugin/lib/maven3/bin/mvn`, absent from `PATH`.
+Bootstrap now prefers that distribution, matching IDE import and eliminating the
+additional wrapper-JAR download. The original wrapper works in an isolated local
+download test; the lower-level cause of its hosted failure was not established.
+
+A runtime thread dump also confirmed that `-P!quality` was still executing PMD.
+The orchestrator declared its profile ID as `${quality.profile.id}`; profile
+selection happens before POM property interpolation. Its ID is now the literal
+`quality`, still active by default. Both default `mvn verify -B` and explicit
+`mvn validate -B '-P!quality'` pass, with the latter omitting quality plugins.
+Default verification ran 94 tests, JaCoCo thresholds, PMD/CPD, formatting and
+SpotBugs successfully. This makes the pre-existing CodeQL extraction-only option
+effective as well as the new Qodana compile-only bootstrap behavior.
+
+`qodana-project.mjs` filters only Maven `originalFiles` in the CI checkout, leaving
+all other IDE configuration bytes intact. It verifies exact equality with all
+scoped POMs, including native variants, before writing; empty, stale, ambiguous,
+unsupported or entity-based inventories fail closed. Services retain 17 imports;
+the orchestrator imports one. Shared inspection configuration, analyzed paths,
+generated symbols and thresholds remain unchanged. This addresses the confirmed
+18-project IDE inventory rather than assuming `--only-directory` restricts import.
+
+The next hosted services sample
+[job 132917764820](https://github.com/George-C-Odes/Observability-Benchmarking/actions/runs/43748734828/job/132917764820)
+still had a cold cache and spent 8m11s opening, 6s configuring and 13s analyzing.
+That run predates scoped imports; it does not measure warm-cache performance.
+Both current main caches still need to be seeded after rollout before making a
+hosted cold/warm speedup claim.
+
+Follow-up validation: 112 workflow/helper tests, 111 passed and the existing Windows
+file-symlink case skipped; Renovate boundary tests and README render/check passed.
+Actionlint 1.7.12 with ShellCheck 0.11.0, offline medium-severity zizmor 1.32.0,
+the pinned report complexity gate and its rejection test passed. New routing/import
+scripts also passed the same complexity/control-regex rules. PMD's Bash boundary
+test verifies valid cache reuse and zero extraction for tampered cached bytes.
+An initial offline npm restore lacked one package; a hash-locked `npm ci` with
+lifecycle scripts disabled restored the validators. An initial sandboxed Maven
+run could not reach Central; the network-enabled verification then passed.
+
+Local Community validation uses only staged orchestrator source, dedicated caches,
+and a synthetic Git repository without host Git history/configuration. Early local
+attempts exposed fixture issues (missing Git boundary and Windows CRLF files), which
+were corrected without editing repository source. Windows bind-mount overhead also
+made those attempts unsuitable as timing samples; final validation uses dedicated
+Linux volumes. No hosted workflow has been dispatched by this task.
+
+### Completed local scanner verification
+
+The final two scans used the same staged source, pinned image, existing profile,
+two CPUs, 6 GiB container limit, and Linux project/cache volumes. The first scan
+started with a cold IDE index but a populated Maven dependency cache from bootstrap
+validation; the second reused the resulting scanner cache. Neither used a baseline.
+
+| Measurement | Cold IDE cache | Warm scanner cache |
+| --- | --- | --- |
+| Overall wall time, approximately | 10m49s | 2m30s |
+| Project opening, reported by Qodana | 8m36s | **15s** |
+| Project configuration | 6s | 15s |
+| Analysis | 30s | 40s |
+| Process exit | 0 | 0 |
+| Findings | 0 | 0 |
+| SARIF rule definitions / enabled rules | 1,675 / 607 | 1,675 / 607 |
+
+Every SARIF run has a nonempty invocation list with `executionSuccessful` explicitly
+`true`. The enabled inspection ID sets are identical, not just their counts. Both
+scans exported nonempty HTML and associated report data. All task scanner containers
+were automatically removed. Retained evidence is under
+`.tmp/qodana-jvm-validation/results-linux`, `results-warm`, `linux.log`, and `warm.log`.
+Local volumes remain available for inspection; they contain only the staged fixture
+and scanner/dependency caches. This comparison excludes GitHub cache download/upload
+cost and does not isolate the import-filter benefit from the cache benefit.
+
+An additional preexisting profile-compatibility issue surfaced during inspection
+coverage verification: five configured include names do not appear as enabled IDs
+in this image's SARIF (`ClassNamingConvention`, `MethodNamingConvention`,
+`TypeParameterNamingConvention`, `CallToPrintStackTrace`, `UseOfSystemOutOrSystemErr`).
+The image instead reports `NewClassNamingConvention` and `ThrowablePrintStackTrace`
+enabled by the recommended profile, and `NewMethodNamingConvention` and `SystemOutErr`
+disabled. No separate Java type-parameter naming descriptor was present. These
+observations are not a license-limit inference. Resolve naming aliases/options as a
+separate policy change with a fresh coverage scan; this performance/bootstrap patch
+retains the existing inspection policy. JetBrains documents the current
+[method naming ID](https://www.jetbrains.com/help/inspectopedia/NewMethodNamingConvention.html)
+and the [System.out/System.err inspection's internal ID](https://www.jetbrains.com/help/inspectopedia/UseOfSystemOutOrSystemErr.html).
+
+Rollout: merge the changes, complete one full main Qodana run to seed both new cache
+namespaces, then verify a Java-only PR restores the matching main cache. Check exact
+restore keys, cache-transfer duration, project opening time, successful invocation
+evidence and the expected scope artifacts. An unrelated PR/merge group should show
+an explicit skip for its unaffected scope. Hosted confirmation remains outstanding.
