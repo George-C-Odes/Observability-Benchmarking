@@ -14,11 +14,13 @@ COMMON = "services/python/django/gunicorn/common/src/obbench_django_common"
 def run_runtime(name, modules, common_only=False):
     directory = ROOT / modules[name]["path"]
     report = directory / "coverage-summary.json"
+    python_path = [str((ROOT / COMMON).parent), os.environ.get("PYTHONPATH")]
     environment = dict(
         os.environ,
         OTEL_SDK_DISABLED="true",
         PYROSCOPE_ENABLED="false",
         COVERAGE_FILE=str(directory / ".coverage"),
+        PYTHONPATH=os.pathsep.join(path for path in python_path if path),
     )
     report.unlink(missing_ok=True)
     commands = [

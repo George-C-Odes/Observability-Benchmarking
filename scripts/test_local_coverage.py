@@ -1,6 +1,9 @@
 """Verify native Maven policy and local Django coverage command behavior."""
 
 import copy
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -129,6 +132,65 @@ class LocalCoverageTests(unittest.TestCase):
                 )
                 self.assertEqual(gate.call_count, 1)
                 self.assertEqual(gate.call_args.args[0], "django-common")
+
+    def test_django_subprocess_imports_checkout_before_installed_package(self):
+        real_run = subprocess.run
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            common = root / django_coverage.COMMON
+            installed = root / "site-packages"
+            for package in (common, installed / "obbench_django_common"):
+                package.mkdir(parents=True)
+                (package / "__init__.py").write_text("", encoding="utf-8")
+            (installed / "existing_dependency.py").write_text("", encoding="utf-8")
+            modules = {"django-common": {"path": "common"}}
+            for name, runtime in django_coverage.RUNTIMES.items():
+                (root / runtime).mkdir()
+                modules[name] = {"path": runtime}
+
+            for name in django_coverage.RUNTIMES:
+                for inherited in (None, "", str(installed)):
+                    with self.subTest(runtime=name, pythonpath=inherited):
+
+                        def probe_import(command, inherited=inherited, **kwargs):
+                            if command[3] == "run":
+                                probe = (
+                                    "import obbench_django_common; "
+                                    "print(obbench_django_common.__file__)"
+                                )
+                                if inherited:
+                                    probe += "; import existing_dependency"
+                                result = real_run(
+                                    [sys.executable, "-c", probe],
+                                    cwd=kwargs["cwd"],
+                                    env=kwargs["env"],
+                                    timeout=kwargs["timeout"],
+                                    capture_output=True,
+                                    text=True,
+                                    check=True,
+                                )
+                                self.assertEqual(
+                                    Path(result.stdout.strip()), common / "__init__.py"
+                                )
+                            return SimpleNamespace(returncode=0)
+
+                        environment = dict(os.environ)
+                        environment.pop("PYTHONPATH", None)
+                        if inherited is not None:
+                            environment["PYTHONPATH"] = inherited
+                        with (
+                            patch.dict(os.environ, environment, clear=True),
+                            patch.object(django_coverage, "ROOT", root),
+                            patch.object(
+                                django_coverage.subprocess,
+                                "run",
+                                side_effect=probe_import,
+                            ),
+                            patch.object(django_coverage, "check", return_value=0),
+                        ):
+                            self.assertEqual(
+                                django_coverage.run_runtime(name, modules), 0
+                            )
 
 
 if __name__ == "__main__":
