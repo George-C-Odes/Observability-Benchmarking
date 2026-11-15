@@ -1,0 +1,13 @@
+{
+  "name": "obbench-script-quality",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node check.mjs",
+    "test": "node --test quality.test.mjs"
+  },
+  "devDependencies": {
+    "eslint": "10.15.0",
+    "eslint-plugin-sonarjs": "4.2.2"
+  }
+}

@@ -1,6 +1,7 @@
 name: Java Coverage
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
@@ -8,6 +9,7 @@ on:
       - 'utils/orchestrator/**'
       - '.github/workflows/java_coverage.yml'
       - 'scripts/sync_coverage_thresholds.py'
+      - 'scripts/java-modules.mjs'
       - 'scripts/test_local_coverage.py'
       - 'scripts/coverage_gate.py'
       - 'scripts/coverage-thresholds.json'
@@ -26,6 +28,7 @@ on:
       - 'utils/orchestrator/**'
       - '.github/workflows/java_coverage.yml'
       - 'scripts/sync_coverage_thresholds.py'
+      - 'scripts/java-modules.mjs'
       - 'scripts/test_local_coverage.py'
       - 'scripts/coverage_gate.py'
       - 'scripts/coverage-thresholds.json'
@@ -39,13 +42,30 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
+  inventory:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.modules.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select JVM modules from coverage policy
+        id: modules
+        run: |
+          matrix="$(node scripts/java-modules.mjs)"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   coverage:
+    needs: inventory
     name: Coverage (${{ matrix.name }})
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -53,32 +73,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: spring-tomcat
-            module_dir: services/java/spring/jvm/tomcat
-          - name: spring-netty
-            module_dir: services/java/spring/jvm/netty
-          - name: quarkus-jvm
-            module_dir: services/java/quarkus/jvm
-          - name: micronaut-jvm
-            module_dir: services/java/micronaut/jvm
-          - name: helidon-se-jvm
-            module_dir: services/java/helidon/se/jvm
-          - name: helidon-mp-jvm
-            module_dir: services/java/helidon/mp/jvm
-          - name: spark-jvm
-            module_dir: services/java/spark/jvm
-          - name: javalin-jvm
-            module_dir: services/java/javalin/jvm
-          - name: dropwizard-jvm
-            module_dir: services/java/dropwizard/jvm
-          - name: vertx-jvm
-            module_dir: services/java/vertx/jvm
-          - name: pekko-jvm
-            module_dir: services/java/pekko/jvm
-          - name: orchestrator
-            module_dir: utils/orchestrator
+      matrix: ${{ fromJSON(needs.inventory.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

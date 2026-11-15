@@ -1,6 +1,7 @@
 name: Next.js Dashboard Quality
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
@@ -15,10 +16,13 @@ on:
       - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/capture-check.mjs'
+      - 'scripts/capture-check.test.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
       - '.github/actions/setup-node/**'
       - '.github/actions/setup-nextjs/**'
       - '.github/actions/upload-artifact/**'
+      - '.github/actions/cache/**'
   push:
     branches:
       - main
@@ -34,17 +38,20 @@ on:
       - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
       - 'scripts/pages/fixtures/nextjs-quality/**'
       - 'scripts/pages/report-helpers.mjs'
+      - 'scripts/capture-check.mjs'
+      - 'scripts/capture-check.test.mjs'
       - '.github/workflows/nextjs_dash_quality.yml'
       - '.github/actions/setup-node/**'
       - '.github/actions/setup-nextjs/**'
       - '.github/actions/upload-artifact/**'
+      - '.github/actions/cache/**'
   schedule:
     # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
     - cron: '15 6 * * 1'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -85,21 +92,25 @@ jobs:
           echo "Oxfmt $oxfmt_ver"
           echo "TypeScript $typescript_ver"
           echo "Vitest $vitest_ver"
-          echo "node=$node_ver"               >> "$GITHUB_OUTPUT"
-          echo "npm=$npm_ver"                 >> "$GITHUB_OUTPUT"
-          echo "oxlint=$oxlint_ver"           >> "$GITHUB_OUTPUT"
-          echo "oxfmt=$oxfmt_ver"             >> "$GITHUB_OUTPUT"
-          echo "typescript=$typescript_ver"   >> "$GITHUB_OUTPUT"
-          echo "vitest=$vitest_ver"           >> "$GITHUB_OUTPUT"
+          {
+            echo "node=$node_ver"
+            echo "npm=$npm_ver"
+            echo "oxlint=$oxlint_ver"
+            echo "oxfmt=$oxfmt_ver"
+            echo "typescript=$typescript_ver"
+            echo "vitest=$vitest_ver"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check formatting (Oxfmt)
-        run: npm run format:check
+        run: node ../../scripts/capture-check.mjs format
 
       - name: Lint (Oxlint)
-        run: npm run lint
+        if: always() && !cancelled() && steps.versions.outcome == 'success'
+        run: node ../../scripts/capture-check.mjs lint
 
       - name: Typecheck (TypeScript 7 native checker)
-        run: npm run typecheck
+        if: always() && !cancelled() && steps.versions.outcome == 'success'
+        run: node ../../scripts/capture-check.mjs typecheck
 
       - name: Quality report tests
         run: node --test ../../scripts/pages/generate-nextjs-quality-report.test.mjs
@@ -172,6 +183,14 @@ jobs:
           name: nextjs-dash-dom
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Restore Next.js compiler cache
+        uses: ./.github/actions/cache
+        with:
+          path: utils/nextjs-dash/.next/cache
+          key: nextjs-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.node }}-${{ hashFiles('utils/nextjs-dash/package-lock.json', 'utils/nextjs-dash/next.config.*', 'utils/nextjs-dash/tsconfig.json') }}-${{ hashFiles('utils/nextjs-dash/app/**', 'utils/nextjs-dash/lib/**', 'utils/nextjs-dash/public/**') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.node }}-${{ hashFiles('utils/nextjs-dash/package-lock.json', 'utils/nextjs-dash/next.config.*', 'utils/nextjs-dash/tsconfig.json') }}-
+
       - name: Production build after required quality and coverage gates
         run: npm run build:compile
 
@@ -181,23 +200,6 @@ jobs:
       # These steps run with `if: always()` so an earlier gate failure still
       # produces a downloadable report artifact.
       # ------------------------------------------------------------------
-
-      - name: Capture Oxfmt diagnostics
-        if: always() && !cancelled()
-        run: |
-          set +e
-          ./node_modules/.bin/oxfmt --check . > oxfmt-output.txt 2>&1
-          status=$?
-          printf '\nOXFMT_EXIT_CODE=%s\n' "$status" >> oxfmt-output.txt
-          exit 0
-
-      - name: Generate Oxlint JSON report
-        if: always() && !cancelled()
-        run: ./node_modules/.bin/oxlint --format json . > oxlint-report.json || true
-
-      - name: Capture TypeScript diagnostics
-        if: always() && !cancelled()
-        run: ./node_modules/.bin/tsc --noEmit > typescript-output.txt 2>&1 || true
 
       - name: Generate quality report
         if: always() && !cancelled()

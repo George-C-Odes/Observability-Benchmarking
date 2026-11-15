@@ -92,11 +92,10 @@ Repository-level helper scripts:
 
 - `scripts/render-readmes.mjs` — renders generated README files from `.template.md` sources using values from `compose/.env`
 - `scripts/pages/` — GitHub Pages deployment scripts:
-  - `resolve-source.sh` — generic parameterized resolver for quality-report workflow run artifacts
+  - `github-reports.mjs` and `report-catalog.json` — validated report requests, freshness policy and producer catalog
   - `report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators
   - `generate-go-quality-report.mjs`, `generate-nextjs-quality-report.mjs`, `generate-codeql-report.mjs` — HTML quality report generators
-  - `assemble-quality-pages.sh` — assembles all quality report scopes into the Pages site
-  - `inspect-qodana-artifacts.sh` — inspects available Qodana artifacts for a resolved workflow run
+  - `assemble-reports.mjs` — validates and assembles quality reports and provenance into both Pages scopes
 
 ### `services/`
 

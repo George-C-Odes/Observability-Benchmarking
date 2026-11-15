@@ -5,6 +5,8 @@ updates:
   # GitHub Actions
   - package-ecosystem: github-actions
     directory: /
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -23,6 +25,8 @@ updates:
   # Ruby / Jekyll (docs site)
   - package-ecosystem: bundler
     directory: /docs
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -31,6 +35,8 @@ updates:
   # Python / Django services
   - package-ecosystem: pip
     directory: /services/python/django/gunicorn/WSGI
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -38,6 +44,8 @@ updates:
 
   - package-ecosystem: pip
     directory: /services/python/django/gunicorn/ASGI
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -46,6 +54,8 @@ updates:
   # Node.js / Next.js dashboard
   - package-ecosystem: npm
     directory: /utils/nextjs-dash
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -54,6 +64,8 @@ updates:
   # Go / Enhanced service
   - package-ecosystem: gomod
     directory: /services/go/enhanced
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -62,6 +74,8 @@ updates:
   # Go / Simple service
   - package-ecosystem: gomod
     directory: /services/go/simple
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:
@@ -70,6 +84,8 @@ updates:
   # Go CI tools (scanner and its transitive build dependencies)
   - package-ecosystem: gomod
     directory: /.github/go-tools
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     commit-message:

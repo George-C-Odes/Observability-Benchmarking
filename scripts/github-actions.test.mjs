@@ -8,6 +8,7 @@ import { temporaryDirectory } from './test-helpers.mjs';
 
 const githubDir = fileURLToPath(new URL('../.github/', import.meta.url));
 const actions = [
+  { name: 'cache', upstream: 'actions/cache', inputs: ['path', 'key', 'restore-keys'] },
   { name: 'setup-python', upstream: 'actions/setup-python', inputs: ['python-version', 'cache', 'cache-dependency-path'] },
   { name: 'setup-node', upstream: 'actions/setup-node', inputs: ['node-version', 'cache', 'cache-dependency-path'] },
   { name: 'setup-go', upstream: 'actions/setup-go', inputs: ['go-version-file', 'cache', 'cache-dependency-path'] },
@@ -161,8 +162,8 @@ test('Go quality matrix preserves independent checks and Pages artifact contract
     ['services/go/enhanced', 'Enhanced — lint, vet & test', 'Go Enhanced Service', 'quality-report-go'],
     ['services/go/simple', 'Simple — lint, vet, test & build', 'Go Simple Service', 'quality-report-go-simple'],
   ]);
-  const pages = readYaml(join(githubDir, 'workflows', 'pages.yml'));
-  for (const entry of entries) assert.ok(pages.includes(`name: ${entry[4]}\n`));
+  const catalog = readFileSync(new URL('./pages/report-catalog.json', import.meta.url), 'utf8');
+  for (const entry of entries) assert.ok(catalog.includes(entry[4]));
   assert.equal((source.match(/uses: golangci\/golangci-lint-action@/g) ?? []).length, 1);
   assert.match(source, /install-mode: none/);
   assert.match(source, /install-only: true/);
@@ -202,7 +203,7 @@ test('all coverage jobs enforce hard module gates without review or artifact agg
     assert.match(source, /run: python3 "\$GITHUB_WORKSPACE\/scripts\/coverage_gate\.py"/);
     assert.doesNotMatch(source, /coverage-review|coverage-gate-review|coverage-verdict|continue-on-error|coverage-status/);
     assert.doesNotMatch(source, /download-artifact/);
-    assert.match(source, /cancel-in-progress: true/);
+    assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' }}/);
     assert.match(source, /fail-fast: false|name: Dashboard Coverage/);
   }
   const django = readYaml(join(githubDir, 'workflows', 'django_python_coverage.yml'));
@@ -236,7 +237,7 @@ test('dashboard quality collects coverage once and preserves the required covera
 test('coverage policy inventory matches the application workflow matrices', () => {
   const { modules } = JSON.parse(readFileSync(new URL('./coverage-thresholds.json', import.meta.url), 'utf8'));
   for (const [workflow, format, nameKey] of [
-    ['java', 'java', 'name'], ['go', 'go', 'name'], ['django_python', 'python', 'summary_name'],
+    ['go', 'go', 'name'], ['django_python', 'python', 'summary_name'],
   ]) {
     const source = readYaml(join(githubDir, 'workflows', `${workflow}_coverage.yml`));
     const entries = [...source.matchAll(new RegExp(`- ${nameKey}: ([a-z0-9-]+)`, 'g'))].map((match) => match[1]);

@@ -1,7 +1,9 @@
 name: Framework Version Sync
 
 on:
-  pull_request_target:
+  # Only trusted base scripts execute, restricted to same-repository Renovate PRs.
+  # Reassess if PR source execution or the publication allowlist changes.
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted-base execution with validated version-only publication
     types: [opened, synchronize, reopened, labeled]
 
 permissions:
