@@ -1,5 +1,8 @@
 package io.github.georgecodes.benchmarking.pekko.config;
 
+import java.util.Objects;
+import java.util.function.Function;
+
 /**
  * Centralized service configuration (env-driven).
  *
@@ -13,8 +16,13 @@ public record ServiceConfig(
 
     /** Creates a {@link ServiceConfig} from environment variables. */
     public static ServiceConfig fromEnvironment() {
-        int port = parseInt(getEnv("SERVICE_PORT"), 8080);
-        long cacheSize = parseLong(getEnv("CACHE_SIZE"), 50000L);
+        return fromEnvironment(ServiceConfig::getEnv);
+    }
+
+    static ServiceConfig fromEnvironment(Function<String, String> environmentProvider) {
+        Objects.requireNonNull(environmentProvider, "environmentProvider");
+        int port = parseInt(environmentProvider.apply("SERVICE_PORT"), 8080);
+        long cacheSize = parseLong(environmentProvider.apply("CACHE_SIZE"), 50000L);
         return new ServiceConfig(port, cacheSize);
     }
 

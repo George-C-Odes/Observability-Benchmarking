@@ -1,5 +1,7 @@
 package io.github.georgecodes.benchmarking.vertx.config;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -29,7 +31,7 @@ public record ServiceConfig(
         return fromEnvironment(ServiceConfig::getEnv);
     }
 
-    static ServiceConfig fromEnvironment(Function<String, String> environmentProvider) {
+    static ServiceConfig fromEnvironment(Function<String, @Nullable String> environmentProvider) {
         Objects.requireNonNull(environmentProvider, "environmentProvider");
 
         int port = parseInt(environmentProvider.apply("SERVICE_PORT"), DEFAULT_PORT);
@@ -51,18 +53,18 @@ public record ServiceConfig(
             : Math.max(2, Runtime.getRuntime().availableProcessors() * 2);
     }
 
-    private static String getEnv(String key) {
+    private static @Nullable String getEnv(String key) {
         return System.getenv(key);
     }
 
-    private static int parseInt(String value, int defaultValue) {
+    private static int parseInt(@Nullable String value, int defaultValue) {
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
         return Integer.parseInt(value.trim());
     }
 
-    private static long parseCacheSize(String value) {
+    private static long parseCacheSize(@Nullable String value) {
         if (value == null || value.isBlank()) {
             return DEFAULT_CACHE_SIZE;
         }

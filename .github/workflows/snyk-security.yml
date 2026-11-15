@@ -1,6 +1,7 @@
 name: Snyk Security
 
 on:
+  merge_group:
   push:
     branches: [ "main" ]
   pull_request:
@@ -11,7 +12,7 @@ on:
 
 concurrency:
   group: snyk-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -26,7 +27,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      SNYK_ENABLED: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -34,7 +35,7 @@ jobs:
           persist-credentials: false
 
       - name: Check SNYK_TOKEN secret
-        if: env.SNYK_TOKEN == ''
+        if: env.SNYK_ENABLED != 'true'
         run: |
           echo "::warning::SNYK_TOKEN secret is not configured in GitHub repository secrets. Snyk scans will be skipped."
           echo "To enable Snyk scans:"
@@ -44,11 +45,13 @@ jobs:
           echo "  4. Add the secret to GitHub: Settings -> Secrets and variables -> Actions -> 'SNYK_TOKEN'"
 
       - name: Set up Snyk CLI
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+        with:
+          snyk-version: v1.1308.4
 
       - name: Set up JDK 25
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         uses: ./.github/actions/setup-java
         with:
           distribution: temurin
@@ -59,16 +62,18 @@ jobs:
             utils/orchestrator/pom.xml
 
       - name: Set up Python
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         uses: ./.github/actions/setup-python
         with:
           cache: pip
           cache-dependency-path: |
-            .github/requirements/**
+            .github/requirements/pip.in
+            .github/requirements/pip.txt
+            .github/requirements/python-ci.txt
             services/python/django/gunicorn/*/requirements.txt
 
       - name: Set up Go
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         uses: ./.github/actions/setup-go
         with:
           go-version-file: services/go/enhanced/go.mod
@@ -77,15 +82,11 @@ jobs:
             .github/go-tools/go.sum
 
       - name: Set up Node.js
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         uses: ./.github/actions/setup-node
 
-      - name: Test Snyk scan runner
-        if: env.SNYK_TOKEN != ''
-        run: node --test scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
-
       - name: Prepare dependency resolution
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         shell: bash
         run: |
           # Snyk invokes native modules' Maven wrappers directly on Linux.
@@ -100,7 +101,7 @@ jobs:
 
       # Snyk needs installed packages to resolve Python's transitive dependencies.
       - name: Install Python dependencies
-        if: env.SNYK_TOKEN != ''
+        if: env.SNYK_ENABLED == 'true'
         uses: ./.github/actions/install-python-dependencies
         with:
           requirements: |
@@ -110,7 +111,9 @@ jobs:
       # Runs Snyk Code (SAST) analysis and exports SARIF for GitHub Code Scanning.
       # Findings are warnings; continue-on-error also lets uploads run after scan errors.
       - name: Snyk Code test
-        if: env.SNYK_TOKEN != ''
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        if: env.SNYK_ENABLED == 'true'
         id: snyk-code
         continue-on-error: true
         shell: bash
@@ -120,7 +123,9 @@ jobs:
       # through its exit code; the gate warns on findings but fails on scan errors.
       # Unresolved projects fail closed, not silently skipped.
       - name: Snyk Open Source test
-        if: env.SNYK_TOKEN != ''
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        if: env.SNYK_ENABLED == 'true'
         id: snyk-open-source-test
         continue-on-error: true
         shell: bash
@@ -129,7 +134,9 @@ jobs:
       # PRs must not overwrite the trusted main dependency snapshot in Snyk.
       # Monitor's exit code only indicates whether the snapshot upload succeeded.
       - name: Snyk Open Source monitor
-        if: env.SNYK_TOKEN != '' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        if: env.SNYK_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         id: snyk-open-source-monitor
         continue-on-error: true
         run: node scripts/snyk-scan.mjs monitor
@@ -176,7 +183,7 @@ jobs:
           TEST_RESULT: ${{ steps.snyk-open-source-test.outputs.result }}
           MONITOR_RESULT: ${{ steps.snyk-open-source-monitor.outputs.result }}
         run: |
-          if [[ -z "$SNYK_TOKEN" ]]; then
+          if [[ "$SNYK_ENABLED" != 'true' ]]; then
             echo 'Snyk scans skipped: no SNYK_TOKEN is available.' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi

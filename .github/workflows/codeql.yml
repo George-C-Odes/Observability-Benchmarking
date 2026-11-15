@@ -7,6 +7,7 @@ env:
   CODEQL_ACTION_FILE_COVERAGE_ON_PRS: 'false'
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
@@ -21,6 +22,9 @@ on:
       - 'scripts/codeql-bundle*.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
+      - '.github/actions/setup-go/**'
+      - 'scripts/java-modules.mjs'
+      - 'scripts/coverage-thresholds.json'
       - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
@@ -40,6 +44,9 @@ on:
       - 'scripts/codeql-bundle*.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
+      - '.github/actions/setup-go/**'
+      - 'scripts/java-modules.mjs'
+      - 'scripts/coverage-thresholds.json'
       - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
@@ -49,6 +56,10 @@ on:
     # Scheduled runs ensure new CWE patterns and updated CodeQL query packs
     # are evaluated even when source code has not changed.
     - cron: '30 5 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions: {}
 
@@ -94,6 +105,15 @@ jobs:
           cache-dependency-path: |
             services/java/**/jvm/**/pom.xml
             utils/orchestrator/pom.xml
+
+      # Install the toolchain before init adds its Go tracing wrapper to PATH.
+      # Running setup-go afterwards bypasses extraction even if go build succeeds.
+      - name: Set up Go
+        if: matrix.language == 'go'
+        uses: ./.github/actions/setup-go
+        with:
+          go-version-file: services/go/enhanced/go.mod
+          cache-dependency-path: services/go/**/go.sum
 
       - name: Resolve CodeQL bundle
         id: bundle
@@ -170,20 +190,9 @@ jobs:
           set -euo pipefail
 
           # ── Module registry (native modules deliberately excluded) ──
-          SERVICE_MODULES=(
-            services/java/spring/jvm/tomcat
-            services/java/spring/jvm/netty
-            services/java/quarkus/jvm
-            services/java/micronaut/jvm
-            services/java/helidon/se/jvm
-            services/java/helidon/mp/jvm
-            services/java/spark/jvm
-            services/java/javalin/jvm
-            services/java/dropwizard/jvm
-            services/java/vertx/jvm
-            services/java/pekko/jvm
-          )
-          build_modules=( "${SERVICE_MODULES[@]}" utils/orchestrator )
+          node scripts/java-modules.mjs --paths > "$RUNNER_TEMP/codeql-java-modules"
+          mapfile -t build_modules < "$RUNNER_TEMP/codeql-java-modules"
+          test "${#build_modules[@]}" -gt 0
 
           echo "Building ${#build_modules[@]} JVM module(s):"
           printf '  • %s\n' "${build_modules[@]}"
@@ -207,17 +216,16 @@ jobs:
           # SARIF upload.
           java_quality_failed=0
           modules_failed=0
+          modules_checked=0
           build_warnings=()
           for mod_dir in "${build_modules[@]}"; do
-            if [[ "$mod_dir" == "utils/orchestrator" ]]; then
-              echo "::group::Maven quality $mod_dir"
-              quality_cmd=(mvn -f "$mod_dir/pom.xml" -DskipTests verify -B)
-              warning_message="Maven quality checks failed in $mod_dir"
-            else
-              echo "::group::Checkstyle $mod_dir"
-              quality_cmd=(mvn -f "$mod_dir/pom.xml" checkstyle:check -B)
-              warning_message="Checkstyle violations found in $mod_dir"
-            fi
+            # Java Coverage owns the orchestrator's full quality-profile verify.
+            # Keep extraction above complete without repeating PMD/SpotBugs here.
+            [[ "$mod_dir" != "utils/orchestrator" ]] || continue
+            modules_checked=$((modules_checked + 1))
+            echo "::group::Checkstyle $mod_dir"
+            quality_cmd=(mvn -f "$mod_dir/pom.xml" checkstyle:check -B)
+            warning_message="Checkstyle violations found in $mod_dir"
 
             if ! "${quality_cmd[@]}"; then
               echo "::warning::$warning_message"
@@ -233,7 +241,7 @@ jobs:
           # jq is pre-installed on GitHub-hosted runners and handles all
           # JSON escaping automatically.
           jq -n \
-            --argjson checked "${#build_modules[@]}" \
+            --argjson checked "$modules_checked" \
             --argjson failed "$modules_failed" \
             --args '{modulesChecked: $checked, modulesFailed: $failed, warnings: $ARGS.positional}' \
             -- "${build_warnings[@]+"${build_warnings[@]}"}" > codeql-build-warnings.json

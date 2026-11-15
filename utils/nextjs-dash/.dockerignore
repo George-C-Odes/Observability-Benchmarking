@@ -1,6 +1,7 @@
 # Dependencies & build output (rebuilt inside Docker)
 node_modules
 .next
+coverage
 
 # VCS
 .git
@@ -40,3 +41,4 @@ typescript-output.txt
 # The builder copies only app/lib/public, so scripts stay out of the runtime image.
 scripts/*
 !scripts/sse-smoke.mjs
+!scripts/coverage-gate.mjs

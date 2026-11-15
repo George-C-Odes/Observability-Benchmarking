@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { withRequestContext, getRequestContext, getRequestId } from '@/lib/requestContext';
+import { withRequestContext, getRequestId } from '@/lib/requestContext';
 
 describe('requestContext', () => {
   it('withRequestContext generates a UUID when none is provided', () => {
     const result = withRequestContext(() => {
-      const ctx = getRequestContext();
-      expect(ctx).toBeDefined();
-      expect(ctx!.requestId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-      );
-      return ctx!.requestId;
+      const requestId = getRequestId();
+      expect(requestId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      return requestId;
     });
 
     expect(typeof result).toBe('string');
@@ -20,10 +17,6 @@ describe('requestContext', () => {
     withRequestContext(() => {
       expect(getRequestId()).toBe(rid);
     }, rid);
-  });
-
-  it('getRequestContext returns undefined outside a context', () => {
-    expect(getRequestContext()).toBeUndefined();
   });
 
   it('getRequestId returns undefined outside a context', () => {

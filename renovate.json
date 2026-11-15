@@ -166,6 +166,12 @@
   ],
   "packageRules": [
     {
+      "description": "Keep all CodeQL subactions on one revision, matching the shared wrapper contract.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["/^github/codeql-action/"],
+      "groupName": "CodeQL action"
+    },
+    {
       "description": "Relay documented dashboard package versions and Next.js image tags using trusted base scripts.",
       "matchManagers": ["npm"],
       "matchFileNames": ["utils/nextjs-dash/package.json"],

@@ -238,7 +238,9 @@ describe('ServiceHealth', () => {
       expect(within(getServiceCard('grafana')).getByText('DOWN')).toBeInTheDocument(),
     );
     expect(within(getServiceCard('loki')).getByText('UP')).toBeInTheDocument();
-    expect(fetchJson).toHaveBeenLastCalledWith('/api/health?service=grafana');
+    expect(fetchJson).toHaveBeenLastCalledWith('/api/health?service=grafana', {
+      redirect: 'error',
+    });
     expect(screen.getByTestId('overview-down')).toHaveTextContent('1');
     expect(within(getServiceCard('grafana')).getByLabelText('Refresh')).toBeEnabled();
   });

@@ -34,9 +34,11 @@ describe('useJobRunner (orchestrator restart simulation)', () => {
     [404, 'not found', /no longer available/],
     [409, 'stale run', /rejected as stale run/],
     [422, 'invalid metadata', /validation failed/],
+    [401, 'unauthorized', /validation failed/],
   ])(
     'marks the job as FAILED and stops reconnecting when events metadata returns %i',
     async (status, body, reason) => {
+      vi.useFakeTimers();
       vi.spyOn(globalThis, 'fetch').mockImplementation(
         async (input: RequestInfo | URL): Promise<Response> => {
           const url = String(input);
@@ -76,6 +78,12 @@ describe('useJobRunner (orchestrator restart simulation)', () => {
       // Should log a helpful message.
       expect(result.current.lastJobStatus?.lastLine).toMatch(reason);
       expect(result.current.eventLogs.join('\n')).toContain(String(status));
+      expect(MockEventSource.instances[0].close).toHaveBeenCalled();
+      await act(async () => {
+        vi.advanceTimersByTime(6000);
+      });
+      expect(MockEventSource.instances).toHaveLength(1);
+      expect(vi.getTimerCount()).toBe(0);
     },
   );
 });

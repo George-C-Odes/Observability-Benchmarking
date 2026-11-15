@@ -149,7 +149,7 @@ go mod download
 go vet ./...
 golangci-lint run
 go test ./... -race -count=1
-go build ./cmd/server
+go build -o bin/server ./cmd/server
 
 # Optional parity with the non-blocking CI vuln scan
 go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -179,7 +179,7 @@ make coverage
   - runs `go test -race -coverprofile=coverage.out -covermode=atomic`
   - uploads `coverage.out` and `coverage.html`
   - rewrites coverage paths into `coverage-codecov.out` before uploading to Codecov
-  - enforces the enhanced-module statement threshold of **85%**
+  - enforces the enhanced-module statement threshold of **90%**
   - fails the gate when coverage jobs fail or profiles are missing or unreadable
 - **Codecov flag**: `go-enhanced`
   - mapped in the repository root `codecov.yml` to `services/go/enhanced/`
@@ -205,13 +205,14 @@ The current unit tests cover:
 - HTTP tracing middleware utilities
 - OpenTelemetry and Pyroscope setup using deterministic test doubles where needed
 - root sampling decisions and sampled/unsampled remote-parent behavior
+- real process startup, bind-error logging, and return through cleanup when the listen address is already in use
 
 ### Coverage scope
 
 No enhanced-module source files are excluded. In particular, `cmd/server/main.go`
 also contains the unit-tested HTTP instrumentation setup; excluding the whole
-file would hide that logic along with process startup and signal handling.
-The latter are better candidates for subprocess/integration tests. The
+file would hide that logic along with the tested startup and bind-failure cleanup
+path. OS signal delivery remains a candidate for subprocess/integration tests. The
 `internal/buildinfo` version variable has no executable statements, so a Codecov
 exclusion would not improve Go statement coverage.
 
@@ -238,3 +239,12 @@ internal/logging/           # slog helpers + trace correlation
 internal/cache/             # cache implementations (slice/map)
 internal/handlers/          # HTTP handlers + unit tests
 ```
+
+## Local coverage gate
+
+`make build` runs race-enabled tests with coverage, enforces this module's statement
+threshold from `scripts/coverage-thresholds.json`, and then builds the server at
+`bin/server`. The ignored `bin/` directory keeps binaries outside source audits.
+`make coverage` enforces the same gate without compiling the server. Python 3 and
+a CGO-capable C toolchain are required; use `make PYTHON=python3 build` where needed.
+Native Go does not measure branch coverage.

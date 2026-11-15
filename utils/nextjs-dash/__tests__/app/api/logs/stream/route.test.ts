@@ -4,6 +4,30 @@ import { getServerLogBuffer } from '@/lib/logBuffer';
 import { GET } from '@/app/api/logs/stream/route';
 
 describe('/api/logs/stream route', () => {
+  it.each(['', '?sinceTs=100', '?sinceTs=invalid'])(
+    'follows an initially empty buffer (%s) and avoids duplicate entries',
+    async (query) => {
+      vi.useFakeTimers();
+      const abort = new AbortController();
+      try {
+        const response = GET(
+          new NextRequest(`http://localhost/api/logs/stream${query}`, { signal: abort.signal }),
+        );
+        const reader = response.body!.getReader();
+        await vi.advanceTimersByTimeAsync(1000);
+        getServerLogBuffer().add({ ts: 200, level: 'info', source: 'server', message: 'new' });
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(new TextDecoder().decode((await reader.read()).value)).toContain('"message":"new"');
+        await vi.advanceTimersByTimeAsync(1000);
+        abort.abort();
+        expect((await reader.read()).done).toBe(true);
+        expect(vi.getTimerCount()).toBe(0);
+      } finally {
+        abort.abort();
+        vi.useRealTimers();
+      }
+    },
+  );
   beforeEach(() => {
     getServerLogBuffer().clear();
   });

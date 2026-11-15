@@ -4,6 +4,42 @@ import { silenceConsole } from '@/__tests__/_helpers/consoleSpy';
 import { logServer } from '@/lib/serverLogger';
 
 describe('serverLogger output mode', () => {
+  it.each(['json', 'plain'] as const)(
+    'routes each level to its matching console method (%s)',
+    (output) => {
+      globalThis.__NEXTJS_DASH_SERVER_LOG_OUTPUT__ = output;
+      logServer('debug', 'debug message');
+      logServer('info', 'info message');
+      logServer('warn', 'warn message');
+      logServer('error', 'error message');
+      for (const [level, method] of [
+        ['debug', 'debug'],
+        ['info', 'log'],
+        ['warn', 'warn'],
+        ['error', 'error'],
+      ] as const) {
+        expect(console[method]).toHaveBeenCalledTimes(1);
+        if (output === 'plain') {
+          expect(console[method]).toHaveBeenCalledWith('', `${level} message`);
+        } else {
+          const [line] = vi.mocked(console[method]).mock.calls[0];
+          expect(JSON.parse(String(line))).toMatchObject({
+            level,
+            message: `${level} message`,
+            source: 'nextjs-dash',
+          });
+        }
+      }
+    },
+  );
+
+  it('defaults to info level and drops debug messages', () => {
+    delete globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__;
+    logServer('debug', 'hidden');
+    logServer('info', 'visible');
+    expect(console.debug).not.toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalledTimes(1);
+  });
   const originalLevel = globalThis.__NEXTJS_DASH_SERVER_LOG_LEVEL__;
   const originalOutput = globalThis.__NEXTJS_DASH_SERVER_LOG_OUTPUT__;
 

@@ -1,0 +1,7 @@
+{
+  "_generated": "scripts/sync_coverage_thresholds.py; edit scripts/coverage-thresholds.json",
+  "thresholds": {
+    "lines": 90,
+    "branches": 90
+  }
+}

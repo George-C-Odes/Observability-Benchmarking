@@ -60,10 +60,6 @@ function append(level: ClientLogEntry['level'], args: unknown[]) {
   notify();
 }
 
-interface RestoreCapableConsole extends Console {
-  __nextjsDashRestore__?: () => void;
-}
-
 export function installConsoleCapture() {
   const s = getState();
   if (s.installed) return;
@@ -91,14 +87,6 @@ export function installConsoleCapture() {
   console.debug = (...args: unknown[]) => {
     originalDebug(...args);
     append('debug', args);
-  };
-
-  // Expose a best-effort restore hook for tests.
-  (console as RestoreCapableConsole).__nextjsDashRestore__ = () => {
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
-    console.debug = originalDebug;
   };
 
   s.installed = true;

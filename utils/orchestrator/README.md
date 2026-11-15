@@ -151,6 +151,9 @@ Checkstyle-only setup.
 
 - `mvn validate` runs the custom public-API Javadoc checker, Spotless, PMD, and CPD.
 - `mvn verify` additionally runs the test suite, JaCoCo reporting/checks, and SpotBugs.
+- These checks belong to the literal `quality` profile, active by default. Scanner
+  bootstrap builds use `-P!quality` to compile symbols without repeating the checks;
+  Java Coverage runs the full profile before merge.
 - The rest of the Java service modules under `services/java/**` still use their shared Checkstyle
   setup for now.
 
@@ -244,3 +247,10 @@ If you want to run it beyond localhost, consider:
 - running behind an authenticated reverse proxy
 - tightening the command allowlist and workspace path configuration
 - adding rate limiting and audit logging
+
+## Local coverage gate
+
+`mvn clean verify` enforces the configured line and branch coverage thresholds through
+JaCoCo. Limits come from `scripts/coverage-thresholds.json`; run
+`python scripts/sync_coverage_thresholds.py` from the repository root after changing
+them. See [the coverage policy](../../docs/TESTING.md#hard-per-module-gates).

@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: sharedResolve,
   test: {
     ...sharedTestOptions,
+    name: 'node',
     environment: 'node',
 
     // Only node-safe tests (all tests live under __tests__/).

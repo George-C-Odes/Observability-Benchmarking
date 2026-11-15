@@ -249,7 +249,7 @@ For details on the CodeQL configuration and how to run it locally, see [docs/LIN
 
 The workflow (`.github/workflows/snyk-security.yml`) runs Snyk Code and Open Source scans on pushes and pull requests
 to `main`, manual dispatch, and a weekly schedule. Configure the repository secret `SNYK_TOKEN` to enable it.
-Runs without a token (including fork pull requests) explicitly skip scanning; a skipped run is not a security assessment.
+Runs without a token (including fork pull requests) explicitly skip scanning; a skipped run is not a security assessment. The CLI version is pinned, and the token is supplied only to scan steps. Offline helper and workflow-security tests also run without scanner secrets in Workflow Quality.
 
 - Java {{JAVA_MAJOR_VERSION}}, Python 3.13, Go from the service `go.mod`, and the dashboard's Node.js version are set up before scanning.
   Maven wrappers are made executable on Linux, and both Django dependency sets are installed through the shared

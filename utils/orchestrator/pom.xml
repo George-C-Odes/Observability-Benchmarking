@@ -28,7 +28,6 @@
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.40.1.2</quarkus.platform.version>
-    <quality.profile.id>quality</quality.profile.id>
     <spotbugs.exclude.filter.file>quality/spotbugs-exclude.xml</spotbugs.exclude.filter.file>
     <spotbugs-maven-plugin.version>4.10.5.0</spotbugs-maven-plugin.version>
     <spotbugs.max.heap>1024</spotbugs.max.heap>
@@ -170,10 +169,8 @@
         </configuration>
       </plugin>
 
-      <!-- JaCoCo code coverage — report + advisory threshold check.
-           haltOnFailure=false: violations are logged but do not fail
-           the build locally or in CI. CI evaluates thresholds
-           independently in the GitHub Step Summary. -->
+      <!-- JaCoCo instrumentation, reports and hard local/CI checks. Limits are configured
+           in scripts/coverage-thresholds.json and enforced by coverage_gate.py. -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -204,14 +201,14 @@
             </configuration>
           </execution>
           <execution>
-            <id>check</id>
+            <id>coverage-check</id>
             <goals>
               <goal>check</goal>
             </goals>
             <phase>verify</phase>
             <configuration>
               <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
-              <haltOnFailure>false</haltOnFailure>
+              <haltOnFailure>true</haltOnFailure>
               <rules>
                 <rule>
                   <element>BUNDLE</element>
@@ -219,12 +216,12 @@
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.90</minimum>
+                      <minimum>0.9</minimum>
                     </limit>
                     <limit>
                       <counter>BRANCH</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.90</minimum>
+                      <minimum>0.9</minimum>
                     </limit>
                   </limits>
                 </rule>
@@ -238,7 +235,7 @@
 
   <profiles>
     <profile>
-      <id>${quality.profile.id}</id>
+      <id>quality</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>

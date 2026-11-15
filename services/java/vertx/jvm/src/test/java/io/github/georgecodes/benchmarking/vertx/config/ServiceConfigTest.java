@@ -2,6 +2,7 @@ package io.github.georgecodes.benchmarking.vertx.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -86,5 +87,31 @@ class ServiceConfigTest {
     @Test
     void fromEnvironmentRejectsNullEnvironmentProvider() {
         assertThrows(NullPointerException.class, () -> ServiceConfig.fromEnvironment(null));
+    }
+
+    @Test
+    void fromEnvironmentUsesDefaultsForAllMissingValues() {
+        assertEquals(new ServiceConfig(8080, 50000L, 0), ServiceConfig.fromEnvironment(_ -> null));
+    }
+
+    @Test
+    void fromEnvironmentUsesDefaultsForAllBlankValues() {
+        assertEquals(new ServiceConfig(8080, 50000L, 0), ServiceConfig.fromEnvironment(_ -> " "));
+    }
+
+    @Test
+    void publicEnvironmentEntryPointReadsCurrentProcessEnvironment() {
+        assertEquals(ServiceConfig.fromEnvironment(System::getenv), ServiceConfig.fromEnvironment());
+    }
+
+    @Test
+    void fromEnvironmentRejectsOverflowAndInvalidCacheOrEventLoopValues() {
+        for (Map<String, String> environment : List.of(
+                Map.of("SERVICE_PORT", "2147483648"),
+                Map.of("CACHE_SIZE", "not-a-number"),
+                Map.of("CACHE_SIZE", "9223372036854775808"),
+                Map.of("VERTX_EVENT_LOOP_SIZE", "not-a-number"))) {
+            assertThrows(NumberFormatException.class, () -> ServiceConfig.fromEnvironment(environment::get));
+        }
     }
 }

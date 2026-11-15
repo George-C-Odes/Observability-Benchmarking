@@ -1,9 +1,13 @@
 name: Django Python Quality
 
 on:
+  merge_group:
   workflow_dispatch:
   pull_request:
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/setup-python/**'
@@ -15,6 +19,9 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/workflow-scope/**'
+      - 'scripts/workflow-scope*.mjs'
+      - 'scripts/changed-paths*.mjs'
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/setup-python/**'
@@ -25,6 +32,10 @@ on:
   schedule:
     # Weekly scan — Monday at 06:30 UTC (staggered after Next.js at 06:15).
     - cron: '30 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -39,108 +50,66 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: django_python_quality.yml
+
       - name: Set up Python
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-python
         with:
           cache: pip
           cache-dependency-path: |
-            .github/requirements/**
-            services/python/django/gunicorn/common/pyproject.toml
+            .github/requirements/pip.in
+            .github/requirements/pip.txt
+            .github/requirements/python-ci.txt
             services/python/django/gunicorn/WSGI/requirements-dev.txt
+            services/python/django/gunicorn/ASGI/requirements-dev.txt
 
       - name: Install dependencies
+        if: steps.scope.outputs.run == 'true'
+        id: dependencies
         uses: ./.github/actions/install-python-dependencies
         with:
-          requirements: services/python/django/gunicorn/WSGI/requirements-dev.txt
-
-      - name: Check Docker dependency locks
-        run: |
-          python services/python/django/gunicorn/sync_build_locks.py --check
-          python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
-          python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py
-          python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py
-
-      - name: Check Qodana helpers
-        run: |
-          python -m unittest discover -s scripts -p test_qodana_python.py -v
-          python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
-          python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
-
-      - name: Syntax check
-        working-directory: services/python/django/gunicorn/common
-        run: python -m compileall src
-
-      - name: Print Ruff version
-        working-directory: services/python/django/gunicorn/common
-        run: python -m ruff --version
-
-      - name: Lint
-        working-directory: services/python/django/gunicorn/common
-        run: python -m ruff check .
-
-      - name: Format check
-        working-directory: services/python/django/gunicorn/common
-        run: python -m ruff format --check .
-
-  modules:
-    name: Django module checks (${{ matrix.module_name }})
-    needs: common
-    runs-on: ubuntu-26.04
-    timeout-minutes: 10
-    env:
-      OTEL_SDK_DISABLED: 'true'
-      PYROSCOPE_ENABLED: 'false'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - module_name: django-platform
-            module_dir: services/python/django/gunicorn/WSGI
-          - module_name: django-reactive
-            module_dir: services/python/django/gunicorn/ASGI
-    defaults:
-      run:
-        working-directory: ${{ matrix.module_dir }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: ./.github/actions/setup-python
-        with:
-          cache: pip
-          cache-dependency-path: |
-            .github/requirements/**
-            services/python/django/gunicorn/common/pyproject.toml
-            ${{ matrix.module_dir }}/requirements.txt
-            ${{ matrix.module_dir }}/requirements-dev.txt
-
-      - name: Install dependencies
-        uses: ./.github/actions/install-python-dependencies
-        with:
+          # These files both select Ruff; pip installs their shared pin once.
+          # Include both so diverging pins fail instead of silently selecting one.
           requirements: |
-            ${{ matrix.module_dir }}/requirements.txt
-            ${{ matrix.module_dir }}/requirements-dev.txt
-          local-project: services/python/django/gunicorn/common
-
-      - name: Syntax check
-        run: python -m compileall manage.py hello_project gunicorn.conf.py
+            services/python/django/gunicorn/WSGI/requirements-dev.txt
+            services/python/django/gunicorn/ASGI/requirements-dev.txt
 
       - name: Print Ruff version
+        if: steps.scope.outputs.run == 'true'
         run: python -m ruff --version
 
-      - name: Lint
-        run: python -m ruff check .
+      # Ruff discovers each tree's own pyproject.toml, retaining its import roots
+      # and reviewed file exceptions. It also rejects invalid Python syntax.
+      - name: Lint Django sources
+        if: steps.scope.outputs.run == 'true'
+        run: python -m ruff check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 
-      - name: Format check
-        run: python -m ruff format --check .
+      - name: Check Django formatting
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: python -m ruff format --check services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI
 
-      - name: Django system checks
-        run: python manage.py check
+      # Framework Version Consistency owns sync_build_locks.py --check.
+      - name: Test Docker dependency lock projection
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
 
-      - name: Unit tests
-        run: python manage.py test obbench_django_common.tests --verbosity=2
+      - name: Test Qodana helpers
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: python -m unittest discover -s scripts -p test_qodana_python.py -v
+
+      - name: Lint CI helpers
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+
+      - name: Check CI helper formatting
+        if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
+        run: python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
 
   qodana:
     name: Qodana Python (Django)
@@ -154,25 +123,35 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'merge_group' && '0' || '1' }}
+          # Full history is used only for the merge-group scope comparison.
+
+      - name: Select merge group scope
+        id: scope
+        uses: ./.github/actions/workflow-scope
+        with:
+          workflow: django_python_quality.yml
 
       - name: Set results directory
+        if: steps.scope.outputs.run == 'true'
         run: echo "RESULTS_DIR=$RUNNER_TEMP/qodana-python/results" >> "$GITHUB_ENV"
 
       - name: Set up Python
+        if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/setup-python
 
       - name: Qodana Python Community Scan
+        if: steps.scope.outputs.run == 'true'
         run: python scripts/run-qodana-python.py --results-dir "$RESULTS_DIR"
 
       - name: Verify inspection coverage and publish summary
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         run: python scripts/qodana-python-report.py "$RESULTS_DIR" >> "$GITHUB_STEP_SUMMARY"
 
       # Explicit upload of the HTML report directory so the Pages workflow
       # can download and host it alongside the JVM and Next.js reports.
       - name: Upload Qodana HTML report
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: qodana-report-django-python
@@ -181,7 +160,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Qodana diagnostics
-        if: always() && !cancelled()
+        if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         uses: ./.github/actions/upload-artifact
         with:
           name: qodana-diagnostics-django-python

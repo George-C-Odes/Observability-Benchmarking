@@ -23,15 +23,25 @@ The compiler lock is not part of the Django runtime inventory or its Docker proj
 | Workflow/job          | Selected requirements                                                      |
 |-----------------------|----------------------------------------------------------------------------|
 | Snyk                  | Both runtime variants                                                      |
-| Django common quality | Ruff from the existing development requirements                            |
-| Django module quality | Selected runtime and development requirements, local build tools           |
-| Django coverage       | Selected runtime and development requirements, coverage, local build tools |
+| Django common quality | Both development inputs select the same Ruff pin, installed once           |
+| Django coverage       | Selected runtime requirements, coverage, local build tools (no Ruff)        |
 | Django Qodana         | Both runtime variants excluding Pyroscope, local build tools, `qodana.in`  |
 
 The Python version default in `setup-python/action.yml` is synchronized from
 `PYTHON_VERSION` in `compose/.env`. Both Django
 workflows include the shared action and requirements directory in their path
 filters, and all consumers include the lock in their pip cache keys.
+
+The single Django common quality job lints and formats common, WSGI and ASGI
+sources using their own Ruff configurations; it also checks CI helpers. It does
+not install Django or build the common package. The two coverage jobs each install
+only their runtime, the common package and coverage tooling. Django's default test
+runner performs system checks during those coverage runs.
+
+Pip cache keys name the consumed bootstrap/hash locks and selected requirement
+inputs explicitly. Documentation, compiler-only and workflow-validator requirements
+no longer invalidate Django or Snyk pip caches. Caches contain downloaded package
+artifacts; isolated jobs still install their own environments.
 
 The shared install action enforces hashes and wheels for third-party packages.
 The checked-out common package is installed separately from local source, using

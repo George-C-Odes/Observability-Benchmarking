@@ -1,0 +1,150 @@
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import test from 'node:test';
+import { modules } from './java-modules.mjs';
+import { catalog } from './pages/github-reports.mjs';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+const workflow = (name) => readFileSync(join(root, '.github/workflows', `${name}.yml`), 'utf8').replaceAll('\r\n', '\n');
+
+test('every external action is SHA-pinned and checkouts do not persist credentials', () => {
+  function inspect(directory) {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) inspect(path);
+      else if (/\.ya?ml$/.test(entry.name)) {
+        const source = readFileSync(path, 'utf8');
+        for (const [, ref] of source.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/gm)) {
+          if (!ref.startsWith('./')) assert.match(ref, /^[^@]+@[a-f0-9]{40}$/, `${path}: ${ref}`);
+        }
+        const checkoutCount = (source.match(/uses: actions\/checkout@/g) || []).length;
+        assert.equal((source.match(/persist-credentials: false/g) || []).length, checkoutCount, path);
+      }
+    }
+  }
+  inspect(join(root, '.github'));
+});
+
+test('PR workflows cancel stale work and support merge queues', () => {
+  for (const file of readdirSync(join(root, '.github/workflows'))) {
+    const source = workflow(file.replace('.yml', ''));
+    if (!/^ {2}pull_request:/m.test(source)) continue;
+    assert.match(source, /^ {2}merge_group:/m, file);
+    assert.match(source, /cancel-in-progress: \$\{\{ github.event_name == 'pull_request' }}/, file);
+  }
+});
+
+test('coverage is the single Go/Django test owner, including weekly scans', () => {
+  assert.doesNotMatch(workflow('go_quality'), /run: go test/);
+  assert.match(workflow('go_coverage'), /go test \.\/\.\.\. -race -count=1/);
+  assert.doesNotMatch(workflow('django_python_quality'), /manage.py test|needs: common/);
+  assert.match(workflow('django_python_coverage'), /manage.py test obbench_django_common.tests/);
+  for (const name of ['go_coverage', 'django_python_coverage']) assert.match(workflow(name), /^ {2}schedule:/m);
+  assert.match(workflow('django_python_coverage'), /include-hidden-files: 'true'/);
+});
+
+test('Django quality has one Ruff installation and independent semantic analysis', () => {
+  const quality = workflow('django_python_quality');
+  assert.deepEqual([...quality.matchAll(/^ {2}([a-z]+):$/gm)].map((match) => match[1])
+    .filter((name) => ['common', 'modules', 'qodana'].includes(name)), ['common', 'qodana']);
+  assert.equal((quality.match(/uses: \.\/\.github\/actions\/install-python-dependencies/g) || []).length, 1);
+  assert.doesNotMatch(quality, /local-project:|compileall|run: .*manage\.py|requirements\.txt/);
+  for (const operation of ['check', 'format --check']) {
+    assert.ok(quality.includes(`python -m ruff ${operation} services/python/django/gunicorn/common services/python/django/gunicorn/WSGI services/python/django/gunicorn/ASGI`));
+  }
+  for (const runtime of ['WSGI', 'ASGI']) assert.ok(quality.includes(`${runtime}/requirements-dev.txt`));
+  assert.match(quality, /test_sync_build_locks\.py/);
+  assert.match(quality, /test_qodana_python\.py/);
+  assert.doesNotMatch(quality, /^ +run: .*sync_build_locks\.py --check/m);
+  assert.match(workflow('framework_versions'), /python services\/python\/django\/gunicorn\/sync_build_locks\.py --check/);
+  const qodana = quality.split('\n  qodana:\n')[1];
+  assert.doesNotMatch(qodana, /^ +needs:/m);
+  assert.match(qodana, /fetch-depth: \$\{\{ github.event_name == 'merge_group' && '0' \|\| '1' }}/);
+});
+
+test('Django runtime environments install coverage without Ruff or repeated system checks', () => {
+  const coverage = workflow('django_python_coverage');
+  assert.doesNotMatch(coverage, /requirements-dev\.txt|ruff|compileall|manage\.py[" ]+check/);
+  assert.equal((coverage.match(/manage\.py test obbench_django_common\.tests/g) || []).length, 1);
+  assert.match(coverage, /default test runner performs system checks/);
+  assert.match(coverage, /\.github\/requirements\/coverage\.in/);
+  for (const runtime of ['WSGI', 'ASGI']) assert.ok(coverage.includes(`module_dir: services/python/django/gunicorn/${runtime}`));
+});
+
+test('pip cache keys track consumed locks rather than unrelated workflow requirements', () => {
+  for (const name of ['django_python_quality', 'django_python_coverage', 'snyk-security']) {
+    const source = workflow(name);
+    const blocks = [...source.matchAll(/cache: pip\n +cache-dependency-path: \|\n((?: +[^\n]+\n)+?)(?=\n| {6}- name:)/g)];
+    assert.ok(blocks.length > 0, `${name}: pip caching must remain enabled`);
+    for (const [, block] of blocks) {
+      assert.ok(!block.includes('.github/requirements/**'), name);
+      for (const file of ['pip.in', 'pip.txt', 'python-ci.txt']) assert.ok(block.includes(`.github/requirements/${file}`), `${name}: ${file}`);
+    }
+  }
+});
+
+test('coverage inventory supplies both JVM consumers without changing module identities', () => {
+  for (const module of modules) assert.ok(existsSync(join(root, module.module_dir, 'pom.xml')));
+  assert.match(workflow('java_coverage'), /matrix: \$\{\{ fromJSON\(needs.inventory.outputs.matrix\) }}/);
+  assert.match(workflow('codeql'), /node scripts\/java-modules.mjs --paths/);
+});
+
+test('Pages preserves its trust boundary and producer catalog contracts', () => {
+  const pages = workflow('pages');
+  assert.equal((pages.match(/ref: refs\/heads\/main/g) || []).length, 4);
+  assert.equal((pages.match(/ref: \$\{\{ needs.inventory.outputs.source_sha }}/g) || []).length, 0);
+  assert.deepEqual([...pages.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), Array(4).fill('refs/heads/main'));
+  assert.equal((pages.match(/EXPECTED_SHA: \$\{\{ needs.inventory.outputs.source_sha }}/g) || []).length, 3);
+  assert.equal((pages.match(/CHECKED_OUT_SHA: \$\{\{ steps.checkout.outputs.commit }}/g) || []).length, 3);
+  assert.equal((pages.match(/run: test "\$CHECKED_OUT_SHA" = "\$EXPECTED_SHA"/g) || []).length, 3);
+  assert.equal((pages.match(/uses: actions\/checkout@[^\n]+NOSONAR/g) || []).length, 3);
+  assert.match(pages, /head_repository.full_name == github.repository/);
+  assert.match(pages, /needs: \[inventory, docs, collect]/);
+  assert.match(pages, /max-parallel: 5/);
+  assert.match(pages, /REPORT_PRODUCER: \$\{\{ matrix.producer.producer }}/);
+  assert.match(pages, /REPORT_ARTIFACT: \$\{\{ matrix.producer.report }}/);
+  assert.match(pages, /pattern: \$\{\{ matrix.producer.pattern }}/);
+  assert.match(pages, /run-id: \$\{\{ steps.source.outputs.run_id }}/);
+  for (const producer of catalog) {
+    assert.ok(pages.includes(producer.name));
+    const source = workflow(producer.workflow.replace('.yml', ''));
+    for (const report of producer.reports) {
+      assert.ok(source.includes(report.artifact) || (producer.id === 'qodana' && source.includes('qodana-report-${{ matrix.name }}')), report.artifact);
+    }
+  }
+});
+
+test('unfiltered validation enforces shell, security, request-boundary and Pages tests', () => {
+  const source = workflow('workflow_quality');
+  assert.doesNotMatch(source, /^ +paths:/m);
+  for (const tool of ['actionlint', 'shellcheck', 'zizmor', 'scripts/pages/*.test.mjs', 'npm run check --prefix scripts/quality', 'npm test --prefix scripts/quality']) assert.ok(source.includes(tool));
+  assert.match(source, /--require-hashes/);
+  const snyk = workflow('snyk-security');
+  assert.match(snyk, /snyk-version: v\d+\.\d+\.\d+/);
+  assert.doesNotMatch(snyk, /^ {6}SNYK_TOKEN:/m, 'Token must not be job-wide');
+  assert.match(readFileSync(join(root, 'qodana.yaml'), 'utf8'), /qodana-jvm-community:\S+@sha256:[a-f0-9]{64}/);
+});
+
+test('Qodana routes scopes without dropping check names or weakening full analysis', () => {
+  const source = workflow('qodana_code_quality');
+  assert.match(source, /pull_request:\n {2}push:/);
+  assert.match(source, /qodana:\n +needs: changes\n +if: always\(\) && !cancelled\(\)/);
+  assert.match(source, /SCAN_ENABLED: \$\{\{ needs.changes.outputs\[matrix.name\] }}/);
+  assert.match(source, /name: Require valid scope selection\n +if: env.SCAN_ENABLED != 'true' && env.SCAN_ENABLED != 'false'\n +run: exit 1/);
+  for (const name of ['services-java', 'orchestrator']) assert.ok(source.includes(`- name: ${name}`));
+  for (const step of ['Checkout', 'Test Qodana CLI release lookup', 'Install Qodana CLI', 'Prepare Qodana arguments', 'Qodana Scan']) {
+    assert.ok(source.includes(`- name: ${step}\n        if: env.SCAN_ENABLED == 'true'`), step);
+  }
+  assert.match(source, /if: always\(\) && !cancelled\(\) && env.SCAN_ENABLED == 'true'/);
+  for (const key of ['primary-cache-key', 'additional-cache-key']) {
+    const line = source.split('\n').find((line) => line.trimStart().startsWith(`${key}:`));
+    for (const input of ['matrix.name', 'qodana.yaml', 'pom.xml', 'runner.arch']) assert.ok(line.includes(input));
+    assert.ok(!line.includes('github.ref'), 'PRs must be able to restore matching main caches');
+  }
+  assert.match(source, /cache-default-branch-only: true/);
+  assert.match(source, /pr-mode: false/);
+  assert.match(source, /env-vars-to-linter: QODANA_ONLY_DIRECTORY,JAVA_TOOL_OPTIONS/);
+  assert.ok(workflow('workflow_quality').includes('scripts/qodana-scopes.test.mjs'));
+});

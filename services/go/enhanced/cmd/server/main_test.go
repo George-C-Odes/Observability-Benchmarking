@@ -4,19 +4,86 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 	"testing"
 
 	"hello/internal/config"
 
 	"github.com/gofiber/fiber/v3"
 	otelapi "go.opentelemetry.io/otel"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 )
+
+// Exercise the real startup and cleanup path without signals or a live collector.
+// Holding the port open makes Listen fail deterministically on Linux and Windows.
+func TestMainReturnsOnBindFailure(t *testing.T) {
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("reserve port: %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	_, port, err := net.SplitHostPort(listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, value := range map[string]string{
+		"HOST": "127.0.0.1", "PORT": port,
+		"CACHE_IMPL": "map", "CACHE_SIZE": "2", "LOG_LEVEL": "info",
+		"OTEL_EXPORTER_OTLP_ENDPOINT": "", "OTEL_RESOURCE_ATTRIBUTES": "",
+		"OTEL_HTTP_ENABLED": "true", "OTEL_HTTP_TRACES_MODE": "minimal",
+		"OTEL_HTTP_SPAN_NAME_MODE": "constant", "OTEL_METRIC_EXPORT_INTERVAL": "15000",
+		"PYROSCOPE_ENABLED": "false", "PYROSCOPE_UPLOAD_INTERVAL": "15s",
+	} {
+		t.Setenv(key, value)
+	}
+
+	output, err := os.CreateTemp(t.TempDir(), "startup-*.log")
+	if err != nil {
+		t.Fatal(err)
+	}
+	previousStdout, previousLogger := os.Stdout, slog.Default()
+	previousPropagator := otelapi.GetTextMapPropagator()
+	previousMeter, previousTracer := otelapi.GetMeterProvider(), otelapi.GetTracerProvider()
+	// Avoid registering instruments on OTel's initial proxy providers: those
+	// registrations would follow the providers installed by subsequent tests.
+	otelapi.SetMeterProvider(metricnoop.NewMeterProvider())
+	otelapi.SetTracerProvider(tracenoop.NewTracerProvider())
+	os.Stdout = output
+	t.Cleanup(func() {
+		os.Stdout = previousStdout
+		slog.SetDefault(previousLogger)
+		otelapi.SetTextMapPropagator(previousPropagator)
+		otelapi.SetMeterProvider(previousMeter)
+		otelapi.SetTracerProvider(previousTracer)
+		signal.Reset(syscall.SIGINT, syscall.SIGTERM)
+		_ = output.Close()
+	})
+
+	main()
+	if _, err := output.Seek(0, io.SeekStart); err != nil {
+		t.Fatal(err)
+	}
+	logs, err := io.ReadAll(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"msg":"starting server"`, `"addr":"` + listener.Addr().String() + `"`, `"msg":"server error"`, `"err":`} {
+		if !strings.Contains(string(logs), want) {
+			t.Errorf("startup output missing %s: %s", want, logs)
+		}
+	}
+}
 
 func TestSetupHTTPInstrumentation(t *testing.T) {
 	cases := []struct {

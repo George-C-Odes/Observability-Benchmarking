@@ -1,0 +1,19 @@
+name: Select merge group scope
+description: Reuse this workflow's push paths to avoid unrelated merge queue work.
+inputs:
+  workflow:
+    description: Literal workflow filename under .github/workflows.
+    required: true
+outputs:
+  run:
+    description: True when checks must run; missing diff evidence always runs checks.
+    value: ${{ steps.scope.outputs.run }}
+runs:
+  using: composite
+  steps:
+    - name: Select scope
+      id: scope
+      shell: bash
+      env:
+        SCOPE_WORKFLOW: ${{ inputs.workflow }}
+      run: node "$GITHUB_WORKSPACE/scripts/workflow-scope.mjs"

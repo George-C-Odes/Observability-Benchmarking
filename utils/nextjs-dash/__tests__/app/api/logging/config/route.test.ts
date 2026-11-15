@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 import { GET } from '@/app/api/logging/config/route';
@@ -11,6 +11,30 @@ const serverLoggerMock = vi.hoisted(() => ({
 vi.mock('@/lib/serverLogger', () => serverLoggerMock);
 
 describe('/api/logging/config route', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each(['debug', 'info', 'warn', 'error', 'silent'])(
+    'accepts the %s log level and JSON output',
+    async (level) => {
+      vi.stubEnv('NEXTJS_DASH_CLIENT_LOG_LEVEL', ` ${level.toUpperCase()} `);
+      vi.stubEnv('NEXTJS_DASH_SERVER_LOG_LEVEL', level);
+      vi.stubEnv('NEXTJS_DASH_SERVER_LOG_OUTPUT', 'JSON');
+      const res = await GET(new NextRequest('http://localhost/api/logging/config'));
+      expect(await res.json()).toEqual({
+        clientLogLevel: level,
+        serverLogLevel: level,
+        serverLogOutput: 'json',
+      });
+    },
+  );
+
+  it('falls back for invalid logging configuration', async () => {
+    vi.stubEnv('NEXTJS_DASH_CLIENT_LOG_LEVEL', 'verbose');
+    vi.stubEnv('NEXTJS_DASH_SERVER_LOG_LEVEL', 'trace');
+    vi.stubEnv('NEXTJS_DASH_SERVER_LOG_OUTPUT', 'xml');
+    const res = await GET(new NextRequest('http://localhost/api/logging/config'));
+    expect(await res.json()).toEqual(DEFAULT_LOGGING_RUNTIME_CONFIG);
+  });
   it('returns defaults when env vars are missing', async () => {
     delete process.env.NEXTJS_DASH_CLIENT_LOG_LEVEL;
     delete process.env.NEXTJS_DASH_SERVER_LOG_LEVEL;

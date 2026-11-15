@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React from 'react';
+import type { ServiceHealth as ServiceHealthData } from '@/lib/serviceHealthModel';
+import { useServiceHealth } from '@/app/hooks/useServiceHealth';
 import {
   Box,
   Typography,
@@ -28,31 +30,12 @@ import AppsIcon from '@mui/icons-material/Apps';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SummarizeIcon from '@mui/icons-material/Summarize';
-import { fetchJson } from '@/lib/fetchJson';
-import { orchestratorConfig } from '@/lib/config';
 import { buildDockerControlCommand } from '@/lib/dockerComposeControl';
-import { useServiceActionsConfig } from '@/app/hooks/useServiceActionsConfig';
-import { useTimedPulse } from '@/app/hooks/useTimedPulse';
 import { ActionRow } from './service-health/ActionRow';
 import { DataRow } from './service-health/DataRow';
 import { ServiceGroup } from './service-health/ServiceGroup';
 
-interface ServiceHealth {
-  name: string;
-  status: 'up' | 'down' | 'pending';
-  responseTime?: number;
-  baseUrl?: string;
-  error?: string;
-  body?: unknown;
-}
-
-type ServiceMessage = {
-  type: 'success' | 'error';
-  text: string;
-  service?: string;
-};
-
-function ServiceResponseData({ service }: { service: ServiceHealth }) {
+function ServiceResponseData({ service }: { service: ServiceHealthData }) {
   return (
     <Box sx={{ mt: 0.5, minWidth: 0 }}>
       {service.baseUrl && <DataRow label="Base URL" value={service.baseUrl} />}
@@ -94,14 +77,7 @@ function ServiceResponseData({ service }: { service: ServiceHealth }) {
   );
 }
 
-function toPending(next: ServiceHealth): ServiceHealth {
-  return {
-    ...next,
-    status: 'pending',
-  };
-}
-
-function getStatusUI(status: ServiceHealth['status']): {
+function getStatusUI(status: ServiceHealthData['status']): {
   label: string;
   color: 'success' | 'error' | 'warning';
   icon: React.ReactNode;
@@ -115,293 +91,29 @@ function getStatusUI(status: ServiceHealth['status']): {
   return { label: 'PENDING', color: 'warning', icon: <CircularProgress size={20} /> };
 }
 
-interface HealthApiService {
-  name?: unknown;
-  status?: unknown;
-  responseTime?: unknown;
-  baseUrl?: unknown;
-  error?: unknown;
-  body?: unknown;
-}
-
-function normalizeServiceFromApi(raw: HealthApiService | null | undefined): ServiceHealth {
-  const name = typeof raw?.name === 'string' ? raw.name : 'unknown';
-  const rawStatus = raw?.status;
-
-  const status: ServiceHealth['status'] =
-    rawStatus === 'up' || rawStatus === 'down' || rawStatus === 'pending'
-      ? rawStatus
-      : rawStatus === 'UP'
-        ? 'up'
-        : rawStatus === 'DOWN'
-          ? 'down'
-          : rawStatus === 'PENDING'
-            ? 'pending'
-            : 'down';
-
-  return {
-    name,
-    status,
-    responseTime: typeof raw?.responseTime === 'number' ? raw.responseTime : undefined,
-    baseUrl: typeof raw?.baseUrl === 'string' ? raw.baseUrl : undefined,
-    error: typeof raw?.error === 'string' ? raw.error : undefined,
-    body: raw?.body,
-  };
-}
-
-function byName(a: ServiceHealth, b: ServiceHealth) {
-  return a.name.localeCompare(b.name);
-}
-
-function countByStatus(services: ServiceHealth[]): {
-  up: number;
-  down: number;
-  pending: number;
-  total: number;
-} {
-  let up = 0;
-  let down = 0;
-  let pending = 0;
-
-  for (const s of services) {
-    if (s.status === 'up') up += 1;
-    else if (s.status === 'pending') pending += 1;
-    else down += 1;
-  }
-
-  return { up, down, pending, total: services.length };
-}
-
-function formatRelativeSince(nowMs: number, thenMs: number): string {
-  const deltaMs = Math.max(0, nowMs - thenMs);
-
-  if (deltaMs < 5_000) return 'Just now';
-  if (deltaMs < 60_000) return `${Math.floor(deltaMs / 1_000)}s ago`;
-  if (deltaMs < 60 * 60_000) return `${Math.floor(deltaMs / 60_000)}m ago`;
-  if (deltaMs < 24 * 60 * 60_000) return `${Math.floor(deltaMs / (60 * 60_000))}h ago`;
-
-  // Older than a day: show an explicit date+time.
-  return new Date(thenMs).toLocaleString();
-}
-
-function formatExactTime(d: Date): string {
-  // Keep it short and consistent (HH:MM:SS), independent of locale.
-  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
 function isObsCoreServiceName(serviceName: string): boolean {
   return ['alloy', 'grafana', 'loki', 'mimir', 'pyroscope', 'tempo'].includes(serviceName);
 }
 
-async function readAllServices(): Promise<ServiceHealth[]> {
-  const data = await fetchJson<{ services?: HealthApiService[] }>(`/api/health`);
-  return (data.services || []).map(normalizeServiceFromApi).sort(byName);
-}
-
 export default function ServiceHealth() {
-  const [services, setServices] = useState<ServiceHealth[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState<string | null>(null);
-  const [message, setMessage] = useState<ServiceMessage | null>(null);
-
-  const serviceActionsCfg = useServiceActionsConfig();
-
-  const statusCounts = useMemo(() => countByStatus(services), [services]);
-  const countsPulseKey = useMemo(
-    () => `${statusCounts.up}-${statusCounts.down}-${statusCounts.pending}-${statusCounts.total}`,
-    [statusCounts.up, statusCounts.down, statusCounts.pending, statusCounts.total],
-  );
-  const { on: countsPulseOn } = useTimedPulse({
-    durationMs: 700,
-    trigger: countsPulseKey,
-    allowFalsy: true,
-  });
-
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-  const [nowMs, setNowMs] = useState<number | null>(null);
-  const updatedFlashTrigger = lastUpdatedAt?.toISOString() ?? null;
-  const { on: updatedFlashOn } = useTimedPulse({
-    durationMs: 900,
-    trigger: updatedFlashTrigger,
-    allowFalsy: true,
-  });
-
-  useEffect(() => {
-    if (!lastUpdatedAt) return;
-
-    const id = window.setInterval(() => setNowMs(Date.now()), 1_000);
-    return () => window.clearInterval(id);
-  }, [lastUpdatedAt]);
-
-  const markUpdated = useCallback(() => {
-    const updatedAt = new Date();
-    setLastUpdatedAt(updatedAt);
-    setNowMs(updatedAt.getTime());
-  }, []);
-
-  const lastUpdatedText = useMemo(() => {
-    if (!lastUpdatedAt) return '—';
-
-    const thenMs = lastUpdatedAt.getTime();
-    const currentNowMs = Math.max(thenMs, nowMs ?? thenMs);
-    const deltaMs = Math.max(0, currentNowMs - thenMs);
-
-    // When older than a day, show explicit date+time.
-    if (deltaMs >= 24 * 60 * 60_000) {
-      return lastUpdatedAt.toLocaleString();
-    }
-
-    const rel = formatRelativeSince(currentNowMs, thenMs);
-    const exact = formatExactTime(lastUpdatedAt);
-    return `${rel} · ${exact}`;
-  }, [lastUpdatedAt, nowMs]);
-
-  const fetchAllServices = useCallback(async () => {
-    setLoading(true);
-    setMessage(null);
-    try {
-      setServices(await readAllServices());
-      markUpdated();
-    } catch {
-      setMessage({
-        type: 'error',
-        text: 'Failed to check service health (dashboard backend unreachable)',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [markUpdated]);
-
-  const refreshService = useCallback(
-    async (serviceName: string) => {
-      setRefreshing(serviceName);
-      try {
-        const data = await fetchJson<{ services?: HealthApiService[] }>(
-          `/api/health?service=${encodeURIComponent(serviceName)}`,
-        );
-        const raw = Array.isArray(data?.services) && data.services.length ? data.services[0] : null;
-        const single = raw ? normalizeServiceFromApi(raw) : null;
-
-        if (single) {
-          setServices((prev) =>
-            prev.map((s) => (s.name === serviceName ? single : s)).sort(byName),
-          );
-          markUpdated();
-        }
-      } catch {
-        // ignore
-      } finally {
-        setRefreshing(null);
-      }
-    },
-    [markUpdated],
-  );
-
-  const submitDockerControl = useCallback(
-    async (
-      serviceName: string,
-      payload: {
-        service: string;
-        action: 'start' | 'stop' | 'restart' | 'recreate' | 'delete';
-      },
-      optimisticActionLabel: string,
-    ) => {
-      setSubmitting(serviceName);
-      setServices((prev) => prev.map((s) => (s.name === serviceName ? toPending(s) : s)));
-      markUpdated();
-
-      try {
-        await fetchJson(`/api/docker/control`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        setMessage({
-          type: 'success',
-          text: `Submitted ${optimisticActionLabel} for ${serviceName}. Status will update after refresh.`,
-          service: serviceName,
-        });
-      } catch {
-        setMessage({
-          type: 'error',
-          text: `Failed to submit ${optimisticActionLabel} for ${serviceName}.`,
-          service: serviceName,
-        });
-        void refreshService(serviceName);
-      } finally {
-        setSubmitting(null);
-      }
-    },
-    [markUpdated, refreshService],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadInitialServices = async () => {
-      try {
-        const nextServices = await readAllServices();
-        if (cancelled) return;
-
-        setServices(nextServices);
-        markUpdated();
-      } catch {
-        if (cancelled) return;
-        setMessage({
-          type: 'error',
-          text: 'Failed to check service health (dashboard backend unreachable)',
-        });
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadInitialServices();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [markUpdated]);
-
-  const groupedServices = useMemo(() => {
-    const observability = services
-      .filter((s) => ['alloy', 'grafana', 'loki', 'mimir', 'pyroscope', 'tempo'].includes(s.name))
-      .sort(byName);
-    const spring = services.filter((s) => s.name.startsWith('spring-')).sort(byName);
-    const quarkus = services.filter((s) => s.name.startsWith('quarkus-')).sort(byName);
-    const micronaut = services.filter((s) => s.name.startsWith('micronaut-')).sort(byName);
-    const helidon = services.filter((s) => s.name.startsWith('helidon-')).sort(byName);
-    const spark = services.filter((s) => s.name.startsWith('spark-')).sort(byName);
-    const javalin = services.filter((s) => s.name.startsWith('javalin-')).sort(byName);
-    const dropwizard = services.filter((s) => s.name.startsWith('dropwizard-')).sort(byName);
-    const vertx = services.filter((s) => s.name.startsWith('vertx-')).sort(byName);
-    const pekko = services.filter((s) => s.name.startsWith('pekko-')).sort(byName);
-    const go = services.filter((s) => s.name.startsWith('go')).sort(byName);
-    const django = services.filter((s) => s.name.startsWith('django-')).sort(byName);
-    const utils = services
-      .filter((s) => ['nextjs-dash', 'orchestrator', 'wrk2'].includes(s.name))
-      .sort(byName);
-
-    return {
-      observability,
-      spring,
-      quarkus,
-      micronaut,
-      helidon,
-      spark,
-      javalin,
-      dropwizard,
-      vertx,
-      pekko,
-      go,
-      django,
-      utils,
-    };
-  }, [services]);
+  const {
+    dismissMessage,
+    lastUpdatedAt,
+    countsPulseKey,
+    loading,
+    refreshing,
+    submitting,
+    message,
+    serviceActionsCfg,
+    statusCounts,
+    countsPulseOn,
+    updatedFlashOn,
+    lastUpdatedText,
+    fetchAllServices,
+    refreshService,
+    submitDockerControl,
+    groupedServices,
+  } = useServiceHealth();
 
   if (loading) {
     return (
@@ -413,9 +125,9 @@ export default function ServiceHealth() {
     );
   }
 
-  const renderServiceCard = (service: ServiceHealth) => {
+  const renderServiceCard = (service: ServiceHealthData) => {
     const statusUI = getStatusUI(service.status);
-    const isBusy = refreshing === service.name || submitting === service.name;
+    const isBusy = refreshing.has(service.name) || submitting === service.name;
 
     const canStart = service.status === 'down';
     const canManageContainer = service.status === 'up';
@@ -449,7 +161,7 @@ export default function ServiceHealth() {
     const canRecreateAction = canRecreate && actionFlags.recreate;
     const canDeleteAction = canManageContainer && actionFlags.delete;
 
-    const upstreamHealthUrl = `${orchestratorConfig.url}/v1/health?service=${encodeURIComponent(service.name)}`;
+    const upstreamHealthUrl = `/api/health?service=${encodeURIComponent(service.name)}`;
 
     const startCommand = buildDockerControlCommand({
       service: service.name,
@@ -566,7 +278,7 @@ export default function ServiceHealth() {
                 onClick={() => refreshService(service.name)}
                 disabled={isBusy}
                 icon={
-                  refreshing === service.name ? (
+                  refreshing.has(service.name) ? (
                     <CircularProgress size={18} />
                   ) : (
                     <RefreshIcon fontSize="small" />
@@ -690,7 +402,7 @@ export default function ServiceHealth() {
           placement="left"
           title={
             <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap' }}>
-              {`${orchestratorConfig.url}/v1/health`}
+              /api/health
             </Box>
           }
         >
@@ -1046,7 +758,7 @@ export default function ServiceHealth() {
       </Card>
 
       {message && (
-        <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage(null)}>
+        <Alert severity={message.type} sx={{ mb: 2 }} onClose={dismissMessage}>
           {message.text}
         </Alert>
       )}
