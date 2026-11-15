@@ -350,6 +350,114 @@ class CoverageGateTests(unittest.TestCase):
                         self.run_check(kind)
                 read.assert_not_called()
 
+    def test_decimal_threshold_does_not_pass_after_display_rounding(self):
+        self.modules["java"]["thresholds"] = {"lines": 90.005, "branches": 90}
+        self.java(lines=(9995, 90005))
+        self.assertEqual(self.run_check("java"), 0)
+        self.java(lines=(9996, 90004))
+        self.assertEqual(self.run_check("java"), 1)
+
+    def test_go_accepts_all_supported_modes_and_weights_hits_once(self):
+        for mode in ("atomic", "count", "set"):
+            with self.subTest(mode=mode):
+                self.write(
+                    "go/coverage.out",
+                    f"mode: {mode}\npkg/a.go:1.1,2.2 9 123\npkg/a.go:3.1,4.2 1 0\n",
+                )
+                self.assertEqual(
+                    gate.measurements(self.modules["go"], self.root),
+                    {"statements": (9, 10)},
+                )
+
+    def test_dashboard_rejects_totals_inconsistent_with_sources(self):
+        self.vitest("node")
+        report = self.vitest("dom")
+        original = json.loads(report.read_text())
+        for metric in ("lines", "branches"):
+            with self.subTest(metric=metric):
+                data = copy.deepcopy(original)
+                data["dom.ts"][metric]["covered"] -= 1
+                report.write_text(json.dumps(data))
+                result = self.cli("nextjs")
+                self.assertEqual(result.returncode, 1)
+                self.assertIn(
+                    "Inconsistent dashboard dom coverage totals", result.stdout
+                )
+
+    def test_python_aggregates_files_by_counts_and_ignores_report_totals(self):
+        report = self.python(lines=0, branches=0)
+        data = json.loads(report.read_text())
+        summary = copy.deepcopy(data["files"]["python/source.py"]["summary"])
+        summary.update(
+            covered_lines=900,
+            missing_lines=0,
+            num_statements=900,
+            covered_branches=900,
+            missing_branches=0,
+            num_branches=900,
+        )
+        data["files"]["python/second.py"] = {"summary": summary}
+        data["totals"] = {"percent_covered": 0}
+        report.write_text(json.dumps(data))
+        self.assertEqual(
+            gate.measurements(self.modules["python"], self.root),
+            {"lines": (900, 1000), "branches": (900, 1000)},
+        )
+        self.assertEqual(self.run_check("python"), 0)
+
+    def test_python_rejects_inconsistent_branch_counters(self):
+        report = self.python()
+        data = json.loads(report.read_text())
+        data["files"]["python/source.py"]["summary"]["missing_branches"] = 9
+        report.write_text(json.dumps(data))
+        result = self.cli("python")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Inconsistent branches counters", result.stdout)
+
+    def test_nested_duplicate_json_keys_are_rejected(self):
+        report = self.write(
+            "python/coverage-summary.json",
+            '{"meta":{"branch_coverage":false,"branch_coverage":true}}',
+        )
+        with self.assertRaisesRegex(ValueError, "Duplicate JSON key: branch_coverage"):
+            gate.read_json(report, self.root)
+
+    def test_report_override_rejected_for_non_python_before_io(self):
+        for kind in ("java", "go", "nextjs"):
+            with self.subTest(kind=kind), patch.object(Path, "read_text") as read:
+                with self.assertRaisesRegex(ValueError, "only supported for Python"):
+                    self.run_check(kind, self.root / "override.json")
+                read.assert_not_called()
+
+    def test_configuration_rejects_invalid_versions_and_empty_modules(self):
+        for version in (True, 1.0, "1", 0, 2, None):
+            with self.subTest(version=version):
+                config = self.write(
+                    "invalid.json",
+                    json.dumps({"version": version, "modules": self.modules}),
+                )
+                self.assertEqual(self.cli("java", config=config).returncode, 1)
+        config = self.write("invalid.json", '{"version":1,"modules":{}}')
+        self.assertEqual(self.cli("java", config=config).returncode, 1)
+
+    def test_invalid_module_names_and_paths_are_rejected(self):
+        for name in ("Java", "java/module", "java\n", ""):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                gate.validate_module(name, self.modules["java"])
+        for path in ("", ".", "../java", "java/../other", str(self.root / "java")):
+            module = dict(self.modules["java"], path=path)
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                gate.validate_module("java", module)
+
+    def test_summary_appends_and_records_each_metric_failure(self):
+        summary = self.write("summary", "Existing summary\n")
+        self.java(lines=(11, 89), branches=(0, 0))
+        self.assertEqual(self.run_check("java"), 1)
+        text = summary.read_text()
+        self.assertTrue(text.startswith("Existing summary\n"))
+        self.assertIn("| lines | 89.00% | 90% | FAIL |", text)
+        self.assertIn("| branches | n/a (0 total) | 90% | PASS |", text)
+
     def test_cli_writes_gate_result_to_summary(self):
         self.java()
         self.assertEqual(self.cli("java").returncode, 0)
