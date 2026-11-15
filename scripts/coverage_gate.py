@@ -84,6 +84,8 @@ def java_measurements(directory, root):
     counters = jacoco_counters(
         workspace_path(directory / "target/site/jacoco/jacoco.xml", root)
     )
+    # JaCoCo omits zero-total counters; LINE remains mandatory executable evidence.
+    counters.setdefault("BRANCH", (0, 0))
     result = {}
     for metric, counter in (("lines", "LINE"), ("branches", "BRANCH")):
         missed, covered = counters[counter]

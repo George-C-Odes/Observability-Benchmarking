@@ -41,12 +41,17 @@ class CoverageGateTests(unittest.TestCase):
         return path
 
     def java(self, lines=(10, 90), branches=(10, 90)):
+        branch_counter = (
+            f'<counter type="BRANCH" missed="{branches[0]}" covered="{branches[1]}"/>'
+            if branches is not None
+            else ""
+        )
         return self.write(
             "java/target/site/jacoco/jacoco.xml",
             '<!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd">'
             '<report><package><counter type="LINE" missed="0" covered="999"/></package>'
             f'<counter type="LINE" missed="{lines[0]}" covered="{lines[1]}"/>'
-            f'<counter type="BRANCH" missed="{branches[0]}" covered="{branches[1]}"/></report>',
+            f"{branch_counter}</report>",
         )
 
     def run_check(self, kind, report=None):
@@ -121,6 +126,14 @@ class CoverageGateTests(unittest.TestCase):
         self.java(lines=(10001, 89999))
         self.assertEqual(self.run_check("java"), 1)
 
+    def test_java_omitted_branch_counter_uses_zero_branch_policy(self):
+        for lines, expected in (((10, 90), 0), ((11, 89), 1), ((0, 0), 1)):
+            with self.subTest(lines=lines):
+                self.java(lines=lines, branches=None)
+                result = self.cli("java")
+                self.assertEqual(result.returncode, expected, result.stdout)
+                self.assertIn("branches 0/0 (n/a (0 total))", result.stdout)
+
     def test_individual_thresholds(self):
         self.java(lines=(20, 80), branches=(30, 70))
         self.assertEqual(self.run_check("java"), 1)
@@ -137,6 +150,20 @@ class CoverageGateTests(unittest.TestCase):
                 '<counter type="LINE" covered="100" missed="0"/></report>'
             ),
             '<report><counter type="LINE" covered="100"/></report>',
+            '<report><counter type="BRANCH" covered="100" missed="0"/></report>',
+            (
+                '<report><counter type="LINE" covered="100" missed="0"/>'
+                '<counter type="BRANCH" covered="-1" missed="1"/></report>'
+            ),
+            (
+                '<report><counter type="LINE" covered="100" missed="0"/>'
+                '<counter type="BRANCH" covered="0"/></report>'
+            ),
+            (
+                '<report><counter type="LINE" covered="100" missed="0"/>'
+                '<counter type="BRANCH" covered="0" missed="0"/>'
+                '<counter type="BRANCH" covered="0" missed="0"/></report>'
+            ),
         ):
             with self.subTest(content=content):
                 self.write("java/target/site/jacoco/jacoco.xml", content)
