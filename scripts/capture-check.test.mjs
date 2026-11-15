@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, linkSync, mkdirSync, readFileSync, readdirSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -13,7 +14,7 @@ async function fixture(t, prefix) {
   const script = join(root, 'scripts/capture-check.mjs');
   copyFileSync(new URL('./capture-check.mjs', import.meta.url), script);
   const { captureCheck } = await import(pathToFileURL(script).href);
-  return { root, cwd, captureCheck };
+  return { root, cwd, captureCheck, script };
 }
 
 test('checks capture one invocation per tool, preserving flags and failure status', async (t) => {
@@ -133,5 +134,20 @@ test('hard-linked outputs cannot overwrite outside evidence', async (t) => {
     assert.throws(() => captureCheck('format', { run() { calls++; } }), /hard links/);
     assert.equal(calls, 0);
     assert.equal(readFileSync(outside, 'utf8'), 'preserve me');
+  }
+});
+
+
+test('real CLI rejects malicious operations before any output or checker execution', async (t) => {
+  const { root, cwd, script } = await fixture(t, 'capture-cli-');
+  const outside = join(root, 'outside');
+  mkdirSync(outside);
+  for (const mode of ['../format', '../../outside/pwn', join(outside, 'pwn'), 'lint\n', '__proto__']) {
+    const result = spawnSync(process.execPath, [script, mode], { cwd: outside, encoding: 'utf8', timeout: 5000 });
+    assert.equal(result.error, undefined);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Unknown quality check/);
+    assert.deepEqual(readdirSync(cwd), []);
+    assert.deepEqual(readdirSync(outside), []);
   }
 });

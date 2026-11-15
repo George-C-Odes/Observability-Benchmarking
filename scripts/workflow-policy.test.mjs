@@ -59,6 +59,7 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
   assert.equal((pages.match(/EXPECTED_SHA: \$\{\{ needs.inventory.outputs.source_sha }}/g) || []).length, 3);
   assert.equal((pages.match(/CHECKED_OUT_SHA: \$\{\{ steps.checkout.outputs.commit }}/g) || []).length, 3);
   assert.equal((pages.match(/run: test "\$CHECKED_OUT_SHA" = "\$EXPECTED_SHA"/g) || []).length, 3);
+  assert.equal((pages.match(/uses: actions\/checkout@[^\n]+NOSONAR/g) || []).length, 3);
   assert.match(pages, /head_repository.full_name == github.repository/);
   assert.match(pages, /needs: \[inventory, docs, collect]/);
   assert.match(pages, /max-parallel: 5/);
