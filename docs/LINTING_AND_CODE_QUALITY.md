@@ -720,7 +720,7 @@ cat results.sarif | python3 -m json.tool
 
 The `utils/nextjs-dash` module (Next.js / React / TypeScript) has its own quality gates enforced by a dedicated GitHub Actions workflow (`.github/workflows/nextjs_dash_quality.yml`):
 
-1. **Oxfmt 0.78.0** — verifies deterministic formatting with `oxfmt --check .`.
+1. **Oxfmt 0.79.0** — verifies deterministic formatting with `oxfmt --check .`.
 2. **Oxlint 1.93.0** — checks the module root with warnings denied.
 3. **TypeScript 7.0.2** — runs the native strict checker through the supported `tsc --noEmit` command.
 4. **Vitest 5.1.0** — runs separate Node and jsdom suites.
