@@ -170,7 +170,7 @@ Some environments terminate long-lived HTTP connections.
 - **Material-UI (MUI)**: v9.5.0
 - **TypeScript**: v7.0.2
 - **Vitest / coverage-v8**: v5.1.0
-- **Oxlint**: v1.93.0
+- **Oxlint**: v1.94.0
 - **Oxfmt**: v0.78.0
 - **Node.js**: v26.13.1
 
