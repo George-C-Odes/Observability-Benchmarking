@@ -18,6 +18,7 @@ exclude:
   - node_modules
   - vendor
   - "*.template.md"
+  - "*.template.html"
 
 # Collections
 collections:
