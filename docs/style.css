@@ -1020,7 +1020,7 @@ html {
 }
 
 .nav-more .dropdown-menu {
-    display: none; /* shown via inline style toggle from script */
+    display: none; /* opened by the is-open class */
     position: absolute;
     right: 0;
     top: calc(100% + 8px);
@@ -1054,3 +1054,8 @@ html {
 
 /* ensure dropdown items don't inherit nav link color */
 .nav-more .dropdown-menu li a .fab { color: inherit; }
+
+/* Keep navigation state compatible with the document's no-inline-style policy. */
+.nav-more[hidden] { display: none; }
+.nav-more.is-open .dropdown-menu { display: block; }
+.results-methodology { margin-top: 1rem; }

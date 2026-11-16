@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    {% include security-head.html %}
+    {% if page.redirect_to %}
+    <meta http-equiv="refresh" content="0; url={{ page.redirect_to | relative_url }}">
+    {% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page.title | default: site.title }}</title>
     <link rel="icon" type="image/x-icon" href="/Observability-Benchmarking/favicon.ico">
     <link rel="stylesheet" href="/Observability-Benchmarking/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css" integrity="sha512-QeR2VH+lsBE5LSAe1Q5EnTBbe7XTBubt8dG93Y7gidSgdMCr8nVqKcfKAMyN96SV8KDbZVTDXChatu5G2KQGzg==" crossorigin="anonymous">
     {% seo %}
+    <script src="{{ "/assets/js/navigation.js" | relative_url }}" defer></script>
 </head>
 <body>
     <header class="header">
@@ -29,7 +34,7 @@
                 </a></li>
 
                 <!-- More dropdown: overflowed nav items will be moved into the nested .dropdown-menu -->
-                <li class="nav-more" style="display:none;">
+                <li class="nav-more" hidden>
                     <button class="more-btn" aria-haspopup="true" aria-expanded="false">More ▾</button>
                     <ul class="dropdown-menu" aria-label="More navigation items"></ul>
                 </li>
@@ -68,80 +73,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Overflow management script: moves overflowing nav items into the More dropdown -->
-    <script>
-    (function(){
-      const debounce = (fn, wait=100)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
-
-      function redistributeNav(){
-        const nav = document.querySelector('.nav');
-        if(!nav) return;
-        const navLinks = nav.querySelector('.nav-links');
-        const moreLi = navLinks.querySelector('.nav-more');
-        const moreMenu = moreLi ? moreLi.querySelector('.dropdown-menu') : null;
-        const logo = nav.querySelector('.logo');
-        if(!navLinks || !moreLi || !moreMenu || !logo) return;
-
-        // move everything back from moreMenu into navLinks (before .nav-more)
-        while(moreMenu.firstChild){
-          navLinks.insertBefore(moreMenu.firstChild, moreLi);
-        }
-        moreLi.style.display = 'none';
-        moreLi.querySelector('.more-btn').setAttribute('aria-expanded','false');
-
-        // compute available width for links (nav width minus logo and some padding)
-        const navStyle = getComputedStyle(nav);
-        const navPaddingLeft = Number.parseFloat(navStyle.paddingLeft) || 0;
-        const navPaddingRight = Number.parseFloat(navStyle.paddingRight) || 0;
-        const available = nav.clientWidth - logo.offsetWidth - navPaddingLeft - navPaddingRight - 24; // safety buffer
-
-        // accumulate widths and move overflow items
-        let total = 0;
-        const items = Array.from(navLinks.children).filter(li=>!li.classList.contains('nav-more'));
-        for(let i=0;i<items.length;i++){
-          const li = items[i];
-          total += li.offsetWidth;
-          if(total > available){
-            // move this and subsequent items into moreMenu
-            for(let j=i;j<items.length;j++){
-              moreMenu.appendChild(items[j]);
-            }
-            moreLi.style.display = '';
-            break;
-          }
-        }
-
-        // hide More if empty
-        if(!moreMenu.children.length) moreLi.style.display = 'none';
-      }
-
-      // toggle dropdown on button click
-      document.addEventListener('click', function(e){
-        const btn = e.target.closest('.more-btn');
-        if(!btn) return;
-        const moreLi = btn.closest('.nav-more');
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-        const menu = moreLi.querySelector('.dropdown-menu');
-        if(menu) menu.style.display = expanded ? 'none' : 'block';
-      });
-
-      // close dropdown on outside click
-      document.addEventListener('click', function(e){
-        if(e.target.closest('.nav-more')) return;
-        document.querySelectorAll('.nav-more .dropdown-menu').forEach(m=>m.style.display='none');
-        document.querySelectorAll('.more-btn').forEach(b=>b.setAttribute('aria-expanded','false'));
-      });
-
-      // run on load and resize
-      window.addEventListener('load', redistributeNav);
-      window.addEventListener('resize', debounce(redistributeNav, 120));
-
-      // also run after images/fonts load via DOMContentLoaded
-      document.addEventListener('DOMContentLoaded', function(){ setTimeout(redistributeNav, 50); });
-    })();
-    </script>
 
 </body>
 </html>

@@ -1,7 +1,11 @@
+---
+layout: null
+---
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    {% include security-head.html %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Observability Benchmarking - Performance Analysis Framework</title>
     <meta name="description" content="Benchmark Spring Boot, Quarkus, Micronaut, Helidon, Spark, Javalin, Dropwizard, Vert.x, Pekko, Go, and Django (Python) REST services under a full Grafana LGTM observability stack (Loki, Tempo, Mimir, Grafana) with OpenTelemetry, Pyroscope profiling, and wrk2 constant-throughput load generation." />
@@ -504,7 +508,7 @@
                 </table>
             </div>
 
-            <p style="margin-top: 1rem;">
+            <p class="results-methodology">
                 See <a href="benchmarking.html">Benchmarking Methodology</a> for reproducibility details and interpretation.
             </p>
 

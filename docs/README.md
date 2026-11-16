@@ -322,6 +322,36 @@ To improve the documentation:
 - **Font Awesome** - Icons (CDN)
 - **GitHub Actions** - Automated deployment
 
+## Browser security on GitHub Pages
+
+The landing page and pages using `_layouts/default.html` share an early
+Content Security Policy meta element in `_includes/security-head.html`. It
+restricts resources to the site and the pinned Font Awesome stylesheet/fonts,
+blocks inline executable scripts and styles, and disables forms, embedded
+objects, connections and base URL changes. Navigation uses `assets/js/navigation.js`
+and CSS classes; legacy entry links redirect through a head meta refresh without
+JavaScript. The CDN stylesheet retains its integrity check.
+
+The same include sets `strict-origin-when-cross-origin` as the document referrer
+policy. GitHub Pages continues to supply HTTPS and HSTS.
+
+This is document-level protection, not an HTTP response header. GitHub Pages
+does not expose custom response-header configuration, and meta CSP cannot
+enforce `frame-ancestors`. Aikido's missing CSP-header and anti-clickjacking
+findings therefore remain unresolved. Do not add ineffective `X-Frame-Options`
+or `Permissions-Policy` meta tags, or claim that this change prevents framing.
+
+Hosted `/quality/` and `/stage/quality/` reports are separate documents assembled
+after Jekyll. They do not inherit the documentation's meta policy, and this
+change does not rewrite vendor reports or weaken the documentation policy to
+accommodate them. GitHub-generated error pages are also outside this policy.
+
+After changing the landing template, run `node scripts/render-readmes.mjs` from
+the repository root, then build Jekyll as described above. The source policy
+regressions run with `node --test scripts/pages/docs-security.test.mjs` (also
+included in Workflow Quality's existing test glob). To check built output too,
+set `DOCS_SITE_DIR` to the Jekyll output directory before running that command.
+
 ## Analytics and Monitoring
 
 Currently, the site does not include analytics. Consider adding:
