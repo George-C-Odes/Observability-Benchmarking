@@ -46,14 +46,19 @@ test('Checkov scans source configuration without secrets and preserves failure e
   assert.match(source, /framework: github_actions\n +directory: \.github\/workflows/);
   assert.match(source, /framework: dockerfile\n +directory: \./);
   assert.match(source, /run: mkdir -p checkov-results/);
-  assert.ok(source.indexOf('run: mkdir -p checkov-results') < source.indexOf('uses: bridgecrewio/checkov-action@'));
+  assert.ok(source.indexOf('run: mkdir -p checkov-results') < source.indexOf('uses: ./.github/actions/checkov'));
   for (const event of ['pull_request', 'merge_group', 'push', 'workflow_dispatch', 'schedule']) {
     assert.match(source, new RegExp(`^ {2}${event}:`, 'm'));
   }
   assert.match(source, /fail-fast: false/);
-  assert.match(source, /bridgecrewio\/checkov-action@[a-f0-9]{40} # v12\.1347\.0/);
-  assert.match(source, /soft_fail: false/);
-  assert.match(source, /download_external_modules: false/);
+  assert.match(source, /uses: \.\/\.github\/actions\/checkov/);
+  const action = readFileSync(join(root, '.github/actions/checkov/action.yml'), 'utf8');
+  assert.match(action, /image: Dockerfile/);
+  const dockerfile = readFileSync(join(root, '.github/actions/checkov/Dockerfile'), 'utf8');
+  assert.match(dockerfile, /^FROM bridgecrew\/checkov:\d+\.\d+\.\d+@sha256:[a-f0-9]{64}$/m);
+  assert.match(dockerfile, /^ENTRYPOINT \["\/usr\/local\/bin\/checkov"]$/m);
+  assert.match(action, /- --download-external-modules\r?\n +-[ ]+'false'/);
+  assert.doesNotMatch(action, /GITHUB_ENV|GITHUB_OUTPUT|set-output|--soft-fail|--skip-check|--baseline/);
   assert.doesNotMatch(source, /continue-on-error:|secrets\.|pull_request_target:|skip_check:|baseline:/);
   const retention = source.split('      - name: Retain Checkov report\n')[1].split('      - name: Upload Checkov')[0];
   assert.match(retention, /if: always\(\) && !cancelled\(\)/);

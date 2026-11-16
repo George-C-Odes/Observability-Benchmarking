@@ -276,7 +276,11 @@ dependency or source remediation; fixing the workflow alone does not resolve gen
 
 The workflow (`.github/workflows/checkov.yml`) scans GitHub Actions workflows and source Dockerfiles in
 independent jobs on pull requests, merge queues, pushes to `main`, manual dispatch, and a weekly schedule.
-It uses `bridgecrewio/checkov-action` v12.1347.0 pinned to its full commit SHA and requires no API key.
+It uses a local Docker action with Checkov 3.4.5 pinned by image digest and requires no API key.
+The local action invokes the Checkov executable directly. The older `bridgecrewio/checkov-action`
+v12.1347.0 shell wrapper exports its full output as `CHECKOV_RESULTS`,
+which can exceed Linux environment limits and prevent report uploads and checkout cleanup from starting.
+Reports remain on disk and scan output stays in the log; no report content is exported as a job variable.
 Docker Compose is not scanned: it is not a supported Checkov framework.
 
 - Findings and scanner errors fail the check; there is no soft-fail setting, policy exclusion, or baseline.

@@ -30,7 +30,7 @@ jobs:
       matrix:
         framework: [github_actions, dockerfile]
         include:
-          # This release skips hidden directories during root discovery.
+          # Scan workflows explicitly, independent of hidden-directory defaults.
           - framework: github_actions
             directory: .github/workflows
           - framework: dockerfile
@@ -47,14 +47,10 @@ jobs:
       # Scan source configuration only; no application builds or API key needed.
       # Compose is not a supported Checkov framework.
       - name: Checkov GitHub Action
-        uses: bridgecrewio/checkov-action@99bb2caf247dfd9f03cf984373bc6043d4e32ebf # v12.1347.0
+        uses: ./.github/actions/checkov
         with:
           directory: ${{ matrix.directory }}
           framework: ${{ matrix.framework }}
-          config_file: .github/checkov.yml
-          output_format: sarif
-          soft_fail: false
-          download_external_modules: false
 
       # Keep evidence after findings or scanner errors without masking failure.
       - name: Retain Checkov report
