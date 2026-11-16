@@ -272,6 +272,25 @@ Runs without a token (including fork pull requests) explicitly skip scanning; a 
 Troubleshoot **errors** using the saved logs and runtime versions printed in the preparation step. Findings require
 dependency or source remediation; fixing the workflow alone does not resolve genuine vulnerabilities.
 
+### Checkov Configuration Scanning
+
+The workflow (`.github/workflows/checkov.yml`) scans GitHub Actions workflows and source Dockerfiles in
+independent jobs on pull requests, merge queues, pushes to `main`, manual dispatch, and a weekly schedule.
+It uses `bridgecrewio/checkov-action` v12.1347.0 pinned to its full commit SHA and requires no API key.
+Docker Compose is not scanned: it is not a supported Checkov framework.
+
+- Findings and scanner errors fail the check; there is no soft-fail setting, policy exclusion, or baseline.
+  Existing findings therefore need review and remediation when the workflow first runs.
+- `.github/checkov.yml` excludes generated dependency/build directories while keeping source Dockerfiles
+  and `.github` workflows in scope. External module and platform metadata downloads are disabled.
+- Each framework retains its available SARIF report in `checkov-github_actions` or `checkov-dockerfile`
+  artifacts for 14 days, including after a scan failure. A missing report also fails the check.
+- Reports upload to GitHub Code Scanning under separate framework categories. Fork and Dependabot PRs
+  still scan and retain artifacts, but skip that upload because their tokens cannot write security events.
+
+Review findings in the scan log, artifacts, or Security tab. A passing workflow requires completion of
+both framework jobs; configure both checks as required in branch protection if they should block merges.
+
 ## Runtime Security
 
 ### Java Security Manager

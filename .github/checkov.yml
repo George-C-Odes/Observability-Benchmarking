@@ -1,0 +1,8 @@
+# Shared by both framework jobs. Keep source Dockerfiles and .github in scope.
+# No policy suppressions or baseline: findings fail the workflow.
+output-file-path: checkov-results
+skip-download: true
+skip-path:
+  - '(^|/)(node_modules|vendor|target|build|dist|\.next|\.venv|venv|_site|apm_modules)(/|$)'
+  - '(^|/)\.git(/|$)'
+  - '(^|/)checkov-results(/|$)'
