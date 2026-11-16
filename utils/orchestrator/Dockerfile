@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.29@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
-ARG IMAGE_BUILDER=maven:3.10.0-eclipse-temurin-25-noble@sha256:8bc26436417b39cd3fbac4150d63df1fa6f8262b713c765c99f4d8075d79bcb8
+ARG IMAGE_BUILDER=maven:3.10.1-eclipse-temurin-25-noble
 ARG IMAGE_DOCKER_CLI=docker:29.9.3-cli-alpine3.24@sha256:5a7af0dcb0e46c803efe9b45371dd21cb500e5b4453250394ac6f06d49b6e6f1
 ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:a08d9054afbaf1af9b90fd02cdc7b32236319b5376d374505a41548d42b0c5db
 ARG JAVA_RELEASE=25
