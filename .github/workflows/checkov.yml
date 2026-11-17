@@ -42,7 +42,8 @@ jobs:
           persist-credentials: false
 
       - name: Prepare Checkov report directory
-        run: mkdir -p checkov-results
+        # The scanner's fixed non-root UID differs from the hosted runner UID.
+        run: install -d -m 0777 checkov-results
 
       # Scan source configuration only; no application builds or API key needed.
       # Compose is not a supported Checkov framework.

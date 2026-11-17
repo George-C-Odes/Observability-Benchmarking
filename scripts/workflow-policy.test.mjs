@@ -45,8 +45,8 @@ test('Checkov scans source configuration without secrets and preserves failure e
   assert.match(source, /framework: \[github_actions, dockerfile]/);
   assert.match(source, /framework: github_actions\n +directory: \.github\/workflows/);
   assert.match(source, /framework: dockerfile\n +directory: \./);
-  assert.match(source, /run: mkdir -p checkov-results/);
-  assert.ok(source.indexOf('run: mkdir -p checkov-results') < source.indexOf('uses: ./.github/actions/checkov'));
+  assert.match(source, /run: install -d -m 0777 checkov-results/);
+  assert.ok(source.indexOf('run: install -d -m 0777 checkov-results') < source.indexOf('uses: ./.github/actions/checkov'));
   for (const event of ['pull_request', 'merge_group', 'push', 'workflow_dispatch', 'schedule']) {
     assert.match(source, new RegExp(`^ {2}${event}:`, 'm'));
   }
@@ -56,8 +56,9 @@ test('Checkov scans source configuration without secrets and preserves failure e
   assert.match(action, /image: Dockerfile/);
   const dockerfile = readFileSync(join(root, '.github/actions/checkov/Dockerfile'), 'utf8');
   assert.match(dockerfile, /^FROM bridgecrew\/checkov:\d+\.\d+\.\d+@sha256:[a-f0-9]{64}$/m);
-  assert.match(dockerfile, /^ENTRYPOINT \["\/usr\/local\/bin\/checkov"]$/m);
-  assert.match(action, /- --download-external-modules\r?\n +-[ ]+'false'/);
+  assert.match(dockerfile, /^USER 65532:65532$/m);
+  assert.match(dockerfile, /^ENTRYPOINT \["\/usr\/bin\/env", "HOME=\/tmp", "\/usr\/local\/bin\/checkov"]$/m);
+  assert.match(action, /- --download-external-modules\r?\n +- +'false'/);
   assert.doesNotMatch(action, /GITHUB_ENV|GITHUB_OUTPUT|set-output|--soft-fail|--skip-check|--baseline/);
   assert.doesNotMatch(source, /continue-on-error:|secrets\.|pull_request_target:|skip_check:|baseline:/);
   const retention = source.split('      - name: Retain Checkov report\n')[1].split('      - name: Upload Checkov')[0];
@@ -72,7 +73,7 @@ test('Checkov scans source configuration without secrets and preserves failure e
   const config = readFileSync(join(root, '.github/checkov.yml'), 'utf8');
   assert.match(config, /output-file-path: checkov-results/);
   assert.match(config, /skip-download: true/);
-  assert.doesNotMatch(config, /^ *(?:soft-fail|skip-check|baseline|check):/m);
+  assert.doesNotMatch(config, /^ *(?:soft-fail|baseline|check):/m);
 });
 
 test('PR workflows cancel stale work and support merge queues', () => {

@@ -283,8 +283,17 @@ which can exceed Linux environment limits and prevent report uploads and checkou
 Reports remain on disk and scan output stays in the log; no report content is exported as a job variable.
 Docker Compose is not scanned: it is not a supported Checkov framework.
 
-- Findings and scanner errors fail the check; there is no soft-fail setting, policy exclusion, or baseline.
-  Existing findings therefore need review and remediation when the workflow first runs.
+- Findings from enabled rules and scanner errors fail the check; there is no soft-fail setting or baseline.
+- The scanner runs as UID/GID 65532 with a temporary home. Its report directory is writable across
+  runner/scanner UIDs in the isolated job workspace; source files retain their checkout permissions.
+- `.github/checkov.yml` contains two user-approved repository-wide rule exclusions. `CKV_DOCKER_2`
+  is excluded because image healthchecks are not required for this benchmark lab; existing optional
+  healthchecks remain in place. `CKV_DOCKER_7` is excluded because Checkov checks literal
+  `FROM ${IMAGE_*}` text without resolving versioned argument defaults.
+- `scripts/dockerfile-policy.test.mjs` enforces image versioning instead: it discovers Dockerfiles under
+  `services`, `utils`, and `.github/actions`, resolves image arguments, and rejects missing versions,
+  `latest`, unresolved arguments, and malformed digests. Workflow Quality runs this test on every PR
+  and merge queue. Reassess the exclusions if deployment requirements or Checkov's argument handling change.
 - `.github/checkov.yml` excludes generated dependency/build directories while keeping source Dockerfiles
   and `.github` workflows in scope. External module and platform metadata downloads are disabled.
 - Each framework retains its available SARIF report in `checkov-github_actions` or `checkov-dockerfile`
