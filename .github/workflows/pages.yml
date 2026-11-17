@@ -74,6 +74,8 @@ jobs:
         with:
           path: _site
           key: jekyll-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('docs/**', '.github/workflows/pages.yml') }}
+          # workflow_run has read-only cache access; push/manual runs populate it.
+          restore-only: ${{ github.event_name == 'workflow_run' }}
       - name: Set up Ruby
         if: steps.site-cache.outputs.cache-hit != 'true'
         uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
