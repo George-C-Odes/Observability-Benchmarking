@@ -191,3 +191,5 @@ vitest-*.json
 
 # Generated Sonar analysis data
 .sonar/
+# Local Checkov reports
+checkov-results/

@@ -9,15 +9,26 @@ import { catalog } from './pages/github-reports.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const workflow = (name) => readFileSync(join(root, '.github/workflows', `${name}.yml`), 'utf8').replaceAll('\r\n', '\n');
 
-test('every external action is SHA-pinned and checkouts do not persist credentials', () => {
+test('external actions are SHA-pinned and checkouts share one revision without persisted credentials', () => {
+  const checkoutRevisions = new Map();
   function inspect(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) inspect(path);
       else if (/\.ya?ml$/.test(entry.name)) {
         const source = readFileSync(path, 'utf8');
-        for (const [, ref] of source.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/gm)) {
+        for (const [, ref, comment] of source.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)([^\r\n]*)/gm)) {
           if (!ref.startsWith('./')) assert.match(ref, /^[^@]+@[a-f0-9]{40}$/, `${path}: ${ref}`);
+          if (ref.startsWith('actions/checkout@')) {
+            // Compare the version token while retaining local review comments,
+            // such as Pages' scoped NOSONAR explanations after the semicolon.
+            const version = /^\s+#\s+(v\d+\.\d+\.\d+)(?=[;\s]|$)/.exec(comment)?.[1];
+            assert.ok(version, `${path}: checkout needs a # vX.Y.Z version comment`);
+            const revision = `${ref} # ${version}`;
+            const paths = checkoutRevisions.get(revision) ?? [];
+            paths.push(path);
+            checkoutRevisions.set(revision, paths);
+          }
         }
         const checkoutCount = (source.match(/uses: actions\/checkout@/g) || []).length;
         assert.equal((source.match(/persist-credentials: false/g) || []).length, checkoutCount, path);
@@ -25,6 +36,46 @@ test('every external action is SHA-pinned and checkouts do not persist credentia
     }
   }
   inspect(join(root, '.github'));
+  assert.equal(checkoutRevisions.size, 1,
+    `All checkout references must share one SHA and version comment. Found: ${JSON.stringify([...checkoutRevisions])}`);
+});
+
+test('Checkov scans source configuration without secrets and preserves failure evidence', () => {
+  const source = workflow('checkov');
+  assert.match(source, /framework: \[github_actions, dockerfile]/);
+  assert.match(source, /framework: github_actions\n +directory: \.github\/workflows/);
+  assert.match(source, /framework: dockerfile\n +directory: \./);
+  assert.match(source, /run: install -d -m 0777 checkov-results/);
+  assert.ok(source.indexOf('run: install -d -m 0777 checkov-results') < source.indexOf('uses: ./.github/actions/checkov'));
+  for (const event of ['pull_request', 'merge_group', 'push', 'workflow_dispatch', 'schedule']) {
+    assert.match(source, new RegExp(`^ {2}${event}:`, 'm'));
+  }
+  assert.match(source, /fail-fast: false/);
+  assert.match(source, /uses: \.\/\.github\/actions\/checkov/);
+  const scan = source.split('      - name: Checkov GitHub Action\n')[1].split('      - name: Retain Checkov report\n')[0];
+  assert.match(scan, /env:\n +CKV_IGNORE_HIDDEN_DIRECTORIES: 'false'/);
+  const action = readFileSync(join(root, '.github/actions/checkov/action.yml'), 'utf8');
+  assert.match(action, /image: Dockerfile/);
+  const dockerfile = readFileSync(join(root, '.github/actions/checkov/Dockerfile'), 'utf8');
+  assert.match(dockerfile, /^FROM bridgecrew\/checkov:\d+\.\d+\.\d+@sha256:[a-f0-9]{64}$/m);
+  assert.match(dockerfile, /^USER 65532:65532$/m);
+  assert.match(dockerfile, /^ENTRYPOINT \["\/usr\/bin\/env", "HOME=\/tmp", "\/usr\/local\/bin\/checkov"]$/m);
+  assert.match(action, /- --download-external-modules\r?\n +- +'false'/);
+  assert.doesNotMatch(action, /GITHUB_ENV|GITHUB_OUTPUT|set-output|--soft-fail|--skip-check|--baseline/);
+  assert.doesNotMatch(source, /continue-on-error:|secrets\.|pull_request_target:|skip_check:|baseline:/);
+  const retention = source.split('      - name: Retain Checkov report\n')[1].split('      - name: Upload Checkov')[0];
+  assert.match(retention, /if: always\(\) && !cancelled\(\)/);
+  assert.match(retention, /if-no-files-found: error/);
+  const upload = source.split('      - name: Upload Checkov to Code Scanning\n')[1];
+  assert.match(upload, /always\(\) && !cancelled\(\)/);
+  assert.match(upload, /github\.actor != 'dependabot\[bot]'/);
+  assert.match(upload, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
+  assert.match(upload, /sarif_file: checkov-results\/results_sarif\.sarif/);
+  assert.match(upload, /category: checkov-\$\{\{ matrix\.framework }}/);
+  const config = readFileSync(join(root, '.github/checkov.yml'), 'utf8');
+  assert.match(config, /output-file-path: checkov-results/);
+  assert.match(config, /skip-download: true/);
+  assert.doesNotMatch(config, /^ *(?:soft-fail|baseline|check):/m);
 });
 
 test('PR workflows cancel stale work and support merge queues', () => {
@@ -148,7 +199,7 @@ test('Qodana routes scopes without dropping check names or weakening full analys
   const source = workflow('qodana_code_quality');
   assert.match(source, /pull_request:\n {2}push:/);
   assert.match(source, /qodana:\n +needs: changes\n +if: always\(\) && !cancelled\(\)/);
-  assert.match(source, /SCAN_ENABLED: \$\{\{ needs.changes.outputs\[matrix.name\] }}/);
+  assert.match(source, /SCAN_ENABLED: \$\{\{ needs.changes.outputs\[matrix.name] }}/);
   assert.match(source, /name: Require valid scope selection\n +if: env.SCAN_ENABLED != 'true' && env.SCAN_ENABLED != 'false'\n +run: exit 1/);
   for (const name of ['services-java', 'orchestrator']) assert.ok(source.includes(`- name: ${name}`));
   for (const step of ['Checkout', 'Test Qodana CLI release lookup', 'Install Qodana CLI', 'Prepare Qodana arguments', 'Qodana Scan']) {
