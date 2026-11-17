@@ -36,4 +36,6 @@ These flags are tied to the configured GraalVM builder. Validate compiler suppor
 
 Telemetry uses the embedded SDK. JVM agent options do not apply to this executable; profiling relies on the configured native monitoring support and external collection.
 
+Micrometer's processor binder reflectively invokes `OperatingSystemMXBean` CPU methods. The shared `reflect-config.json` registers CPU load methods (including the legacy system-load fallback) and `getProcessCpuTime` for native invocation. A missing registration can let the server start but fail each periodic OTel metric collection with `MissingReflectionRegistrationError`. Rebuild the native image after changing this metadata; restarting the existing image does not apply it.
+
 Edit shared application behavior in the [JVM module](../jvm/README.md). Edit native compilation and packaging here. Run a native build after changing flags, reflection metadata, or dependencies; passing shared JVM tests alone does not validate native-image analysis.

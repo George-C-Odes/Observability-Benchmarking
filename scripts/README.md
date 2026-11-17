@@ -4,6 +4,7 @@ This directory contains small repository-level helper scripts.
 
 ## Current scripts
 
+- `upgrade-apm.py` - installs the reviewed `apm-version.txt` CLI pin in `.venv-apm`, stages and checks a fresh lockfile, and refreshes/validates `my-agent` deployments; see [the APM guide](../my-agent/README.md#upgrade-and-refresh). Use `--dry-run` for an offline plan, or IntelliJ **[upgrade] APM** to run it. Offline checks: `python -m unittest discover -s scripts -p test_upgrade_apm.py`.
 - `image-tags.mjs` - shared framework/runtime image inventory and tag formatter
 - `sync-image-tags.mjs` - generates Compose image tags and build names
 - `sync-node-versions.mjs` - relays paired Node env pins to Docker and CI
