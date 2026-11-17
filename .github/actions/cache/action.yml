@@ -10,16 +10,29 @@ inputs:
   restore-keys:
     description: Optional ordered fallback key prefixes.
     required: false
+  restore-only:
+    description: Restore existing cache entries without attempting to save new ones.
+    required: false
+    default: 'false'
 outputs:
   cache-hit:
     description: Whether an exact cache entry was restored.
-    value: ${{ steps.cache.outputs.cache-hit }}
+    value: ${{ steps.cache.outputs.cache-hit || steps.restore.outputs.cache-hit }}
 runs:
   using: composite
   steps:
     - name: Restore and save cache
+      if: inputs.restore-only != 'true'
       id: cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ inputs.key }}
+        restore-keys: ${{ inputs.restore-keys }}
+    - name: Restore cache only
+      if: inputs.restore-only == 'true'
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.path }}
         key: ${{ inputs.key }}

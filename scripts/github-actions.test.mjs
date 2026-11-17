@@ -77,6 +77,24 @@ test('new wrappers preserve caller-selected execution and cache/upload defaults'
   assert.match(codecov, /disable_search:\n[^\n]*\n {4}required: false\n {4}default: 'true'/);
 });
 
+test('cache wrapper supports restore-only access while preserving default saves and cache-hit output', () => {
+  const source = readYaml(join(githubDir, 'actions', 'cache', 'action.yml'));
+  assert.match(source, /restore-only:\n[^\n]*\n {4}required: false\n {4}default: 'false'/);
+  assert.match(source, /value: \$\{\{ steps.cache.outputs.cache-hit \|\| steps.restore.outputs.cache-hit }}/);
+  const steps = source.split('    - name: Restore cache only\n');
+  assert.equal(steps.length, 2);
+  assert.match(steps[0], /if: inputs.restore-only != 'true'\n +id: cache\n +uses: actions\/cache@[a-f0-9]{40}/);
+  assert.match(steps[1], /if: inputs.restore-only == 'true'\n +id: restore\n +uses: actions\/cache\/restore@[a-f0-9]{40}/);
+  const pins = [...source.matchAll(/uses: actions\/cache(?:\/restore)?@([a-f0-9]{40})/g)].map((match) => match[1]);
+  assert.equal(pins.length, 2);
+  assert.equal(pins[0], pins[1]);
+  for (const step of steps) {
+    for (const input of ['path', 'key', 'restore-keys']) {
+      assert.ok(step.includes(`${input}: \${{ inputs.${input} }}`));
+    }
+  }
+});
+
 test('path-filtered workflows include the shared actions they consume', () => {
   for (const path of yamlFiles(join(githubDir, 'workflows'))) {
     const source = readYaml(path);

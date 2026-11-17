@@ -167,6 +167,18 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
   }
 });
 
+test('Pages restores compiled docs without cache writes on workflow_run and rebuilds on misses', () => {
+  const docs = workflow('pages').split('\n  docs:\n')[1].split('\n  collect:\n')[0];
+  const cache = docs.split('      - name: Restore compiled documentation\n')[1].split('      - name: Set up Ruby\n')[0];
+  assert.match(cache, /uses: \.\/\.github\/actions\/cache/);
+  assert.match(cache, /path: _site\n/);
+  assert.match(cache, /restore-only: \$\{\{ github.event_name == 'workflow_run' }}/);
+  assert.equal((docs.match(/if: steps.site-cache.outputs.cache-hit != 'true'/g) || []).length, 2);
+  assert.match(docs, /bundle exec jekyll build --destination \.\.\/_site/);
+  assert.match(docs, /name: Upload base site/);
+  assert.doesNotMatch(docs, /actions: write|cache-mode: write/);
+});
+
 test('Pages uploads the hidden report collection and retains missing-file failures', () => {
   const pages = workflow('pages');
   const upload = pages.split('      - name: Upload report collection\n')[1]?.split('\n  build:')[0];
