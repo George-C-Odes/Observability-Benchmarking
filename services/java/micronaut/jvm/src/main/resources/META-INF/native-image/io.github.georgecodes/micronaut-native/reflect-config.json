@@ -1,5 +1,14 @@
 [
   {
+    "name": "com.sun.management.OperatingSystemMXBean",
+    "methods": [
+      { "name": "getCpuLoad", "parameterTypes": [] },
+      { "name": "getSystemCpuLoad", "parameterTypes": [] },
+      { "name": "getProcessCpuLoad", "parameterTypes": [] },
+      { "name": "getProcessCpuTime", "parameterTypes": [] }
+    ]
+  },
+  {
     "name": "ch.qos.logback.core.status.NopStatusListener",
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
   },
