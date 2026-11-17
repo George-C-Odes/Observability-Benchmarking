@@ -1,0 +1,81 @@
+name: Checkov Security
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '41 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checkov:
+    name: Checkov (${{ matrix.framework }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [github_actions, dockerfile]
+        include:
+          # Scan workflows explicitly, independent of hidden-directory defaults.
+          - framework: github_actions
+            directory: .github/workflows
+          - framework: dockerfile
+            directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare Checkov report directory
+        # The scanner's fixed non-root UID differs from the hosted runner UID.
+        run: install -d -m 0777 checkov-results
+
+      # Scan source configuration only; no application builds or API key needed.
+      # Compose is not a supported Checkov framework.
+      - name: Checkov GitHub Action
+        uses: ./.github/actions/checkov
+        # Include action Dockerfiles below .github when scanning from the root.
+        env:
+          CKV_IGNORE_HIDDEN_DIRECTORIES: 'false'
+        with:
+          directory: ${{ matrix.directory }}
+          framework: ${{ matrix.framework }}
+
+      # Keep evidence after findings or scanner errors without masking failure.
+      - name: Retain Checkov report
+        if: always() && !cancelled()
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: checkov-${{ matrix.framework }}
+          path: checkov-results/
+          if-no-files-found: error
+          retention-days: 14
+
+      # Fork and Dependabot PR tokens cannot write security events. Their scans
+      # and artifact retention still run, and findings still fail the check.
+      - name: Upload Checkov to Code Scanning
+        if: >-
+          always() && !cancelled() &&
+          github.actor != 'dependabot[bot]' &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+          hashFiles('checkov-results/results_sarif.sarif') != ''
+        uses: ./.github/actions/codeql-action
+        with:
+          phase: upload-sarif
+          sarif_file: checkov-results/results_sarif.sarif
+          category: checkov-${{ matrix.framework }}

@@ -1,0 +1,28 @@
+name: Checkov
+description: Run Checkov directly without exporting scan output into the job environment.
+
+inputs:
+  directory:
+    description: Source directory to scan, relative to the workspace.
+    required: true
+  framework:
+    description: Checkov framework to scan.
+    required: true
+
+runs:
+  using: docker
+  # Invoke the scanner directly. The old upstream action wrapper exported its
+  # entire report as CHECKOV_RESULTS, exceeding Linux environment limits.
+  # Keep reports on disk instead.
+  image: Dockerfile
+  args:
+    - --directory
+    - ${{ inputs.directory }}
+    - --framework
+    - ${{ inputs.framework }}
+    - --config-file
+    - .github/checkov.yml
+    - --output
+    - sarif
+    - --download-external-modules
+    - 'false'

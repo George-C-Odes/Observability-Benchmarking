@@ -28,6 +28,8 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Install pinned report-script validators
         run: npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
+      - name: Install pinned Pages test dependencies
+        run: npm ci --prefix scripts/pages --ignore-scripts --no-audit --no-fund
       - name: Check report-script complexity and control characters
         run: |
           npm run check --prefix scripts/quality
@@ -47,4 +49,4 @@ jobs:
       - name: Audit workflow security
         run: zizmor --offline --min-severity medium .github
       - name: Test workflow and publication contracts
-        run: node --test scripts/github-actions.test.mjs scripts/workflow-policy.test.mjs scripts/workflow-scope.test.mjs scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
+        run: node --test scripts/github-actions.test.mjs scripts/workflow-policy.test.mjs scripts/dockerfile-policy.test.mjs scripts/workflow-scope.test.mjs scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs

@@ -272,6 +272,38 @@ Runs without a token (including fork pull requests) explicitly skip scanning; a 
 Troubleshoot **errors** using the saved logs and runtime versions printed in the preparation step. Findings require
 dependency or source remediation; fixing the workflow alone does not resolve genuine vulnerabilities.
 
+### Checkov Configuration Scanning
+
+The workflow (`.github/workflows/checkov.yml`) scans GitHub Actions workflows and source Dockerfiles in
+independent jobs on pull requests, merge queues, pushes to `main`, manual dispatch, and a weekly schedule.
+It uses a local Docker action with Checkov 3.4.5 pinned by image digest and requires no API key.
+The local action invokes the Checkov executable directly. The older `bridgecrewio/checkov-action`
+v12.1347.0 shell wrapper exports its full output as `CHECKOV_RESULTS`,
+which can exceed Linux environment limits and prevent report uploads and checkout cleanup from starting.
+Reports remain on disk and scan output stays in the log; no report content is exported as a job variable.
+Docker Compose is not scanned: it is not a supported Checkov framework.
+
+- Findings from enabled rules and scanner errors fail the check; there is no soft-fail setting or baseline.
+- The scanner runs as UID/GID 65532 with a temporary home. Its report directory is writable across
+  runner/scanner UIDs in the isolated job workspace; source files retain their checkout permissions.
+- `.github/checkov.yml` contains two user-approved repository-wide rule exclusions. `CKV_DOCKER_2`
+  is excluded because image healthchecks are not required for this benchmark lab; existing optional
+  healthchecks remain in place. `CKV_DOCKER_7` is excluded because Checkov checks literal
+  `FROM ${IMAGE_*}` text without resolving versioned argument defaults.
+- `scripts/dockerfile-policy.test.mjs` enforces image versioning instead: it discovers Dockerfiles under
+  `services`, `utils`, and `.github/actions`, resolves image arguments, and rejects missing versions,
+  `latest`, unresolved arguments, and malformed digests. Workflow Quality runs this test on every PR
+  and merge queue. Reassess the exclusions if deployment requirements or Checkov's argument handling change.
+- `.github/checkov.yml` excludes generated dependency/build directories while keeping source Dockerfiles
+  and `.github` workflows in scope. External module and platform metadata downloads are disabled.
+- Each framework retains its available SARIF report in `checkov-github_actions` or `checkov-dockerfile`
+  artifacts for 14 days, including after a scan failure. A missing report also fails the check.
+- Reports upload to GitHub Code Scanning under separate framework categories. Fork and Dependabot PRs
+  still scan and retain artifacts, but skip that upload because their tokens cannot write security events.
+
+Review findings in the scan log, artifacts, or Security tab. A passing workflow requires completion of
+both framework jobs; configure both checks as required in branch protection if they should block merges.
+
 ## Runtime Security
 
 ### Java Security Manager

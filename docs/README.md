@@ -348,7 +348,9 @@ accommodate them. GitHub-generated error pages are also outside this policy.
 
 After changing the landing template, run `node scripts/render-readmes.mjs` from
 the repository root, then build Jekyll as described above. The source policy
-regressions run with `node --test scripts/pages/docs-security.test.mjs` (also
+regressions use the locked HTML parser: first run
+`npm ci --prefix scripts/pages --ignore-scripts --no-audit --no-fund`, then
+`node --test scripts/pages/docs-security.test.mjs` (also
 included in Workflow Quality's existing test glob). To check built output too,
 set `DOCS_SITE_DIR` to the Jekyll output directory before running that command.
 
