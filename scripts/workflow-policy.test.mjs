@@ -52,6 +52,8 @@ test('Checkov scans source configuration without secrets and preserves failure e
   }
   assert.match(source, /fail-fast: false/);
   assert.match(source, /uses: \.\/\.github\/actions\/checkov/);
+  const scan = source.split('      - name: Checkov GitHub Action\n')[1].split('      - name: Retain Checkov report\n')[0];
+  assert.match(scan, /env:\n +CKV_IGNORE_HIDDEN_DIRECTORIES: 'false'/);
   const action = readFileSync(join(root, '.github/actions/checkov/action.yml'), 'utf8');
   assert.match(action, /image: Dockerfile/);
   const dockerfile = readFileSync(join(root, '.github/actions/checkov/Dockerfile'), 'utf8');

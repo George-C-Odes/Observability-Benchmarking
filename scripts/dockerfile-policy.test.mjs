@@ -40,9 +40,11 @@ function assertVersionedDefaults(source) {
   const defaults = new Map();
   const stages = new Set();
   let global = true;
-  for (const line of source.split(/\r?\n/)) {
-    const arg = /^ARG ([A-Z0-9_]+)=(\S+)/.exec(line);
-    if (global && arg) defaults.set(arg[1], arg[2].replace(/^["']|["']$/g, ''));
+  for (const rawLine of source.split(/\r?\n/)) {
+    const line = rawLine.trimStart();
+    const arg = /^ARG\s+([A-Z0-9_]+)=(\S+)/i.exec(line);
+    // Docker expands each default against the arguments declared before it.
+    if (global && arg) defaults.set(arg[1], resolveImage(arg[2].replace(/^["']|["']$/g, ''), defaults));
     const from = /^FROM\s+(?:--platform=\S+\s+)?(\S+)(?:\s+AS\s+(\S+))?/i.exec(line);
     if (!from) continue;
     global = false;
@@ -77,4 +79,21 @@ test('only the approved healthcheck and literal image-tag rules are excluded cen
   assert.ok(exclusions, 'Central Checkov exclusions must be explicit');
   assert.deepEqual([...exclusions.matchAll(/- (\S+)/g)].map((match) => match[1]), ['CKV_DOCKER_2', 'CKV_DOCKER_7']);
   for (const file of files) assert.doesNotMatch(read(file), /checkov:skip=CKV_DOCKER_[27]\b/, file);
+});
+
+test('image arguments capture defaults at declaration before later reassignments', () => {
+  assert.throws(() => assertVersionedDefaults(
+    'ARG TAG=latest\nARG BASE=alpine:${TAG}\nARG TAG=3.21\nFROM ${BASE}',
+  ), /Mutable latest image: alpine:latest/);
+  assertVersionedDefaults('ARG TAG=3.21\nARG BASE=alpine:${TAG}\nARG TAG=latest\nFROM ${BASE}');
+  assertVersionedDefaults('ARG TAG=3.21\nARG TAG=${TAG}.1\nFROM alpine:${TAG}');
+});
+
+test('indented instructions validate every stage and resolve versioned arguments', () => {
+  for (const indent of [' ', '\t']) {
+    assert.throws(() => assertVersionedDefaults(
+      `FROM alpine:3.21 AS build\n${indent}FROM alpine:latest`,
+    ), /Mutable latest image: alpine:latest/);
+    assertVersionedDefaults(`${indent}arg TAG=3.21\n${indent}ARG BASE=alpine:\${TAG}\n${indent}from \${BASE} AS build\n${indent}FROM build`);
+  }
 });

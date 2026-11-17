@@ -49,6 +49,9 @@ jobs:
       # Compose is not a supported Checkov framework.
       - name: Checkov GitHub Action
         uses: ./.github/actions/checkov
+        # Include action Dockerfiles below .github when scanning from the root.
+        env:
+          CKV_IGNORE_HIDDEN_DIRECTORIES: 'false'
         with:
           directory: ${{ matrix.directory }}
           framework: ${{ matrix.framework }}
