@@ -28,6 +28,8 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Install pinned report-script validators
         run: npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
+      - name: Install pinned Pages test dependencies
+        run: npm ci --prefix scripts/pages --ignore-scripts --no-audit --no-fund
       - name: Check report-script complexity and control characters
         run: |
           npm run check --prefix scripts/quality
