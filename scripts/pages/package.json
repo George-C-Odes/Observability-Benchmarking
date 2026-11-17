@@ -1,0 +1,11 @@
+{
+  "name": "obbench-pages-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test *.test.mjs"
+  },
+  "devDependencies": {
+    "parse5": "8.1.1"
+  }
+}
