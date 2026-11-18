@@ -1032,7 +1032,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Platform**      | Tooling            | Docker CLI                 | 29.10.0                  | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | {{MAVEN_VERSION}}                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.2.2                  | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 12.2.3                  | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.17.5                  | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | {{OXLINT_VERSION}}                  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | {{OXFMT_VERSION}}                  | Next.js dashboard formatting                                         |
