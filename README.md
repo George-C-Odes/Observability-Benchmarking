@@ -108,7 +108,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0     | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1     | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1      | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 8.0.0      | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 8.0.1      | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+        | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2         | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.10.0    | Image build and lifecycle management                                 |
