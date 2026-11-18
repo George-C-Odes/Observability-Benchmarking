@@ -10,7 +10,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.40.1.2-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-5.2.25-1A1A2E.svg)](https://micronaut.io/)
-[![Helidon](https://img.shields.io/badge/Helidon-4.5.6-008F6B.svg)](https://helidon.io/)
+[![Helidon](https://img.shields.io/badge/Helidon-4.5.7-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.5-FF7043.svg)](https://sparkjava.com/)
 [![Javalin](https://img.shields.io/badge/Javalin-7.2.4-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
@@ -87,8 +87,8 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Spring Boot                | 4.1.2      | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.2   | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.2.25     | Compile-time optimized JVM microservices framework                   |
-| **Backend**       | Framework          | Helidon SE                 | 4.5.6      | Lightweight Java microservices (programmatic routing)                |
-| **Backend**       | Framework          | Helidon MP                 | 4.5.6      | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
+| **Backend**       | Framework          | Helidon SE                 | 4.5.7      | Lightweight Java microservices (programmatic routing)                |
+| **Backend**       | Framework          | Helidon MP                 | 4.5.7      | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.5      | Minimal HTTP server (virtual-thread friendly)                        |
 | **Backend**       | Framework          | Javalin                    | 7.2.4      | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2      | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
@@ -187,7 +187,7 @@ The JVM target is Java 25; its patch is determined by the pinned builder image (
 - **Micronaut**: 5.2.25
   - JVM build (all three thread modes)
   - Native (all three thread modes)
-- **Helidon**: 4.5.6
+- **Helidon**: 4.5.7
   - SE JVM build
     - Virtual threads
   - SE Native build
@@ -513,7 +513,7 @@ The numbers below are a curated summary of a representative run.
 - **Spring Boot**: 4.1.2 (3.5.16 also supported)
 - **Quarkus**: 3.40.1.2
 - **Micronaut**: 5.2.25
-- **Helidon**: 4.5.6
+- **Helidon**: 4.5.7
 - **Spark**: 3.0.5
 - **Javalin**: 7.2.4
 - **Dropwizard**: 5.0.2
