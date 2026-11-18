@@ -17,7 +17,7 @@ describe('runtimeConfig', () => {
       __OBS_DASH_CONFIG__: {
         systemInfo: {
           nodejs: 'v26.13.1',
-          npm: '12.2.2',
+          npm: '12.2.3',
           nextjs: packageJson.dependencies.next,
           react: packageJson.dependencies.react,
           mui: packageJson.dependencies['@mui/material'],
@@ -31,7 +31,7 @@ describe('runtimeConfig', () => {
     expect(getRuntimeConfig()).toEqual({
       systemInfo: {
         nodejs: 'v26.13.1',
-        npm: '12.2.2',
+        npm: '12.2.3',
         nextjs: packageJson.dependencies.next,
         react: packageJson.dependencies.react,
         mui: packageJson.dependencies['@mui/material'],
