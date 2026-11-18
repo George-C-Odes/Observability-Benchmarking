@@ -140,9 +140,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/jvm/Dockerfile `
-  -t helidon-se-jvm:4.5.6-java25 `
-  --build-arg HELIDON_VERSION=4.5.6 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.5.6-java25 `
+  -t helidon-se-jvm:4.5.7-java25 `
+  --build-arg HELIDON_VERSION=4.5.7 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-jvm:4.5.7-java25 `
   --load `
   services/java
 ```
@@ -150,9 +150,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/se/native/Dockerfile `
-  -t helidon-se-native:4.5.6-java25 `
-  --build-arg HELIDON_VERSION=4.5.6 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.5.6-java25 `
+  -t helidon-se-native:4.5.7-java25 `
+  --build-arg HELIDON_VERSION=4.5.7 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-se-native:4.5.7-java25 `
   --load `
   services/java
 ```
@@ -160,9 +160,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/jvm/Dockerfile `
-  -t helidon-mp-jvm:4.5.6-java25 `
-  --build-arg HELIDON_VERSION=4.5.6 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.6-java25 `
+  -t helidon-mp-jvm:4.5.7-java25 `
+  --build-arg HELIDON_VERSION=4.5.7 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-jvm:4.5.7-java25 `
   --load `
   services/java
 ```
@@ -170,9 +170,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/helidon/mp/native/Dockerfile `
-  -t helidon-mp-native:4.5.6-java25 `
-  --build-arg HELIDON_VERSION=4.5.6 `
-  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.6-java25 `
+  -t helidon-mp-native:4.5.7-java25 `
+  --build-arg HELIDON_VERSION=4.5.7 `
+  --build-arg BUILDKIT_BUILD_NAME=helidon-mp-native:4.5.7-java25 `
   --load `
   services/java
 ```

@@ -9,7 +9,7 @@ FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE
 ARG JAVA_RELEASE
 ENV JAVA_RELEASE=${JAVA_RELEASE}
 ENV JAVA_TOOL_OPTIONS="--sun-misc-unsafe-memory-access=allow"
-ARG HELIDON_VERSION=4.5.6
+ARG HELIDON_VERSION=4.5.7
 ENV HELIDON_VERSION=${HELIDON_VERSION}
 ENV LANGUAGE='en_US:en'
 ENV HOME=/home/maven
