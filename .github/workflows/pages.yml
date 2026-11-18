@@ -78,7 +78,7 @@ jobs:
           restore-only: ${{ github.event_name == 'workflow_run' }}
       - name: Set up Ruby
         if: steps.site-cache.outputs.cache-hit != 'true'
-        uses: ruby/setup-ruby@4e97ecde5048e1e0816923020652678063ffbf65 # v1.339.0
+        uses: ruby/setup-ruby@20eb24b0d509e2b9ed9b6d42ddfeb992915e0564 # v1.341.0
         with:
           ruby-version: '4.0.9'
           bundler-cache: true
