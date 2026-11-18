@@ -572,8 +572,8 @@ Node.js: 22.12+
 Next.js: 16.4.6
 React: 19.3.1
 TypeScript: 7.0.2
-Vitest: 5.1.0
-@vitest/coverage-v8: 5.1.0
+Vitest: 5.1.1
+@vitest/coverage-v8: 5.1.1
 Oxlint: 1.94.0
 Oxfmt: 0.79.0
 ```
@@ -1468,7 +1468,7 @@ GitHub settings. Repository settings are separate from these workflow files.
 ### Next.js Dashboard — Vitest + v8
 
 The Next.js dashboard (`utils/nextjs-dash`) uses
-[Vitest 5.1.0](https://vitest.dev/) with the matching
+[Vitest 5.1.1](https://vitest.dev/) with the matching
 [@vitest/coverage-v8](https://vitest.dev/guide/coverage) provider for code
 coverage. The project's existing dual-environment split is preserved.
 All test files live under `__tests__/` (mirroring the source tree), keeping
