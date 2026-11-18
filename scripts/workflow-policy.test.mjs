@@ -92,7 +92,8 @@ test('coverage is the single Go/Django test owner, including weekly scans', () =
   assert.match(workflow('go_coverage'), /go test \.\/\.\.\. -race -count=1/);
   assert.doesNotMatch(workflow('django_python_quality'), /manage.py test|needs: common/);
   assert.match(workflow('django_python_coverage'), /manage.py test obbench_django_common.tests/);
-  for (const name of ['go_coverage', 'django_python_coverage']) assert.match(workflow(name), /^ {2}schedule:/m);
+  assert.match(workflow('sonar'), /^ {2}schedule:/m);
+  for (const name of ['go_coverage', 'django_python_coverage']) assert.ok(workflow('sonar').includes(`uses: ./.github/workflows/${name}.yml`));
   assert.match(workflow('django_python_coverage'), /include-hidden-files: 'true'/);
 });
 

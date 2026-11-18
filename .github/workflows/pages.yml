@@ -14,7 +14,7 @@ on:
   # Only trusted main code executes; same-repository artifacts are data.
   # Reassess this scoped exception if checkout refs or artifact execution change.
   workflow_run: # zizmor: ignore[dangerous-triggers] trusted-main checkout, read-only collection, isolated deploy job
-    workflows: [Qodana, Next.js Dashboard Quality, Django Python Quality, Go Quality, CodeQL]
+    workflows: [Qodana, SonarQube Cloud, Django Python Quality, Go Quality, CodeQL]
     types: [completed]
   workflow_dispatch:
 

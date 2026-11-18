@@ -73,7 +73,7 @@ test('exact authorized URL, headers, redirect rejection, and bounded transient r
   assert.equal(calls.length, 3);
   assert.deepEqual(waits, [1000, 2000]);
   for (const { url, options } of calls) {
-    assert.equal(url, 'https://api.github.com/repos/owner/repo.name/actions/workflows/nextjs_dash_quality.yml/runs?per_page=100&page=1&status=completed');
+    assert.equal(url, 'https://api.github.com/repos/owner/repo.name/actions/workflows/sonar.yml/runs?per_page=100&page=1&status=completed');
     assert.equal(options.method, 'GET');
     assert.equal(options.redirect, 'error');
     assert.equal(options.headers.Authorization, 'Bearer synthetic-token');

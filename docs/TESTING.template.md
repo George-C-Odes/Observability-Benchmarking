@@ -1355,6 +1355,22 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 
 ## Code Coverage
 
+The **SonarQube Cloud** coordinator (`.github/workflows/sonar.yml`) runs the existing
+Java, Go, Django and dashboard coverage jobs together, once per variant, on every
+PR, main push, merge group and weekly/manual run. All module gates and Codecov
+uploads remain enforced. One dependent Sonar scan imports the complete reports
+and Java build outputs from that same run and revision; missing inputs fail the
+scan preparation. Fork and Dependabot PRs run tests without the secret-backed
+scan. Merge groups run coverage gates without publishing branch analysis.
+
+Set the GitHub `SONAR_TOKEN` secret and disable **Sonar > Administration > Analysis
+Method > Automatic Analysis** before enabling CI analysis. The scanner waits for
+Sonar's quality gate. Coverage appears only after a successful report import;
+check the first hosted scan's revision and importer logs. Source without coverage
+reports remains in scope. See [the automation guide](../.github/AUTOMATION.md) for
+reusable workflow check names and [the scripts guide](../scripts/README.md#sonar-ci-coverage-and-shared-configuration)
+for report validation and shared configuration.
+
 ### Java — JaCoCo
 
 All 12 Java/Maven JVM modules are instrumented with the

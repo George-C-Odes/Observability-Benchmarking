@@ -1,51 +1,14 @@
 name: Django Python Coverage
 
 on:
-  merge_group:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
   workflow_dispatch:
-  schedule:
-    - cron: '30 6 * * 1'
-  pull_request:
-    paths:
-      - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
-      - 'services/python/**'
-      - '.github/workflows/django_python_coverage.yml'
-      - '.github/actions/setup-python/**'
-      - '.github/actions/install-python-dependencies/**'
-      - '.github/requirements/**'
-      - '.github/actions/upload-artifact/**'
-      - '.github/actions/codecov-upload/**'
-      - 'scripts/coverage_gate.py'
-      - 'scripts/coverage-thresholds.json'
-      - 'scripts/test_coverage_gate.py'
-      - 'scripts/coverage_summary.py'
-      - 'scripts/test_coverage_summary.py'
-      - 'codecov.yml'
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
-      - 'services/python/**'
-      - '.github/workflows/django_python_coverage.yml'
-      - '.github/actions/setup-python/**'
-      - '.github/actions/install-python-dependencies/**'
-      - '.github/requirements/**'
-      - '.github/actions/upload-artifact/**'
-      - '.github/actions/codecov-upload/**'
-      - 'scripts/coverage_gate.py'
-      - 'scripts/coverage-thresholds.json'
-      - 'scripts/test_coverage_gate.py'
-      - 'scripts/coverage_summary.py'
-      - 'scripts/test_coverage_summary.py'
-      - 'codecov.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: django_python_coverage-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -177,3 +140,18 @@ jobs:
           name: ${{ matrix.codecov_flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Stage Sonar coverage inputs
+        if: steps.scope.outputs.run == 'true'
+        env:
+          MODULE_NAME: ${{ matrix.summary_name }}
+        run: node "$GITHUB_WORKSPACE/scripts/sonar-coverage.mjs" stage "$MODULE_NAME"
+
+      - name: Upload Sonar coverage inputs
+        if: steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: sonar-inputs-${{ matrix.summary_name }}
+          path: .sonar/inputs/
+          include-hidden-files: 'true'
+          retention-days: 3
+          if-no-files-found: error
