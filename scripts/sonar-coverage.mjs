@@ -12,7 +12,7 @@ const entries = Object.entries(inventory).filter(([name]) => name !== 'django-co
 export function workspacePath(workspace, relative) {
   if (typeof relative !== 'string' || relative.includes('\\') || path.posix.isAbsolute(relative)
     || relative.split('/').some((part) => !part || part === '.' || part === '..' || part.includes(':')
-      || [...part].some((char) => char.charCodeAt(0) < 32))) throw new Error('Invalid Sonar input path');
+      || [...part].some((char) => char.codePointAt(0) < 32))) throw new Error('Invalid Sonar input path');
   let current = workspace;
   if (lstatSync(current).isSymbolicLink()) throw new Error('Redirected Sonar workspace');
   for (const part of relative.split('/')) {
