@@ -152,17 +152,17 @@ test('dashboard setup rejects invalid npm pins before invoking npm', (t) => {
       env: { ...process.env, TEST_BIN: shellPath(bin), NPM_LOG: shellPath(log), PACKAGE_MANAGER: packageManager, NODE_FAILURE: String(nodeFailure) },
     });
   };
-  const valid = run('npm@12.2.2');
+  const valid = run('npm@12.2.3');
   assert.equal(valid.error, undefined);
   assert.equal(valid.status, 0, valid.stderr);
-  assert.equal(readFileSync(log, 'utf8'), 'install\n--global\n--ignore-scripts\nnpm@12.2.2\n');
-  for (const invalid of ['', 'npm@latest', 'npm@12.2.2\ninvalid', '--registry=untrusted', 'npm@12.2.2; touch marker', '$(touch marker)']) {
+  assert.equal(readFileSync(log, 'utf8'), 'install\n--global\n--ignore-scripts\nnpm@12.2.3\n');
+  for (const invalid of ['', 'npm@latest', 'npm@12.2.3\ninvalid', '--registry=untrusted', 'npm@12.2.3; touch marker', '$(touch marker)']) {
     const result = run(invalid);
     assert.equal(result.error, undefined);
     assert.notEqual(result.status, 0, invalid);
     assert.equal(readFileSync(log, 'utf8'), '', `npm must not run for ${JSON.stringify(invalid)}`);
   }
-  assert.notEqual(run('npm@12.2.2', true).status, 0);
+  assert.notEqual(run('npm@12.2.3', true).status, 0);
   assert.equal(readFileSync(log, 'utf8'), '');
   assert.equal(existsSync(join(root, 'marker')), false);
 });
