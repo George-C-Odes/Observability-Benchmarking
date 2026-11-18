@@ -2,7 +2,7 @@
   "name": "nextjs-dash",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "npm@12.2.2",
+  "packageManager": "npm@12.2.3",
   "scripts": {
     "dev": "next dev -p 3001",
     "prebuild": "npm run verify",

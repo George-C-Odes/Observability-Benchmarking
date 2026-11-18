@@ -1020,19 +1020,19 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Visualization      | Grafana                    | 13.3.1     | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.10     | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1      | Distributed tracing backend                                          |
-| **Observability** | Metrics            | Mimir                      | 3.2.5      | Long-term metrics storage                                            |
+| **Observability** | Metrics            | Mimir                      | 3.2.6      | Long-term metrics storage                                            |
 | **Observability** | Profiling          | Pyroscope                  | 2.4.3      | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2     | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0     | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1     | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1      | High-performance in-memory caching (Java)                            |
-| **Performance**   | Cache              | cachetools                 | 8.0.0      | In-memory caching (Python)                                           |
+| **Performance**   | Cache              | cachetools                 | 8.0.1      | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+        | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2         | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.10.0    | Image build and lifecycle management                                 |
 | **Build**         | Build Tool         | Maven                      | 3.10.0     | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest     | Python dependency pinning and resolution                             |
-| **Build**         | Package Manager    | npm                        | 12.2.2     | Frontend dependency management                                       |
+| **Build**         | Package Manager    | npm                        | 12.2.3     | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.17.5     | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.94.0     | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.79.0     | Next.js dashboard formatting                                         |
