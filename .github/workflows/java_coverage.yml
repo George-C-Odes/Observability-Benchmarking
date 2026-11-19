@@ -1,53 +1,14 @@
 name: Java Coverage
 
 on:
-  merge_group:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
-      - 'services/java/**'
-      - 'utils/orchestrator/**'
-      - '.github/workflows/java_coverage.yml'
-      - 'scripts/sync_coverage_thresholds.py'
-      - 'scripts/java-modules.mjs'
-      - 'scripts/test_local_coverage.py'
-      - 'scripts/coverage_gate.py'
-      - 'scripts/coverage-thresholds.json'
-      - 'scripts/test_coverage_gate.py'
-      - 'scripts/coverage_summary.py'
-      - 'scripts/test_coverage_summary.py'
-      - '.github/actions/setup-java/**'
-      - '.github/actions/setup-node/**'
-      - '.github/actions/upload-artifact/**'
-      - '.github/actions/codecov-upload/**'
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
-      - 'services/java/**'
-      - 'utils/orchestrator/**'
-      - '.github/workflows/java_coverage.yml'
-      - 'scripts/sync_coverage_thresholds.py'
-      - 'scripts/java-modules.mjs'
-      - 'scripts/test_local_coverage.py'
-      - 'scripts/coverage_gate.py'
-      - 'scripts/coverage-thresholds.json'
-      - 'scripts/test_coverage_gate.py'
-      - 'scripts/coverage_summary.py'
-      - 'scripts/test_coverage_summary.py'
-      - '.github/actions/setup-java/**'
-      - '.github/actions/setup-node/**'
-      - '.github/actions/upload-artifact/**'
-      - '.github/actions/codecov-upload/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: java_coverage-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -166,3 +127,24 @@ jobs:
           flags: java-${{ matrix.name }}
           name: java-${{ matrix.name }}
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Collect Java analysis libraries
+        if: steps.scope.outputs.run == 'true'
+        working-directory: ${{ matrix.module_dir }}
+        run: mvn -B -q org.apache.maven.plugins:maven-dependency-plugin:3.11.0:copy-dependencies -DoutputDirectory=target/sonar-libraries
+
+      - name: Stage Sonar coverage inputs
+        if: steps.scope.outputs.run == 'true'
+        env:
+          MODULE_NAME: ${{ matrix.name }}
+        run: node "$GITHUB_WORKSPACE/scripts/sonar-coverage.mjs" stage "$MODULE_NAME"
+
+      - name: Upload Sonar coverage inputs
+        if: steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: sonar-inputs-${{ matrix.name }}
+          path: .sonar/inputs/
+          include-hidden-files: 'true'
+          retention-days: 3
+          if-no-files-found: error

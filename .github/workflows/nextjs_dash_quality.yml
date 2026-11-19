@@ -1,62 +1,13 @@
 name: Next.js Dashboard Quality
 
 on:
-  merge_group:
-  workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
-      - 'utils/nextjs-dash/**'
-      - 'scripts/coverage_gate.py'
-      - 'scripts/coverage-thresholds.json'
-      - 'scripts/test_coverage_gate.py'
-      - 'scripts/coverage_summary.py'
-      - 'scripts/test_coverage_summary.py'
-      - '.github/actions/codecov-upload/**'
-      - 'scripts/pages/generate-nextjs-quality-report.mjs'
-      - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
-      - 'scripts/pages/fixtures/nextjs-quality/**'
-      - 'scripts/pages/report-helpers.mjs'
-      - 'scripts/capture-check.mjs'
-      - 'scripts/capture-check.test.mjs'
-      - '.github/workflows/nextjs_dash_quality.yml'
-      - '.github/actions/setup-node/**'
-      - '.github/actions/setup-nextjs/**'
-      - '.github/actions/upload-artifact/**'
-      - '.github/actions/cache/**'
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
-      - 'utils/nextjs-dash/**'
-      - 'scripts/coverage_gate.py'
-      - 'scripts/coverage-thresholds.json'
-      - 'scripts/test_coverage_gate.py'
-      - 'scripts/coverage_summary.py'
-      - 'scripts/test_coverage_summary.py'
-      - '.github/actions/codecov-upload/**'
-      - 'scripts/pages/generate-nextjs-quality-report.mjs'
-      - 'scripts/pages/generate-nextjs-quality-report.test.mjs'
-      - 'scripts/pages/fixtures/nextjs-quality/**'
-      - 'scripts/pages/report-helpers.mjs'
-      - 'scripts/capture-check.mjs'
-      - 'scripts/capture-check.test.mjs'
-      - '.github/workflows/nextjs_dash_quality.yml'
-      - '.github/actions/setup-node/**'
-      - '.github/actions/setup-nextjs/**'
-      - '.github/actions/upload-artifact/**'
-      - '.github/actions/cache/**'
-  schedule:
-    # Weekly scan — Monday at 06:15 UTC (staggered after Go Quality at 06:00).
-    - cron: '15 6 * * 1'
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: nextjs_dash_quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -201,6 +152,20 @@ jobs:
           flags: nextjs-dash-dom
           name: nextjs-dash-dom
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Stage Sonar coverage inputs
+        if: steps.scope.outputs.run == 'true'
+        run: node ../../scripts/sonar-coverage.mjs stage nextjs-dash
+
+      - name: Upload Sonar coverage inputs
+        if: steps.scope.outputs.run == 'true'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: sonar-inputs-nextjs-dash
+          path: .sonar/inputs/
+          include-hidden-files: 'true'
+          retention-days: 3
+          if-no-files-found: error
 
       - name: Restore Next.js compiler cache
         if: steps.scope.outputs.run == 'true'

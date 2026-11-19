@@ -14,6 +14,14 @@ explicit rather than introducing a universal workflow with conditional behavior.
   ShellCheck 0.11.0, hash-locked zizmor 1.32.0, workflow contracts and Pages/API
   boundary tests. Its `Workflow policy` check can be required without path skips.
 - **Framework Version Consistency** checks generated versions and coverage policy.
+- **SonarQube Cloud** coordinates reusable Java, Go, Django and dashboard jobs on
+  every PR, main push, merge group and weekly/manual run. Each module tests once,
+  retains its hard gate and Codecov upload, and publishes revision-stamped Sonar
+  inputs. One dependent scan imports all coverage plus Java bytecode/libraries.
+  No coverage from an older run is reused. Merge groups run coverage gates only;
+  forks and Dependabot run tests without the secret-backed scan. `SONAR_TOKEN`
+  is exposed only to the scanner step. Disable Sonar Automatic Analysis before
+  enabling this workflow; CI waits for the Sonar quality gate.
 - **Go Coverage / Django Python Coverage** own the only race-enabled Go and Django
   test executions per variant, including weekly runs. Quality workflows own lint,
   format, static analysis and builds. Django system checks run inside its default
@@ -43,13 +51,18 @@ explicit rather than introducing a universal workflow with conditional behavior.
 PR concurrency cancels superseded runs. Main scans, Renovate synchronization and
 Pages publishing finish their active run. Language matrices retain `fail-fast: false`.
 
-Java/Go/Django coverage, Go/Django/dashboard quality and PMD use the shared
+Go/Django quality and PMD use the shared
 `workflow-scope` action inside merge-group jobs. It reuses each workflow's existing
 positive `push.paths` globs; unsupported rules or unavailable Git diffs run all checks.
 Unrelated groups retain job names while skipping tool installation, execution and
 uploads. PR path filtering remains unchanged for these workflows. CodeQL retains all
-language categories on every triggered run. Dashboard Coverage skips its evidence
-assertions only when its producer explicitly reports an unaffected scope.
+language categories on every triggered run. Coverage workflows are reusable
+producers without path filters, so their retained scope action conservatively
+runs all checks, including on documentation-only merge groups. The dashboard's
+Pages report is now collected from the SonarQube Cloud coordinator run.
+To refresh just that report, choose **Actions > SonarQube Cloud > Run workflow**
+and select **Run dashboard quality and refresh its Pages report only**. Select
+`main` for the live report or a repository branch for the staging report.
 
 ### Django jobs
 
@@ -58,8 +71,10 @@ coverage jobs, and Qodana. The retained `Django common checks` job now checks al
 three source trees using their own Ruff configurations and installs Ruff once.
 The former `Django module checks (django-platform)` and
 `Django module checks (django-reactive)` jobs are retired; remove those names from
-any custom required-check settings. Coverage check names and Qodana artifact names
-are unchanged.
+any custom required-check settings. Qodana artifact names remain unchanged.
+Reusable workflow checks gain caller prefixes (`java /`, `go /`, `python /`,
+`dashboard /`); update custom required-check rules to the names displayed by the
+first coordinator run. `Sonar analysis and coverage` is the new dependent scan check.
 
 Coverage installs no Ruff, and the quality job installs no Django runtime.
 Framework Version Consistency owns the dependency-lock freshness check; the common

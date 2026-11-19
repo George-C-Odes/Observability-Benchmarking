@@ -273,12 +273,32 @@ python scripts/qodana-python-report.py $results
 Run the regression tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
 Symlink tests are skipped on systems that do not permit creating symlinks.
 
-### Sonar automatic-analysis configuration
+### Sonar CI coverage and shared configuration
 
-The repository contains an IDE SonarQube Cloud binding in `.sonarlint/connectedMode.json` and an automatic-analysis
-configuration in `.sonarcloud.properties`, but no Sonar scanner workflow. Sonar documents both
-`sonar.python.version` and `sonar.sourceEncoding` as supported automatic-analysis properties. Confirm
-**Administration > Analysis Method** in Sonar before switching methods; Qodana configuration does not control Sonar.
+`.github/workflows/sonar.yml` runs the reusable Java, Go, Django and dashboard coverage workflows on
+every PR, main push, merge group and weekly run. Manual runs can also select only the dashboard to
+refresh its Pages report. Existing hard coverage gates and
+Codecov uploads remain in their module jobs. The coordinator downloads only `sonar-inputs-*` artifacts
+from its own run, then runs one repository-wide Sonar analysis after every producer succeeds.
+Merge groups run the coverage gates only; fork and Dependabot PRs also run tests without a token-backed scan.
+
+`sonar-coverage.mjs stage MODULE` copies reports, Java classes/test classes and dependency JARs to a
+fixed `.sonar/inputs` tree, recording `GITHUB_SHA` for each module. Go and LCOV paths become repository-relative.
+`prepare` requires every policy module's reports and matching revision, plus Java bytecode/libraries,
+before writing `.sonar/analysis.properties`. It merges the authored `sonar-project.properties` with
+the shared `.sonarcloud.properties` scope, encoding and synchronized Python version. Java test classification
+is added explicitly for the CLI scanner. Production source remains in scope, including untested files.
+The scan job runs the coverage helper's Node tests from the repository root and imports their LCOV
+alongside the dashboard's two LCOV reports.
+Regression checks: `node --test scripts/sonar-coverage.test.mjs` and `npm run check --prefix scripts/quality`.
+
+Before the first CI scan, configure the repository `SONAR_TOKEN` secret and turn off **Administration >
+Analysis Method > Automatic Analysis** in SonarQube Cloud. Automatic analysis cannot import coverage and
+conflicts with CI analysis. The scanner waits for the quality gate; a failed gate fails the scan job.
+Confirm the analyzed revision and all four coverage importers in the first hosted run; local fixtures
+do not establish that Sonar has accepted coverage. Qodana configuration does not control Sonar.
+
+The following background describes the original automatic-analysis settings retained in the shared file:
 
 - `PYTHON_VERSION` in the colon-style `compose/.env` remains authoritative. The existing framework synchronizer
   relays a stable X.Y.Z runtime pin to Sonar's accepted **X.Y** language version (for example, 3.13.18 becomes 3.13).

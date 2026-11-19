@@ -92,7 +92,8 @@ test('coverage is the single Go/Django test owner, including weekly scans', () =
   assert.match(workflow('go_coverage'), /go test \.\/\.\.\. -race -count=1/);
   assert.doesNotMatch(workflow('django_python_quality'), /manage.py test|needs: common/);
   assert.match(workflow('django_python_coverage'), /manage.py test obbench_django_common.tests/);
-  for (const name of ['go_coverage', 'django_python_coverage']) assert.match(workflow(name), /^ {2}schedule:/m);
+  assert.match(workflow('sonar'), /^ {2}schedule:/m);
+  for (const name of ['go_coverage', 'django_python_coverage']) assert.ok(workflow('sonar').includes(`uses: ./.github/workflows/${name}.yml`));
   assert.match(workflow('django_python_coverage'), /include-hidden-files: 'true'/);
 });
 
@@ -165,6 +166,22 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
       assert.ok(source.includes(report.artifact) || (producer.id === 'qodana' && source.includes('qodana-report-${{ matrix.name }}')), report.artifact);
     }
   }
+});
+
+test('manual dashboard quality runs as a Pages report producer without running a Sonar scan', () => {
+  const coordinator = workflow('sonar');
+  const dashboard = workflow('nextjs_dash_quality');
+  const producer = catalog.find(({ id }) => id === 'nextjs');
+  assert.match(coordinator, /workflow_dispatch:\n +inputs:\n +dashboard_only:\n +description: .+\n +type: boolean\n +default: false/);
+  for (const job of ['java', 'go', 'python']) {
+    assert.match(coordinator, new RegExp(String.raw`^  ${job}:\n {4}if: \$\{\{ !inputs\.dashboard_only }}$`, 'm'));
+  }
+  assert.match(coordinator, / {2}dashboard:\n(?: {4}#.*\n)* {4}uses: \.\/\.github\/workflows\/nextjs_dash_quality.yml/);
+  assert.match(coordinator, / {2}scan:\n[^]*? {4}if: >-\n {6}!inputs\.dashboard_only &&/);
+  assert.doesNotMatch(dashboard, /^ {2}workflow_dispatch:/m);
+  assert.equal(producer.workflow, 'sonar.yml');
+  assert.ok(workflow('pages').includes(producer.name));
+  assert.ok(dashboard.includes(`name: ${producer.reports[0].artifact}`));
 });
 
 test('Pages restores compiled docs without cache writes on workflow_run and rebuilds on misses', () => {
