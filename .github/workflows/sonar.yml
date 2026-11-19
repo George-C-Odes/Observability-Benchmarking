@@ -74,6 +74,13 @@ jobs:
           pattern: sonar-inputs-*
           path: .sonar/inputs/
           merge-multiple: 'true'
+      - name: Measure Sonar coverage helper tests
+        run: |
+          node --test --experimental-test-coverage \
+            --test-coverage-include=scripts/sonar-coverage.mjs \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=.sonar/sonar-helper.lcov.info \
+            scripts/sonar-coverage.test.mjs
       - name: Require complete coverage inputs and prepare scanner configuration
         run: node scripts/sonar-coverage.mjs prepare
       - name: Analyze repository and import coverage

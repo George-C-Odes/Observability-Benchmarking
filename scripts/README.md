@@ -288,6 +288,8 @@ fixed `.sonar/inputs` tree, recording `GITHUB_SHA` for each module. Go and LCOV 
 before writing `.sonar/analysis.properties`. It merges the authored `sonar-project.properties` with
 the shared `.sonarcloud.properties` scope, encoding and synchronized Python version. Java test classification
 is added explicitly for the CLI scanner. Production source remains in scope, including untested files.
+The scan job runs the coverage helper's Node tests from the repository root and imports their LCOV
+alongside the dashboard's two LCOV reports.
 Regression checks: `node --test scripts/sonar-coverage.test.mjs` and `npm run check --prefix scripts/quality`.
 
 Before the first CI scan, configure the repository `SONAR_TOKEN` secret and turn off **Administration >

@@ -141,6 +141,8 @@ export function stage(workspace, requestedName, sha) {
 
 export function prepare(workspace, sha) {
   revision(sha);
+  const helperReport = '.sonar/sonar-helper.lcov.info';
+  requiredFile(workspace, helperReport);
   const reports = new Map(['java', 'go', 'python', 'nextjs'].map((format) => [format, []]));
   for (const { name, module, revisionFile } of entries) {
     const evidence = JSON.parse(readFileSync(requiredFile(workspace, revisionFile), 'utf8'));
@@ -164,7 +166,7 @@ export function prepare(workspace, sha) {
     `sonar.coverage.jacoco.xmlReportPaths=${reports.get('java').join(',')}`,
     `sonar.go.coverage.reportPaths=${reports.get('go').join(',')}`,
     `sonar.python.coverage.reportPaths=${reports.get('python').join(',')}`,
-    `sonar.javascript.lcov.reportPaths=${reports.get('nextjs').join(',')}`,
+    `sonar.javascript.lcov.reportPaths=${[...reports.get('nextjs'), helperReport].join(',')}`,
     `sonar.java.binaries=${java.map((directory) => `${directory}/classes`).join(',')}`,
     `sonar.java.test.binaries=${java.map((directory) => `${directory}/test-classes`).join(',')}`,
     `sonar.java.libraries=${java.map((directory) => `${directory}/sonar-libraries/*.jar`).join(',')}`,
