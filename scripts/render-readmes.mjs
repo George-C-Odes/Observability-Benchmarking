@@ -4,7 +4,9 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { imageTemplateVariables } from './image-tags.mjs';
+import { workflowActionTemplateVariables } from './workflow-action-versions.mjs';
 
+const templateVariablePattern = /\{\{\s*([A-Z0-9_]+)\s*}}/g;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
@@ -43,7 +45,7 @@ export function parseColonEnv(content) {
 }
 
 export function renderTemplate(templateContent, variables) {
-  return templateContent.replace(/\{\{\s*([A-Z0-9_]+)\s*}}/g, (match, key) => {
+  return templateContent.replace(templateVariablePattern, (match, key) => {
     if (!(key in variables)) {
       throw new Error(`Missing value for placeholder {{${key}}}`);
     }
@@ -273,7 +275,9 @@ export function renderTemplates({ envPath, templatePaths, check = false }) {
     const absoluteTemplatePath = resolveRepoPath(templatePath);
     const absoluteOutputPath = deriveOutputPath(absoluteTemplatePath);
     const templateContent = readFileSync(absoluteTemplatePath, 'utf8');
-    const substituted = renderTemplate(templateContent, variables);
+    const keys = new Set(Array.from(templateContent.matchAll(templateVariablePattern), ([, key]) => key));
+    const actionVariables = workflowActionTemplateVariables(keys, (file) => readFileSync(resolveRepoPath(file), 'utf8'));
+    const substituted = renderTemplate(templateContent, { ...variables, ...actionVariables });
     // Formatter-owned docs can retain their authored table style when pins occur outside tables.
     const renderedContent = templateContent.includes('<!-- render-readmes: preserve-tables -->')
       ? substituted : realignMarkdownTables(substituted);

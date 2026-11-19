@@ -6,12 +6,36 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
+import { workflowActionTemplateVariables } from './workflow-action-versions.mjs';
+
+test('workflow action template variables require consistent, annotated SHA pins', () => {
+  const workflow = '.github/workflows/pages.yml';
+  const wrapper = '.github/actions/download-artifact/action.yml';
+  const sha = 'a'.repeat(40);
+  const sources = new Map([
+    [workflow, '      # uses: actions/download-artifact@v1\r\n      - uses: "./.github/actions/download-artifact"\r\n'],
+    [wrapper, `    - uses: 'actions/download-artifact@${sha}' # v8.7.6; release note\r\n`],
+  ]);
+  const load = () => workflowActionTemplateVariables(new Set(['PAGES_DOWNLOAD_ARTIFACT_VERSION']), (file) => {
+    assert.ok(sources.has(file), file);
+    return sources.get(file);
+  });
+
+  assert.deepEqual(load(), { PAGES_DOWNLOAD_ARTIFACT_VERSION: 'v8.7.6' });
+  sources.set(wrapper, `    - uses: actions/download-artifact@${sha}\n`);
+  assert.throws(load, /Expected a SHA pin and version comment/);
+  sources.set(wrapper, `    - uses: actions/download-artifact@${sha} # v8.7.6\n`);
+  sources.set(workflow, `      - uses: actions/download-artifact@${sha} # v8.7.7\n${sources.get(workflow)}`);
+  assert.throws(load, /Conflicting download-artifact pins for \.github\/workflows\/pages\.yml/);
+  sources.set(workflow, '# uses: ./.github/actions/download-artifact\n');
+  assert.throws(load, /Missing download-artifact in \.github\/workflows\/pages\.yml/);
+});
 
 test('README workflow badges link to current workflows with matching names', () => {
   const repoRoot = fileURLToPath(new URL('../', import.meta.url));
   const source = readFileSync(path.join(repoRoot, 'README.template.md'), 'utf8');
   const prefix = 'https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/';
-  const badges = [...source.matchAll(/\[!\[([^\]]+)\]\(([^)]+)\)\]\(([^)]+)\)/g)]
+  const badges = [...source.matchAll(/\[!\[([^\]]+)]\(([^)]+)\)]\(([^)]+)\)/g)]
     .filter(([, , image]) => image.startsWith(prefix));
   assert.ok(badges.length > 0);
   for (const [, label, image, target] of badges) {
