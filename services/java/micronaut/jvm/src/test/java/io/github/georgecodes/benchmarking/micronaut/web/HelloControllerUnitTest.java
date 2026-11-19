@@ -81,9 +81,11 @@ class HelloControllerUnitTest {
     }
 
     private static void ignoreMetric(String endpointTag) {
+        // RecordingHelloService overrides hello, so these tests never record metrics.
     }
 
     private static void ignoreSleep(long duration, TimeUnit unit) {
+        // RecordingHelloService overrides hello, so these tests never perform a sleep.
     }
 }
 
