@@ -14,6 +14,11 @@ test('routing reads existing positive push globs and fails closed on unsupported
   for (const name of workflows) {
     const workflow = source(name);
     const patterns = pushPatterns(workflow);
+    if (workflow.includes('  workflow_call:')) {
+      assert.equal(patterns, null, name);
+      assert.equal(shouldRun('merge_group', ['docs/readme.md'], workflow), true, 'Sonar requires full coverage even for unrelated groups');
+      continue;
+    }
     assert.ok(patterns?.length > 0, name);
     assert.equal(shouldRun('merge_group', ['docs/readme.md'], workflow), false, name);
     assert.equal(shouldRun('merge_group', [`.github/workflows/${name}.yml`], workflow), true, name);
@@ -35,7 +40,7 @@ test('glob semantics distinguish direct children, nested paths, dots, deletions 
   assert.equal(matchesGlob('anythingxjava', '*.java'), false);
   assert.equal(shouldRun('merge_group', ['services/go/deleted.go'], source('go_quality')), true);
   assert.equal(shouldRun('merge_group', ['services/go/old.go', 'docs/new.md'], source('go_coverage')), true);
-  assert.equal(shouldRun('merge_group', ['services/go/main.go'], source('java_coverage')), false);
+  assert.equal(shouldRun('merge_group', ['services/go/main.go'], source('java_coverage')), true);
   assert.equal(shouldRun('merge_group', ['services/java/example/Main.java'], source('go_quality')), false);
 });
 

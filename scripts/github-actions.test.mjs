@@ -195,6 +195,10 @@ test('coverage helper consumers trigger on helper changes and CI runs its unit t
     ['java_coverage', ['java']], ['nextjs_dash_quality', ['nextjs']],
   ]) {
     const source = readYaml(join(githubDir, 'workflows', `${workflow}.yml`));
+    if (source.includes('  workflow_call:')) {
+      assert.ok(readYaml(join(githubDir, 'workflows', 'sonar.yml')).includes(`uses: ./.github/workflows/${workflow}.yml`));
+      continue;
+    }
     for (const format of formats) assert.ok(source.includes(`coverage_summary.py" ${format}\n`));
     for (const path of ['scripts/coverage_summary.py', 'scripts/test_coverage_summary.py', 'scripts/coverage_gate.py', 'scripts/test_coverage_gate.py', 'scripts/coverage-thresholds.json']) {
       assert.equal(source.split(`- '${path}'`).length - 1, 2, `${workflow} needs push and PR helper triggers`);

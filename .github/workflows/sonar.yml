@@ -1,0 +1,92 @@
+name: SonarQube Cloud
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dashboard_only:
+        description: Run dashboard quality and refresh its Pages report only
+        type: boolean
+        default: false
+  schedule:
+    - cron: '15 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-${{ github.event.pull_request.number || github.ref }}${{ inputs.dashboard_only && '-dashboard' || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  java:
+    if: ${{ !inputs.dashboard_only }}
+    uses: ./.github/workflows/java_coverage.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  go:
+    if: ${{ !inputs.dashboard_only }}
+    uses: ./.github/workflows/go_coverage.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  python:
+    if: ${{ !inputs.dashboard_only }}
+    uses: ./.github/workflows/django_python_coverage.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  dashboard:
+    # Publishes quality-report-nextjs-dash for the Pages report catalog.
+    uses: ./.github/workflows/nextjs_dash_quality.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  scan:
+    name: Sonar analysis and coverage
+    needs: [java, go, python, dashboard]
+    # Merge queues run coverage gates, without publishing an ephemeral branch analysis.
+    # Forks and Dependabot do not receive repository secrets. Their tests still run.
+    if: >-
+      !inputs.dashboard_only &&
+      github.event_name != 'merge_group' &&
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+      - name: Set up Java
+        uses: ./.github/actions/setup-java
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Download coverage and bytecode from this run
+        uses: ./.github/actions/download-artifact
+        with:
+          pattern: sonar-inputs-*
+          path: .sonar/inputs/
+          merge-multiple: 'true'
+      - name: Measure Sonar coverage helper tests
+        run: |
+          node --test --experimental-test-coverage \
+            --test-coverage-include=scripts/sonar-coverage.mjs \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=.sonar/sonar-helper.lcov.info \
+            scripts/sonar-coverage.test.mjs
+      - name: Require complete coverage inputs and prepare scanner configuration
+        run: node scripts/sonar-coverage.mjs prepare
+      - name: Analyze repository and import coverage
+        uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: -Dproject.settings=.sonar/analysis.properties

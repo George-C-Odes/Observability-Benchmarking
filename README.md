@@ -23,14 +23,13 @@
 [![Deploy GitHub Pages](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pages.yml)
 [![Dependency review](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/dependency-review.yml)
 [![Qodana](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/qodana_code_quality.yml)
+[![SonarQube Cloud](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/sonar.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/sonar.yml)
 [![CodeQL](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/codeql.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/codeql.yml)
 [![pmd](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pmd.yml/badge.svg?branch=main)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/pmd.yml)
 [![Go Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_quality.yml)
 [![Django Python Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/django_python_quality.yml)
-[![Next.js Dashboard Quality](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/nextjs_dash_quality.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/nextjs_dash_quality.yml)
-[![Java Coverage](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/java_coverage.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/java_coverage.yml)
-[![Go Coverage](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_coverage.yml/badge.svg)](https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/go_coverage.yml)
 [![codecov](https://codecov.io/github/George-C-Odes/Observability-Benchmarking/graph/badge.svg?token=RY6UM4T2BW)](https://codecov.io/github/George-C-Odes/Observability-Benchmarking)
+[![Sonar Coverage](https://sonarcloud.io/api/project_badges/measure?project=George-C-Odes_Observability-Benchmarking&metric=coverage)](https://sonarcloud.io/summary/new_code?id=George-C-Odes_Observability-Benchmarking)
 
 > A comprehensive Docker Compose-based environment for **observability benchmarking** and **OpenTelemetry benchmarking** of containerized REST services with full telemetry using the **Grafana observability stack (LGTM: Loki, Grafana, Tempo, Mimir)**, continuous profiling (Pyroscope), OpenTelemetry collection (Alloy), and deterministic load generation (wrk2).
 
