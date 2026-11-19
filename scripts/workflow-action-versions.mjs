@@ -21,13 +21,14 @@ const documentedActions = [
 ];
 
 function readUses(content) {
-  return [...content.matchAll(/^[ \t]*(?:-[ \t]+)?uses:[ \t]+(['"]?)([^\s#'"]+)\1([ \t]+#[^\r\n]*)?[ \t]*\r?$/gm)]
+  // The comment consumes trailing whitespace on its line.
+  return [...content.matchAll(/^[ \t]*(?:-[ \t]+)?uses:[ \t]+(['"]?)([^\s#'"]+)\1(?:[ \t]+(#[^\r\n]*)?)?\r?$/gm)]
     .map(([, , ref, comment = '']) => ({ ref, comment }));
 }
 
 function readPin({ ref, comment }, sourcePath) {
   const sha = /@([a-f0-9]{40})$/.exec(ref)?.[1];
-  const version = /^[ \t]+#[ \t]+(v\d+\.\d+\.\d+(?:-[\w.-]+)?)(?=[; \t]|$)/.exec(comment)?.[1];
+  const version = /^#[ \t]+(v\d+\.\d+\.\d+(?:-[\w.-]+)?)(?=[; \t]|$)/.exec(comment)?.[1];
   if (!sha || !version) {
     throw new Error(`Expected a SHA pin and version comment for ${ref} in ${sourcePath}`);
   }

@@ -30,7 +30,7 @@ jobs:
         run: npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
       - name: Install pinned Pages test dependencies
         run: npm ci --prefix scripts/pages --ignore-scripts --no-audit --no-fund
-      - name: Check report-script complexity and control characters
+      - name: Check JavaScript helper quality
         run: |
           npm run check --prefix scripts/quality
           npm test --prefix scripts/quality

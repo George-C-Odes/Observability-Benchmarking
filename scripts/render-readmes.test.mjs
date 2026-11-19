@@ -13,15 +13,15 @@ test('workflow action template variables require consistent, annotated SHA pins'
   const wrapper = '.github/actions/download-artifact/action.yml';
   const sha = 'a'.repeat(40);
   const sources = new Map([
-    [workflow, '      # uses: actions/download-artifact@v1\r\n      - uses: "./.github/actions/download-artifact"\r\n'],
-    [wrapper, `    - uses: 'actions/download-artifact@${sha}' # v8.7.6; release note\r\n`],
+    [workflow, '      # uses: actions/download-artifact@v1\r\n      - uses: "./.github/actions/download-artifact" \t\r\n'],
+    [wrapper, `    - uses: 'actions/download-artifact@${sha}' # v8.7.6-rc.1; release note \t\r\n`],
   ]);
   const load = () => workflowActionTemplateVariables(new Set(['PAGES_DOWNLOAD_ARTIFACT_VERSION']), (file) => {
     assert.ok(sources.has(file), file);
     return sources.get(file);
   });
 
-  assert.deepEqual(load(), { PAGES_DOWNLOAD_ARTIFACT_VERSION: 'v8.7.6' });
+  assert.deepEqual(load(), { PAGES_DOWNLOAD_ARTIFACT_VERSION: 'v8.7.6-rc.1' });
   sources.set(wrapper, `    - uses: actions/download-artifact@${sha}\n`);
   assert.throws(load, /Expected a SHA pin and version comment/);
   sources.set(wrapper, `    - uses: actions/download-artifact@${sha} # v8.7.6\n`);
