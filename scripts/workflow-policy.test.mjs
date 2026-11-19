@@ -174,7 +174,7 @@ test('manual dashboard quality runs as a Pages report producer without running a
   const producer = catalog.find(({ id }) => id === 'nextjs');
   assert.match(coordinator, /workflow_dispatch:\n +inputs:\n +dashboard_only:\n +description: .+\n +type: boolean\n +default: false/);
   for (const job of ['java', 'go', 'python']) {
-    assert.match(coordinator, new RegExp(`^  ${job}:\n {4}if: \$\{\{ !inputs\.dashboard_only }}`, 'm'));
+    assert.match(coordinator, new RegExp(String.raw`^  ${job}:\n {4}if: \$\{\{ !inputs\.dashboard_only }}$`, 'm'));
   }
   assert.match(coordinator, / {2}dashboard:\n(?: {4}#.*\n)* {4}uses: \.\/\.github\/workflows\/nextjs_dash_quality.yml/);
   assert.match(coordinator, / {2}scan:\n[^]*? {4}if: >-\n {6}!inputs\.dashboard_only &&/);
