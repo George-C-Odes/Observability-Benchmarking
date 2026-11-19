@@ -1357,7 +1357,10 @@ cat results/quarkus-jvm-$(date +%Y%m%d).txt
 
 The **SonarQube Cloud** coordinator (`.github/workflows/sonar.yml`) runs the existing
 Java, Go, Django and dashboard coverage jobs together, once per variant, on every
-PR, main push, merge group and weekly/manual run. All module gates and Codecov
+PR, main push, merge group and weekly run, as well as by default on manual runs.
+To refresh the Pages dashboard report alone, select **Run dashboard quality and
+refresh its Pages report only** when dispatching the SonarQube Cloud workflow.
+All module gates and Codecov
 uploads remain enforced. One dependent Sonar scan imports the complete reports
 and Java build outputs from that same run and revision; missing inputs fail the
 scan preparation. Fork and Dependabot PRs run tests without the secret-backed

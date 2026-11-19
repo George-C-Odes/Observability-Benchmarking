@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -72,8 +73,30 @@ test('unknown modules, invalid revisions and unsafe paths fail before output', (
   assert.equal(existsSync(path.join(workspace, '.sonar')), false);
 });
 
+test('the CLI selects a fixed inventory output and rejects path-shaped module arguments', (t) => {
+  const workspace = fixture(t);
+  for (const file of ['sonar-coverage.mjs', 'coverage-thresholds.json']) {
+    put(workspace, `scripts/${file}`, readFileSync(new URL(`./${file}`, import.meta.url)));
+  }
+  put(workspace, 'services/go/simple/go.mod', 'module hello\n');
+  put(workspace, 'services/go/simple/coverage.out', 'mode: atomic\nhello/main.go:1.1,2.1 1 1\n');
+  const run = (name) => spawnSync(process.execPath, ['scripts/sonar-coverage.mjs', 'stage', name], {
+    cwd: workspace, env: { ...process.env, GITHUB_SHA: sha }, encoding: 'utf8', timeout: 10_000,
+  });
+  for (const name of ['../go-simple', 'go-simple/../../outside', 'go-simple\n', path.join(workspace, 'outside')]) {
+    const result = run(name);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /Unknown coverage module/);
+    assert.equal(existsSync(path.join(workspace, '.sonar')), false);
+  }
+  const result = run('go-simple');
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(path.join(workspace, '.sonar/inputs/revisions/go-simple.json'), 'utf8')),
+    { name: 'go-simple', revision: sha });
+});
+
 test('source and destination junctions cannot read or write outside the workspace', (t) => {
-  for (const relative of ['.sonar', 'services/go/simple']) {
+  for (const relative of ['.sonar', 'services/go/simple', '.sonar/inputs/revisions']) {
     const workspace = fixture(t);
     const outside = fixture(t);
     put(workspace, 'services/go/simple/go.mod', 'module hello\n');
@@ -86,6 +109,8 @@ test('source and destination junctions cannot read or write outside the workspac
     assert.throws(() => stage(workspace, 'go-simple', sha), /Redirected/);
     assert.equal(readFileSync(path.join(outside, 'sentinel'), 'utf8'), 'unchanged');
     assert.equal(existsSync(path.join(outside, 'inputs')), false);
+    assert.equal(existsSync(path.join(outside, 'go-simple.json')), false);
+    assert.equal(existsSync(path.join(workspace, '.sonar/inputs/services/go/simple/coverage.out')), false);
   }
 });
 

@@ -6,6 +6,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      dashboard_only:
+        description: Run dashboard quality and refresh its Pages report only
+        type: boolean
+        default: false
   schedule:
     - cron: '15 6 * * 1'
 
@@ -13,19 +18,22 @@ permissions:
   contents: read
 
 concurrency:
-  group: sonar-${{ github.event.pull_request.number || github.ref }}
+  group: sonar-${{ github.event.pull_request.number || github.ref }}${{ inputs.dashboard_only && '-dashboard' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   java:
+    if: ${{ !inputs.dashboard_only }}
     uses: ./.github/workflows/java_coverage.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   go:
+    if: ${{ !inputs.dashboard_only }}
     uses: ./.github/workflows/go_coverage.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   python:
+    if: ${{ !inputs.dashboard_only }}
     uses: ./.github/workflows/django_python_coverage.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -41,6 +49,7 @@ jobs:
     # Merge queues run coverage gates, without publishing an ephemeral branch analysis.
     # Forks and Dependabot do not receive repository secrets. Their tests still run.
     if: >-
+      !inputs.dashboard_only &&
       github.event_name != 'merge_group' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
@@ -68,7 +77,7 @@ jobs:
       - name: Require complete coverage inputs and prepare scanner configuration
         run: node scripts/sonar-coverage.mjs prepare
       - name: Analyze repository and import coverage
-        uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
+        uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io

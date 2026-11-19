@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const inputRoot = '.sonar/inputs';
 export const inventory = JSON.parse(readFileSync(new URL('./coverage-thresholds.json', import.meta.url), 'utf8')).modules;
-const entries = Object.entries(inventory).filter(([name]) => name !== 'django-common');
+const entries = Object.entries(inventory)
+  .filter(([name]) => name !== 'django-common')
+  .map(([name, module]) => ({ name, module, revisionFile: `${inputRoot}/revisions/${name}.json` }));
 
 // CLI roots are fixed by this module, never by arguments, environment or artifacts.
 // Reject redirected parents before reads/writes in the isolated Actions workspace.
@@ -30,10 +32,10 @@ function isLink(location) {
   }
 }
 
-function moduleEntry(name) {
-  const entry = entries.find(([key]) => key === name);
+function moduleEntry(requestedName) {
+  const entry = entries.find(({ name }) => name === requestedName);
   if (!entry) throw new Error('Unknown coverage module');
-  return entry[1];
+  return entry;
 }
 
 function revision(value) {
@@ -107,12 +109,14 @@ export function normalizeLcov(content, workspace, directory) {
   }).join('\n');
 }
 
-export function stage(workspace, name, sha) {
+export function stage(workspace, requestedName, sha) {
   revision(sha);
-  const module = moduleEntry(name);
+  // The CLI selects an inventory entry. Output paths come from that entry.
+  const { name, module, revisionFile } = moduleEntry(requestedName);
   const sources = reportPaths(module);
   if (module.format === 'java') sources.push(...javaFiles(workspace, '', module));
   // Validate the entire selected inventory before creating any output.
+  workspacePath(workspace, revisionFile);
   for (const source of sources) {
     requiredFile(workspace, source);
     workspacePath(workspace, `${inputRoot}/${source}`);
@@ -132,14 +136,14 @@ export function stage(workspace, name, sha) {
       copyFileSync(from, target);
     }
   }
-  write(workspace, `${inputRoot}/revisions/${name}.json`, JSON.stringify({ name, revision: sha }));
+  write(workspace, revisionFile, JSON.stringify({ name, revision: sha }));
 }
 
 export function prepare(workspace, sha) {
   revision(sha);
   const reports = new Map(['java', 'go', 'python', 'nextjs'].map((format) => [format, []]));
-  for (const [name, module] of entries) {
-    const evidence = JSON.parse(readFileSync(requiredFile(workspace, `${inputRoot}/revisions/${name}.json`), 'utf8'));
+  for (const { name, module, revisionFile } of entries) {
+    const evidence = JSON.parse(readFileSync(requiredFile(workspace, revisionFile), 'utf8'));
     if (evidence.name !== name || evidence.revision !== sha) throw new Error(`Coverage revision mismatch: ${name}`);
     for (const report of reportPaths(module)) {
       const relative = `${inputRoot}/${report}`;
@@ -153,7 +157,7 @@ export function prepare(workspace, sha) {
   const testRoots = /^sonar.tests=(.+)$/m.exec(shared)?.[1].trim();
   const testPatterns = /^sonar.test.inclusions=(.+)$/m.exec(shared)?.[1].trim();
   if (!testRoots || !testPatterns) throw new Error('Missing shared test classification');
-  const java = entries.filter(([, module]) => module.format === 'java').map(([, module]) => `${inputRoot}/${module.path}/target`);
+  const java = entries.filter(({ module }) => module.format === 'java').map(({ module }) => `${inputRoot}/${module.path}/target`);
   const config = [shared.trim(), ci.trim(),
     `sonar.tests=${testRoots},services/java,utils/orchestrator/src/test`,
     `sonar.test.inclusions=${testPatterns},services/java/**/src/test/**,utils/orchestrator/src/test/**`,

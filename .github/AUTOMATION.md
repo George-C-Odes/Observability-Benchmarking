@@ -60,6 +60,9 @@ language categories on every triggered run. Coverage workflows are reusable
 producers without path filters, so their retained scope action conservatively
 runs all checks, including on documentation-only merge groups. The dashboard's
 Pages report is now collected from the SonarQube Cloud coordinator run.
+To refresh just that report, choose **Actions > SonarQube Cloud > Run workflow**
+and select **Run dashboard quality and refresh its Pages report only**. Select
+`main` for the live report or a repository branch for the staging report.
 
 ### Django jobs
 

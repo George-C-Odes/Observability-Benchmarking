@@ -5,7 +5,6 @@ on:
     secrets:
       CODECOV_TOKEN:
         required: false
-  workflow_dispatch:
 
 concurrency:
   group: nextjs_dash_quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

@@ -276,7 +276,8 @@ Symlink tests are skipped on systems that do not permit creating symlinks.
 ### Sonar CI coverage and shared configuration
 
 `.github/workflows/sonar.yml` runs the reusable Java, Go, Django and dashboard coverage workflows on
-every PR, main push, merge group, manual run and weekly schedule. Existing hard coverage gates and
+every PR, main push, merge group and weekly run. Manual runs can also select only the dashboard to
+refresh its Pages report. Existing hard coverage gates and
 Codecov uploads remain in their module jobs. The coordinator downloads only `sonar-inputs-*` artifacts
 from its own run, then runs one repository-wide Sonar analysis after every producer succeeds.
 Merge groups run the coverage gates only; fork and Dependabot PRs also run tests without a token-backed scan.

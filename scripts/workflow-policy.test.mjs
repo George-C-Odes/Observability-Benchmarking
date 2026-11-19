@@ -168,6 +168,22 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
   }
 });
 
+test('manual dashboard quality runs as a Pages report producer without running a Sonar scan', () => {
+  const coordinator = workflow('sonar');
+  const dashboard = workflow('nextjs_dash_quality');
+  const producer = catalog.find(({ id }) => id === 'nextjs');
+  assert.match(coordinator, /workflow_dispatch:\n +inputs:\n +dashboard_only:\n +description: .+\n +type: boolean\n +default: false/);
+  for (const job of ['java', 'go', 'python']) {
+    assert.match(coordinator, new RegExp(`^  ${job}:\n {4}if: \$\{\{ !inputs\.dashboard_only }}`, 'm'));
+  }
+  assert.match(coordinator, / {2}dashboard:\n(?: {4}#.*\n)* {4}uses: \.\/\.github\/workflows\/nextjs_dash_quality.yml/);
+  assert.match(coordinator, / {2}scan:\n[^]*? {4}if: >-\n {6}!inputs\.dashboard_only &&/);
+  assert.doesNotMatch(dashboard, /^ {2}workflow_dispatch:/m);
+  assert.equal(producer.workflow, 'sonar.yml');
+  assert.ok(workflow('pages').includes(producer.name));
+  assert.ok(dashboard.includes(`name: ${producer.reports[0].artifact}`));
+});
+
 test('Pages restores compiled docs without cache writes on workflow_run and rebuilds on misses', () => {
   const docs = workflow('pages').split('\n  docs:\n')[1].split('\n  collect:\n')[0];
   const cache = docs.split('      - name: Restore compiled documentation\n')[1].split('      - name: Set up Ruby\n')[0];
