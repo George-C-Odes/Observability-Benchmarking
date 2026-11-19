@@ -4,6 +4,7 @@ on:
   # Only trusted base scripts execute, restricted to same-repository Renovate PRs.
   # Reassess if PR source execution or the publication allowlist changes.
   pull_request_target: # zizmor: ignore[dangerous-triggers] trusted-base execution with validated version-only publication
+    branches: [main]
     types: [opened, synchronize, reopened, labeled]
 
 permissions:
@@ -21,7 +22,8 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'renovate/') &&
       (contains(github.event.pull_request.labels.*.name, 'framework-version') ||
-       contains(github.event.pull_request.labels.*.name, 'nextjs-version'))
+       contains(github.event.pull_request.labels.*.name, 'nextjs-version') ||
+       contains(github.event.pull_request.labels.*.name, 'action-docs-version'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -30,8 +32,17 @@ jobs:
       - name: Checkout trusted base
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: refs/heads/main
           persist-credentials: false
+
+      - name: Verify trusted base revision
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$BASE_SHA" ]]; then
+            echo '::error::The trusted base moved. Rerun synchronization on the updated PR.'
+            exit 1
+          fi
 
       - name: Set up Node
         uses: ./.github/actions/setup-node
@@ -66,6 +77,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/renovate-framework-sync.mjs prepare-nextjs
 
+      - name: Validate Renovate action pins and render the guide
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'nextjs-version') &&
+          contains(github.event.pull_request.labels.*.name, 'action-docs-version')
+        id: actions_docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/renovate-framework-sync.mjs prepare-actions
+
       - name: Select Python runtime
         if: steps.proposal.outputs.changed == 'true'
         id: python
@@ -98,7 +119,10 @@ jobs:
           fi
 
       - name: Commit generated files to the PR
-        if: steps.proposal.outputs.changed == 'true' || steps.nextjs.outputs.changed == 'true'
+        if: >-
+          steps.proposal.outputs.changed == 'true' ||
+          steps.nextjs.outputs.changed == 'true' ||
+          steps.actions_docs.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           # Required to trigger the usual path-scoped CI on the generated commit.

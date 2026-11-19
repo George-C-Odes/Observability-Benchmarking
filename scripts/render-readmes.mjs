@@ -261,6 +261,15 @@ export function resolveTemplatePaths({ templatePaths, manifestPath }) {
   return loadManifestTemplatePaths(manifestPath);
 }
 
+export function renderReadme(templateContent, variables, readActionSource) {
+  const keys = new Set(Array.from(templateContent.matchAll(templateVariablePattern), ([, key]) => key));
+  const actionVariables = workflowActionTemplateVariables(keys, readActionSource);
+  const substituted = renderTemplate(templateContent, { ...variables, ...actionVariables });
+  // Formatter-owned docs can retain their authored table style when pins occur outside tables.
+  return templateContent.includes('<!-- render-readmes: preserve-tables -->')
+    ? substituted : realignMarkdownTables(substituted);
+}
+
 export function renderTemplates({ envPath, templatePaths, check = false }) {
   if (!Array.isArray(templatePaths) || templatePaths.length === 0) {
     throw new Error('Provide at least one README template path.');
@@ -275,12 +284,7 @@ export function renderTemplates({ envPath, templatePaths, check = false }) {
     const absoluteTemplatePath = resolveRepoPath(templatePath);
     const absoluteOutputPath = deriveOutputPath(absoluteTemplatePath);
     const templateContent = readFileSync(absoluteTemplatePath, 'utf8');
-    const keys = new Set(Array.from(templateContent.matchAll(templateVariablePattern), ([, key]) => key));
-    const actionVariables = workflowActionTemplateVariables(keys, (file) => readFileSync(resolveRepoPath(file), 'utf8'));
-    const substituted = renderTemplate(templateContent, { ...variables, ...actionVariables });
-    // Formatter-owned docs can retain their authored table style when pins occur outside tables.
-    const renderedContent = templateContent.includes('<!-- render-readmes: preserve-tables -->')
-      ? substituted : realignMarkdownTables(substituted);
+    const renderedContent = renderReadme(templateContent, variables, (file) => readFileSync(resolveRepoPath(file), 'utf8'));
 
     if (check) {
       const existingContent = readFileSync(absoluteOutputPath, 'utf8');

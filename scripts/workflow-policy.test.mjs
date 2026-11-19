@@ -243,6 +243,14 @@ test('unfiltered validation enforces shell, security, request-boundary and Pages
   assert.match(readFileSync(join(root, 'qodana.yaml'), 'utf8'), /qodana-jvm-community:\S+@sha256:[a-f0-9]{64}/);
 });
 
+test('Renovate verifies the main revision before executing repository code', () => {
+  const source = workflow('renovate_framework_sync');
+  assert.match(source, /branches: \[main]/);
+  assert.deepEqual([...source.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), ['refs/heads/main']);
+  assert.match(source, /BASE_SHA: \$\{\{ github.event.pull_request.base.sha }}/);
+  assert.match(source, /git rev-parse HEAD\)" != "\$BASE_SHA"[\s\S]*?exit 1[\s\S]*?uses: \.\/\.github\/actions\/setup-node/);
+});
+
 test('Qodana routes scopes without dropping check names or weakening full analysis', () => {
   const source = workflow('qodana_code_quality');
   assert.match(source, /pull_request:\n {2}push:/);

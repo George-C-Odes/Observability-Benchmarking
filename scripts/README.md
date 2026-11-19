@@ -173,6 +173,11 @@ receive the existing `nextjs-version` label. The trusted relay detects the chang
 validates dependency-only manifest edits and the complete lockfile against independent npm regeneration,
 then regenerates the documentation and image tags. A non-Next.js update retains the existing image tag.
 
+Renovate adds `action-docs-version` to updates for the shared upload-artifact, download-artifact, and
+CodeQL action wrappers. The relay accepts only full commit SHA pins and version comment changes in
+those wrappers. It renders and publishes [the linting and code quality guide](../docs/LINTING_AND_CODE_QUALITY.md)
+from the trusted template, using the proposed pins as data. CodeQL subactions update as a group.
+
 1. Renovate proposes an env update and labels the PR `framework-version`.
 2. **Framework Version Sync** (`renovate_framework_sync.yml`) runs the **trusted base revision's** scripts.
    It accepts only open `renovate[bot]` PRs from this repository under `renovate/`, validates that the env changed

@@ -20,10 +20,16 @@ const documentedActions = [
   },
 ];
 
+function wrapperActionPath({ wrapper }) {
+  return `.github/actions/${wrapper}/action.yml`;
+}
+
+export const documentedActionPaths = documentedActions.map(wrapperActionPath);
+
 function readUses(content) {
   // The comment consumes trailing whitespace on its line.
   return [...content.matchAll(/^[ \t]*(?:-[ \t]+)?uses:[ \t]+(['"]?)([^\s#'"]+)\1(?:[ \t]+(#[^\r\n]*)?)?\r?$/gm)]
-    .map(([, , ref, comment = '']) => ({ ref, comment }));
+    .map(({ 0: line, 2: ref, 3: comment = '', index }) => ({ line, ref, comment, index }));
 }
 
 function readPin({ ref, comment }, sourcePath) {
@@ -54,6 +60,27 @@ function actionPin({ workflow, wrapper, upstream }, readSource) {
     throw new Error(`Conflicting ${wrapper} pins for ${workflowPath}`);
   }
   return pin;
+}
+
+function maskWrapperPins(content, upstream, file) {
+  let offset = 0;
+  let masked = '';
+  for (const use of readUses(content).filter(({ ref }) => upstream.test(ref.split('@')[0]))) {
+    const { sha, version } = readPin(use, file);
+    const { line, ref, comment, index } = use;
+    masked += content.slice(offset, index) + line.replace(ref, () => ref.replace(sha, '<sha>'))
+      .replace(comment, () => comment.replace(version, '<version>'));
+    offset = index + line.length;
+  }
+  return masked + content.slice(offset);
+}
+
+export function validateDocumentedActionChange(file, base, head) {
+  const action = documentedActions.find((entry) => wrapperActionPath(entry) === file);
+  if (!action) throw new Error(`Unexpected documented action file: ${file}`);
+  if (maskWrapperPins(base, action.upstream, file) !== maskWrapperPins(head, action.upstream, file)) {
+    throw new Error(`Renovate may change only the documented action pins in ${file}`);
+  }
 }
 
 export function workflowActionTemplateVariables(keys, readSource) {
