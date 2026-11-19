@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { modules } from './java-modules.mjs';
-import { catalog } from './pages/github-reports.mjs';
+import { catalog, collectionPlan } from './pages/github-reports.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const workflow = (name) => readFileSync(join(root, '.github/workflows', `${name}.yml`), 'utf8').replaceAll('\r\n', '\n');
@@ -157,14 +157,33 @@ test('Pages preserves its trust boundary and producer catalog contracts', () => 
   assert.match(pages, /max-parallel: 5/);
   assert.match(pages, /REPORT_PRODUCER: \$\{\{ matrix.producer.producer }}/);
   assert.match(pages, /REPORT_ARTIFACT: \$\{\{ matrix.producer.report }}/);
-  assert.match(pages, /pattern: \$\{\{ matrix.producer.pattern }}/);
-  assert.match(pages, /run-id: \$\{\{ steps.source.outputs.run_id }}/);
   for (const producer of catalog) {
     assert.ok(pages.includes(producer.name));
     const source = workflow(producer.workflow.replace('.yml', ''));
     for (const report of producer.reports) {
       assert.ok(source.includes(report.artifact) || (producer.id === 'qodana' && source.includes('qodana-report-${{ matrix.name }}')), report.artifact);
     }
+  }
+});
+
+test('Pages downloads each producer report into its own artifact directory', () => {
+  const pages = workflow('pages');
+  const steps = ['download', 'download_second'];
+  for (const [index, id] of steps.entries()) {
+    const entry = `matrix.producer.reports[${index}].artifact`;
+    const step = pages.split(`        id: ${id}\n`)[1].split('\n      - name: ')[0];
+    const condition = "steps.source.outputs.run_id != ''" + (index ? ` && ${entry} != ''` : '');
+    assert.ok(step.includes(`if: ${condition}\n`));
+    assert.ok(step.includes(`pattern: \${{ ${entry} }}\n`));
+    assert.ok(step.includes(`path: .collected/\${{ ${entry} }}/\n`));
+    assert.ok(step.includes('run-id: ${{ steps.source.outputs.run_id }}'));
+    assert.ok(step.includes('uses: ./.github/actions/download-artifact'));
+  }
+  assert.match(pages, /DOWNLOAD_OUTCOME: \$\{\{ steps.download.outcome }}/);
+  assert.match(pages, /SECOND_DOWNLOAD_OUTCOME: \$\{\{ steps.download_second.outcome }}/);
+  for (const producer of collectionPlan) {
+    assert.ok(producer.reports.length > 0 && producer.reports.length <= steps.length, producer.id);
+    for (const report of producer.reports) assert.match(report.artifact, /^[a-z0-9-]+$/);
   }
 });
 

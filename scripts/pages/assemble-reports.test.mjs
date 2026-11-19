@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { assembleReports } from './assemble-reports.mjs';
 import { catalog, collectionPlan, resolveReport } from './github-reports.mjs';
 import { temporaryDirectory } from '../test-helpers.mjs';
@@ -14,7 +16,8 @@ test('assembly preserves every catalog URL, nested HTML and failed-run provenanc
     for (const producer of collectionPlan) {
       const directory = join(collections, `collection-${scope}-${producer.id}`);
       mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: producer.producer, report: producer.report, scope, run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', status: 'resolved', download: 'success' }));
+      const downloads = Object.fromEntries(producer.reports.map(({ artifact }) => [artifact, 'success']));
+      writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: producer.producer, report: producer.report, scope, run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', status: 'resolved', downloads }));
       for (const report of producer.reports) {
         mkdirSync(join(directory, report.artifact, 'nested'), { recursive: true });
         writeFileSync(join(directory, report.artifact, 'nested', 'index.html'), '<h1>Scan diagnostics</h1>');
@@ -34,11 +37,51 @@ test('assembly preserves every catalog URL, nested HTML and failed-run provenanc
   }
 });
 
+test('the main and staging indexes link to each other and report pages link to their own index', (t) => {
+  const root = temporaryDirectory(t, 'pages-navigation-');
+  assembleReports(join(root, 'site'), join(root, 'collections'), 'example/benchmark');
+  const base = 'https://example.github.io/benchmark/';
+  for (const [scope, otherScope, label] of [
+    ['quality/', 'stage/quality/', 'Shared staging quality reports'],
+    ['stage/quality/', 'quality/', 'Main quality reports'],
+  ]) {
+    const index = readFileSync(join(root, 'site', scope, 'index.html'), 'utf8');
+    const [, href, text] = /<nav[^>]*><a href="([^"]+)">([^<]+)<\/a><\/nav>/.exec(index);
+    assert.equal(text, label);
+    assert.equal(new URL(href, new URL(scope, base)).href, new URL(otherScope, base).href);
+    const report = readFileSync(join(root, 'site', scope, 'go/index.html'), 'utf8');
+    const [, back] = /<nav[^>]*><a href="([^"]+)">/.exec(report);
+    assert.equal(new URL(back, new URL(`${scope}go/`, base)).href, new URL(scope, base).href);
+  }
+});
+
+test('one Go artifact can be published when the other download fails', (t) => {
+  const root = temporaryDirectory(t, 'pages-go-downloads-');
+  const directory = join(root, '.collected');
+  mkdirSync(join(directory, 'quality-report-go-simple'), { recursive: true });
+  writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: 'go', scope: 'live', run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', status: 'resolved' }));
+  writeFileSync(join(directory, 'quality-report-go-simple/index.html'), '<h1>Go simple report</h1>');
+  const script = fileURLToPath(new URL('./github-reports.mjs', import.meta.url));
+  const finish = spawnSync(process.execPath, [script, 'finish'], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, DOWNLOAD_OUTCOME: 'failure', SECOND_DOWNLOAD_OUTCOME: 'success' },
+  });
+  assert.equal(finish.status, 0, finish.stderr);
+  const collections = join(root, 'collections');
+  mkdirSync(collections);
+  renameSync(directory, join(collections, 'collection-live-go'));
+  const site = join(root, 'site');
+  assembleReports(site, collections, 'example/benchmark');
+  const index = readFileSync(join(site, 'quality/index.html'), 'utf8');
+  assert.match(index, /Go enhanced<\/td><td>download failed<\/td><td>failure<\/td><td>123/);
+  assert.match(index, /Go simple<\/a><\/td><td>available<\/td><td>failure<\/td><td>123/);
+  assert.equal(readFileSync(join(site, 'quality/go-simple/index.html'), 'utf8'), '<h1>Go simple report</h1>');
+});
+
 test('missing collections and failed downloads cannot appear available', (t) => {
   const root = temporaryDirectory(t, 'pages-unavailable-');
   const directory = join(root, 'collections/collection-live-go');
   mkdirSync(directory, { recursive: true });
-  writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: 'go', scope: 'live', run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', download: 'failure' }));
+  writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: 'go', scope: 'live', run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', downloads: { 'quality-report-go': 'failure' } }));
   assembleReports(join(root, 'site'), join(root, 'collections'), 'example/benchmark');
   const html = readFileSync(join(root, 'site/quality/index.html'), 'utf8');
   assert.match(html, /download failed/);
@@ -81,7 +124,7 @@ test('independent Qodana sources preserve an untouched report while exposing a n
       } });
     const directory = join(collections, `collection-stage-${producer.id}`);
     mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, 'source.json'), JSON.stringify({ ...source, download: 'success' }));
+    writeFileSync(join(directory, 'source.json'), JSON.stringify({ ...source, downloads: { [producer.report]: 'success' } }));
     if (source.run_id === '1') {
       mkdirSync(join(directory, producer.report));
       writeFileSync(join(directory, producer.report, 'index.html'), 'Previous services scan');
@@ -107,7 +150,8 @@ test('Qodana failed downloads and unavailable scope evidence cannot reuse older 
     mkdirSync(join(directory, 'qodana-report-orchestrator'), { recursive: true });
     writeFileSync(join(directory, 'qodana-report-orchestrator/index.html'), 'Never publish this stale artifact');
     writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: 'qodana', report: 'qodana-report-orchestrator',
-      scope: 'stage', run_id: '456', head_sha: 'b'.repeat(40), conclusion: 'failure', ...state }));
+      scope: 'stage', run_id: '456', head_sha: 'b'.repeat(40), conclusion: 'failure', status: state.status,
+      downloads: { 'qodana-report-orchestrator': state.download } }));
     assembleReports(join(root, 'site'), join(root, 'collections'), 'example/benchmark');
     const html = readFileSync(join(root, 'site/stage/quality/orchestrator/index.html'), 'utf8');
     assert.ok(html.includes(state.expected));

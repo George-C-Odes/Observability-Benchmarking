@@ -46,23 +46,23 @@ function copyReport(directory, destination) {
   return 'available';
 }
 
-function reportStatus(source, directory, destination) {
+function reportStatus(source, download, directory, destination) {
   if (source.status && source.status !== 'resolved') return source.status;
   if (!source.run_id) return source.status;
-  if (source.download === 'failure') return 'download failed';
-  if (source.download !== 'success' || !existsSync(directory)) return 'report missing';
+  if (download === 'failure') return 'download failed';
+  if (download !== 'success' || !existsSync(directory)) return 'report missing';
   return copyReport(directory, destination);
 }
 
 function reportRow(report, collection, destination, source) {
   const reportDestination = join(destination, report.path);
-  const status = reportStatus(source, join(collection, report.artifact), reportDestination);
+  const status = reportStatus(source, source.downloads?.[report.artifact], join(collection, report.artifact), reportDestination);
   let link = esc(report.title);
   if (status === 'available') link = `<a href="./${report.path}/">${esc(report.title)}</a>`;
   else {
     mkdirSync(reportDestination, { recursive: true });
     writeFileSync(join(reportDestination, 'index.html'), htmlPage({ title: report.title,
-      body: `<h1>${esc(report.title)}</h1><p>Report ${esc(status)}.</p><p>Workflow conclusion: ${esc(source.conclusion || 'unknown')}. Run: ${esc(source.run_id || 'unknown')}. Analyzed commit: <code>${esc(source.head_sha || 'unknown')}</code>.</p><p><a href="../">All quality reports</a></p>` }));
+      body: `<h1>${esc(report.title)}</h1><p>Availability: ${esc(status)}.</p><p>Workflow conclusion: ${esc(source.conclusion || 'unknown')}. Run: ${esc(source.run_id || 'unknown')}. Analyzed commit: <code>${esc(source.head_sha || 'unknown')}</code>.</p>` }));
   }
   return `<tr><td>${link}</td><td>${esc(status)}</td><td>${esc(source.conclusion || 'unknown')}</td><td>${esc(source.run_id || '\u2014')}</td><td><code>${esc(source.head_sha || 'unknown')}</code></td></tr>`;
 }
@@ -80,7 +80,10 @@ export function assembleReports(site, collections, repository) {
     const body = `<h1>${scope === 'live' ? 'Main' : 'Shared staging'} quality reports</h1>
 <p>Latest eligible scan for each report by creation order. Unaffected Qodana scopes retain their previous scan. Failed scans remain visible. Staging combines the latest runs from repository branches.</p>
 <table><thead><tr><th>Report</th><th>Availability</th><th>Workflow conclusion</th><th>Run</th><th>Analyzed commit</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
-    writeFileSync(join(destination, 'index.html'), htmlPage({ title: 'Quality reports', body }));
+    const navigation = scope === 'live'
+      ? { href: '../stage/quality/', label: 'Shared staging quality reports' }
+      : { href: '../../quality/', label: 'Main quality reports' };
+    writeFileSync(join(destination, 'index.html'), htmlPage({ title: 'Quality reports', body, navigation }));
   }
 }
 

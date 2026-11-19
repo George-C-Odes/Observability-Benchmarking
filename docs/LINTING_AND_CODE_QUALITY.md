@@ -852,6 +852,10 @@ and workflow content. Assembly publishes all seven existing paths and records
 availability, workflow conclusion, run ID and analyzed SHA. Deployment alone
 receives `pages: write` and `id-token: write`.
 
+The [main quality index](https://george-c-odes.github.io/Observability-Benchmarking/quality/)
+and [shared staging index](https://george-c-odes.github.io/Observability-Benchmarking/stage/quality/)
+link directly to each other.
+
 `scripts/pages/report-catalog.json` defines producers, workflow names, artifacts
 and report paths. `github-reports.mjs` implements validated, repository-scoped
 requests with redirect rejection, deadlines and bounded retries. `assemble-reports.mjs`

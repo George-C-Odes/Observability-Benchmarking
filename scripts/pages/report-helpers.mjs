@@ -178,9 +178,9 @@ const FAVICON = "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%2
 
 /**
  * Wrap report body content in the full HTML page shell.
- * @param {{title: string, extraCSS?: string, body: string}} opts
+ * @param {{title: string, extraCSS?: string, body: string, navigation?: {href: string, label: string}}} opts
  */
-export function htmlPage({ title, extraCSS = '', body }) {
+export function htmlPage({ title, extraCSS = '', body, navigation = { href: '../', label: '\u2190 Back to quality reports index' } }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -193,7 +193,7 @@ ${themeCSS(extraCSS)}
   </style>
 </head>
 <body>
-  <p class="back-link"><a href="../">\u2190 Back to quality reports index</a></p>
+  <nav class="back-link" aria-label="Quality reports"><a href="${esc(navigation.href)}">${esc(navigation.label)}</a></nav>
 ${body}
 </body>
 </html>`;
