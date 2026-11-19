@@ -133,21 +133,33 @@ jobs:
           REPORT_ARTIFACT: ${{ matrix.producer.report }}
           REPORT_SCOPE: ${{ matrix.scope }}
         run: node scripts/pages/github-reports.mjs collect
-      - name: Download producer reports
+      - name: Download producer report
         id: download
         if: steps.source.outputs.run_id != ''
         # Missing diagnostics are represented explicitly by assembly.
         continue-on-error: true
         uses: ./.github/actions/download-artifact
         with:
-          pattern: ${{ matrix.producer.pattern }}
-          path: .collected/
+          # An exact pattern preserves the missing-artifact state. A single
+          # match is extracted directly into the specified path by the action.
+          pattern: ${{ matrix.producer.reports[0].artifact }}
+          path: .collected/${{ matrix.producer.reports[0].artifact }}/
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
-          merge-multiple: false
-      - name: Record download outcome
+      - name: Download second producer report
+        id: download_second
+        if: steps.source.outputs.run_id != '' && matrix.producer.reports[1].artifact != ''
+        continue-on-error: true
+        uses: ./.github/actions/download-artifact
+        with:
+          pattern: ${{ matrix.producer.reports[1].artifact }}
+          path: .collected/${{ matrix.producer.reports[1].artifact }}/
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Record download outcomes
         env:
           DOWNLOAD_OUTCOME: ${{ steps.download.outcome }}
+          SECOND_DOWNLOAD_OUTCOME: ${{ steps.download_second.outcome }}
         run: node scripts/pages/github-reports.mjs finish
       - name: Upload report collection
         uses: ./.github/actions/upload-artifact

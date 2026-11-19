@@ -170,10 +170,13 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   const scripts = [
     'renovate-framework-sync.mjs', 'sync-nextjs-tags.mjs', 'sync-framework-versions.mjs', 'sync-django-versions.mjs', 'sync-java-pom-versions.mjs',
     'sync-dockerfile-versions.mjs', 'sync-go-mod-versions.mjs', 'sync-build-img-runs.mjs', 'sync-maven-versions.mjs',
-    'image-tags.mjs', 'sync-image-tags.mjs', 'sync-node-versions.mjs', 'sync-java-runtime-versions.mjs', 'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json',
+    'image-tags.mjs', 'sync-image-tags.mjs', 'sync-node-versions.mjs', 'sync-java-runtime-versions.mjs',
+    'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json', 'workflow-action-versions.mjs',
   ];
   const files = [...new Set([
     'compose/.env', 'utils/nextjs-dash/package.json', ...generatedFrameworkPaths(), ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json'),
+    '.github/workflows/qodana_code_quality.yml', '.github/workflows/pages.yml', '.github/workflows/codeql.yml',
+    '.github/actions/upload-artifact/action.yml', '.github/actions/download-artifact/action.yml', '.github/actions/codeql-action/action.yml',
     ...scripts.map((file) => `scripts/${file}`),
   ])];
   for (const file of files) {
@@ -289,6 +292,35 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.equal(repeat.status, 0, repeat.stderr);
   assert.match(repeat.stdout, /0 updated/);
   assert.deepEqual(snapshot(), generated);
+
+  // An action-only bump invalidates the rendered guide without changing any runtime or package pins.
+  const uploadAction = path.join(workspace, '.github/actions/upload-artifact/action.yml');
+  const uploadSource = readFileSync(uploadAction, 'utf8');
+  writeFileSync(uploadAction, uploadSource.replace(/(uses: actions\/upload-artifact@)[a-f0-9]{40} # v[^\s;]+/,
+    (_match, prefix) => `${prefix}${'a'.repeat(40)} # v99.7.1`));
+  const pages = path.join(workspace, '.github/workflows/pages.yml');
+  const pagesSource = readFileSync(pages, 'utf8');
+  writeFileSync(pages, pagesSource.replaceAll('./.github/actions/download-artifact',
+    `actions/download-artifact@${'b'.repeat(40)} # v99.8.2`));
+  const codeqlAction = path.join(workspace, '.github/actions/codeql-action/action.yml');
+  const codeqlSource = readFileSync(codeqlAction, 'utf8');
+  const codeqlSha = 'c'.repeat(40);
+  writeFileSync(codeqlAction, codeqlSource.replace(/(uses: github\/codeql-action\/[a-z-]+@)[a-f0-9]{40} # v[^\s;]+/g,
+    (_match, prefix) => `${prefix}${codeqlSha} # v99.9.3`));
+  const beforeActionRender = snapshot();
+  const actionDrift = run('--check');
+  assert.equal(actionDrift.status, 1, actionDrift.stderr);
+  assert.match(actionDrift.stderr, /Generated file is out of date: .*LINTING_AND_CODE_QUALITY\.md/);
+  assert.deepEqual(snapshot(), beforeActionRender);
+  const render = spawnSync(process.execPath, [path.join(workspace, 'scripts/render-readmes.mjs'), 'docs/LINTING_AND_CODE_QUALITY.template.md'],
+    { cwd: workspace, encoding: 'utf8', timeout: 30_000 });
+  assert.equal(render.status, 0, render.stderr);
+  const guide = readFileSync(path.join(workspace, 'docs/LINTING_AND_CODE_QUALITY.md'), 'utf8');
+  assert.equal(guide.split('actions/upload-artifact@v99.7.1').length - 1, 2);
+  assert.ok(guide.includes('actions/download-artifact@v99.8.2'));
+  assert.ok(guide.includes(`github/codeql-action@${codeqlSha}\` (v99.9.3)`));
+  assert.equal(run('--check').status, 0);
+
   // Exercise the dependency upgrade generator used by the trusted npm relay.
   const manifestPath = path.join(workspace, 'utils/nextjs-dash/package.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));

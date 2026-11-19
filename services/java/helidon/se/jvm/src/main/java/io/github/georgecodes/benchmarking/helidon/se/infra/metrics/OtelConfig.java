@@ -81,8 +81,17 @@ public final class OtelConfig {
     static final String OKHTTP_GRPC_SENDER_PROVIDER =
             "io.opentelemetry.exporter.sender.okhttp.internal.OkHttpGrpcSenderProvider";
 
+    /** OTLP signal name for traces. */
+    private static final String TRACES_SIGNAL = "traces";
+
+    /** OTLP signal name for metrics. */
+    private static final String METRICS_SIGNAL = "metrics";
+
+    /** OTLP signal name for logs. */
+    private static final String LOGS_SIGNAL = "logs";
+
     /** Supported OTLP signal names resolved from signal-specific or global protocol settings. */
-    private static final List<String> OTLP_SIGNALS = List.of("traces", "metrics", "logs");
+    private static final List<String> OTLP_SIGNALS = List.of(TRACES_SIGNAL, METRICS_SIGNAL, LOGS_SIGNAL);
 
     /** Environment-to-system-property mappings consumed by OTel SDK autoconfigure. */
     private static final Map<String, String> OTEL_ENV_PROPERTY_MAPPINGS = Map.ofEntries(
@@ -221,9 +230,9 @@ public final class OtelConfig {
 
         if (grpcSignals.isEmpty()) {
             log.info("OTLP protocols do not use gRPC sender selection: traces={}, metrics={}, logs={}",
-                    resolveProtocol("traces"),
-                    resolveProtocol("metrics"),
-                    resolveProtocol("logs"));
+                    resolveProtocol(TRACES_SIGNAL),
+                    resolveProtocol(METRICS_SIGNAL),
+                    resolveProtocol(LOGS_SIGNAL));
             return;
         }
 
@@ -236,9 +245,9 @@ public final class OtelConfig {
         String selectedProvider = System.getProperty(GRPC_SENDER_PROVIDER_PROPERTY);
 
         log.info("OTLP protocols: traces={}, metrics={}, logs={}",
-                resolveProtocol("traces"),
-                resolveProtocol("metrics"),
-                resolveProtocol("logs"));
+                resolveProtocol(TRACES_SIGNAL),
+                resolveProtocol(METRICS_SIGNAL),
+                resolveProtocol(LOGS_SIGNAL));
         log.info("Selected OTel gRPC sender provider: {}", selectedProvider);
         log.info("Discovered OTel gRPC sender providers: {}", discoveredProviders);
 

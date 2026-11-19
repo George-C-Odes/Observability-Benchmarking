@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Observability tests for Quarkus service.
@@ -79,10 +80,9 @@ public class HelloResourceObservabilityTest {
         // Verify the custom counter metric is present
         // Updated to match the unified metric naming convention
         // Metric should be: hello.request.count_total{endpoint="/hello/platform"}
-        assert metrics.contains("hello.request.count") : 
-            "Custom metric hello.request.count not found in metrics output";
-        assert metrics.contains("endpoint") : 
-            "Metric tag 'endpoint' not found in metrics output";
+        assertTrue(metrics.contains("hello.request.count"),
+            "Custom metric hello.request.count not found in metrics output");
+        assertTrue(metrics.contains("endpoint"), "Metric tag 'endpoint' not found in metrics output");
     }
 
     @Test
@@ -102,8 +102,7 @@ public class HelloResourceObservabilityTest {
             .extract().asString();
 
         // Caffeine cache metrics should be present
-        assert metrics.contains("cache") : 
-            "Cache metrics not found";
+        assertTrue(metrics.contains("cache"), "Cache metrics not found");
     }
 
     @Test
@@ -125,8 +124,7 @@ public class HelloResourceObservabilityTest {
             .extract().asString();
 
         // Should have endpoint-specific tag
-        assert metrics.contains("/hello/platform") : 
-            "Platform endpoint metric tag not found";
+        assertTrue(metrics.contains("/hello/platform"), "Platform endpoint metric tag not found");
     }
 
     @Test
@@ -148,8 +146,7 @@ public class HelloResourceObservabilityTest {
             .extract().asString();
 
         // Should have endpoint-specific tag
-        assert metrics.contains("/hello/virtual") : 
-            "Virtual endpoint metric tag not found";
+        assertTrue(metrics.contains("/hello/virtual"), "Virtual endpoint metric tag not found");
     }
 
     @Test
@@ -171,8 +168,7 @@ public class HelloResourceObservabilityTest {
             .extract().asString();
 
         // Should have endpoint-specific tag
-        assert metrics.contains("/hello/reactive") : 
-            "Reactive endpoint metric tag not found";
+        assertTrue(metrics.contains("/hello/reactive"), "Reactive endpoint metric tag not found");
     }
 
     @Test
@@ -191,8 +187,8 @@ public class HelloResourceObservabilityTest {
             .extract().asString();
 
         // All three endpoint tags should exist
-        assert metrics.contains("/hello/platform") : "Platform endpoint not tracked";
-        assert metrics.contains("/hello/virtual") : "Virtual endpoint not tracked";
-        assert metrics.contains("/hello/reactive") : "Reactive endpoint not tracked";
+        assertTrue(metrics.contains("/hello/platform"), "Platform endpoint not tracked");
+        assertTrue(metrics.contains("/hello/virtual"), "Virtual endpoint not tracked");
+        assertTrue(metrics.contains("/hello/reactive"), "Reactive endpoint not tracked");
     }
 }

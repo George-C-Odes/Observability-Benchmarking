@@ -129,7 +129,6 @@ test('Qodana collection plan has separate source/download contracts without chan
   assert.equal(plans.length, 2);
   assert.deepEqual(plans.map((entry) => entry.id), ['qodana-services-java', 'qodana-orchestrator']);
   for (const entry of plans) {
-    assert.equal(entry.pattern, entry.report);
     assert.equal(entry.reports.length, 1);
     assert.equal(entry.reports[0].artifact, entry.report);
   }

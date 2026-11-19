@@ -140,7 +140,7 @@ func main() {
 		}
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTime)
+	shutdownCtx, cancel := context.WithTimeout(ctx, gracefulShutdownTime)
 	defer cancel()
 
 	_ = app.ShutdownWithContext(shutdownCtx)

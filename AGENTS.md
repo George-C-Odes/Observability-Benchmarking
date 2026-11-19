@@ -39,7 +39,7 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 - `service.name` and endpoint response semantics must remain stable across benchmark variants.
 - The orchestrator executes commands; treat command validation, path validation, and auth filters as security-sensitive.
 - Pages privileged event consumers execute literal trusted main checkouts and verify the inventory revision before repository code; artifacts remain data.
-- Report/capture and Qodana project-helper changes require the pinned complexity/control-regex/explicit-sort gate (`npm run check --prefix scripts/quality`) and boundary tests; see the CI/report safety skill. Supply an explicit comparator for JavaScript `sort`/`toSorted` calls.
+- Changes to JavaScript helpers under `scripts/` require the pinned script quality gate (`npm run check --prefix scripts/quality`) and focused tests. The gate checks for super-linear regex backtracking across production `.mjs` files and also enforces complexity, control-regex, and explicit-sort rules on selected helpers. Supply an explicit comparator for JavaScript `sort`/`toSorted` calls. See the CI/report safety skill.
 - Scanner/report and authenticated API helpers cross command, filesystem, container, URL, and credential trust boundaries; apply the CI/report safety skill before changing them or triaging their alerts.
 - For any HTTP request construction, complete the skill's request-safety gate: trace lower-trust inputs to the client, enforce origin/resource scope, and test zero requests for malicious input. Report fresh matching scanner evidence separately; passing tests do not clear an open Sonar alert.
 
