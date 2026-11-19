@@ -111,7 +111,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Platform**      | Container Runtime  | Docker Engine              | 24+        | Container runtime for reproducible benchmarks                        |
 | **Platform**      | Orchestration      | Docker Compose             | v2         | Local multi-service orchestration                                    |
 | **Platform**      | Tooling            | Docker CLI                 | 29.10.0    | Image build and lifecycle management                                 |
-| **Build**         | Build Tool         | Maven                      | 3.10.0     | Java build and dependency management                                 |
+| **Build**         | Build Tool         | Maven                      | 3.10.1     | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest     | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.3     | Frontend dependency management                                       |
 | **Quality**       | Linter / Formatter | Ruff                       | 0.17.5     | Python linting and code formatting                                   |
