@@ -6,15 +6,23 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { resolveRepoPath } from './render-readmes.mjs';
+import { parseColonEnv, renderReadme, resolveRepoPath } from './render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
+import { documentedActionPaths, validateDocumentedActionChange } from './workflow-action-versions.mjs';
 
 import { readNodeVersion } from './sync-node-versions.mjs';
-import { dashboardPackageVersions, readDashboardPackageVersions } from './image-tags.mjs';
+import { dashboardPackageVersions, imageTemplateVariables, readDashboardPackageVersions } from './image-tags.mjs';
 
 const envFile = 'compose/.env';
 const nextManifest = 'utils/nextjs-dash/package.json';
 const nextLock = 'utils/nextjs-dash/package-lock.json';
+const actionGuide = 'docs/LINTING_AND_CODE_QUALITY.md';
+const actionGuideTemplate = 'docs/LINTING_AND_CODE_QUALITY.template.md';
+const relayCommitMessages = {
+  env: 'chore: relay framework versions from compose/.env',
+  nextjs: 'chore: relay Next.js image tags from package.json',
+  actions: 'chore: relay documented GitHub Actions versions',
+};
 
 function validateNextjsManifest(base, head) {
   const original = JSON.parse(base);
@@ -277,14 +285,7 @@ function statePath() {
   return path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json');
 }
 
-export async function prepare(event, token, route = 'env') {
-  if (!['env', 'nextjs'].includes(route)) throw new Error('Unknown version relay route');
-  const repository = process.env.GITHUB_REPOSITORY;
-  const baseSha = event.pull_request.base.sha;
-  const pr = await api('readPull', token, { identifier: event.number });
-  assertRenovatePullRequest(pr, repository, baseSha);
-  const baseTree = await readTree(baseSha, token);
-  const headTree = await readTree(pr.head.sha, token);
+async function prepareVersionInputs(baseTree, headTree, route, token) {
   const baseEnv = await readBlob(baseTree, envFile, token);
   const headEnv = await readBlob(headTree, envFile, token);
   let changed;
@@ -308,9 +309,52 @@ export async function prepare(event, token, route = 'env') {
     if (route === 'nextjs') writeFileSync(resolveRepoPath(nextManifest), manifest, 'utf8');
     else writeFileSync(resolveRepoPath(envFile), headEnv, 'utf8');
   }
-  writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, changed, route }));
+  return { changed };
+}
+
+async function prepareActionGuide(baseTree, headTree, token) {
+  validateFrameworkTree(baseTree.entries, headTree.entries, new Set([...documentedActionPaths, actionGuide]));
+  const changed = documentedActionPaths.filter((file) => baseTree.entries.get(file)?.sha !== headTree.entries.get(file)?.sha);
+  if (!changed.length) return { changed };
+
+  const proposedWrappers = new Map();
+  for (const file of changed) {
+    const base = await readBlob(baseTree, file, token);
+    const head = await readBlob(headTree, file, token);
+    validateDocumentedActionChange(file, base, head);
+    proposedWrappers.set(file, head);
+  }
+  const readTrusted = (file) => readFileSync(resolveRepoPath(file), 'utf8');
+  const variables = imageTemplateVariables(parseColonEnv(readTrusted(envFile)));
+  // The proposed wrappers stay in memory and are read only by the Markdown renderer.
+  const guide = renderReadme(readTrusted(actionGuideTemplate), variables,
+    (file) => proposedWrappers.get(file) ?? readTrusted(file));
+  const updates = selectGeneratedUpdates([{ file: actionGuide, content: guide }], baseTree.entries, headTree.entries);
+  if (!updates.length) return { changed: [] };
+  return { changed, guide };
+}
+
+export async function prepare(event, token, route = 'env') {
+  if (!Object.hasOwn(relayCommitMessages, route)) throw new Error('Unknown version relay route');
+  const baseSha = event.pull_request.base.sha;
+  const pr = await api('readPull', token, { identifier: event.number });
+  assertRenovatePullRequest(pr, process.env.GITHUB_REPOSITORY, baseSha);
+  const baseTree = await readTree(baseSha, token);
+  const headTree = await readTree(pr.head.sha, token);
+  const prepared = route === 'actions'
+    ? await prepareActionGuide(baseTree, headTree, token)
+    : await prepareVersionInputs(baseTree, headTree, route, token);
+  const { changed } = prepared;
+  writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, route, ...prepared }));
   appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${changed.some((key) => ['DJANGO_VERSION', 'GUNICORN_VERSION'].includes(key))}\n`);
-  console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No framework version changes');
+  console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No version changes to synchronize');
+}
+
+function generatedFiles(state) {
+  if (state.route === 'actions') return [{ file: actionGuide, content: state.guide }];
+  return [...new Set(state.route === 'nextjs' ? generatedNextjsPaths() : generatedFrameworkPaths())].map((file) => ({
+    file, content: readFileSync(resolveRepoPath(file), 'utf8'),
+  }));
 }
 
 export async function publish(token) {
@@ -321,10 +365,7 @@ export async function publish(token) {
   if (pr.head.sha !== state.headSha || pr.head.ref !== state.ref) throw new Error('PR head changed during synchronization; rerun on the new revision');
   const baseTree = await readTree(state.baseSha, token);
   const headTree = await readTree(state.headSha, token);
-  const files = [...new Set(state.route === 'nextjs' ? generatedNextjsPaths() : generatedFrameworkPaths())].map((file) => ({
-    file, content: readFileSync(resolveRepoPath(file), 'utf8'),
-  }));
-  const updates = selectGeneratedUpdates(files, baseTree.entries, headTree.entries);
+  const updates = selectGeneratedUpdates(generatedFiles(state), baseTree.entries, headTree.entries);
   if (!updates.length) { console.log('Generated versions are already synchronized'); return; }
   // A PAT/App token, unlike GITHUB_TOKEN, triggers the normal path-scoped CI on the new commit.
   const writeToken = process.env.RENOVATE_SYNC_TOKEN;
@@ -338,8 +379,7 @@ export async function publish(token) {
   const tree = await api('createTree', writeToken, { body: { base_tree: headTree.sha, tree: entries } });
   requireGitSha(tree.sha);
   const commit = await api('createCommit', writeToken, { body: {
-    message: state.route === 'nextjs' ? 'chore: relay Next.js image tags from package.json'
-      : 'chore: relay framework versions from compose/.env', tree: tree.sha, parents: [state.headSha],
+    message: relayCommitMessages[state.route ?? 'env'], tree: tree.sha, parents: [state.headSha],
     author: { name: 'github-actions[bot]', email: '41898282+github-actions[bot]@users.noreply.github.com' },
   } });
   requireGitSha(commit.sha);
@@ -353,8 +393,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
     if (mode === 'prepare') await prepare(event, process.env.GH_TOKEN);
     else if (mode === 'prepare-nextjs') await prepare(event, process.env.GH_TOKEN, 'nextjs');
+    else if (mode === 'prepare-actions') await prepare(event, process.env.GH_TOKEN, 'actions');
     else if (mode === 'publish') await publish(process.env.GH_TOKEN);
-    else throw new Error('Usage: node scripts/renovate-framework-sync.mjs prepare|prepare-nextjs|publish');
+    else throw new Error('Usage: node scripts/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|publish');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

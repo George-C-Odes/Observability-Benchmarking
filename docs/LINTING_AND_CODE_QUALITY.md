@@ -114,8 +114,8 @@ It keeps the repository root as the Qodana project so the shared root `qodana.ya
 
 The shared root `qodana.yaml` pins the JVM linter image (`jetbrains/qodana-jvm-community:2026.2`) so both the action's initial pull step and the later scoped scan step resolve the same linter in this otherwise mixed-language repository. The workflow uploads two artifacts per matrix entry:
 
-- **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. Note: the Qodana action pre-zips this artifact internally, so it cannot be consumed directly by `actions/download-artifact@v4+`.
-- **`qodana-report-<scope>`** — the HTML report directory, uploaded by an explicit `actions/upload-artifact@v7.0.2` step. This is what the Pages workflow downloads to host the report.
+- **`qodana-results-<scope>`** — the full results archive (SARIF, logs) produced by the Qodana action's built-in `upload-result` option. After download, its contents require an additional unzip step.
+- **`qodana-report-<scope>`** — the HTML report directory, uploaded through the shared `actions/upload-artifact@v7.0.2` action. This is what the Pages workflow downloads to host the report.
 
 It is triggered on:
 - manual dispatch
@@ -133,7 +133,7 @@ How it works:
 - it downloads the uploaded Qodana HTML report artifacts for both matrix entries:
   - `qodana-report-services-java`
   - `qodana-report-orchestrator`
-- the HTML report is uploaded as a separate `actions/upload-artifact@v7.0.2` step in the Qodana workflow, ensuring compatibility with `actions/download-artifact@v8.0.2` in the Pages workflow (the Qodana action's built-in `upload-result` pre-zips files, making them unusable by `download-artifact@v4+`)
+- the Qodana workflow uploads the HTML report with `actions/upload-artifact@v7.0.2`, and the Pages workflow extracts it with `actions/download-artifact@v8.0.2`
 - it copies those artifacts into the built Pages site under:
   - `quality/services-java/`
   - `quality/orchestrator/`
@@ -709,7 +709,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action**: `github/codeql-action@33d7b85da1a04171e211befe2c739303b9a4c066` (# v4.39.3, SHA-pinned)
+- **CodeQL Action** is pinned to `github/codeql-action@33d7b85da1a04171e211befe2c739303b9a4c066` (v4.39.3).
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
@@ -851,6 +851,10 @@ runs in parallel with the documentation build. Jekyll output is cached by docs
 and workflow content. Assembly publishes all seven existing paths and records
 availability, workflow conclusion, run ID and analyzed SHA. Deployment alone
 receives `pages: write` and `id-token: write`.
+
+The [main quality index](https://george-c-odes.github.io/Observability-Benchmarking/quality/)
+and [shared staging index](https://george-c-odes.github.io/Observability-Benchmarking/stage/quality/)
+link directly to each other.
 
 `scripts/pages/report-catalog.json` defines producers, workflow names, artifacts
 and report paths. `github-reports.mjs` implements validated, repository-scoped

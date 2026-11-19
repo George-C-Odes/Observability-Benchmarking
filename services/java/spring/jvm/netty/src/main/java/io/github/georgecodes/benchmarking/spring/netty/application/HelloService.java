@@ -4,6 +4,7 @@ import io.github.georgecodes.benchmarking.spring.netty.application.port.CachePor
 import io.micrometer.core.instrument.Counter;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,7 +16,7 @@ public class HelloService {
     /** Request counter for the reactive endpoint. */
     private final Counter reactiveCounter;
 
-    public HelloService(CachePort cache, Counter reactiveCounter) {
+    public HelloService(CachePort cache, @Qualifier("helloReactiveCounter") Counter reactiveCounter) {
         this.cache = cache;
         this.reactiveCounter = reactiveCounter;
     }

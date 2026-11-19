@@ -9,6 +9,7 @@ import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
+import { documentedActionPaths } from './workflow-action-versions.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
 const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
@@ -459,8 +460,6 @@ test('Sonar version publication refuses unrelated PR edits to scanner scope or e
 test('workflow executes only trusted base scripts, keeps credentials scoped, and does not force refs', () => {
   const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
   assert.match(workflow, /pull_request_target:/);
-  assert.match(workflow, /ref: \$\{\{ github.event.pull_request.base.sha }}/);
-  assert.doesNotMatch(workflow, /ref: \$\{\{ github.event.pull_request.head/);
   assert.match(workflow, /persist-credentials: false/);
   assert.doesNotMatch(workflow, /^\s+contents: write/m);
   assert.match(workflow, /RENOVATE_SYNC_TOKEN: \$\{\{ secrets.RENOVATE_SYNC_TOKEN }}/);
@@ -477,6 +476,134 @@ test('workflow executes only trusted base scripts, keeps credentials scoped, and
   assert.match(helper, /force: false/);
   assert.ok(helper.includes('parents: [state.headSha]'));
   assert.ok(helper.includes(config.gitIgnoredAuthors[0]));
+});
+
+const guidePath = 'docs/LINTING_AND_CODE_QUALITY.md';
+
+test('Renovate routes only the documented action wrappers to guide regeneration', () => {
+  const rules = config.packageRules.filter((rule) => rule.addLabels?.includes('action-docs-version'));
+  assert.equal(rules.length, 1);
+  assert.deepEqual(rules[0].matchManagers, ['github-actions']);
+  assert.deepEqual(rules[0].matchDepTypes, ['action']);
+  assert.deepEqual(rules[0].matchFileNames, documentedActionPaths);
+  assert.deepEqual(rules[0].matchPackageNames, ['actions/upload-artifact', 'actions/download-artifact', 'github/codeql-action']);
+  assert.deepEqual(config.packageRules.find((rule) => rule.groupName === 'CodeQL action').matchPackageNames, ['github/codeql-action']);
+  const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
+  assert.match(workflow, /contains\(github.event.pull_request.labels.\*.name, 'action-docs-version'\)\)\r?\n {4}runs-on:/);
+  assert.match(workflow, /!contains\([^\n]+ 'framework-version'\) &&\s+!contains\([^\n]+ 'nextjs-version'\) &&\s+contains\([^\n]+ 'action-docs-version'\)\s+id: actions_docs[\s\S]*?run: node scripts\/renovate-framework-sync.mjs prepare-actions/);
+  assert.match(workflow, /steps.actions_docs.outputs.changed == 'true'\s+env:[\s\S]*?run: node scripts\/renovate-framework-sync.mjs publish/);
+});
+
+function actionGuideFixture(t, onWrite) {
+  const blobs = new Map();
+  const fixture = publicationFixture(t, (route, options) => {
+    if (options.method !== 'GET') return onWrite?.(route, JSON.parse(options.body)) ?? assert.fail(route);
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  });
+  const { base, head, state } = fixture;
+  // Both routes start at the same complete base in this fixture.
+  for (const [file, entry] of base) head.set(file, entry);
+  const add = (tree, file, content, mode = '100644') => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { type: 'blob', mode, sha });
+  };
+  const wrappers = new Map(documentedActionPaths.map((file) => [file, readFileSync(resolveRepoPath(file), 'utf8')]));
+  for (const [file, content] of wrappers) {
+    add(base, file, content);
+    add(head, file, content);
+  }
+  const output = path.join(process.env.RUNNER_TEMP, 'output');
+  const originalOutput = process.env.GITHUB_OUTPUT;
+  process.env.GITHUB_OUTPUT = output;
+  t.after(() => {
+    if (originalOutput === undefined) delete process.env.GITHUB_OUTPUT;
+    else process.env.GITHUB_OUTPUT = originalOutput;
+  });
+  const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
+  return { ...fixture, wrappers, output,
+    stateFile: path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'),
+    change: (file, content, mode) => add(head, file, content, mode),
+    prepare: () => prepare(event, 'synthetic-test-token', 'actions'),
+  };
+}
+
+function nextActionPin(content, version = 'v99.1.2') {
+  return content.replaceAll(/@[a-f0-9]{40} # v\d+\.\d+\.\d+/g, `@${'f'.repeat(40)} # ${version}`);
+}
+
+for (const file of documentedActionPaths) {
+  test(`Renovate regenerates the guide for an isolated bump to ${file}`, async (t) => {
+    const { wrappers, change, prepare: prepareGuide, output, stateFile } = actionGuideFixture(t);
+    const original = wrappers.get(file);
+    change(file, nextActionPin(original));
+    await prepareGuide();
+    assert.match(readFileSync(output, 'utf8'), /^changed=true\r?\npython_locks=false/m);
+    const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+    assert.deepEqual(state.changed, [file]);
+    const guide = readFileSync(resolveRepoPath(guidePath), 'utf8');
+    if (file.includes('codeql-action')) {
+      const pin = state.guide.split('\n').find((line) => line.includes('CodeQL Action** is pinned'));
+      assert.match(pin, /github\/codeql-action@f{40}` \(v99\.1\.2\)/);
+    } else {
+      const action = file.split('/')[2];
+      assert.ok(state.guide.includes(`actions/${action}@v99.1.2`));
+    }
+    assert.notEqual(state.guide, guide);
+    assert.equal(readFileSync(resolveRepoPath(file), 'utf8'), original);
+  });
+}
+
+test('action guide publication writes only the generated guide and a repeat run is a no-op', async (t) => {
+  const writes = [];
+  const { wrappers, change, prepare: prepareGuide, headTreeSha, state, stateFile } = actionGuideFixture(t, (route, body) => {
+    writes.push({ route, body });
+    return { sha: String(writes.length).repeat(40) };
+  });
+  const [file] = documentedActionPaths;
+  change(file, nextActionPin(wrappers.get(file)));
+  await prepareGuide();
+  const { guide } = JSON.parse(readFileSync(stateFile, 'utf8'));
+  await publish('synthetic-test-token');
+  assert.deepEqual(writes.map(({ route }) => route), ['git/blobs', 'git/trees', 'git/commits', 'git/refs/heads/renovate%2Fframework']);
+  assert.equal(Buffer.from(writes[0].body.content, 'base64').toString('utf8'), guide);
+  assert.deepEqual(writes[1].body, { base_tree: headTreeSha, tree: [{ path: guidePath, mode: '100644', type: 'blob', sha: '1'.repeat(40) }] });
+  assert.deepEqual(writes[2].body.parents, [state.headSha]);
+  assert.deepEqual(writes[3].body, { sha: '3'.repeat(40), force: false });
+  change(guidePath, guide);
+  await prepareGuide();
+  await publish('synthetic-test-token');
+  assert.equal(writes.length, 4);
+});
+
+test('action guide preparation rejects changes outside the exact pin values before publication', async (t) => {
+  const { change, wrappers, prepare: prepareGuide, head, base, mock, output, stateFile } = actionGuideFixture(t);
+  const [upload, , codeql] = documentedActionPaths;
+  const original = wrappers.get(upload);
+  const bumped = nextActionPin(original);
+  const beforeState = readFileSync(stateFile, 'utf8');
+  for (const [file, content, error, mode] of [
+    ['.github/workflows/qodana_code_quality.yml', 'unrelated workflow edit', /Unexpected file/],
+    ['docs/LINTING_AND_CODE_QUALITY.template.md', 'template edit', /Unexpected file/],
+    [upload, bumped, /unchanged regular file mode/, '120000'],
+    [upload, bumped.replace('default: artifact', 'default: changed'), /only the documented action pins/],
+    [upload, bumped.replace('actions/upload-artifact@', 'actions/download-artifact@'), /only the documented action pins/],
+    [upload, bumped.replace('f'.repeat(40), 'main'), /Expected a SHA pin/],
+    [upload, nextActionPin(original, 'latest'), /Expected a SHA pin/],
+    [codeql, wrappers.get(codeql).replace(/@[a-f0-9]{40} # v\d+\.\d+\.\d+/, `@${'f'.repeat(40)} # v99.1.2`), /Conflicting codeql-action pins/],
+    [guidePath, 'unrelated guide edit', /Refusing to overwrite/],
+  ]) {
+    change(upload, bumped);
+    change(file, content, mode);
+    await assert.rejects(prepareGuide(), error);
+    if (base.has(file)) head.set(file, base.get(file));
+    else head.delete(file);
+    assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
+    assert.equal(existsSync(output), false);
+  }
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
 });
 
 

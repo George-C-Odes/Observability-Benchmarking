@@ -173,6 +173,11 @@ receive the existing `nextjs-version` label. The trusted relay detects the chang
 validates dependency-only manifest edits and the complete lockfile against independent npm regeneration,
 then regenerates the documentation and image tags. A non-Next.js update retains the existing image tag.
 
+Renovate adds `action-docs-version` to updates for the shared upload-artifact, download-artifact, and
+CodeQL action wrappers. The relay accepts only full commit SHA pins and version comment changes in
+those wrappers. It renders and publishes [the linting and code quality guide](../docs/LINTING_AND_CODE_QUALITY.md)
+from the trusted template, using the proposed pins as data. CodeQL subactions update as a group.
+
 1. Renovate proposes an env update and labels the PR `framework-version`.
 2. **Framework Version Sync** (`renovate_framework_sync.yml`) runs the **trusted base revision's** scripts.
    It accepts only open `renovate[bot]` PRs from this repository under `renovate/`, validates that the env changed
@@ -287,9 +292,14 @@ fixed `.sonar/inputs` tree, recording `GITHUB_SHA` for each module. Go and LCOV 
 `prepare` requires every policy module's reports and matching revision, plus Java bytecode/libraries,
 before writing `.sonar/analysis.properties`. It merges the authored `sonar-project.properties` with
 the shared `.sonarcloud.properties` scope, encoding and synchronized Python version. Java test classification
-is added explicitly for the CLI scanner. Production source remains in scope, including untested files.
-The scan job runs the coverage helper's Node tests from the repository root and imports their LCOV
-alongside the dashboard's two LCOV reports.
+is added explicitly for the CLI scanner. Production source remains in scope for static analysis.
+Keep `sonar.coverage.exclusions` in `sonar-project.properties` aligned with the shared paths in
+`codecov.yml`. These paths cover duplicate shims, framework launchers and declarations, static
+dashboard files, and the generated landing page. Benchmark behavior and executable tooling stay
+eligible for coverage. What Codecov can display depends on the files in the uploaded reports.
+
+The scan job runs the coverage helper's Node tests from the repository root. It imports their LCOV
+alongside the dashboard's two LCOV reports and uploads the same helper report to Codecov as `ci-tooling`.
 Regression checks: `node --test scripts/sonar-coverage.test.mjs` and `npm run check --prefix scripts/quality`.
 
 Before the first CI scan, configure the repository `SONAR_TOKEN` secret and turn off **Administration >

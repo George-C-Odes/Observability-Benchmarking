@@ -75,6 +75,7 @@ jobs:
           path: .sonar/inputs/
           merge-multiple: 'true'
       - name: Measure Sonar coverage helper tests
+        id: helper_coverage
         run: |
           node --test --experimental-test-coverage \
             --test-coverage-include=scripts/sonar-coverage.mjs \
@@ -90,3 +91,11 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: -Dproject.settings=.sonar/analysis.properties
+      - name: Upload Sonar coverage helper results to Codecov
+        if: ${{ !cancelled() && steps.helper_coverage.outcome == 'success' }}
+        uses: ./.github/actions/codecov-upload
+        with:
+          files: .sonar/sonar-helper.lcov.info
+          flags: ci-tooling
+          name: ci-tooling
+          token: ${{ secrets.CODECOV_TOKEN }}

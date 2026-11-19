@@ -6,7 +6,7 @@ export const catalog = JSON.parse(readFileSync(new URL('./report-catalog.json', 
 // Conditionally scanned reports need independent run provenance and downloads.
 export const collectionPlan = catalog.flatMap((producer) => producer.reports.some((report) => report.job)
   ? producer.reports.map((report) => ({ ...producer, id: `${producer.id}-${report.path}`, producer: producer.id,
-    report: report.artifact, pattern: report.artifact, reports: [report] }))
+    report: report.artifact, reports: [report] }))
   : [{ ...producer, producer: producer.id }]);
 const transient = new Set([408, 429, 500, 502, 503, 504]);
 const identifier = (value) => typeof value === 'string' && /^[1-9][0-9]*$/.test(value) && value.trim() === value;
@@ -162,7 +162,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (process.argv[2] === 'matrix') console.log(JSON.stringify(collectionPlan));
   else if (process.argv[2] === 'finish') {
     const source = JSON.parse(readFileSync('.collected/source.json', 'utf8'));
-    source.download = process.env.DOWNLOAD_OUTCOME || 'skipped';
+    const plan = collectionPlan.find((entry) => entry.producer === source.producer && entry.report === source.report);
+    const outcomes = [process.env.DOWNLOAD_OUTCOME, process.env.SECOND_DOWNLOAD_OUTCOME];
+    source.downloads = Object.fromEntries(plan.reports.map(({ artifact }, index) => [artifact, outcomes[index] || 'skipped']));
     writeFileSync('.collected/source.json', JSON.stringify(source));
   } else if (process.argv[2] === 'collect') await collectReport();
   else throw new Error('Unknown report operation');
