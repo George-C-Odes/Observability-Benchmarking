@@ -48,21 +48,21 @@ def runtime_paths(root):
     )
 
 
-def ensure_runtime(root, version):
-    if sys.version_info < (3, 11):
-        raise ValueError("APM requires Python 3.11 or newer")
-    runtime, python, _ = runtime_paths(root)
-    if not python.is_file():
-        venv.EnvBuilder(with_pip=True).create(runtime)
-    probe = subprocess.run(
-        [str(python), "-c", "import importlib.metadata; print(importlib.metadata.version('apm-cli'))"],
-        cwd=root, capture_output=True, text=True, check=False, timeout=30,
-    )
-    if probe.returncode != 0 or probe.stdout.strip() != version:
-        run([python, "-m", "pip", "install", "--upgrade", "--disable-pip-version-check",
+def ensure_cli(root, python, apm, version):
+    try:
+        installed = importlib.metadata.version("apm-cli")
+    except importlib.metadata.PackageNotFoundError:
+        installed = None
+    if installed != version or not apm.is_file():
+        print(f"Installing repository APM {version} (previous version: {installed or 'none'}).", flush=True)
+        install_options = ["--force-reinstall", "--no-deps"] if installed == version else ["--upgrade"]
+        run([python, "-m", "pip", "install", *install_options, "--disable-pip-version-check",
              f"apm-cli=={version}"], root)
     run([python, "-m", "pip", "check"], root)
-    return python
+    reported = run([apm, "--version"], root, capture=True)
+    if reported.split()[-1:] != [version]:
+        raise ValueError(f"Unexpected APM CLI version from {apm}: {reported!r}")
+    print(f"Using repository APM {version} at {apm}.", flush=True)
 
 
 def load_lock(path):
@@ -248,21 +248,21 @@ def main():
     version = read_pin(ROOT)
     runtime, python, apm = runtime_paths(ROOT)
     if args.dry_run:
-        print(f"Install apm-cli=={version} in {runtime}; preserve the system APM installation.")
+        print(f"Install apm-cli=={version} into the repository environment.")
+        print(f"Repository CLI: {apm}")
         print("Stage a fresh lock; require unchanged dependency commits, hashes and paths.")
-        print("Reconcile my-agent deployments, replace lock metadata, then run:")
+        print("Validate clean staging, then reconcile and validate my-agent deployments:")
         for arguments in VALIDATION:
             print("  apm " + " ".join(arguments))
         return
+    if sys.version_info < (3, 11):
+        raise ValueError("APM requires Python 3.11 or newer")
     if Path(sys.prefix).resolve() != runtime.resolve():
-        python = ensure_runtime(ROOT, version)
+        if not python.is_file():
+            venv.EnvBuilder(with_pip=True).create(runtime)
         run([python, Path(__file__).resolve()], ROOT)
         return
-    if importlib.metadata.version("apm-cli") != version:
-        raise ValueError("Active APM Python package does not match the pin")
-    reported = run([apm, "--version"], ROOT, capture=True)
-    if re.search(rf"\b{re.escape(version)}\b", reported) is None:
-        raise ValueError(f"Unexpected APM CLI version: {reported}")
+    ensure_cli(ROOT, python, apm, version)
     refresh(ROOT, apm, version)
 
 

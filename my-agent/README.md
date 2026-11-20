@@ -13,7 +13,7 @@ python scripts/upgrade-apm.py --dry-run
 python scripts/upgrade-apm.py
 ```
 
-The script installs the exact `apm-cli` pin into the ignored root `.venv-apm/` environment and uses that executable for every operation. It leaves your system/Scoop APM installation alone; for later manual commands, use `.venv-apm/Scripts/apm.exe` on Windows or `.venv-apm/bin/apm` on Unix. Initial installation and dependency staging require network access and any GitHub authentication your environment needs. The CLI version is pinned; pip resolves its transitive Python dependencies.
+The script installs the exact `apm-cli` pin into the ignored root `.venv-apm/` environment and prints the version and path of the executable it uses. The bare `apm --version` command reports whichever executable is on your `PATH`, which may be a separate system or Scoop installation. From the repository root, verify the CLI used by the upgrade with `./.venv-apm/Scripts/apm.exe --version` on Windows or `./.venv-apm/bin/apm --version` on Unix. Initial installation and dependency staging require network access and any GitHub authentication your environment needs. The CLI version is pinned; pip resolves its transitive Python dependencies.
 
 To adopt a newer stable release, review [upstream releases](https://github.com/microsoft/apm/releases), change `scripts/apm-version.txt` to its exact version, then run the script and review the generated lockfile diff. Runs never select a floating `latest` version or update the audited skill commits.
 
@@ -55,7 +55,7 @@ The root router and repository contract load these only for matching tasks. They
 
 ## Validate
 
-Run from this directory:
+Run from this directory with the pinned `.venv-apm` activated, or invoke its APM executable by path:
 
 ```powershell
 apm install --frozen
