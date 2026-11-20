@@ -67,7 +67,11 @@ jobs:
         uses: ./.github/actions/setup-python
         with:
           cache: pip
-          cache-dependency-path: .github/requirements/coverage.in
+          cache-dependency-path: |
+            .github/requirements/pip.in
+            .github/requirements/pip.txt
+            .github/requirements/python-ci.txt
+            .github/requirements/coverage.in
       - name: Set up Java
         uses: ./.github/actions/setup-java
         with:
@@ -79,8 +83,10 @@ jobs:
           pattern: sonar-inputs-*
           path: .sonar/inputs/
           merge-multiple: 'true'
-      - name: Install pinned Python coverage tool
-        run: 'python -m pip install --only-binary=:all: --no-deps -r .github/requirements/coverage.in'
+      - name: Install hash-verified Python coverage tool
+        uses: ./.github/actions/install-python-dependencies
+        with:
+          requirements: .github/requirements/coverage.in
       - name: Measure JavaScript tooling coverage
         id: javascript_tooling_coverage
         run: |
