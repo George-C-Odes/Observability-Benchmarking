@@ -101,10 +101,11 @@ jobs:
       - name: Measure Python tooling coverage
         id: python_tooling_coverage
         env:
-          COVERAGE_FILE: .sonar/ci-tooling.coverage
+          COVERAGE_FILE: ${{ runner.temp }}/ci-tooling.coverage
+          COVERAGE_RCFILE: ${{ github.workspace }}/.github/ci-tooling.coveragerc
         run: |
-          python -m coverage run --branch --include='scripts/*.py' --omit='scripts/test_*.py' \
-            -m unittest discover -s scripts -p 'test_*.py'
+          python -m coverage run -m unittest discover -s scripts -p 'test_*.py'
+          python -m coverage combine
           python -m coverage xml -o .sonar/ci-tooling.cobertura.xml
       - name: Require complete coverage inputs and prepare scanner configuration
         run: node scripts/sonar-coverage.mjs prepare

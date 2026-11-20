@@ -1,0 +1,7 @@
+[run]
+branch = True
+patch = subprocess
+include =
+    ${GITHUB_WORKSPACE?}/scripts/*.py
+omit =
+    ${GITHUB_WORKSPACE?}/scripts/test_*.py

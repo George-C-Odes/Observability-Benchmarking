@@ -141,6 +141,10 @@ test('coordinator owns all triggers, passes only Codecov to tests and reserves S
   for (const generator of ['--test-reporter=lcov --test-reporter-destination=.sonar/ci-tooling.lcov.info', 'coverage xml -o .sonar/ci-tooling.cobertura.xml']) {
     assert.ok(coordinator.includes(generator) && coordinator.indexOf(generator) < preparation);
   }
+  const coverageConfig = readFileSync(new URL('../.github/ci-tooling.coveragerc', import.meta.url), 'utf8');
+  assert.match(coverageConfig, /^patch = subprocess\r?$/m);
+  assert.match(coordinator, /COVERAGE_RCFILE: \$\{\{ github\.workspace \}\}\/\.github\/ci-tooling\.coveragerc/);
+  assert.match(coordinator, /python -m coverage combine\r?\n +python -m coverage xml/);
   assert.match(coordinator, /files: \.sonar\/ci-tooling\.lcov\.info,\.sonar\/ci-tooling\.cobertura\.xml/);
   for (const file of ['java_coverage', 'go_coverage', 'django_python_coverage', 'nextjs_dash_quality']) {
     const workflow = readFileSync(new URL(`../.github/workflows/${file}.yml`, import.meta.url), 'utf8');
