@@ -18,7 +18,8 @@ function put(workspace, relative, content = 'data') {
 function populate(workspace) {
   put(workspace, '.sonarcloud.properties', readFileSync(new URL('../.sonarcloud.properties', import.meta.url)));
   put(workspace, 'sonar-project.properties', readFileSync(new URL('../sonar-project.properties', import.meta.url)));
-  put(workspace, '.sonar/sonar-helper.lcov.info', 'SF:scripts/sonar-coverage.mjs\nDA:1,1\nend_of_record\n');
+  put(workspace, '.sonar/ci-tooling.lcov.info', 'SF:scripts/sonar-coverage.mjs\nDA:1,1\nend_of_record\n');
+  put(workspace, '.sonar/ci-tooling.cobertura.xml', '<coverage/>');
   for (const [name, module] of Object.entries(inventory)) {
     if (name === 'django-common') continue;
     const directory = module.path;
@@ -46,14 +47,15 @@ test('all modules stage separate reports and bytecode and prepare one same-revis
   assert.ok(config.includes(pythonVersion));
   assert.match(config, /sonar.sources=\./);
   assert.match(config, /services\/java\/\*\*\/src\/test\/\*\*/);
-  assert.match(config, /^sonar\.javascript\.lcov\.reportPaths=.*\/node\/lcov\.info,.*\/dom\/lcov\.info,\.sonar\/sonar-helper\.lcov\.info$/m);
+  assert.match(config, /^sonar\.javascript\.lcov\.reportPaths=.*\/node\/lcov\.info,.*\/dom\/lcov\.info,\.sonar\/ci-tooling\.lcov\.info$/m);
+  assert.match(config, /^sonar\.python\.coverage\.reportPaths=.*\/WSGI\/coverage\.xml,.*\/ASGI\/coverage\.xml,\.sonar\/ci-tooling\.cobertura\.xml$/m);
   assert.equal(readFileSync(path.join(workspace, '.sonar/analysis.properties'), 'utf8'), `${config}\n`);
   assert.match(readFileSync(path.join(workspace, '.sonar/inputs/services/go/simple/coverage.out'), 'utf8'), /services\/go\/simple\/cmd\/server\/main.go:/);
   assert.match(readFileSync(path.join(workspace, '.sonar/inputs/utils/nextjs-dash/coverage/node/lcov.info'), 'utf8'), /SF:utils\/nextjs-dash\/app\/page.tsx/);
 });
 
 test('incomplete, empty, missing-bytecode and stale-revision collections cannot produce scanner settings', (t) => {
-  for (const kind of ['missing report', 'empty report', 'missing bytecode', 'stale revision', 'missing module', 'missing helper coverage']) {
+  for (const kind of ['missing report', 'empty report', 'missing bytecode', 'stale revision', 'missing module', 'missing JavaScript tooling coverage', 'missing Python tooling coverage']) {
     const workspace = fixture(t);
     populate(workspace);
     const first = inventory['spring-tomcat'].path;
@@ -62,7 +64,8 @@ test('incomplete, empty, missing-bytecode and stale-revision collections cannot 
     if (kind === 'missing bytecode') rmSync(path.join(workspace, `.sonar/inputs/${first}/target/classes/Main.class`));
     if (kind === 'stale revision') put(workspace, '.sonar/inputs/revisions/go-simple.json', JSON.stringify({ name: 'go-simple', revision: 'b'.repeat(40) }));
     if (kind === 'missing module') rmSync(path.join(workspace, '.sonar/inputs/revisions/go-simple.json'));
-    if (kind === 'missing helper coverage') rmSync(path.join(workspace, '.sonar/sonar-helper.lcov.info'));
+    if (kind === 'missing JavaScript tooling coverage') rmSync(path.join(workspace, '.sonar/ci-tooling.lcov.info'));
+    if (kind === 'missing Python tooling coverage') rmSync(path.join(workspace, '.sonar/ci-tooling.cobertura.xml'));
     assert.throws(() => prepare(workspace, sha), undefined, kind);
     assert.equal(existsSync(path.join(workspace, '.sonar/analysis.properties')), false, kind);
   }
@@ -134,9 +137,11 @@ test('coordinator owns all triggers, passes only Codecov to tests and reserves S
   assert.equal((coordinator.match(/secrets.SONAR_TOKEN/g) ?? []).length, 1);
   assert.match(coordinator, /fetch-depth: 0/);
   assert.match(coordinator, /head.repo.full_name == github.repository/);
-  assert.match(coordinator, /--test-coverage-include=scripts\/sonar-coverage\.mjs/);
-  assert.match(coordinator, /--test-reporter=lcov --test-reporter-destination=\.sonar\/sonar-helper\.lcov\.info/);
-  assert.ok(coordinator.indexOf('--test-reporter=lcov') < coordinator.indexOf('node scripts/sonar-coverage.mjs prepare'));
+  const preparation = coordinator.indexOf('node scripts/sonar-coverage.mjs prepare');
+  for (const generator of ['--test-reporter=lcov --test-reporter-destination=.sonar/ci-tooling.lcov.info', 'coverage xml -o .sonar/ci-tooling.cobertura.xml']) {
+    assert.ok(coordinator.includes(generator) && coordinator.indexOf(generator) < preparation);
+  }
+  assert.match(coordinator, /files: \.sonar\/ci-tooling\.lcov\.info,\.sonar\/ci-tooling\.cobertura\.xml/);
   for (const file of ['java_coverage', 'go_coverage', 'django_python_coverage', 'nextjs_dash_quality']) {
     const workflow = readFileSync(new URL(`../.github/workflows/${file}.yml`, import.meta.url), 'utf8');
     assert.match(workflow, /^ {2}workflow_call:/m);

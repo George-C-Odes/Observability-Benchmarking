@@ -141,8 +141,10 @@ export function stage(workspace, requestedName, sha) {
 
 export function prepare(workspace, sha) {
   revision(sha);
-  const helperReport = '.sonar/sonar-helper.lcov.info';
-  requiredFile(workspace, helperReport);
+  const javascriptToolingReport = '.sonar/ci-tooling.lcov.info';
+  const pythonToolingReport = '.sonar/ci-tooling.cobertura.xml';
+  requiredFile(workspace, javascriptToolingReport);
+  requiredFile(workspace, pythonToolingReport);
   const reports = new Map(['java', 'go', 'python', 'nextjs'].map((format) => [format, []]));
   for (const { name, module, revisionFile } of entries) {
     const evidence = JSON.parse(readFileSync(requiredFile(workspace, revisionFile), 'utf8'));
@@ -165,8 +167,8 @@ export function prepare(workspace, sha) {
     `sonar.test.inclusions=${testPatterns},services/java/**/src/test/**,utils/orchestrator/src/test/**`,
     `sonar.coverage.jacoco.xmlReportPaths=${reports.get('java').join(',')}`,
     `sonar.go.coverage.reportPaths=${reports.get('go').join(',')}`,
-    `sonar.python.coverage.reportPaths=${reports.get('python').join(',')}`,
-    `sonar.javascript.lcov.reportPaths=${[...reports.get('nextjs'), helperReport].join(',')}`,
+    `sonar.python.coverage.reportPaths=${[...reports.get('python'), pythonToolingReport].join(',')}`,
+    `sonar.javascript.lcov.reportPaths=${[...reports.get('nextjs'), javascriptToolingReport].join(',')}`,
     `sonar.java.binaries=${java.map((directory) => `${directory}/classes`).join(',')}`,
     `sonar.java.test.binaries=${java.map((directory) => `${directory}/test-classes`).join(',')}`,
     `sonar.java.libraries=${java.map((directory) => `${directory}/sonar-libraries/*.jar`).join(',')}`,
