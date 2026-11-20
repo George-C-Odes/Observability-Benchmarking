@@ -93,6 +93,8 @@ def on_startup() -> None:
     global _booted, _cache, _config, _hello_service
 
     if _booted:
+        # The first startup call sets _booted, so later calls skip rebuilding the cache.
+        # noinspection PyUnreachableCode
         return
     _booted = True
 

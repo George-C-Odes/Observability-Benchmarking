@@ -112,6 +112,8 @@ def configure_pyroscope() -> None:
     global _configured
 
     if _configured:
+        # The first call sets _configured before checking whether profiling is enabled.
+        # noinspection PyUnreachableCode
         return
     _configured = True
 
