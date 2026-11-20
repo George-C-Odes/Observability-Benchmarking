@@ -63,6 +63,15 @@ jobs:
           fetch-depth: 0
       - name: Set up Node
         uses: ./.github/actions/setup-node
+      - name: Set up Python
+        uses: ./.github/actions/setup-python
+        with:
+          cache: pip
+          cache-dependency-path: |
+            .github/requirements/pip.in
+            .github/requirements/pip.txt
+            .github/requirements/python-ci.txt
+            .github/requirements/coverage.in
       - name: Set up Java
         uses: ./.github/actions/setup-java
         with:
@@ -74,14 +83,30 @@ jobs:
           pattern: sonar-inputs-*
           path: .sonar/inputs/
           merge-multiple: 'true'
-      - name: Measure Sonar coverage helper tests
-        id: helper_coverage
+      - name: Install hash-verified Python coverage tool
+        uses: ./.github/actions/install-python-dependencies
+        with:
+          requirements: .github/requirements/coverage.in
+      - name: Measure JavaScript tooling coverage
+        id: javascript_tooling_coverage
         run: |
           node --test --experimental-test-coverage \
-            --test-coverage-include=scripts/sonar-coverage.mjs \
+            --test-coverage-include='scripts/**/*.mjs' \
+            --test-coverage-exclude='scripts/**/*.test.mjs' \
+            --test-coverage-exclude=scripts/test-helpers.mjs \
             --test-reporter=spec --test-reporter-destination=stdout \
-            --test-reporter=lcov --test-reporter-destination=.sonar/sonar-helper.lcov.info \
-            scripts/sonar-coverage.test.mjs
+            --test-reporter=lcov --test-reporter-destination=.sonar/ci-tooling.lcov.info \
+            scripts/*.test.mjs scripts/pages/assemble-reports.test.mjs \
+            scripts/pages/generate-nextjs-quality-report.test.mjs scripts/pages/github-reports.test.mjs
+      - name: Measure Python tooling coverage
+        id: python_tooling_coverage
+        env:
+          COVERAGE_FILE: ${{ runner.temp }}/ci-tooling.coverage
+          COVERAGE_RCFILE: ${{ github.workspace }}/.github/ci-tooling.coveragerc
+        run: |
+          python -m coverage run -m unittest discover -s scripts -p 'test_*.py'
+          python -m coverage combine
+          python -m coverage xml -o .sonar/ci-tooling.cobertura.xml
       - name: Require complete coverage inputs and prepare scanner configuration
         run: node scripts/sonar-coverage.mjs prepare
       - name: Analyze repository and import coverage
@@ -91,11 +116,11 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: -Dproject.settings=.sonar/analysis.properties
-      - name: Upload Sonar coverage helper results to Codecov
-        if: ${{ !cancelled() && steps.helper_coverage.outcome == 'success' }}
+      - name: Upload tooling coverage to Codecov
+        if: ${{ !cancelled() && steps.javascript_tooling_coverage.outcome == 'success' && steps.python_tooling_coverage.outcome == 'success' }}
         uses: ./.github/actions/codecov-upload
         with:
-          files: .sonar/sonar-helper.lcov.info
+          files: .sonar/ci-tooling.lcov.info,.sonar/ci-tooling.cobertura.xml
           flags: ci-tooling
           name: ci-tooling
           token: ${{ secrets.CODECOV_TOKEN }}

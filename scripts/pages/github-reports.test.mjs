@@ -30,6 +30,42 @@ test('creation order wins over out-of-order completion and event metadata', asyn
   assert.equal(result.run_id, '123');
 });
 
+test('artifact timestamps come from exact report names in the selected run', async () => {
+  const calls = [];
+  const result = await resolver([], { fetchImpl: async (url, options) => {
+    calls.push({ url, options });
+    if (url.includes('/workflows/')) return { ok: true, json: async () => ({ workflow_runs: [run(), run({ id: 456, run_number: 4 })] }) };
+    const page = new URL(url).searchParams.get('page');
+    const enhanced = { name: 'quality-report-go', expired: false, created_at: '2026-11-20T08:12:34Z' };
+    const archives = page === '1' ? [enhanced, ...Array.from({ length: 99 }, () => ({ name: 'unrelated', expired: false }))] : [
+      { name: 'quality-report-go-simple', expired: false, created_at: '2026-11-20T08:13:55Z' },
+      { name: 'quality-report-go-simple', expired: true, created_at: '2026-11-19T08:13:55Z' },
+    ];
+    return { ok: true, json: async () => ({ artifacts: archives }) };
+  } });
+  assert.equal(result.run_id, '456');
+  assert.deepEqual(result.artifact_created_at, {
+    'quality-report-go': '2026-11-20T08:12:34Z',
+    'quality-report-go-simple': '2026-11-20T08:13:55Z',
+  });
+  assert.equal(calls.length, 3);
+  for (const [index, { url, options }] of calls.slice(1).entries()) {
+    assert.equal(url, `https://api.github.com/repos/${repository}/actions/runs/456/artifacts?per_page=100&page=${index + 1}`);
+    assert.equal(options.method, 'GET');
+    assert.equal(options.redirect, 'error');
+    assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+  }
+});
+
+test('a failed timestamp lookup preserves the selected report run', async () => {
+  const result = await resolver([], { fetchImpl: async (url) => url.includes('/artifacts?')
+    ? { ok: false, status: 403 }
+    : { ok: true, json: async () => ({ workflow_runs: [run()] }) } });
+  assert.equal(result.run_id, '123');
+  assert.equal(result.status, 'resolved');
+  assert.deepEqual(result.artifact_created_at, {});
+});
+
 test('forks, missing source repositories, cancelled runs and wrong scopes are excluded', async () => {
   assert.equal((await resolver([run({ head_repository: null }), run({ head_repository: { full_name: 'fork/benchmark' } }),
     run({ conclusion: 'cancelled' }), run({ head_branch: 'feature' })])).status, 'no matching run');
@@ -39,6 +75,7 @@ test('forks, missing source repositories, cancelled runs and wrong scopes are ex
 test('bounded pagination finds eligible runs beyond the first 100', async () => {
   const pages = [];
   const result = await resolver([], { fetchImpl: async (url) => {
+    if (url.includes('/artifacts?')) return { ok: true, json: async () => ({ artifacts: [] }) };
     pages.push(new URL(url).searchParams.get('page'));
     return { ok: true, json: async () => ({ workflow_runs: pages.length === 1 ? Array.from({ length: 100 }, () => run({ head_branch: 'feature' })) : [run()] }) };
   } });
@@ -93,8 +130,14 @@ test('redirects, authentication failures and malformed responses remain errors',
 
 test('malicious response identifiers never reach subsequent download operations', async () => {
   for (const malicious of ['123\nrun_id=999', '../1', '1?x', '%2e%2e']) {
-    await assert.rejects(resolver([run({ id: malicious })]), /Malformed/);
-    await assert.rejects(resolver([run({ head_sha: malicious })]), /Malformed/);
+    for (const overrides of [{ id: malicious }, { head_sha: malicious }]) {
+      let requests = 0;
+      await assert.rejects(resolver([], { fetchImpl: async () => {
+        requests++;
+        return { ok: true, json: async () => ({ workflow_runs: [run(overrides)] }) };
+      } }), /Malformed/);
+      assert.equal(requests, 1);
+    }
   }
 });
 
@@ -171,7 +214,7 @@ test('scan, startup and missing-evidence failures never fall back to older green
     assert.equal(selected.run_id, '4');
     assert.equal(selected.conclusion, 'failure');
     assert.equal(selected.status, 'resolved');
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 3);
   }
   const { resolve } = scopedResolver(runs, { 4: [] });
   assert.equal((await resolve('qodana-report-orchestrator')).status, 'scope evidence unavailable');

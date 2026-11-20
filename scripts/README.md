@@ -298,8 +298,10 @@ Keep `sonar.coverage.exclusions` in `sonar-project.properties` aligned with the 
 dashboard files, and the generated landing page. Benchmark behavior and executable tooling stay
 eligible for coverage. What Codecov can display depends on the files in the uploaded reports.
 
-The scan job runs the coverage helper's Node tests from the repository root. It imports their LCOV
-alongside the dashboard's two LCOV reports and uploads the same helper report to Codecov as `ci-tooling`.
+The scan job measures the Node and Python tooling tests under `scripts/`. The Python run also measures
+CLI subprocesses and combines their data before exporting Cobertura XML. Sonar imports the tooling
+reports alongside the dashboard and Django reports. Codecov receives the same tooling reports under
+the `ci-tooling` flag.
 Regression checks: `node --test scripts/sonar-coverage.test.mjs` and `npm run check --prefix scripts/quality`.
 
 Before the first CI scan, configure the repository `SONAR_TOKEN` secret and turn off **Administration >

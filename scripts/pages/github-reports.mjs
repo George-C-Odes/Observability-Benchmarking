@@ -32,8 +32,9 @@ function reportRoute(operation, value) {
 // Request-safety gate: repository/token come from the trusted Actions launcher;
 // producer/scope are fixed catalog operations. API run IDs/SHAs remain untrusted.
 // Only GET list-runs/list-artifacts/list-jobs within this repository on api.github.com are
-// authorized. Components are validated then encoded once; credentials stay in
-// headers, redirects are rejected, and every attempt has a 20-second deadline.
+// authorized. Artifact lookups use the selected run's validated numeric ID and do not
+// follow URLs in the response. Components are encoded once; credentials stay in headers,
+// redirects are rejected, and every attempt has a 20-second deadline.
 export function reportClient(repository, token, { fetchImpl = fetch, wait = sleep, now = Date.now } = {}) {
   const parts = repositoryParts(repository);
   const prefix = `https://api.github.com/repos/${parts.map(encodeURIComponent).join('/')}`;
@@ -117,6 +118,26 @@ async function latestReportRun(client, matches, selection) {
   return null;
 }
 
+async function artifactCreationTimes(client, runId, reportNames) {
+  try {
+    const artifacts = [];
+    for (let page = 1; page <= 5; page++) {
+      const data = await client.request('artifacts', runId, page);
+      if (!Array.isArray(data.artifacts)) return {};
+      artifacts.push(...data.artifacts);
+      if (data.artifacts.length < 100) {
+        return Object.fromEntries(reportNames.flatMap((name) => {
+          const matches = artifacts.filter((artifact) => artifact?.name === name && artifact.expired === false);
+          return matches.length === 1 && typeof matches[0].created_at === 'string' ? [[name, matches[0].created_at]] : [];
+        }));
+      }
+    }
+  } catch {
+    // Timestamp metadata is optional. Preserve the selected run and its download.
+  }
+  return {};
+}
+
 export async function resolveReport({ repository, token, producer, scope, report, ...options }) {
   const selection = reportSelection(producer, scope, report);
   const provenance = { producer, scope, ...(report && { report }) };
@@ -131,7 +152,13 @@ export async function resolveReport({ repository, token, producer, scope, report
     const selected = await latestReportRun(client, matches, selection);
     if (selected) {
       const { run, status } = selected;
-      return { ...provenance, run_id: String(run.id), head_sha: run.head_sha, conclusion: run.conclusion, status };
+      const runId = String(run.id);
+      const source = { ...provenance, run_id: runId, head_sha: run.head_sha, conclusion: run.conclusion, status };
+      if (status === 'resolved') {
+        const reports = selection ? [selection] : catalog.find((entry) => entry.id === producer).reports;
+        source.artifact_created_at = await artifactCreationTimes(client, runId, reports.map(({ artifact }) => artifact));
+      }
+      return source;
     }
     if (data.workflow_runs.length < 100) return { ...provenance, status: 'no matching run' };
   }

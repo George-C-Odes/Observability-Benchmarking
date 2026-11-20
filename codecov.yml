@@ -110,7 +110,7 @@ flags:
 
   # ── CI tooling (uploaded by sonar.yml) ────────────────────────────────
   ci-tooling:
-    paths: [scripts/sonar-coverage.mjs]
+    paths: [scripts/]
 
 # ── Component definitions ─────────────────────────────────────────────
 # Components aggregate flags into language-level groups.  The Codecov
