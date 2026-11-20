@@ -35,6 +35,8 @@ def register_metrics() -> None:
     global _registered
 
     if _registered:
+        # Successful registration sets _registered, so later calls skip the counter.
+        # noinspection PyUnreachableCode
         return
 
     try:
