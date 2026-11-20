@@ -208,6 +208,8 @@ def instrument_app() -> None:
     global _app_instrumented
 
     if _app_instrumented:
+        # The first call sets _app_instrumented even when instrumentation is disabled.
+        # noinspection PyUnreachableCode
         return
     if _sdk_disabled():
         logger.info("OTel app instrumentation skipped (OTEL_SDK_DISABLED=true)")
@@ -266,6 +268,8 @@ def configure_sdk() -> None:
     global _sdk_configured
 
     if _sdk_configured:
+        # The first call sets _sdk_configured even when the SDK is disabled.
+        # noinspection PyUnreachableCode
         return
     if _sdk_disabled():
         logger.info("OTel SDK setup skipped (OTEL_SDK_DISABLED=true)")

@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from sync_build_locks import (
+    Requirement,
     generate_locks,
     parse_requirements,
     render_requirements,
@@ -38,14 +39,22 @@ class BuildLockTests(TestCase):
             parse_requirements("package==1\npackage==2\n")
 
     def test_hash_selection_requires_matching_versions_and_hashes(self) -> None:
-        pins = {"package": ("1", ())}
-        for inventory in ({}, {"package": ("2", (_HASH_A,))}, {"package": ("1", ())}):
+        pins: dict[str, Requirement] = {"package": ("1", ())}
+        inventories: tuple[dict[str, Requirement], ...] = (
+            {},
+            {"package": ("2", (_HASH_A,))},
+            {"package": ("1", ())},
+        )
+        for inventory in inventories:
             with self.subTest(inventory=inventory):
                 with self.assertRaisesRegex(ValueError, "Missing matching hashes"):
                     select_hashes(pins, inventory)
 
     def test_render_round_trip_is_deterministic(self) -> None:
-        requirements = {"z-package": ("2", (_HASH_B,)), "a-package": ("1", (_HASH_A,))}
+        requirements: dict[str, Requirement] = {
+            "z-package": ("2", (_HASH_B,)),
+            "a-package": ("1", (_HASH_A,)),
+        }
         rendered = render_requirements(requirements, hashes=True)
         self.assertEqual(requirements, parse_requirements(rendered))
         self.assertLess(rendered.index("a-package==1"), rendered.index("z-package==2"))
