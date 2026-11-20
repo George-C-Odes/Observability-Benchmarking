@@ -40,6 +40,9 @@ class BuildLockTests(TestCase):
 
     def test_hash_selection_requires_matching_versions_and_hashes(self) -> None:
         pins: dict[str, Requirement] = {"package": ("1", ())}
+        # The dict literals fit dict[str, Requirement], including the empty dict.
+        # Both empty and one-string hash tuples fit Requirement's tuple[str, ...].
+        # noinspection PyTypeChecker
         inventories: tuple[dict[str, Requirement], ...] = (
             {},
             {"package": ("2", (_HASH_A,))},

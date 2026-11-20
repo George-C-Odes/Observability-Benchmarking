@@ -31,7 +31,7 @@ profile:
     - inspection: PyCompatibilityInspection
       enabled: true
 
-linter: jetbrains/qodana-python-community:2026.2@sha256:0f245387509ebb3120805d100a2fbc71e6cdbf5b1204f05f206ca8144f8175da
+linter: jetbrains/qodana-python-community:2026.3@sha256:ea61fa24dcabd75a55f250bed362630f6b944ddaea0df25863b1800f63b1747c
 
 # Enforce annotations in shared production code, not Django test methods/hooks.
 include:
