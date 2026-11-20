@@ -709,7 +709,7 @@ cat results.sarif | python3 -m json.tool
 
 ### Action Versions
 
-- **CodeQL Action** is pinned to `github/codeql-action@33d7b85da1a04171e211befe2c739303b9a4c066` (v4.39.3).
+- **CodeQL Action** is pinned to `github/codeql-action@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea` (v4.39.4).
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
