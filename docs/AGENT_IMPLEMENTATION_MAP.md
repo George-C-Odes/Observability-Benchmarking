@@ -270,7 +270,7 @@ apm audit --ci --no-policy
 apm pack --dry-run
 ```
 
-Use `apm lock` after intentional dependency changes, then rerun the full validation sequence.
+Run `python scripts/upgrade-apm.py` from the repository root after changing the pinned CLI or authored primitives. Use `apm lock` after intentional dependency changes, then rerun the full validation sequence. See [the APM guide](../my-agent/README.md#validate) for the matching CI checks.
 
 ## Cross-cutting invariants
 

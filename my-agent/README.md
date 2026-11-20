@@ -2,7 +2,7 @@
 
 This directory is a Microsoft Agent Package Manager (APM) project containing portable, repository-specific agent primitives.
 
-The reviewed APM CLI pin is in [`scripts/apm-version.txt`](../scripts/apm-version.txt). Check the active executable with `apm --version` before manually refreshing or validating generated state.
+Local upgrades and the **APM package** CI job share the reviewed CLI pin in [`scripts/apm-version.txt`](../scripts/apm-version.txt).
 
 ## Upgrade and refresh
 
@@ -50,6 +50,7 @@ The catalog is pinned to an audited full commit SHA in `apm.yml`; `apm.lock.yaml
 - `.apm/skills/benchmark-integrity/SKILL.md` protects comparable endpoint, telemetry, and resource behavior.
 - `.apm/skills/focused-validation/SKILL.md` selects failure-mode-appropriate checks and reports validation limits.
 - `.apm/skills/ci-report-safety/SKILL.md` covers workflow context validity, scanner/helper trust boundaries, authenticated API URL/credential boundaries, subprocess deadlines, Git-data isolation, fail-closed reports, and scoped security-alert triage with fresh-scan confirmation.
+- [Dashboard web guidance](.apm/skills/dashboard-web-guidance/SKILL.md) uses the pinned Modern Web Guidance npm CLI for browser compatibility and UI patterns in `utils/nextjs-dash/`. Update the npm version and the upstream skill reference together after reviewing the release.
 
 The root router and repository contract load these only for matching tasks. They complement the pinned upstream skills with local contracts; do not manually copy them into generated deployments or edit upstream dependency sources. `includes: auto` discovers authored primitives without dependency pin changes, but adding or changing deployed primitives can require refreshed lockfile deployment records.
 
@@ -71,11 +72,9 @@ apm lock
 apm install --frozen
 ```
 
-After upgrading the APM CLI, run `apm install` to reconcile local deployment hashes, then rerun the validation sequence above. Keep the audited dependency commits pinned; `--update` and `--refresh` are for intentional upstream dependency changes.
+When the CLI pin or authored primitives change, use [the upgrade and refresh script](#upgrade-and-refresh) to regenerate the lockfile and reconcile local deployments. Reserve `--update` and `--refresh` for intentional dependency changes.
 
-APM preserves the CLI version recorded in an existing lockfile. To refresh that metadata, copy `apm.yml` and `.apm/` into a clean temporary directory and run `apm install` there. Compare the generated lockfile with this package's lockfile before copying it back: dependency commits, content hashes, and deployment paths must match the expected sources. Rerun the validation sequence in this directory. Keep the existing lockfile until the replacement is ready; removing it in place can cause APM to skip existing deployments as unmanaged files.
-
-If `apm install --frozen` reports new local deployments missing from the lockfile, run `apm install` without `--update`/`--refresh`, inspect the generated lock diff for unchanged upstream pins, then rerun the full validation sequence. Preserve any locally modified deployments APM skips; do not use `--force` to bypass ownership or security checks. Record such skips, and validate the authored primitives in a clean temporary deployment if necessary.
+The **APM package** job in [Workflow Quality](../.github/workflows/workflow_quality.yml) runs the four validation commands on a clean checkout, checks that the lockfile records the pinned CLI version and survives validation intact, and runs the offline upgrade script tests. It installs the CLI with `microsoft/apm-action` and disables APM lifecycle scripts.
 
 To evaluate an upstream skill update, inspect the available refs and use `apm install --dry-run` before changing the pinned commit:
 

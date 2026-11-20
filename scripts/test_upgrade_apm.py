@@ -252,6 +252,16 @@ class RefreshTests(unittest.TestCase):
         ):
             apm.ensure_cli(self.root, python, executable, "0.36.1")
 
+    def test_cli_can_report_the_release_build_revision_after_the_version(self):
+        _, python, executable = apm.runtime_paths(self.root)
+        executable.parent.mkdir(parents=True)
+        executable.touch()
+        with (
+            patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
+            patch.object(apm, "run", side_effect=[None, "Agent Package Manager (APM) CLI version 0.36.1 (784d778)"]),
+        ):
+            apm.ensure_cli(self.root, python, executable, "0.36.1")
+
     def test_command_failure_propagates(self):
         with patch.object(apm.subprocess, "run", side_effect=subprocess.CalledProcessError(7, "apm")):
             with self.assertRaises(subprocess.CalledProcessError):

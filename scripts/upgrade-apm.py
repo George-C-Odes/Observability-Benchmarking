@@ -60,7 +60,8 @@ def ensure_cli(root, python, apm, version):
              f"apm-cli=={version}"], root)
     run([python, "-m", "pip", "check"], root)
     reported = run([apm, "--version"], root, capture=True)
-    if reported.split()[-1:] != [version]:
+    # Standalone release builds can append their Git revision to the version.
+    if re.search(rf"\bversion {re.escape(version)}(?: \([0-9a-f]{{7,40}}\))?\Z", reported) is None:
         raise ValueError(f"Unexpected APM CLI version from {apm}: {reported!r}")
     print(f"Using repository APM {version} at {apm}.", flush=True)
 
