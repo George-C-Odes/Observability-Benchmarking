@@ -54,6 +54,17 @@ function reportStatus(source, download, directory, destination) {
   return copyReport(directory, destination);
 }
 
+function timestampTag(value) {
+  if (typeof value !== 'string') return '\u2014';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '\u2014';
+  const iso = date.toISOString();
+  if (iso.length !== 24 || iso.startsWith('0000-')) return '\u2014';
+  const seconds = iso.slice(0, 19);
+  if (value !== iso && value !== `${seconds}Z`) return '\u2014';
+  return `<time datetime="${seconds}Z">${seconds.replace('T', ' ')} UTC</time>`;
+}
+
 function reportRow(report, collection, destination, source) {
   const reportDestination = join(destination, report.path);
   const status = reportStatus(source, source.downloads?.[report.artifact], join(collection, report.artifact), reportDestination);
@@ -64,7 +75,8 @@ function reportRow(report, collection, destination, source) {
     writeFileSync(join(reportDestination, 'index.html'), htmlPage({ title: report.title,
       body: `<h1>${esc(report.title)}</h1><p>Availability: ${esc(status)}.</p><p>Workflow conclusion: ${esc(source.conclusion || 'unknown')}. Run: ${esc(source.run_id || 'unknown')}. Analyzed commit: <code>${esc(source.head_sha || 'unknown')}</code>.</p>` }));
   }
-  return `<tr><td>${link}</td><td>${esc(status)}</td><td>${esc(source.conclusion || 'unknown')}</td><td>${esc(source.run_id || '\u2014')}</td><td><code>${esc(source.head_sha || 'unknown')}</code></td></tr>`;
+  const created = timestampTag(source.artifact_created_at?.[report.artifact]);
+  return `<tr><td>${link}</td><td>${esc(status)}</td><td>${esc(source.conclusion || 'unknown')}</td><td>${esc(source.run_id || '\u2014')}</td><td><code>${esc(source.head_sha || 'unknown')}</code></td><td>${created}</td></tr>`;
 }
 
 export function assembleReports(site, collections, repository) {
@@ -77,13 +89,18 @@ export function assembleReports(site, collections, repository) {
       const source = readSource(collection, producer, scope, repository);
       for (const report of producer.reports) rows.push(reportRow(report, collection, destination, source));
     }
+    const generated = timestampTag(new Date().toISOString());
     const body = `<h1>${scope === 'live' ? 'Main' : 'Shared staging'} quality reports</h1>
+<p class="subtitle">Index generated ${generated}</p>
 <p>Latest eligible scan for each report by creation order. Unaffected Qodana scopes retain their previous scan. Failed scans remain visible. Staging combines the latest runs from repository branches.</p>
-<table><thead><tr><th>Report</th><th>Availability</th><th>Workflow conclusion</th><th>Run</th><th>Analyzed commit</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+<div class="table-scroll" tabindex="0" role="region" aria-label="Quality report details">
+  <table><thead><tr><th>Report</th><th>Availability</th><th>Workflow conclusion</th><th>Run</th><th>Analyzed commit</th><th>Report artifact created</th></tr></thead><tbody>${rows.join('')}</tbody></table>
+</div>`;
     const navigation = scope === 'live'
       ? { href: '../stage/quality/', label: 'Shared staging quality reports' }
       : { href: '../../quality/', label: 'Main quality reports' };
-    writeFileSync(join(destination, 'index.html'), htmlPage({ title: 'Quality reports', body, navigation }));
+    writeFileSync(join(destination, 'index.html'), htmlPage({ title: 'Quality reports', body, navigation,
+      extraCSS: '    .table-scroll { overflow-x: auto; }' }));
   }
 }
 

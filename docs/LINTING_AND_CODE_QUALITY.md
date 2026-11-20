@@ -854,7 +854,9 @@ receives `pages: write` and `id-token: write`.
 
 The [main quality index](https://george-c-odes.github.io/Observability-Benchmarking/quality/)
 and [shared staging index](https://george-c-odes.github.io/Observability-Benchmarking/stage/quality/)
-link directly to each other.
+link directly to each other. Each shows when the index was generated and when
+GitHub Actions created each report artifact, in UTC to the second. The index
+shows an em dash when a report artifact timestamp is unavailable.
 
 `scripts/pages/report-catalog.json` defines producers, workflow names, artifacts
 and report paths. `github-reports.mjs` implements validated, repository-scoped

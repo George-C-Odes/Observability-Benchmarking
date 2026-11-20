@@ -12,12 +12,18 @@ test('assembly preserves every catalog URL, nested HTML and failed-run provenanc
   const root = temporaryDirectory(t, 'pages-assembly-');
   const site = join(root, 'site');
   const collections = join(root, 'collections');
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-20T15:05:47.826Z') });
   for (const scope of ['live', 'stage']) {
     for (const producer of collectionPlan) {
       const directory = join(collections, `collection-${scope}-${producer.id}`);
       mkdirSync(directory, { recursive: true });
       const downloads = Object.fromEntries(producer.reports.map(({ artifact }) => [artifact, 'success']));
-      writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: producer.producer, report: producer.report, scope, run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', status: 'resolved', downloads }));
+      const artifact_created_at = {
+        'quality-report-go': scope === 'live' ? '2026-11-20T08:12:34Z' : '2026-11-20T09:42:59Z',
+        'quality-report-go-simple': '2026-11-20T10:13:55.912Z',
+        'quality-report-codeql': '<script>invalid timestamp</script>',
+      };
+      writeFileSync(join(directory, 'source.json'), JSON.stringify({ producer: producer.producer, report: producer.report, scope, run_id: '123', head_sha: 'a'.repeat(40), conclusion: 'failure', status: 'resolved', downloads, artifact_created_at }));
       for (const report of producer.reports) {
         mkdirSync(join(directory, report.artifact, 'nested'), { recursive: true });
         writeFileSync(join(directory, report.artifact, 'nested', 'index.html'), '<h1>Scan diagnostics</h1>');
@@ -29,6 +35,13 @@ test('assembly preserves every catalog URL, nested HTML and failed-run provenanc
     const html = readFileSync(join(site, scopePath, 'index.html'), 'utf8');
     assert.match(html, /failure/);
     assert.match(html, /aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/);
+    assert.ok(html.includes('Index generated <time datetime="2026-11-20T15:05:47Z">2026-11-20 15:05:47 UTC</time>'));
+    const goTime = scopePath === 'quality' ? '08:12:34' : '09:42:59';
+    const row = (path) => html.split('<tr>').find((row) => row.includes(`href="./${path}/"`));
+    assert.ok(row('go').includes(`<time datetime="2026-11-20T${goTime}Z">2026-11-20 ${goTime} UTC</time>`));
+    assert.ok(row('go-simple').includes('<time datetime="2026-11-20T10:13:55Z">2026-11-20 10:13:55 UTC</time>'));
+    assert.ok(row('codeql').includes('<td>\u2014</td>'));
+    assert.ok(!html.includes('invalid timestamp'));
     for (const producer of catalog) for (const report of producer.reports) {
       assert.ok(existsSync(join(site, scopePath, report.path, 'nested/index.html')));
       assert.ok(html.includes(`./${report.path}/`));
@@ -112,6 +125,9 @@ test('independent Qodana sources preserve an untouched report while exposing a n
   for (const producer of collectionPlan.filter((entry) => entry.producer === 'qodana')) {
     const source = await resolveReport({ repository, token: 'synthetic-token', producer: producer.producer,
       scope: 'stage', report: producer.report, fetchImpl: async (url) => {
+        if (url.includes('/runs/1/artifacts?')) return { ok: true, json: async () => ({ artifacts: [
+          { name: producer.report, expired: false, created_at: '2026-11-19T06:30:24Z' },
+        ] }) };
         const match = /\/runs\/([0-9]+)\/jobs\?/.exec(url);
         if (!match) return { ok: true, json: async () => ({ workflow_runs: runs }) };
         const id = Number(match[1]);
@@ -138,7 +154,9 @@ test('independent Qodana sources preserve an untouched report while exposing a n
   assert.match(orchestrator, /Run: 2/);
   assert.match(orchestrator, /2222222222222222222222222222222222222222/);
   const index = readFileSync(join(site, 'stage/quality/index.html'), 'utf8');
-  assert.match(index, /Java services<\/a><\/td><td>available<\/td><td>success<\/td><td>1/);
+  const servicesRow = index.split('<tr>').find((row) => row.includes('Java services'));
+  assert.match(servicesRow, /Java services<\/a><\/td><td>available<\/td><td>success<\/td><td>1/);
+  assert.ok(servicesRow.includes('<time datetime="2026-11-19T06:30:24Z">2026-11-19 06:30:24 UTC</time>'));
   assert.match(index, /Orchestrator<\/td><td>report missing<\/td><td>failure<\/td><td>2/);
 });
 
