@@ -129,7 +129,9 @@ def verify_v4_migration(apm, candidate_path, original_bytes, candidate):
     if promoted.get("lockfile_version") != "4":
         raise ValueError("APM did not promote the verified legacy lockfile to version 4")
     require_same_dependencies(promoted, candidate)
-    candidate_path.write_bytes(candidate_bytes)
+    # SonarCloud AaH9rNivKWHopb5S6urm flags the payload. refresh() fixes the destination
+    # to apm.lock.yaml inside its temporary staging directory.
+    candidate_path.write_bytes(candidate_bytes)  # NOSONAR(S2083) restores contents to the fixed staging path.
 
 
 def managed_hashes(lock):
