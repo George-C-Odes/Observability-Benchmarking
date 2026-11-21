@@ -42,7 +42,7 @@ class RefreshTests(unittest.TestCase):
     def fake_run(self, arguments, cwd, **_):
         arguments = list(arguments)[1:]
         self.calls.append((arguments, cwd))
-        if arguments == ["install"]:
+        if arguments in (["install"], ["install", "--no-frozen"]):
             self.assertTrue((cwd / ".apm/source.md").is_file())
             lock = copy.deepcopy(self.candidate)
             if cwd == self.package:
@@ -55,7 +55,7 @@ class RefreshTests(unittest.TestCase):
         with patch.object(apm, "run", side_effect=runner or self.fake_run), patch.dict(
             "sys.modules", {"yaml": SimpleNamespace(safe_load=json.loads)}
         ):
-            apm.refresh(self.root, "pinned-apm", "0.35.1")
+            apm.refresh(self.root, "pinned-apm", self.candidate["apm_version"])
 
     def test_success_stages_then_reconciles_and_validates_both(self):
         self.invoke()
@@ -78,6 +78,7 @@ class RefreshTests(unittest.TestCase):
         else:
             self.original["lockfile_version"] = legacy_version
         self.candidate["lockfile_version"] = candidate_version
+        self.candidate["apm_version"] = "0.37.0"
         self.candidate["dependencies"][0]["content_hash"] = "sha256:framed"
         self.lock_path.write_text(json.dumps(self.original), encoding="utf-8")
         self.original_bytes = self.lock_path.read_bytes()
@@ -91,8 +92,12 @@ class RefreshTests(unittest.TestCase):
                 self.assertEqual((cwd / self.lock_path.name).read_bytes(), self.original_bytes)
             self.fake_run(arguments, cwd, **kwargs)
 
-        self.invoke(verify)
-        self.assertEqual([command for command, _ in self.calls[:3]], [["install"], ["install", "--frozen"], ["install"]])
+        with patch.dict("os.environ", {"CI": "true"}):
+            self.invoke(verify)
+        self.assertEqual([command for command, _ in self.calls[:3]],
+                         [["install"], ["install", "--frozen"], ["install", "--no-frozen"]])
+        self.assertEqual([command for command, cwd in self.calls if cwd == self.package],
+                         [["install", "--no-frozen"], *map(list, apm.VALIDATION)])
         self.assertEqual(json.loads(self.lock_path.read_text()), self.candidate)
 
     def test_v4_migration_accepts_unquoted_and_implicit_legacy_schema_versions(self):
@@ -102,7 +107,7 @@ class RefreshTests(unittest.TestCase):
                 self.prepare_v4_migration(legacy_version, candidate_version=4)
                 self.invoke()
                 self.assertEqual([command for command, _ in self.calls[:3]],
-                                 [["install"], ["install", "--frozen"], ["install"]])
+                                 [["install"], ["install", "--frozen"], ["install", "--no-frozen"]])
                 self.assertEqual(json.loads(self.lock_path.read_text()), self.candidate)
 
     def test_v4_migration_rejects_a_digest_that_promotion_cannot_reproduce(self):

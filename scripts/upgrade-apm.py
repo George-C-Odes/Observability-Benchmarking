@@ -124,7 +124,7 @@ def verify_v4_migration(apm, candidate_path, original_bytes, candidate):
     run([apm, "install", "--frozen"], stage)
     if candidate_path.read_bytes() != original_bytes:
         raise ValueError("Frozen APM verification changed the legacy lockfile")
-    run([apm, "install"], stage)
+    run([apm, "install", "--no-frozen"], stage)
     promoted = load_lock(candidate_path)
     if promoted.get("lockfile_version") != "4":
         raise ValueError("APM did not promote the verified legacy lockfile to version 4")
@@ -244,7 +244,11 @@ def refresh(root, apm, version):
             # The validated candidate includes the license source selection needed
             # to rehydrate old caches. Existing APM local trust records stay in place.
             shutil.copyfile(candidate_path, lock_path)
-            run([apm, "install"], package)
+            install = [apm, "install"]
+            # APM 0.37 defaults to frozen in CI when a lockfile exists.
+            if tuple(map(int, version.split("."))) >= (0, 37, 0):
+                install.append("--no-frozen")
+            run(install, package)
             reconciled = load_lock(lock_path)
             require_same_dependencies(candidate, reconciled)
             local_inventory = deployment_inventory(reconciled)
