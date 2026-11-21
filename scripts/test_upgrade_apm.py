@@ -219,6 +219,73 @@ class RefreshTests(unittest.TestCase):
         pin.write_text("0.35.1\n", encoding="utf-8")
         self.assertEqual(apm.read_pin(self.root), "0.35.1")
 
+    def test_launch_from_active_repository_environment_upgrades_stale_cli(self):
+        runtime, python, executable = apm.runtime_paths(self.root)
+        executable.parent.mkdir(parents=True)
+        executable.touch()
+        with (
+            patch.object(apm, "ROOT", self.root),
+            patch.object(apm.sys, "argv", ["upgrade-apm.py"]),
+            patch.object(apm.sys, "prefix", str(runtime)),
+            patch.object(apm, "read_pin", return_value="0.36.1"),
+            patch.object(apm.importlib.metadata, "version", return_value="0.36.0"),
+            patch.object(apm, "run", side_effect=[None, None, "Agent Package Manager (APM) CLI version 0.36.1"]) as run,
+            patch.object(apm, "refresh") as refresh,
+        ):
+            apm.main()
+
+        self.assertEqual(run.call_args_list[0].args[0], [
+            python, "-m", "pip", "install", "--upgrade", "--disable-pip-version-check", "apm-cli==0.36.1",
+        ])
+        self.assertEqual(run.call_args_list[1].args[0], [python, "-m", "pip", "check"])
+        self.assertEqual(run.call_args_list[2].args[0], [executable, "--version"])
+        refresh.assert_called_once_with(self.root, executable, "0.36.1")
+
+    def test_cli_must_report_the_exact_pinned_version(self):
+        _, python, executable = apm.runtime_paths(self.root)
+        executable.parent.mkdir(parents=True)
+        executable.touch()
+        for reported in (
+            "Agent Package Manager (APM) CLI version 0.36.1-rc1\n  Python: 3.13.17",
+            "Agent Package Manager (APM) CLI version 0.36.10",
+            "Agent Package Manager (APM) CLI version 0.36.0\n  Install path: version 0.36.1",
+        ):
+            with (
+                self.subTest(reported=reported),
+                patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
+                patch.object(apm, "run", side_effect=[None, reported]),
+                self.assertRaisesRegex(ValueError, "Unexpected APM CLI version"),
+            ):
+                apm.ensure_cli(self.root, python, executable, "0.36.1")
+
+    def test_cli_can_report_the_release_build_revision_after_the_version(self):
+        _, python, executable = apm.runtime_paths(self.root)
+        executable.parent.mkdir(parents=True)
+        executable.touch()
+        with (
+            patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
+            patch.object(apm, "run", side_effect=[None, "Agent Package Manager (APM) CLI version 0.36.1 (784d778)"]),
+        ):
+            apm.ensure_cli(self.root, python, executable, "0.36.1")
+
+    def test_cli_accepts_verbose_version_output(self):
+        _, python, executable = apm.runtime_paths(self.root)
+        executable.parent.mkdir(parents=True)
+        executable.touch()
+        for revision in ("", " (784d778)"):
+            reported = (
+                f"Agent Package Manager (APM) CLI version 0.36.1{revision}\n"
+                "  Python:       3.13.17\n"
+                "  Platform:     win32-AMD64\n"
+                "  Install path: .venv-apm/Lib/site-packages/apm_cli"
+            )
+            with (
+                self.subTest(revision=revision),
+                patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
+                patch.object(apm, "run", side_effect=[None, reported]),
+            ):
+                apm.ensure_cli(self.root, python, executable, "0.36.1")
+
     def test_command_failure_propagates(self):
         with patch.object(apm.subprocess, "run", side_effect=subprocess.CalledProcessError(7, "apm")):
             with self.assertRaises(subprocess.CalledProcessError):

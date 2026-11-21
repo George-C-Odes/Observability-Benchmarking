@@ -30,6 +30,8 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 | Docs site                             | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
 | Agent guidance or APM package         | `AGENTS.md`, relevant `.github/instructions/*`, `my-agent/README.md`                 | `docs/AGENT_IMPLEMENTATION_MAP.md`, then affected `.apm/*` files  |
 
+For HTML, CSS, and browser behavior in `utils/nextjs-dash/`, use the [dashboard web guidance skill](my-agent/.apm/skills/dashboard-web-guidance/SKILL.md).
+
 ## Non-negotiable contracts
 
 - Do not edit generated files directly when a template exists. Use `scripts/render-readmes.mjs` after template changes.

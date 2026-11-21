@@ -50,3 +50,46 @@ jobs:
         run: zizmor --offline --min-severity medium .github
       - name: Test workflow and publication contracts
         run: node --test scripts/github-actions.test.mjs scripts/workflow-policy.test.mjs scripts/dockerfile-policy.test.mjs scripts/workflow-scope.test.mjs scripts/sonar-coverage.test.mjs scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
+
+  apm:
+    name: APM package
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    env:
+      APM_NO_SCRIPTS: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read and check the APM pin
+        id: apm-pin
+        shell: bash
+        run: |
+          version="$(cat scripts/apm-version.txt)"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error file=scripts/apm-version.txt::Expected an exact stable APM version (X.Y.Z).'
+            exit 1
+          fi
+          if ! grep -xFq "apm_version: $version" my-agent/apm.lock.yaml; then
+            echo '::error file=my-agent/apm.lock.yaml::CLI version differs from the pin. Run python scripts/upgrade-apm.py and commit the generated lockfile.'
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Install pinned APM CLI
+        uses: microsoft/apm-action@176186397bcf6d997b4ef8d3433bfb3db37fe630 # v1.11.0
+        with:
+          setup-only: 'true'
+          apm-version: ${{ steps.apm-pin.outputs.version }}
+      - name: Validate the agent package
+        working-directory: my-agent
+        shell: bash
+        run: |
+          apm --version
+          apm install --frozen
+          apm compile --validate
+          apm audit --ci --no-policy
+          apm pack --dry-run
+          git diff --exit-code -- apm.lock.yaml
+      - name: Test the local upgrade script
+        run: python3 -m unittest discover -s scripts -p test_upgrade_apm.py

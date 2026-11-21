@@ -12,6 +12,22 @@
   "customManagers": [
     {
       "customType": "regex",
+      "managerFilePatterns": ["/^scripts\\/apm-version\\.txt$/"],
+      "matchStrings": ["^(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\\r?\\n?$"],
+      "depNameTemplate": "apm-cli",
+      "datasourceTemplate": "pypi",
+      "versioningTemplate": "pep440"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^my-agent\\/\\.apm\\/skills\\/dashboard-web-guidance\\/SKILL\\.md$/"],
+      "matchStrings": ["(?:^|\\r?\\n)npx --yes --ignore-scripts modern-web-guidance@(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+) search "],
+      "depNameTemplate": "modern-web-guidance",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": ["/^compose\\/\\.env$/"],
       "matchStrings": ["(?:^|\\r?\\n)MAVEN_VERSION:[ \\t]*(?<currentValue>[^\\s]+)"],
       "depNameTemplate": "org.apache.maven:apache-maven",
@@ -173,6 +189,24 @@
     "my-agent/apm_modules/**"
   ],
   "packageRules": [
+    {
+      "description": "Review the APM CLI pin together with the generated agent package lockfile.",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["scripts/apm-version.txt"],
+      "matchPackageNames": ["apm-cli"],
+      "allowedVersions": "/^[0-9]+\\.[0-9]+\\.[0-9]+$/",
+      "automerge": false,
+      "prBodyNotes": ["Review the matching APM release and confirm it includes the Linux binary used by CI. Run `python scripts/upgrade-apm.py` from the repository root and commit the reviewed `my-agent/apm.lock.yaml` diff to this PR."]
+    },
+    {
+      "description": "Review the Modern Web Guidance CLI pin together with its upstream skill revision.",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["my-agent/.apm/skills/dashboard-web-guidance/SKILL.md"],
+      "matchPackageNames": ["modern-web-guidance"],
+      "allowedVersions": "/^[0-9]+\\.[0-9]+\\.[0-9]+$/",
+      "automerge": false,
+      "prBodyNotes": ["Review the upstream release, update the skill's link to the matching full commit SHA, and verify search and retrieval with the proposed npm version. Run `python scripts/upgrade-apm.py` from the repository root and commit the reviewed `my-agent/apm.lock.yaml` diff to this PR."]
+    },
     {
       "description": "Maven distributions follow compose/.env; retain independent wrapper tooling updates.",
       "matchManagers": ["maven-wrapper"],
