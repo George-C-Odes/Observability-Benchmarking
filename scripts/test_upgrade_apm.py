@@ -245,12 +245,18 @@ class RefreshTests(unittest.TestCase):
         _, python, executable = apm.runtime_paths(self.root)
         executable.parent.mkdir(parents=True)
         executable.touch()
-        with (
-            patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
-            patch.object(apm, "run", side_effect=[None, "Agent Package Manager (APM) CLI version 0.36.1-rc1"]),
-            self.assertRaisesRegex(ValueError, "Unexpected APM CLI version"),
+        for reported in (
+            "Agent Package Manager (APM) CLI version 0.36.1-rc1\n  Python: 3.13.17",
+            "Agent Package Manager (APM) CLI version 0.36.10",
+            "Agent Package Manager (APM) CLI version 0.36.0\n  Install path: version 0.36.1",
         ):
-            apm.ensure_cli(self.root, python, executable, "0.36.1")
+            with (
+                self.subTest(reported=reported),
+                patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
+                patch.object(apm, "run", side_effect=[None, reported]),
+                self.assertRaisesRegex(ValueError, "Unexpected APM CLI version"),
+            ):
+                apm.ensure_cli(self.root, python, executable, "0.36.1")
 
     def test_cli_can_report_the_release_build_revision_after_the_version(self):
         _, python, executable = apm.runtime_paths(self.root)
@@ -261,6 +267,24 @@ class RefreshTests(unittest.TestCase):
             patch.object(apm, "run", side_effect=[None, "Agent Package Manager (APM) CLI version 0.36.1 (784d778)"]),
         ):
             apm.ensure_cli(self.root, python, executable, "0.36.1")
+
+    def test_cli_accepts_verbose_version_output(self):
+        _, python, executable = apm.runtime_paths(self.root)
+        executable.parent.mkdir(parents=True)
+        executable.touch()
+        for revision in ("", " (784d778)"):
+            reported = (
+                f"Agent Package Manager (APM) CLI version 0.36.1{revision}\n"
+                "  Python:       3.13.17\n"
+                "  Platform:     win32-AMD64\n"
+                "  Install path: .venv-apm/Lib/site-packages/apm_cli"
+            )
+            with (
+                self.subTest(revision=revision),
+                patch.object(apm.importlib.metadata, "version", return_value="0.36.1"),
+                patch.object(apm, "run", side_effect=[None, reported]),
+            ):
+                apm.ensure_cli(self.root, python, executable, "0.36.1")
 
     def test_command_failure_propagates(self):
         with patch.object(apm.subprocess, "run", side_effect=subprocess.CalledProcessError(7, "apm")):

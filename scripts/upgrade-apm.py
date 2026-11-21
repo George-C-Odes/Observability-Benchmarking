@@ -60,8 +60,10 @@ def ensure_cli(root, python, apm, version):
              f"apm-cli=={version}"], root)
     run([python, "-m", "pip", "check"], root)
     reported = run([apm, "--version"], root, capture=True)
-    # Standalone release builds can append their Git revision to the version.
-    if re.search(rf"\bversion {re.escape(version)}(?: \([0-9a-f]{{7,40}}\))?\Z", reported) is None:
+    # The banner can include a build revision, with verbose diagnostics on later lines.
+    version_line = reported.partition("\n")[0]
+    match = re.search(r"\bversion ([0-9]+\.[0-9]+\.[0-9]+)(?: \([0-9a-f]{7,40}\))?\Z", version_line)
+    if match is None or match[1] != version:
         raise ValueError(f"Unexpected APM CLI version from {apm}: {reported!r}")
     print(f"Using repository APM {version} at {apm}.", flush=True)
 
