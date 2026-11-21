@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import { parseColonEnv, renderReadme, resolveRepoPath } from './render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
+import { pythonLockVersionKeys } from './sync-django-versions.mjs';
 import { documentedActionPaths, validateDocumentedActionChange } from './workflow-action-versions.mjs';
 import { codeqlActionSha, createCodeqlBundleLock } from './codeql-bundle.mjs';
 
@@ -371,7 +372,7 @@ export async function prepare(event, token, route = 'env') {
     : await prepareVersionInputs(baseTree, headTree, route, token);
   const { changed } = prepared;
   writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, route, ...prepared }));
-  appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${changed.some((key) => ['DJANGO_VERSION', 'GUNICORN_VERSION'].includes(key))}\n`);
+  appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${changed.some((key) => pythonLockVersionKeys.includes(key))}\n`);
   console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No version changes to synchronize');
 }
 

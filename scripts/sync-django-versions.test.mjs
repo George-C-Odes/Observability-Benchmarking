@@ -3,8 +3,11 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { djangoGeneratedFiles, djangoInputs, djangoLocks, lockedDjangoVersion, pinDjangoInput, pinGunicornInput, lockedGunicornVersion, runCompiler, syncDjangoVersions } from './sync-django-versions.mjs';
+import { djangoGeneratedFiles, djangoInputs, djangoLocks, lockedDjangoVersion, pinDjangoInput, pinGunicornInput, lockedGunicornVersion, ruffInputs, runCompiler, syncDjangoVersions } from './sync-django-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
+
+const ciLock = '.github/requirements/python-ci.txt';
+const ruffPin = 'ruff==0.17.5\n';
 
 test('compiler wrapper does not replace the actual regeneration command in headers', (t) => {
   const workspace = temporaryDirectory(t, 'django-compiler-');
@@ -29,11 +32,16 @@ test('Django input pins preserve unrelated dependencies, comments, casing and CR
 function fixture(t, version = '7.0.1') {
   const workspace = temporaryDirectory(t, 'django-sync-');
   const envPath = path.join(workspace, '.env');
-  writeFileSync(envPath, `DJANGO_VERSION: ${version}\nGUNICORN_VERSION: 27.0.1\n`);
+  writeFileSync(envPath, `DJANGO_VERSION: ${version}\nGUNICORN_VERSION: 27.0.1\nRUFF_VERSION: 0.17.5\n`);
+  const frameworkPins = 'django==6.1.2\ngunicorn==27.0.1\n';
   for (const file of djangoGeneratedFiles) {
     const full = path.join(workspace, file);
     mkdirSync(path.dirname(full), { recursive: true });
-    writeFileSync(full, djangoInputs.includes(file) ? 'Django>=6.1.2,<7\ngunicorn==27.0.1\n' : 'django==6.1.2\ngunicorn==27.0.1\n');
+    let content = frameworkPins;
+    if (djangoInputs.includes(file)) content = 'Django>=6.1.2,<7\ngunicorn==27.0.1\n';
+    if (ruffInputs.includes(file)) content = ruffPin;
+    if (file === ciLock) content += ruffPin;
+    writeFileSync(full, content);
   }
   return { workspace, envPath };
 }
@@ -58,7 +66,10 @@ test('regenerate runtime resolutions before central hashes and projections; repe
       const output = args.find((arg) => arg.startsWith('--output-file=')).slice('--output-file='.length);
       writeFileSync(path.join(workspace, output), 'django==7.0.1\ngunicorn==27.0.1\n');
     } else if (command === 'bash') {
-      for (const file of djangoLocks.slice(2)) writeFileSync(path.join(workspace, file), 'django==7.0.1 \\\n    --hash=sha256:verified-by-compiler\ngunicorn==27.0.1\n');
+      for (const file of djangoLocks.slice(2)) {
+        const pins = 'django==7.0.1 \\\n    --hash=sha256:verified-by-compiler\ngunicorn==27.0.1\n';
+        writeFileSync(path.join(workspace, file), pins + (file === ciLock ? ruffPin : ''));
+      }
     }
   };
   const results = syncDjangoVersions({ ...options, run });
@@ -82,7 +93,10 @@ test('regeneration rejects a stale version in any Django lock file', (t) => {
     const run = (command, _args, workspace) => {
       if (command !== 'bash') return;
       for (const file of djangoLocks) {
-        if (file !== staleFile) writeFileSync(path.join(workspace, file), 'django==7.0.1\ngunicorn==27.0.1\n');
+        if (file !== staleFile) {
+          const pins = 'django==7.0.1\ngunicorn==27.0.1\n';
+          writeFileSync(path.join(workspace, file), pins + (file === ciLock ? ruffPin : ''));
+        }
       }
     };
     assert.throws(() => syncDjangoVersions({ ...options, run }), {
@@ -135,7 +149,8 @@ test('Gunicorn-only upgrade regenerates both runtimes and shared hashes, then ru
       writeFileSync(path.join(workspace, output), 'django==6.1.2\ngunicorn==27.0.1\n');
     } else {
       for (const file of djangoLocks.slice(2)) {
-        writeFileSync(path.join(workspace, file), 'django==6.1.2\ngunicorn==27.0.1 \\\n    --hash=sha256:regenerated\n');
+        const pins = 'django==6.1.2\ngunicorn==27.0.1 \\\n    --hash=sha256:regenerated\n';
+        writeFileSync(path.join(workspace, file), pins + (file === ciLock ? ruffPin : ''));
       }
     }
   };
@@ -160,4 +175,30 @@ test('regeneration rejects Gunicorn drift in every lock and missing env pins bef
   const before = djangoGeneratedFiles.map((file) => readFileSync(path.join(options.workspace, file), 'utf8'));
   assert.throws(() => syncDjangoVersions({ ...options, run: () => assert.fail('no compiler') }), /GUNICORN_VERSION/);
   assert.deepEqual(djangoGeneratedFiles.map((file) => readFileSync(path.join(options.workspace, file), 'utf8')), before);
+});
+
+test('a Ruff-only bump updates both dev pins and the hashed CI inventory without compiling runtime requirements', (t) => {
+  const { workspace, envPath } = fixture(t, '6.1.2');
+  const full = (file) => path.join(workspace, file);
+  for (const file of djangoInputs) writeFileSync(full(file), 'django==6.1.2\ngunicorn==27.0.1\n');
+  const read = (file) => readFileSync(full(file), 'utf8');
+  const before = read(ciLock).replace('ruff==0.17.5', `ruff==0.17.5 \\\n    --hash=sha256:${'a'.repeat(64)}`);
+  writeFileSync(full(ciLock), before);
+  writeFileSync(envPath, read('.env').replace('0.17.5', '0.17.6'));
+  const run = t.mock.fn((command, args) => {
+    if (args.includes('--version')) return;
+    assert.deepEqual([command, args], ['bash', ['.github/requirements/update-lock.sh']]);
+    for (const file of ruffInputs) assert.equal(read(file), 'ruff==0.17.6\n');
+    assert.equal(read(ciLock), before);
+    writeFileSync(full(ciLock), before.replace('0.17.5', '0.17.6').replace('a'.repeat(64), 'b'.repeat(64)));
+  });
+  const options = { workspace, envPath, run };
+  assert.throws(() => syncDjangoVersions({ ...options, check: true }), /Ruff versions are out of date/);
+  assert.equal(run.mock.callCount(), 0);
+  const updated = syncDjangoVersions(options).filter(({ changed }) => changed).map(({ filePath }) => filePath);
+  assert.deepEqual(updated, [...ruffInputs, ciLock].map(full));
+  assert.equal(run.mock.callCount(), 2);
+  assert.ok(syncDjangoVersions({ ...options, check: true }).every(({ changed }) => !changed));
+  assert.ok(syncDjangoVersions(options).every(({ changed }) => !changed));
+  assert.equal(run.mock.callCount(), 2);
 });
