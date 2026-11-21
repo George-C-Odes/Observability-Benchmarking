@@ -75,6 +75,9 @@ def load_lock(path):
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict) or not isinstance(data.get("dependencies"), list):
         raise ValueError(f"Invalid APM lockfile: {path}")
+    # Match APM's schema reader for omitted versions and unquoted integers.
+    version = data.get("lockfile_version", "1")
+    data["lockfile_version"] = str(version) if type(version) is int else version
     return data
 
 
