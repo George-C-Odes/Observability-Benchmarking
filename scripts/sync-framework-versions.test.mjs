@@ -172,6 +172,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     'sync-dockerfile-versions.mjs', 'sync-go-mod-versions.mjs', 'sync-build-img-runs.mjs', 'sync-maven-versions.mjs',
     'image-tags.mjs', 'sync-image-tags.mjs', 'sync-node-versions.mjs', 'sync-java-runtime-versions.mjs',
     'sync-common.mjs', 'render-readmes.mjs', 'render-readmes.manifest.json', 'workflow-action-versions.mjs',
+    'codeql-bundle.mjs',
   ];
   const files = [...new Set([
     'compose/.env', 'utils/nextjs-dash/package.json', ...generatedFrameworkPaths(), ...loadManifestTemplatePaths('scripts/render-readmes.manifest.json'),
