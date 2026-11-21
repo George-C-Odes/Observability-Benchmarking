@@ -70,6 +70,49 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 1)
         self.assertEqual(self.lock_path.read_bytes(), self.original_bytes)
 
+    def prepare_v4_migration(self):
+        self.original["lockfile_version"] = "1"
+        self.candidate["lockfile_version"] = "4"
+        self.candidate["dependencies"][0]["content_hash"] = "sha256:framed"
+        self.lock_path.write_text(json.dumps(self.original), encoding="utf-8")
+        self.original_bytes = self.lock_path.read_bytes()
+
+    def test_v4_migration_replays_legacy_lock_before_promoting(self):
+        self.prepare_v4_migration()
+
+        def verify(arguments, cwd, **kwargs):
+            if len(self.calls) in (1, 2):
+                self.assertNotEqual(cwd, self.package)
+                self.assertEqual((cwd / self.lock_path.name).read_bytes(), self.original_bytes)
+            self.fake_run(arguments, cwd, **kwargs)
+
+        self.invoke(verify)
+        self.assertEqual([command for command, _ in self.calls[:3]], [["install"], ["install", "--frozen"], ["install"]])
+        self.assertEqual(json.loads(self.lock_path.read_text()), self.candidate)
+
+    def test_v4_migration_rejects_a_digest_that_promotion_cannot_reproduce(self):
+        self.prepare_v4_migration()
+
+        def change_promoted_hash(arguments, cwd, **kwargs):
+            self.fake_run(arguments, cwd, **kwargs)
+            if len(self.calls) == 3:
+                promoted = copy.deepcopy(self.candidate)
+                promoted["dependencies"][0]["content_hash"] = "sha256:different"
+                (cwd / self.lock_path.name).write_text(json.dumps(promoted), encoding="utf-8")
+
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            self.invoke(change_promoted_hash)
+        self.assertTrue(all(cwd != self.package for _, cwd in self.calls))
+        self.assertEqual(self.lock_path.read_bytes(), self.original_bytes)
+
+    def test_v4_migration_rejects_a_changed_dependency_pin_before_replaying(self):
+        self.prepare_v4_migration()
+        self.candidate["dependencies"][0]["resolved_commit"] = "b" * 40
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            self.invoke()
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.lock_path.read_bytes(), self.original_bytes)
+
     def test_reviewed_license_migration_preserves_skill_provenance(self):
         dependency = self.original["dependencies"][0]
         dependency["deployed_files"] = [".agents/skills/test/SKILL.md"]

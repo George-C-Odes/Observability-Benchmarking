@@ -94,7 +94,7 @@ def dependency_provenance(dependency):
     return result
 
 
-def require_same_dependencies(before, after):
+def require_same_dependencies(before, after, *, rehash=False):
     # Includes commit, content hashes, and dependency deployment paths/hashes.
     # Compare independent of upstream serialization order.
     def index(lock):
@@ -103,11 +103,30 @@ def require_same_dependencies(before, after):
             key = (dependency["repo_url"], dependency.get("virtual_path"), dependency["name"])
             if key in result:
                 raise ValueError("Duplicate APM dependency in lockfile")
-            result[key] = dependency_provenance(dependency)
+            provenance = dependency_provenance(dependency)
+            if rehash:
+                provenance.pop("content_hash", None)
+            result[key] = provenance
         return result
 
     if index(before) != index(after):
         raise ValueError("APM dependency provenance changed; review upstream sources separately")
+
+
+def verify_v4_migration(apm, candidate_path, original_bytes, candidate):
+    # Verify legacy hashes, then have APM promote those same locked bytes to framed hashes.
+    stage = candidate_path.parent
+    candidate_bytes = candidate_path.read_bytes()
+    candidate_path.write_bytes(original_bytes)
+    run([apm, "install", "--frozen"], stage)
+    if candidate_path.read_bytes() != original_bytes:
+        raise ValueError("Frozen APM verification changed the legacy lockfile")
+    run([apm, "install"], stage)
+    promoted = load_lock(candidate_path)
+    if promoted.get("lockfile_version") != "4":
+        raise ValueError("APM did not promote the verified legacy lockfile to version 4")
+    require_same_dependencies(promoted, candidate)
+    candidate_path.write_bytes(candidate_bytes)
 
 
 def managed_hashes(lock):
@@ -204,7 +223,12 @@ def refresh(root, apm, version):
         candidate = load_lock(candidate_path)
         if candidate.get("apm_version") != version:
             raise ValueError("Staged lockfile does not record the pinned CLI version")
-        require_same_dependencies(original, candidate)
+        migrating_hashes = (
+            original.get("lockfile_version") in ("1", "2", "3") and candidate.get("lockfile_version") == "4"
+        )
+        require_same_dependencies(original, candidate, rehash=migrating_hashes)
+        if migrating_hashes:
+            verify_v4_migration(apm, candidate_path, original_bytes, candidate)
         # A retry may encounter outputs already refreshed before a prior failure.
         require_unmodified_deployments(package, original, candidate)
         validate(apm, stage)
@@ -251,9 +275,9 @@ def main():
     version = read_pin(ROOT)
     runtime, python, apm = runtime_paths(ROOT)
     if args.dry_run:
-        print(f"Install apm-cli=={version} into the repository environment.")
+        print(f"Install apm-cli=={version} from scripts/apm-version.txt into the repository environment.")
         print(f"Repository CLI: {apm}")
-        print("Stage a fresh lock; require unchanged dependency commits, hashes and paths.")
+        print("Stage a fresh lock and verify dependency commits, content and deployment paths.")
         print("Validate clean staging, then reconcile and validate my-agent deployments:")
         for arguments in VALIDATION:
             print("  apm " + " ".join(arguments))
@@ -265,6 +289,7 @@ def main():
             venv.EnvBuilder(with_pip=True).create(runtime)
         run([python, Path(__file__).resolve()], ROOT)
         return
+    print(f"Repository APM version from scripts/apm-version.txt: {version}", flush=True)
     ensure_cli(ROOT, python, apm, version)
     refresh(ROOT, apm, version)
 
