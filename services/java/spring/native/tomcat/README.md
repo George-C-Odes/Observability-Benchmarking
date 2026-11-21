@@ -3,7 +3,7 @@
 # Spring Boot Tomcat Native Service
 
 ## Overview
-A REST service implementation built with Spring Boot 4.1.2 compiled to a native executable using GraalVM Native Image. This service runs on embedded Tomcat and can be configured for either platform thread mode or virtual thread mode, offering fast startup times and low memory footprint.
+A REST service implementation built with Spring Boot 4.2.0 compiled to a native executable using GraalVM Native Image. This service runs on embedded Tomcat and can be configured for either platform thread mode or virtual thread mode, offering fast startup times and low memory footprint.
 
 ## Purpose
 - Demonstrate Spring Boot native compilation with traditional Spring Web (MVC)
@@ -14,7 +14,7 @@ A REST service implementation built with Spring Boot 4.1.2 compiled to a native 
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.1.2 + Spring Web MVC
+- **Framework**: Spring Boot 4.2.0 + Spring Web MVC
 - **Web Server**: Apache Tomcat (embedded)
 - **Compiler**: GraalVM Native Image (Enterprise or Community)
 - **Base Java**: 25.0.5.0.3
@@ -239,7 +239,7 @@ cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=tomcat \
   --build-arg VIRTUAL_ENABLED=false \
-  -t spring-native-tomcat-platform:4.1.2-java25 .
+  -t spring-native-tomcat-platform:4.2.0-java25 .
 ```
 
 #### Virtual Threads
@@ -248,7 +248,7 @@ cd services/java/spring
 docker build -f native/Dockerfile \
   --build-arg PROFILE=tomcat \
   --build-arg VIRTUAL_ENABLED=true \
-  -t spring-native-tomcat-virtual:4.1.2-java25 .
+  -t spring-native-tomcat-virtual:4.2.0-java25 .
 ```
 
 ### Docker Compose

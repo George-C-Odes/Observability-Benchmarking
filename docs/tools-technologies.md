@@ -23,7 +23,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.1.2
+### Spring Boot 4.2.0
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -34,7 +34,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.1.2** (latest major release)
+- **Spring Boot 4.2.0** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -1002,7 +1002,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18    | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 27.0.1     | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.13.1    | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.1.2      | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.2.0      | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.2   | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.2.25     | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.7      | Lightweight Java microservices (programmatic routing)                |
