@@ -99,7 +99,7 @@ jobs:
         with:
           python-version: ${{ steps.python.outputs.version }}
 
-      - name: Install hash-locked compiler when Django or Gunicorn changes
+      - name: Install hash-locked compiler for Python dependency updates
         if: steps.proposal.outputs.python_locks == 'true'
         run: |
           python -m pip install --require-hashes --only-binary=:all: \

@@ -6,14 +6,17 @@ import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { readLiteralVersion, runSyncCli } from './sync-common.mjs';
 
 const root = 'services/python/django/gunicorn';
-export const djangoInputs = ['WSGI', 'ASGI'].map((variant) => `${root}/${variant}/requirements.in`);
+const variants = ['WSGI', 'ASGI'];
+const ciLock = '.github/requirements/python-ci.txt';
+export const djangoInputs = variants.map((variant) => `${root}/${variant}/requirements.in`);
+export const ruffInputs = variants.map((variant) => `${root}/${variant}/requirements-dev.txt`);
 export const djangoLocks = [
-  ...['WSGI', 'ASGI'].map((variant) => `${root}/${variant}/requirements.txt`),
-  '.github/requirements/python-ci.txt',
+  ...variants.map((variant) => `${root}/${variant}/requirements.txt`),
+  ciLock,
   `${root}/dependencies.lock`,
 ];
 export const djangoGeneratedFiles = [
-  ...djangoInputs, ...djangoLocks, '.github/requirements/pip.txt',
+  ...djangoInputs, ...ruffInputs, ...djangoLocks, '.github/requirements/pip.txt',
   `${root}/build-requirements.txt`, `${root}/pip-requirements.txt`,
 ];
 
@@ -21,6 +24,9 @@ const pythonFrameworks = [
   { name: 'Django', packageName: 'django', key: 'DJANGO_VERSION' },
   { name: 'Gunicorn', packageName: 'gunicorn', key: 'GUNICORN_VERSION' },
 ];
+const ruff = { name: 'Ruff', packageName: 'ruff', key: 'RUFF_VERSION' };
+const pythonPins = [...pythonFrameworks, ruff];
+export const pythonLockVersionKeys = pythonPins.map(({ key }) => key);
 
 function pinInput(content, version, { name, packageName, key }) {
   readLiteralVersion({ [key]: version }, key);
@@ -62,19 +68,23 @@ export function runCompiler(command, args, workspace) {
   }
 }
 
-function regenerateDjangoLocks(versions, changedFrameworks, workspace, run) {
-  for (const variant of ['WSGI', 'ASGI']) {
+function regenerateRuntimeLocks(changedFrameworks, workspace, run) {
+  for (const variant of variants) {
     run('python', ['-m', 'piptools', 'compile', '--strip-extras',
       ...changedFrameworks.flatMap(({ packageName }) => ['--upgrade-package', packageName]),
       '--pip-args=--only-binary :all:', `--output-file=${root}/${variant}/requirements.txt`,
       `${root}/${variant}/requirements.in`], workspace);
   }
+}
+
+function regeneratePythonLocks(versions, changedFrameworks, workspace, run) {
+  if (changedFrameworks.length) regenerateRuntimeLocks(changedFrameworks, workspace, run);
   run('bash', ['.github/requirements/update-lock.sh'], workspace);
   for (const file of djangoLocks) {
     const content = readFileSync(path.join(workspace, file), 'utf8');
-    for (const framework of pythonFrameworks) {
-      if (lockedVersion(content, framework) !== versions[framework.key]) {
-        throw new Error(`${framework.name} lock regeneration did not propagate ${versions[framework.key]}: ${file}`);
+    for (const pin of file === ciLock ? pythonPins : pythonFrameworks) {
+      if (lockedVersion(content, pin) !== versions[pin.key]) {
+        throw new Error(`${pin.name} lock regeneration did not propagate ${versions[pin.key]}: ${file}`);
       }
     }
   }
@@ -84,21 +94,21 @@ export function syncDjangoVersions({
   envPath = 'compose/.env', workspace = resolveRepoPath('.'), check = false, run = runCompiler,
 } = {}) {
   const variables = parseColonEnv(readFileSync(resolveRepoPath(envPath), 'utf8'));
-  const versions = Object.fromEntries(pythonFrameworks.map(({ key }) => [key, readLiteralVersion(variables, key)]));
+  const versions = Object.fromEntries(pythonLockVersionKeys.map((key) => [key, readLiteralVersion(variables, key)]));
   const files = djangoGeneratedFiles.map((file) => {
     const filePath = path.join(workspace, file);
     const original = readFileSync(filePath, 'utf8');
-    const content = djangoInputs.includes(file)
-      ? pythonFrameworks.reduce((input, framework) => pinInput(input, versions[framework.key], framework), original)
-      : original;
-    return { filePath, original, content };
+    const pins = djangoInputs.includes(file) ? pythonFrameworks : ruffInputs.includes(file) ? [ruff] : [];
+    const content = pins.reduce((input, pin) => pinInput(input, versions[pin.key], pin), original);
+    return { file, filePath, original, content };
   });
+  const originalFiles = new Map(files.map(({ file, original }) => [file, original]));
   const changedFrameworks = pythonFrameworks.filter((framework) => djangoLocks.some((file) =>
-    lockedVersion(files.find(({ filePath }) => filePath === path.join(workspace, file)).original, framework) !== versions[framework.key]));
-  const staleLocks = changedFrameworks.length > 0;
+    lockedVersion(originalFiles.get(file), framework) !== versions[framework.key]));
+  const staleLocks = changedFrameworks.length > 0 || lockedVersion(originalFiles.get(ciLock), ruff) !== versions.RUFF_VERSION;
   if (check) {
     if (staleLocks || files.some(({ original, content }) => original !== content)) {
-      throw new Error('Django/Gunicorn versions are out of date. Run node scripts/sync-framework-versions.mjs on Linux with pip-tools 7.6.2');
+      throw new Error('Django, Gunicorn, or Ruff versions are out of date. Run node scripts/sync-framework-versions.mjs on Linux with pip-tools 7.6.2');
     }
   } else {
     // Check the compiler before changing inputs. Never substitute a version into existing hashes.
@@ -106,7 +116,7 @@ export function syncDjangoVersions({
     for (const { filePath, original, content } of files) {
       if (original !== content) writeFileSync(filePath, content, 'utf8');
     }
-    if (staleLocks) regenerateDjangoLocks(versions, changedFrameworks, workspace, run);
+    if (staleLocks) regeneratePythonLocks(versions, changedFrameworks, workspace, run);
   }
   return files.map(({ filePath, original }) => {
     const content = readFileSync(filePath, 'utf8');
@@ -114,4 +124,4 @@ export function syncDjangoVersions({
   });
 }
 
-runSyncCli(import.meta.url, syncDjangoVersions, 'Django/Gunicorn version files');
+runSyncCli(import.meta.url, syncDjangoVersions, 'Python version files');
