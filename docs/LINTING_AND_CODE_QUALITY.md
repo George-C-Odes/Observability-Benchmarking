@@ -710,6 +710,7 @@ cat results.sarif | python3 -m json.tool
 ### Action Versions
 
 - **CodeQL Action** is pinned to `github/codeql-action@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea` (v4.39.4).
+- **Linux bundles** are resolved from `.github/actions/codeql-action/bundle-lock.json` and verified against its SHA-256 digests. When the action pin changes, run `node scripts/codeql-bundle.mjs --refresh-lock` from the repository root and commit the regenerated lockfile with the pin. Bundle resolution fails on a stale lock before contacting the release API.
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards

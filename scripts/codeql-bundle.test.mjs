@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { codeqlActionSha, resolveCodeqlBundle } from './codeql-bundle.mjs';
+import { codeqlActionSha, createCodeqlBundleLock, resolveCodeqlBundle } from './codeql-bundle.mjs';
 
 const sha = '33d7b85da1a04171e211befe2c739303b9a4c066';
 const digest = `sha256:${'a'.repeat(64)}`;
@@ -186,23 +186,45 @@ test('all three wrapper pins must agree', () => {
 });
 
 test('the checked-in lock resolves all matrix languages without any network request', async () => {
+  const wrapper = readFileSync(new URL('../.github/actions/codeql-action/action.yml', import.meta.url), 'utf8');
+  const actionSha = codeqlActionSha(wrapper);
   const lock = JSON.parse(readFileSync(new URL('../.github/actions/codeql-action/bundle-lock.json', import.meta.url), 'utf8'));
-  assert.equal(lock.actionSha, sha);
   for (const language of ['java-kotlin', 'python', 'go', 'javascript-typescript']) {
     let calls = 0;
-    const result = await resolveCodeqlBundle(sha, language, async () => { calls += 1; throw new Error('network unavailable'); }, { lock });
+    const result = await resolveCodeqlBundle(actionSha, language, async () => { calls += 1; throw new Error('network unavailable'); }, { lock });
     assert.equal(calls, 0);
     assert.match(result.sha256, /^[a-f0-9]{64}$/);
     assert.match(result.api_url, /^https:\/\/api\.github\.com\/repos\/github\/codeql-action\/releases\/assets\/[0-9]+$/);
   }
 });
 
-test('an upgraded action ignores an old lock and resolves its own version', async () => {
+test('an upgraded action rejects a stale lock before contacting GitHub', async () => {
   let calls = 0;
   const lock = { actionSha: 'a'.repeat(40), defaults: defaults('1.0.0'), release: release([], '1.0.0') };
-  const result = await resolveCodeqlBundle(sha, 'python', async () => response(++calls === 1 ? defaults('2.27.5') : release([asset()], '2.27.5')), { lock });
-  assert.equal(calls, 2);
-  assert.match(result.download_url, /codeql-bundle-v2\.27\.5/);
+  await assert.rejects(resolveCodeqlBundle(sha, 'go', async () => { calls += 1; }, { lock }), /--refresh-lock/);
+  assert.equal(calls, 0);
+});
+
+test('lock refresh fetches metadata once and records only validated matrix assets', async () => {
+  const version = '2.27.5';
+  const expectedAssets = ['java', 'python', 'go', 'javascript'].map(asset);
+  const upstreamAssets = expectedAssets.map((entry) => ({ ...entry, browser_download_url: 'https://example.invalid/' }));
+  const calls = [];
+  const lock = await createCodeqlBundleLock(sha, async (url) => {
+    calls.push(url);
+    return response(calls.length === 1 ? defaults(version) : release(upstreamAssets, version));
+  });
+  assert.deepEqual(calls, [
+    `https://raw.githubusercontent.com/github/codeql-action/${sha}/src/defaults.json`,
+    `https://api.github.com/repos/github/codeql-action/releases/tags/codeql-bundle-v${version}`,
+  ]);
+  assert.deepEqual(lock, { actionSha: sha, defaults: defaults(version), release: release(expectedAssets, version) });
+
+  let incompleteCalls = 0;
+  await assert.rejects(createCodeqlBundleLock(sha, async () => response(
+    ++incompleteCalls === 1 ? defaults(version) : release(upstreamAssets.slice(0, 2), version),
+  )), /Missing, ambiguous or invalid/);
+  assert.equal(incompleteCalls, 2);
 });
 
 test('a malformed matching lock fails closed without network fallback', async () => {
@@ -213,14 +235,8 @@ test('a malformed matching lock fails closed without network fallback', async ()
   }
 });
 
-test('the actual CLI resolves each locked language and exits nonzero for invalid input', (t) => {
+test('the actual CLI resolves each locked language and exits nonzero for invalid input', () => {
   const cli = fileURLToPath(new URL('./codeql-bundle.mjs', import.meta.url));
-  const wrapper = readFileSync(new URL('../.github/actions/codeql-action/action.yml', import.meta.url), 'utf8');
-  const lock = JSON.parse(readFileSync(new URL('../.github/actions/codeql-action/bundle-lock.json', import.meta.url), 'utf8'));
-  if (codeqlActionSha(wrapper) !== lock.actionSha) {
-    t.skip('Action upgraded: live lookup is covered separately; CLI has no matching offline lock.');
-    return;
-  }
   for (const language of ['java-kotlin', 'python', 'go', 'javascript-typescript']) {
     const result = spawnSync(process.execPath, [cli, language], { encoding: 'utf8', timeout: 5000 });
     assert.equal(result.status, 0, result.stderr);
