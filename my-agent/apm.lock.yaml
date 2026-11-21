@@ -1,5 +1,13 @@
-lockfile_version: '1'
-apm_version: 0.36.1
+lockfile_version: '4'
+apm_version: 0.37.0
+manifest_targets:
+- claude
+- codex
+- copilot
+- cursor
+- gemini
+- opencode
+- windsurf
 dependencies:
 - repo_url: github/awesome-copilot
   name: github-actions-hardening
@@ -42,7 +50,7 @@ dependencies:
     .claude/skills/github-actions-hardening/references/report-format.md: sha256:3ecd2442e173bc001f858747873349be7c6c77050470b87ae516647908b1e86e
     .claude/skills/github-actions-hardening/references/supply-chain.md: sha256:f66f613dbd732ce87c1e76b88208efde8feae3ffe5a3ab405cde4ce3df66f605
     .claude/skills/github-actions-hardening/references/triggers-and-privilege.md: sha256:465f3f76517e9f5374a73e30f46cb47e1fe62ce9fd81f782808a3abbb2df2756
-  content_hash: sha256:d826005e7e1f7792531836c747c78df9e9caac534dd027b8ad872725340e5df2
+  content_hash: sha256:3817e093448449ff892872ee170d5aa811be37cfc88142c45d9a1ce54f1929e1
   carried_licenses:
   - path: LICENSE
     source: LICENSE
@@ -88,7 +96,7 @@ dependencies:
     .claude/skills/security-review/references/secret-patterns.md: sha256:38f84f60021490d785f33fc70f2ce784888d2a751781a881372e6862e7e11288
     .claude/skills/security-review/references/vuln-categories.md: sha256:d06159479bd92b9dcf3a2842e09f7712f1fd297c0bc9792fe20bc3cb69188df5
     .claude/skills/security-review/references/vulnerable-packages.md: sha256:8693a6a258bad18a8a1d0925bc1eae9c744071ff37a36b8f1da83adca93608af
-  content_hash: sha256:a0fc25587c016178c9cf6238ac8702695fa761694965192472487f92093db571
+  content_hash: sha256:ef21be383ea53d84c0c9a663cfa299328c935aa30b996b69d5f9b955fb54d7aa
   carried_licenses:
   - path: LICENSE
     source: LICENSE

@@ -226,7 +226,8 @@
       "description": "Keep all CodeQL subactions on one revision, matching the shared wrapper contract.",
       "matchManagers": ["github-actions"],
       "matchPackageNames": ["github/codeql-action"],
-      "groupName": "CodeQL action"
+      "groupName": "CodeQL action",
+      "prBodyNotes": ["Run `node scripts/codeql-bundle.mjs --refresh-lock` from the repository root and commit the regenerated bundle lock with the new action pins."]
     },
     {
       "description": "Relay documented GitHub Actions pins from the shared wrappers using trusted base scripts.",

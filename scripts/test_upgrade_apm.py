@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -41,7 +42,7 @@ class RefreshTests(unittest.TestCase):
     def fake_run(self, arguments, cwd, **_):
         arguments = list(arguments)[1:]
         self.calls.append((arguments, cwd))
-        if arguments == ["install"]:
+        if arguments in (["install"], ["install", "--no-frozen"]):
             self.assertTrue((cwd / ".apm/source.md").is_file())
             lock = copy.deepcopy(self.candidate)
             if cwd == self.package:
@@ -50,10 +51,11 @@ class RefreshTests(unittest.TestCase):
             (cwd / "apm.lock.yaml").write_text(json.dumps(lock), encoding="utf-8")
 
     def invoke(self, runner=None):
-        with patch.object(apm, "run", side_effect=runner or self.fake_run), patch.object(
-            apm, "load_lock", side_effect=lambda path: json.loads(path.read_text(encoding="utf-8"))
+        # JSON fixtures preserve numeric and string scalars without needing PyYAML on the host.
+        with patch.object(apm, "run", side_effect=runner or self.fake_run), patch.dict(
+            "sys.modules", {"yaml": SimpleNamespace(safe_load=json.loads)}
         ):
-            apm.refresh(self.root, "pinned-apm", "0.35.1")
+            apm.refresh(self.root, "pinned-apm", self.candidate["apm_version"])
 
     def test_success_stages_then_reconciles_and_validates_both(self):
         self.invoke()
@@ -64,6 +66,67 @@ class RefreshTests(unittest.TestCase):
         self.assertFalse(self.calls[0][1].exists(), "Staging must be cleaned up")
 
     def test_changed_dependency_rejected_before_local_mutation(self):
+        self.candidate["dependencies"][0]["resolved_commit"] = "b" * 40
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            self.invoke()
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.lock_path.read_bytes(), self.original_bytes)
+
+    def prepare_v4_migration(self, legacy_version="1", candidate_version="4"):
+        if legacy_version is None:
+            self.original.pop("lockfile_version", None)
+        else:
+            self.original["lockfile_version"] = legacy_version
+        self.candidate["lockfile_version"] = candidate_version
+        self.candidate["apm_version"] = "0.37.0"
+        self.candidate["dependencies"][0]["content_hash"] = "sha256:framed"
+        self.lock_path.write_text(json.dumps(self.original), encoding="utf-8")
+        self.original_bytes = self.lock_path.read_bytes()
+
+    def test_v4_migration_replays_legacy_lock_before_promoting(self):
+        self.prepare_v4_migration()
+
+        def verify(arguments, cwd, **kwargs):
+            if len(self.calls) in (1, 2):
+                self.assertNotEqual(cwd, self.package)
+                self.assertEqual((cwd / self.lock_path.name).read_bytes(), self.original_bytes)
+            self.fake_run(arguments, cwd, **kwargs)
+
+        with patch.dict("os.environ", {"CI": "true"}):
+            self.invoke(verify)
+        self.assertEqual([command for command, _ in self.calls[:3]],
+                         [["install"], ["install", "--frozen"], ["install", "--no-frozen"]])
+        self.assertEqual([command for command, cwd in self.calls if cwd == self.package],
+                         [["install", "--no-frozen"], *map(list, apm.VALIDATION)])
+        self.assertEqual(json.loads(self.lock_path.read_text()), self.candidate)
+
+    def test_v4_migration_accepts_unquoted_and_implicit_legacy_schema_versions(self):
+        for legacy_version in (None, 1, 2, 3):
+            with self.subTest(legacy_version=legacy_version):
+                self.calls.clear()
+                self.prepare_v4_migration(legacy_version, candidate_version=4)
+                self.invoke()
+                self.assertEqual([command for command, _ in self.calls[:3]],
+                                 [["install"], ["install", "--frozen"], ["install", "--no-frozen"]])
+                self.assertEqual(json.loads(self.lock_path.read_text()), self.candidate)
+
+    def test_v4_migration_rejects_a_digest_that_promotion_cannot_reproduce(self):
+        self.prepare_v4_migration()
+
+        def change_promoted_hash(arguments, cwd, **kwargs):
+            self.fake_run(arguments, cwd, **kwargs)
+            if len(self.calls) == 3:
+                promoted = copy.deepcopy(self.candidate)
+                promoted["dependencies"][0]["content_hash"] = "sha256:different"
+                (cwd / self.lock_path.name).write_text(json.dumps(promoted), encoding="utf-8")
+
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            self.invoke(change_promoted_hash)
+        self.assertTrue(all(cwd != self.package for _, cwd in self.calls))
+        self.assertEqual(self.lock_path.read_bytes(), self.original_bytes)
+
+    def test_v4_migration_rejects_a_changed_dependency_pin_before_replaying(self):
+        self.prepare_v4_migration()
         self.candidate["dependencies"][0]["resolved_commit"] = "b" * 40
         with self.assertRaisesRegex(ValueError, "provenance"):
             self.invoke()

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { parseColonEnv, renderReadme, resolveRepoPath } from './render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { documentedActionPaths, validateDocumentedActionChange } from './workflow-action-versions.mjs';
+import { codeqlActionSha, createCodeqlBundleLock } from './codeql-bundle.mjs';
 
 import { readNodeVersion } from './sync-node-versions.mjs';
 import { dashboardPackageVersions, imageTemplateVariables, readDashboardPackageVersions } from './image-tags.mjs';
@@ -18,6 +19,8 @@ const nextManifest = 'utils/nextjs-dash/package.json';
 const nextLock = 'utils/nextjs-dash/package-lock.json';
 const actionGuide = 'docs/LINTING_AND_CODE_QUALITY.md';
 const actionGuideTemplate = 'docs/LINTING_AND_CODE_QUALITY.template.md';
+const codeqlAction = '.github/actions/codeql-action/action.yml';
+const codeqlLock = '.github/actions/codeql-action/bundle-lock.json';
 const relayCommitMessages = {
   env: 'chore: relay framework versions from compose/.env',
   nextjs: 'chore: relay Next.js image tags from package.json',
@@ -312,18 +315,40 @@ async function prepareVersionInputs(baseTree, headTree, route, token) {
   return { changed };
 }
 
-async function prepareActionGuide(baseTree, headTree, token) {
-  validateFrameworkTree(baseTree.entries, headTree.entries, new Set([...documentedActionPaths, actionGuide]));
-  const changed = documentedActionPaths.filter((file) => baseTree.entries.get(file)?.sha !== headTree.entries.get(file)?.sha);
-  if (!changed.length) return { changed };
+async function validateCodeqlLockChange(baseTree, headTree, newPin, token) {
+  const lockChanged = baseTree.entries.get(codeqlLock)?.sha !== headTree.entries.get(codeqlLock)?.sha;
+  if (!newPin) {
+    if (lockChanged) throw new Error('A CodeQL bundle lock change requires a new CodeQL action SHA');
+    return;
+  }
+  const refresh = 'Run node scripts/codeql-bundle.mjs --refresh-lock and commit bundle-lock.json with the new action pin.';
+  if (!lockChanged) throw new Error(`CodeQL action pin changed without a bundle lock update. ${refresh}`);
+  const proposed = JSON.parse(await readBlob(headTree, codeqlLock, token));
+  if (proposed?.actionSha !== newPin) throw new Error(`CodeQL bundle lock does not match the proposed action pin. ${refresh}`);
+  // Only the validated wrapper SHA selects anonymous requests to the upstream action.
+  // The PR's lock is data for comparison and cannot select URLs or asset IDs.
+  const expected = await createCodeqlBundleLock(newPin);
+  if (!isDeepStrictEqual(proposed, expected)) throw new Error(`CodeQL bundle lock differs from the published bundle metadata. ${refresh}`);
+}
 
+async function prepareActionGuide(baseTree, headTree, token) {
+  validateFrameworkTree(baseTree.entries, headTree.entries, new Set([...documentedActionPaths, actionGuide, codeqlLock]));
+  const changed = documentedActionPaths.filter((file) => baseTree.entries.get(file)?.sha !== headTree.entries.get(file)?.sha);
   const proposedWrappers = new Map();
+  let newPin;
   for (const file of changed) {
     const base = await readBlob(baseTree, file, token);
     const head = await readBlob(headTree, file, token);
     validateDocumentedActionChange(file, base, head);
     proposedWrappers.set(file, head);
+    if (file === codeqlAction) {
+      const proposedPin = codeqlActionSha(head);
+      if (proposedPin !== codeqlActionSha(base)) newPin = proposedPin;
+    }
   }
+  await validateCodeqlLockChange(baseTree, headTree, newPin, token);
+  if (!changed.length) return { changed };
+
   const readTrusted = (file) => readFileSync(resolveRepoPath(file), 'utf8');
   const variables = imageTemplateVariables(parseColonEnv(readTrusted(envFile)));
   // The proposed wrappers stay in memory and are read only by the Markdown renderer.

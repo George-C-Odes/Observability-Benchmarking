@@ -339,7 +339,7 @@ test('hash-based no-op selection still rejects missing files, symlinks and chang
   assert.deepEqual(selectGeneratedUpdates([{ file: 'pom.xml', content: 'new' }], executable, executable), [{ file: 'pom.xml', content: 'new' }]);
 });
 
-function publicationFixture(t, onWrite = (route) => assert.fail(`Unexpected request: ${route}`)) {
+function publicationFixture(t, onWrite = (route) => assert.fail(`Unexpected request: ${route}`), onPublicRequest = (url) => assert.fail(`Unexpected public request: ${url}`)) {
   setRepository(t);
   const originalTemp = process.env.RUNNER_TEMP;
   const originalToken = process.env.RENOVATE_SYNC_TOKEN;
@@ -360,6 +360,9 @@ function publicationFixture(t, onWrite = (route) => assert.fail(`Unexpected requ
   const headTreeSha = 'd'.repeat(40);
   const mock = t.mock.method(globalThis, 'fetch', async (url, options) => {
     assert.equal(options.redirect, 'error');
+    if (options.headers.Authorization === undefined) {
+      return new Response(JSON.stringify(onPublicRequest(url, options)), { status: 200 });
+    }
     assert.equal(options.headers.Authorization, options.method === 'GET' ? 'Bearer synthetic-test-token' : 'Bearer synthetic-write-token');
     const route = url.replace('https://api.github.com/repos/owner/repo/', '');
     let response;
@@ -479,6 +482,9 @@ test('workflow executes only trusted base scripts, keeps credentials scoped, and
 });
 
 const guidePath = 'docs/LINTING_AND_CODE_QUALITY.md';
+const codeqlActionPath = '.github/actions/codeql-action/action.yml';
+const codeqlLockPath = '.github/actions/codeql-action/bundle-lock.json';
+const nextActionSha = 'f'.repeat(40);
 
 test('Renovate routes only the documented action wrappers to guide regeneration', () => {
   const rules = config.packageRules.filter((rule) => rule.addLabels?.includes('action-docs-version'));
@@ -496,11 +502,26 @@ test('Renovate routes only the documented action wrappers to guide regeneration'
 
 function actionGuideFixture(t, onWrite) {
   const blobs = new Map();
+  const baseLock = readFileSync(resolveRepoPath(codeqlLockPath), 'utf8');
+  const nextLock = JSON.parse(baseLock);
+  nextLock.actionSha = nextActionSha;
+  nextLock.defaults = { cliVersion: '99.1.2', bundleVersion: 'codeql-bundle-v99.1.2' };
+  nextLock.release.tag_name = nextLock.defaults.bundleVersion;
+  const defaultsUrl = `https://raw.githubusercontent.com/github/codeql-action/${nextActionSha}/src/defaults.json`;
+  const releaseUrl = `https://api.github.com/repos/github/codeql-action/releases/tags/${nextLock.release.tag_name}`;
+  const upstreamResponses = new Map([[defaultsUrl, nextLock.defaults], [releaseUrl, nextLock.release]]);
+  const upstreamRequests = [];
   const fixture = publicationFixture(t, (route, options) => {
     if (options.method !== 'GET') return onWrite?.(route, JSON.parse(options.body)) ?? assert.fail(route);
     const content = blobs.get(route.slice('git/blobs/'.length));
     assert.ok(content, route);
     return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  }, (url, options) => {
+    assert.equal(options.method, 'GET');
+    assert.deepEqual(options.headers, { Accept: 'application/json' });
+    assert.ok(upstreamResponses.has(url), url);
+    upstreamRequests.push(url);
+    return upstreamResponses.get(url);
   });
   const { base, head, state } = fixture;
   // Both routes start at the same complete base in this fixture.
@@ -515,6 +536,8 @@ function actionGuideFixture(t, onWrite) {
     add(base, file, content);
     add(head, file, content);
   }
+  add(base, codeqlLockPath, baseLock);
+  add(head, codeqlLockPath, baseLock);
   const output = path.join(process.env.RUNNER_TEMP, 'output');
   const originalOutput = process.env.GITHUB_OUTPUT;
   process.env.GITHUB_OUTPUT = output;
@@ -523,7 +546,7 @@ function actionGuideFixture(t, onWrite) {
     else process.env.GITHUB_OUTPUT = originalOutput;
   });
   const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
-  return { ...fixture, wrappers, output,
+  return { ...fixture, wrappers, output, nextLock, upstreamRequests, defaultsUrl, releaseUrl,
     stateFile: path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'),
     change: (file, content, mode) => add(head, file, content, mode),
     prepare: () => prepare(event, 'synthetic-test-token', 'actions'),
@@ -531,39 +554,42 @@ function actionGuideFixture(t, onWrite) {
 }
 
 function nextActionPin(content, version = 'v99.1.2') {
-  return content.replaceAll(/@[a-f0-9]{40} # v\d+\.\d+\.\d+/g, `@${'f'.repeat(40)} # ${version}`);
+  return content.replaceAll(/@[a-f0-9]{40} # v\d+\.\d+\.\d+/g, `@${nextActionSha} # ${version}`);
 }
 
 for (const file of documentedActionPaths) {
   test(`Renovate regenerates the guide for an isolated bump to ${file}`, async (t) => {
-    const { wrappers, change, prepare: prepareGuide, output, stateFile } = actionGuideFixture(t);
+    const { wrappers, change, prepare: prepareGuide, output, stateFile, nextLock, upstreamRequests, defaultsUrl, releaseUrl } = actionGuideFixture(t);
     const original = wrappers.get(file);
     change(file, nextActionPin(original));
+    if (file === codeqlActionPath) change(codeqlLockPath, JSON.stringify(nextLock));
     await prepareGuide();
     assert.match(readFileSync(output, 'utf8'), /^changed=true\r?\npython_locks=false/m);
     const state = JSON.parse(readFileSync(stateFile, 'utf8'));
     assert.deepEqual(state.changed, [file]);
     const guide = readFileSync(resolveRepoPath(guidePath), 'utf8');
-    if (file.includes('codeql-action')) {
+    if (file === codeqlActionPath) {
       const pin = state.guide.split('\n').find((line) => line.includes('CodeQL Action** is pinned'));
       assert.match(pin, /github\/codeql-action@f{40}` \(v99\.1\.2\)/);
+      assert.deepEqual(upstreamRequests, [defaultsUrl, releaseUrl]);
     } else {
       const action = file.split('/')[2];
       assert.ok(state.guide.includes(`actions/${action}@v99.1.2`));
+      assert.deepEqual(upstreamRequests, []);
     }
     assert.notEqual(state.guide, guide);
     assert.equal(readFileSync(resolveRepoPath(file), 'utf8'), original);
   });
 }
 
-test('action guide publication writes only the generated guide and a repeat run is a no-op', async (t) => {
+test('CodeQL action guide publication preserves the validated PR lock and a repeat run is a no-op', async (t) => {
   const writes = [];
-  const { wrappers, change, prepare: prepareGuide, headTreeSha, state, stateFile } = actionGuideFixture(t, (route, body) => {
+  const { wrappers, change, prepare: prepareGuide, headTreeSha, state, stateFile, nextLock } = actionGuideFixture(t, (route, body) => {
     writes.push({ route, body });
     return { sha: String(writes.length).repeat(40) };
   });
-  const [file] = documentedActionPaths;
-  change(file, nextActionPin(wrappers.get(file)));
+  change(codeqlActionPath, nextActionPin(wrappers.get(codeqlActionPath)));
+  change(codeqlLockPath, JSON.stringify(nextLock));
   await prepareGuide();
   const { guide } = JSON.parse(readFileSync(stateFile, 'utf8'));
   await publish('synthetic-test-token');
@@ -576,6 +602,38 @@ test('action guide publication writes only the generated guide and a repeat run 
   await prepareGuide();
   await publish('synthetic-test-token');
   assert.equal(writes.length, 4);
+});
+
+test('CodeQL relay rejects unpaired, stale and tampered locks before publication', async (t) => {
+  const { base, head, wrappers, change, prepare: prepareGuide, mock, output, stateFile,
+    nextLock, upstreamRequests, defaultsUrl, releaseUrl } = actionGuideFixture(t);
+  const beforeState = readFileSync(stateFile, 'utf8');
+  const lock = JSON.stringify(nextLock);
+  change(codeqlLockPath, lock);
+  await assert.rejects(prepareGuide(), /lock change requires a new CodeQL action SHA/);
+
+  change(codeqlActionPath, nextActionPin(wrappers.get(codeqlActionPath)));
+  head.set(codeqlLockPath, base.get(codeqlLockPath));
+  await assert.rejects(prepareGuide(), /pin changed without a bundle lock update.*--refresh-lock/);
+  change(codeqlLockPath, JSON.stringify({ ...nextLock, actionSha: 'a'.repeat(40) }));
+  await assert.rejects(prepareGuide(), /lock does not match the proposed action pin/);
+  change(codeqlLockPath, lock, '120000');
+  await assert.rejects(prepareGuide(), /unchanged regular file mode/);
+  assert.deepEqual(upstreamRequests, []);
+
+  for (const content of [
+    lock.replaceAll('99.1.2', '99.1.3'),
+    lock.replace(nextLock.release.assets[2].digest, `sha256:${'0'.repeat(64)}`),
+    JSON.stringify({ ...nextLock, release: { ...nextLock.release, assets: nextLock.release.assets.slice(1) } }),
+    JSON.stringify({ ...nextLock, release: { ...nextLock.release, url: 'https://example.invalid/release' } }),
+  ]) {
+    change(codeqlLockPath, content);
+    await assert.rejects(prepareGuide(), /lock differs from the published bundle metadata/);
+    assert.deepEqual(upstreamRequests.splice(0), [defaultsUrl, releaseUrl]);
+  }
+  assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
+  assert.equal(existsSync(output), false);
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
 });
 
 test('action guide preparation rejects changes outside the exact pin values before publication', async (t) => {
@@ -592,7 +650,7 @@ test('action guide preparation rejects changes outside the exact pin values befo
     [upload, bumped.replace('actions/upload-artifact@', 'actions/download-artifact@'), /only the documented action pins/],
     [upload, bumped.replace('f'.repeat(40), 'main'), /Expected a SHA pin/],
     [upload, nextActionPin(original, 'latest'), /Expected a SHA pin/],
-    [codeql, wrappers.get(codeql).replace(/@[a-f0-9]{40} # v\d+\.\d+\.\d+/, `@${'f'.repeat(40)} # v99.1.2`), /Conflicting codeql-action pins/],
+    [codeql, wrappers.get(codeql).replace(/@[a-f0-9]{40} # v\d+\.\d+\.\d+/, `@${nextActionSha} # v99.1.2`), /CodeQL action pins must agree/],
     [guidePath, 'unrelated guide edit', /Refusing to overwrite/],
   ]) {
     change(upload, bumped);

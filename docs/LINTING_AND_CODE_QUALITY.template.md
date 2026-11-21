@@ -710,6 +710,8 @@ cat results.sarif | python3 -m json.tool
 ### Action Versions
 
 - **CodeQL Action** is pinned to `github/codeql-action@{{CODEQL_ACTION_SHA}}` ({{CODEQL_ACTION_VERSION}}).
+- **Linux bundles** are resolved from `.github/actions/codeql-action/bundle-lock.json` and verified against its SHA-256 digests. When the action pin changes, run `node scripts/codeql-bundle.mjs --refresh-lock` from the repository root and commit the regenerated lockfile with the pin. Bundle resolution fails on a stale lock before contacting the release API.
+  For CodeQL pin bumps opened by Renovate, **Framework Version Sync** compares the submitted lock with upstream metadata for that exact action SHA before publishing the updated guide. A pin change requires a matching lock update in the same PR.
 - **Query packs**: default (automatically updated by GitHub)
 
 ## Code Quality Standards
