@@ -3,7 +3,7 @@
 # Spring Boot Tomcat JVM Service
 
 ## Overview
-A REST service implementation built with Spring Boot 4.1.2 running on Apache Tomcat embedded server with the Java Virtual Machine (JVM 25). This service can be configured to run in either platform thread mode or virtual thread mode, but only one mode per deployment.
+A REST service implementation built with Spring Boot 4.2.0 running on Apache Tomcat embedded server with the Java Virtual Machine (JVM 25). This service can be configured to run in either platform thread mode or virtual thread mode, but only one mode per deployment.
 
 ## Purpose
 - Benchmark Spring Boot with Tomcat web server across different thread models
@@ -14,7 +14,7 @@ A REST service implementation built with Spring Boot 4.1.2 running on Apache Tom
 ## Service Details
 
 ### Framework & Runtime
-- **Framework**: Spring Boot 4.1.2
+- **Framework**: Spring Boot 4.2.0
 - **Web Server**: Apache Tomcat (embedded)
 - **Java Version**: Eclipse Temurin 25 (patch determined by the selected Maven builder image)
 - **JVM GC**: G1 Garbage Collector
@@ -291,7 +291,7 @@ cd services/java/spring/jvm/tomcat
 ### Docker Build
 ```bash
 cd services/java/spring/jvm
-docker build --build-arg PROFILE=tomcat -t spring-jvm-tomcat:4.1.2-java25 .
+docker build --build-arg PROFILE=tomcat -t spring-jvm-tomcat:4.2.0-java25 .
 ```
 
 ### Docker Compose

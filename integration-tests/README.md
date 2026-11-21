@@ -175,7 +175,7 @@ The runner loads and prints framework versions from `compose/.env`:
 
 | Framework       | Version  |
 |-----------------|----------|
-| Spring Boot     | 4.1.2    |
+| Spring Boot     | 4.2.0    |
 | Quarkus         | 3.40.1.2 |
 | Micronaut       | 5.2.25   |
 | Helidon SE & MP | 4.5.7    |

@@ -228,12 +228,12 @@ x-common-properties: &common_properties
 services:
   spring-jvm-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_PLATFORM:-skip}"]
-    image: spring-jvm-tomcat-platform:4.1.2-java25
+    image: spring-jvm-tomcat-platform:4.2.0-java25
     build:
       context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:4.1.2-java25
+        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:4.2.0-java25
         PROFILE: tomcat
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
     container_name: spring-jvm-tomcat-platform
@@ -301,12 +301,12 @@ services:
 
   spring-jvm-tomcat-virtual:
     profiles: ["${DOCKER_PROF_SPRING_JVM_TOMCAT_VIRTUAL:-skip}"]
-    image: spring-jvm-tomcat-virtual:4.1.2-java25
+    image: spring-jvm-tomcat-virtual:4.2.0-java25
     build:
       context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:4.1.2-java25
+        BUILDKIT_BUILD_NAME: spring-jvm-tomcat:4.2.0-java25
         PROFILE: tomcat
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
     container_name: spring-jvm-tomcat-virtual
@@ -374,12 +374,12 @@ services:
 
   spring-jvm-netty:
     profiles: ["${DOCKER_PROF_SPRING_JVM_NETTY:-skip}"]
-    image: spring-jvm-netty:4.1.2-java25
+    image: spring-jvm-netty:4.2.0-java25
     build:
       context: ../services/java
       dockerfile: spring/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-jvm-netty:4.1.2-java25
+        BUILDKIT_BUILD_NAME: spring-jvm-netty:4.2.0-java25
         PROFILE: netty
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
     container_name: spring-jvm-netty
@@ -443,12 +443,12 @@ services:
 
   spring-native-tomcat-platform:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_TOMCAT_PLATFORM:-skip}"]
-    image: spring-native-tomcat-platform:4.1.2-java25
+    image: spring-native-tomcat-platform:4.2.0-java25
     build:
       context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-native-tomcat-platform:4.1.2-java25
+        BUILDKIT_BUILD_NAME: spring-native-tomcat-platform:4.2.0-java25
         PROFILE: tomcat
         VIRTUAL_ENABLED: false
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
@@ -496,12 +496,12 @@ services:
 
   spring-native-tomcat-virtual:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_TOMCAT_VIRTUAL:-skip}"]
-    image: spring-native-tomcat-virtual:4.1.2-java25
+    image: spring-native-tomcat-virtual:4.2.0-java25
     build:
       context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-native-tomcat-virtual:4.1.2-java25
+        BUILDKIT_BUILD_NAME: spring-native-tomcat-virtual:4.2.0-java25
         PROFILE: tomcat
         VIRTUAL_ENABLED: true
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
@@ -549,12 +549,12 @@ services:
 
   spring-native-netty:
     profiles: ["${DOCKER_PROF_SPRING_NATIVE_NETTY:-skip}"]
-    image: spring-native-netty:4.1.2-java25
+    image: spring-native-netty:4.2.0-java25
     build:
       context: ../services/java
       dockerfile: spring/native/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: spring-native-netty:4.1.2-java25
+        BUILDKIT_BUILD_NAME: spring-native-netty:4.2.0-java25
         PROFILE: netty
         VIRTUAL_ENABLED: false
         SPRING_BOOT_VERSION: ${SPRING_BOOT_VERSION}
