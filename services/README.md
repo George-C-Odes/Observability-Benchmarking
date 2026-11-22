@@ -31,10 +31,10 @@ Run from the project root directory.
 ```powershell
 docker buildx build `
   -f services/java/spring/jvm/Dockerfile `
-  -t spring-jvm-tomcat-platform:4.1.2-java25 `
+  -t spring-jvm-tomcat-platform:4.2.0-java25 `
   --build-arg PROFILE=tomcat `
-  --build-arg SPRING_BOOT_VERSION=4.1.2 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-platform:4.1.2-java25 `
+  --build-arg SPRING_BOOT_VERSION=4.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-platform:4.2.0-java25 `
   --load `
   services/java
 ```
@@ -42,10 +42,10 @@ docker buildx build `
 ```powershell
 docker buildx build `
     -f services/java/spring/jvm/Dockerfile `
-    -t spring-jvm-tomcat-virtual:4.1.2-java25 `
+    -t spring-jvm-tomcat-virtual:4.2.0-java25 `
     --build-arg PROFILE=tomcat `
-    --build-arg SPRING_BOOT_VERSION=4.1.2 `
-    --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-virtual:4.1.2-java25 `
+    --build-arg SPRING_BOOT_VERSION=4.2.0 `
+    --build-arg BUILDKIT_BUILD_NAME=spring-jvm-tomcat-virtual:4.2.0-java25 `
     --load `
     services/java
 ```
@@ -53,10 +53,10 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/jvm/Dockerfile `
-  -t spring-jvm-netty:4.1.2-java25 `
+  -t spring-jvm-netty:4.2.0-java25 `
   --build-arg PROFILE=netty `
-  --build-arg SPRING_BOOT_VERSION=4.1.2 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-netty:4.1.2-java25 `
+  --build-arg SPRING_BOOT_VERSION=4.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-jvm-netty:4.2.0-java25 `
   --load `
   services/java
 ```
@@ -64,11 +64,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-tomcat-platform:4.1.2-java25 `
+  -t spring-native-tomcat-platform:4.2.0-java25 `
   --build-arg PROFILE=tomcat `
   --build-arg VIRTUAL_ENABLED=false `
-  --build-arg SPRING_BOOT_VERSION=4.1.2 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-platform:4.1.2-java25 `
+  --build-arg SPRING_BOOT_VERSION=4.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-platform:4.2.0-java25 `
   --load `
   services/java
 ```
@@ -76,11 +76,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-tomcat-virtual:4.1.2-java25 `
+  -t spring-native-tomcat-virtual:4.2.0-java25 `
   --build-arg PROFILE=tomcat `
   --build-arg VIRTUAL_ENABLED=true `
-  --build-arg SPRING_BOOT_VERSION=4.1.2 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-virtual:4.1.2-java25 `
+  --build-arg SPRING_BOOT_VERSION=4.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-tomcat-virtual:4.2.0-java25 `
   --load `
   services/java
 ```
@@ -88,11 +88,11 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/spring/native/Dockerfile `
-  -t spring-native-netty:4.1.2-java25 `
+  -t spring-native-netty:4.2.0-java25 `
   --build-arg PROFILE=netty `
   --build-arg VIRTUAL_ENABLED=false `
-  --build-arg SPRING_BOOT_VERSION=4.1.2 `
-  --build-arg BUILDKIT_BUILD_NAME=spring-native-netty:4.1.2-java25 `
+  --build-arg SPRING_BOOT_VERSION=4.2.0 `
+  --build-arg BUILDKIT_BUILD_NAME=spring-native-netty:4.2.0-java25 `
   --load `
   services/java
 ```
