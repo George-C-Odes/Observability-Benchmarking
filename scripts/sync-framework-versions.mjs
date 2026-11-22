@@ -4,7 +4,7 @@ import path from 'node:path';
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, renderTemplates, resolveRepoPath } from './render-readmes.mjs';
 import { syncBuildImageRuns } from './sync-build-img-runs.mjs';
 import { finishSync, readLiteralVersion, readSyncFile, runSyncCli } from './sync-common.mjs';
-import { djangoGeneratedFiles, syncDjangoVersions } from './sync-django-versions.mjs';
+import { djangoGeneratedFiles, pythonLockVersionKeys, syncDjangoVersions } from './sync-django-versions.mjs';
 import { dockerfileVersions, syncDockerfileVersions } from './sync-dockerfile-versions.mjs';
 import { imageTagGeneratedPaths, syncImageTags } from './sync-image-tags.mjs';
 import { nodeGeneratedPaths, nodeVersionKeys, syncNodeVersions } from './sync-node-versions.mjs';
@@ -14,7 +14,7 @@ import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sy
 import { dashboardPackageVersions } from './image-tags.mjs';
 import { mavenGeneratedPaths, readMavenVersion, syncMavenVersions } from './sync-maven-versions.mjs';
 
-export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), 'DJANGO_VERSION', 'GUNICORN_VERSION', 'MAVEN_VERSION', ...nodeVersionKeys];
+export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), ...pythonLockVersionKeys, 'MAVEN_VERSION', ...nodeVersionKeys];
 const controlPom = 'utils/orchestrator/pom.xml';
 const pythonAction = '.github/actions/setup-python/action.yml';
 const sonarConfig = '.sonarcloud.properties';
