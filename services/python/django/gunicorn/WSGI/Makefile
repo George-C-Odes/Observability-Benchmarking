@@ -5,4 +5,4 @@ PYTHON ?= python
 build: coverage
 
 coverage:
-	$(PYTHON) ../../../../../scripts/django_coverage.py django-platform
+	$(PYTHON) ../../../../../scripts/coverage/django_coverage.py django-platform

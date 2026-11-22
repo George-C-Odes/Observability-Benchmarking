@@ -1,0 +1,329 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
+import { workflowActionTemplateVariables } from '../ci/workflow-action-versions.mjs';
+
+test('workflow action template variables require consistent, annotated SHA pins', () => {
+  const workflow = '.github/workflows/pages.yml';
+  const wrapper = '.github/actions/download-artifact/action.yml';
+  const sha = 'a'.repeat(40);
+  const sources = new Map([
+    [workflow, '      # uses: actions/download-artifact@v1\r\n      - uses: "./.github/actions/download-artifact" \t\r\n'],
+    [wrapper, `    - uses: 'actions/download-artifact@${sha}' # v8.7.6-rc.1; release note \t\r\n`],
+  ]);
+  const load = () => workflowActionTemplateVariables(new Set(['PAGES_DOWNLOAD_ARTIFACT_VERSION']), (file) => {
+    assert.ok(sources.has(file), file);
+    return sources.get(file);
+  });
+
+  assert.deepEqual(load(), { PAGES_DOWNLOAD_ARTIFACT_VERSION: 'v8.7.6-rc.1' });
+  sources.set(wrapper, `    - uses: actions/download-artifact@${sha}\n`);
+  assert.throws(load, /Expected a SHA pin and version comment/);
+  sources.set(wrapper, `    - uses: actions/download-artifact@${sha} # v8.7.6\n`);
+  sources.set(workflow, `      - uses: actions/download-artifact@${sha} # v8.7.7\n${sources.get(workflow)}`);
+  assert.throws(load, /Conflicting download-artifact pins for \.github\/workflows\/pages\.yml/);
+  sources.set(workflow, '# uses: ./.github/actions/download-artifact\n');
+  assert.throws(load, /Missing download-artifact in \.github\/workflows\/pages\.yml/);
+});
+
+test('README workflow badges link to current workflows with matching names', () => {
+  const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+  const source = readFileSync(path.join(repoRoot, 'README.template.md'), 'utf8');
+  const prefix = 'https://github.com/George-C-Odes/Observability-Benchmarking/actions/workflows/';
+  const badges = [...source.matchAll(/\[!\[([^\]]+)]\(([^)]+)\)]\(([^)]+)\)/g)]
+    .filter(([, , image]) => image.startsWith(prefix));
+  assert.ok(badges.length > 0);
+  for (const [, label, image, target] of badges) {
+    assert.ok(target.startsWith(prefix), label);
+    const workflow = target.slice(prefix.length);
+    assert.equal(new URL(image).pathname, `${new URL(target).pathname}/badge.svg`, label);
+    // GitHub manages this built-in Pages workflow outside the repository.
+    if (workflow === 'pages/pages-build-deployment') {
+      assert.equal(label, 'pages-build-deployment');
+      continue;
+    }
+    assert.match(workflow, /^[a-z0-9_-]+\.yml$/, label);
+    const content = readFileSync(path.join(repoRoot, '.github/workflows', workflow), 'utf8');
+    const name = /^name: (.+)\r?$/m.exec(content)?.[1];
+    assert.ok([label, `'${label}'`, `"${label}"`].includes(name), workflow);
+  }
+});
+
+test('documented Gunicorn versions follow the env pin across all registered templates', () => {
+  const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+  const variables = parseColonEnv(readFileSync(path.join(repoRoot, 'compose/.env'), 'utf8'));
+  const templates = loadManifestTemplatePaths('scripts/readmes/render-readmes.manifest.json');
+  const versionedDocs = [
+    'README.template.md', 'docs/benchmarking.template.md', 'docs/tools-technologies.template.md',
+    'services/python/django/README.template.md',
+    'services/python/django/gunicorn/ASGI/README.template.md',
+    'services/python/django/gunicorn/WSGI/README.template.md',
+  ];
+  for (const file of templates) {
+    const content = readFileSync(path.join(repoRoot, file), 'utf8');
+    assert.doesNotMatch(content, /Gunicorn[^\r\n]*\b\d+\.\d+\.\d+\b/, file);
+    if (!versionedDocs.includes(file)) continue;
+    const lines = content.split(/\r?\n/).filter((line) => line.includes('{{GUNICORN_VERSION}}'));
+    assert.ok(lines.length > 0, file);
+    for (const version of [variables.GUNICORN_VERSION, '28.9.3']) {
+      for (const line of lines) {
+        const rendered = renderTemplate(line, { ...variables, GUNICORN_VERSION: version });
+        assert.ok(rendered.includes(version), file);
+        assert.doesNotMatch(rendered, /\{\{GUNICORN_VERSION}}/, file);
+      }
+    }
+  }
+});
+
+function testParseColonEnv() {
+  const env = parseColonEnv(`
+# Commented values must be ignored
+#SPRING_BOOT_VERSION: 3.5.16
+HOST_REPO: C:\\Users\\example\\repo
+SPRING_BOOT_VERSION: 4.2.0
+IMAGE_TAG: ghcr.io/acme/app:1.2.3
+`);
+
+  assert.equal(env.HOST_REPO, 'C:\\Users\\example\\repo');
+  assert.equal(env.SPRING_BOOT_VERSION, '4.2.0');
+  assert.equal(env.IMAGE_TAG, 'ghcr.io/acme/app:1.2.3');
+  assert.equal(env['#SPRING_BOOT_VERSION'], undefined);
+}
+
+function testRenderTemplate() {
+  const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
+    SPRING_BOOT_VERSION: '4.2.0',
+    GO_VERSION: '1.27.3',
+  });
+
+  assert.equal(rendered, 'Spring 4.2.0 / Go 1.27.3');
+
+  const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
+    GO_VERSION: '1.27.3',
+  });
+
+  assert.equal(githubActionsSnippet, 'Build ${{ matrix.service.name }} with 1.27.3');
+
+  const jekyllSnippet = renderTemplate("Image {{ '/images/foo.png' | relative_url }} with {{GO_VERSION}}", {
+    GO_VERSION: '1.27.3',
+  });
+
+  assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.3");
+
+  assert.throws(
+    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.2.0' }),
+    /Missing value for placeholder \{\{QUARKUS_VERSION}}/,
+  );
+}
+
+function testDeriveOutputPath() {
+  assert.equal(
+    deriveOutputPath(path.join('services', 'README.template.md')),
+    path.join('services', 'README.md'),
+  );
+
+  assert.throws(
+    () => deriveOutputPath(path.join('services', 'README.md')),
+    /Template path must end with '.template\.md'/,
+  );
+}
+
+function testLoadManifestTemplatePaths() {
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), 'render-readmes-manifest-'));
+
+  try {
+    const manifestPath = path.join(tempDir, 'render-readmes.manifest.json');
+    writeFileSync(manifestPath, JSON.stringify({ defaultTemplatePaths: ['README.template.md', 'docs/TESTING.template.md'] }, null, 2), 'utf8');
+
+    assert.deepEqual(loadManifestTemplatePaths(manifestPath), ['README.template.md', 'docs/TESTING.template.md']);
+
+    writeFileSync(manifestPath, JSON.stringify({ defaultTemplatePaths: [] }, null, 2), 'utf8');
+    assert.throws(
+      () => loadManifestTemplatePaths(manifestPath),
+      /Manifest does not define any default template paths/,
+    );
+
+    writeFileSync(manifestPath, JSON.stringify({ defaultTemplatePaths: [''] }, null, 2), 'utf8');
+    assert.throws(
+      () => loadManifestTemplatePaths(manifestPath),
+      /Manifest contains an invalid template path entry/,
+    );
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function testResolveTemplatePaths() {
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), 'render-readmes-resolve-'));
+
+  try {
+    const manifestPath = path.join(tempDir, 'render-readmes.manifest.json');
+    writeFileSync(manifestPath, JSON.stringify({ defaultTemplatePaths: ['README.template.md', 'services/README.template.md'] }, null, 2), 'utf8');
+
+    assert.deepEqual(
+      resolveTemplatePaths({ templatePaths: [], manifestPath }),
+      ['README.template.md', 'services/README.template.md'],
+    );
+
+    assert.deepEqual(
+      resolveTemplatePaths({ templatePaths: ['docs/README.template.md'], manifestPath }),
+      ['docs/README.template.md'],
+    );
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function testGeneratedOutputRoundTrip() {
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), 'render-readmes-'));
+
+  try {
+    const templatePath = path.join(tempDir, 'README.template.md');
+    const outputPath = path.join(tempDir, 'README.md');
+
+    writeFileSync(templatePath, 'Version {{SPRING_BOOT_VERSION}}', 'utf8');
+    writeFileSync(outputPath, 'Version 4.2.0', 'utf8');
+
+    const rendered = renderTemplate(readFileSync(templatePath, 'utf8'), {
+      SPRING_BOOT_VERSION: '4.2.0',
+    });
+
+    assert.equal(rendered, readFileSync(outputPath, 'utf8'));
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function testRenderTemplatesResolvesRelativeEnvPath() {
+  const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+  const repoTempDir = mkdtempSync(path.join(repoRoot, 'scripts', '__tmp_render_readmes_tests-'));
+  const envPath = path.join(repoTempDir, '.env');
+  const templatePath = path.join(repoTempDir, 'relative-env.template.md');
+  const outputPath = path.join(repoTempDir, 'relative-env.md');
+  const options = {
+    envPath: path.relative(repoRoot, envPath),
+    templatePaths: [path.relative(repoRoot, templatePath)],
+  };
+
+  try {
+    // Keep fixture releases independent of Renovate-managed compose/.env pins.
+    writeFileSync(envPath, 'SPRING_BOOT_VERSION: 9.8.7\nQUARKUS_VERSION: 8.7.6.5\n', 'utf8');
+    writeFileSync(templatePath, 'Spring {{SPRING_BOOT_VERSION}} / Quarkus {{QUARKUS_VERSION}}', 'utf8');
+
+    const results = renderTemplates(options);
+
+    assert.equal(results.length, 1);
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 9.8.7 / Quarkus 8.7.6.5');
+    assert.doesNotThrow(() => renderTemplates({ ...options, check: true }));
+
+    // An env-only upgrade must invalidate the output until it is regenerated.
+    writeFileSync(envPath, 'SPRING_BOOT_VERSION: 9.8.8\nQUARKUS_VERSION: 8.7.6.6\n', 'utf8');
+    assert.throws(
+      () => renderTemplates({ ...options, check: true }),
+      /Generated file is out of date/,
+    );
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 9.8.7 / Quarkus 8.7.6.5');
+    renderTemplates(options);
+    assert.equal(readFileSync(outputPath, 'utf8'), 'Spring 9.8.8 / Quarkus 8.7.6.6');
+    assert.doesNotThrow(() => renderTemplates({ ...options, check: true }));
+  } finally {
+    rmSync(repoTempDir, { recursive: true, force: true });
+  }
+}
+
+function testRealignMarkdownTables() {
+  // Simulates what happens when template placeholders of different lengths
+  // are replaced with shorter values, leaving ragged columns.
+  const ragged = [
+    '| Name   | Version                 | Notes        |',
+    '|--------|-------------------------|--------------|',
+    '| Spring | 4.2.0 | Main framework |',
+    '| Go     | 1.27.3          | Alt runtime    |',
+    '| Node   | 26.13.0                  | Frontend       |',
+  ].join('\n');
+
+  const aligned = realignMarkdownTables(ragged);
+
+  const expected = [
+    '| Name   | Version | Notes          |',
+    '|--------|---------|----------------|',
+    '| Spring | 4.2.0   | Main framework |',
+    '| Go     | 1.27.3  | Alt runtime    |',
+    '| Node   | 26.13.0 | Frontend       |',
+  ].join('\n');
+
+  assert.equal(aligned, expected);
+
+  // Non-table content must be left untouched.
+  const prose = 'Hello {{SPRING_BOOT_VERSION}} world';
+  assert.equal(realignMarkdownTables(prose), prose);
+
+  // Table with alignment markers (:---:) must be preserved.
+  const centered = [
+    '| A   | B     |',
+    '|:---:|------:|',
+    '| x   | longvalue |',
+  ].join('\n');
+
+  const centeredAligned = realignMarkdownTables(centered);
+  const centeredExpected = [
+    '| A |         B |',
+    '|:-:|----------:|',
+    '| x | longvalue |',
+  ].join('\n');
+
+  assert.equal(centeredAligned, centeredExpected);
+
+  // Table with right-aligned column must right-pad values.
+  const rightAligned = [
+    '| Metric | Minimum |',
+    '|--------|--------:|',
+    '| Line   |     15% |',
+    '| Branch |     10% |',
+  ].join('\n');
+
+  const rightAlignedResult = realignMarkdownTables(rightAligned);
+  const rightAlignedExpected = [
+    '| Metric | Minimum |',
+    '|--------|--------:|',
+    '| Line   |     15% |',
+    '| Branch |     10% |',
+  ].join('\n');
+
+  assert.equal(rightAlignedResult, rightAlignedExpected);
+
+  // Emoji occupy two display columns even though JavaScript string length
+  // counts each of these symbols as one UTF-16 code unit.
+  const emoji = [
+    '| Component | Result          |',
+    '|-----------|-----------------|',
+    '| Quarkus   | ✅ 18 tests     |',
+    '| Gate      | Hard-fails ❌   |',
+    '| **Total** | **377 tests**   |',
+  ].join('\n');
+
+  const emojiAligned = realignMarkdownTables(emoji);
+  const emojiExpected = [
+    '| Component | Result        |',
+    '|-----------|---------------|',
+    '| Quarkus   | ✅ 18 tests   |',
+    '| Gate      | Hard-fails ❌ |',
+    '| **Total** | **377 tests** |',
+  ].join('\n');
+
+  assert.equal(emojiAligned, emojiExpected);
+}
+
+test('parses colon-delimited environment values', testParseColonEnv);
+test('renders placeholders and preserves other template syntax', testRenderTemplate);
+test('derives output paths from template paths', testDeriveOutputPath);
+test('loads and validates manifest template paths', testLoadManifestTemplatePaths);
+test('resolves explicit and default template paths', testResolveTemplatePaths);
+test('generated output matches the rendered template', testGeneratedOutputRoundTrip);
+test('renders templates with a relative environment path', testRenderTemplatesResolvesRelativeEnvPath);
+test('realigns Markdown tables and preserves alignment markers', testRealignMarkdownTables);

@@ -76,7 +76,7 @@ Syntax references:
 - SonarSource's [JavaScript clarification](https://community.sonarsource.com/t/help-needed-how-does-nosonar-comment-work-in-js-ts-files/151620/7):
   Sonar directives do not disable ESLint rules.
 
-Keep `scripts/workflow-policy.test.mjs` and `scripts/capture-check.test.mjs`
+Keep `scripts/ci/workflow-policy.test.mjs` and `scripts/capture-check.test.mjs`
 enforced in Workflow Quality. They protect trusted checkout refs/revision wiring,
 malicious mode rejection, exact valid operations, redirected roots/package bins,
 output links and failure evidence. Run the report-script lint gate and actionlint

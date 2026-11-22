@@ -1,4 +1,4 @@
-<!-- Generated from `services/python/django/gunicorn/WSGI/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/python/django/gunicorn/WSGI/README.md` directly. -->
+<!-- Generated from `services/python/django/gunicorn/WSGI/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/python/django/gunicorn/WSGI/README.md` directly. -->
 
 # Django Platform — Benchmarking Service
 

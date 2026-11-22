@@ -114,6 +114,7 @@ desktop.ini
 
 # Test / coverage
 coverage/
+!/scripts/coverage/
 .coverage*
 coverage.xml
 htmlcov/

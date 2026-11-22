@@ -27,7 +27,7 @@ explicit rather than introducing a universal workflow with conditional behavior.
   format, static analysis and builds. Django system checks run inside its default
   test runner during coverage, without a second management-command invocation.
 - **Java Coverage / CodeQL** share the JVM inventory derived from
-  `scripts/coverage-thresholds.json` via `scripts/java-modules.mjs`. Qodana discovers
+  `scripts/coverage/coverage-thresholds.json` via `scripts/coverage/java-modules.mjs`. Qodana discovers
   Maven modules, including native projects, under its configured source tree.
   Java Coverage owns the orchestrator's complete Maven quality profile; CodeQL and
   Qodana compile its symbols with that profile disabled. CodeQL retains its service
@@ -91,7 +91,7 @@ complete dependency installs or security-analysis databases are added to caches.
 
 Snyk CLI is explicitly version-pinned; the JVM Qodana image is digest-pinned in
 both configuration fields. Update both image fields together. Validator archives
-have checked-in SHA-256 digests in `scripts/install-workflow-tools.sh`; zizmor's
+have checked-in SHA-256 digests in `scripts/ci/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
 from official release metadata when upgrading. Renovate owns routine dependency
 version PRs, including grouped CodeQL action pins. Dependabot's version PR limit is

@@ -100,7 +100,7 @@ environment:
 
 ### Qodana Report Environment Trust Boundary
 
-`scripts/qodana-python-report.py` is a local/CI report helper, not a privileged service for remote
+`scripts/scanners/qodana-python-report.py` is a local/CI report helper, not a privileged service for remote
 requests. Its allowed results location is `RUNNER_TEMP/qodana-python/results`; without `RUNNER_TEMP`,
 the root comes from `tempfile.gettempdir()`. GitHub runner configuration supplies `RUNNER_TEMP` in the
 checked-in Django quality workflow. No separate remote request or LLM-supplied data is mapped to that
@@ -127,7 +127,7 @@ globally. Reassess the finding if a new launcher introduces untrusted environmen
 execution, or shared writable output storage. PR-controlled executable source is not made trusted by
 these path checks; existing workflow permission and isolation constraints still apply.
 
-`scripts/run-qodana-python.py` likewise expects a trusted local/CI-selected workspace, not a remote
+`scripts/scanners/run-qodana-python.py` likewise expects a trusted local/CI-selected workspace, not a remote
 filesystem selector. Before reading Qodana config or copying source, it rejects symlink/junction
 redirection of `services`, `python`, and `django` below that workspace. Descendant symlinks are also
 rejected. Host Git directories are not mounted into the scanner: revision, attached branch, and a
@@ -276,7 +276,7 @@ dependency or source remediation; fixing the workflow alone does not resolve gen
 
 The workflow (`.github/workflows/checkov.yml`) scans GitHub Actions workflows and source Dockerfiles in
 independent jobs on pull requests, merge queues, pushes to `main`, manual dispatch, and a weekly schedule.
-It uses a local Docker action with Checkov 3.4.5 pinned by image digest and requires no API key.
+It uses a local Docker action with Checkov pinned by image digest and requires no API key.
 The local action invokes the Checkov executable directly. The older `bridgecrewio/checkov-action`
 v12.1347.0 shell wrapper exports its full output as `CHECKOV_RESULTS`,
 which can exceed Linux environment limits and prevent report uploads and checkout cleanup from starting.
@@ -290,7 +290,7 @@ Docker Compose is not scanned: it is not a supported Checkov framework.
   is excluded because image healthchecks are not required for this benchmark lab; existing optional
   healthchecks remain in place. `CKV_DOCKER_7` is excluded because Checkov checks literal
   `FROM ${IMAGE_*}` text without resolving versioned argument defaults.
-- `scripts/dockerfile-policy.test.mjs` enforces image versioning instead: it discovers Dockerfiles under
+- `scripts/ci/dockerfile-policy.test.mjs` enforces image versioning instead: it discovers Dockerfiles under
   `services`, `utils`, and `.github/actions`, resolves image arguments, and rejects missing versions,
   `latest`, unresolved arguments, and malformed digests. Workflow Quality runs this test on every PR
   and merge queue. Reassess the exclusions if deployment requirements or Checkov's argument handling change.

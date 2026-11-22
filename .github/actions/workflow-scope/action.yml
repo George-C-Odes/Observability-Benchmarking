@@ -16,4 +16,4 @@ runs:
       shell: bash
       env:
         SCOPE_WORKFLOW: ${{ inputs.workflow }}
-      run: node "$GITHUB_WORKSPACE/scripts/workflow-scope.mjs"
+      run: node "$GITHUB_WORKSPACE/scripts/ci/workflow-scope.mjs"

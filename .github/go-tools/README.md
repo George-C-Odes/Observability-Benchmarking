@@ -6,7 +6,7 @@ scanner dependencies to either benchmark service. Dependabot maintains its
 cache keys.
 
 The Go language version follows `GO_VERSION` in `compose/.env`. Run
-`node scripts/sync-go-mod-versions.mjs` (or IntelliJ **[doc] Render Updates**)
+`node scripts/versions/sync-go-mod-versions.mjs` (or IntelliJ **[doc] Render Updates**)
 after changing it; this updates all three modules without changing dependency
 versions or checksums. Use `--check` to detect version drift without writing.
 

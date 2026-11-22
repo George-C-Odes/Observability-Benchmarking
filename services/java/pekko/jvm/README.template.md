@@ -32,7 +32,7 @@ Follows clean architecture / hexagonal principles:
 - `PEKKO_VERSION` selects Pekko HTTP (`pekko.version`); image tags and `webengine.version` follow HTTP.
 - `PEKKO_CORE_VERSION` selects Core actor/stream/SLF4J modules (`pekko.core.version`).
 
-After changing either pin, run `node scripts/sync-framework-versions.mjs` (or IntelliJ **[doc] Render Updates**)
+After changing either pin, run `node scripts/versions/sync-framework-versions.mjs` (or IntelliJ **[doc] Render Updates**)
 to refresh literal Maven/Docker defaults, IDE build arguments, and documentation. Compose passes both pins as build arguments.
 Review HTTP/Core compatibility when changing release lines; the synchronizer does not resolve compatible pairs.
 ## Docker

@@ -13,9 +13,9 @@ export default [
   {
     files: [
       'scripts/capture-check.mjs',
-      'scripts/qodana-project.mjs',
-      'scripts/sonar-coverage.mjs',
-      'scripts/workflow-action-versions.mjs',
+      'scripts/scanners/qodana-project.mjs',
+      'scripts/coverage/sonar-coverage.mjs',
+      'scripts/ci/workflow-action-versions.mjs',
       'scripts/pages/assemble-reports.mjs',
       'scripts/pages/github-reports.mjs',
       'scripts/pages/generate-nextjs-quality-report.mjs',

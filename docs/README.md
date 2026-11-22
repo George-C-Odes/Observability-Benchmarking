@@ -346,7 +346,7 @@ after Jekyll. They do not inherit the documentation's meta policy, and this
 change does not rewrite vendor reports or weaken the documentation policy to
 accommodate them. GitHub-generated error pages are also outside this policy.
 
-After changing the landing template, run `node scripts/render-readmes.mjs` from
+After changing the landing template, run `node scripts/readmes/render-readmes.mjs` from
 the repository root, then build Jekyll as described above. The source policy
 regressions use the locked HTML parser: first run
 `npm ci --prefix scripts/pages --ignore-scripts --no-audit --no-fund`, then

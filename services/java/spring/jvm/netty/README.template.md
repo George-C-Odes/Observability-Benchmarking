@@ -1,4 +1,4 @@
-<!-- Generated from `services/java/spring/jvm/netty/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/spring/jvm/netty/README.md` directly. -->
+<!-- Generated from `services/java/spring/jvm/netty/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/java/spring/jvm/netty/README.md` directly. -->
 
 # Spring Boot Netty JVM Service
 

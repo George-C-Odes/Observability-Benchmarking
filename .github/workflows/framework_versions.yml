@@ -31,26 +31,26 @@ jobs:
         uses: ./.github/actions/setup-python
 
       - name: Check native coverage policy synchronization
-        run: python scripts/sync_coverage_thresholds.py --check
+        run: python scripts/coverage/sync_coverage_thresholds.py --check
 
       - name: Test local coverage integration
         run: |
-          python -m unittest discover -s scripts -p test_local_coverage.py -v
+          python -m unittest discover -s scripts/coverage -p test_local_coverage.py -v
           node --test utils/nextjs-dash/scripts/coverage-gate.test.mjs
 
       - name: Test hard coverage gates
-        run: python -m unittest discover -s scripts -p test_coverage_gate.py -v
+        run: python -m unittest discover -s scripts/coverage -p test_coverage_gate.py -v
 
       - name: Test coverage summary helpers
-        run: python -m unittest discover -s scripts -p test_coverage_summary.py -v
+        run: python -m unittest discover -s scripts/coverage -p test_coverage_summary.py -v
 
       - name: Test version synchronization and Renovate routing
-        run: node --test scripts/sync-*.test.mjs scripts/render-readmes.test.mjs scripts/renovate-framework-sync.test.mjs
+        run: node --test scripts/versions/sync-*.test.mjs scripts/readmes/render-readmes.test.mjs scripts/versions/renovate-framework-sync.test.mjs
 
       - name: Test Java agent artifact integrity
-        run: node --test scripts/java-agent-integrity.test.mjs
+        run: node --test scripts/ci/java-agent-integrity.test.mjs
 
       - name: Check framework version consistency
         run: |
-          node scripts/sync-framework-versions.mjs --check
+          node scripts/versions/sync-framework-versions.mjs --check
           python services/python/django/gunicorn/sync_build_locks.py --check

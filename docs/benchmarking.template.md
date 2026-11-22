@@ -3,7 +3,7 @@ layout: default
 title: Benchmarking Methodology
 permalink: /docs/benchmarking
 ---
-<!-- Generated from `docs/benchmarking.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/benchmarking.md` directly. -->
+<!-- Generated from `docs/benchmarking.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `docs/benchmarking.md` directly. -->
 
 # Benchmarking Methodology
 

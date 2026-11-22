@@ -38,18 +38,18 @@ jobs:
         uses: ./.github/actions/setup-python
       - name: Install pinned workflow validators
         run: |
-          bash scripts/install-workflow-tools.sh
+          bash scripts/ci/install-workflow-tools.sh
           python -m pip install --require-hashes --only-binary=:all: --no-deps -r .github/requirements/workflow-lint.txt
       - name: Validate workflow expressions and embedded shell
         # actionlint 1.7.12 predates this officially supported hosted image.
         # Filter only this exact label diagnostic; retain all other errors.
         run: actionlint -ignore 'label "ubuntu-26\.04" is unknown\.'
       - name: Check standalone workflow shell
-        run: shellcheck scripts/install-workflow-tools.sh .github/actions/install-python-dependencies/install.sh
+        run: shellcheck scripts/ci/install-workflow-tools.sh .github/actions/install-python-dependencies/install.sh
       - name: Audit workflow security
         run: zizmor --offline --min-severity medium .github
       - name: Test workflow and publication contracts
-        run: node --test scripts/github-actions.test.mjs scripts/workflow-policy.test.mjs scripts/dockerfile-policy.test.mjs scripts/workflow-scope.test.mjs scripts/sonar-coverage.test.mjs scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/snyk-scan.test.mjs scripts/snyk-report.test.mjs
+        run: node --test scripts/ci/github-actions.test.mjs scripts/ci/workflow-policy.test.mjs scripts/ci/dockerfile-policy.test.mjs scripts/ci/workflow-scope.test.mjs scripts/coverage/sonar-coverage.test.mjs scripts/scanners/qodana-project.test.mjs scripts/scanners/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/scanners/snyk-scan.test.mjs scripts/scanners/snyk-report.test.mjs
 
   apm:
     name: APM package

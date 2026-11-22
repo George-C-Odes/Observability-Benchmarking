@@ -12,13 +12,13 @@ on:
   pull_request:
     paths:
       - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
+      - 'scripts/ci/workflow-scope*.mjs'
+      - 'scripts/ci/changed-paths*.mjs'
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
-      - 'scripts/golangci-lint-asset*.mjs'
-      - 'scripts/github-release-asset*.mjs'
+      - 'scripts/ci/golangci-lint-asset*.mjs'
+      - 'scripts/ci/github-release-asset*.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
       - '.github/actions/setup-go/**'
@@ -29,13 +29,13 @@ on:
       - main
     paths:
       - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
+      - 'scripts/ci/workflow-scope*.mjs'
+      - 'scripts/ci/changed-paths*.mjs'
       - 'services/go/**'
       - 'scripts/pages/generate-go-quality-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
-      - 'scripts/golangci-lint-asset*.mjs'
-      - 'scripts/github-release-asset*.mjs'
+      - 'scripts/ci/golangci-lint-asset*.mjs'
+      - 'scripts/ci/github-release-asset*.mjs'
       - '.github/workflows/go_quality.yml'
       - '.github/go-tools/**'
       - '.github/actions/setup-go/**'
@@ -97,7 +97,7 @@ jobs:
       - name: Test golangci-lint release lookup
         if: steps.scope.outputs.run == 'true'
         working-directory: .
-        run: node --test scripts/golangci-lint-asset.test.mjs scripts/github-release-asset.test.mjs
+        run: node --test scripts/ci/golangci-lint-asset.test.mjs scripts/ci/github-release-asset.test.mjs
 
       - name: Download golangci-lint
         if: steps.scope.outputs.run == 'true'
@@ -119,7 +119,7 @@ jobs:
           archive="golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64"
           if ! download_lint "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${archive}.tar.gz"; then
             echo '::warning::golangci-lint release download failed; trying the public release-asset API.'
-            asset_url="$(node scripts/golangci-lint-asset.mjs "$GOLANGCI_LINT_VERSION")"
+            asset_url="$(node scripts/ci/golangci-lint-asset.mjs "$GOLANGCI_LINT_VERSION")"
             download_lint "$asset_url"
           fi
           printf '%s  %s\n' "$GOLANGCI_LINT_SHA256" "$RUNNER_TEMP/golangci-lint.tar.gz" | sha256sum --check --strict

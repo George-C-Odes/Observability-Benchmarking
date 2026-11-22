@@ -1,4 +1,4 @@
-<!-- Generated from `README.template.md` via `scripts/render-readmes.mjs`. Do not edit `README.md` directly. -->
+<!-- Generated from `README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `README.md` directly. -->
 
 # Observability Benchmarking
 
@@ -102,7 +102,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Logs               | Loki                       | 3.7.10     | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1      | Distributed tracing backend                                          |
 | **Observability** | Metrics            | Mimir                      | 3.2.6      | Long-term metrics storage                                            |
-| **Observability** | Profiling          | Pyroscope                  | 2.4.3      | Continuous CPU and memory profiling                                  |
+| **Observability** | Profiling          | Pyroscope                  | 2.4.4      | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2     | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0     | Manual metrics, logs, and traces instrumentation                     |
 | **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.34.0     | Auto-instrumentation and exporters                                   |

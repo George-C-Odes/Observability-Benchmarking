@@ -79,7 +79,7 @@ jobs:
         if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.name }}
-        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" "$MODULE_NAME"
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage/coverage_gate.py" "$MODULE_NAME"
 
       - name: Generate coverage summary
         if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
@@ -87,7 +87,7 @@ jobs:
           MODULE_NAME: ${{ matrix.name }}
           MODULE_DIR: ${{ matrix.module_dir }}
           TEST_OUTCOME: ${{ steps.test.outcome }}
-        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" go
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage/coverage_summary.py" go
 
       # ── Generate HTML coverage report ────────────────────────────
       - name: Generate HTML coverage report
@@ -141,7 +141,7 @@ jobs:
         if: steps.scope.outputs.run == 'true'
         env:
           MODULE_NAME: ${{ matrix.name }}
-        run: node "$GITHUB_WORKSPACE/scripts/sonar-coverage.mjs" stage "$MODULE_NAME"
+        run: node "$GITHUB_WORKSPACE/scripts/coverage/sonar-coverage.mjs" stage "$MODULE_NAME"
 
       - name: Upload Sonar coverage inputs
         if: steps.scope.outputs.run == 'true'

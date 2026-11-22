@@ -96,7 +96,8 @@ jobs:
             --test-coverage-exclude=scripts/test-helpers.mjs \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=lcov --test-reporter-destination=.sonar/ci-tooling.lcov.info \
-            scripts/*.test.mjs scripts/pages/assemble-reports.test.mjs \
+            scripts/*.test.mjs scripts/{ci,coverage,readmes,scanners,versions}/*.test.mjs \
+            scripts/pages/assemble-reports.test.mjs \
             scripts/pages/generate-nextjs-quality-report.test.mjs scripts/pages/github-reports.test.mjs
       - name: Measure Python tooling coverage
         id: python_tooling_coverage
@@ -104,11 +105,13 @@ jobs:
           COVERAGE_FILE: ${{ runner.temp }}/ci-tooling.coverage
           COVERAGE_RCFILE: ${{ github.workspace }}/.github/ci-tooling.coveragerc
         run: |
-          python -m coverage run -m unittest discover -s scripts -p 'test_*.py'
+          for directory in scripts scripts/coverage scripts/scanners; do
+            python -m coverage run --parallel-mode -m unittest discover -s "$directory" -p 'test_*.py'
+          done
           python -m coverage combine
           python -m coverage xml -o .sonar/ci-tooling.cobertura.xml
       - name: Require complete coverage inputs and prepare scanner configuration
-        run: node scripts/sonar-coverage.mjs prepare
+        run: node scripts/coverage/sonar-coverage.mjs prepare
       - name: Analyze repository and import coverage
         uses: SonarSource/sonarqube-scan-action@59202af334b4ba7b5db01b701b8e79f8b3bef0f4 # v8.5.0
         env:

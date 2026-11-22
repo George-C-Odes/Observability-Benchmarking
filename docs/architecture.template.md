@@ -3,7 +3,7 @@ layout: default
 title: System Architecture
 permalink: /docs/architecture
 ---
-<!-- Generated from `docs/architecture.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/architecture.md` directly. -->
+<!-- Generated from `docs/architecture.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `docs/architecture.md` directly. -->
 
 # System Architecture
 

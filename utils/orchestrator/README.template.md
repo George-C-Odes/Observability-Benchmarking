@@ -251,6 +251,6 @@ If you want to run it beyond localhost, consider:
 ## Local coverage gate
 
 `mvn clean verify` enforces the configured line and branch coverage thresholds through
-JaCoCo. Limits come from `scripts/coverage-thresholds.json`; run
-`python scripts/sync_coverage_thresholds.py` from the repository root after changing
+JaCoCo. Limits come from `scripts/coverage/coverage-thresholds.json`; run
+`python scripts/coverage/sync_coverage_thresholds.py` from the repository root after changing
 them. See [the coverage policy](../../docs/TESTING.md#hard-per-module-gates).

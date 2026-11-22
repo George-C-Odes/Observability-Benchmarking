@@ -1,4 +1,4 @@
-<!-- Generated from `services/java/helidon/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/helidon/README.md` directly. -->
+<!-- Generated from `services/java/helidon/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/java/helidon/README.md` directly. -->
 
 # Helidon benchmark services
 
@@ -22,8 +22,8 @@ Set `HELIDON_VERSION` in [compose/.env](../../../compose/.env). To refresh POM p
 For a documentation-only refresh, run from the repository root:
 
 ```powershell
-node scripts/render-readmes.mjs
-node scripts/render-readmes.mjs --check
+node scripts/readmes/render-readmes.mjs
+node scripts/readmes/render-readmes.mjs --check
 ```
 
 Edit [README.template.md](README.template.md) for shared documentation changes. The renderer reads `HELIDON_VERSION` from the env file; the four module READMEs link here instead of repeating a literal framework version. See the [script guide](../../../scripts/README.md) for individual synchronization commands and check modes. Editing `.env` alone does not refresh generated files.

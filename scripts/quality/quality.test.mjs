@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { scriptLinter } from './check.mjs';
 
-const coveredHelper = 'scripts/workflow-action-versions.mjs';
+const coveredHelper = 'scripts/ci/workflow-action-versions.mjs';
 
 test('the quality gate rejects excessive cognitive complexity and control regexes', async () => {
   const linter = scriptLinter();

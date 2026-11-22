@@ -19,12 +19,12 @@ on:
       - 'scripts/pages/codeql-workflow.test.mjs'
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
-      - 'scripts/codeql-bundle*.mjs'
+      - 'scripts/ci/codeql-bundle*.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
       - '.github/actions/setup-go/**'
-      - 'scripts/java-modules.mjs'
-      - 'scripts/coverage-thresholds.json'
+      - 'scripts/coverage/java-modules.mjs'
+      - 'scripts/coverage/coverage-thresholds.json'
       - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
@@ -41,12 +41,12 @@ on:
       - 'scripts/pages/codeql-workflow.test.mjs'
       - 'scripts/pages/generate-codeql-report.mjs'
       - 'scripts/pages/report-helpers.mjs'
-      - 'scripts/codeql-bundle*.mjs'
+      - 'scripts/ci/codeql-bundle*.mjs'
       - '.github/workflows/codeql.yml'
       - '.github/actions/setup-java/**'
       - '.github/actions/setup-go/**'
-      - 'scripts/java-modules.mjs'
-      - 'scripts/coverage-thresholds.json'
+      - 'scripts/coverage/java-modules.mjs'
+      - 'scripts/coverage/coverage-thresholds.json'
       - '.github/actions/setup-node/**'
       - '.github/actions/upload-artifact/**'
       - '.github/actions/download-artifact/**'
@@ -121,8 +121,8 @@ jobs:
         env:
           CODEQL_LANGUAGE: ${{ matrix.language }}
         run: |
-          node --test scripts/codeql-bundle.test.mjs
-          node scripts/codeql-bundle.mjs "$CODEQL_LANGUAGE" >> "$GITHUB_OUTPUT"
+          node --test scripts/ci/codeql-bundle.test.mjs
+          node scripts/ci/codeql-bundle.mjs "$CODEQL_LANGUAGE" >> "$GITHUB_OUTPUT"
 
       - name: Download CodeQL bundle
         timeout-minutes: 10
@@ -190,7 +190,7 @@ jobs:
           set -euo pipefail
 
           # ── Module registry (native modules deliberately excluded) ──
-          node scripts/java-modules.mjs --paths > "$RUNNER_TEMP/codeql-java-modules"
+          node scripts/coverage/java-modules.mjs --paths > "$RUNNER_TEMP/codeql-java-modules"
           mapfile -t build_modules < "$RUNNER_TEMP/codeql-java-modules"
           test "${#build_modules[@]}" -gt 0
 

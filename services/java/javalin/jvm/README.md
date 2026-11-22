@@ -1,4 +1,4 @@
-<!-- Generated from `services/java/javalin/jvm/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/javalin/jvm/README.md` directly. -->
+<!-- Generated from `services/java/javalin/jvm/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/java/javalin/jvm/README.md` directly. -->
 
 # Javalin JVM Service
 
