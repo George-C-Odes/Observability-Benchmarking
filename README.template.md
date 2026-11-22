@@ -1,4 +1,4 @@
-<!-- Generated from `README.template.md` via `scripts/render-readmes.mjs`. Do not edit `README.md` directly. -->
+<!-- Generated from `README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `README.md` directly. -->
 
 # Observability Benchmarking
 

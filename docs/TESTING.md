@@ -1,4 +1,4 @@
-<!-- Generated from `docs/TESTING.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/TESTING.md` directly. -->
+<!-- Generated from `docs/TESTING.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `docs/TESTING.md` directly. -->
 
 # Comprehensive Testing Guide
 
@@ -1415,7 +1415,7 @@ runs on every PR and push to `main` that touches `services/java/**` or
 
 #### Hard per-module gates
 
-`scripts/coverage-thresholds.json` is the single coverage policy for the 18 application
+`scripts/coverage/coverage-thresholds.json` is the single coverage policy for the 18 application
 modules: 11 JVM services, the Java orchestrator, two Go services, two Django runtimes,
 the shared Django package, and the Next.js dashboard. Every module declares its own
 thresholds. Java, Python, and the dashboard require **90% lines and 90% branches**;
@@ -1423,7 +1423,7 @@ Go requires **90% statements**, because native Go coverage does not measure bran
 or executable lines. Native Java variants share application sources with the JVM
 variants; coverage is collected by JVM tests, not native-image instrumentation.
 
-Each module job runs `scripts/coverage_gate.py` after generating its reports. A
+Each module job runs `scripts/coverage/coverage_gate.py` after generating its reports. A
 threshold violation, missing report, malformed counter, or empty executable-line
 report fails that job. Comparisons use exact counts without rounding percentages.
 A valid report with zero branches has no branch obligations and is reported as
@@ -1451,11 +1451,11 @@ and Python packaging tools do not execute tests or coverage hooks; use the gated
 entry points for local validation. Maven's `package` phase also precedes the `verify`
 gate. Native Java images continue to rely on their corresponding JVM coverage.
 
-Change a module's `thresholds` entry in `scripts/coverage-thresholds.json`, then run:
+Change a module's `thresholds` entry in `scripts/coverage/coverage-thresholds.json`, then run:
 
 ```bash
-python scripts/sync_coverage_thresholds.py
-python scripts/sync_coverage_thresholds.py --check
+python scripts/coverage/sync_coverage_thresholds.py
+python scripts/coverage/sync_coverage_thresholds.py --check
 ```
 
 This synchronizes native JaCoCo checks and the dashboard's generated
@@ -1596,7 +1596,7 @@ of the GitHub-native Step Summary and artifact uploads described above. It adds:
 
 Codecov is **informational only** — its status checks are set to
 `informational: true`. Each module job enforces its configured hard thresholds
-through `scripts/coverage_gate.py`, independently of Codecov.
+through `scripts/coverage/coverage_gate.py`, independently of Codecov.
 
 #### Configuration
 
@@ -1751,7 +1751,7 @@ that touches `services/go/**`. It:
 | `go/simple`   | 1          | Tests in `cmd/server`; covers route, bootstrap, env parsing, and error paths |
 
 Each Go matrix job enforces its own **90% statement** minimum from
-`scripts/coverage-thresholds.json`. Branch coverage is unsupported by the native tool
+`scripts/coverage/coverage-thresholds.json`. Branch coverage is unsupported by the native tool
 and is not inferred from statement blocks.
 
 ### Python — coverage.py

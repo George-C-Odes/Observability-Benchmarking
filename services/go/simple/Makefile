@@ -20,4 +20,4 @@ coverage:
 	go tool cover -func=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 
-	$(PYTHON) ../../../scripts/coverage_gate.py go-simple
+	$(PYTHON) ../../../scripts/coverage/coverage_gate.py go-simple

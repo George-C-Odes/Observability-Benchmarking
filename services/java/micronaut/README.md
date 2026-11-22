@@ -1,4 +1,4 @@
-<!-- Generated from `services/java/micronaut/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/micronaut/README.md` directly. -->
+<!-- Generated from `services/java/micronaut/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/java/micronaut/README.md` directly. -->
 
 # Micronaut benchmark services
 
@@ -20,8 +20,8 @@ Set `MICRONAUT_VERSION` in [compose/.env](../../../compose/.env), then run **[do
 For a documentation-only refresh, run from the repository root:
 
 ```powershell
-node scripts/render-readmes.mjs
-node scripts/render-readmes.mjs --check
+node scripts/readmes/render-readmes.mjs
+node scripts/readmes/render-readmes.mjs --check
 ```
 
 Edit [README.template.md](README.template.md) for shared documentation changes. The renderer reads `MICRONAUT_VERSION` from the env file; module READMEs link here instead of repeating literal framework versions. Micronaut integration modules and other library versions retain their own properties in the POMs. See the [script guide](../../../scripts/README.md) for individual synchronization commands. Editing `.env` alone does not refresh generated files.

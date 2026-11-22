@@ -117,7 +117,7 @@ jobs:
         id: snyk-code
         continue-on-error: true
         shell: bash
-        run: node scripts/snyk-scan.mjs code || test "$?" -eq 1
+        run: node scripts/scanners/snyk-scan.mjs code || test "$?" -eq 1
 
       # Runs Snyk Open Source (SCA) analysis. The test command reports findings
       # through its exit code; the gate warns on findings but fails on scan errors.
@@ -129,7 +129,7 @@ jobs:
         id: snyk-open-source-test
         continue-on-error: true
         shell: bash
-        run: node scripts/snyk-scan.mjs test || test "$?" -eq 1
+        run: node scripts/scanners/snyk-scan.mjs test || test "$?" -eq 1
 
       # PRs must not overwrite the trusted main dependency snapshot in Snyk.
       # Monitor's exit code only indicates whether the snapshot upload succeeded.
@@ -139,7 +139,7 @@ jobs:
         if: env.SNYK_ENABLED == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         id: snyk-open-source-monitor
         continue-on-error: true
-        run: node scripts/snyk-scan.mjs monitor
+        run: node scripts/scanners/snyk-scan.mjs monitor
 
       # Snyk IaC does not support Docker Compose. This repository currently has
       # no supported IaC manifests (e.g. Terraform, Kubernetes or CloudFormation).

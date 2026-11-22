@@ -49,7 +49,7 @@ The goal is **apples-to-apples performance comparison**: identical endpoint logi
 - `services/java/checkstyle.xml` — shared Checkstyle config for all Java services.
 - `utils/orchestrator/quality/` — module-local Spotless / PMD / SpotBugs / custom-Javadoc quality config for the orchestrator.
 - `qodana.yaml` (root) — JVM Qodana config; `services/python/django/qodana.yaml` for Python.
-- `scripts/render-readmes.manifest.json` — lists all `*.template.md` → `*.md` pairs.
+- `scripts/readmes/render-readmes.manifest.json` — lists all `*.template.md` → `*.md` pairs.
 - `my-agent/.apm/` — authoritative APM primitive sources; `apm_modules/` and deployed copies are generated.
 
 ---
@@ -178,7 +178,7 @@ For workflow, scanner-wrapper, report-gate, staging/mount, or security-alert tas
 
 ## 8 · Documentation Conventions
 
-- **Generated READMEs**: Files listed in `scripts/render-readmes.manifest.json` are rendered from `*.template.md` by `scripts/render-readmes.mjs`. **Never edit the generated `*.md` directly** — edit the `.template.md` source instead.
+- **Generated READMEs**: Files listed in `scripts/readmes/render-readmes.manifest.json` are rendered from `*.template.md` by `scripts/readmes/render-readmes.mjs`. **Never edit the generated `*.md` directly** — edit the `.template.md` source instead.
 - Each generated file has a header comment: `<!-- Generated from ... Do not edit ... directly. -->`
 - The docs site is Jekyll-based under `docs/` with `docs/Gemfile` for dependencies.
 - Screenshots and diagrams go in `docs/images/`.

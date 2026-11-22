@@ -3,7 +3,7 @@ layout: default
 title: Tools & Technologies
 permalink: /docs/tools-technologies
 ---
-<!-- Generated from `docs/tools-technologies.template.md` via `scripts/render-readmes.mjs`. Do not edit `docs/tools-technologies.md` directly. -->
+<!-- Generated from `docs/tools-technologies.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `docs/tools-technologies.md` directly. -->
 
 # Tools & Technologies
 

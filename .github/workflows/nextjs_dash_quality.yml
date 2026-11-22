@@ -100,14 +100,14 @@ jobs:
       - name: Enforce dashboard coverage thresholds
         id: coverage_gate
         if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
-        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_gate.py" nextjs-dash
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage/coverage_gate.py" nextjs-dash
 
       - name: Generate coverage summary
         if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
         env:
           NODE_OUTCOME: ${{ steps.coverage_node.outcome }}
           DOM_OUTCOME: ${{ steps.coverage_dom.outcome }}
-        run: python3 "$GITHUB_WORKSPACE/scripts/coverage_summary.py" nextjs
+        run: python3 "$GITHUB_WORKSPACE/scripts/coverage/coverage_summary.py" nextjs
 
       # ── Upload HTML coverage reports as artifacts ────────────────────
       - name: Upload Node coverage report
@@ -155,7 +155,7 @@ jobs:
 
       - name: Stage Sonar coverage inputs
         if: steps.scope.outputs.run == 'true'
-        run: node ../../scripts/sonar-coverage.mjs stage nextjs-dash
+        run: node ../../scripts/coverage/sonar-coverage.mjs stage nextjs-dash
 
       - name: Upload Sonar coverage inputs
         if: steps.scope.outputs.run == 'true'

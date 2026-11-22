@@ -1,4 +1,4 @@
-<!-- Generated from `integration-tests/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `integration-tests/README.md` directly. -->
+<!-- Generated from `integration-tests/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `integration-tests/README.md` directly. -->
 
 # Integration Tests
 

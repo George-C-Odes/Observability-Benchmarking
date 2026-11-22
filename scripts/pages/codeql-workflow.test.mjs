@@ -4,8 +4,8 @@ import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-import { parseColonEnv } from '../render-readmes.mjs';
-import { modules } from '../java-modules.mjs';
+import { parseColonEnv } from '../readmes/render-readmes.mjs';
+import { modules } from '../coverage/java-modules.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const workflow = readFileSync(join(root, '.github/workflows/codeql.yml'), 'utf8').replaceAll('\r\n', '\n');
@@ -71,18 +71,18 @@ test('Go setup precedes CodeQL initialization so manual builds use its tracing w
 });
 
 test('every language uses a verified local bundle and the wrapper forwards tools', () => {
-  assert.match(step('Resolve CodeQL bundle'), /node --test scripts\/codeql-bundle.test.mjs/);
+  assert.match(step('Resolve CodeQL bundle'), /node --test scripts\/ci\/codeql-bundle.test.mjs/);
   assert.match(step('Resolve CodeQL bundle'), /CODEQL_LANGUAGE: \$\{\{ matrix.language }}/);
   assert.match(step('Download CodeQL bundle'), /sha256sum --check --strict/);
   assert.match(step('Initialize CodeQL'), /tools: \$\{\{ runner.temp }}\/codeql-bundle.tar.zst/);
   const wrapper = readFileSync(join(root, '.github/actions/codeql-action/action.yml'), 'utf8');
   assert.match(wrapper, /tools: \$\{\{ inputs.tools }}/);
-  assert.equal(workflow.split("- 'scripts/codeql-bundle*.mjs'").length - 1, 2);
+  assert.equal(workflow.split("- 'scripts/ci/codeql-bundle*.mjs'").length - 1, 2);
 });
 
 test('fresh Java databases compile all JVM services plus the orchestrator, excluding native builds', () => {
   const build = step('Build Java modules');
-  assert.match(build, /node scripts\/java-modules.mjs --paths > "\$RUNNER_TEMP\/codeql-java-modules"/);
+  assert.match(build, /node scripts\/coverage\/java-modules.mjs --paths > "\$RUNNER_TEMP\/codeql-java-modules"/);
   assert.match(build, /mapfile -t build_modules < "\$RUNNER_TEMP\/codeql-java-modules"/);
   const declared = modules.map((module) => module.module_dir);
   const expected = jvmModules(join(root, 'services/java'));

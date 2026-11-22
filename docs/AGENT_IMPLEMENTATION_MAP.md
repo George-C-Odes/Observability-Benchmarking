@@ -61,7 +61,7 @@ Expected updates:
 - Compose `SERVICES` profile entry with matching resources and network behavior.
 - Telemetry export matching sibling services.
 - wrk2/dashboard/benchmark target wiring if the service should be selectable.
-- Template docs, then generated docs via `scripts/render-readmes.mjs`.
+- Template docs, then generated docs via `scripts/readmes/render-readmes.mjs`.
 
 ### Work on the orchestrator
 
@@ -162,7 +162,7 @@ On Windows, `pyroscope-io` may need filtering for local installs; CI runs the fu
 
 ### Work on docs
 
-Generated files are listed in `scripts/render-readmes.manifest.json`. Edit templates first:
+Generated files are listed in `scripts/readmes/render-readmes.manifest.json`. Edit templates first:
 
 - `README.template.md` -> `README.md`
 - `docs/*.template.md` -> generated docs page
@@ -173,8 +173,8 @@ Generated files are listed in `scripts/render-readmes.manifest.json`. Edit templ
 Validation:
 
 ```bash
-node scripts/render-readmes.mjs
-node scripts/render-readmes.test.mjs
+node scripts/readmes/render-readmes.mjs
+node scripts/readmes/render-readmes.test.mjs
 ```
 
 For Jekyll page-only docs, inspect `docs/_config.yml`, `docs/_layouts/default.html`, and the changed page. Do not commit `docs/_site`.
@@ -187,7 +187,7 @@ Read:
 - Shared report helpers in `scripts/pages/report-helpers.mjs` when HTML report output changes.
 - Specific generator scripts only for the relevant language report.
 - `my-agent/.apm/skills/ci-report-safety/SKILL.md` for workflow context checks, helper trust boundaries, subprocess deadlines, scanner isolation, evidence gates, and alert triage. Use the same recipe for scanner/report scripts even when the workflow itself is unchanged.
-- For Django Qodana, `scripts/README.md`, `scripts/test_qodana_python.py`, and the environment trust boundary in `docs/SECURITY.md`.
+- For Django Qodana, read the [scanner guide](../scripts/guides/scanners.md#qodana-python-reports), `scripts/scanners/test_qodana_python.py`, and the environment trust boundary in `docs/SECURITY.md`.
 
 Contracts:
 
@@ -198,9 +198,9 @@ Validation (from the repository root):
 
 ```bash
 actionlint .github/workflows/django_python_quality.yml # substitute the changed workflow
-python -m unittest discover -s scripts -p test_qodana_python.py -v
-python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
-python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+python -m unittest discover -s scripts/scanners -p test_qodana_python.py -v
+python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml scripts/scanners/run-qodana-python.py scripts/scanners/qodana-python-report.py scripts/scanners/test_qodana_python.py
+python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml scripts/scanners/run-qodana-python.py scripts/scanners/qodana-python-report.py scripts/scanners/test_qodana_python.py
 ```
 
 For JavaScript helpers under `scripts/`, also run:
@@ -209,14 +209,14 @@ For JavaScript helpers under `scripts/`, also run:
 npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
 npm run check --prefix scripts/quality
 npm test --prefix scripts/quality
-node --test scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/workflow-policy.test.mjs
+node --test scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/ci/workflow-policy.test.mjs
 ```
 
-The gate checks production `.mjs` files under `scripts/` for super-linear regex backtracking. Its focused rules enforce cognitive complexity <= 15, reject control-character regexes, and require explicit `sort`/`toSorted` comparators. Add new report, scanner, and version-parsing helpers to the focused scope in `scripts/quality/eslint.config.mjs`. Test rejected and accepted lint examples when changing the gate. For workflow action version extraction, run `node --test scripts/render-readmes.test.mjs` and check the linting guide with `node scripts/render-readmes.mjs --check docs/LINTING_AND_CODE_QUALITY.template.md`. For Qodana project changes, run `node --test scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs` and preserve order-independent inventory equality, input arrays, and rejection of missing, stale, or duplicate entries. Pages checkout-policy tests enforce literal main refs and revision consistency. Capture tests exercise traversal and filesystem redirection. The unfiltered Workflow Quality job runs the script gate. Verify warning clearance with a fresh SonarCloud analysis of the corrected revision.
+The gate checks production `.mjs` files under `scripts/` for super-linear regex backtracking. Its focused rules enforce cognitive complexity <= 15, reject control-character regexes, and require explicit `sort`/`toSorted` comparators. Add new report, scanner, and version-parsing helpers to the focused scope in `scripts/quality/eslint.config.mjs`. Test rejected and accepted lint examples when changing the gate. For workflow action version extraction, run `node --test scripts/readmes/render-readmes.test.mjs` and check the linting guide with `node scripts/readmes/render-readmes.mjs --check docs/LINTING_AND_CODE_QUALITY.template.md`. For Qodana project changes, run `node --test scripts/scanners/qodana-project.test.mjs scripts/scanners/qodana-scopes.test.mjs` and preserve order-independent inventory equality, input arrays, and rejection of missing, stale, or duplicate entries. Pages checkout-policy tests enforce literal main refs and revision consistency. Capture tests exercise traversal and filesystem redirection. The unfiltered Workflow Quality job runs the script gate. Verify warning clearance with a fresh SonarCloud analysis of the corrected revision.
 
 Run only checks relevant to the changed helper. If actionlint is unavailable, use a verified pinned installation or record the blocker; a YAML-only check is not a substitute. Record the validator version and any narrowly justified runner-label exclusion, without suppressing expression/security diagnostics.
 
-For Django staging, mount, interpreter/bootstrap, or scan/report lifecycle changes, follow the local scan commands in `scripts/README.md` and verify fresh coverage, exported HTML/SARIF, sanitized provenance, and container removal. Use an empty results directory at the documented runner/OS temp location. Run Linux checks for symlink behavior skipped on Windows; do not weaken locked installs to make local validation pass. A summary rerun against old SARIF validates only the summary, not the modified scanner. Template edits require a selected render/check and inspection of the generated diff.
+For Django staging, mount, interpreter/bootstrap, or scan/report lifecycle changes, follow the [local Qodana scan commands](../scripts/guides/scanners.md#qodana-python-reports) and verify fresh coverage, exported HTML/SARIF, sanitized provenance, and container removal. Use an empty results directory at the documented runner/OS temp location. Run Linux checks for symlink behavior skipped on Windows; do not weaken locked installs to make local validation pass. A summary rerun against old SARIF validates only the summary, not the modified scanner. Template edits require a selected render/check and inspection of the generated diff.
 
 For scanner/reviewer feedback, read the latest alert and source, reproduce the claim, and distinguish code fixes from authorized per-alert dismissal. Do not disable a rule globally or treat new alert IDs as proof that a prior dismissal failed; see the safety skill for the evidence and authorization requirements.
 
@@ -224,7 +224,7 @@ For scanner/reviewer feedback, read the latest alert and source, reproduce the c
 
 Read the changed client, the callers supplying its identifiers/credentials, the matching workflow when present,
 and section 7 of `my-agent/.apm/skills/ci-report-safety/SKILL.md`. Trace external response fields into subsequent
-requests, not just user input into the first request. Use `scripts/renovate-framework-sync.mjs` and its tests as
+requests, not just user input into the first request. Use `scripts/versions/renovate-framework-sync.mjs` and its tests as
 a bounded GitHub API example, not a universal client abstraction.
 
 Before implementing, identify the trusted origin/resource scope, fixed operations, identifier validation,
@@ -235,7 +235,7 @@ Prefer changes at the actual boundary over wrappers that merely move a taint fin
 For the framework helper, run from the repository root:
 
 ```bash
-node --test scripts/renovate-framework-sync.test.mjs
+node --test scripts/versions/renovate-framework-sync.test.mjs
 ```
 
 For other clients, run their matching tests instead. Verify zero outgoing calls for rejected values, exact valid
@@ -295,7 +295,7 @@ Use these before broad search:
 | Dashboard API behavior    | `utils/nextjs-dash/app/api/**/route.ts`, then `lib/*`, then tests                                |
 | Orchestrator API behavior | `utils/orchestrator/.../resource`, then `application`, then `domain`                             |
 | Quality failure           | Matching workflow, then module build config, then report script if artifact generation failed    |
-| Docs drift                | `scripts/render-readmes.manifest.json`, template source, generated file header                   |
+| Docs drift                | `scripts/readmes/render-readmes.manifest.json`, template source, generated file header                   |
 | Agent/APM drift           | `my-agent/apm.yml`, `my-agent/.apm`, then generated `my-agent/apm.lock.yaml`                     |
 
 ## Recommended PR notes for agents

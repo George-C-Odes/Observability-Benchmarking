@@ -6,8 +6,8 @@ on:
     branches: [ "main" ]
     paths:
       - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
+      - 'scripts/ci/workflow-scope*.mjs'
+      - 'scripts/ci/changed-paths*.mjs'
       - 'utils/orchestrator/**/*.java'
       - '.github/workflows/pmd.yml'
       - '.github/actions/setup-java/**'
@@ -18,8 +18,8 @@ on:
     branches: [ "main" ]
     paths:
       - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
+      - 'scripts/ci/workflow-scope*.mjs'
+      - 'scripts/ci/changed-paths*.mjs'
       - 'utils/orchestrator/**/*.java'
       - '.github/workflows/pmd.yml'
       - '.github/actions/setup-java/**'

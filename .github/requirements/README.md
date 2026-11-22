@@ -52,16 +52,16 @@ dependencies. Workflow steps do not upgrade pip independently.
 ## Regenerate or upgrade the locks
 
 **Django/Gunicorn framework updates:** change `DJANGO_VERSION` or `GUNICORN_VERSION` in `compose/.env`, then run
-`node scripts/sync-framework-versions.mjs` in the Linux compiler environment described below.
+`node scripts/versions/sync-framework-versions.mjs` in the Linux compiler environment described below.
 It synchronizes the exact Django and Gunicorn pins in both runtime inputs, regenerates the runtime resolutions, and invokes
 `update-lock.sh` for the verified CI inventory and Docker projections. Renovate follows this same
 source-of-truth flow; do not independently upgrade Django or Gunicorn in generated requirements or hashes.
-Use `node scripts/sync-framework-versions.mjs --check` to check the complete version contract.
+Use `node scripts/versions/sync-framework-versions.mjs --check` to check the complete version contract.
 
 **Ruff updates** start with `RUFF_VERSION` in `compose/.env`. Framework Version Sync updates both Django
 development inputs, regenerates the Ruff hashes in `python-ci.txt`, and renders `README.md` and
 `docs/tools-technologies.md` on the Renovate PR. For local updates, run
-`node scripts/sync-framework-versions.mjs` in the Linux compiler environment below.
+`node scripts/versions/sync-framework-versions.mjs` in the Linux compiler environment below.
 
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.

@@ -6,29 +6,29 @@ on:
   pull_request:
     paths:
       - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
+      - 'scripts/ci/workflow-scope*.mjs'
+      - 'scripts/ci/changed-paths*.mjs'
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/setup-python/**'
       - '.github/actions/install-python-dependencies/**'
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
-      - 'scripts/*qodana*'
+      - 'scripts/**/*qodana*'
   push:
     branches:
       - main
     paths:
       - '.github/actions/workflow-scope/**'
-      - 'scripts/workflow-scope*.mjs'
-      - 'scripts/changed-paths*.mjs'
+      - 'scripts/ci/workflow-scope*.mjs'
+      - 'scripts/ci/changed-paths*.mjs'
       - 'services/python/django/**'
       - '.github/workflows/django_python_quality.yml'
       - '.github/actions/setup-python/**'
       - '.github/actions/install-python-dependencies/**'
       - '.github/requirements/**'
       - '.github/actions/upload-artifact/**'
-      - 'scripts/*qodana*'
+      - 'scripts/**/*qodana*'
   schedule:
     # Weekly scan — Monday at 06:30 UTC (staggered after Next.js at 06:15).
     - cron: '30 6 * * 1'
@@ -101,15 +101,15 @@ jobs:
 
       - name: Test Qodana helpers
         if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
-        run: python -m unittest discover -s scripts -p test_qodana_python.py -v
+        run: python -m unittest discover -s scripts/scanners -p test_qodana_python.py -v
 
       - name: Lint CI helpers
         if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
-        run: python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+        run: python -m ruff check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/scanners/run-qodana-python.py scripts/scanners/qodana-python-report.py scripts/scanners/test_qodana_python.py
 
       - name: Check CI helper formatting
         if: (!cancelled() && steps.dependencies.outcome == 'success') && steps.scope.outputs.run == 'true'
-        run: python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/run-qodana-python.py scripts/qodana-python-report.py scripts/test_qodana_python.py
+        run: python -m ruff format --check --config services/python/django/gunicorn/common/pyproject.toml services/python/django/gunicorn/*.py scripts/scanners/run-qodana-python.py scripts/scanners/qodana-python-report.py scripts/scanners/test_qodana_python.py
 
   qodana:
     name: Qodana Python (Django)
@@ -142,11 +142,11 @@ jobs:
 
       - name: Qodana Python Community Scan
         if: steps.scope.outputs.run == 'true'
-        run: python scripts/run-qodana-python.py --results-dir "$RESULTS_DIR"
+        run: python scripts/scanners/run-qodana-python.py --results-dir "$RESULTS_DIR"
 
       - name: Verify inspection coverage and publish summary
         if: (always() && !cancelled()) && steps.scope.outputs.run == 'true'
-        run: python scripts/qodana-python-report.py "$RESULTS_DIR" >> "$GITHUB_STEP_SUMMARY"
+        run: python scripts/scanners/qodana-python-report.py "$RESULTS_DIR" >> "$GITHUB_STEP_SUMMARY"
 
       # Explicit upload of the HTML report directory so the Pages workflow
       # can download and host it alongside the JVM and Next.js reports.

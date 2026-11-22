@@ -12,7 +12,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- Independent Core and HTTP pins from compose/.env; run scripts/sync-java-pom-versions.mjs. -->
+        <!-- Independent Core and HTTP pins from compose/.env; run scripts/versions/sync-java-pom-versions.mjs. -->
         <pekko.core.version>1.7.1</pekko.core.version>
         <pekko.version>1.4.2</pekko.version>
         <caffeine.version>3.3.1</caffeine.version>
@@ -135,7 +135,7 @@
             </plugin>
 
             <!-- JaCoCo instrumentation, reports and hard local/CI checks. Limits are configured
-                 in scripts/coverage-thresholds.json and enforced by coverage_gate.py. -->
+                 in scripts/coverage/coverage-thresholds.json and enforced by coverage_gate.py. -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <!-- Versions: compose/.env; refresh with node scripts/sync-build-img-runs.mjs -->
+  <!-- Versions: compose/.env; refresh with node scripts/versions/sync-build-img-runs.mjs -->
   <configuration default="false" name="[build-img] Spring NATIVE Netty" type="docker-deploy" factoryName="dockerfile" activateToolWindowBeforeRun="false" server-name="Docker Ubuntu">
     <deployment type="dockerfile">
       <settings>

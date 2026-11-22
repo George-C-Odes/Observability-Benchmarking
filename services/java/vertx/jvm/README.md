@@ -1,4 +1,4 @@
-<!-- Generated from `services/java/vertx/jvm/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/java/vertx/jvm/README.md` directly. -->
+<!-- Generated from `services/java/vertx/jvm/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/java/vertx/jvm/README.md` directly. -->
 
 # Vert.x JVM Service
 

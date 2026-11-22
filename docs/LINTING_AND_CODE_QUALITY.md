@@ -358,13 +358,13 @@ The scan uses a dedicated configuration at `services/python/django/qodana.yaml` 
 The `qodana` job in `.github/workflows/django_python_quality.yml` runs independently of the `common` checks so lint failures do not hide semantic diagnostics:
 
 1. Checks out the repository without persisted credentials and sets up Python.
-2. Invokes `scripts/run-qodana-python.py`, using the Community image tag and digest from `services/python/django/qodana.yaml` (maintained by Renovate):
+2. Invokes `scripts/scanners/run-qodana-python.py`, using the Community image tag and digest from `services/python/django/qodana.yaml` (maintained by Renovate):
    - The Django source root and intermediate directories are validated before copying; symlink/junction redirection is rejected. Only a disposable Django copy is opened at `/data/workspace/services/python/django`; host IDE metadata, virtualenvs, caches, build output, and `.env` files are omitted.
    - Docker runs as the caller's non-root UID/GID with `--cap-drop=ALL` and `--security-opt=no-new-privileges`.
    - No host Git directories, config, object database, or `.git` pointer are mounted/copied. The host collects only the revision, attached branch, and sanitized network repository URI and adds them to exported SARIF after analysis. URL userinfo, query strings, and fragments are stripped; local/unsupported remote URLs are omitted. Git integration is unavailable inside Qodana, so its native report/logs may lack Git metadata; exported SARIF receives the sanitized provenance without altering findings or invocation status.
    - Shared requirements and installer are mounted read-only at `/opt/python-ci/requirements` and `/opt/python-ci/installer`.
 3. Before analysis, the `bootstrap` command in `qodana.yaml` installs the project dependencies (`django`, `opentelemetry-*`, `gunicorn`, `cachetools`, and the local `obbench-django-common` package) so that Qodana can resolve imports and perform accurate type inference. Without a bootstrap, every third-party import would produce unresolved-reference false positives not visible in the IDE.
-4. Runs `scripts/qodana-python-report.py` even after scan failure, writes inspection-count diagnostics, and verifies required inspections remain enabled.
+4. Runs `scripts/scanners/qodana-python-report.py` even after scan failure, writes inspection-count diagnostics, and verifies required inspections remain enabled.
 5. Always attempts HTML upload as `qodana-report-django-python` and logs/SARIF/summary upload as `qodana-diagnostics-django-python`, unless cancelled.
 
 The workflow uses `docker run` directly instead of the `JetBrains/qodana-action` because the action's internal image-pull phase reads the root `qodana.yaml` (which pins the JVM linter). Running the container directly is explicit and avoids image conflicts.
@@ -422,9 +422,9 @@ The Pages workflow triggers on completed successful or failed `Django Python Qua
 temp_root="${RUNNER_TEMP:-$(python3 -c 'import tempfile; print(tempfile.gettempdir())')}"
 results="$temp_root/qodana-python/results"
 scan_status=0
-python3 scripts/run-qodana-python.py --results-dir "$results" || scan_status=$?
+python3 scripts/scanners/run-qodana-python.py --results-dir "$results" || scan_status=$?
 coverage_status=0
-python3 scripts/qodana-python-report.py "$results" || coverage_status=$?
+python3 scripts/scanners/qodana-python-report.py "$results" || coverage_status=$?
 test "$scan_status" -eq 0 && test "$coverage_status" -eq 0
 ```
 
@@ -433,9 +433,9 @@ test "$scan_status" -eq 0 && test "$coverage_status" -eq 0
 ```powershell
 $tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { python -c "import tempfile; print(tempfile.gettempdir())" }
 $results = Join-Path $tempRoot 'qodana-python/results'
-python scripts/run-qodana-python.py --results-dir "$results"
+python scripts/scanners/run-qodana-python.py --results-dir "$results"
 $scanExit = $LASTEXITCODE
-python scripts/qodana-python-report.py "$results"
+python scripts/scanners/qodana-python-report.py "$results"
 $coverageExit = $LASTEXITCODE
 if ($scanExit -ne 0 -or $coverageExit -ne 0) { throw "Qodana failed; inspect $results/scan.log and the report." }
 ```
@@ -445,7 +445,7 @@ Notes:
 - A non-zero scanner exit code indicates a quality-gate violation or scanner/bootstrap failure. A non-zero summary exit code indicates failed analysis or missing inspection coverage.
 - A `QODANA_TOKEN` is not required for local scans with the community linter.
 - Use `RUNNER_TEMP/qodana-python/results` (OS temp locally) for both helpers. Reusing a non-empty results directory is rejected; archive or remove prior results before another scan. The selected workspace and launcher environment must be trusted; see `docs/SECURITY.md` for the trust boundary.
-- Run helper tests with `python -m unittest discover -s scripts -p test_qodana_python.py -v`.
+- Run helper tests with `python -m unittest discover -s scripts/scanners -p test_qodana_python.py -v`.
 
 ### Configuration
 Each Django module has its own Ruff configuration in a local `pyproject.toml`
@@ -710,7 +710,7 @@ cat results.sarif | python3 -m json.tool
 ### Action Versions
 
 - **CodeQL Action** is pinned to `github/codeql-action@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea` (v4.39.4).
-- **Linux bundles** are resolved from `.github/actions/codeql-action/bundle-lock.json` and verified against its SHA-256 digests. When the action pin changes, run `node scripts/codeql-bundle.mjs --refresh-lock` from the repository root and commit the regenerated lockfile with the pin. Bundle resolution fails on a stale lock before contacting the release API.
+- **Linux bundles** are resolved from `.github/actions/codeql-action/bundle-lock.json` and verified against its SHA-256 digests. When the action pin changes, run `node scripts/ci/codeql-bundle.mjs --refresh-lock` from the repository root and commit the regenerated lockfile with the pin. Bundle resolution fails on a stale lock before contacting the release API.
   For CodeQL pin bumps opened by Renovate, **Framework Version Sync** compares the submitted lock with upstream metadata for that exact action SHA before publishing the updated guide. A pin change requires a matching lock update in the same PR.
 - **Query packs**: default (automatically updated by GitHub)
 
@@ -909,7 +909,7 @@ outputs against the env on PRs and `main`, including Docker hash projection fres
 required in branch protection. Major-upgrade dashboard approval and existing service quality gates
 remain unchanged; consistency checks do not establish framework API compatibility.
 
-For manual updates, run `node scripts/sync-framework-versions.mjs`, then the same command with `--check`.
+For manual updates, run `node scripts/versions/sync-framework-versions.mjs`, then the same command with `--check`.
 Actual Django version changes require a Linux Python/pip-tools compiler environment; up-to-date checks
 do not fetch dependencies. Automatic PR publication requires the repository secret `RENOVATE_SYNC_TOKEN`
 so generated commits trigger CI instead of being suppressed by `GITHUB_TOKEN`.

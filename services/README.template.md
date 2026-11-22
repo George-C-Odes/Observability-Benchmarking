@@ -1,4 +1,4 @@
-<!-- Generated from `services/README.template.md` via `scripts/render-readmes.mjs`. Do not edit `services/README.md` directly. -->
+<!-- Generated from `services/README.template.md` via `scripts/readmes/render-readmes.mjs`. Do not edit `services/README.md` directly. -->
 
 # Services
 

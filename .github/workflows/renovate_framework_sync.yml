@@ -66,7 +66,7 @@ jobs:
         id: proposal
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/renovate-framework-sync.mjs prepare
+        run: node scripts/versions/renovate-framework-sync.mjs prepare
 
       - name: Validate Renovate Next.js proposal
         if: >-
@@ -75,7 +75,7 @@ jobs:
         id: nextjs
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/renovate-framework-sync.mjs prepare-nextjs
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-nextjs
 
       - name: Validate Renovate action pins and render the guide
         if: >-
@@ -85,13 +85,13 @@ jobs:
         id: actions_docs
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/renovate-framework-sync.mjs prepare-actions
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-actions
 
       - name: Select Python runtime
         if: steps.proposal.outputs.changed == 'true'
         id: python
         run: |
-          node --input-type=module -e "import { readFileSync, appendFileSync } from 'node:fs'; import { parseColonEnv } from './scripts/render-readmes.mjs'; const env = parseColonEnv(readFileSync('compose/.env', 'utf8')); appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + env.PYTHON_VERSION + '\n');"
+          node --input-type=module -e "import { readFileSync, appendFileSync } from 'node:fs'; import { parseColonEnv } from './scripts/readmes/render-readmes.mjs'; const env = parseColonEnv(readFileSync('compose/.env', 'utf8')); appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + env.PYTHON_VERSION + '\n');"
 
       - name: Set up Python for lock projection
         if: steps.proposal.outputs.changed == 'true'
@@ -110,12 +110,12 @@ jobs:
         if: steps.proposal.outputs.changed == 'true' || steps.nextjs.outputs.changed == 'true'
         run: |
           if [ '${{ steps.proposal.outputs.changed }}' = 'true' ]; then
-            node scripts/sync-framework-versions.mjs
-            node scripts/sync-framework-versions.mjs --check
+            node scripts/versions/sync-framework-versions.mjs
+            node scripts/versions/sync-framework-versions.mjs --check
             python services/python/django/gunicorn/sync_build_locks.py --check
           else
-            node scripts/sync-nextjs-tags.mjs
-            node scripts/sync-nextjs-tags.mjs --check
+            node scripts/versions/sync-nextjs-tags.mjs
+            node scripts/versions/sync-nextjs-tags.mjs --check
           fi
 
       - name: Commit generated files to the PR
@@ -128,4 +128,4 @@ jobs:
           # Required to trigger the usual path-scoped CI on the generated commit.
           # A repository-scoped fine-grained PAT needs contents: write and PRs: read.
           RENOVATE_SYNC_TOKEN: ${{ secrets.RENOVATE_SYNC_TOKEN }}
-        run: node scripts/renovate-framework-sync.mjs publish
+        run: node scripts/versions/renovate-framework-sync.mjs publish

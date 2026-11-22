@@ -1,4 +1,4 @@
-# Image tags: generated from version sources by node scripts/sync-framework-versions.mjs
+# Image tags: generated from version sources by node scripts/versions/sync-framework-versions.mjs
 x-default-environment:
   timezone: &default_timezone ${TIMEZONE:-Europe/Nicosia}
   host_repo: ${HOST_REPO:-C:/}

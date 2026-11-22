@@ -18,13 +18,14 @@ For deeper routing, commands, and rationale, open `docs/AGENT_IMPLEMENTATION_MAP
 
 | If the task touches                   | Read first                                                                           | Then inspect                                                      |
 |---------------------------------------|--------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| Root docs or generated READMEs        | `scripts/render-readmes.manifest.json`, the relevant `*.template.md`                 | Generated target only to verify output                            |
+| Root docs or generated READMEs        | `scripts/readmes/render-readmes.manifest.json`, the relevant `*.template.md`                 | Generated target only to verify output                            |
 | Docker Compose or benchmark wiring    | `compose/docker-compose.yml`, `compose/obs.yml`, `compose/utils.yml`, `compose/.env` | A sibling service with the same profile                           |
 | Java benchmark services               | Matching `services/java/<framework>/.../README.md`, `pom.xml`                        | Same framework tests plus `services/java/checkstyle.xml`          |
 | Java orchestrator                     | `utils/orchestrator/README.md`, `utils/orchestrator/pom.xml`                         | `application/`, `resource/`, `domain/`, and matching tests        |
 | Go services                           | `services/go/<simple\| enhanced>/README.md`, `go.mod`, `Makefile`                    | `internal/*` for enhanced, `cmd/server` for simple                |
 | Django services                       | `services/python/django/README.md`                                                   | `gunicorn/common`, then `WSGI` or `ASGI` runtime wrapper          |
 | Next.js dashboard                     | `utils/nextjs-dash/README.md`, `package.json`, `.oxlintrc.json`, `.oxfmtrc.json`     | `app/components`, `app/api`, `lib`, matching `__tests__`          |
+| Repository scripts                    | [Script task index](scripts/README.md)                                               | Selected helper, its caller, and the focused check in that row   |
 | CI, scanner wrappers, quality reports | Matching workflow and `my-agent/.apm/skills/ci-report-safety/SKILL.md`               | Nearest helper tests; `scripts/pages/*` if report output changes  |
 | HTTP/API request construction         | Matching client and `my-agent/.apm/skills/ci-report-safety/SKILL.md` section 7       | Request-boundary tests; callers supplying URL identifiers         |
 | Docs site                             | `docs/README.md`, `docs/STRUCTURE.md`                                                | Specific page plus `docs/_layouts/default.html` if layout changes |
@@ -34,7 +35,7 @@ For HTML, CSS, and browser behavior in `utils/nextjs-dash/`, use the [dashboard 
 
 ## Non-negotiable contracts
 
-- Do not edit generated files directly when a template exists. Use `scripts/render-readmes.mjs` after template changes.
+- Do not edit generated files directly when a template exists. Use `scripts/readmes/render-readmes.mjs` after template changes.
 - Keep GitHub Actions pinned to full commit SHAs with version comments.
 - Runtime containers stay non-root and multi-stage; do not add build tools to final images.
 - Compose profile, CPU, memory, ulimit, health, and telemetry settings are part of benchmark fairness.
@@ -56,9 +57,9 @@ For HTML, CSS, and browser behavior in `utils/nextjs-dash/`, use the [dashboard 
 | `services/python/django/gunicorn/common/**`          | `python -m compileall src`, `python -m ruff check .`, `python -m ruff format --check .` from `common`                         |
 | Django `WSGI` or `ASGI` runtime                      | Install common package, then `python manage.py check` and `python manage.py test obbench_django_common.tests --verbosity=2`   |
 | `.github/workflows/**`                               | Run actionlint on changed workflows; YAML parsing alone does not validate expression contexts (see the CI recipe)             |
-| Django Qodana helpers                                | `python -m unittest discover -s scripts -p test_qodana_python.py`; helper Ruff checks and scan verification per the CI recipe |
-| Qodana Maven project helper                          | `npm run check --prefix scripts/quality`, `npm test --prefix scripts/quality`, `node --test scripts/qodana-project.test.mjs scripts/qodana-scopes.test.mjs` |
-| Template docs                                        | `node scripts/render-readmes.mjs` and inspect the generated diff                                                              |
+| Django Qodana helpers                                | `python -m unittest discover -s scripts/scanners -p test_qodana_python.py`; helper Ruff checks and scan verification per the CI recipe |
+| Qodana Maven project helper                          | `npm run check --prefix scripts/quality`, `npm test --prefix scripts/quality`, `node --test scripts/scanners/qodana-project.test.mjs scripts/scanners/qodana-scopes.test.mjs` |
+| Template docs                                        | `node scripts/readmes/render-readmes.mjs` and inspect the generated diff                                                              |
 | `my-agent/**`                                        | `apm install --frozen`, `apm compile --validate`, `apm audit --ci --no-policy`, and `apm pack --dry-run` from `my-agent`      |
 
 Use broader CI reasoning only after the focused path is clean or when shared contracts are changed.

@@ -90,7 +90,7 @@ Benchmark outputs and run summaries.
 
 Repository-level helper scripts:
 
-- `scripts/render-readmes.mjs` — renders generated README files from `.template.md` sources using values from `compose/.env`
+- `scripts/readmes/render-readmes.mjs` — renders generated README files from `.template.md` sources using values from `compose/.env`
 - `scripts/pages/` — GitHub Pages deployment scripts:
   - `github-reports.mjs` and `report-catalog.json` — validated report requests, freshness policy and producer catalog
   - `report-helpers.mjs` — shared module providing HTML escaping, CSS theming, metadata assembly, and report output helpers used by all three report generators

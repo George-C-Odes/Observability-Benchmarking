@@ -6,7 +6,7 @@ skip-check:
   # Healthchecks are not required for benchmark images; keep their runtime unchanged.
   - CKV_DOCKER_2
   # Checkov does not resolve whole-image ARGs. Workflow Quality validates resolved
-  # image defaults instead (scripts/dockerfile-policy.test.mjs).
+  # image defaults instead (scripts/ci/dockerfile-policy.test.mjs).
   - CKV_DOCKER_7
 skip-path:
   - '(^|/)(node_modules|vendor|target|build|dist|\.next|\.venv|venv|_site|apm_modules)(/|$)'
