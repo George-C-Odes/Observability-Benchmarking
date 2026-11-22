@@ -85,23 +85,23 @@ function testParseColonEnv() {
 # Commented values must be ignored
 #SPRING_BOOT_VERSION: 3.5.16
 HOST_REPO: C:\\Users\\example\\repo
-SPRING_BOOT_VERSION: 4.1.2
+SPRING_BOOT_VERSION: 4.2.0
 IMAGE_TAG: ghcr.io/acme/app:1.2.3
 `);
 
   assert.equal(env.HOST_REPO, 'C:\\Users\\example\\repo');
-  assert.equal(env.SPRING_BOOT_VERSION, '4.1.2');
+  assert.equal(env.SPRING_BOOT_VERSION, '4.2.0');
   assert.equal(env.IMAGE_TAG, 'ghcr.io/acme/app:1.2.3');
   assert.equal(env['#SPRING_BOOT_VERSION'], undefined);
 }
 
 function testRenderTemplate() {
   const rendered = renderTemplate('Spring {{SPRING_BOOT_VERSION}} / Go {{GO_VERSION}}', {
-    SPRING_BOOT_VERSION: '4.1.2',
+    SPRING_BOOT_VERSION: '4.2.0',
     GO_VERSION: '1.27.3',
   });
 
-  assert.equal(rendered, 'Spring 4.1.2 / Go 1.27.3');
+  assert.equal(rendered, 'Spring 4.2.0 / Go 1.27.3');
 
   const githubActionsSnippet = renderTemplate('Build ${{ matrix.service.name }} with {{GO_VERSION}}', {
     GO_VERSION: '1.27.3',
@@ -116,7 +116,7 @@ function testRenderTemplate() {
   assert.equal(jekyllSnippet, "Image {{ '/images/foo.png' | relative_url }} with 1.27.3");
 
   assert.throws(
-    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.1.2' }),
+    () => renderTemplate('Missing {{QUARKUS_VERSION}}', { SPRING_BOOT_VERSION: '4.2.0' }),
     /Missing value for placeholder \{\{QUARKUS_VERSION}}/,
   );
 }
@@ -187,10 +187,10 @@ function testGeneratedOutputRoundTrip() {
     const outputPath = path.join(tempDir, 'README.md');
 
     writeFileSync(templatePath, 'Version {{SPRING_BOOT_VERSION}}', 'utf8');
-    writeFileSync(outputPath, 'Version 4.1.2', 'utf8');
+    writeFileSync(outputPath, 'Version 4.2.0', 'utf8');
 
     const rendered = renderTemplate(readFileSync(templatePath, 'utf8'), {
-      SPRING_BOOT_VERSION: '4.1.2',
+      SPRING_BOOT_VERSION: '4.2.0',
     });
 
     assert.equal(rendered, readFileSync(outputPath, 'utf8'));
@@ -242,7 +242,7 @@ function testRealignMarkdownTables() {
   const ragged = [
     '| Name   | Version                 | Notes        |',
     '|--------|-------------------------|--------------|',
-    '| Spring | 4.1.2 | Main framework |',
+    '| Spring | 4.2.0 | Main framework |',
     '| Go     | 1.27.3          | Alt runtime    |',
     '| Node   | 26.13.0                  | Frontend       |',
   ].join('\n');
@@ -252,7 +252,7 @@ function testRealignMarkdownTables() {
   const expected = [
     '| Name   | Version | Notes          |',
     '|--------|---------|----------------|',
-    '| Spring | 4.1.2   | Main framework |',
+    '| Spring | 4.2.0   | Main framework |',
     '| Go     | 1.27.3  | Alt runtime    |',
     '| Node   | 26.13.0 | Frontend       |',
   ].join('\n');
