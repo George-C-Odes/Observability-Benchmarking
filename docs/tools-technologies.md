@@ -23,7 +23,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 
 ## Application Frameworks
 
-### Spring Boot 4.1.2
+### Spring Boot 4.2.0
 
 **Official Site**: [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
 
@@ -34,7 +34,7 @@ A comprehensive overview of the tools, frameworks, and technologies used in this
 - Excellent integration with observability tools
 
 **Implementation Details**:
-- **Spring Boot 4.1.2** (latest major release)
+- **Spring Boot 4.2.0** (latest major release)
 - **Spring WebFlux** for reactive implementation
 - **Spring MVC** for traditional servlet-based implementations
 - **Actuator** for health checks and metrics
@@ -1002,7 +1002,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18    | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 27.0.1     | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.13.1    | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.1.2      | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.2.0      | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.2   | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.2.25     | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.7      | Lightweight Java microservices (programmatic routing)                |
@@ -1024,7 +1024,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Observability** | Profiling          | Pyroscope                  | 2.4.3      | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2     | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0     | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1     | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.34.0     | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1      | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 8.0.2      | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+        | Container runtime for reproducible benchmarks                        |
@@ -1033,7 +1033,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Build**         | Build Tool         | Maven                      | 3.10.0     | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest     | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.3     | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.5     | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.6     | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.94.0     | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.79.0     | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest     | Deterministic HTTP benchmarking                                      |

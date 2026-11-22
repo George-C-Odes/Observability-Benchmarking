@@ -21,7 +21,7 @@ function repositoryFiles() {
 test('canonical inventory covers exactly the active env version variables', () => {
   const variables = parseColonEnv(readFileSync(resolveRepoPath('compose/.env'), 'utf8'));
   assert.deepEqual([...frameworkVersionKeys].sort(), Object.keys(variables).filter((key) => key.endsWith('_VERSION') && !key.startsWith('JAVA_')).sort());
-  assert.equal(new Set(frameworkVersionKeys).size, 17);
+  assert.equal(new Set(frameworkVersionKeys).size, 18);
 });
 
 test('Pekko build wiring forwards independent HTTP and Core versions to Maven', () => {
@@ -222,6 +222,10 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
   assert.match(readFileSync(path.join(workspace, 'services/java/quarkus/native/.mvn/wrapper/maven-wrapper.properties'), 'utf8'), /apache-maven\/3\.99\.1\/apache-maven-3\.99\.1-bin.zip/);
   assert.match(readFileSync(path.join(workspace, 'utils/orchestrator/Dockerfile'), 'utf8'), /maven:3\.99\.1-eclipse-temurin-26-noble\r?\n/);
   assert.match(readFileSync(path.join(workspace, 'README.md'), 'utf8'), /Maven\s*\| 3\.99\.1/);
+  for (const file of ['README.md', 'docs/tools-technologies.md']) {
+    const ruffRow = readFileSync(path.join(workspace, file), 'utf8').split('\n').find((line) => line.includes('| Ruff '));
+    assert.equal(ruffRow?.split('|')[4].trim(), parseColonEnv(source).RUFF_VERSION, file);
+  }
   assert.equal(readFileSync(dashboardManifestPath, 'utf8'), dashboardSource);
   for (const file of ['utils/nextjs-dash/__tests__/app/components/SystemInfo.test.tsx',
     'utils/nextjs-dash/__tests__/lib/runtimeConfig.test.ts', 'utils/nextjs-dash/__tests__/lib/systemInfo.test.ts']) {
