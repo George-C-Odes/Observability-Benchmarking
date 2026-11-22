@@ -105,7 +105,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Profiling          | Pyroscope                  | 2.4.3                   | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2                  | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0                  | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1                  | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.34.0                  | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1                   | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 8.0.2                   | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+                     | Container runtime for reproducible benchmarks                        |
@@ -114,7 +114,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | {{MAVEN_VERSION}}                  | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest                  | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.3                  | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.5                  | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | {{RUFF_VERSION}}        | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | {{OXLINT_VERSION}}                  | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | {{OXFMT_VERSION}}                  | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest                  | Deterministic HTTP benchmarking                                      |
