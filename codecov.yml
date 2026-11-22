@@ -149,6 +149,10 @@ ignore:
   # Identical native OpenTelemetry compatibility shims.
   - "services/java/spring/native/netty/src/main/java/io/opentelemetry/api/internal/InstrumentationUtil.java"
   - "services/java/spring/native/tomcat/src/main/java/io/opentelemetry/api/internal/InstrumentationUtil.java"
+  # Helidon MP native-image substitutions and build-time feature.
+  - "services/java/helidon/mp/native/src/main/java/io/github/georgecodes/benchmarking/helidon/mp/graalvm/WeldEventPreloaderSubstitution.java"
+  - "services/java/helidon/mp/native/src/main/java/io/github/georgecodes/benchmarking/helidon/mp/graalvm/WeldExecutorSubstitution.java"
+  - "services/java/helidon/mp/native/src/main/java/io/github/georgecodes/benchmarking/helidon/mp/graalvm/WeldProxyBuildTimeInitFeature.java"
   # Framework launchers and the JAX-RS resource-root declaration.
   - "services/java/spring/jvm/netty/src/main/java/io/github/georgecodes/benchmarking/spring/netty/NettyApplication.java"
   - "services/java/spring/jvm/tomcat/src/main/java/io/github/georgecodes/benchmarking/spring/tomcat/TomcatApplication.java"
@@ -157,6 +161,9 @@ ignore:
   - "services/java/dropwizard/jvm/src/main/java/io/github/georgecodes/benchmarking/dropwizard/DropwizardApplication.java"
   - "services/java/helidon/se/jvm/src/main/java/io/github/georgecodes/benchmarking/helidon/se/HelidonApplication.java"
   - "services/java/javalin/jvm/src/main/java/io/github/georgecodes/benchmarking/javalin/JavalinApplication.java"
+  - "services/java/pekko/jvm/src/main/java/io/github/georgecodes/benchmarking/pekko/PekkoApplication.java"
+  - "services/java/spark/jvm/src/main/java/io/github/georgecodes/benchmarking/spark/SparkApplication.java"
+  - "services/java/vertx/jvm/src/main/java/io/github/georgecodes/benchmarking/vertx/VertxApplication.java"
   # Metrics providers and JVM metrics configuration excluded by JaCoCo.
   - "services/java/dropwizard/jvm/src/main/java/io/github/georgecodes/benchmarking/dropwizard/infra/MetricsProvider.java"
   - "services/java/javalin/jvm/src/main/java/io/github/georgecodes/benchmarking/javalin/infra/MetricsProvider.java"
