@@ -154,6 +154,21 @@ ignore:
   - "services/java/spring/jvm/tomcat/src/main/java/io/github/georgecodes/benchmarking/spring/tomcat/TomcatApplication.java"
   - "services/java/micronaut/jvm/src/main/java/io/github/georgecodes/benchmarking/micronaut/MicronautApplication.java"
   - "services/java/helidon/mp/jvm/src/main/java/io/github/georgecodes/benchmarking/helidon/mp/web/HelloApplication.java"
+  - "services/java/dropwizard/jvm/src/main/java/io/github/georgecodes/benchmarking/dropwizard/DropwizardApplication.java"
+  - "services/java/helidon/se/jvm/src/main/java/io/github/georgecodes/benchmarking/helidon/se/HelidonApplication.java"
+  - "services/java/javalin/jvm/src/main/java/io/github/georgecodes/benchmarking/javalin/JavalinApplication.java"
+  # Metrics providers and JVM metrics configuration excluded by JaCoCo.
+  - "services/java/dropwizard/jvm/src/main/java/io/github/georgecodes/benchmarking/dropwizard/infra/MetricsProvider.java"
+  - "services/java/javalin/jvm/src/main/java/io/github/georgecodes/benchmarking/javalin/infra/MetricsProvider.java"
+  - "services/java/pekko/jvm/src/main/java/io/github/georgecodes/benchmarking/pekko/infra/MetricsProvider.java"
+  - "services/java/spark/jvm/src/main/java/io/github/georgecodes/benchmarking/spark/infra/MetricsProvider.java"
+  - "services/java/vertx/jvm/src/main/java/io/github/georgecodes/benchmarking/vertx/infra/MetricsProvider.java"
+  - "services/java/helidon/mp/jvm/src/main/java/io/github/georgecodes/benchmarking/helidon/mp/infra/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/helidon/se/jvm/src/main/java/io/github/georgecodes/benchmarking/helidon/se/infra/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/micronaut/jvm/src/main/java/io/github/georgecodes/benchmarking/micronaut/infra/metrics/JvmExtrasMetricsConfiguration.java"
+  - "services/java/quarkus/jvm/src/main/java/io/github/georgecodes/benchmarking/quarkus/infra/metrics/JvmExtrasMetricsConfiguration.java"
+  # Build-time checker run directly from Java source.
+  - "utils/orchestrator/quality/CompactConstructorJavadocParamCheck.java"
   # Dashboard build settings and shared type definitions.
   - "utils/nextjs-dash/next.config.ts"
   - "utils/nextjs-dash/lib/loggingTypes.ts"
