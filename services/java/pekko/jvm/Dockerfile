@@ -87,7 +87,7 @@ ARG OTEL_JAVA_AGENT_VERSION=2.34.0
 # Reviewed release asset digests from the GitHub releases API for these versions.
 # Update version/URL/filename overrides together with their matching SHA-256.
 ARG OTEL_PYROSCOPE_SHA256=c91cc1b4df86633179eede381ed9df181ba100794632534b5f114661440ef075
-ARG OTEL_JAVA_AGENT_SHA256=e43a270df53c6f423e0ab157be9c27ccc01d5dc3232e162fe54777573db2f149
+ARG OTEL_JAVA_AGENT_SHA256=da44154cea128257779c8a782b9651fd7c0c6aa177cd3810f9a867ac8509555d
 ARG OTEL_JAVA_AGENT_FILENAME=opentelemetry-javaagent.jar
 ARG OTEL_JAVA_AGENT_URL="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/${OTEL_JAVA_AGENT_FILENAME}"
 
