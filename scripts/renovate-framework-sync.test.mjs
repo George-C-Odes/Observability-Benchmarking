@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import { parseColonEnv, resolveRepoPath } from './render-readmes.mjs';
 import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
+import { pythonLockVersionKeys, ruffInputs } from './sync-django-versions.mjs';
 import { temporaryDirectory } from './test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 import { documentedActionPaths } from './workflow-action-versions.mjs';
@@ -32,8 +33,9 @@ test('Renovate extracts each active env pin once with the correct registry coord
     PYTHON_VERSION: ['github-tags', 'python/cpython'],
     DJANGO_VERSION: ['pypi', 'django'],
     GUNICORN_VERSION: ['pypi', 'gunicorn'],
+    RUFF_VERSION: ['pypi', 'ruff'],
   };
-  assert.equal(managers.length, 16);
+  assert.equal(managers.length, 17);
   const variables = parseColonEnv(env);
   for (const [key, [datasource, name]] of Object.entries(expected)) {
     const manager = managers.find(({ depNameTemplate }) => depNameTemplate === name);
@@ -909,15 +911,23 @@ test('npm preparation rejects a tampered full lock before state/output/writes an
 });
 
 
-test('Gunicorn updates use the framework route and install the hashed lock compiler', () => {
-  const proposed = env.replace(/^GUNICORN_VERSION:[^\r\n]+/m, 'GUNICORN_VERSION: 28.0.0');
-  assert.deepEqual(validateVersionChange(env, proposed), ['GUNICORN_VERSION']);
+test('Gunicorn and Ruff updates use the framework route and install the hashed lock compiler', () => {
+  for (const key of ['GUNICORN_VERSION', 'RUFF_VERSION']) {
+    const proposed = env.replace(new RegExp(`^${key}:[^\\r\\n]+`, 'm'), `${key}: 99.0.0`);
+    assert.deepEqual(validateVersionChange(env, proposed), [key]);
+    assert.ok(pythonLockVersionKeys.includes(key));
+  }
   const rule = config.packageRules.find(({ matchPackageNames, matchManagers }) =>
     matchManagers?.includes('pip_requirements') && matchPackageNames?.includes('gunicorn'));
   assert.equal(rule.enabled, false);
   assert.ok(rule.matchManagers.includes('pip-compile'));
+  assert.ok(rule.matchPackageNames.includes('ruff'));
+  const files = generatedFrameworkPaths();
+  for (const file of [...ruffInputs, '.github/requirements/python-ci.txt', 'README.md', 'docs/tools-technologies.md']) {
+    assert.ok(files.includes(file), file);
+  }
   const script = readFileSync(resolveRepoPath('scripts/renovate-framework-sync.mjs'), 'utf8');
-  assert.ok(script.includes("python_locks=${changed.some((key) => ['DJANGO_VERSION', 'GUNICORN_VERSION'].includes(key))}"));
+  assert.ok(script.includes('python_locks=${changed.some((key) => pythonLockVersionKeys.includes(key))}'));
   const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
   assert.match(workflow, /if: steps\.proposal\.outputs\.python_locks == 'true'/);
   assert.ok(workflow.includes('--requirement .github/requirements/lock-compiler.txt'));

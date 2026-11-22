@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-6E7781.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-0A84FF.svg)](https://www.docker.com/)
 [![Java](https://img.shields.io/badge/Java-25-ED8B00.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.2.0-6DB33F.svg)](https://spring.io/projects/spring-boot)
 [![Quarkus](https://img.shields.io/badge/Quarkus-3.40.1.2-6C63FF.svg)](https://quarkus.io/)
 [![Micronaut](https://img.shields.io/badge/Micronaut-5.2.25-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.7-008F6B.svg)](https://helidon.io/)
@@ -83,7 +83,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Execution**     | Runtime            | Python (CPython)           | 3.13.18    | Interpreted runtime for Django benchmark services                    |
 | **Execution**     | Server             | Gunicorn                   | 27.0.1     | Production WSGI/ASGI process manager for Django benchmark services   |
 | **Execution**     | Runtime            | Node.js                    | 26.13.1    | Frontend tooling and SSR runtime                                     |
-| **Backend**       | Framework          | Spring Boot                | 4.1.2      | Enterprise Java baseline framework                                   |
+| **Backend**       | Framework          | Spring Boot                | 4.2.0      | Enterprise Java baseline framework                                   |
 | **Backend**       | Framework          | Quarkus                    | 3.40.1.2   | Cloud-native Java framework (JVM + native image focus)               |
 | **Backend**       | Framework          | Micronaut                  | 5.2.25     | Compile-time optimized JVM microservices framework                   |
 | **Backend**       | Framework          | Helidon SE                 | 4.5.7      | Lightweight Java microservices (programmatic routing)                |
@@ -105,7 +105,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Observability** | Profiling          | Pyroscope                  | 2.4.3      | Continuous CPU and memory profiling                                  |
 | **Observability** | Collection         | Grafana Alloy              | 1.10.2     | Unified telemetry collection pipelines                               |
 | **Telemetry**     | Instrumentation    | OpenTelemetry SDK          | 1.68.0     | Manual metrics, logs, and traces instrumentation                     |
-| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.33.1     | Auto-instrumentation and exporters                                   |
+| **Telemetry**     | Instrumentation    | OpenTelemetry Distribution | 2.34.0     | Auto-instrumentation and exporters                                   |
 | **Performance**   | Cache              | Caffeine                   | 3.3.1      | High-performance in-memory caching (Java)                            |
 | **Performance**   | Cache              | cachetools                 | 8.0.2      | In-memory caching (Python)                                           |
 | **Platform**      | Container Runtime  | Docker Engine              | 24+        | Container runtime for reproducible benchmarks                        |
@@ -114,7 +114,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Build**         | Build Tool         | Maven                      | 3.10.0     | Java build and dependency management                                 |
 | **Build**         | Build Tool         | pip-compile                | Latest     | Python dependency pinning and resolution                             |
 | **Build**         | Package Manager    | npm                        | 12.2.3     | Frontend dependency management                                       |
-| **Quality**       | Linter / Formatter | Ruff                       | 0.17.5     | Python linting and code formatting                                   |
+| **Quality**       | Linter / Formatter | Ruff                       | 0.17.6     | Python linting and code formatting                                   |
 | **Quality**       | Linter             | Oxlint                     | 1.94.0     | Next.js dashboard static analysis                                    |
 | **Quality**       | Formatter          | Oxfmt                      | 0.79.0     | Next.js dashboard formatting                                         |
 | **Testing**       | Load Testing       | wrk2                       | Latest     | Deterministic HTTP benchmarking                                      |
@@ -171,7 +171,7 @@ If you’re searching for projects like this, these are the topics it covers:
 The JVM target is Java 25; its patch is determined by the pinned builder image (including the orchestrator’s jlink runtime). `JAVA_MINOR_PATCH_VERSION` selects the GraalVM native-image release suffix and does not select a Temurin patch. Refresh JVM builder digests independently when upgrading their JDK patch.
 
 #### Java (JDK 25 – Eclipse Temurin)
-- **Spring Boot 4.1.2 (3.5.16 also supported)**
+- **Spring Boot 4.2.0 (3.5.16 also supported)**
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -509,7 +509,7 @@ The numbers below are a curated summary of a representative run.
 #### Software Versions
 - **Java JDK**: Eclipse Temurin 25
 - **Java Native**: GraalVM Enterprise 25.0.5.0.3-ol9
-- **Spring Boot**: 4.1.2 (3.5.16 also supported)
+- **Spring Boot**: 4.2.0 (3.5.16 also supported)
 - **Quarkus**: 3.40.1.2
 - **Micronaut**: 5.2.25
 - **Helidon**: 4.5.7

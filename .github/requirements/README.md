@@ -58,6 +58,11 @@ It synchronizes the exact Django and Gunicorn pins in both runtime inputs, regen
 source-of-truth flow; do not independently upgrade Django or Gunicorn in generated requirements or hashes.
 Use `node scripts/sync-framework-versions.mjs --check` to check the complete version contract.
 
+**Ruff updates** start with `RUFF_VERSION` in `compose/.env`. Framework Version Sync updates both Django
+development inputs, regenerates the Ruff hashes in `python-ci.txt`, and renders `README.md` and
+`docs/tools-technologies.md` on the Renovate PR. For local updates, run
+`node scripts/sync-framework-versions.mjs` in the Linux compiler environment below.
+
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
 Use a virtualenv for the compiler:
