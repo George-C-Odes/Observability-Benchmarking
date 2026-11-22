@@ -79,7 +79,7 @@ RUN set -eux; \
 FROM alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS otel_deps
 
 ARG OTEL_PYROSCOPE_VERSION=2.1.4
-ARG OTEL_JAVA_AGENT_VERSION=2.33.1
+ARG OTEL_JAVA_AGENT_VERSION=2.34.0
 # Reviewed release asset digests from the GitHub releases API for these versions.
 # Update version/URL/filename overrides together with their matching SHA-256.
 ARG OTEL_PYROSCOPE_SHA256=c91cc1b4df86633179eede381ed9df181ba100794632534b5f114661440ef075

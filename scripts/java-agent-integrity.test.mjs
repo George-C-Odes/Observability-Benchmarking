@@ -33,7 +33,7 @@ for (const framework of frameworks) {
     const env = {
       ...process.env,
       OTEL_PYROSCOPE_VERSION: '2.1.4',
-      OTEL_JAVA_AGENT_VERSION: '2.33.1',
+      OTEL_JAVA_AGENT_VERSION: '2.34.0',
       OTEL_PYROSCOPE_SHA256: digest(pyro),
       OTEL_JAVA_AGENT_SHA256: digest(agent),
       OTEL_JAVA_AGENT_URL: 'https://example.invalid/custom-agent.jar',
@@ -41,7 +41,7 @@ for (const framework of frameworks) {
     };
     const cache = {
       pyro: `pyroscope-otel-javaagent-extension-2.1.4-${env.OTEL_PYROSCOPE_SHA256}.jar`,
-      agent: `opentelemetry-javaagent-2.33.1-${env.OTEL_JAVA_AGENT_SHA256}.jar`,
+      agent: `opentelemetry-javaagent-2.34.0-${env.OTEL_JAVA_AGENT_SHA256}.jar`,
     };
     // Execute the actual Dockerfile shell with a network-free curl at the client boundary.
     const script = `
@@ -115,7 +115,7 @@ for (const framework of frameworks) {
   test(`${framework}: a different digest for the same version cannot reuse the old agent`, (t) => {
     const replacement = 'reviewed replacement agent';
     const f = fixture(t, { OTEL_JAVA_AGENT_SHA256: digest(replacement), TEST_AGENT_CONTENT: replacement });
-    writeFileSync(path.join(f.directory, 'cache', `opentelemetry-javaagent-2.33.1-${digest(agent)}.jar`), agent);
+    writeFileSync(path.join(f.directory, 'cache', `opentelemetry-javaagent-2.34.0-${digest(agent)}.jar`), agent);
     assert.equal(f.run().status, 0);
     assert.equal(f.requests().length, 2);
     assert.equal(readFileSync(path.join(f.directory, 'opentelemetry-javaagent.jar'), 'utf8'), replacement);
