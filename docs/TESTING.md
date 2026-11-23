@@ -574,7 +574,7 @@ React: 19.3.1
 TypeScript: 7.0.2
 Vitest: 5.1.1
 @vitest/coverage-v8: 5.1.1
-Oxlint: 1.94.0
+Oxlint: 1.95.0
 Oxfmt: 0.79.0
 ```
 
