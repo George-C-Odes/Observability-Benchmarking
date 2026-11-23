@@ -107,7 +107,13 @@ class BuildLockTests(TestCase):
                 {"pip": ("4", (_HASH_A,))},
                 parse_requirements(generated[gunicorn / "pip-requirements.txt"]),
             )
-            with patch.object(sync_build_locks, "__file__", str(gunicorn / "sync_build_locks.py")):
+            # Python sets __file__ when loading this source module. Temporarily
+            # redirect it so the CLI resolves the fixture workspace.
+            # noinspection PyUnresolvedReferences
+            module_file_patch = patch.object(
+                sync_build_locks, "__file__", str(gunicorn / "sync_build_locks.py")
+            )
+            with module_file_patch:
                 with (
                     patch("sys.argv", ["sync_build_locks.py", "--check"]),
                     redirect_stderr(StringIO()) as stderr,
