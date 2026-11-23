@@ -14,7 +14,7 @@ This skill follows the [reviewed upstream Modern Web Guidance skill](https://git
 3. Check browser support and fallback guidance against the dashboard requirements. If a guide requires an Origin Trial, use a supported pattern unless the project has explicitly opted in. Verify the resulting behavior with the focused dashboard checks and identify the guides that informed the change.
 
 ```sh
-npx --yes --ignore-scripts modern-web-guidance@1.0.1 search "accessible modal dialog"
+npx --yes --ignore-scripts modern-web-guidance@1.0.2 search "accessible modal dialog"
 ```
 
 On Windows, use `npx.cmd` if PowerShell blocks the script shim. After the package has been cached, add `--offline` if network access is unavailable. If the pinned tool is unavailable, use the existing dashboard guidance and record that the lookup was skipped.
