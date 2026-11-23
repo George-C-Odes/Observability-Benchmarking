@@ -203,8 +203,10 @@
       "matchFileNames": ["scripts/apm-version.txt"],
       "matchPackageNames": ["apm-cli"],
       "allowedVersions": "/^[0-9]+\\.[0-9]+\\.[0-9]+$/",
+      "addLabels": ["apm-version"],
+      "rebaseWhen": "behind-base-branch",
       "automerge": false,
-      "prBodyNotes": ["Review the matching APM release and confirm it includes the Linux binary used by CI. Run `python scripts/upgrade-apm.py` from the repository root and commit the reviewed `my-agent/apm.lock.yaml` diff to this PR."]
+      "prBodyNotes": ["Framework Version Sync runs `python scripts/upgrade-apm.py` and adds the refreshed `my-agent/apm.lock.yaml` to this PR. Review the lockfile diff and confirm the matching APM release includes the Linux binary used by CI."]
     },
     {
       "description": "Review the Modern Web Guidance CLI pin together with its upstream skill revision.",

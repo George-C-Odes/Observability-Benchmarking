@@ -87,6 +87,12 @@ CodeQL action wrappers. The relay accepts only full commit SHA pins and version 
 those wrappers. It renders and publishes [the linting and code quality guide](../../docs/LINTING_AND_CODE_QUALITY.md)
 from the trusted template, using the proposed pins as data. CodeQL subactions update as a group.
 
+Renovate adds `apm-version` to APM CLI pin updates. The workflow validates the exact stable version in
+`scripts/apm-version.txt`, runs `python scripts/upgrade-apm.py` from the trusted base checkout with APM lifecycle
+scripts disabled, and verifies the generated lockfile records the new version before committing it to the same PR.
+Generation and publication use separate runners. Publication uses the existing sync token, checks that the PR head
+still matches the generation input, and writes only `my-agent/apm.lock.yaml`. APM CLI updates require manual review.
+
 1. Renovate proposes an env update and labels the PR `framework-version`.
 2. **Framework Version Sync** (`renovate_framework_sync.yml`) runs the **trusted base revision's** scripts.
    It accepts only open `renovate[bot]` PRs from this repository under `renovate/`, validates that the env changed
@@ -106,8 +112,8 @@ secret **`RENOVATE_SYNC_TOKEN`**, using a repository-scoped fine-grained PAT (or
 to the publication step; checkout and preparation use the read-only `GITHUB_TOKEN` without persisted Git
 credentials. There is deliberately no write-token fallback: commits made with `GITHUB_TOKEN` suppress normal
 push/PR workflows, which would otherwise leave the generated service changes untested. A missing token fails
-publication rather than merging an env-only update. Hosted Renovate does not execute repository-configured
-`postUpgradeTasks`, so this workflow supplies the synchronization without requiring a self-hosted bot.
+publication rather than merging an env-only update. The hosted Renovate app restricts `postUpgradeTasks` to
+approved commands, so the workflow supplies the synchronization. [Mend Renovate hosted configuration](https://docs.renovatebot.com/mend-hosted/hosted-apps-config/)
 
 The env represents benchmark framework/runtime versions, not every tool/library in the monorepo. Other pins
 (for example Pekko core, Micronaut integration modules, Java/Maven tooling, and dashboard dependencies) retain

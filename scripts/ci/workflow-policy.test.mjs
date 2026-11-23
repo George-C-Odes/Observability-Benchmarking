@@ -246,9 +246,29 @@ test('unfiltered validation enforces shell, security, request-boundary and Pages
 test('Renovate verifies the main revision before executing repository code', () => {
   const source = workflow('renovate_framework_sync');
   assert.match(source, /branches: \[main]/);
-  assert.deepEqual([...source.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), ['refs/heads/main']);
-  assert.match(source, /BASE_SHA: \$\{\{ github.event.pull_request.base.sha }}/);
-  assert.match(source, /git rev-parse HEAD\)" != "\$BASE_SHA"[\s\S]*?exit 1[\s\S]*?uses: \.\/\.github\/actions\/setup-node/);
+  assert.match(source, /^permissions: \{}$/m);
+  const jobs = source.split(/^ {2}(?:synchronize|generate-apm|publish-apm):\s*$/m).slice(1);
+  assert.equal(jobs.length, 3);
+  for (const job of jobs) {
+    assert.match(job, /^ {4}permissions:\n {6}contents: read\n {6}pull-requests: read\n {4}\S/m);
+    assert.deepEqual([...job.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), ['refs/heads/main']);
+    assert.match(job, /persist-credentials: false/);
+    assert.doesNotMatch(job, /^ +(?:repository|allow-unsafe-pr-checkout):/m);
+    assert.match(job, /BASE_SHA: \$\{\{ github.event.pull_request.base.sha }}/);
+    assert.match(job, /git rev-parse HEAD\)" != "\$BASE_SHA"[\s\S]*?exit 1[\s\S]*?uses: \.\/\.github\/actions\/setup-node/);
+  }
+});
+
+test('Renovate runs the full APM upgrade apart from the lockfile publication token', () => {
+  const source = workflow('renovate_framework_sync');
+  const [, generate, publish] = source.split(/^ {2}(?:generate-apm|publish-apm):\s*$/m);
+  assert.match(generate, /user\.login == 'renovate\[bot]'[\s\S]*?head\.repo\.full_name == github\.repository[\s\S]*?contains\([^\n]+ 'apm-version'\)/);
+  assert.match(generate, /prepare-apm[\s\S]*?APM_NO_SCRIPTS: '1'[\s\S]*?python scripts\/upgrade-apm\.py\r?\n/);
+  assert.doesNotMatch(generate, /secrets\.|RENOVATE_SYNC_TOKEN/);
+  assert.match(publish, /needs: generate-apm/);
+  assert.match(publish, /APM_GENERATED_HEAD_SHA: \$\{\{ needs.generate-apm.outputs.head_sha }}[\s\S]*?prepare-apm/);
+  assert.match(publish, /RENOVATE_SYNC_TOKEN: \$\{\{ secrets.RENOVATE_SYNC_TOKEN }}[\s\S]*?APM_GENERATED_LOCK: \$\{\{ needs.generate-apm.outputs.lockfile }}[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs publish/);
+  assert.doesNotMatch(publish, /upgrade-apm\.py/);
 });
 
 test('Qodana routes scopes without dropping check names or weakening full analysis', () => {
