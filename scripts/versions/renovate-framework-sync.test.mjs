@@ -449,6 +449,107 @@ test('an invalid blob response stops subsequent uploads and publication', async 
   assert.equal(mock.mock.callCount(), 6);
 });
 
+const apmPinPath = 'scripts/apm-version.txt';
+const apmLockPath = 'my-agent/apm.lock.yaml';
+const refreshedApmLock = 'lockfile_version: \'4\'\napm_version: 0.38.1\ndependencies: []\n';
+
+function apmFixture(t, onWrite = (route) => assert.fail(`Unexpected write: ${route}`)) {
+  const blobs = new Map();
+  const fixture = publicationFixture(t, (route, options) => {
+    if (options.method !== 'GET') return onWrite(route, JSON.parse(options.body));
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  });
+  const { base, head, state } = fixture;
+  for (const [file, entry] of base) head.set(file, entry);
+  const add = (tree, file, content, mode = '100644') => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { mode, sha, type: 'blob' });
+  };
+  add(base, apmPinPath, '0.37.0\n');
+  add(base, apmLockPath, refreshedApmLock.replace('0.38.1', '0.37.0'));
+  head.set(apmLockPath, base.get(apmLockPath));
+  add(head, apmPinPath, '0.38.1\r\n');
+  const output = path.join(process.env.RUNNER_TEMP, 'output');
+  const settings = { GITHUB_OUTPUT: output, APM_GENERATED_LOCK: Buffer.from(refreshedApmLock).toString('base64'),
+    APM_GENERATED_HEAD_SHA: state.headSha };
+  for (const [name, value] of Object.entries(settings)) {
+    const previous = process.env[name];
+    process.env[name] = value;
+    t.after(() => {
+      if (previous === undefined) delete process.env[name];
+      else process.env[name] = previous;
+    });
+  }
+  const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
+  return { ...fixture, output, change: (file, content, mode) => add(head, file, content, mode),
+    prepareApm: () => prepare(event, 'synthetic-test-token', 'apm') };
+}
+
+test('only the APM CLI pin gets the APM relay label and remains manual to merge', () => {
+  const rules = config.packageRules.filter((rule) => rule.addLabels?.includes('apm-version'));
+  assert.equal(rules.length, 1);
+  assert.deepEqual(rules[0].matchManagers, ['custom.regex']);
+  assert.deepEqual(rules[0].matchFileNames, [apmPinPath]);
+  assert.deepEqual(rules[0].matchPackageNames, ['apm-cli']);
+  assert.equal(rules[0].automerge, false);
+});
+
+test('APM relay publishes only the generated lockfile and a repeat publication is a no-op', async (t) => {
+  const writes = [];
+  const { state, headTreeSha, change, prepareApm, output } = apmFixture(t, (route, body) => {
+    writes.push({ route, body });
+    return { sha: 'f'.repeat(40) };
+  });
+  await prepareApm();
+  assert.match(readFileSync(output, 'utf8'), new RegExp(`apm_version=0\\.38\\.1\\nhead_sha=${state.headSha}\\n`));
+  await publish('synthetic-test-token');
+  assert.deepEqual(writes.map(({ route }) => route), ['git/blobs', 'git/trees', 'git/commits', 'git/refs/heads/renovate%2Fframework']);
+  assert.deepEqual(writes[0].body, { encoding: 'base64', content: Buffer.from(refreshedApmLock).toString('base64') });
+  assert.deepEqual(writes[1].body, { base_tree: headTreeSha, tree: [
+    { path: apmLockPath, mode: '100644', type: 'blob', sha: 'f'.repeat(40) },
+  ] });
+  assert.deepEqual(writes[2].body.parents, [state.headSha]);
+  assert.equal(writes[3].body.force, false);
+  change(apmLockPath, refreshedApmLock);
+  await prepareApm();
+  await publish('synthetic-test-token');
+  assert.equal(writes.length, 4);
+});
+
+test('APM preparation rejects source edits, pin injection, and changed file modes', async (t) => {
+  const { base, head, change, prepareApm, output } = apmFixture(t);
+  change('scripts/upgrade-apm.py', 'edited source');
+  await assert.rejects(prepareApm(), /Unexpected file/);
+  head.delete('scripts/upgrade-apm.py');
+  change(apmLockPath, 'redirected lock', '120000');
+  await assert.rejects(prepareApm(), /unchanged regular file mode/);
+  head.set(apmLockPath, base.get(apmLockPath));
+  for (const version of ['0.38.1\nhead_sha=injected', '0.38.1rc1', '0.38.1\n\n', '0.38.1 --extra-index-url=example.org']) {
+    change(apmPinPath, version);
+    await assert.rejects(prepareApm(), /exactly one stable APM CLI version/);
+  }
+  assert.equal(existsSync(output), false);
+});
+
+test('APM publication rejects stale, malformed, or conflicting lockfile handoffs before writes', async (t) => {
+  const { state, change, prepareApm, mock } = apmFixture(t);
+  process.env.APM_GENERATED_HEAD_SHA = 'e'.repeat(40);
+  await assert.rejects(prepareApm(), /PR head changed after APM generation/);
+  assert.equal(mock.mock.callCount(), 1);
+  process.env.APM_GENERATED_HEAD_SHA = state.headSha;
+  await prepareApm();
+  process.env.APM_GENERATED_LOCK = 'not base64';
+  await assert.rejects(publish('synthetic-test-token'), /Invalid generated APM lockfile encoding/);
+  process.env.APM_GENERATED_LOCK = Buffer.from(refreshedApmLock.replace('0.38.1', '0.37.0')).toString('base64');
+  await assert.rejects(publish('synthetic-test-token'), /does not match the proposed CLI version/);
+  process.env.APM_GENERATED_LOCK = Buffer.from(refreshedApmLock).toString('base64');
+  change(apmLockPath, 'manually edited lockfile');
+  await assert.rejects(publish('synthetic-test-token'), /Refusing to overwrite a PR edit/);
+});
+
 test('Sonar version publication refuses unrelated PR edits to scanner scope or encoding', () => {
   const file = '.sonarcloud.properties';
   const original = 'sonar.python.version=3.13\nsonar.sourceEncoding=UTF-8\n';

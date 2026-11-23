@@ -3,7 +3,7 @@ name: Framework Version Sync
 on:
   # Only trusted base scripts execute, restricted to same-repository Renovate PRs.
   # Reassess if PR source execution or the publication allowlist changes.
-  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted-base execution with validated version-only publication
+  pull_request_target: # zizmor: ignore[dangerous-triggers] trusted-base execution with validated version and generated-file publication
     branches: [main]
     types: [opened, synchronize, reopened, labeled]
 
@@ -128,4 +128,102 @@ jobs:
           # Required to trigger the usual path-scoped CI on the generated commit.
           # A repository-scoped fine-grained PAT needs contents: write and PRs: read.
           RENOVATE_SYNC_TOKEN: ${{ secrets.RENOVATE_SYNC_TOKEN }}
+        run: node scripts/versions/renovate-framework-sync.mjs publish
+
+  generate-apm:
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'renovate/') &&
+      contains(github.event.pull_request.labels.*.name, 'apm-version')
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    outputs:
+      changed: ${{ steps.apm.outputs.changed }}
+      head_sha: ${{ steps.apm.outputs.head_sha }}
+      lockfile: ${{ steps.refresh.outputs.lockfile }}
+    steps:
+      - name: Checkout trusted base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/heads/main
+          persist-credentials: false
+
+      - name: Verify trusted base revision
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$BASE_SHA" ]]; then
+            echo '::error::The trusted base moved. Rerun synchronization on the updated PR.'
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+
+      - name: Validate Renovate APM proposal
+        id: apm
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-apm
+
+      - name: Set up Python for the APM upgrade
+        if: steps.apm.outputs.changed == 'true'
+        uses: ./.github/actions/setup-python
+
+      # The newly installed CLI runs on a separate runner from the write token.
+      - name: Run full APM upgrade and export the lockfile
+        if: steps.apm.outputs.changed == 'true'
+        id: refresh
+        shell: bash
+        env:
+          APM_VERSION: ${{ steps.apm.outputs.apm_version }}
+          APM_NO_SCRIPTS: '1'
+        run: |
+          printf '%s\n' "$APM_VERSION" > scripts/apm-version.txt
+          python scripts/upgrade-apm.py
+          lockfile=my-agent/apm.lock.yaml
+          if [[ ! -f "$lockfile" || -L "$lockfile" || $(wc -c < "$lockfile") -gt $((90 * 1024)) ]]; then
+            echo '::error::The generated APM lockfile must be a regular file small enough to pass between jobs.'
+            exit 1
+          fi
+          printf 'lockfile=%s\n' "$(base64 -w0 "$lockfile")" >> "$GITHUB_OUTPUT"
+
+  publish-apm:
+    needs: generate-apm
+    if: needs.generate-apm.outputs.changed == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/heads/main
+          persist-credentials: false
+
+      - name: Verify trusted base revision
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$BASE_SHA" ]]; then
+            echo '::error::The trusted base moved. Rerun synchronization on the updated PR.'
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: ./.github/actions/setup-node
+
+      - name: Revalidate the APM proposal against the generated revision
+        id: apm
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APM_GENERATED_HEAD_SHA: ${{ needs.generate-apm.outputs.head_sha }}
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-apm
+
+      - name: Commit the generated APM lockfile to the PR
+        if: steps.apm.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RENOVATE_SYNC_TOKEN: ${{ secrets.RENOVATE_SYNC_TOKEN }}
+          APM_GENERATED_LOCK: ${{ needs.generate-apm.outputs.lockfile }}
         run: node scripts/versions/renovate-framework-sync.mjs publish

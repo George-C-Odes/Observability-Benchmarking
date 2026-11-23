@@ -22,10 +22,13 @@ const actionGuide = 'docs/LINTING_AND_CODE_QUALITY.md';
 const actionGuideTemplate = 'docs/LINTING_AND_CODE_QUALITY.template.md';
 const codeqlAction = '.github/actions/codeql-action/action.yml';
 const codeqlLock = '.github/actions/codeql-action/bundle-lock.json';
+const apmPin = 'scripts/apm-version.txt';
+const apmLock = 'my-agent/apm.lock.yaml';
 const relayCommitMessages = {
   env: 'chore: relay framework versions from compose/.env',
   nextjs: 'chore: relay Next.js image tags from package.json',
   actions: 'chore: relay documented GitHub Actions versions',
+  apm: 'chore: refresh the APM package lockfile',
 };
 
 function validateNextjsManifest(base, head) {
@@ -360,24 +363,60 @@ async function prepareActionGuide(baseTree, headTree, token) {
   return { changed, guide };
 }
 
+function readApmVersion(content) {
+  if (!matchesEntireString(content, /^[0-9]+\.[0-9]+\.[0-9]+(?:\r?\n)?$/)) {
+    throw new Error('Expected exactly one stable APM CLI version (X.Y.Z)');
+  }
+  return content.trimEnd();
+}
+
+async function prepareApm(baseTree, headTree, token) {
+  validateFrameworkTree(baseTree.entries, headTree.entries, new Set([apmPin, apmLock]));
+  const original = readApmVersion(await readBlob(baseTree, apmPin, token));
+  const apmVersion = readApmVersion(await readBlob(headTree, apmPin, token));
+  return { changed: original === apmVersion ? [] : ['apm-cli'], apmVersion };
+}
+
 export async function prepare(event, token, route = 'env') {
   if (!Object.hasOwn(relayCommitMessages, route)) throw new Error('Unknown version relay route');
   const baseSha = event.pull_request.base.sha;
   const pr = await api('readPull', token, { identifier: event.number });
   assertRenovatePullRequest(pr, process.env.GITHUB_REPOSITORY, baseSha);
+  const generatedHead = process.env.APM_GENERATED_HEAD_SHA;
+  if (route === 'apm' && generatedHead !== undefined && generatedHead !== pr.head.sha) {
+    throw new Error('PR head changed after APM generation; rerun on the new revision');
+  }
   const baseTree = await readTree(baseSha, token);
   const headTree = await readTree(pr.head.sha, token);
-  const prepared = route === 'actions'
-    ? await prepareActionGuide(baseTree, headTree, token)
-    : await prepareVersionInputs(baseTree, headTree, route, token);
+  let prepared;
+  if (route === 'actions') prepared = await prepareActionGuide(baseTree, headTree, token);
+  else if (route === 'apm') prepared = await prepareApm(baseTree, headTree, token);
+  else prepared = await prepareVersionInputs(baseTree, headTree, route, token);
   const { changed } = prepared;
   writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, route, ...prepared }));
   appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${changed.some((key) => pythonLockVersionKeys.includes(key))}\n`);
+  if (route === 'apm') appendFileSync(process.env.GITHUB_OUTPUT, `apm_version=${prepared.apmVersion}\nhead_sha=${pr.head.sha}\n`);
   console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No version changes to synchronize');
+}
+
+function generatedApmLock(version) {
+  // The lock crosses runners as a single environment value. Keep it within
+  // Linux's per-variable size limit, including its base64 expansion.
+  const encoded = process.env.APM_GENERATED_LOCK;
+  if (!encoded || encoded.length > 120 * 1024) throw new Error('Missing or oversized generated APM lockfile');
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.toString('base64') !== encoded) throw new Error('Invalid generated APM lockfile encoding');
+  const content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  const versions = content.split(/\r?\n/).filter((line) => line.startsWith('apm_version:'));
+  if (versions.length !== 1 || versions[0] !== `apm_version: ${version}`) {
+    throw new Error('Generated APM lockfile does not match the proposed CLI version');
+  }
+  return { file: apmLock, content };
 }
 
 function generatedFiles(state) {
   if (state.route === 'actions') return [{ file: actionGuide, content: state.guide }];
+  if (state.route === 'apm') return [generatedApmLock(state.apmVersion)];
   return [...new Set(state.route === 'nextjs' ? generatedNextjsPaths() : generatedFrameworkPaths())].map((file) => ({
     file, content: readFileSync(resolveRepoPath(file), 'utf8'),
   }));
@@ -420,8 +459,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (mode === 'prepare') await prepare(event, process.env.GH_TOKEN);
     else if (mode === 'prepare-nextjs') await prepare(event, process.env.GH_TOKEN, 'nextjs');
     else if (mode === 'prepare-actions') await prepare(event, process.env.GH_TOKEN, 'actions');
+    else if (mode === 'prepare-apm') await prepare(event, process.env.GH_TOKEN, 'apm');
     else if (mode === 'publish') await publish(process.env.GH_TOKEN);
-    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|publish');
+    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|publish');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
