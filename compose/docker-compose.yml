@@ -1193,12 +1193,12 @@ services:
 
   javalin-jvm-platform:
     profiles: ["${DOCKER_PROF_JAVALIN_JVM_PLATFORM:-skip}"]
-    image: javalin-jvm-platform:7.2.4-java25
+    image: javalin-jvm-platform:7.3.0-java25
     build:
       context: ../services/java
       dockerfile: javalin/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: javalin-jvm:7.2.4-java25
+        BUILDKIT_BUILD_NAME: javalin-jvm:7.3.0-java25
         JAVALIN_VERSION: ${JAVALIN_VERSION}
     container_name: javalin-jvm-platform
     ports:
@@ -1263,12 +1263,12 @@ services:
 
   javalin-jvm-virtual:
     profiles: ["${DOCKER_PROF_JAVALIN_JVM_VIRTUAL:-skip}"]
-    image: javalin-jvm-virtual:7.2.4-java25
+    image: javalin-jvm-virtual:7.3.0-java25
     build:
       context: ../services/java
       dockerfile: javalin/jvm/Dockerfile
       args:
-        BUILDKIT_BUILD_NAME: javalin-jvm:7.2.4-java25
+        BUILDKIT_BUILD_NAME: javalin-jvm:7.3.0-java25
         JAVALIN_VERSION: ${JAVALIN_VERSION}
     container_name: javalin-jvm-virtual
     ports:

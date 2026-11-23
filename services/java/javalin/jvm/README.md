@@ -2,7 +2,7 @@
 
 # Javalin JVM Service
 
-A lightweight, high-throughput REST service implemented with Javalin 7.2.4 on **Java 25**.
+A lightweight, high-throughput REST service implemented with Javalin 7.3.0 on **Java 25**.
 
 This module mirrors the `/hello/*` contracts used by the existing Spring JVM and Spark JVM services.
 
@@ -48,7 +48,7 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 
 ## Docker
 
-**Image**: `javalin-jvm:7.2.4-java25`
+**Image**: `javalin-jvm:7.3.0-java25`
 
 | Stage   | Image                                                        |
 |---------|--------------------------------------------------------------|
@@ -64,9 +64,9 @@ If the service is started in platform mode, `/hello/virtual` returns `404` and v
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm:7.2.4-java25 `
-  --build-arg JAVALIN_VERSION=7.2.4 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.4-java25 `
+  -t javalin-jvm:7.3.0-java25 `
+  --build-arg JAVALIN_VERSION=7.3.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.3.0-java25 `
   --load `
   services/java
 ```

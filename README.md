@@ -12,7 +12,7 @@
 [![Micronaut](https://img.shields.io/badge/Micronaut-5.2.25-1A1A2E.svg)](https://micronaut.io/)
 [![Helidon](https://img.shields.io/badge/Helidon-4.5.7-008F6B.svg)](https://helidon.io/)
 [![SparkJava](https://img.shields.io/badge/SparkJava-3.0.5-FF7043.svg)](https://sparkjava.com/)
-[![Javalin](https://img.shields.io/badge/Javalin-7.2.4-00AFCF.svg)](https://javalin.io/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.3.0-00AFCF.svg)](https://javalin.io/)
 [![Dropwizard](https://img.shields.io/badge/Dropwizard-5.0.2-C9A200.svg)](https://www.dropwizard.io/)
 [![Vert.x](https://img.shields.io/badge/Vert.x-5.2.3-782A90.svg)](https://vertx.io/)
 [![Pekko](https://img.shields.io/badge/Pekko%20HTTP-1.4.2-DB2777.svg)](https://pekko.apache.org/)
@@ -89,7 +89,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Backend**       | Framework          | Helidon SE                 | 4.5.7      | Lightweight Java microservices (programmatic routing)                |
 | **Backend**       | Framework          | Helidon MP                 | 4.5.7      | MicroProfile-compliant Java microservices (CDI + JAX-RS)             |
 | **Backend**       | Framework          | SparkJava (Zoomba fork)    | 3.0.5      | Minimal HTTP server (virtual-thread friendly)                        |
-| **Backend**       | Framework          | Javalin                    | 7.2.4      | Lightweight REST server                                              |
+| **Backend**       | Framework          | Javalin                    | 7.3.0      | Lightweight REST server                                              |
 | **Backend**       | Framework          | Dropwizard                 | 5.0.2      | Production-ready RESTful web services (Jetty + Jersey + Jackson)     |
 | **Backend**       | Framework          | Vert.x                     | 5.2.3      | Reactive, event-driven applications on the JVM (Netty)               |
 | **Backend**       | Framework          | Pekko                      | 1.4.2      | Reactive HTTP toolkit on the Pekko actor system (Apache)             |
@@ -199,7 +199,7 @@ The JVM target is Java 25; its patch is determined by the pinned builder image (
   - JVM builds
     - Platform threads
     - Virtual threads
-- **Javalin**: 7.2.4
+- **Javalin**: 7.3.0
   - JVM builds
     - Platform threads
     - Virtual threads
@@ -514,7 +514,7 @@ The numbers below are a curated summary of a representative run.
 - **Micronaut**: 5.2.25
 - **Helidon**: 4.5.7
 - **Spark**: 3.0.5
-- **Javalin**: 7.2.4
+- **Javalin**: 7.3.0
 - **Dropwizard**: 5.0.2
 - **Vert.x**: 5.2.3
 - **Pekko HTTP**: 1.4.2 (Pekko Core 1.7.1)
