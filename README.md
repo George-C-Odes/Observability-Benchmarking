@@ -97,7 +97,7 @@ Perfect for developers, architects, and DevOps engineers looking to make data-dr
 | **Frontend**      | Framework          | Next.js                    | 16.4.6     | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1     | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2      | Native checker and type-safe dashboard development                   |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0      | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.6.0      | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.3.1     | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.10     | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1      | Distributed tracing backend                                          |
@@ -164,7 +164,7 @@ If you’re searching for projects like this, these are the topics it covers:
   - Configure benchmark targets via chip-based multiselect with quick-filter group buttons
   - Execute IntelliJ IDEA run configurations from the browser
   - Professional MUI-based interface with switchable themes
-  - Built with Next.js 16.4.6 and Material-UI 9.5.0
+  - Built with Next.js 16.4.6 and Material-UI 9.6.0
 
 ### 🚀 REST Service Implementations
 
