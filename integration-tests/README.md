@@ -180,7 +180,7 @@ The runner loads and prints framework versions from `compose/.env`:
 | Micronaut       | 5.2.25   |
 | Helidon SE & MP | 4.5.7    |
 | Spark           | 3.0.5    |
-| Javalin         | 7.2.4    |
+| Javalin         | 7.3.0    |
 | Dropwizard      | 5.0.2    |
 | Vert.x          | 5.2.3    |
 | Pekko           | 1.4.2    |

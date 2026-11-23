@@ -200,9 +200,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-platform:7.2.4-java25 `
-  --build-arg JAVALIN_VERSION=7.2.4 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.4-java25 `
+  -t javalin-jvm-platform:7.3.0-java25 `
+  --build-arg JAVALIN_VERSION=7.3.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.3.0-java25 `
   --load `
   services/java
 ```
@@ -210,9 +210,9 @@ docker buildx build `
 ```powershell
 docker buildx build `
   -f services/java/javalin/jvm/Dockerfile `
-  -t javalin-jvm-virtual:7.2.4-java25 `
-  --build-arg JAVALIN_VERSION=7.2.4 `
-  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.2.4-java25 `
+  -t javalin-jvm-virtual:7.3.0-java25 `
+  --build-arg JAVALIN_VERSION=7.3.0 `
+  --build-arg BUILDKIT_BUILD_NAME=javalin-jvm:7.3.0-java25 `
   --load `
   services/java
 ```
