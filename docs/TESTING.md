@@ -575,7 +575,7 @@ TypeScript: 7.0.2
 Vitest: 5.1.1
 @vitest/coverage-v8: 5.1.1
 Oxlint: 1.95.0
-Oxfmt: 0.79.0
+Oxfmt: 0.80.0
 ```
 
 #### Test Structure
