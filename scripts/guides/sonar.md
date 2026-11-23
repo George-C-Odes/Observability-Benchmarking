@@ -14,14 +14,15 @@ before writing `.sonar/analysis.properties`. It merges the authored `sonar-proje
 the shared `.sonarcloud.properties` scope, encoding and synchronized Python version. Java test classification
 is added explicitly for the CLI scanner. Production source remains in scope for static analysis.
 Keep `sonar.coverage.exclusions` in `sonar-project.properties` aligned with the shared paths in
-`codecov.yml`. These paths cover duplicate shims, framework launchers and declarations, static
-dashboard files, and the generated landing page. Benchmark behavior and executable tooling stay
-eligible for coverage. What Codecov can display depends on the files in the uploaded reports.
+`codecov.yml`. These paths cover duplicate shims, thin framework and tool launchers, static files,
+the PowerShell package bootstrap, the docs navigation script that depends on browser layout, and the
+checker exercised from isolated temporary copies. Tests of the isolated checker still run in CI.
 
-The scan job measures the Node and Python tooling tests under `scripts/`. The Python run also measures
-CLI subprocesses and combines their data before exporting Cobertura XML. Sonar imports the tooling
-reports alongside the dashboard and Django reports. Codecov receives the same tooling reports under
-the `ci-tooling` flag.
+The scan job measures Node and Python tooling under `scripts/` and selected tooling elsewhere,
+including the dashboard's coverage gate, direct orchestrator SSE smoke, integration result validation
+and Django lock generation. The Python run measures CLI subprocesses and combines their data before
+exporting Cobertura XML. Sonar imports the tooling reports alongside the dashboard and Django reports.
+Codecov receives the same tooling reports under the `ci-tooling` flag.
 Regression checks: `node --test scripts/coverage/sonar-coverage.test.mjs` and `npm run check --prefix scripts/quality`.
 
 Before the first CI scan, configure the repository `SONAR_TOKEN` secret and turn off **Administration >

@@ -228,6 +228,27 @@ describe('ClientHome', () => {
     expect(screen.getByLabelText('Theme')).toBeInTheDocument();
   });
 
+  it('applies the selected theme by its catalogue id', async () => {
+    await renderClientHomeAndWaitForActiveTab();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Theme' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Cyberpunk' }));
+    expect(mockSetCurrentTheme).toHaveBeenCalledWith('cyberpunk');
+  });
+
+  it('still allows switching tabs when browser storage is unavailable', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('Storage unavailable');
+      },
+      setItem: () => {
+        throw new Error('Storage unavailable');
+      },
+    });
+    const { tabs } = await renderClientHomeAndWaitForActiveTab();
+    expect(tabs.serviceHealth).toHaveAttribute('aria-selected', 'true');
+    await activateTab(tabs.logs, 4);
+  });
+
   it('renders active tab panel with correct ARIA attributes', async () => {
     await renderClientHomeAndWaitForActiveTab();
 

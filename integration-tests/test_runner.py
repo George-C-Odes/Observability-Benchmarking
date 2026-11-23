@@ -36,6 +36,16 @@ def find_bash():
 
 
 class PayloadTests(unittest.TestCase):
+    @staticmethod
+    def run_results_cli(*args, input_text=None, check=True):
+        return subprocess.run(
+            [sys.executable, str(ROOT / "results.py"), *args],
+            input=input_text,
+            capture_output=True,
+            encoding="utf-8",
+            check=check,
+        )
+
     def test_metric_names_can_differ_with_identical_other_labels(self):
         payload = {
             "status": "success",
@@ -168,44 +178,36 @@ class PayloadTests(unittest.TestCase):
             with self.subTest(output=output), self.assertRaises(ValueError):
                 RESULTS.check_wrk(output)
 
+    def test_check_cli_reports_invalid_telemetry_with_a_failing_exit_status(self):
+        result = self.run_results_cli(
+            "check",
+            "loki",
+            "go",
+            "100",
+            input_text=json.dumps({"status": "success", "data": {"result": []}}),
+            check=False,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("no fresh log entries for go", result.stderr)
+
     def test_report_round_trips_diagnostics_and_exit_status(self):
         with tempfile.TemporaryDirectory() as directory:
             events = Path(directory) / "events.jsonl"
             report = Path(directory) / "report.json"
+            configuration = Path(directory) / "configuration.json"
+            config = self.run_results_cli("configuration", "services=go", "query=service=go")
+            configuration.write_text(config.stdout, encoding="utf-8")
             message = 'quote " backslash \\ newline\ncontrol\t Unicode: λ'
             rows = []
             for status in ["passed", "failed", "skipped"]:
-                result = subprocess.run(
-                    [
-                        sys.executable,
-                        str(ROOT / "results.py"),
-                        "record",
-                        "test",
-                        "logs",
-                        "go",
-                        status,
-                        "1",
-                    ],
-                    input=message,
-                    text=True,
-                    capture_output=True,
-                    check=True,
-                    encoding="utf-8",
+                result = self.run_results_cli(
+                    "record", "test", "logs", "go", status, "1", input_text=message
                 )
                 rows.append(result.stdout)
             events.write_text("".join(rows), encoding="utf-8")
-            subprocess.run(
-                [
-                    sys.executable,
-                    str(ROOT / "results.py"),
-                    "report",
-                    str(events),
-                    str(report),
-                    "start",
-                    "143",
-                    "log",
-                ],
-                check=True,
+            self.run_results_cli(
+                "report", str(events), str(report), "start", "143", "log", str(configuration)
             )
             payload = json.loads(report.read_text(encoding="utf-8"))
             self.assertEqual(
@@ -213,6 +215,7 @@ class PayloadTests(unittest.TestCase):
             )
             self.assertEqual(payload["exit_code"], 143)
             self.assertEqual(payload["tests"][1]["message"], message)
+            self.assertEqual(payload["configuration"], {"services": "go", "query": "service=go"})
 
 
 class BashSelectionTests(unittest.TestCase):

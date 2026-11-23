@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import { loadManifestTemplatePaths, parseColonEnv, resolveRepoPath } from '../readmes/render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, syncPythonDefault, syncSonarPythonVersion } from './sync-framework-versions.mjs';
+import { syncNextjsTags } from './sync-nextjs-tags.mjs';
 import { temporaryDirectory } from '../test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 
@@ -163,6 +164,15 @@ test('generated allowlist includes all target classes, but never scripts or sour
   assert.ok(files.some((file) => file.startsWith('.run/[build-img]')));
   assert.ok(files.every((file) => !file.includes('\\') && !file.includes('..') && !file.includes('.template.') && !file.startsWith('scripts/')));
   for (const file of files) assert.ok(readFileSync(resolveRepoPath(file)).length, file);
+});
+
+test('Next.js tag check verifies Compose, build configurations and rendered documentation', () => {
+  const results = syncNextjsTags({ check: true });
+  const files = results.map(({ filePath }) => path.relative(resolveRepoPath('.'), filePath).split(path.sep).join('/'));
+  assert.ok(files.includes('compose/utils.yml'));
+  assert.ok(files.includes('.run/[build-img] Next.js Dashboard.run.xml'));
+  assert.ok(files.includes('utils/nextjs-dash/README.md'));
+  assert.ok(results.every(({ changed }) => !changed));
 });
 
 test('complete CLI relays changed env values, detects drift read-only, and is repeatable', (t) => {

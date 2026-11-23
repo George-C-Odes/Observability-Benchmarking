@@ -64,6 +64,31 @@ test('missing suites and malformed or overlapping counters fail closed', (t) => 
   assert.throws(() => checkCoverage(root));
 });
 
+test('a passing summary cannot hide lower coverage in per-file counters', (t) => {
+  const root = fixture(t);
+  report(root, 'node');
+  report(root, 'dom');
+  writeFileSync(
+    path.join(root, 'coverage', 'dom', 'coverage-summary.json'),
+    JSON.stringify({
+      total: { lines: { covered: 90, total: 100 }, branches: { covered: 90, total: 100 } },
+      'dom.ts': { lines: { covered: 89, total: 100 }, branches: { covered: 90, total: 100 } },
+    }),
+  );
+  assert.throws(() => checkCoverage(root), /Inconsistent dom lines totals/);
+});
+
+test('invalid native policy fails closed', (t) => {
+  const root = fixture(t);
+  report(root, 'node', 100);
+  report(root, 'dom', 100);
+  writeFileSync(
+    path.join(root, 'coverage-policy.json'),
+    JSON.stringify({ thresholds: { lines: -1, branches: 90 } }),
+  );
+  assert.throws(() => checkCoverage(root), /Invalid lines threshold/);
+});
+
 test('independent policy changes are applied by the native checker', (t) => {
   const root = fixture(t);
   report(root, 'node', 80);

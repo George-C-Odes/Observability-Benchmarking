@@ -86,10 +86,10 @@ flags:
 
   # ── Next.js dashboard (uploaded by nextjs_dash_quality.yml) ──────────
   nextjs-dash-node:
-    paths: [utils/nextjs-dash/lib/, utils/nextjs-dash/app/api/]
+    paths: [utils/nextjs-dash/lib/, utils/nextjs-dash/app/api/, utils/nextjs-dash/scripts/sse-smoke.mjs]
     carryforward: true
   nextjs-dash-dom:
-    paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/, utils/nextjs-dash/app/theme.ts, utils/nextjs-dash/app/Providers.tsx]
+    paths: [utils/nextjs-dash/app/components/, utils/nextjs-dash/app/hooks/, utils/nextjs-dash/app/theme.ts, utils/nextjs-dash/app/themeOptions.ts, utils/nextjs-dash/app/Providers.tsx]
     carryforward: true
 
   # ── Go services (uploaded by go_coverage.yml) ──────────────────────
@@ -110,7 +110,12 @@ flags:
 
   # ── CI tooling (uploaded by sonar.yml) ────────────────────────────────
   ci-tooling:
-    paths: [scripts/]
+    paths:
+      - scripts/
+      - integration-tests/results.py
+      - services/python/django/gunicorn/sync_build_locks.py
+      - utils/nextjs-dash/scripts/coverage-gate.mjs
+      - utils/orchestrator/scripts/direct-sse-smoke.mjs
 
 # ── Component definitions ─────────────────────────────────────────────
 # Components aggregate flags into language-level groups.  The Codecov
@@ -146,6 +151,12 @@ ignore:
   # Shared with sonar.coverage.exclusions in sonar-project.properties.
   # Generated landing page. Its authored template remains in scope.
   - "docs/index.html"
+  # Docs navigation uses browser layout for responsive overflow.
+  - "docs/assets/js/navigation.js"
+  # Platform bootstrap, isolated checker fixtures, and compatibility launcher.
+  - ".github/requirements/python-ci.ps1"
+  - "scripts/capture-check.mjs"
+  - "scripts/sync-framework-versions.mjs"
   # Identical native OpenTelemetry compatibility shims.
   - "services/java/spring/native/netty/src/main/java/io/opentelemetry/api/internal/InstrumentationUtil.java"
   - "services/java/spring/native/tomcat/src/main/java/io/opentelemetry/api/internal/InstrumentationUtil.java"
@@ -178,6 +189,7 @@ ignore:
   - "utils/orchestrator/quality/CompactConstructorJavadocParamCheck.java"
   # Dashboard build settings and shared type definitions.
   - "utils/nextjs-dash/next.config.ts"
+  - "utils/nextjs-dash/app/layout.tsx"
   - "utils/nextjs-dash/lib/loggingTypes.ts"
   - "utils/nextjs-dash/lib/runtimeConfigTypes.ts"
 
