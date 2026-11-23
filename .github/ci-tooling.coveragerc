@@ -3,5 +3,7 @@ branch = True
 patch = subprocess
 include =
     ${GITHUB_WORKSPACE?}/scripts/**/*.py
+    ${GITHUB_WORKSPACE?}/integration-tests/results.py
+    ${GITHUB_WORKSPACE?}/services/python/django/gunicorn/sync_build_locks.py
 omit =
     ${GITHUB_WORKSPACE?}/scripts/**/test_*.py

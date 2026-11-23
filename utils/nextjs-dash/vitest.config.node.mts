@@ -22,7 +22,7 @@ export default defineConfig({
       provider: 'v8',
       reportsDirectory: 'coverage/node',
       reporter: ['text', 'html', 'json', 'json-summary', 'lcov'],
-      include: ['lib/**/*.ts', 'app/api/**/*.ts'],
+      include: ['lib/**/*.ts', 'app/api/**/*.ts', 'scripts/sse-smoke.mjs'],
       exclude: [
         ...sharedCoverageExclude,
         // Pure type definitions / static defaults — no executable logic.

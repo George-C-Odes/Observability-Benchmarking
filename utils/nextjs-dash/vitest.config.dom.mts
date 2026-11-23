@@ -37,14 +37,13 @@ export default defineConfig({
         'app/components/**/*.{ts,tsx}',
         'app/hooks/**/*.ts',
         'app/theme.ts', // client-side theme logic
+        'app/themeOptions.ts', // palette catalogue consumed by the theme
         'app/Providers.tsx', // client-side context / theme wiring
       ],
       exclude: [
         ...sharedCoverageExclude,
-        // Inline <Script> components inject raw JS strings via
-        // dangerouslySetInnerHTML — they need a real browser, not jsdom.
+        // This script's before-hydration behavior needs a real browser.
         'app/components/PreHydrationScript.tsx',
-        'app/components/RuntimeConfigScript.tsx',
         // Side-effect-only component (returns null). Testing would just
         // mock every dependency; no meaningful assertions possible.
         'app/components/BootLogger.tsx',

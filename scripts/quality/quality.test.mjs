@@ -1,8 +1,19 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { scriptLinter } from './check.mjs';
 
 const coveredHelper = 'scripts/ci/workflow-action-versions.mjs';
+
+test('the script quality CLI checks the repository from another working directory', () => {
+  const script = new URL('./check.mjs', import.meta.url);
+  const result = spawnSync(process.execPath, [fileURLToPath(script)], {
+    cwd: fileURLToPath(new URL('.', script)), encoding: 'utf8', timeout: 90_000,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+});
 
 test('the quality gate rejects excessive cognitive complexity and control regexes', async () => {
   const linter = scriptLinter();

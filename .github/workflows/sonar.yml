@@ -87,18 +87,26 @@ jobs:
         uses: ./.github/actions/install-python-dependencies
         with:
           requirements: .github/requirements/coverage.in
+      - name: Install pinned script quality dependencies
+        run: npm ci --prefix scripts/quality --ignore-scripts --no-audit --no-fund
       - name: Measure JavaScript tooling coverage
         id: javascript_tooling_coverage
         run: |
           node --test --experimental-test-coverage \
             --test-coverage-include='scripts/**/*.mjs' \
+            --test-coverage-include=utils/nextjs-dash/scripts/coverage-gate.mjs \
+            --test-coverage-include=utils/orchestrator/scripts/direct-sse-smoke.mjs \
             --test-coverage-exclude='scripts/**/*.test.mjs' \
+            --test-coverage-exclude=scripts/capture-check.mjs \
+            --test-coverage-exclude=scripts/sync-framework-versions.mjs \
             --test-coverage-exclude=scripts/test-helpers.mjs \
             --test-reporter=spec --test-reporter-destination=stdout \
             --test-reporter=lcov --test-reporter-destination=.sonar/ci-tooling.lcov.info \
-            scripts/*.test.mjs scripts/{ci,coverage,readmes,scanners,versions}/*.test.mjs \
+            scripts/{ci,coverage,quality,readmes,scanners,versions}/*.test.mjs \
             scripts/pages/assemble-reports.test.mjs \
-            scripts/pages/generate-nextjs-quality-report.test.mjs scripts/pages/github-reports.test.mjs
+            scripts/pages/generate-nextjs-quality-report.test.mjs scripts/pages/github-reports.test.mjs \
+            utils/nextjs-dash/scripts/coverage-gate.test.mjs \
+            utils/orchestrator/scripts/direct-sse-smoke.test.mjs
       - name: Measure Python tooling coverage
         id: python_tooling_coverage
         env:
@@ -108,6 +116,8 @@ jobs:
           for directory in scripts scripts/coverage scripts/scanners; do
             python -m coverage run --parallel-mode -m unittest discover -s "$directory" -p 'test_*.py'
           done
+          python -m coverage run --parallel-mode -m unittest discover -s integration-tests -p test_runner.py -k PayloadTests
+          python -m coverage run --parallel-mode -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py
           python -m coverage combine
           python -m coverage xml -o .sonar/ci-tooling.cobertura.xml
       - name: Require complete coverage inputs and prepare scanner configuration

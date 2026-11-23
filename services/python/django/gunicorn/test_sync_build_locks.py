@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import tempfile
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
+import sync_build_locks
 from sync_build_locks import (
     Requirement,
     generate_locks,
@@ -103,6 +107,23 @@ class BuildLockTests(TestCase):
                 {"pip": ("4", (_HASH_A,))},
                 parse_requirements(generated[gunicorn / "pip-requirements.txt"]),
             )
+            with patch.object(sync_build_locks, "__file__", str(gunicorn / "sync_build_locks.py")):
+                with (
+                    patch("sys.argv", ["sync_build_locks.py", "--check"]),
+                    redirect_stderr(StringIO()) as stderr,
+                    self.assertRaises(SystemExit) as stale,
+                ):
+                    sync_build_locks.main()
+                self.assertEqual(stale.exception.code, 1)
+                for path in generated:
+                    self.assertIn(path.name, stderr.getvalue())
+                    self.assertFalse(path.exists())
+                with patch("sys.argv", ["sync_build_locks.py"]), redirect_stdout(StringIO()):
+                    self.assertEqual(sync_build_locks.main(), 0)
+                for path, content in generated.items():
+                    self.assertEqual(path.read_text(encoding="utf-8"), content)
+                with patch("sys.argv", ["sync_build_locks.py", "--check"]):
+                    self.assertEqual(sync_build_locks.main(), 0)
             (gunicorn / "ASGI/requirements.txt").write_text("django==2\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "pins disagree"):
                 generate_locks(workspace)
