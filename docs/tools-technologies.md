@@ -1016,7 +1016,7 @@ cache = TTLCache(maxsize=50_000, ttl=86_400)
 | **Frontend**      | Framework          | Next.js                    | 16.4.6     | SSR frontend and control dashboard                                   |
 | **Frontend**      | Library            | React                      | 19.3.1     | UI rendering layer                                                   |
 | **Frontend**      | Language           | TypeScript                 | 7.0.2      | Native checker and type-safe dashboard development                   |
-| **Frontend**      | UI Library         | Material UI (MUI)          | 9.5.0      | Component library and theming                                        |
+| **Frontend**      | UI Library         | Material UI (MUI)          | 9.6.0      | Component library and theming                                        |
 | **Observability** | Visualization      | Grafana                    | 13.3.1     | Metrics, logs, traces dashboards                                     |
 | **Observability** | Logs               | Loki                       | 3.7.10     | Log aggregation                                                      |
 | **Observability** | Tracing            | Tempo                      | 3.1.1      | Distributed tracing backend                                          |
