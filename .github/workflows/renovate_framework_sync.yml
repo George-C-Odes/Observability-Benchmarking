@@ -7,9 +7,7 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, labeled]
 
-permissions:
-  contents: read
-  pull-requests: read
+permissions: {}
 
 concurrency:
   group: framework-sync-${{ github.event.pull_request.number }}
@@ -26,6 +24,9 @@ jobs:
        contains(github.event.pull_request.labels.*.name, 'action-docs-version'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       # Never check out or run PR code in this privileged event. Only regular
       # branch blobs are read; base scripts validate each version-only route.
@@ -138,6 +139,9 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'apm-version')
     runs-on: ubuntu-26.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       changed: ${{ steps.apm.outputs.changed }}
       head_sha: ${{ steps.apm.outputs.head_sha }}
@@ -194,9 +198,12 @@ jobs:
     if: needs.generate-apm.outputs.changed == 'true'
     runs-on: ubuntu-26.04
     timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout trusted base
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1; NOSONAR - reviewed S7631: current repository's main, base SHA verified before execution; scripts/quality/sonar-exceptions.md
         with:
           ref: refs/heads/main
           persist-credentials: false

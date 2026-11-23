@@ -246,11 +246,14 @@ test('unfiltered validation enforces shell, security, request-boundary and Pages
 test('Renovate verifies the main revision before executing repository code', () => {
   const source = workflow('renovate_framework_sync');
   assert.match(source, /branches: \[main]/);
+  assert.match(source, /^permissions: \{}$/m);
   const jobs = source.split(/^ {2}(?:synchronize|generate-apm|publish-apm):\s*$/m).slice(1);
   assert.equal(jobs.length, 3);
   for (const job of jobs) {
+    assert.match(job, /^ {4}permissions:\n {6}contents: read\n {6}pull-requests: read\n {4}\S/m);
     assert.deepEqual([...job.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), ['refs/heads/main']);
     assert.match(job, /persist-credentials: false/);
+    assert.doesNotMatch(job, /^ +(?:repository|allow-unsafe-pr-checkout):/m);
     assert.match(job, /BASE_SHA: \$\{\{ github.event.pull_request.base.sha }}/);
     assert.match(job, /git rev-parse HEAD\)" != "\$BASE_SHA"[\s\S]*?exit 1[\s\S]*?uses: \.\/\.github\/actions\/setup-node/);
   }

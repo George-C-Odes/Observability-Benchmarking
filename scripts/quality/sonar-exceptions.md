@@ -1,8 +1,7 @@
 # Reviewed Sonar exceptions
 
-The user authorized suppression of verified false positives on 2026-11-15. These
-exceptions apply only to the four reported lines below. They do not authorize
-copying directives to other sinks or disabling either rule globally.
+The user authorized suppression of the four original findings on 2026-11-15.
+Each exception is limited to the specific finding reviewed below.
 
 ## Evidence and scope
 
@@ -45,6 +44,28 @@ This exception concerns fork-code execution at these checkouts. It does not
 assert that report HTML is trusted or that all artifact-handling risks are absent.
 Re-review if repository/ref selection, event guards, revision checks, permissions,
 local action ordering, cache trust, or artifact execution behavior changes.
+
+## Renovate APM publication checkout
+
+The user authorized suppressing verified false positives on 2026-11-23.
+[SonarCloud issue `AaIJkD9Mb1EEQTancyi_`](https://sonarcloud.io/project/issues?id=George-C-Odes_Observability-Benchmarking&issues=AaIJkD9Mb1EEQTancyi_&open=AaIJkD9Mb1EEQTancyi_&pullRequest=558)
+was open on PR 558 at analyzed commit `af44de2bb14a8bac6e023cf620f93cc7f92b9197`.
+`githubactions:S7631` links `pull_request_target` to the `publish-apm` checkout
+at the original line 199. The checkout uses the current repository and literal
+`refs/heads/main`, with credential persistence disabled. The next step checks
+the actual commit against the PR base SHA and aborts before running local actions
+or repository scripts if they differ.
+
+The publication job depends on generation for a same-repository Renovate PR.
+It revalidates the open PR, base and head independently before using the existing
+scoped publication token. The generated lockfile enters as data and can only be
+published at the fixed lockfile path. `workflow-policy.test.mjs` checks the
+checkout inputs, revision verification, and separate generation and publication
+jobs. Reassess this exception if the trigger, checkout source, revision checks,
+job credentials, or use of generation outputs changes.
+
+The same-line YAML `NOSONAR` applies to all Sonar findings on this one checkout
+line. A fresh PR analysis is required to confirm clearance.
 
 ## CLI flow
 
