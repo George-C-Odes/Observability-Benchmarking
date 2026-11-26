@@ -3,7 +3,7 @@ ARG MAVEN_RELEASE=3.10.0
 ARG JAVA_RELEASE=25
 ARG DISTRIBUTION=eclipse-temurin
 ARG BASE_BUILDER=noble
-ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:83e67481ae9fc8c7a6d211113431fb8085619bed49672e583261111bac184f0d
+ARG IMAGE_RUNTIME=gcr.io/distroless/base-debian13:nonroot@sha256:7088bf1cdc94a65af4e0d5ad94518ed489a372dec1ece38ff4411c6c15fb5864
 ARG JAVA_ARGS="--sun-misc-unsafe-memory-access=allow"
 
 # ------------ BUILD STAGE -----------------------
