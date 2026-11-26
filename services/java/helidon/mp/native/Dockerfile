@@ -2,7 +2,7 @@
 ARG JAVA_RELEASE=25
 ARG JAVA_MINOR_RELEASE=.0.5.0.3
 ARG BASE_BUILDER=ol9
-ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:532c7a94f9e96ba9db75eb9388f4227751131c7cb0a411d1a8521af4096135de
+ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:29ee70762214fe8190cea04ef1c0a84a8365879e047ce8f911ae5a5ab2355fa2
 
 # ------------ BUILD STAGE -----------------------
 FROM container-registry-frankfurt.oracle.com/graalvm/native-image:${JAVA_RELEASE}${JAVA_MINOR_RELEASE}-${BASE_BUILDER} AS builder

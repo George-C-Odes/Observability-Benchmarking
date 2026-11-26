@@ -5,7 +5,7 @@ ARG JAVA_MINOR_RELEASE=.0.5.0.3
 ARG BASE_BUILDER=ol9
 #ARG DISTRIBUTION=mandrel
 #mandrel, graalvmce
-ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:532c7a94f9e96ba9db75eb9388f4227751131c7cb0a411d1a8521af4096135de
+ARG IMAGE_RUNTIME=gcr.io/distroless/cc-debian13:nonroot@sha256:29ee70762214fe8190cea04ef1c0a84a8365879e047ce8f911ae5a5ab2355fa2
 #ARG IMAGE_RUNTIME=debian:13.2-slim
 #ARG IMAGE_RUNTIME=quay.io/quarkus/ubi9-quarkus-micro-image:2.0
 # ------------ BUILD STAGE -----------------------
