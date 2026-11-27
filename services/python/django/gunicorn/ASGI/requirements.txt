@@ -84,7 +84,7 @@ opentelemetry-util-http==0.66b2
     #   opentelemetry-instrumentation-asgi
     #   opentelemetry-instrumentation-django
     #   opentelemetry-instrumentation-wsgi
-packaging==26.3
+packaging==26.4
     # via opentelemetry-instrumentation
 protobuf==7.36.2
     # via
