@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { imageTemplateVariables } from '../versions/image-tags.mjs';
 import { workflowActionTemplateVariables } from '../ci/workflow-action-versions.mjs';
+import { dockerCliTemplateVariables } from '../versions/docker-cli-version.mjs';
 
 const templateVariablePattern = /\{\{\s*([A-Z0-9_]+)\s*}}/g;
 const __filename = fileURLToPath(import.meta.url);
@@ -261,10 +262,18 @@ export function resolveTemplatePaths({ templatePaths, manifestPath }) {
   return loadManifestTemplatePaths(manifestPath);
 }
 
-export function renderReadme(templateContent, variables, readActionSource) {
-  const keys = new Set(Array.from(templateContent.matchAll(templateVariablePattern), ([, key]) => key));
-  const actionVariables = workflowActionTemplateVariables(keys, readActionSource);
-  const substituted = renderTemplate(templateContent, { ...variables, ...actionVariables });
+export function templateVariableKeys(templateContent) {
+  return new Set(Array.from(templateContent.matchAll(templateVariablePattern), ([, key]) => key));
+}
+
+// readSource supplies repository files that pins are read from (workflows, action wrappers, Dockerfiles).
+export function renderReadme(templateContent, variables, readSource) {
+  const keys = templateVariableKeys(templateContent);
+  const sourceVariables = {
+    ...workflowActionTemplateVariables(keys, readSource),
+    ...dockerCliTemplateVariables(keys, readSource),
+  };
+  const substituted = renderTemplate(templateContent, { ...variables, ...sourceVariables });
   // Formatter-owned docs can retain their authored table style when pins occur outside tables.
   return templateContent.includes('<!-- render-readmes: preserve-tables -->')
     ? substituted : realignMarkdownTables(substituted);

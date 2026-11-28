@@ -6,11 +6,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseColonEnv, renderReadme, resolveRepoPath } from '../readmes/render-readmes.mjs';
+import { loadManifestTemplatePaths, parseColonEnv, renderReadme, resolveRepoPath, templateVariableKeys } from '../readmes/render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { pythonLockVersionKeys } from './sync-django-versions.mjs';
 import { documentedActionPaths, validateDocumentedActionChange } from '../ci/workflow-action-versions.mjs';
 import { codeqlActionSha, createCodeqlBundleLock } from '../ci/codeql-bundle.mjs';
+import { dockerCliDockerfile, dockerCliVersionKey, validateDockerCliChange } from './docker-cli-version.mjs';
 
 import { readNodeVersion } from './sync-node-versions.mjs';
 import { dashboardPackageVersions, imageTemplateVariables, readDashboardPackageVersions } from './image-tags.mjs';
@@ -24,10 +25,12 @@ const codeqlAction = '.github/actions/codeql-action/action.yml';
 const codeqlLock = '.github/actions/codeql-action/bundle-lock.json';
 const apmPin = 'scripts/apm-version.txt';
 const apmLock = 'my-agent/apm.lock.yaml';
+const readmeManifest = 'scripts/readmes/render-readmes.manifest.json';
 const relayCommitMessages = {
   env: 'chore: relay framework versions from compose/.env',
   nextjs: 'chore: relay Next.js image tags from package.json',
   actions: 'chore: relay documented GitHub Actions versions',
+  dockerCli: 'chore: relay the documented Docker CLI version',
   apm: 'chore: refresh the APM package lockfile',
 };
 
@@ -292,6 +295,10 @@ function statePath() {
   return path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json');
 }
 
+function readTrusted(file) {
+  return readFileSync(resolveRepoPath(file), 'utf8');
+}
+
 async function prepareVersionInputs(baseTree, headTree, route, token) {
   const baseEnv = await readBlob(baseTree, envFile, token);
   const headEnv = await readBlob(headTree, envFile, token);
@@ -353,7 +360,6 @@ async function prepareActionGuide(baseTree, headTree, token) {
   await validateCodeqlLockChange(baseTree, headTree, newPin, token);
   if (!changed.length) return { changed };
 
-  const readTrusted = (file) => readFileSync(resolveRepoPath(file), 'utf8');
   const variables = imageTemplateVariables(parseColonEnv(readTrusted(envFile)));
   // The proposed wrappers stay in memory and are read only by the Markdown renderer.
   const guide = renderReadme(readTrusted(actionGuideTemplate), variables,
@@ -361,6 +367,28 @@ async function prepareActionGuide(baseTree, headTree, token) {
   const updates = selectGeneratedUpdates([{ file: actionGuide, content: guide }], baseTree.entries, headTree.entries);
   if (!updates.length) return { changed: [] };
   return { changed, guide };
+}
+
+// Every registered template that documents the Docker CLI version, read from the trusted base.
+export function dockerCliDocuments() {
+  return loadManifestTemplatePaths(readmeManifest)
+    .filter((template) => templateVariableKeys(readTrusted(template)).has(dockerCliVersionKey))
+    .map((template) => ({ template, file: template.replace(/\.template(\.[a-z]+)$/, '$1') }));
+}
+
+async function prepareDockerCliDocs(baseTree, headTree, token) {
+  const documents = dockerCliDocuments();
+  validateFrameworkTree(baseTree.entries, headTree.entries, new Set([dockerCliDockerfile, ...documents.map(({ file }) => file)]));
+  const base = await readBlob(baseTree, dockerCliDockerfile, token);
+  const head = await readBlob(headTree, dockerCliDockerfile, token);
+  if (!validateDockerCliChange(base, head)) return { changed: [] };
+
+  const variables = imageTemplateVariables(parseColonEnv(readTrusted(envFile)));
+  // The proposed Dockerfile stays in memory and is read only by the Markdown renderer.
+  const readSource = (file) => (file === dockerCliDockerfile ? head : readTrusted(file));
+  const rendered = documents.map(({ template, file }) => ({ file, content: renderReadme(readTrusted(template), variables, readSource) }));
+  const docs = selectGeneratedUpdates(rendered, baseTree.entries, headTree.entries);
+  return { changed: docs.length ? [dockerCliVersionKey] : [], docs };
 }
 
 function readApmVersion(content) {
@@ -391,6 +419,7 @@ export async function prepare(event, token, route = 'env') {
   let prepared;
   if (route === 'actions') prepared = await prepareActionGuide(baseTree, headTree, token);
   else if (route === 'apm') prepared = await prepareApm(baseTree, headTree, token);
+  else if (route === 'dockerCli') prepared = await prepareDockerCliDocs(baseTree, headTree, token);
   else prepared = await prepareVersionInputs(baseTree, headTree, route, token);
   const { changed } = prepared;
   writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, route, ...prepared }));
@@ -417,6 +446,7 @@ function generatedApmLock(version) {
 function generatedFiles(state) {
   if (state.route === 'actions') return [{ file: actionGuide, content: state.guide }];
   if (state.route === 'apm') return [generatedApmLock(state.apmVersion)];
+  if (state.route === 'dockerCli') return state.docs;
   return [...new Set(state.route === 'nextjs' ? generatedNextjsPaths() : generatedFrameworkPaths())].map((file) => ({
     file, content: readFileSync(resolveRepoPath(file), 'utf8'),
   }));
@@ -460,8 +490,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     else if (mode === 'prepare-nextjs') await prepare(event, process.env.GH_TOKEN, 'nextjs');
     else if (mode === 'prepare-actions') await prepare(event, process.env.GH_TOKEN, 'actions');
     else if (mode === 'prepare-apm') await prepare(event, process.env.GH_TOKEN, 'apm');
+    else if (mode === 'prepare-docker-cli') await prepare(event, process.env.GH_TOKEN, 'dockerCli');
     else if (mode === 'publish') await publish(process.env.GH_TOKEN);
-    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|publish');
+    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|prepare-docker-cli|publish');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

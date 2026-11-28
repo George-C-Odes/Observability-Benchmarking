@@ -82,6 +82,39 @@ quality job owns its projection tests. Ruff validates syntax, so CI no longer
 performs overlapping `compileall` passes. Failed lint does not suppress formatting
 or helper diagnostics after a successful tool install.
 
+### On-demand Codex reviews
+
+For general code review, comment `@codex review` on the pull request. The
+connected GitHub integration posts its review on the PR and uses the requester's
+included Codex allowance. For manual reviews on your PRs, set the repository's
+**Review** policy to **Follow personal preferences** and keep your personal
+**Automatic review** off. Keep **Use credits for reviews** off to stay within
+the included allowance. See the [Codex GitHub review guide](https://learn.chatgpt.com/docs/third-party/github).
+
+#### Codex Security scan
+
+Add `codex-security` to request a security scan. The label launches a separate
+GitHub Actions job with its own API credentials.
+
+1. Create a dedicated project key in the [OpenAI API platform](https://platform.openai.com/api-keys).
+   Enable API billing and ensure that the project can use `gpt-5.6-sol`, the default
+   model in the pinned Action release. The Marketplace Action uses API billing,
+   which is separate from ChatGPT Plus. See the [pinned Action guide](https://github.com/openai/codex-security/blob/02c70601a70dde2d1c9c9867d4ead298370890d1/github-action/README.md).
+2. In this repository, open **Settings > Secrets and variables > Actions > New
+   repository secret**. Save the API key as `CODEX_SECURITY_API_KEY`.
+3. Create the `codex-security` label under **Issues > Labels > New label**. Once
+   the workflow is on `main`, apply the label to an open PR from a trusted
+   contributor's branch in this repository targeting `main`. Forks and Dependabot
+   PRs are skipped. To scan an updated revision, remove and reapply the label.
+
+Open **Actions > Codex Security** for the result for the revision that was labeled.
+High and critical findings fail the scan job, as do execution errors. The check is
+on demand and should stay optional in branch protection. The Action uses a $5
+estimated stop threshold per scan. In-flight requests can exceed it.
+
+The job summary shows findings and is visible to readers of this public repository.
+Detailed logs, inline annotations, and downloadable scan artifacts are disabled.
+
 ## Caches and pins
 
 The cache composite centralizes the upstream action SHA. Maven, Go, pip and npm
@@ -89,7 +122,8 @@ caches remain selected by their setup actions. Next.js caches only `.next/cache`
 keyed by OS, architecture, Node, lockfile, configuration and source. No credentials,
 complete dependency installs or security-analysis databases are added to caches.
 
-Snyk CLI is explicitly version-pinned; the JVM Qodana image is digest-pinned in
+Snyk CLI is explicitly version-pinned; the Checkov and Semgrep scanner images are
+digest-pinned in their local Docker actions; the JVM Qodana image is digest-pinned in
 both configuration fields. Update both image fields together. Validator archives
 have checked-in SHA-256 digests in `scripts/ci/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
@@ -153,6 +187,36 @@ and Renovate's `pull_request_target`. Their comments explain trusted-source
 checkout and publication constraints. Reassess them if execution refs, token
 scope, artifact handling or version-only publication change. No audit rule is
 disabled globally.
+
+## Claude Code Review
+
+**Claude Code Review** (`claude_review.yml`) runs Claude Opus 5.5 on demand only,
+never on push or synchronize, and is not a required check. It authenticates with
+the `CLAUDE_CODE_OAUTH_TOKEN` secret and the installed Claude GitHub App, so its
+usage counts against that Claude subscription.
+
+- Request a review by adding the `claude-review` label to a same-repository PR,
+  including Renovate and Dependabot PRs. Claude posts inline `[P0-P3]` findings
+  and a progress-tracked summary comment, then the job removes the label. Add it
+  again for a fresh review.
+- The workflow triggers only on `labeled`. Comment and review triggers were removed:
+  GitHub cannot filter those events by author or text, so every bot comment
+  registered a skipped run. Other labels still register a skipped run, which costs
+  no runner time.
+- The review applies `.github/skills/code-review/SKILL.md` as staged from `main`,
+  so a PR cannot rewrite the rubric it is reviewed against.
+- Fork PRs are skipped, and the action checks that the labeller has write access.
+- The job is read-only. The app token is requested with `contents: read`, the
+  session uses `--permission-mode default` with an explicit allowlist (read tools,
+  inline comments, `gh pr diff/view`), and edit and git write tools are denied.
+  `git diff/log/show` stay off the allowlist because their `--output` option can
+  write files that later steps execute. The prompt directs Claude to `gh pr diff`,
+  because the action's built-in instructions suggest `git diff`.
+  `workflow-policy.test.mjs` enforces these settings.
+- Each run logs two expected warnings. The action reports the two `gh` Bash rules,
+  because it cannot verify custom rules, and on bot-authored PRs it notes that
+  commands that run checkout code are denied. Keep `restrict_untrusted_prs` at its
+  default.
 
 ## Repository settings and rollout
 
