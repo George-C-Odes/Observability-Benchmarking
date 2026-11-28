@@ -89,32 +89,32 @@ test('PR workflows cancel stale work and support merge queues', () => {
   }
 });
 
-test('Claude review stays on-demand, read-only and limited to same-repository PRs', () => {
+test('Claude review stays label-only, read-only and limited to same-repository PRs', () => {
   const source = workflow('claude_review');
   assert.match(source, /^permissions: \{}$/m);
-  assert.match(source, /^ {2}pull_request:\n {4}types: \[labeled]\n/m);
-  assert.doesNotMatch(source, /pull_request_target:|workflow_run:|^ {2}push:|^ {2}schedule:|^ {2}merge_group:/m);
-  assert.doesNotMatch(source, /allow_fork_prs|allowed_bots|allowed_non_write_users|restrict_untrusted_prs|bypassPermissions|github_token:/);
-  assert.match(source, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
-  const jobs = source.split(/^ {2}(?:review|assist):\s*$/m).slice(1);
-  assert.equal(jobs.length, 2);
-  for (const job of jobs) {
-    assert.match(job, /^ {4}permissions:\n {6}contents: read\n {6}pull-requests: read\n {6}id-token: write\n {4}\S/m);
-    assert.deepEqual([...job.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), ['refs/heads/main']);
-    assert.match(job, /author_association/);
-    assert.match(job, /uses: anthropics\/claude-code-action@[a-f0-9]{40} # v\d+\.\d+\.\d+\n/);
-    assert.match(job, /claude_code_oauth_token: \$\{\{ secrets\.CLAUDE_CODE_OAUTH_TOKEN }}/);
-    assert.match(job, /additional_permissions: \|\n +contents: read\n/);
-    assert.match(job, /--model claude-opus-5-5\n +--permission-mode default\n/);
-    // git diff/log/show accept --output, which writes arbitrary runner files.
-    assert.match(job, /--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash\(gh pr diff:\*\),Bash\(gh pr view:\*\)"\n/);
-    assert.match(job, /--disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash\(git add:\*\),Bash\(git rm:\*\),Bash\(git commit:\*\),Bash\(git push:\*\)"/);
-  }
-  assert.equal((source.match(/secrets\./g) || []).length, 2, 'The OAuth token is passed only to the action');
-  const [review] = jobs;
+  // Comment and review events cannot be filtered by author or text, so every
+  // bot comment would register a skipped run.
+  assert.match(source, /^on:\n {2}pull_request:\n {4}types: \[labeled]\n\n/m);
+  assert.doesNotMatch(source, /issue_comment:|pull_request_review|pull_request_target:|workflow_run:|zizmor: ignore/);
+  assert.doesNotMatch(source, /allow_fork_prs|allowed_bots|allowed_non_write_users|restrict_untrusted_prs|bypassPermissions|github_token:|trigger_phrase:/);
+  const review = source.split(/^ {2}review:\s*$/m)[1].split(/^ {2}release-label:\s*$/m)[0];
+  assert.match(review, /github\.event\.label\.name == 'claude-review' &&\n +github\.event\.pull_request\.head\.repo\.full_name == github\.repository\n/);
+  assert.match(review, /^ {4}permissions:\n {6}contents: read\n {6}pull-requests: read\n {6}id-token: write\n {4}\S/m);
+  assert.deepEqual([...review.matchAll(/^ +ref: (.+)$/gm)].map((match) => match[1]), ['refs/heads/main']);
   assert.ok(review.indexOf('Stage trusted review contract') < review.indexOf('uses: anthropics/claude-code-action@'));
+  assert.match(review, /uses: anthropics\/claude-code-action@[a-f0-9]{40} # v\d+\.\d+\.\d+\n/);
+  assert.match(review, /claude_code_oauth_token: \$\{\{ secrets\.CLAUDE_CODE_OAUTH_TOKEN }}/);
+  assert.match(review, /additional_permissions: \|\n +contents: read\n/);
+  assert.match(review, /--model claude-opus-5-5\n +--permission-mode default\n/);
   assert.match(review, /--add-dir \$\{\{ runner\.temp }}\/claude-review\n/);
-  const release = source.split(/^ {2}release-label:\s*$/m)[1].split(/^ {2}assist:\s*$/m)[0];
+  // git diff/log/show accept --output, which writes arbitrary runner files.
+  assert.match(review, /--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash\(gh pr diff:\*\),Bash\(gh pr view:\*\)"\n/);
+  assert.match(review, /--disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash\(git add:\*\),Bash\(git rm:\*\),Bash\(git commit:\*\),Bash\(git push:\*\)"/);
+  // The action's built-in prompt suggests git diff; steer Claude to the allowed command.
+  assert.match(review, /Get the diff with `gh pr diff /);
+  assert.equal((source.match(/secrets\./g) || []).length, 1, 'The OAuth token is passed only to the action');
+  const release = source.split(/^ {2}release-label:\s*$/m)[1];
+  assert.match(release, /^ {4}needs: review\n {4}if: always\(\) && needs\.review\.result != 'skipped'\n/m);
   assert.match(release, /^ {4}permissions:\n {6}pull-requests: write\n {4}\S/m);
   assert.doesNotMatch(release, /uses:|secrets\./);
 });
