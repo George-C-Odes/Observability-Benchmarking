@@ -1,6 +1,6 @@
 # Pin the scanner by digest; Renovate updates the version and digest together.
 # The nonroot variant matches the version currently published as latest-nonroot.
-FROM semgrep/semgrep:1.186.0-nonroot@sha256:9e7a5ea2466f5a9b7f308a1c6087ced2626b988869d432b326668578abf60944
+FROM semgrep/semgrep:1.187.0-nonroot@sha256:36cd451db16459c30711510295052467d333ad4dd4a6b69bc8d7d7e9e3e9dae7
 # The image's own semgrep user. Keep it numeric: the workflow reads this UID
 # to grant workspace access to this user alone.
 USER 1000:1000
