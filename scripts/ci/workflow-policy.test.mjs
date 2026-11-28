@@ -93,7 +93,11 @@ test('Semgrep runs a pinned non-root scanner, scopes its token and fails closed'
   assert.match(scan, /uses: \.\/\.github\/actions\/semgrep\n/);
   assert.match(scan, /env:\n +SEMGREP_APP_TOKEN: \$\{\{ secrets\.SEMGREP_APP_TOKEN }}\n/);
   assert.match(source, /fetch-depth: 0/);
-  assert.ok(source.indexOf('run: install -d -m 0777 semgrep-results') < source.indexOf('uses: ./.github/actions/semgrep'));
+  // The non-root scanner fetches into .git on PRs; widen modes, never ownership.
+  const prepare = source.split('      - name: Prepare Semgrep workspace\n')[1].split('      - name: Semgrep scan\n')[0];
+  assert.match(prepare, /install -d -m 0777 semgrep-results\n/);
+  assert.match(prepare, /chmod -R a\+rwX \.git\n/);
+  assert.doesNotMatch(prepare, /chown|sudo/);
   const action = readFileSync(join(root, '.github/actions/semgrep/action.yml'), 'utf8');
   assert.match(action, /image: Dockerfile/);
   assert.match(action, /- ci\r?\n/);

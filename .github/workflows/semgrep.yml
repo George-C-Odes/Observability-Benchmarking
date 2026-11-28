@@ -35,8 +35,8 @@ jobs:
           echo "::warning::SEMGREP_APP_TOKEN is not available to this run. Semgrep scans will be skipped."
           echo 'Semgrep scan skipped: no SEMGREP_APP_TOKEN is available. A skipped run is not a security assessment.' >> "$GITHUB_STEP_SUMMARY"
 
-      # Diff-aware PR scans compare against the merge base, so fetch history
-      # locally rather than relying on the scanner to fetch without credentials.
+      # Diff-aware PR scans compare against the merge base. Full history lets
+      # the scanner find it without repeatedly deepening a shallow clone.
       - name: Checkout
         if: env.SEMGREP_ENABLED == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,10 +44,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Prepare Semgrep report directory
+      # The scanner's non-root UID differs from the hosted runner UID. semgrep ci
+      # always fetches the PR head/base into .git and uses a temporary worktree
+      # for the baseline, so grant write access to Git metadata and the report
+      # directory only. Ownership stays with the runner, so later Git calls by
+      # the runner keep passing the safe.directory ownership check.
+      - name: Prepare Semgrep workspace
         if: env.SEMGREP_ENABLED == 'true'
-        # The scanner's non-root UID differs from the hosted runner UID.
-        run: install -d -m 0777 semgrep-results
+        run: |
+          install -d -m 0777 semgrep-results
+          chmod -R a+rwX .git
 
       # PRs report only new findings; push, merge-queue, manual and scheduled
       # runs are full scans. Blocking findings follow the Semgrep AppSec
