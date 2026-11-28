@@ -18,6 +18,7 @@ export default [
       'scripts/coverage/sonar-coverage.mjs',
       'scripts/ci/workflow-action-versions.mjs',
       'scripts/versions/python-lock-relay.mjs',
+      'scripts/versions/sync-pmd-version.mjs',
       'scripts/pages/assemble-reports.mjs',
       'scripts/pages/github-reports.mjs',
       'scripts/pages/generate-nextjs-quality-report.mjs',

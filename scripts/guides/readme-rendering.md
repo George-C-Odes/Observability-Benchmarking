@@ -91,8 +91,8 @@ Placeholders inside templates use uppercase brace syntax:
 If a placeholder is present in a template but missing from the env data, the script fails fast with an error.
 
 A few placeholders are read from repository pins instead of the env: documented GitHub Actions versions come
-from their workflows and wrappers, and `{{DOCKER_CLI_VERSION}}` comes from `ARG IMAGE_DOCKER_CLI` in
-`utils/orchestrator/Dockerfile`. Renovate relays updates to these pins as described in [the versions guide](versions.md#renovate-pr-synchronization).
+from their workflows and wrappers, `{{DOCKER_CLI_VERSION}}` comes from `ARG IMAGE_DOCKER_CLI` in
+`utils/orchestrator/Dockerfile`, and `{{PMD_VERSION}}` comes from `<pmd.version>` in `utils/orchestrator/pom.xml`. Renovate relays updates to these pins as described in [the versions guide](versions.md#renovate-pr-synchronization).
 
 ## How to extend this for more README files
 

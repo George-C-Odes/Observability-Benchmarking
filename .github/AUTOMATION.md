@@ -132,7 +132,9 @@ version PRs, including grouped CodeQL action pins. Dependabot's version PR limit
 zero for every configured ecosystem; its separate security-update channel remains
 available. Existing Renovate vulnerability alerts are also retained.
 
-PMD caches its downloaded ZIP by version, digest, OS and architecture. Cached bytes
+PMD reads its CLI version and archive SHA-256 from `pmd-lock.json`, which is generated from
+`<pmd.version>` in the orchestrator POM and refreshed on Renovate PMD PRs from the upstream release
+digest. The workflow fails if the lock and POM disagree. PMD caches its downloaded ZIP by version, digest, OS and architecture. Cached bytes
 are checked against SHA-256 before extraction on every run. Installation is bounded
 to six minutes; analysis has a separate five-minute limit within a fifteen-minute job.
 

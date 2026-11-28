@@ -1,10 +1,11 @@
 # ------------------------------------------------------------------
 # requirements.in  — top-level dependencies for pip-compile
 #
-# Usage:
-#   python -m pip install pip-tools
-#   pip-compile --upgrade requirements.in          # → requirements.txt
-#   pip-compile --upgrade --strip-extras requirements.in  # strip extras markers
+# Usage: compile requirements.txt only in the Linux container, from the repo root:
+#   pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action UpgradeDjango
+# (IntelliJ: "[upgrade] Django G"). A host pip-compile, especially on Windows,
+# changes the header/options and adds Windows-only pins such as tzdata.
+# See .github/requirements/README.md.
 #
 # Only list *direct* dependencies here.  pip-compile resolves the
 # full dependency tree and pins every version in requirements.txt.

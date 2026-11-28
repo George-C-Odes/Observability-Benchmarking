@@ -16,4 +16,9 @@ runs:
     - ci
     # Fail closed on scanner and platform errors instead of the default exit 0.
     - --no-suppress-errors
+    # Renovate merges every matching packageRules entry, so the registry-wide
+    # minimumReleaseAge rule in renovate.json already covers each entry. This
+    # registry rule checks entries in isolation (and wants 7 days), so it only
+    # produces false positives here. It targets Renovate configs alone.
+    - --exclude-rule=package_managers.renovate.renovate-missing-minimum-release-age.renovate-missing-minimum-release-age
     - --sarif-output=${{ inputs.sarif-output }}

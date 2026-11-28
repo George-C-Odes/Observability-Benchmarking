@@ -1,16 +1,16 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="[upgrade] Django G" type="ShConfigurationType" activateToolWindowBeforeRun="false">
-    <option name="SCRIPT_TEXT" value="pip-compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt; pip-compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt" />
+  <configuration default="false" name="[upgrade] Django G" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
-    <option name="SCRIPT_PATH" value="" />
-    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="SCRIPT_PATH" value="$PROJECT_DIR$/.github/requirements/python-ci.ps1" />
+    <option name="SCRIPT_OPTIONS" value="-Action UpgradeDjango" />
     <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
     <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
-    <option name="INTERPRETER_PATH" value="" />
-    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="INTERPRETER_PATH" value="pwsh" />
+    <option name="INTERPRETER_OPTIONS" value="-NoProfile -NoExit -File" />
     <option name="EXECUTE_IN_TERMINAL" value="true" />
-    <option name="EXECUTE_SCRIPT_FILE" value="false" />
+    <option name="EXECUTE_SCRIPT_FILE" value="true" />
     <envs />
     <method v="2" />
   </configuration>

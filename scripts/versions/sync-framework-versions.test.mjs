@@ -195,6 +195,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     'scripts/versions/sync-java-runtime-versions.mjs',
     'scripts/versions/sync-common.mjs',
     'scripts/versions/docker-cli-version.mjs',
+    'scripts/versions/sync-pmd-version.mjs',
     'scripts/versions/django-lock-versions.mjs',
     'scripts/versions/python-lock-relay.mjs',
     'scripts/readmes/render-readmes.mjs',
@@ -206,7 +207,7 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     'compose/.env', 'utils/nextjs-dash/package.json', ...generatedFrameworkPaths(), ...loadManifestTemplatePaths('scripts/readmes/render-readmes.manifest.json'),
     '.github/workflows/qodana_code_quality.yml', '.github/workflows/pages.yml', '.github/workflows/codeql.yml',
     '.github/actions/upload-artifact/action.yml', '.github/actions/download-artifact/action.yml', '.github/actions/codeql-action/action.yml',
-    'utils/orchestrator/Dockerfile', ...scripts,
+    'utils/orchestrator/Dockerfile', '.github/pmd-lock.json', ...scripts,
   ])];
   for (const file of files) {
     const target = path.join(workspace, file);

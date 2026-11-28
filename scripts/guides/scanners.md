@@ -36,6 +36,12 @@ unsuppressed SARIF result is a finding, whatever the platform policy mode; resul
 (`nosemgrep`) suppressions are counted but do not fail. On pull requests `semgrep ci` reports only findings new
 relative to the merge base, so the gate does too; full scans report all findings.
 
+The scan excludes the registry rule `renovate-missing-minimum-release-age` with `--exclude-rule` in
+`.github/actions/semgrep/action.yml`, because `renovate.json` has no comments for `nosemgrep`. That rule checks each
+`packageRules` entry in isolation and wants at least 7 days. Renovate merges every matching entry in order, so the
+registry-wide rule (`minimumReleaseAge: "2 days"`, `timestamp-required`; vulnerability alerts `0 days`) already applies
+to every registry update. Keep that rule last among the age rules, and revisit the exclusion if it is removed.
+
 The job summary lists counts by level and up to 25 findings with rule, location and message. Up to ten findings
 become error annotations on their file and line; paths that are not plain workspace-relative paths are not
 annotated as files. Exit code 0 is clean. Exit code 1 means the scan step succeeded and the report has findings.

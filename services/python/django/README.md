@@ -78,18 +78,14 @@ Run the following **once** from the repository root:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-
-# Install the shared common package and each module's dependencies.
-# pyroscope-io requires a native Rust toolchain and only builds on Linux;
-# filter it out for local development — the app handles its absence gracefully.
-(Get-Content services\python\django\gunicorn\WSGI\requirements.txt, `
-              services\python\django\gunicorn\ASGI\requirements.txt) `
-    -notmatch 'pyroscope' | Set-Content $env:TEMP\django-reqs.txt
-pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.txt
-
-# Dev/lint tooling (optional but recommended)
-pip install -r services/python/django/gunicorn/WSGI/requirements-dev.txt
+pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action InstallDjango
 ```
+
+The **`[install] Django G`** run configuration runs the same action. It checks that the interpreter matches the
+`PYTHON_VERSION` minor in `compose/.env` (warning outside a virtualenv) and installs hash-verified pip, the exact
+pins from both runtime locks, the editable common package, and the Ruff pin used by the `[lint] Django G`
+configurations, then runs `pip check`. `pyroscope-io` is filtered out because it has no Windows wheels and only
+builds on Linux; the app handles its absence gracefully.
 
 ### Configure the Python interpreter in IntelliJ
 
@@ -111,17 +107,19 @@ Select either configuration from the IntelliJ **Run** dropdown and click ▶ to 
 
 ## Upgrade dependencies
 
-First update `pip-tools` in the active Python environment. This is required with newer `pip` releases because older `pip-tools` versions call a removed pip API. Then re-compile lock files with the latest compatible versions for **all** Django modules (run from the repository root):
+Re-compile the WSGI and ASGI lock files with the latest versions their `requirements.in` ranges allow by running
+**`[upgrade] Django G`**, or the same action from the repository root:
 
 ```powershell
-python -m pip install --upgrade pip-tools
-python -m piptools compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt
-if ($LASTEXITCODE -ne 0) { throw 'WSGI dependency compilation failed.' }
-python -m piptools compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt
-if ($LASTEXITCODE -ne 0) { throw 'ASGI dependency compilation failed.' }
+pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action UpgradeDjango
 ```
 
-After changing runtime pins, run **`[upgrade] Python CI`** (Linux container), or
+It compiles in a disposable Linux `python:<PYTHON_VERSION>-slim-bookworm` container with the hash-verified pip-tools lock,
+using the same command as the Renovate lock relay, and then refreshes the central hashes. Do not run `pip-compile`
+on the host: on Windows it rewrites the header and options and adds Windows-only pins such as `tzdata`, which the
+relay's Linux regeneration can never match. Django and Gunicorn stay pinned from `compose/.env`.
+
+To refresh every central lock instead, run **`[upgrade] Python CI`** (Linux container), or
 follow the [central lock regeneration guide](../../../.github/requirements/README.md).
 The shared updater regenerates the Docker-context locks automatically. Commit
 the runtime pins, central hashes, and generated Docker locks together. To check
@@ -132,14 +130,8 @@ python services/python/django/gunicorn/sync_build_locks.py --check
 python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
 ```
 
-Then re-install into the local virtualenv (filtering out `pyroscope-io` which only builds on Linux):
-
-```powershell
-(Get-Content services\python\django\gunicorn\WSGI\requirements.txt, `
-              services\python\django\gunicorn\ASGI\requirements.txt) `
-    -notmatch 'pyroscope' | Set-Content $env:TEMP\django-reqs.txt
-pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.txt
-```
+Then re-install into the local virtualenv with **`[install] Django G`**
+(`pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action InstallDjango`).
 
 ## Run quality gates locally
 

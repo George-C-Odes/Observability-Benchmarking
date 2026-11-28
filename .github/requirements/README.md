@@ -81,7 +81,8 @@ bash .github/requirements/update-lock.sh
 
 Compile on Linux: the committed runtime locks are that command's Linux output (its header and the
 `--only-binary :all:` option line, without Windows-only packages such as Django's `tzdata`), so a lock
-compiled elsewhere cannot match the relay's regeneration.
+compiled elsewhere cannot match the relay's regeneration. Do not run plain `pip-compile` on Windows; use
+**`[upgrade] Django G`** (`python-ci.ps1 -Action UpgradeDjango`), which compiles in the Linux container.
 
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
@@ -156,13 +157,15 @@ directory, following the existing Django install/upgrade naming convention:
 
 | Configuration                                                           | Purpose                                                                                                                                  | Prerequisites                                                                  |
 |-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`[install] Python CI`](../../.run/%5Binstall%5D%20Python%20CI.run.xml) | Install hash-verified pip, the compiler lock (pip-tools and its dependencies), and the tools from `build.in`, `coverage.in`, and `qodana.in`; finish with `pip check`. | PowerShell 7 and Python 3.13 on the IDE process's `PATH`, preferably from a virtualenv. |
-| [`[upgrade] Python CI`](../../.run/%5Bupgrade%5D%20Python%20CI.run.xml) | Regenerate both locks with `update-lock.sh --upgrade` in a disposable Linux `python:3.13.18-slim-bookworm` container using the hash-verified compiler lock. | PowerShell 7 and a running Docker daemon configured for Linux containers. |
+| [`[install] Python CI`](../../.run/%5Binstall%5D%20Python%20CI.run.xml) | Install hash-verified pip, the compiler lock (pip-tools and its dependencies), and the tools from `build.in`, `coverage.in`, and `qodana.in`; finish with `pip check`. | PowerShell 7 and Python of the `PYTHON_VERSION` minor on the IDE process's `PATH`, preferably from a virtualenv. |
+| [`[install] Django G`](../../.run/%5Binstall%5D%20Django%20G.run.xml) | Install hash-verified pip, both runtime locks' exact pins except Pyroscope (no Windows wheels), the editable common package, and the Ruff pin from `requirements-dev.txt` used by the `[lint] Django G` configurations; finish with `pip check`. | Same as `[install] Python CI`. |
+| [`[upgrade] Python CI`](../../.run/%5Bupgrade%5D%20Python%20CI.run.xml) | Regenerate both locks with `update-lock.sh --upgrade` in a disposable Linux `python:<PYTHON_VERSION>-slim-bookworm` container (the Django Dockerfiles' base) using the hash-verified compiler lock. | PowerShell 7 and a running Docker daemon configured for Linux containers. |
+| [`[upgrade] Django G`](../../.run/%5Bupgrade%5D%20Django%20G.run.xml) | Upgrade the WSGI and ASGI runtime locks within their `requirements.in` ranges in the same container, using the relay's `runtimeLockCompileArgs` invocation plus `--upgrade`, then run `update-lock.sh` for the hash inventory and Docker projections. | Same as `[upgrade] Python CI`. |
 
-Both configurations run `.github/requirements/python-ci.ps1` in a dedicated
-PowerShell process with `-NoProfile -NoExit -File` in IntelliJ's **Run** console.
-**Execute in terminal** is disabled: direct process launching avoids the Shell
-Script plugin's Bash-style path escaping when the IDE terminal uses PowerShell.
+These configurations run `.github/requirements/python-ci.ps1` as a script file in a
+dedicated PowerShell process with `-NoProfile -NoExit -File`, with **Execute in terminal**
+enabled. Running the script file, rather than inline script text, avoids the Shell
+Script plugin's Bash-style escaping of inline commands.
 Keep the interpreter as `pwsh` (resolved from `PATH`), rather than a project-relative
 path into `Program Files`. Do not add quotes or backslash escapes to the interpreter field.
 The script contains no `exit` statement, so the session stays open after success
@@ -171,17 +174,22 @@ type `exit` when finished reviewing the output. Errors stop subsequent steps.
 The session remains active until you close it, even after the operation completes.
 If an existing IDE configuration still shows inline script text, reopen
 **Run | Edit Configurations** and select the shared configuration's script file.
-Confirm **Script options** is `-Action Install` or `-Action Upgrade` as appropriate;
+Confirm **Script options** is `-Action Install`, `-Action InstallDjango`, `-Action Upgrade` or `-Action UpgradeDjango` as appropriate;
 without this option PowerShell prompts for the mandatory action.
 The Debian-based upgrade image provides Bash; the Alpine image does not include it.
 
-Both operations explicitly upgrade to hash-verified pip 26.3 before installing
-the compiler. The container bootstraps from `pip.in`, and `update-lock.sh` also
+Every operation explicitly upgrades to hash-verified pip 26.3 before installing
+anything else. The container bootstraps from `pip.in`, and `update-lock.sh` also
 performs that bootstrap when invoked directly.
 
-The install configuration prints the interpreter path and version, rejects versions
-outside Python 3.13, and targets the `python` environment on the IDE process's `PATH`; it does
-not install Django or Pyroscope, nor regenerate locks. The upgrade configuration
+Both install configurations print the interpreter path and version, reject a Python
+minor other than `PYTHON_VERSION`'s in `compose/.env`, warn when `python` is not in a virtualenv,
+and target the `python` environment on the IDE process's `PATH`; neither regenerates locks.
+`[install] Python CI` does not install Django or Pyroscope. `[install] Django G` installs the runtime
+pins without hash checking, because host platforms add packages the Linux inventory lacks (Django's
+`tzdata` on Windows); the exact pins still come from the locks. The upgrade configurations read
+`PYTHON_VERSION` from `compose/.env` for the container image, so locks resolve for the patch
+release CI and the images use, and silence pip's root-user and version-check notices. The upgrade configuration
 bind-mounts only `.github/requirements` and `services/python/django/gunicorn`, so
 the generated files are written back to the repository without exposing host Git metadata;
 it does not install anything into the host Python environment. Linux compilation

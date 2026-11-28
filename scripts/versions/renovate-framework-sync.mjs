@@ -13,6 +13,7 @@ import { pythonRuntimeLocks, regeneratePythonRuntimeLocks, validatePythonLockCha
 import { documentedActionPaths, validateDocumentedActionChange } from '../ci/workflow-action-versions.mjs';
 import { codeqlActionSha, createCodeqlBundleLock } from '../ci/codeql-bundle.mjs';
 import { dockerCliDockerfile, dockerCliVersionKey, validateDockerCliChange } from './docker-cli-version.mjs';
+import { formatPmdLock, pmdLock, pmdPom, pmdVersionKey, readPmdVersion, resolvePmdDigest, validatePmdChange } from './sync-pmd-version.mjs';
 
 import { readNodeVersion } from './sync-node-versions.mjs';
 import { dashboardPackageVersions, imageTemplateVariables, readDashboardPackageVersions } from './image-tags.mjs';
@@ -32,6 +33,7 @@ const relayCommitMessages = {
   nextjs: 'chore: relay Next.js image tags from package.json',
   actions: 'chore: relay documented GitHub Actions versions',
   dockerCli: 'chore: relay the documented Docker CLI version',
+  pmd: 'chore: relay the PMD version to its CI lock and docs',
   apm: 'chore: refresh the APM package lockfile',
   pythonLock: 'chore: regenerate Python locks and docs for Renovate pins',
 };
@@ -371,11 +373,19 @@ async function prepareActionGuide(baseTree, headTree, token) {
   return { changed, guide };
 }
 
-// Every registered template that documents the Docker CLI version, read from the trusted base.
-export function dockerCliDocuments() {
+// Every registered template that uses a placeholder, read from the trusted base.
+function documentsUsing(key) {
   return loadManifestTemplatePaths(readmeManifest)
-    .filter((template) => templateVariableKeys(readTrusted(template)).has(dockerCliVersionKey))
+    .filter((template) => templateVariableKeys(readTrusted(template)).has(key))
     .map((template) => ({ template, file: template.replace(/\.template(\.[a-z]+)$/, '$1') }));
+}
+
+export function dockerCliDocuments() {
+  return documentsUsing(dockerCliVersionKey);
+}
+
+export function pmdDocuments() {
+  return documentsUsing(pmdVersionKey);
 }
 
 async function prepareDockerCliDocs(baseTree, headTree, token) {
@@ -391,6 +401,26 @@ async function prepareDockerCliDocs(baseTree, headTree, token) {
   const rendered = documents.map(({ template, file }) => ({ file, content: renderReadme(readTrusted(template), variables, readSource) }));
   const docs = selectGeneratedUpdates(rendered, baseTree.entries, headTree.entries);
   return { changed: docs.length ? [dockerCliVersionKey] : [], docs };
+}
+
+async function preparePmd(baseTree, headTree, token) {
+  const documents = pmdDocuments();
+  // The generated lock and docs stay allowed so a repeat run accepts the relay's own commit.
+  validateFrameworkTree(baseTree.entries, headTree.entries, new Set([pmdPom, pmdLock, ...documents.map(({ file }) => file)]));
+  const base = await readBlob(baseTree, pmdPom, token);
+  const head = await readBlob(headTree, pmdPom, token);
+  if (!validatePmdChange(base, head)) return { changed: [] };
+
+  // Only the validated X.Y.Z version selects the anonymous upstream release lookup;
+  // the digest comes from GitHub's metadata for PMD's own asset, never from the PR.
+  const version = readPmdVersion(head);
+  const lock = formatPmdLock(version, await resolvePmdDigest(version));
+  const variables = imageTemplateVariables(parseColonEnv(readTrusted(envFile)));
+  // The proposed POM stays in memory and is read only by the Markdown renderer.
+  const readSource = (file) => (file === pmdPom ? head : readTrusted(file));
+  const rendered = documents.map(({ template, file }) => ({ file, content: renderReadme(readTrusted(template), variables, readSource) }));
+  const files = selectGeneratedUpdates([{ file: pmdLock, content: lock }, ...rendered], baseTree.entries, headTree.entries);
+  return { changed: files.length ? [pmdVersionKey] : [], files };
 }
 
 function readApmVersion(content) {
@@ -444,6 +474,7 @@ export async function prepare(event, token, route = 'env') {
   if (route === 'actions') prepared = await prepareActionGuide(baseTree, headTree, token);
   else if (route === 'apm') prepared = await prepareApm(baseTree, headTree, token);
   else if (route === 'dockerCli') prepared = await prepareDockerCliDocs(baseTree, headTree, token);
+  else if (route === 'pmd') prepared = await preparePmd(baseTree, headTree, token);
   else if (route === 'pythonLock') prepared = await preparePythonLocks(baseTree, headTree, token);
   else prepared = await prepareVersionInputs(baseTree, headTree, route, token);
   const { changed } = prepared;
@@ -473,6 +504,7 @@ function generatedFiles(state) {
   if (state.route === 'actions') return [{ file: actionGuide, content: state.guide }];
   if (state.route === 'apm') return [generatedApmLock(state.apmVersion)];
   if (state.route === 'dockerCli') return state.docs;
+  if (state.route === 'pmd') return state.files;
   return [...new Set(state.route === 'nextjs' ? generatedNextjsPaths() : generatedFrameworkPaths())].map((file) => ({
     file, content: readFileSync(resolveRepoPath(file), 'utf8'),
   }));
@@ -517,10 +549,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     else if (mode === 'prepare-actions') await prepare(event, process.env.GH_TOKEN, 'actions');
     else if (mode === 'prepare-apm') await prepare(event, process.env.GH_TOKEN, 'apm');
     else if (mode === 'prepare-docker-cli') await prepare(event, process.env.GH_TOKEN, 'dockerCli');
+    else if (mode === 'prepare-pmd') await prepare(event, process.env.GH_TOKEN, 'pmd');
     else if (mode === 'prepare-python-lock') await prepare(event, process.env.GH_TOKEN, 'pythonLock');
     else if (mode === 'relay-python-lock') relayPythonLocks();
     else if (mode === 'publish') await publish(process.env.GH_TOKEN);
-    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|prepare-docker-cli|prepare-python-lock|relay-python-lock|publish');
+    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|prepare-docker-cli|prepare-pmd|prepare-python-lock|relay-python-lock|publish');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

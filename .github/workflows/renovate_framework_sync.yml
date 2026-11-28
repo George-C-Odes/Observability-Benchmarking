@@ -23,6 +23,7 @@ jobs:
        contains(github.event.pull_request.labels.*.name, 'nextjs-version') ||
        contains(github.event.pull_request.labels.*.name, 'action-docs-version') ||
        contains(github.event.pull_request.labels.*.name, 'python-lock') ||
+       contains(github.event.pull_request.labels.*.name, 'pmd-version') ||
        contains(github.event.pull_request.labels.*.name, 'docker-cli-version'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
@@ -101,11 +102,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/versions/renovate-framework-sync.mjs prepare-docker-cli
 
+      # The CI archive lock is data, so the sync token needs no workflow-file permission.
+      - name: Validate Renovate PMD pin and refresh its lock and docs
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'nextjs-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'action-docs-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'docker-cli-version') &&
+          contains(github.event.pull_request.labels.*.name, 'pmd-version')
+        id: pmd
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-pmd
+
       - name: Validate Renovate Python lock pins
         if: >-
           !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
           !contains(github.event.pull_request.labels.*.name, 'nextjs-version') &&
           !contains(github.event.pull_request.labels.*.name, 'action-docs-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'pmd-version') &&
           !contains(github.event.pull_request.labels.*.name, 'docker-cli-version') &&
           contains(github.event.pull_request.labels.*.name, 'python-lock')
         id: python_lock
@@ -158,6 +173,7 @@ jobs:
           steps.nextjs.outputs.changed == 'true' ||
           steps.python_lock.outputs.changed == 'true' ||
           steps.actions_docs.outputs.changed == 'true' ||
+          steps.pmd.outputs.changed == 'true' ||
           steps.docker_cli_docs.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
