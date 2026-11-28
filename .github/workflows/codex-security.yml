@@ -1,0 +1,48 @@
+name: Codex Security
+
+on:
+  pull_request:
+    types: [labeled]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  scan:
+    name: Scan PR changes
+    # The upstream Action supports same-repository PRs from trusted contributors.
+    if: >-
+      github.event.label.name == 'codex-security' &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.actor != 'dependabot[bot]'
+    concurrency:
+      group: codex-security-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    # The pinned release supports sandbox setup on this GitHub-hosted image.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the labeled PR revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan PR changes
+        uses: openai/codex-security@02c70601a70dde2d1c9c9867d4ead298370890d1 # action-v0.11.0
+        timeout-minutes: 50
+        with:
+          scope: diff
+          max-cost: '5'
+          fail-on-severity: high
+          verbose: 'false'
+          summary: 'true'
+          annotations: 'false'
+          upload-artifacts: 'false'
+        env:
+          OPENAI_API_KEY: ${{ secrets.CODEX_SECURITY_API_KEY }}

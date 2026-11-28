@@ -82,6 +82,39 @@ quality job owns its projection tests. Ruff validates syntax, so CI no longer
 performs overlapping `compileall` passes. Failed lint does not suppress formatting
 or helper diagnostics after a successful tool install.
 
+### On-demand Codex reviews
+
+For general code review, comment `@codex review` on the pull request. The
+connected GitHub integration posts its review on the PR and uses the requester's
+included Codex allowance. For manual reviews on your PRs, set the repository's
+**Review** policy to **Follow personal preferences** and keep your personal
+**Automatic review** off. Keep **Use credits for reviews** off to stay within
+the included allowance. See the [Codex GitHub review guide](https://learn.chatgpt.com/docs/third-party/github).
+
+#### Codex Security scan
+
+Add `codex-security` to request a security scan. The label launches a separate
+GitHub Actions job with its own API credentials.
+
+1. Create a dedicated project key in the [OpenAI API platform](https://platform.openai.com/api-keys).
+   Enable API billing and ensure that the project can use `gpt-5.6-sol`, the default
+   model in the pinned Action release. The Marketplace Action uses API billing,
+   which is separate from ChatGPT Plus. See the [pinned Action guide](https://github.com/openai/codex-security/blob/02c70601a70dde2d1c9c9867d4ead298370890d1/github-action/README.md).
+2. In this repository, open **Settings > Secrets and variables > Actions > New
+   repository secret**. Save the API key as `CODEX_SECURITY_API_KEY`.
+3. Create the `codex-security` label under **Issues > Labels > New label**. Once
+   the workflow is on `main`, apply the label to an open PR from a trusted
+   contributor's branch in this repository targeting `main`. Forks and Dependabot
+   PRs are skipped. To scan an updated revision, remove and reapply the label.
+
+Open **Actions > Codex Security** for the result for the revision that was labeled.
+High and critical findings fail the scan job, as do execution errors. The check is
+on demand and should stay optional in branch protection. The Action uses a $5
+estimated stop threshold per scan. In-flight requests can exceed it.
+
+The job summary shows findings and is visible to readers of this public repository.
+Detailed logs, inline annotations, and downloadable scan artifacts are disabled.
+
 ## Caches and pins
 
 The cache composite centralizes the upstream action SHA. Maven, Go, pip and npm
