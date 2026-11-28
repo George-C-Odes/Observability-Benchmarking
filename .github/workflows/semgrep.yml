@@ -46,14 +46,20 @@ jobs:
 
       # The scanner's non-root UID differs from the hosted runner UID. semgrep ci
       # always fetches the PR head/base into .git and uses a temporary worktree
-      # for the baseline, so grant write access to Git metadata and the report
-      # directory only. Ownership stays with the runner, so later Git calls by
-      # the runner keep passing the safe.directory ownership check.
+      # for the baseline, so grant that one UID write access to Git metadata and
+      # the report directory through ACLs. Modes for other users and ownership
+      # stay unchanged, so later Git calls by the runner pass the ownership check.
       - name: Prepare Semgrep workspace
         if: env.SEMGREP_ENABLED == 'true'
         run: |
-          install -d -m 0777 semgrep-results
-          chmod -R a+rwX .git
+          scanner_uid="$(sed -nE 's/^USER ([0-9]+):[0-9]+$/\1/p' .github/actions/semgrep/Dockerfile)"
+          if [[ ! "$scanner_uid" =~ ^[1-9][0-9]*$ ]]; then
+            echo '::error file=.github/actions/semgrep/Dockerfile::Expected a numeric non-root USER uid:gid.'
+            exit 1
+          fi
+          install -d -m 0755 semgrep-results
+          setfacl -m "u:${scanner_uid}:rwx" semgrep-results
+          setfacl -R -m "u:${scanner_uid}:rwX" .git
 
       # PRs report only new findings; push, merge-queue, manual and scheduled
       # runs are full scans. Blocking findings follow the Semgrep AppSec

@@ -93,11 +93,14 @@ test('Semgrep runs a pinned non-root scanner, scopes its token and fails closed'
   assert.match(scan, /uses: \.\/\.github\/actions\/semgrep\n/);
   assert.match(scan, /env:\n +SEMGREP_APP_TOKEN: \$\{\{ secrets\.SEMGREP_APP_TOKEN }}\n/);
   assert.match(source, /fetch-depth: 0/);
-  // The non-root scanner fetches into .git on PRs; widen modes, never ownership.
+  // The non-root scanner fetches into .git on PRs. Grant only its UID through
+  // ACLs read from the Dockerfile; never world-writable modes or ownership changes.
   const prepare = source.split('      - name: Prepare Semgrep workspace\n')[1].split('      - name: Semgrep scan\n')[0];
-  assert.match(prepare, /install -d -m 0777 semgrep-results\n/);
-  assert.match(prepare, /chmod -R a\+rwX \.git\n/);
-  assert.doesNotMatch(prepare, /chown|sudo/);
+  assert.ok(prepare.includes("sed -nE 's/^USER ([0-9]+):[0-9]+$/\\1/p' .github/actions/semgrep/Dockerfile"));
+  assert.match(prepare, /install -d -m 0755 semgrep-results\n/);
+  assert.match(prepare, /setfacl -m "u:\$\{scanner_uid}:rwx" semgrep-results\n/);
+  assert.match(prepare, /setfacl -R -m "u:\$\{scanner_uid}:rwX" \.git\n/);
+  assert.doesNotMatch(prepare, /chmod|0777|a\+w|o\+w|chown|sudo/);
   const action = readFileSync(join(root, '.github/actions/semgrep/action.yml'), 'utf8');
   assert.match(action, /image: Dockerfile/);
   assert.match(action, /- ci\r?\n/);
@@ -105,7 +108,7 @@ test('Semgrep runs a pinned non-root scanner, scopes its token and fails closed'
   assert.doesNotMatch(action, /GITHUB_ENV|GITHUB_OUTPUT|--dry-run|--baseline-commit|\|\| true/);
   const dockerfile = readFileSync(join(root, '.github/actions/semgrep/Dockerfile'), 'utf8');
   assert.match(dockerfile, /^FROM semgrep\/semgrep:\d+\.\d+\.\d+-nonroot@sha256:[a-f0-9]{64}$/m);
-  assert.match(dockerfile, /^USER semgrep$/m);
+  assert.match(dockerfile, /^USER [1-9]\d*:[1-9]\d*$/m);
   assert.match(dockerfile, /"GIT_CONFIG_KEY_0=safe\.directory", "GIT_CONFIG_VALUE_0=\/github\/workspace", "semgrep"]$/m);
   const retention = source.split('      - name: Retain Semgrep report\n')[1].split('      - name: Upload Semgrep')[0];
   assert.match(retention, /if: always\(\) && !cancelled\(\)/);
