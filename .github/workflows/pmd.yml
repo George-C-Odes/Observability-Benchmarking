@@ -10,6 +10,7 @@ on:
       - 'scripts/ci/changed-paths*.mjs'
       - 'utils/orchestrator/**/*.java'
       - '.github/workflows/pmd.yml'
+      - '.github/pmd-lock.json'
       - '.github/actions/setup-java/**'
       - '.github/actions/codeql-action/**'
       - '.github/actions/upload-artifact/**'
@@ -22,6 +23,7 @@ on:
       - 'scripts/ci/changed-paths*.mjs'
       - 'utils/orchestrator/**/*.java'
       - '.github/workflows/pmd.yml'
+      - '.github/pmd-lock.json'
       - '.github/actions/setup-java/**'
       - '.github/actions/codeql-action/**'
       - '.github/actions/upload-artifact/**'
@@ -46,9 +48,6 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-26.04
     timeout-minutes: 15
-    env:
-      PMD_VERSION: '7.29.0'
-      PMD_SHA256: 'd27177c185b837fa57f097e482d1253468aa035379c5eb2671fa0a279109b179'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -69,12 +68,31 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
+      # The lock is generated from <pmd.version> in the orchestrator POM by
+      # scripts/versions/sync-pmd-version.mjs (and the Renovate relay).
+      - name: Read PMD archive pin
+        if: steps.scope.outputs.run == 'true'
+        id: pmd_pin
+        shell: bash
+        run: |
+          version="$(jq -er '.version' .github/pmd-lock.json)"
+          sha256="$(jq -er '.sha256' .github/pmd-lock.json)"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || ! "$sha256" =~ ^[a-f0-9]{64}$ ]]; then
+            echo '::error::.github/pmd-lock.json must pin a stable PMD version and a lowercase SHA-256.'
+            exit 1
+          fi
+          if ! grep -Fq "<pmd.version>${version}</pmd.version>" utils/orchestrator/pom.xml; then
+            echo '::error::.github/pmd-lock.json is stale. Run node scripts/versions/sync-pmd-version.mjs'
+            exit 1
+          fi
+          printf 'version=%s\nsha256=%s\n' "$version" "$sha256" >> "$GITHUB_OUTPUT"
+
       - name: Cache verified PMD archive
         if: steps.scope.outputs.run == 'true'
         uses: ./.github/actions/cache
         with:
           path: ${{ runner.temp }}/pmd-download/pmd.zip
-          key: pmd-${{ runner.os }}-${{ runner.arch }}-${{ env.PMD_VERSION }}-${{ env.PMD_SHA256 }}
+          key: pmd-${{ runner.os }}-${{ runner.arch }}-${{ steps.pmd_pin.outputs.version }}-${{ steps.pmd_pin.outputs.sha256 }}
 
       - name: Install PMD
         if: steps.scope.outputs.run == 'true'
@@ -82,6 +100,9 @@ jobs:
         # Leave two minutes for verification and extraction.
         timeout-minutes: 6
         shell: bash
+        env:
+          PMD_VERSION: ${{ steps.pmd_pin.outputs.version }}
+          PMD_SHA256: ${{ steps.pmd_pin.outputs.sha256 }}
         run: |
           # Use the CLI because pmd/pmd-github-action still declares Node 20.
           download_pmd() {

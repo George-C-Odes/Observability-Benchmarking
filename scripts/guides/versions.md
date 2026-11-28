@@ -57,7 +57,7 @@ node scripts/versions/sync-framework-versions.mjs
 node scripts/versions/sync-framework-versions.mjs --check
 ```
 
-This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
+This relays versions to Java service POMs, the orchestrator's Quarkus POM (and checks that the PMD archive lock matches its PMD version), Go directives/toolchains, service
 Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django/Gunicorn requirement inputs and locks, the shared
 Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Dashboard documentation reads exact `next`, `react`, `@mui/material`, `typescript`, `vitest`, `oxfmt`, and `oxlint` versions from `utils/nextjs-dash/package.json`; Python documentation reads `cachetools` (`CACHETOOLS_VERSION`) and `gunicorn` (`GUNICORN_VERSION`) from the compiled `services/python/django/gunicorn/ASGI/requirements.txt` lock, and rendering fails if the locked Gunicorn differs from the `compose/.env` pin; dashboard unit-test expectations and fixtures import that manifest directly. Direct builds retain literal defaults. Individual
 synchronizers remain available; use the combined command for a complete update. `--env` selects another env
@@ -92,6 +92,30 @@ Renovate adds `docker-cli-version` to version updates of the `docker:<X.Y.Z>-cli
 `{{DOCKER_CLI_VERSION}}` from that ARG. The relay accepts only version and digest changes to that one ARG, then
 renders and publishes every registered template that uses the placeholder (currently the root README and
 [tools and technologies](../../docs/tools-technologies.md)) from the trusted templates, using the proposed Dockerfile as data.
+
+Renovate adds `pmd-version` to its grouped Maven updates of `net.sourceforge.pmd:pmd-core` and `pmd-java` in
+`utils/orchestrator/pom.xml`. Both share the `<pmd.version>` property, which is the single PMD source: Maven's PMD/CPD
+checks use it, templates read `{{PMD_VERSION}}` from it, and `.github/pmd-lock.json` pins the matching CLI archive
+(version, asset name and SHA-256) for the [PMD workflow](../../.github/workflows/pmd.yml). The workflow reads the
+lock at runtime and fails if it disagrees with the POM, so PMD upgrades never edit a workflow file and the sync token
+needs no workflow permission. The relay accepts only a change to that one property with a stable `X.Y.Z` value; other
+POM edits (including `maven-pmd-plugin`) and malformed versions are rejected before any network request. It then reads
+the archive digest from GitHub's release metadata for PMD's own `pmd-dist-<version>-bin.zip` asset (an anonymous,
+redirect-rejecting request to the fixed `pmd/pmd` release tag; no PR content selects the URL or digest), and commits
+the refreshed lock and every registered template that uses the placeholder (currently the root README and
+[the linting and code quality guide](../../docs/LINTING_AND_CODE_QUALITY.md)).
+
+For a manual PMD change, edit `<pmd.version>` and run:
+
+```powershell
+node scripts/versions/sync-pmd-version.mjs
+node scripts/versions/sync-framework-versions.mjs
+```
+
+The first command refreshes the lock from the same upstream metadata; it makes no request when the lock is already
+current, and `--check` is always offline. The combined sync and its `--check` fail on a stale lock without
+downloading anything, so **Framework Version Consistency** catches drift. Regression tests:
+`node --test scripts/versions/sync-pmd-version.test.mjs`.
 
 Renovate adds `python-lock` to its `pip_requirements` updates of the compiled Django runtime locks
 (`services/python/django/gunicorn/{WSGI,ASGI}/requirements.txt`), such as cachetools, grpcio or packaging bumps.

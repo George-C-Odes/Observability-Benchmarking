@@ -13,6 +13,7 @@ import { javaRuntimeGeneratedPaths, syncJavaRuntimeVersions } from './sync-java-
 import { javaFrameworkVersions, syncJavaPomVersions, syncJavaPomXml } from './sync-java-pom-versions.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 import { mavenGeneratedPaths, readMavenVersion, syncMavenVersions } from './sync-maven-versions.mjs';
+import { assertPmdLockCurrent, pmdLock, pmdPom } from './sync-pmd-version.mjs';
 
 export const frameworkVersionKeys = [...dockerfileVersions.map(({ key }) => key), ...pythonLockVersionKeys, 'MAVEN_VERSION', ...nodeVersionKeys];
 const controlPom = 'utils/orchestrator/pom.xml';
@@ -64,6 +65,8 @@ export function syncFrameworkVersions({ envPath = 'compose/.env', check = false 
   const variables = parseColonEnv(readFileSync(resolveRepoPath(envPath), 'utf8'));
   for (const key of frameworkVersionKeys) readLiteralVersion(variables, key);
   readMavenVersion(variables);
+  // The PMD lock needs a network digest lookup, so this offline sync only rejects drift before writing.
+  assertPmdLockCurrent(readFileSync(resolveRepoPath(pmdPom), 'utf8'), readFileSync(resolveRepoPath(pmdLock), 'utf8'));
   const extra = [
     readSyncFile(resolveRepoPath(controlPom), (content) => syncJavaPomXml(content, 'quarkus.platform.version', variables.QUARKUS_VERSION), controlPom),
     readSyncFile(resolveRepoPath(pythonAction), (content) => syncPythonDefault(content, variables.PYTHON_VERSION), pythonAction),

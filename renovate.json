@@ -270,6 +270,17 @@
       "rebaseWhen": "behind-base-branch"
     },
     {
+      "description": "Relay the orchestrator's PMD version into the CI archive lock and documentation using trusted base scripts.",
+      "matchManagers": ["maven"],
+      "matchFileNames": ["utils/orchestrator/pom.xml"],
+      "matchPackageNames": ["net.sourceforge.pmd:pmd-core", "net.sourceforge.pmd:pmd-java"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "PMD",
+      "addLabels": ["pmd-version"],
+      "rebaseWhen": "behind-base-branch",
+      "prBodyNotes": ["utils/orchestrator/pom.xml is authoritative. Framework Version Sync commits the refreshed .github/pmd-lock.json (from the upstream release digest) and documentation to this PR."]
+    },
+    {
       "description": "Node Docker tag versions follow the paired env pin; retain digest refreshes.",
       "matchManagers": [
         "dockerfile"

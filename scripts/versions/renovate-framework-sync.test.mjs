@@ -5,13 +5,14 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from '../readmes/render-readmes.mjs';
-import { api, assertRenovatePullRequest, buildGitHubRequest, dockerCliDocuments, gitBlobSha, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
+import { api, assertRenovatePullRequest, buildGitHubRequest, dockerCliDocuments, gitBlobSha, pmdDocuments, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { pythonLockVersionKeys, ruffInputs } from './sync-django-versions.mjs';
 import { temporaryDirectory } from '../test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 import { documentedActionPaths } from '../ci/workflow-action-versions.mjs';
 import { dockerCliDockerfile, readDockerCliVersion } from './docker-cli-version.mjs';
+import { formatPmdLock, pmdLock, pmdPom, readPmdVersion } from './sync-pmd-version.mjs';
 import {
   pythonRuntimeLocks, regeneratePythonRuntimeLocks, runtimeLockCompileArgs, validatePythonLockChange,
 } from './python-lock-relay.mjs';
@@ -1160,6 +1161,153 @@ test('Docker CLI relay rejects edits outside the image version and digest before
     assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
     assert.equal(existsSync(output), false);
   }
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
+});
+
+const pmdDocs = ['README.md', 'docs/LINTING_AND_CODE_QUALITY.md'];
+
+test('Renovate routes only orchestrator PMD engine bumps to the lock and doc relay', () => {
+  const rules = config.packageRules.filter((rule) => rule.addLabels?.includes('pmd-version'));
+  assert.equal(rules.length, 1);
+  assert.deepEqual(rules[0].matchManagers, ['maven']);
+  assert.deepEqual(rules[0].matchFileNames, [pmdPom]);
+  assert.deepEqual(rules[0].matchPackageNames, ['net.sourceforge.pmd:pmd-core', 'net.sourceforge.pmd:pmd-java']);
+  assert.deepEqual(rules[0].matchUpdateTypes, ['major', 'minor', 'patch']);
+  assert.equal(rules[0].groupName, 'PMD');
+  assert.deepEqual(pmdDocuments().map(({ file }) => file), pmdDocs);
+  const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
+  assert.match(workflow, /contains\(github.event.pull_request.labels.\*.name, 'pmd-version'\) \|\|\r?\n/);
+  assert.match(workflow, /!contains\([^\n]+ 'framework-version'\) &&\s+!contains\([^\n]+ 'nextjs-version'\) &&\s+!contains\([^\n]+ 'action-docs-version'\) &&\s+!contains\([^\n]+ 'docker-cli-version'\) &&\s+contains\([^\n]+ 'pmd-version'\)\s+id: pmd\s[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs prepare-pmd/);
+  assert.match(workflow, /!contains\([^\n]+ 'pmd-version'\) &&\s+!contains\([^\n]+ 'docker-cli-version'\) &&\s+contains\([^\n]+ 'python-lock'\)/);
+  assert.match(workflow, /steps.pmd.outputs.changed == 'true' \|\|\s+steps.docker_cli_docs.outputs.changed == 'true'\s+env:[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs publish/);
+});
+
+function pmdFixture(t, { onWrite, onPublicRequest } = {}) {
+  const blobs = new Map();
+  const fixture = publicationFixture(t, (route, options) => {
+    if (options.method !== 'GET') return onWrite?.(route, JSON.parse(options.body)) ?? assert.fail(route);
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  }, onPublicRequest);
+  const { base, head, state } = fixture;
+  for (const [file, entry] of base) head.set(file, entry);
+  const add = (tree, file, content, mode = '100644') => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { type: 'blob', mode, sha });
+  };
+  const pom = readFileSync(resolveRepoPath(pmdPom), 'utf8');
+  for (const file of [pmdPom, pmdLock, ...pmdDocs]) {
+    const content = readFileSync(resolveRepoPath(file), 'utf8');
+    add(base, file, content);
+    add(head, file, content);
+  }
+  const output = path.join(process.env.RUNNER_TEMP, 'output');
+  const originalOutput = process.env.GITHUB_OUTPUT;
+  process.env.GITHUB_OUTPUT = output;
+  t.after(() => {
+    if (originalOutput === undefined) delete process.env.GITHUB_OUTPUT;
+    else process.env.GITHUB_OUTPUT = originalOutput;
+  });
+  const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
+  const current = readPmdVersion(pom);
+  const bump = (version = '99.1.2') => pom.replace(`<pmd.version>${current}</pmd.version>`, `<pmd.version>${version}</pmd.version>`);
+  return { ...fixture, pom, current, bump, output,
+    stateFile: path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'),
+    change: (file, content, mode) => add(head, file, content, mode),
+    prepare: () => prepare(event, 'synthetic-test-token', 'pmd') };
+}
+
+const pmdDigest = '9'.repeat(64);
+const pmdRelease = (url) => {
+  assert.equal(url, 'https://api.github.com/repos/pmd/pmd/releases/tags/pmd_releases%2F99.1.2');
+  return { tag_name: 'pmd_releases/99.1.2', assets: [{ name: 'pmd-dist-99.1.2-bin.zip', digest: `sha256:${pmdDigest}` }] };
+};
+
+test('PMD relay pins the upstream digest, renders the docs and repeats as a no-op', async (t) => {
+  const writes = [];
+  const publicRequests = [];
+  const { change, bump, current, prepare: preparePmdRelay, output, stateFile, headTreeSha, state } = pmdFixture(t, {
+    onWrite: (route, body) => {
+      writes.push({ route, body });
+      return { sha: String(writes.length).repeat(40) };
+    },
+    onPublicRequest: (url, options) => {
+      publicRequests.push({ url, options });
+      return pmdRelease(url);
+    },
+  });
+  change(pmdPom, bump());
+  await preparePmdRelay();
+  assert.equal(publicRequests.length, 1);
+  assert.equal(publicRequests[0].options.method, 'GET');
+  assert.match(readFileSync(output, 'utf8'), /^changed=true\r?\npython_locks=false/m);
+  const { changed, files } = JSON.parse(readFileSync(stateFile, 'utf8'));
+  assert.deepEqual(changed, ['PMD_VERSION']);
+  assert.deepEqual(files.map(({ file }) => file), [pmdLock, ...pmdDocs]);
+  assert.equal(files[0].content, formatPmdLock('99.1.2', pmdDigest));
+  for (const { file, content } of files.slice(1)) {
+    const original = readFileSync(resolveRepoPath(file), 'utf8');
+    assert.ok(content.includes('PMD 99.1.2'), file);
+    assert.equal(content.replaceAll('PMD 99.1.2', `PMD ${current}`), original, file);
+  }
+  await publish('synthetic-test-token');
+  assert.deepEqual(writes.map(({ route }) => route), ['git/blobs', 'git/blobs', 'git/blobs', 'git/trees', 'git/commits', 'git/refs/heads/renovate%2Fframework']);
+  assert.deepEqual(writes[3].body.tree.map(({ path: file }) => file), [pmdLock, ...pmdDocs]);
+  assert.ok(writes[3].body.tree.every(({ path: file }) => !file.startsWith('.github/workflows/')), 'No workflow-file permission is needed');
+  assert.equal(writes[3].body.base_tree, headTreeSha);
+  assert.equal(writes[4].body.message, 'chore: relay the PMD version to its CI lock and docs');
+  assert.deepEqual(writes[4].body.parents, [state.headSha]);
+  assert.equal(writes[5].body.force, false);
+  for (const { file, content } of files) change(file, content);
+  await preparePmdRelay();
+  await publish('synthetic-test-token');
+  assert.equal(writes.length, 6);
+});
+
+test('PMD relay rejects other edits and invalid versions before any upstream lookup', async (t) => {
+  let lookups = 0;
+  const { change, bump, base, head, prepare: preparePmdRelay, mock, output, stateFile } = pmdFixture(t, {
+    onPublicRequest: (url) => {
+      lookups += 1;
+      return pmdRelease(url);
+    },
+  });
+  const bumped = bump();
+  const beforeState = readFileSync(stateFile, 'utf8');
+  for (const [file, content, error, mode] of [
+    ['utils/orchestrator/Dockerfile', 'unrelated source edit', /Unexpected file/],
+    ['.github/workflows/pmd.yml', 'workflow edit', /Unexpected file/],
+    ['README.template.md', 'template edit', /Unexpected file/],
+    [pmdPom, bumped, /unchanged regular file mode/, '120000'],
+    [pmdPom, bumped.replace(/<maven-pmd-plugin\.version>[^<]+</, '<maven-pmd-plugin.version>9.9.9<'), /only the <pmd\.version> property/],
+    [pmdPom, bump('99.1.2-rc1'), /stable X\.Y\.Z/],
+    [pmdPom, bump('99.1.2/../../evil'), /stable X\.Y\.Z/],
+    [pmdPom, bump('99.1.2%2F..'), /stable X\.Y\.Z/],
+    [pmdPom, bump('99.1.2\n'), /stable X\.Y\.Z/],
+    [pmdPom, `${bumped}<pmd.version>99.1.2</pmd.version>`, /Expected one <pmd\.version>/],
+  ]) {
+    change(pmdPom, bumped);
+    change(file, content, mode);
+    await assert.rejects(preparePmdRelay(), error);
+    for (const reset of [file, pmdPom]) {
+      if (base.has(reset)) head.set(reset, base.get(reset));
+      else head.delete(reset);
+    }
+    assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
+    assert.equal(existsSync(output), false);
+  }
+  assert.equal(lookups, 0, 'Rejected proposals never reach the upstream release API');
+  // Existing PR edits to generated files are refused after the lookup, before any write.
+  for (const file of [pmdLock, 'README.md']) {
+    change(pmdPom, bumped);
+    change(file, `unrelated edit to ${file}`);
+    await assert.rejects(preparePmdRelay(), /Refusing to overwrite/);
+    head.set(file, base.get(file));
+    head.set(pmdPom, base.get(pmdPom));
+  }
+  assert.equal(lookups, 2);
   assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
 });
 
