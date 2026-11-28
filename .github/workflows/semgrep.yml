@@ -35,20 +35,24 @@ jobs:
           echo "::warning::SEMGREP_APP_TOKEN is not available to this run. Semgrep scans will be skipped."
           echo 'Semgrep scan skipped: no SEMGREP_APP_TOKEN is available. A skipped run is not a security assessment.' >> "$GITHUB_STEP_SUMMARY"
 
-      # Diff-aware PR scans compare against the merge base. Full history lets
-      # the scanner find it without repeatedly deepening a shallow clone.
+      # semgrep ci scans the PR head, not the synthetic merge commit, and would
+      # otherwise switch the workspace to it. Check out the head directly; other
+      # events keep their default commit. Full history lets the scanner find the
+      # merge base without repeatedly deepening a shallow clone.
       - name: Checkout
         if: env.SEMGREP_ENABLED == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
-      # The scanner's non-root UID differs from the hosted runner UID. semgrep ci
-      # always fetches the PR head/base into .git and uses a temporary worktree
-      # for the baseline, so grant that one UID write access to Git metadata and
-      # the report directory through ACLs. Modes for other users and ownership
-      # stay unchanged, so later Git calls by the runner pass the ownership check.
+      # The scanner's non-root UID differs from the hosted runner UID. On a clean
+      # tree, PR baseline scans run `git reset --hard <merge-base>` in place and
+      # then reset back to the head, after semgrep ci fetches into .git. That
+      # rewrites tracked files, so grant that one UID write access to the
+      # checkout and report directory through ACLs. Modes for other users and
+      # ownership stay unchanged, so later runner Git calls pass the ownership check.
       - name: Prepare Semgrep workspace
         if: env.SEMGREP_ENABLED == 'true'
         run: |
@@ -58,8 +62,7 @@ jobs:
             exit 1
           fi
           install -d -m 0755 semgrep-results
-          setfacl -m "u:${scanner_uid}:rwx" semgrep-results
-          setfacl -R -m "u:${scanner_uid}:rwX" .git
+          setfacl -R -m "u:${scanner_uid}:rwX" .
 
       # PRs report only new findings; push, merge-queue, manual and scheduled
       # runs are full scans. Blocking findings follow the Semgrep AppSec

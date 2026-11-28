@@ -315,10 +315,12 @@ security assessment.
 - A local Docker action pins the `semgrep/semgrep` non-root image by digest, mirroring the Checkov action.
   It runs with a temporary home and trusts only the mounted workspace for Git through process environment,
   without writing global configuration. Renovate updates the image version and digest together.
-- Because `semgrep ci` fetches the pull request commits into `.git`, the job grants the scanner's UID (read from the
-  action's numeric `USER`) write access to `.git` and the report directory through ACLs. Nothing is made
-  world-writable, ownership is unchanged, and source files retain their checkout permissions.
-- Pull requests run diff-aware scans and report only new findings, using full local history for the merge base.
+- `semgrep ci` fetches pull request commits into `.git` and, on a clean tree, scans the PR baseline by running
+  `git reset --hard` to the merge base in place and then back to the head. The job therefore grants the scanner's
+  UID (read from the action's numeric `USER`) write access to the checkout through ACLs. Nothing is made
+  world-writable, and ownership and modes for other users are unchanged.
+- Pull requests check out the PR head rather than the synthetic merge commit, so Semgrep does not switch the workspace
+  itself. They run diff-aware scans and report only new findings, using full local history for the merge base.
   Pushes, merge queues, manual and scheduled runs scan the full tracked tree.
 - Findings blocked by platform policy fail the check. `--no-suppress-errors` also fails the check on scanner or
   platform errors instead of Semgrep's default successful exit.

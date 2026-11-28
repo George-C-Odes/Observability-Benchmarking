@@ -93,13 +93,15 @@ test('Semgrep runs a pinned non-root scanner, scopes its token and fails closed'
   assert.match(scan, /uses: \.\/\.github\/actions\/semgrep\n/);
   assert.match(scan, /env:\n +SEMGREP_APP_TOKEN: \$\{\{ secrets\.SEMGREP_APP_TOKEN }}\n/);
   assert.match(source, /fetch-depth: 0/);
-  // The non-root scanner fetches into .git on PRs. Grant only its UID through
-  // ACLs read from the Dockerfile; never world-writable modes or ownership changes.
+  // semgrep ci would otherwise switch a PR merge checkout to the head itself.
+  assert.match(source, /ref: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha }}\n +fetch-depth: 0\n/);
+  // The non-root scanner fetches into .git and resets tracked files in place
+  // for PR baselines. Grant only its UID through ACLs read from the Dockerfile;
+  // never world-writable modes or ownership changes.
   const prepare = source.split('      - name: Prepare Semgrep workspace\n')[1].split('      - name: Semgrep scan\n')[0];
   assert.ok(prepare.includes("sed -nE 's/^USER ([0-9]+):[0-9]+$/\\1/p' .github/actions/semgrep/Dockerfile"));
-  assert.match(prepare, /install -d -m 0755 semgrep-results\n/);
-  assert.match(prepare, /setfacl -m "u:\$\{scanner_uid}:rwx" semgrep-results\n/);
-  assert.match(prepare, /setfacl -R -m "u:\$\{scanner_uid}:rwX" \.git\n/);
+  assert.ok(prepare.indexOf('install -d -m 0755 semgrep-results\n') < prepare.indexOf('setfacl'));
+  assert.match(prepare, /setfacl -R -m "u:\$\{scanner_uid}:rwX" \.\n/);
   assert.doesNotMatch(prepare, /chmod|0777|a\+w|o\+w|chown|sudo/);
   const action = readFileSync(join(root, '.github/actions/semgrep/action.yml'), 'utf8');
   assert.match(action, /image: Dockerfile/);
