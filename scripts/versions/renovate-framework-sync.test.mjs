@@ -88,13 +88,13 @@ test('release-age gates preserve registry policies and scope GitHub tags to CPyt
   const ageRules = config.packageRules.filter(({ minimumReleaseAge }) => minimumReleaseAge !== undefined);
   const registry = ageRules.find(({ matchDatasources }) => matchDatasources?.includes('npm'));
   assert.deepEqual(registry.matchDatasources, ['npm', 'pypi', 'maven', 'go', 'golang-version', 'node-version', 'rubygems']);
-  assert.equal(registry.minimumReleaseAge, '3 days');
+  assert.equal(registry.minimumReleaseAge, '2 days');
   assert.equal(registry.minimumReleaseAgeBehaviour, 'timestamp-required');
   const githubTags = ageRules.filter(({ matchDatasources }) => matchDatasources?.includes('github-tags'));
   assert.equal(githubTags.length, 1);
   assert.deepEqual(githubTags[0].matchDatasources, ['github-tags']);
   assert.deepEqual(githubTags[0].matchPackageNames, ['python/cpython']);
-  assert.equal(githubTags[0].minimumReleaseAge, '3 days');
+  assert.equal(githubTags[0].minimumReleaseAge, '2 days');
   assert.equal(githubTags[0].minimumReleaseAgeBehaviour, 'timestamp-required');
 });
 

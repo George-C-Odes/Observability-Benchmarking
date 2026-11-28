@@ -9,7 +9,7 @@ read this repository's colon-style syntax, ignore commented-out alternatives, an
 than independently changing its generated copies. Maven lookups use the actual service coordinates, including
 the Zoomba Spark fork, Micronaut **core** BOM, and Pekko **HTTP** (not its separately versioned core libraries).
 Framework major upgrades still require Dependency Dashboard approval; automerge remains disabled. Stable
-registry releases still age for three days, except vulnerability alerts. Unrelated libraries, plugins, action pins,
+registry releases still age for two days, except vulnerability alerts. Unrelated libraries, plugins, action pins,
 Docker digests, and independent tool versions remain managed normally.
 
 `MAVEN_VERSION` also follows this relay. Change it in `compose/.env` and run
