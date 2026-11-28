@@ -304,6 +304,24 @@ Docker Compose is not scanned: it is not a supported Checkov framework.
 Review findings in the scan log, artifacts, or Security tab. A passing workflow requires completion of
 both framework jobs; configure both checks as required in branch protection if they should block merges.
 
+### Semgrep Static Analysis
+
+The workflow (`.github/workflows/semgrep.yml`) runs `semgrep ci` on pull requests, merge queues, pushes to
+`main`, manual dispatch, and a weekly schedule. Configure the repository secret `SEMGREP_APP_TOKEN` to enable it;
+rules and blocking policies are managed in Semgrep AppSec Platform rather than in the repository.
+Runs without the token (fork and Dependabot pull requests) explicitly skip scanning; a skipped run is not a
+security assessment.
+
+- A local Docker action pins the `semgrep/semgrep` non-root image by digest, mirroring the Checkov action.
+  It runs with a temporary home and trusts only the mounted workspace for Git through process environment,
+  without writing global configuration. Renovate updates the image version and digest together.
+- Pull requests run diff-aware scans and report only new findings, using full local history for the merge base.
+  Pushes, merge queues, manual and scheduled runs scan the full tracked tree.
+- Findings blocked by platform policy fail the check. `--no-suppress-errors` also fails the check on scanner or
+  platform errors instead of Semgrep's default successful exit.
+- The token is supplied only to the scan step. The SARIF report is retained in the `semgrep-results` artifact for
+  14 days, including after failures, and is uploaded to GitHub Code Scanning under the `semgrep` category.
+
 ## Runtime Security
 
 ### Java Security Manager

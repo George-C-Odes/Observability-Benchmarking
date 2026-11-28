@@ -78,6 +78,40 @@ test('Checkov scans source configuration without secrets and preserves failure e
   assert.doesNotMatch(config, /^ *(?:soft-fail|baseline|check):/m);
 });
 
+test('Semgrep runs a pinned non-root scanner, scopes its token and fails closed', () => {
+  const source = workflow('semgrep');
+  for (const event of ['pull_request', 'merge_group', 'push', 'workflow_dispatch', 'schedule']) {
+    assert.match(source, new RegExp(`^ {2}${event}:`, 'm'));
+  }
+  assert.match(source, /^permissions: \{}$/m);
+  assert.doesNotMatch(source, /continue-on-error:|pull_request_target:|workflow_run:|zizmor: ignore/);
+  // The job-level flag exposes only whether the secret exists; the token
+  // itself reaches the scanner step alone.
+  assert.equal((source.match(/secrets\.SEMGREP_APP_TOKEN/g) || []).length, 2);
+  assert.match(source, /SEMGREP_ENABLED: \$\{\{ secrets\.SEMGREP_APP_TOKEN != '' }}/);
+  const scan = source.split('      - name: Semgrep scan\n')[1].split('      - name: Retain Semgrep report\n')[0];
+  assert.match(scan, /uses: \.\/\.github\/actions\/semgrep\n/);
+  assert.match(scan, /env:\n +SEMGREP_APP_TOKEN: \$\{\{ secrets\.SEMGREP_APP_TOKEN }}\n/);
+  assert.match(source, /fetch-depth: 0/);
+  assert.ok(source.indexOf('run: install -d -m 0777 semgrep-results') < source.indexOf('uses: ./.github/actions/semgrep'));
+  const action = readFileSync(join(root, '.github/actions/semgrep/action.yml'), 'utf8');
+  assert.match(action, /image: Dockerfile/);
+  assert.match(action, /- ci\r?\n/);
+  assert.match(action, /- --no-suppress-errors\r?\n/);
+  assert.doesNotMatch(action, /GITHUB_ENV|GITHUB_OUTPUT|--dry-run|--baseline-commit|\|\| true/);
+  const dockerfile = readFileSync(join(root, '.github/actions/semgrep/Dockerfile'), 'utf8');
+  assert.match(dockerfile, /^FROM semgrep\/semgrep:\d+\.\d+\.\d+-nonroot@sha256:[a-f0-9]{64}$/m);
+  assert.match(dockerfile, /^USER semgrep$/m);
+  assert.match(dockerfile, /"GIT_CONFIG_KEY_0=safe\.directory", "GIT_CONFIG_VALUE_0=\/github\/workspace", "semgrep"]$/m);
+  const retention = source.split('      - name: Retain Semgrep report\n')[1].split('      - name: Upload Semgrep')[0];
+  assert.match(retention, /if: always\(\) && !cancelled\(\)/);
+  assert.match(retention, /if-no-files-found: error/);
+  const upload = source.split('      - name: Upload Semgrep to Code Scanning\n')[1];
+  assert.match(upload, /always\(\) && !cancelled\(\)/);
+  assert.match(upload, /sarif_file: semgrep-results\/semgrep\.sarif/);
+  assert.match(upload, /category: semgrep\n/);
+});
+
 test('PR workflows cancel stale work and support merge queues', () => {
   for (const file of readdirSync(join(root, '.github/workflows'))) {
     const source = workflow(file.replace('.yml', ''));
