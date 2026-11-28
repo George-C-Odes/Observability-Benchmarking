@@ -1,0 +1,19 @@
+name: Semgrep
+description: Run semgrep ci against Semgrep AppSec Platform policies without exporting output into the job environment.
+
+# The caller supplies SEMGREP_APP_TOKEN through the step environment only.
+# Docker actions receive GITHUB_* context and the event payload automatically,
+# which semgrep ci uses for diff-aware pull request scans.
+inputs:
+  sarif-output:
+    description: SARIF report path, relative to the workspace.
+    required: true
+
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ci
+    # Fail closed on scanner and platform errors instead of the default exit 0.
+    - --no-suppress-errors
+    - --sarif-output=${{ inputs.sarif-output }}

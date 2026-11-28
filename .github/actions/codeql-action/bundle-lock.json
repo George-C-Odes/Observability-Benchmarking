@@ -1,31 +1,31 @@
 {
-  "actionSha": "1bd86f2fdb4b86187fa4059f16f31a3202acc9ea",
+  "actionSha": "915412ff23e8b7659517e607487dbeae018f2934",
   "defaults": {
-    "cliVersion": "2.27.5",
-    "bundleVersion": "codeql-bundle-v2.27.5"
+    "cliVersion": "2.27.6",
+    "bundleVersion": "codeql-bundle-v2.27.6"
   },
   "release": {
-    "tag_name": "codeql-bundle-v2.27.5",
+    "tag_name": "codeql-bundle-v2.27.6",
     "assets": [
       {
         "name": "codeql-bundle-java-linux64.tar.zst",
-        "id": 759634789,
-        "digest": "sha256:74fa88434b6c252fc98333e3c4d087f8882c5e34a1b3f1af2021a75b2b303fa1"
+        "id": 772595320,
+        "digest": "sha256:8682d0809eb607a4f08bd2038bde129463908bb8465dda9ae3f790b45b84e599"
       },
       {
         "name": "codeql-bundle-python-linux64.tar.zst",
-        "id": 759634996,
-        "digest": "sha256:ae506772fcc6abeb810dc862c9346eaba55e6e6d65c9df56f74d6966690ee507"
+        "id": 772595380,
+        "digest": "sha256:1e7d6480d37634a2d3e205c59ae3ecf665e849ac1234f100f42376bc91b17d36"
       },
       {
         "name": "codeql-bundle-go-linux64.tar.zst",
-        "id": 759634772,
-        "digest": "sha256:276178db52d177f0a992523bbbd884cde542617f0cca31578be9f66be4e18f28"
+        "id": 772594962,
+        "digest": "sha256:518c5c2797288c133f5f55126f5f456b9f5ad059ba326413171c7bf139ad23d5"
       },
       {
         "name": "codeql-bundle-javascript-linux64.tar.zst",
-        "id": 759634802,
-        "digest": "sha256:b10957140a7969819022eac23a6a37d0c6a65de12a84704ca71c416b980edb5c"
+        "id": 772595340,
+        "digest": "sha256:872a02eaa11b6ed6dac33796d1b964827d12ab93582db5479de579ea8f6a3539"
       }
     ]
   }
