@@ -9,6 +9,6 @@
   "devDependencies": {
     "eslint": "10.15.0",
     "eslint-plugin-regexp": "3.3.3",
-    "eslint-plugin-sonarjs": "4.2.2"
+    "eslint-plugin-sonarjs": "4.2.3"
   }
 }
