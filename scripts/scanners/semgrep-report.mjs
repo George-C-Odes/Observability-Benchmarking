@@ -56,9 +56,22 @@ function locationOf(result, run) {
   return { uri: String(uri), line };
 }
 
+// Semgrep can report executionSuccessful: true while recording scanner errors
+// (interfile timeouts, memory limits) as error-level notifications; either one
+// means the results cannot be assumed complete.
 function invocationFailures(run) {
   const invocations = Array.isArray(run.invocations) ? run.invocations : [];
-  return invocations.filter((invocation) => invocation?.executionSuccessful === false).length;
+  const errorNotifications = (notifications) => (Array.isArray(notifications) ? notifications : [])
+    .filter((notification) => notification?.level === 'error').length;
+  return invocations.filter((invocation) => invocation?.executionSuccessful === false
+    || errorNotifications(invocation?.toolExecutionNotifications) > 0
+    || errorNotifications(invocation?.toolConfigurationNotifications) > 0).length;
+}
+
+// SARIF 2.1.0 requires tool.driver.name; an anonymous driver is not a scanner report.
+function hasNamedDriver(run) {
+  const name = run?.tool?.driver?.name;
+  return typeof name === 'string' && name.trim().length > 0;
 }
 
 function ruleIndex(run) {
@@ -94,7 +107,7 @@ export function summarizeSarif(sarif) {
   let suppressed = 0;
   let failedInvocations = 0;
   for (const run of sarif.runs) {
-    if (!Array.isArray(run?.results) || !run.tool?.driver) throw new Error('Incomplete SARIF run data');
+    if (!Array.isArray(run?.results) || !hasNamedDriver(run)) throw new Error('Incomplete SARIF run data');
     failedInvocations += invocationFailures(run);
     const index = ruleIndex(run);
     for (const result of run.results) {
@@ -147,7 +160,9 @@ function renderSummary(result, scanOutcome, overview, overviewError) {
   const rows = ['### Semgrep findings', '', verdicts[result], '', `Scan step outcome: **${cell(scanOutcome || 'not completed', 40)}**.`];
   if (overview) {
     rows.push(`Findings: **${overview.findings.length}** from **${overview.rules}** rules; suppressed in source: **${overview.suppressed}**.`);
-    if (overview.failedInvocations) rows.push(`Failed scanner invocations: **${overview.failedInvocations}**.`);
+    if (overview.failedInvocations) {
+      rows.push(`Failed or errored scanner invocations: **${overview.failedInvocations}**.`);
+    }
     if (overview.findings.length) appendFindings(rows, overview);
   } else {
     rows.push('', `Report unavailable: ${cell(overviewError || 'No SARIF report was produced.')}`);

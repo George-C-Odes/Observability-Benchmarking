@@ -65,7 +65,9 @@ test('result level overrides rule level and unknown levels fall back to warning'
 
 test('malformed SARIF is rejected rather than read as zero findings', () => {
   for (const report of [undefined, {}, { version: '2.1.0', runs: [] }, { version: '2.0.0', runs: [{}] },
-    { version: '2.1.0', runs: [{ tool: { driver: {} } }] }, { version: '2.1.0', runs: [{ results: [] }] }]) {
+    { version: '2.1.0', runs: [{ tool: { driver: {} } }] }, { version: '2.1.0', runs: [{ results: [] }] },
+    { version: '2.1.0', runs: [{ results: [], tool: { driver: {} } }] },
+    { version: '2.1.0', runs: [{ results: [], tool: { driver: { name: ' ' } } }] }]) {
     assert.throws(() => summarizeSarif(report));
   }
 });
@@ -74,12 +76,24 @@ test('gate fails on findings, incomplete scans and failed invocations', () => {
   const clean = summarizeSarif(sarif([]));
   const dirty = summarizeSarif(sarif([result('rule.note', 'a.py', 1)]));
   const failed = summarizeSarif(sarif([], [{ executionSuccessful: true }, { executionSuccessful: false }]));
+  const errorNotification = [{ level: 'error', message: { text: 'Timeout during interfile analysis' } }];
+  const executionError = summarizeSarif(sarif([], [{ executionSuccessful: true, toolExecutionNotifications: errorNotification }]));
+  const configError = summarizeSarif(sarif([], [{ executionSuccessful: true, toolConfigurationNotifications: errorNotification }]));
+  const warningsOnly = summarizeSarif(sarif([], [{ executionSuccessful: true,
+    toolExecutionNotifications: [{ level: 'warning' }, { message: { text: 'default level is warning' } }],
+    toolConfigurationNotifications: [{ level: 'note' }] }]));
   assert.equal(gateResult('success', clean), 'clean');
   assert.equal(gateResult('success', dirty), 'findings');
   assert.equal(gateResult('failure', dirty), 'findings-incomplete');
   assert.equal(gateResult('failure', clean), 'error');
   assert.equal(gateResult('', clean), 'error');
   assert.equal(gateResult('success', failed), 'error');
+  assert.equal(gateResult('success', executionError), 'error');
+  assert.equal(gateResult('success', configError), 'error');
+  assert.equal(executionError.failedInvocations, 1);
+  assert.equal(gateResult('success', summarizeSarif(sarif([result('rule.note', 'a.py', 1)],
+    [{ executionSuccessful: true, toolExecutionNotifications: errorNotification }]))), 'findings-incomplete');
+  assert.equal(gateResult('success', warningsOnly), 'clean');
   assert.equal(gateResult('success', undefined), 'error');
 });
 

@@ -66,7 +66,22 @@ development inputs, regenerates the Ruff hashes in `python-ci.txt`, and renders 
 **Other runtime dependency updates** (cachetools, grpcio, OpenTelemetry and so on): Renovate's `python-lock`
 PRs edit the runtime `requirements.txt` pins, and Framework Version Sync reproduces them with the trusted compiler,
 regenerates the hash inventory and Docker projections, and re-renders the docs on the same PR. If trusted
-regeneration differs from Renovate's edit, the sync fails; regenerate locally as below.
+regeneration differs from Renovate's edit, the sync fails. To recover, install the compiler as shown below, then
+recompile each changed runtime lock exactly as the relay does (`runtimeLockCompileArgs` in
+`scripts/versions/python-lock-relay.mjs`), with one `--upgrade-package` selector per bumped pin, and only then
+run `update-lock.sh`:
+
+```bash
+python -m piptools compile --strip-extras --upgrade-package cachetools==8.0.3 \
+  --pip-args="--only-binary :all:" \
+  --output-file=services/python/django/gunicorn/WSGI/requirements.txt \
+  services/python/django/gunicorn/WSGI/requirements.in   # repeat for ASGI if it changed
+bash .github/requirements/update-lock.sh
+```
+
+Compile on Linux: the committed runtime locks are that command's Linux output (its header and the
+`--only-binary :all:` option line, without Windows-only packages such as Django's `tzdata`), so a lock
+compiled elsewhere cannot match the relay's regeneration.
 
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.

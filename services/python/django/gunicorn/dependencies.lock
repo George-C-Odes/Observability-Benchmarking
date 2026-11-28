@@ -154,8 +154,6 @@ sqlparse==0.6.1 \
     --hash=sha256:3be5a72d04c873d690d7c6dedd33d6fae2ef82759881ceec02fc2efd0cba564f
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8
-tzdata==2026.6 \
-    --hash=sha256:0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec
 uvicorn==0.55.0 \
     --hash=sha256:bee604c5af6e15fb0584913c632b222c09db1048c26fc05053203207c4b9e37d
 wheel==0.48.0 \

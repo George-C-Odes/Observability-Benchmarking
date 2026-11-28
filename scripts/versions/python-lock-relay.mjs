@@ -17,6 +17,16 @@ const packageNamePattern = /^[a-z0-9][a-z0-9._-]*$/;
 const versionPattern = /^\d+(?:\.\d+)*(?:(?:a|b|rc)\d+)?(?:\.post\d+)?$/;
 const pinLinePattern = /^([A-Za-z0-9][A-Za-z0-9._-]*)==(\S+)/;
 
+// The single runtime-lock invocation shared with the framework-version route.
+// Committed locks must be in exactly this command's Linux output form (header
+// and `--only-binary :all:` option line), or a pin-only proposal cannot match.
+// pip-tools omits --upgrade-package from the header, so the selectors are safe.
+export function runtimeLockCompileArgs(lockFile, upgradePackages = []) {
+  return ['-m', 'piptools', 'compile', '--strip-extras',
+    ...upgradePackages.flatMap((selector) => ['--upgrade-package', selector]),
+    '--pip-args=--only-binary :all:', `--output-file=${lockFile}`, lockFile.replace(/requirements\.txt$/, 'requirements.in')];
+}
+
 function normalizeName(name) {
   return name.toLowerCase().replaceAll(/[-_.]+/g, '-');
 }
@@ -70,9 +80,7 @@ export function regeneratePythonRuntimeLocks(proposed, { workspace, run }) {
   for (const file of pythonRuntimeLocks) {
     const upgrades = changes.filter((change) => change.file === file);
     if (!upgrades.length) continue;
-    run('python', ['-m', 'piptools', 'compile', '--strip-extras',
-      ...upgrades.flatMap(({ packageName, to }) => ['--upgrade-package', `${packageName}==${to}`]),
-      '--pip-args=--only-binary :all:', `--output-file=${file}`, file.replace(/requirements\.txt$/, 'requirements.in')], workspace);
+    run('python', runtimeLockCompileArgs(file, upgrades.map(({ packageName, to }) => `${packageName}==${to}`)), workspace);
     if (read(file) !== proposed[file]) {
       throw new Error(`Renovate's ${file} differs from trusted pip-compile regeneration; regenerate the Python locks manually`);
     }

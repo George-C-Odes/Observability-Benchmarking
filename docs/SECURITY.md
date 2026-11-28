@@ -326,7 +326,9 @@ security assessment.
   platform errors instead of Semgrep's default successful exit.
 - A final gate (`scripts/scanners/semgrep-report.mjs`) fails the check on every unsuppressed finding in the SARIF
   report, including those the platform policy only monitors or comments on, and lists them in the job summary with
-  error annotations. A missing or malformed report or an incomplete scan also fails; it is never shown as clean.
+  error annotations. A missing or malformed report (not SARIF 2.1.0, or a run without results or a named
+  `tool.driver`) or an incomplete scan (a failed invocation or an error-level scanner notification) also fails; it is
+  never shown as clean.
   Suppress a false positive in source with `nosemgrep` or triage it in Semgrep AppSec Platform.
 - The token is supplied only to the scan step. The SARIF report is retained in the `semgrep-results` artifact for
   14 days, including after failures, and is uploaded to GitHub Code Scanning under the `semgrep` category.

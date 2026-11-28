@@ -38,8 +38,12 @@ relative to the merge base, so the gate does too; full scans report all findings
 
 The job summary lists counts by level and up to 25 findings with rule, location and message. Up to ten findings
 become error annotations on their file and line; paths that are not plain workspace-relative paths are not
-annotated as files. Exit code 0 is clean, 1 is findings, and 2 is an incomplete scan, failed invocation, or missing
-or malformed report, which is never displayed as zero findings.
+annotated as files. Exit code 0 is clean. Exit code 1 means the scan step succeeded and the report has findings.
+Exit code 2 means the scan step failed or the report is missing, malformed or incomplete; it is never displayed as
+zero findings. Findings that platform policy blocks fail the scan step, so they also exit 2 (`findings-incomplete`),
+with the findings still listed. An incomplete report is one with a failed invocation (`executionSuccessful: false`)
+or an error-level `toolExecutionNotifications` or `toolConfigurationNotifications` entry, which Semgrep can record
+while still reporting success. A report must be SARIF 2.1.0 with results and a named `tool.driver` in every run.
 
 ## Qodana Python reports
 

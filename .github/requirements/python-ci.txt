@@ -444,11 +444,6 @@ typing-extensions==4.16.0 \
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-tzdata==2026.6 \
-    --hash=sha256:0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec
-    # via
-    #   -r services/python/django/gunicorn/ASGI/requirements.txt
-    #   -r services/python/django/gunicorn/WSGI/requirements.txt
 uvicorn==0.55.0 \
     --hash=sha256:bee604c5af6e15fb0584913c632b222c09db1048c26fc05053203207c4b9e37d
     # via -r services/python/django/gunicorn/ASGI/requirements.txt
