@@ -162,6 +162,25 @@ test('Claude review stays label-only, read-only and limited to same-repository P
   assert.doesNotMatch(release, /uses:|secrets\./);
 });
 
+test('Codex Security scans only labeled, trusted PR snapshots with a step-scoped API key', () => {
+  const source = workflow('codex-security');
+  assert.match(source, /^on:\n {2}pull_request:\n {4}types: \[labeled]\n {4}branches: \[main]\n\npermissions: \{}$/m);
+  assert.match(source, /github\.event\.label\.name == 'codex-security' &&\n +github\.event\.pull_request\.state == 'open' &&\n +github\.event\.pull_request\.head\.repo\.full_name == github\.repository &&\n +github\.event\.pull_request\.user\.login != 'dependabot\[bot]' &&\n +github\.actor != 'dependabot\[bot]'/);
+  assert.match(source, /^ {4}concurrency:\n {6}group: codex-security-pr-\$\{\{ github\.event\.pull_request\.number }}/m);
+  assert.match(source, /^ {4}permissions:\n {6}contents: read\n {4}steps:/m);
+  assert.match(source, /ref: \$\{\{ github\.event\.pull_request\.head\.sha }}\n +fetch-depth: 0\n +persist-credentials: false/);
+  assert.deepEqual([...source.matchAll(/^ +uses: ([^@]+)@/gm)].map((match) => match[1]), [
+    'actions/checkout', 'openai/codex-security',
+  ]);
+  assert.doesNotMatch(source, /^ +(?:run|continue-on-error|dry-run):/m);
+  const scan = source.split('      - name: Scan PR changes\n')[1];
+  assert.match(scan, /uses: openai\/codex-security@[a-f0-9]{40} # action-v\d+\.\d+\.\d+/);
+  assert.match(scan, /scope: diff\n +max-cost: '5'\n +fail-on-severity: high/);
+  assert.match(scan, /verbose: 'false'\n +summary: 'true'\n +annotations: 'false'\n +upload-artifacts: 'false'/);
+  assert.match(scan, /env:\n +OPENAI_API_KEY: \$\{\{ secrets\.CODEX_SECURITY_API_KEY }}/);
+  assert.equal((source.match(/secrets\./g) || []).length, 1);
+});
+
 test('coverage is the single Go/Django test owner, including weekly scans', () => {
   assert.doesNotMatch(workflow('go_quality'), /run: go test/);
   assert.match(workflow('go_coverage'), /go test \.\/\.\.\. -race -count=1/);
