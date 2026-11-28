@@ -106,6 +106,8 @@ test('Claude review stays on-demand, read-only and limited to same-repository PR
     assert.match(job, /claude_code_oauth_token: \$\{\{ secrets\.CLAUDE_CODE_OAUTH_TOKEN }}/);
     assert.match(job, /additional_permissions: \|\n +contents: read\n/);
     assert.match(job, /--model claude-opus-5-5\n +--permission-mode default\n/);
+    // git diff/log/show accept --output, which writes arbitrary runner files.
+    assert.match(job, /--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash\(gh pr diff:\*\),Bash\(gh pr view:\*\)"\n/);
     assert.match(job, /--disallowedTools "Edit,MultiEdit,Write,NotebookEdit,Bash\(git add:\*\),Bash\(git rm:\*\),Bash\(git commit:\*\),Bash\(git push:\*\)"/);
   }
   assert.equal((source.match(/secrets\./g) || []).length, 2, 'The OAuth token is passed only to the action');
