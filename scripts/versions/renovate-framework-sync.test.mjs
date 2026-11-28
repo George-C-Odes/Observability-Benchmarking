@@ -5,12 +5,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import { parseColonEnv, resolveRepoPath } from '../readmes/render-readmes.mjs';
-import { api, assertRenovatePullRequest, buildGitHubRequest, gitBlobSha, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
+import { api, assertRenovatePullRequest, buildGitHubRequest, dockerCliDocuments, gitBlobSha, prepare, publish, regenerateNextjsLock, selectGeneratedUpdates, validateFrameworkTree, validateNextjsChange, validateVersionChange } from './renovate-framework-sync.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
 import { pythonLockVersionKeys, ruffInputs } from './sync-django-versions.mjs';
 import { temporaryDirectory } from '../test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 import { documentedActionPaths } from '../ci/workflow-action-versions.mjs';
+import { dockerCliDockerfile, readDockerCliVersion } from './docker-cli-version.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
 const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
@@ -598,9 +599,9 @@ test('Renovate routes only the documented action wrappers to guide regeneration'
   assert.deepEqual(rules[0].matchPackageNames, ['actions/upload-artifact', 'actions/download-artifact', 'github/codeql-action']);
   assert.deepEqual(config.packageRules.find((rule) => rule.groupName === 'CodeQL action').matchPackageNames, ['github/codeql-action']);
   const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
-  assert.match(workflow, /contains\(github.event.pull_request.labels.\*.name, 'action-docs-version'\)\)\r?\n {4}runs-on:/);
+  assert.match(workflow, /contains\(github.event.pull_request.labels.\*.name, 'action-docs-version'\) \|\|\r?\n/);
   assert.match(workflow, /!contains\([^\n]+ 'framework-version'\) &&\s+!contains\([^\n]+ 'nextjs-version'\) &&\s+contains\([^\n]+ 'action-docs-version'\)\s+id: actions_docs[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs prepare-actions/);
-  assert.match(workflow, /steps.actions_docs.outputs.changed == 'true'\s+env:[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs publish/);
+  assert.match(workflow, /steps.actions_docs.outputs.changed == 'true' \|\|[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs publish/);
 });
 
 function actionGuideFixture(t, onWrite) {
@@ -1032,4 +1033,129 @@ test('Gunicorn and Ruff updates use the framework route and install the hashed l
   const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
   assert.match(workflow, /if: steps\.proposal\.outputs\.python_locks == 'true'/);
   assert.ok(workflow.includes('--requirement .github/requirements/lock-compiler.txt'));
+});
+
+const dockerCliDocs = ['README.md', 'docs/tools-technologies.md'];
+
+test('Renovate routes only orchestrator Docker CLI version bumps to doc regeneration', () => {
+  const rules = config.packageRules.filter((rule) => rule.addLabels?.includes('docker-cli-version'));
+  assert.equal(rules.length, 1);
+  assert.deepEqual(rules[0].matchManagers, ['dockerfile']);
+  assert.deepEqual(rules[0].matchFileNames, [dockerCliDockerfile]);
+  assert.deepEqual(rules[0].matchPackageNames, ['docker']);
+  assert.deepEqual(rules[0].matchUpdateTypes, ['major', 'minor', 'patch']);
+  assert.deepEqual(dockerCliDocuments().map(({ file }) => file), dockerCliDocs);
+  const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
+  assert.match(workflow, /contains\(github.event.pull_request.labels.\*.name, 'docker-cli-version'\)\)\r?\n {4}runs-on:/);
+  assert.match(workflow, /!contains\([^\n]+ 'framework-version'\) &&\s+!contains\([^\n]+ 'nextjs-version'\) &&\s+!contains\([^\n]+ 'action-docs-version'\) &&\s+contains\([^\n]+ 'docker-cli-version'\)\s+id: docker_cli_docs[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs prepare-docker-cli/);
+  assert.match(workflow, /steps.docker_cli_docs.outputs.changed == 'true'\s+env:[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs publish/);
+});
+
+function dockerCliFixture(t, onWrite) {
+  const blobs = new Map();
+  const fixture = publicationFixture(t, (route, options) => {
+    if (options.method !== 'GET') return onWrite?.(route, JSON.parse(options.body)) ?? assert.fail(route);
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  });
+  const { base, head, state } = fixture;
+  for (const [file, entry] of base) head.set(file, entry);
+  const add = (tree, file, content, mode = '100644') => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { type: 'blob', mode, sha });
+  };
+  const dockerfile = readFileSync(resolveRepoPath(dockerCliDockerfile), 'utf8');
+  for (const file of [dockerCliDockerfile, ...dockerCliDocs]) {
+    const content = readFileSync(resolveRepoPath(file), 'utf8');
+    add(base, file, content);
+    add(head, file, content);
+  }
+  const output = path.join(process.env.RUNNER_TEMP, 'output');
+  const originalOutput = process.env.GITHUB_OUTPUT;
+  process.env.GITHUB_OUTPUT = output;
+  t.after(() => {
+    if (originalOutput === undefined) delete process.env.GITHUB_OUTPUT;
+    else process.env.GITHUB_OUTPUT = originalOutput;
+  });
+  const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
+  const current = readDockerCliVersion(dockerfile);
+  const bump = (version = '99.1.2', digest = '0'.repeat(64)) => dockerfile
+    .replace(`docker:${current}-`, `docker:${version}-`)
+    .replace(/(IMAGE_DOCKER_CLI=[^@\n]+@sha256:)[a-f0-9]{64}/, (_match, prefix) => `${prefix}${digest}`);
+  return { ...fixture, dockerfile, current, bump, output,
+    stateFile: path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'),
+    change: (file, content, mode) => add(head, file, content, mode),
+    prepare: () => prepare(event, 'synthetic-test-token', 'dockerCli') };
+}
+
+test('Docker CLI relay renders the proposed version into every documented table and repeats as a no-op', async (t) => {
+  const writes = [];
+  const { change, bump, current, prepare: prepareDocs, output, stateFile, headTreeSha, state } = dockerCliFixture(t, (route, body) => {
+    writes.push({ route, body });
+    return { sha: String(writes.length).repeat(40) };
+  });
+  change(dockerCliDockerfile, bump());
+  await prepareDocs();
+  assert.match(readFileSync(output, 'utf8'), /^changed=true\r?\npython_locks=false/m);
+  const { changed, docs } = JSON.parse(readFileSync(stateFile, 'utf8'));
+  assert.deepEqual(changed, ['DOCKER_CLI_VERSION']);
+  assert.deepEqual(docs.map(({ file }) => file), dockerCliDocs);
+  const normalize = (content) => content.replaceAll(/ +\|/g, ' |').replaceAll(/-+\|/g, '-|');
+  for (const { file, content } of docs) {
+    const original = readFileSync(resolveRepoPath(file), 'utf8');
+    assert.match(content, /\| Docker CLI +\| 99\.1\.2 +\|/, file);
+    assert.equal(normalize(content.replaceAll('| 99.1.2 ', `| ${current} `)), normalize(original), file);
+  }
+  await publish('synthetic-test-token');
+  assert.deepEqual(writes.map(({ route }) => route), ['git/blobs', 'git/blobs', 'git/trees', 'git/commits', 'git/refs/heads/renovate%2Fframework']);
+  assert.deepEqual(writes[2].body.tree.map(({ path: file }) => file), dockerCliDocs);
+  assert.equal(writes[2].body.base_tree, headTreeSha);
+  assert.equal(writes[3].body.message, 'chore: relay the documented Docker CLI version');
+  assert.deepEqual(writes[3].body.parents, [state.headSha]);
+  assert.equal(writes[4].body.force, false);
+  for (const { file, content } of docs) change(file, content);
+  await prepareDocs();
+  await publish('synthetic-test-token');
+  assert.equal(writes.length, 5);
+});
+
+test('Docker CLI digest-only refreshes do not regenerate documentation', async (t) => {
+  const { change, dockerfile, current, bump, prepare: prepareDocs, output, stateFile } = dockerCliFixture(t);
+  const refreshed = bump(current, 'f'.repeat(64));
+  assert.notEqual(refreshed, dockerfile);
+  change(dockerCliDockerfile, refreshed);
+  await prepareDocs();
+  assert.match(readFileSync(output, 'utf8'), /^changed=false/m);
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, 'utf8')).changed, []);
+});
+
+test('Docker CLI relay rejects edits outside the image version and digest before publication', async (t) => {
+  const { change, bump, base, head, prepare: prepareDocs, mock, output, stateFile } = dockerCliFixture(t);
+  const bumped = bump();
+  const beforeState = readFileSync(stateFile, 'utf8');
+  for (const [file, content, error, mode] of [
+    ['utils/orchestrator/pom.xml', 'unrelated source edit', /Unexpected file/],
+    ['README.template.md', 'template edit', /Unexpected file/],
+    [dockerCliDockerfile, bumped, /unchanged regular file mode/, '120000'],
+    [dockerCliDockerfile, bumped.replace('ARG JAVA_RELEASE=', 'ARG JAVA_RELEASE=1'), /only the Docker CLI image version and digest/],
+    [dockerCliDockerfile, bumped.replace('docker:99.1.2-cli', 'evil/docker:99.1.2-cli'), /Expected one digest-pinned stable/],
+    [dockerCliDockerfile, bumped.replace('docker:99.1.2-cli', 'docker:99.1.2-rc.1-cli'), /Expected one digest-pinned stable/],
+    [dockerCliDockerfile, bumped.replace('-cli-alpine', '-dind-alpine'), /Expected one digest-pinned stable/],
+    [dockerCliDockerfile, bumped.replace(/@sha256:0{64}/, ''), /Expected one digest-pinned stable/],
+    [dockerCliDockerfile, `${bumped}ARG IMAGE_DOCKER_CLI=docker:1.0.0-cli@sha256:${'1'.repeat(64)}\n`, /Expected one digest-pinned stable/],
+    ['README.md', 'unrelated README edit', /Refusing to overwrite/],
+  ]) {
+    change(dockerCliDockerfile, bumped);
+    change(file, content, mode);
+    await assert.rejects(prepareDocs(), error);
+    for (const reset of [file, dockerCliDockerfile]) {
+      if (base.has(reset)) head.set(reset, base.get(reset));
+      else head.delete(reset);
+    }
+    assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
+    assert.equal(existsSync(output), false);
+  }
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
 });

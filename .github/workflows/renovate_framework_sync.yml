@@ -21,7 +21,8 @@ jobs:
       startsWith(github.event.pull_request.head.ref, 'renovate/') &&
       (contains(github.event.pull_request.labels.*.name, 'framework-version') ||
        contains(github.event.pull_request.labels.*.name, 'nextjs-version') ||
-       contains(github.event.pull_request.labels.*.name, 'action-docs-version'))
+       contains(github.event.pull_request.labels.*.name, 'action-docs-version') ||
+       contains(github.event.pull_request.labels.*.name, 'docker-cli-version'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
@@ -88,6 +89,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/versions/renovate-framework-sync.mjs prepare-actions
 
+      - name: Validate Renovate Docker CLI pin and render the docs
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'nextjs-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'action-docs-version') &&
+          contains(github.event.pull_request.labels.*.name, 'docker-cli-version')
+        id: docker_cli_docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-docker-cli
+
       - name: Select Python runtime
         if: steps.proposal.outputs.changed == 'true'
         id: python
@@ -123,7 +135,8 @@ jobs:
         if: >-
           steps.proposal.outputs.changed == 'true' ||
           steps.nextjs.outputs.changed == 'true' ||
-          steps.actions_docs.outputs.changed == 'true'
+          steps.actions_docs.outputs.changed == 'true' ||
+          steps.docker_cli_docs.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           # Required to trigger the usual path-scoped CI on the generated commit.
