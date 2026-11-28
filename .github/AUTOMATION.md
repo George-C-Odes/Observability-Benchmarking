@@ -176,8 +176,14 @@ usage counts against that Claude subscription.
   on `OWNER`, `MEMBER` or `COLLABORATOR` so unrelated comments start no runner.
 - Both jobs are read-only. The app token is requested with `contents: read`, the
   session uses `--permission-mode default` with an explicit allowlist (read tools,
-  inline comments, `gh pr diff/view`, `git diff/log/show`), and edit and git write
-  tools are denied. `workflow-policy.test.mjs` enforces these settings.
+  inline comments, `gh pr diff/view`), and edit and git write tools are denied.
+  `git diff/log/show` stay off the allowlist because their `--output` option can
+  write files that later steps execute. `workflow-policy.test.mjs` enforces these
+  settings.
+- Each run logs two expected warnings. The action reports the two `gh` Bash rules,
+  because it cannot verify custom rules, and on bot-authored PRs it notes that
+  commands that run checkout code are denied. Keep `restrict_untrusted_prs` at its
+  default.
 
 ## Repository settings and rollout
 
