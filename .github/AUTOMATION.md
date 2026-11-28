@@ -89,7 +89,8 @@ caches remain selected by their setup actions. Next.js caches only `.next/cache`
 keyed by OS, architecture, Node, lockfile, configuration and source. No credentials,
 complete dependency installs or security-analysis databases are added to caches.
 
-Snyk CLI is explicitly version-pinned; the JVM Qodana image is digest-pinned in
+Snyk CLI is explicitly version-pinned; the Checkov and Semgrep scanner images are
+digest-pinned in their local Docker actions; the JVM Qodana image is digest-pinned in
 both configuration fields. Update both image fields together. Validator archives
 have checked-in SHA-256 digests in `scripts/ci/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
