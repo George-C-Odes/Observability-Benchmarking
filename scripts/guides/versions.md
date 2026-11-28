@@ -59,7 +59,7 @@ node scripts/versions/sync-framework-versions.mjs --check
 
 This relays versions to Java service POMs, the orchestrator's Quarkus POM, Go directives/toolchains, service
 Dockerfile ARG defaults, IntelliJ build image arguments/tags, Django/Gunicorn requirement inputs and locks, the shared
-Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Dashboard documentation reads exact `next`, `react`, `@mui/material`, `typescript`, `vitest`, `oxfmt`, and `oxlint` versions from `utils/nextjs-dash/package.json`; dashboard unit-test expectations and fixtures import that manifest directly. Direct builds retain literal defaults. Individual
+Python CI default, `sonar.python.version` in `.sonarcloud.properties`, and manifest-listed documentation. Dashboard documentation reads exact `next`, `react`, `@mui/material`, `typescript`, `vitest`, `oxfmt`, and `oxlint` versions from `utils/nextjs-dash/package.json`; Python documentation reads `cachetools` (`CACHETOOLS_VERSION`) and `gunicorn` (`GUNICORN_VERSION`) from the compiled `services/python/django/gunicorn/ASGI/requirements.txt` lock, and rendering fails if the locked Gunicorn differs from the `compose/.env` pin; dashboard unit-test expectations and fixtures import that manifest directly. Direct builds retain literal defaults. Individual
 synchronizers remain available; use the combined command for a complete update. `--env` selects another env
 source and `--check` never writes or downloads dependencies. Changes do not run automatically just by editing
 the env. The combined operation is not transactional: after a compiler or filesystem failure, inspect the diff,
@@ -92,6 +92,17 @@ Renovate adds `docker-cli-version` to version updates of the `docker:<X.Y.Z>-cli
 `{{DOCKER_CLI_VERSION}}` from that ARG. The relay accepts only version and digest changes to that one ARG, then
 renders and publishes every registered template that uses the placeholder (currently the root README and
 [tools and technologies](../../docs/tools-technologies.md)) from the trusted templates, using the proposed Dockerfile as data.
+
+Renovate adds `python-lock` to its `pip_requirements` updates of the compiled Django runtime locks
+(`services/python/django/gunicorn/{WSGI,ASGI}/requirements.txt`), such as cachetools, grpcio or packaging bumps.
+Renovate can edit those pins but not the hashed `python-ci.txt` inventory, the Docker projections, or the docs,
+so CI would otherwise reject the PR. The relay accepts only version changes to existing pins with released PEP 440
+versions. It rejects new or removed lines, other files, and the env-managed `django`, `gunicorn` and `ruff` pins.
+It then reproduces each pin from the trusted base locks with the hash-locked pip-compile
+(`--upgrade-package <name>==<version>`). If the result differs from Renovate's edit (for example, a new transitive
+dependency), it fails and you regenerate the locks manually. Otherwise it runs `update-lock.sh` and the framework sync,
+which re-renders `{{CACHETOOLS_VERSION}}` and `{{GUNICORN_VERSION}}` from the ASGI lock, and commits the generated files
+to the PR. Renovate does not edit the generated `build-requirements.txt` and `pip-requirements.txt` projections.
 
 Renovate adds `apm-version` to APM CLI pin updates. The workflow validates the exact stable version in
 `scripts/apm-version.txt`, runs `python scripts/upgrade-apm.py` from the trusted base checkout with APM lifecycle

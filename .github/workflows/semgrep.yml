@@ -47,6 +47,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Set up Node.js
+        if: env.SEMGREP_ENABLED == 'true'
+        uses: ./.github/actions/setup-node
+
       # The scanner's non-root UID differs from the hosted runner UID. On a clean
       # tree, PR baseline scans run `git reset --hard <merge-base>` in place and
       # then reset back to the head, after semgrep ci fetches into .git. That
@@ -66,8 +70,10 @@ jobs:
 
       # PRs report only new findings; push, merge-queue, manual and scheduled
       # runs are full scans. Blocking findings follow the Semgrep AppSec
-      # Platform policies and fail the check, as do scanner and platform errors.
+      # Platform policies and fail this step, as do scanner and platform errors.
+      # The final gate also fails on non-blocking (monitor/comment) findings.
       - name: Semgrep scan
+        id: scan
         if: env.SEMGREP_ENABLED == 'true'
         uses: ./.github/actions/semgrep
         env:
@@ -95,3 +101,12 @@ jobs:
           phase: upload-sarif
           sarif_file: semgrep-results/semgrep.sarif
           category: semgrep
+
+      # Fail on every unsuppressed finding in the report, not only those the
+      # platform policy blocks, and list them in the job summary. Missing or
+      # malformed reports and incomplete scans also fail.
+      - name: Enforce Semgrep findings gate
+        if: always() && !cancelled() && env.SEMGREP_ENABLED == 'true'
+        env:
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+        run: node scripts/scanners/semgrep-report.mjs

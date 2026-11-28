@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { parseColonEnv, resolveRepoPath } from '../readmes/render-readmes.mjs';
+import { runtimeLockCompileArgs } from './python-lock-relay.mjs';
 import { readLiteralVersion, runSyncCli } from './sync-common.mjs';
 
 const root = 'services/python/django/gunicorn';
@@ -70,10 +71,8 @@ export function runCompiler(command, args, workspace) {
 
 function regenerateRuntimeLocks(changedFrameworks, workspace, run) {
   for (const variant of variants) {
-    run('python', ['-m', 'piptools', 'compile', '--strip-extras',
-      ...changedFrameworks.flatMap(({ packageName }) => ['--upgrade-package', packageName]),
-      '--pip-args=--only-binary :all:', `--output-file=${root}/${variant}/requirements.txt`,
-      `${root}/${variant}/requirements.in`], workspace);
+    run('python', runtimeLockCompileArgs(`${root}/${variant}/requirements.txt`,
+      changedFrameworks.map(({ packageName }) => packageName)), workspace);
   }
 }
 

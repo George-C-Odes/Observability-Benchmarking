@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 
 import { loadManifestTemplatePaths, parseColonEnv, renderReadme, resolveRepoPath, templateVariableKeys } from '../readmes/render-readmes.mjs';
 import { frameworkVersionKeys, generatedFrameworkPaths, generatedNextjsPaths } from './sync-framework-versions.mjs';
-import { pythonLockVersionKeys } from './sync-django-versions.mjs';
+import { pythonLockVersionKeys, runCompiler } from './sync-django-versions.mjs';
+import { pythonRuntimeLocks, regeneratePythonRuntimeLocks, validatePythonLockChange } from './python-lock-relay.mjs';
 import { documentedActionPaths, validateDocumentedActionChange } from '../ci/workflow-action-versions.mjs';
 import { codeqlActionSha, createCodeqlBundleLock } from '../ci/codeql-bundle.mjs';
 import { dockerCliDockerfile, dockerCliVersionKey, validateDockerCliChange } from './docker-cli-version.mjs';
@@ -32,6 +33,7 @@ const relayCommitMessages = {
   actions: 'chore: relay documented GitHub Actions versions',
   dockerCli: 'chore: relay the documented Docker CLI version',
   apm: 'chore: refresh the APM package lockfile',
+  pythonLock: 'chore: regenerate Python locks and docs for Renovate pins',
 };
 
 function validateNextjsManifest(base, head) {
@@ -405,6 +407,28 @@ async function prepareApm(baseTree, headTree, token) {
   return { changed: original === apmVersion ? [] : ['apm-cli'], apmVersion };
 }
 
+async function preparePythonLocks(baseTree, headTree, token) {
+  // Generated paths stay allowed so a repeat run accepts the relay's own commit;
+  // publication still refuses to overwrite any PR edit to them.
+  validateFrameworkTree(baseTree.entries, headTree.entries, new Set(generatedFrameworkPaths()));
+  const base = {};
+  const proposed = {};
+  for (const file of pythonRuntimeLocks) {
+    base[file] = await readBlob(baseTree, file, token);
+    proposed[file] = await readBlob(headTree, file, token);
+  }
+  const changes = validatePythonLockChange(base, proposed);
+  return { changed: [...new Set(changes.map(({ packageName }) => packageName))], proposed };
+}
+
+// Runs after the hash-locked compiler is installed; the PR's locks are data only.
+export function relayPythonLocks({ workspace = resolveRepoPath('.'), run = runCompiler } = {}) {
+  const state = JSON.parse(readFileSync(statePath(), 'utf8'));
+  if (state.route !== 'pythonLock') throw new Error('Expected a prepared Python lock relay');
+  const changes = regeneratePythonRuntimeLocks(state.proposed, { workspace, run });
+  console.log(changes.length ? `Regenerated Python locks for ${changes.map(({ packageName, to }) => `${packageName}==${to}`).join(', ')}` : 'No Python lock changes');
+}
+
 export async function prepare(event, token, route = 'env') {
   if (!Object.hasOwn(relayCommitMessages, route)) throw new Error('Unknown version relay route');
   const baseSha = event.pull_request.base.sha;
@@ -420,10 +444,12 @@ export async function prepare(event, token, route = 'env') {
   if (route === 'actions') prepared = await prepareActionGuide(baseTree, headTree, token);
   else if (route === 'apm') prepared = await prepareApm(baseTree, headTree, token);
   else if (route === 'dockerCli') prepared = await prepareDockerCliDocs(baseTree, headTree, token);
+  else if (route === 'pythonLock') prepared = await preparePythonLocks(baseTree, headTree, token);
   else prepared = await prepareVersionInputs(baseTree, headTree, route, token);
   const { changed } = prepared;
   writeFileSync(statePath(), JSON.stringify({ number: event.number, baseSha, headSha: pr.head.sha, ref: pr.head.ref, route, ...prepared }));
-  appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${changed.some((key) => pythonLockVersionKeys.includes(key))}\n`);
+  const pythonLocks = changed.length > 0 && (route === 'pythonLock' || changed.some((key) => pythonLockVersionKeys.includes(key)));
+  appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed.length > 0}\npython_locks=${pythonLocks}\n`);
   if (route === 'apm') appendFileSync(process.env.GITHUB_OUTPUT, `apm_version=${prepared.apmVersion}\nhead_sha=${pr.head.sha}\n`);
   console.log(changed.length ? `Synchronizing ${changed.join(', ')}` : 'No version changes to synchronize');
 }
@@ -491,8 +517,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     else if (mode === 'prepare-actions') await prepare(event, process.env.GH_TOKEN, 'actions');
     else if (mode === 'prepare-apm') await prepare(event, process.env.GH_TOKEN, 'apm');
     else if (mode === 'prepare-docker-cli') await prepare(event, process.env.GH_TOKEN, 'dockerCli');
+    else if (mode === 'prepare-python-lock') await prepare(event, process.env.GH_TOKEN, 'pythonLock');
+    else if (mode === 'relay-python-lock') relayPythonLocks();
     else if (mode === 'publish') await publish(process.env.GH_TOKEN);
-    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|prepare-docker-cli|publish');
+    else throw new Error('Usage: node scripts/versions/renovate-framework-sync.mjs prepare|prepare-nextjs|prepare-actions|prepare-apm|prepare-docker-cli|prepare-python-lock|relay-python-lock|publish');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

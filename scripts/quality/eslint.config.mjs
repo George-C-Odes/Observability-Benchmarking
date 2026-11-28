@@ -14,8 +14,10 @@ export default [
     files: [
       'scripts/capture-check.mjs',
       'scripts/scanners/qodana-project.mjs',
+      'scripts/scanners/semgrep-report.mjs',
       'scripts/coverage/sonar-coverage.mjs',
       'scripts/ci/workflow-action-versions.mjs',
+      'scripts/versions/python-lock-relay.mjs',
       'scripts/pages/assemble-reports.mjs',
       'scripts/pages/github-reports.mjs',
       'scripts/pages/generate-nextjs-quality-report.mjs',

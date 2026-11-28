@@ -195,6 +195,8 @@ test('complete CLI relays changed env values, detects drift read-only, and is re
     'scripts/versions/sync-java-runtime-versions.mjs',
     'scripts/versions/sync-common.mjs',
     'scripts/versions/docker-cli-version.mjs',
+    'scripts/versions/django-lock-versions.mjs',
+    'scripts/versions/python-lock-relay.mjs',
     'scripts/readmes/render-readmes.mjs',
     'scripts/readmes/render-readmes.manifest.json',
     'scripts/ci/workflow-action-versions.mjs',

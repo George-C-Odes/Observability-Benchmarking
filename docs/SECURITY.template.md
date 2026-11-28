@@ -322,8 +322,14 @@ security assessment.
 - Pull requests check out the PR head rather than the synthetic merge commit, so Semgrep does not switch the workspace
   itself. They run diff-aware scans and report only new findings, using full local history for the merge base.
   Pushes, merge queues, manual and scheduled runs scan the full tracked tree.
-- Findings blocked by platform policy fail the check. `--no-suppress-errors` also fails the check on scanner or
+- Findings blocked by platform policy fail the scan step. `--no-suppress-errors` also fails it on scanner or
   platform errors instead of Semgrep's default successful exit.
+- A final gate (`scripts/scanners/semgrep-report.mjs`) fails the check on every unsuppressed finding in the SARIF
+  report, including those the platform policy only monitors or comments on, and lists them in the job summary with
+  error annotations. A missing or malformed report (not SARIF 2.1.0, or a run without results or a named
+  `tool.driver`) or an incomplete scan (a failed invocation or an error-level scanner notification) also fails; it is
+  never shown as clean.
+  Suppress a false positive in source with `nosemgrep` or triage it in Semgrep AppSec Platform.
 - The token is supplied only to the scan step. The SARIF report is retained in the `semgrep-results` artifact for
   14 days, including after failures, and is uploaded to GitHub Code Scanning under the `semgrep` category.
 

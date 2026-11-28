@@ -115,10 +115,17 @@ test('Semgrep runs a pinned non-root scanner, scopes its token and fails closed'
   const retention = source.split('      - name: Retain Semgrep report\n')[1].split('      - name: Upload Semgrep')[0];
   assert.match(retention, /if: always\(\) && !cancelled\(\)/);
   assert.match(retention, /if-no-files-found: error/);
-  const upload = source.split('      - name: Upload Semgrep to Code Scanning\n')[1];
+  const upload = source.split('      - name: Upload Semgrep to Code Scanning\n')[1].split('      - name: Enforce Semgrep findings gate\n')[0];
   assert.match(upload, /always\(\) && !cancelled\(\)/);
   assert.match(upload, /sarif_file: semgrep-results\/semgrep\.sarif/);
   assert.match(upload, /category: semgrep\n/);
+  // Every unsuppressed finding fails the job after evidence is retained and
+  // uploaded, and the gate receives the scan outcome so failures stay failures.
+  const gate = source.split('      - name: Enforce Semgrep findings gate\n')[1];
+  assert.match(gate, /if: always\(\) && !cancelled\(\) && env\.SEMGREP_ENABLED == 'true'\n/);
+  assert.match(gate, /SCAN_OUTCOME: \$\{\{ steps\.scan\.outcome }}\n/);
+  assert.match(gate, /run: node scripts\/scanners\/semgrep-report\.mjs\n$/);
+  assert.match(scan, /id: scan\n/);
 });
 
 test('PR workflows cancel stale work and support merge queues', () => {

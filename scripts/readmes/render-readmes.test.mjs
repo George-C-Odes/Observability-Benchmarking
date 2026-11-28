@@ -5,8 +5,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
+import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderReadme, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 import { workflowActionTemplateVariables } from '../ci/workflow-action-versions.mjs';
+import { djangoAsgiLock, djangoLockTemplateVariables, readLockedPackageVersion } from '../versions/django-lock-versions.mjs';
+import { imageTemplateVariables } from '../versions/image-tags.mjs';
 import { dockerCliDockerfile, dockerCliTemplateVariables, dockerCliVersionKey, validateDockerCliChange } from '../versions/docker-cli-version.mjs';
 
 test('workflow action template variables require consistent, annotated SHA pins', () => {
@@ -57,6 +59,36 @@ test('Docker CLI version is read only from the orchestrator image pin', () => {
   for (const file of loadManifestTemplatePaths('scripts/readmes/render-readmes.manifest.json')) {
     const content = readFileSync(path.join(repoRoot, file), 'utf8');
     assert.doesNotMatch(content, /Docker CLI[^\r\n]*\|\s*\d+\.\d+\.\d+\s*\|/, file);
+  }
+});
+
+test('cachetools and Gunicorn doc versions are read from the ASGI runtime lock', () => {
+  let lock = '#\r\ncachetools==8.0.3\r\n    # via -r requirements.in\r\nGunicorn==27.0.1 \\\r\n    --hash=sha256:abc\r\n';
+  const load = (keys, variables) => djangoLockTemplateVariables(new Set(keys), (file) => {
+    assert.equal(file, djangoAsgiLock);
+    return lock;
+  }, variables);
+  assert.deepEqual(load(['GO_VERSION']), {});
+  assert.deepEqual(load(['CACHETOOLS_VERSION']), { CACHETOOLS_VERSION: '8.0.3' });
+  assert.deepEqual(load(['CACHETOOLS_VERSION', 'GUNICORN_VERSION'], { GUNICORN_VERSION: '27.0.1' }),
+    { CACHETOOLS_VERSION: '8.0.3', GUNICORN_VERSION: '27.0.1' });
+  assert.throws(() => load(['GUNICORN_VERSION'], { GUNICORN_VERSION: '28.0.0' }), /differs from locked gunicorn 27\.0\.1/);
+  assert.equal(readLockedPackageVersion('cachetools-extra==1.0.0\ncachetools==9.1.0\n', 'cachetools'), '9.1.0');
+  for (const invalid of ['', 'cachetools>=8.0.0\n', 'cachetools==8.0.0rc1\n', 'cachetools==8.0.1\ncachetools==8.0.2\n']) {
+    lock = invalid;
+    assert.throws(() => load(['CACHETOOLS_VERSION']), /Expected one stable exact cachetools==X\.Y\.Z pin/);
+  }
+
+  const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+  const real = readFileSync(path.join(repoRoot, djangoAsgiLock), 'utf8');
+  const env = parseColonEnv(readFileSync(path.join(repoRoot, 'compose/.env'), 'utf8'));
+  for (const file of ['README.template.md', 'docs/tools-technologies.template.md']) {
+    const content = readFileSync(path.join(repoRoot, file), 'utf8');
+    assert.match(content, /\| cachetools +\| \{\{CACHETOOLS_VERSION}} +\|/, file);
+    assert.match(content, /\| Gunicorn +\| \{\{GUNICORN_VERSION}} +\|/, file);
+    const rendered = renderReadme(content, imageTemplateVariables(env), (source) => readFileSync(path.join(repoRoot, source), 'utf8'));
+    assert.ok(rendered.includes(readLockedPackageVersion(real, 'cachetools')), file);
+    assert.doesNotMatch(rendered, /\{\{(?:CACHETOOLS|GUNICORN)_VERSION}}/, file);
   }
 });
 

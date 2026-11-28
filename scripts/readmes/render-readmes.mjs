@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { imageTemplateVariables } from '../versions/image-tags.mjs';
 import { workflowActionTemplateVariables } from '../ci/workflow-action-versions.mjs';
 import { dockerCliTemplateVariables } from '../versions/docker-cli-version.mjs';
+import { djangoLockTemplateVariables } from '../versions/django-lock-versions.mjs';
 
 const templateVariablePattern = /\{\{\s*([A-Z0-9_]+)\s*}}/g;
 const __filename = fileURLToPath(import.meta.url);
@@ -266,12 +267,13 @@ export function templateVariableKeys(templateContent) {
   return new Set(Array.from(templateContent.matchAll(templateVariablePattern), ([, key]) => key));
 }
 
-// readSource supplies repository files that pins are read from (workflows, action wrappers, Dockerfiles).
+// readSource supplies repository files that pins are read from (workflows, action wrappers, Dockerfiles, Python locks).
 export function renderReadme(templateContent, variables, readSource) {
   const keys = templateVariableKeys(templateContent);
   const sourceVariables = {
     ...workflowActionTemplateVariables(keys, readSource),
     ...dockerCliTemplateVariables(keys, readSource),
+    ...djangoLockTemplateVariables(keys, readSource, variables),
   };
   const substituted = renderTemplate(templateContent, { ...variables, ...sourceVariables });
   // Formatter-owned docs can retain their authored table style when pins occur outside tables.

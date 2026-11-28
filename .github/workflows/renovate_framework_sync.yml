@@ -22,6 +22,7 @@ jobs:
       (contains(github.event.pull_request.labels.*.name, 'framework-version') ||
        contains(github.event.pull_request.labels.*.name, 'nextjs-version') ||
        contains(github.event.pull_request.labels.*.name, 'action-docs-version') ||
+       contains(github.event.pull_request.labels.*.name, 'python-lock') ||
        contains(github.event.pull_request.labels.*.name, 'docker-cli-version'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
@@ -100,29 +101,49 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/versions/renovate-framework-sync.mjs prepare-docker-cli
 
+      - name: Validate Renovate Python lock pins
+        if: >-
+          !contains(github.event.pull_request.labels.*.name, 'framework-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'nextjs-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'action-docs-version') &&
+          !contains(github.event.pull_request.labels.*.name, 'docker-cli-version') &&
+          contains(github.event.pull_request.labels.*.name, 'python-lock')
+        id: python_lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/versions/renovate-framework-sync.mjs prepare-python-lock
+
       - name: Select Python runtime
-        if: steps.proposal.outputs.changed == 'true'
+        if: steps.proposal.outputs.changed == 'true' || steps.python_lock.outputs.changed == 'true'
         id: python
         run: |
           node --input-type=module -e "import { readFileSync, appendFileSync } from 'node:fs'; import { parseColonEnv } from './scripts/readmes/render-readmes.mjs'; const env = parseColonEnv(readFileSync('compose/.env', 'utf8')); appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + env.PYTHON_VERSION + '\n');"
 
       - name: Set up Python for lock projection
-        if: steps.proposal.outputs.changed == 'true'
+        if: steps.proposal.outputs.changed == 'true' || steps.python_lock.outputs.changed == 'true'
         uses: ./.github/actions/setup-python
         with:
           python-version: ${{ steps.python.outputs.version }}
 
       - name: Install hash-locked compiler for Python dependency updates
-        if: steps.proposal.outputs.python_locks == 'true'
+        if: steps.proposal.outputs.python_locks == 'true' || steps.python_lock.outputs.python_locks == 'true'
         run: |
           python -m pip install --require-hashes --only-binary=:all: \
             --requirement .github/requirements/lock-compiler.txt \
             --constraint .github/requirements/lock-compiler.in
 
+      # Reproduces the validated pins with the trusted compiler; PR lock content is compared, never executed.
+      - name: Regenerate Python locks from the validated pins
+        if: steps.python_lock.outputs.changed == 'true'
+        run: node scripts/versions/renovate-framework-sync.mjs relay-python-lock
+
       - name: Relay versions and verify generated output
-        if: steps.proposal.outputs.changed == 'true' || steps.nextjs.outputs.changed == 'true'
+        if: >-
+          steps.proposal.outputs.changed == 'true' ||
+          steps.python_lock.outputs.changed == 'true' ||
+          steps.nextjs.outputs.changed == 'true'
         run: |
-          if [ '${{ steps.proposal.outputs.changed }}' = 'true' ]; then
+          if [ '${{ steps.proposal.outputs.changed }}' = 'true' ] || [ '${{ steps.python_lock.outputs.changed }}' = 'true' ]; then
             node scripts/versions/sync-framework-versions.mjs
             node scripts/versions/sync-framework-versions.mjs --check
             python services/python/django/gunicorn/sync_build_locks.py --check
@@ -135,6 +156,7 @@ jobs:
         if: >-
           steps.proposal.outputs.changed == 'true' ||
           steps.nextjs.outputs.changed == 'true' ||
+          steps.python_lock.outputs.changed == 'true' ||
           steps.actions_docs.outputs.changed == 'true' ||
           steps.docker_cli_docs.outputs.changed == 'true'
         env:
