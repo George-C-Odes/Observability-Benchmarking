@@ -63,6 +63,11 @@ development inputs, regenerates the Ruff hashes in `python-ci.txt`, and renders 
 `docs/tools-technologies.md` on the Renovate PR. For local updates, run
 `node scripts/versions/sync-framework-versions.mjs` in the Linux compiler environment below.
 
+**Other runtime dependency updates** (cachetools, grpcio, OpenTelemetry and so on): Renovate's `python-lock`
+PRs edit the runtime `requirements.txt` pins, and Framework Version Sync reproduces them with the trusted compiler,
+regenerates the hash inventory and Docker projections, and re-renders the docs on the same PR. If trusted
+regeneration differs from Renovate's edit, the sync fails; regenerate locally as below.
+
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
 Use a virtualenv for the compiler:
