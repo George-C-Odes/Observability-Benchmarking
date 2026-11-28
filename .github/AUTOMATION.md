@@ -89,7 +89,8 @@ caches remain selected by their setup actions. Next.js caches only `.next/cache`
 keyed by OS, architecture, Node, lockfile, configuration and source. No credentials,
 complete dependency installs or security-analysis databases are added to caches.
 
-Snyk CLI is explicitly version-pinned; the JVM Qodana image is digest-pinned in
+Snyk CLI is explicitly version-pinned; the Checkov and Semgrep scanner images are
+digest-pinned in their local Docker actions; the JVM Qodana image is digest-pinned in
 both configuration fields. Update both image fields together. Validator archives
 have checked-in SHA-256 digests in `scripts/ci/install-workflow-tools.sh`; zizmor's
 standalone wheel hashes are in `requirements/workflow-lint.txt`. Refresh hashes
@@ -148,12 +149,11 @@ clean assessments. Requests have fixed repository-scoped operations, component
 validation/encoding, redirect rejection, 20-second attempt deadlines and up to
 three transient retries. Missing artifacts do not select older green reports.
 
-The three `dangerous-triggers` zizmor exceptions are local to Pages' `workflow_run`,
-Renovate's `pull_request_target` and Claude Code Review's `issue_comment`. Their
-comments explain trusted-source checkout, token scope and publication constraints.
-Reassess them if execution refs, token scope, artifact handling, version-only
-publication or Claude's read-only tool policy change. No audit rule is disabled
-globally.
+The two `dangerous-triggers` zizmor exceptions are local to Pages' `workflow_run`
+and Renovate's `pull_request_target`. Their comments explain trusted-source
+checkout and publication constraints. Reassess them if execution refs, token
+scope, artifact handling or version-only publication change. No audit rule is
+disabled globally.
 
 ## Claude Code Review
 
@@ -162,24 +162,24 @@ never on push or synchronize, and is not a required check. It authenticates with
 the `CLAUDE_CODE_OAUTH_TOKEN` secret and the installed Claude GitHub App, so its
 usage counts against that Claude subscription.
 
-| Request                         | How                                                              | Result                                                                 |
-|---------------------------------|------------------------------------------------------------------|------------------------------------------------------------------------|
-| Review                          | Add the `claude-review` label, or comment `/claude-review [focus]` | Inline `[P0-P3]` findings plus a progress-tracked summary comment      |
-| Question                        | Mention `@claude` in a PR comment, review or review comment      | A reply on the PR; code changes are explained, never committed         |
-
+- Request a review by adding the `claude-review` label to a same-repository PR,
+  including Renovate and Dependabot PRs. Claude posts inline `[P0-P3]` findings
+  and a progress-tracked summary comment, then the job removes the label. Add it
+  again for a fresh review.
+- The workflow triggers only on `labeled`. Comment and review triggers were removed:
+  GitHub cannot filter those events by author or text, so every bot comment
+  registered a skipped run. Other labels still register a skipped run, which costs
+  no runner time.
 - The review applies `.github/skills/code-review/SKILL.md` as staged from `main`,
   so a PR cannot rewrite the rubric it is reviewed against.
-- The job removes the label afterwards; add it again for a fresh review.
-- Renovate and Dependabot PRs need the `/claude-review` comment: the action refuses
-  label runs whose PR author lacks write access, and no bots are allow-listed.
-- Fork PRs are skipped. Commenters need write access; the workflow also pre-filters
-  on `OWNER`, `MEMBER` or `COLLABORATOR` so unrelated comments start no runner.
-- Both jobs are read-only. The app token is requested with `contents: read`, the
+- Fork PRs are skipped, and the action checks that the labeller has write access.
+- The job is read-only. The app token is requested with `contents: read`, the
   session uses `--permission-mode default` with an explicit allowlist (read tools,
   inline comments, `gh pr diff/view`), and edit and git write tools are denied.
   `git diff/log/show` stay off the allowlist because their `--output` option can
-  write files that later steps execute. `workflow-policy.test.mjs` enforces these
-  settings.
+  write files that later steps execute. The prompt directs Claude to `gh pr diff`,
+  because the action's built-in instructions suggest `git diff`.
+  `workflow-policy.test.mjs` enforces these settings.
 - Each run logs two expected warnings. The action reports the two `gh` Bash rules,
   because it cannot verify custom rules, and on bot-authored PRs it notes that
   commands that run checkout code are denied. Keep `restrict_untrusted_prs` at its

@@ -1,0 +1,97 @@
+name: Semgrep
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Weekly full scan picks up new registry rules on unchanged code.
+    - cron: '11 7 * * 1'
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  semgrep:
+    name: Semgrep scan
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+    env:
+      # Fork and Dependabot PRs receive no repository secrets.
+      SEMGREP_ENABLED: ${{ secrets.SEMGREP_APP_TOKEN != '' }}
+    steps:
+      - name: Check SEMGREP_APP_TOKEN secret
+        if: env.SEMGREP_ENABLED != 'true'
+        run: |
+          echo "::warning::SEMGREP_APP_TOKEN is not available to this run. Semgrep scans will be skipped."
+          echo 'Semgrep scan skipped: no SEMGREP_APP_TOKEN is available. A skipped run is not a security assessment.' >> "$GITHUB_STEP_SUMMARY"
+
+      # semgrep ci scans the PR head, not the synthetic merge commit, and would
+      # otherwise switch the workspace to it. Check out the head directly; other
+      # events keep their default commit. Full history lets the scanner find the
+      # merge base without repeatedly deepening a shallow clone.
+      - name: Checkout
+        if: env.SEMGREP_ENABLED == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The scanner's non-root UID differs from the hosted runner UID. On a clean
+      # tree, PR baseline scans run `git reset --hard <merge-base>` in place and
+      # then reset back to the head, after semgrep ci fetches into .git. That
+      # rewrites tracked files, so grant that one UID write access to the
+      # checkout and report directory through ACLs. Modes for other users and
+      # ownership stay unchanged, so later runner Git calls pass the ownership check.
+      - name: Prepare Semgrep workspace
+        if: env.SEMGREP_ENABLED == 'true'
+        run: |
+          scanner_uid="$(sed -nE 's/^USER ([0-9]+):[0-9]+$/\1/p' .github/actions/semgrep/Dockerfile)"
+          if [[ ! "$scanner_uid" =~ ^[1-9][0-9]*$ ]]; then
+            echo '::error file=.github/actions/semgrep/Dockerfile::Expected a numeric non-root USER uid:gid.'
+            exit 1
+          fi
+          install -d -m 0755 semgrep-results
+          setfacl -R -m "u:${scanner_uid}:rwX" .
+
+      # PRs report only new findings; push, merge-queue, manual and scheduled
+      # runs are full scans. Blocking findings follow the Semgrep AppSec
+      # Platform policies and fail the check, as do scanner and platform errors.
+      - name: Semgrep scan
+        if: env.SEMGREP_ENABLED == 'true'
+        uses: ./.github/actions/semgrep
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        with:
+          sarif-output: semgrep-results/semgrep.sarif
+
+      # Keep evidence after findings or scanner errors without masking failure.
+      - name: Retain Semgrep report
+        if: always() && !cancelled() && env.SEMGREP_ENABLED == 'true'
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: semgrep-results
+          path: semgrep-results/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Semgrep to Code Scanning
+        if: >-
+          always() && !cancelled() &&
+          env.SEMGREP_ENABLED == 'true' &&
+          hashFiles('semgrep-results/semgrep.sarif') != ''
+        uses: ./.github/actions/codeql-action
+        with:
+          phase: upload-sarif
+          sarif_file: semgrep-results/semgrep.sarif
+          category: semgrep
