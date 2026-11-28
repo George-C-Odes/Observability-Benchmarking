@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Install', 'Upgrade')]
+    [ValidateSet('Install', 'Upgrade', 'UpgradeDjango')]
     [string]$Action
 )
 
@@ -41,13 +41,27 @@ try {
         Invoke-CheckedCommand python @('-m', 'pip', 'check')
     } else {
         # Bash code is a single Docker argument; only the required trees are mounted.
-        $containerCommand = @'
+        $bootstrap = @'
 set -euo pipefail
 echo 'Installing hash-verified pip 26.3...'
 python -m pip install --upgrade --require-hashes --only-binary=:all: --no-deps --requirement .github/requirements/pip.in
 python -m pip install --require-hashes --only-binary=:all: --constraint .github/requirements/lock-compiler.in --requirement .github/requirements/lock-compiler.txt
-bash .github/requirements/update-lock.sh --upgrade
+
 '@
+        if ($Action -eq 'Upgrade') {
+            $containerCommand = $bootstrap + "bash .github/requirements/update-lock.sh --upgrade`n"
+        } else {
+            # Same invocation as runtimeLockCompileArgs in scripts/versions/python-lock-relay.mjs, plus --upgrade
+            # (omitted from the header). Linux output keeps the committed form the Renovate relay reproduces.
+            $containerCommand = $bootstrap + @'
+for variant in WSGI ASGI; do
+  python -m piptools compile --upgrade --strip-extras --pip-args='--only-binary :all:' \
+    --output-file="services/python/django/gunicorn/$variant/requirements.txt" \
+    "services/python/django/gunicorn/$variant/requirements.in"
+done
+bash .github/requirements/update-lock.sh
+'@
+        }
         Invoke-CheckedCommand docker @(
             'run', '--rm',
             '--mount', "type=bind,source=$($PWD.Path)/.github/requirements,target=/workspace/.github/requirements",

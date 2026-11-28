@@ -81,7 +81,8 @@ bash .github/requirements/update-lock.sh
 
 Compile on Linux: the committed runtime locks are that command's Linux output (its header and the
 `--only-binary :all:` option line, without Windows-only packages such as Django's `tzdata`), so a lock
-compiled elsewhere cannot match the relay's regeneration.
+compiled elsewhere cannot match the relay's regeneration. Do not run plain `pip-compile` on Windows; use
+**`[upgrade] Django G`** (`python-ci.ps1 -Action UpgradeDjango`), which compiles in the Linux container.
 
 After changing runtime/development pins, `build.in`, `coverage.in`, `qodana.in`, or `pip.in`,
 regenerate both locks from the repository root on Linux with Python 3.13 and pip-tools 7.6.2.
@@ -158,8 +159,9 @@ directory, following the existing Django install/upgrade naming convention:
 |-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
 | [`[install] Python CI`](../../.run/%5Binstall%5D%20Python%20CI.run.xml) | Install hash-verified pip, the compiler lock (pip-tools and its dependencies), and the tools from `build.in`, `coverage.in`, and `qodana.in`; finish with `pip check`. | PowerShell 7 and Python 3.13 on the IDE process's `PATH`, preferably from a virtualenv. |
 | [`[upgrade] Python CI`](../../.run/%5Bupgrade%5D%20Python%20CI.run.xml) | Regenerate both locks with `update-lock.sh --upgrade` in a disposable Linux `python:3.13.18-slim-bookworm` container using the hash-verified compiler lock. | PowerShell 7 and a running Docker daemon configured for Linux containers. |
+| [`[upgrade] Django G`](../../.run/%5Bupgrade%5D%20Django%20G.run.xml) | Upgrade the WSGI and ASGI runtime locks within their `requirements.in` ranges in the same container, using the relay's `runtimeLockCompileArgs` invocation plus `--upgrade`, then run `update-lock.sh` for the hash inventory and Docker projections. | Same as `[upgrade] Python CI`. |
 
-Both configurations run `.github/requirements/python-ci.ps1` in a dedicated
+These configurations run `.github/requirements/python-ci.ps1` in a dedicated
 PowerShell process with `-NoProfile -NoExit -File` in IntelliJ's **Run** console.
 **Execute in terminal** is disabled: direct process launching avoids the Shell
 Script plugin's Bash-style path escaping when the IDE terminal uses PowerShell.
@@ -171,7 +173,7 @@ type `exit` when finished reviewing the output. Errors stop subsequent steps.
 The session remains active until you close it, even after the operation completes.
 If an existing IDE configuration still shows inline script text, reopen
 **Run | Edit Configurations** and select the shared configuration's script file.
-Confirm **Script options** is `-Action Install` or `-Action Upgrade` as appropriate;
+Confirm **Script options** is `-Action Install`, `-Action Upgrade` or `-Action UpgradeDjango` as appropriate;
 without this option PowerShell prompts for the mandatory action.
 The Debian-based upgrade image provides Bash; the Alpine image does not include it.
 

@@ -111,17 +111,19 @@ Select either configuration from the IntelliJ **Run** dropdown and click ▶ to 
 
 ## Upgrade dependencies
 
-First update `pip-tools` in the active Python environment. This is required with newer `pip` releases because older `pip-tools` versions call a removed pip API. Then re-compile lock files with the latest compatible versions for **all** Django modules (run from the repository root):
+Re-compile the WSGI and ASGI lock files with the latest versions their `requirements.in` ranges allow by running
+**`[upgrade] Django G`**, or the same action from the repository root:
 
 ```powershell
-python -m pip install --upgrade pip-tools
-python -m piptools compile --upgrade services/python/django/gunicorn/WSGI/requirements.in -o services/python/django/gunicorn/WSGI/requirements.txt
-if ($LASTEXITCODE -ne 0) { throw 'WSGI dependency compilation failed.' }
-python -m piptools compile --upgrade services/python/django/gunicorn/ASGI/requirements.in -o services/python/django/gunicorn/ASGI/requirements.txt
-if ($LASTEXITCODE -ne 0) { throw 'ASGI dependency compilation failed.' }
+pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action UpgradeDjango
 ```
 
-After changing runtime pins, run **`[upgrade] Python CI`** (Linux container), or
+It compiles in a disposable Linux `python:3.13.18-slim-bookworm` container with the hash-verified pip-tools lock,
+using the same command as the Renovate lock relay, and then refreshes the central hashes. Do not run `pip-compile`
+on the host: on Windows it rewrites the header and options and adds Windows-only pins such as `tzdata`, which the
+relay's Linux regeneration can never match. Django and Gunicorn stay pinned from `compose/.env`.
+
+To refresh every central lock instead, run **`[upgrade] Python CI`** (Linux container), or
 follow the [central lock regeneration guide](../../../.github/requirements/README.md).
 The shared updater regenerates the Docker-context locks automatically. Commit
 the runtime pins, central hashes, and generated Docker locks together. To check
