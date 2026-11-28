@@ -78,18 +78,14 @@ Run the following **once** from the repository root:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-
-# Install the shared common package and each module's dependencies.
-# pyroscope-io requires a native Rust toolchain and only builds on Linux;
-# filter it out for local development — the app handles its absence gracefully.
-(Get-Content services\python\django\gunicorn\WSGI\requirements.txt, `
-              services\python\django\gunicorn\ASGI\requirements.txt) `
-    -notmatch 'pyroscope' | Set-Content $env:TEMP\django-reqs.txt
-pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.txt
-
-# Dev/lint tooling (optional but recommended)
-pip install -r services/python/django/gunicorn/WSGI/requirements-dev.txt
+pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action InstallDjango
 ```
+
+The **`[install] Django G`** run configuration runs the same action. It checks that the interpreter matches the
+`PYTHON_VERSION` minor in `compose/.env` (warning outside a virtualenv) and installs hash-verified pip, the exact
+pins from both runtime locks, the editable common package, and the Ruff pin used by the `[lint] Django G`
+configurations, then runs `pip check`. `pyroscope-io` is filtered out because it has no Windows wheels and only
+builds on Linux; the app handles its absence gracefully.
 
 ### Configure the Python interpreter in IntelliJ
 
@@ -118,7 +114,7 @@ Re-compile the WSGI and ASGI lock files with the latest versions their `requirem
 pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action UpgradeDjango
 ```
 
-It compiles in a disposable Linux `python:3.13.18-slim-bookworm` container with the hash-verified pip-tools lock,
+It compiles in a disposable Linux `python:<PYTHON_VERSION>-slim-bookworm` container with the hash-verified pip-tools lock,
 using the same command as the Renovate lock relay, and then refreshes the central hashes. Do not run `pip-compile`
 on the host: on Windows it rewrites the header and options and adds Windows-only pins such as `tzdata`, which the
 relay's Linux regeneration can never match. Django and Gunicorn stay pinned from `compose/.env`.
@@ -134,14 +130,8 @@ python services/python/django/gunicorn/sync_build_locks.py --check
 python -m unittest discover -s services/python/django/gunicorn -p test_sync_build_locks.py -v
 ```
 
-Then re-install into the local virtualenv (filtering out `pyroscope-io` which only builds on Linux):
-
-```powershell
-(Get-Content services\python\django\gunicorn\WSGI\requirements.txt, `
-              services\python\django\gunicorn\ASGI\requirements.txt) `
-    -notmatch 'pyroscope' | Set-Content $env:TEMP\django-reqs.txt
-pip install -e services\python\django\gunicorn\common -r $env:TEMP\django-reqs.txt
-```
+Then re-install into the local virtualenv with **`[install] Django G`**
+(`pwsh -NoProfile -File .github/requirements/python-ci.ps1 -Action InstallDjango`).
 
 ## Run quality gates locally
 

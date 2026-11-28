@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Install', 'Upgrade', 'UpgradeDjango')]
+    [ValidateSet('Install', 'InstallDjango', 'Upgrade', 'UpgradeDjango')]
     [string]$Action
 )
 
@@ -19,15 +19,39 @@ function Invoke-CheckedCommand {
     }
 }
 
+# compose/.env is the Python source of truth (also synced into setup-python and the Dockerfiles' base).
+function Get-PythonVersion {
+    $match = Select-String -Path 'compose/.env' -Pattern '^PYTHON_VERSION:\s*(\d+\.\d+\.\d+)\s*$' | Select-Object -First 1
+    if (-not $match) { throw 'compose/.env must define PYTHON_VERSION as a stable X.Y.Z release.' }
+    return $match.Matches[0].Groups[1].Value
+}
+
+function Assert-HostPython {
+    param([string]$Version)
+
+    $minor = ($Version -split '\.')[0..1] -join '.'
+    $check = "import sys; print(sys.executable, sys.version); sys.exit(0 if '%d.%d' % sys.version_info[:2] == '$minor' else 'Python $minor is required.')"
+    Invoke-CheckedCommand python @('-c', $check)
+    & python -c 'import sys; sys.exit(0 if sys.prefix != sys.base_prefix else 1)'
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning 'python is not running in a virtualenv; packages will be installed into this interpreter globally.'
+    }
+}
+
+function Install-HashedPip {
+    Write-Host 'Installing hash-verified pip 26.3...'
+    Invoke-CheckedCommand python @(
+        '-m', 'pip', 'install', '--upgrade', '--require-hashes', '--only-binary=:all:', '--no-deps',
+        '--constraint', '.github/requirements/pip.in', '--requirement', '.github/requirements/pip.txt'
+    )
+}
+
 Push-Location (Join-Path $PSScriptRoot '../..')
 try {
+    $pythonVersion = Get-PythonVersion
     if ($Action -eq 'Install') {
-        Invoke-CheckedCommand python @('-c', 'import sys; print(sys.executable, sys.version); sys.exit(0 if sys.version_info[:2] == (3, 13) else "Python 3.13 is required.")')
-        Write-Host 'Installing hash-verified pip 26.3...'
-        Invoke-CheckedCommand python @(
-            '-m', 'pip', 'install', '--upgrade', '--require-hashes', '--only-binary=:all:', '--no-deps',
-            '--constraint', '.github/requirements/pip.in', '--requirement', '.github/requirements/pip.txt'
-        )
+        Assert-HostPython $pythonVersion
+        Install-HashedPip
         Invoke-CheckedCommand python @(
             '-m', 'pip', 'install', '--require-hashes', '--only-binary=:all:',
             '--constraint', '.github/requirements/lock-compiler.in', '--requirement', '.github/requirements/lock-compiler.txt'
@@ -38,6 +62,24 @@ try {
             '--requirement', '.github/requirements/build.in', '--requirement', '.github/requirements/coverage.in',
             '--requirement', '.github/requirements/qodana.in'
         )
+        Invoke-CheckedCommand python @('-m', 'pip', 'check')
+    } elseif ($Action -eq 'InstallDjango') {
+        Assert-HostPython $pythonVersion
+        Install-HashedPip
+        # Exact pins from both runtime locks, without Pyroscope (no Windows wheels). Not hash-checked: host
+        # platforms add packages the Linux inventory lacks (Django's tzdata on Windows).
+        $root = 'services/python/django/gunicorn'
+        $requirements = New-TemporaryFile
+        try {
+            Get-Content "$root/WSGI/requirements.txt", "$root/ASGI/requirements.txt" |
+                Where-Object { $_ -notmatch 'pyroscope' } | Set-Content $requirements.FullName
+            Invoke-CheckedCommand python @(
+                '-m', 'pip', 'install', '--editable', "$root/common", '--requirement', $requirements.FullName,
+                '--requirement', "$root/WSGI/requirements-dev.txt", '--requirement', "$root/ASGI/requirements-dev.txt"
+            )
+        } finally {
+            Remove-Item $requirements.FullName -Force -ErrorAction SilentlyContinue
+        }
         Invoke-CheckedCommand python @('-m', 'pip', 'check')
     } else {
         # Bash code is a single Docker argument; only the required trees are mounted.
@@ -62,11 +104,15 @@ done
 bash .github/requirements/update-lock.sh
 '@
         }
+        # Same base as the Django Dockerfiles, so locks resolve for the Python patch release CI and images use.
+        $image = "python:$pythonVersion-slim-bookworm"
+        Write-Host "Compiling in $image..."
         Invoke-CheckedCommand docker @(
             'run', '--rm',
+            '--env', 'PIP_ROOT_USER_ACTION=ignore', '--env', 'PIP_DISABLE_PIP_VERSION_CHECK=1',
             '--mount', "type=bind,source=$($PWD.Path)/.github/requirements,target=/workspace/.github/requirements",
             '--mount', "type=bind,source=$($PWD.Path)/services/python/django/gunicorn,target=/workspace/services/python/django/gunicorn",
-            '--workdir', '/workspace', 'python:3.13.18-slim-bookworm', 'bash', '-c',
+            '--workdir', '/workspace', $image, 'bash', '-c',
             $containerCommand.Replace("`r`n", "`n")
         )
     }
