@@ -87,6 +87,12 @@ CodeQL action wrappers. The relay accepts only full commit SHA pins and version 
 those wrappers. It renders and publishes [the linting and code quality guide](../../docs/LINTING_AND_CODE_QUALITY.md)
 from the trusted template, using the proposed pins as data. CodeQL subactions update as a group.
 
+Renovate adds `docker-cli-version` to version updates of the `docker:<X.Y.Z>-cli` image pinned by
+`ARG IMAGE_DOCKER_CLI` in `utils/orchestrator/Dockerfile`; digest-only refreshes are not labeled. Templates read
+`{{DOCKER_CLI_VERSION}}` from that ARG. The relay accepts only version and digest changes to that one ARG, then
+renders and publishes every registered template that uses the placeholder (currently the root README and
+[tools and technologies](../../docs/tools-technologies.md)) from the trusted templates, using the proposed Dockerfile as data.
+
 Renovate adds `apm-version` to APM CLI pin updates. The workflow validates the exact stable version in
 `scripts/apm-version.txt`, runs `python scripts/upgrade-apm.py` from the trusted base checkout with APM lifecycle
 scripts disabled, and verifies the generated lockfile records the new version before committing it to the same PR.

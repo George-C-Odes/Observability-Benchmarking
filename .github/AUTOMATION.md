@@ -148,11 +148,36 @@ clean assessments. Requests have fixed repository-scoped operations, component
 validation/encoding, redirect rejection, 20-second attempt deadlines and up to
 three transient retries. Missing artifacts do not select older green reports.
 
-The two `dangerous-triggers` zizmor exceptions are local to Pages' `workflow_run`
-and Renovate's `pull_request_target`. Their comments explain trusted-source
-checkout and publication constraints. Reassess them if execution refs, token
-scope, artifact handling or version-only publication change. No audit rule is
-disabled globally.
+The three `dangerous-triggers` zizmor exceptions are local to Pages' `workflow_run`,
+Renovate's `pull_request_target` and Claude Code Review's `issue_comment`. Their
+comments explain trusted-source checkout, token scope and publication constraints.
+Reassess them if execution refs, token scope, artifact handling, version-only
+publication or Claude's read-only tool policy change. No audit rule is disabled
+globally.
+
+## Claude Code Review
+
+**Claude Code Review** (`claude_review.yml`) runs Claude Opus 5.5 on demand only,
+never on push or synchronize, and is not a required check. It authenticates with
+the `CLAUDE_CODE_OAUTH_TOKEN` secret and the installed Claude GitHub App, so its
+usage counts against that Claude subscription.
+
+| Request                         | How                                                              | Result                                                                 |
+|---------------------------------|------------------------------------------------------------------|------------------------------------------------------------------------|
+| Review                          | Add the `claude-review` label, or comment `/claude-review [focus]` | Inline `[P0-P3]` findings plus a progress-tracked summary comment      |
+| Question                        | Mention `@claude` in a PR comment, review or review comment      | A reply on the PR; code changes are explained, never committed         |
+
+- The review applies `.github/skills/code-review/SKILL.md` as staged from `main`,
+  so a PR cannot rewrite the rubric it is reviewed against.
+- The job removes the label afterwards; add it again for a fresh review.
+- Renovate and Dependabot PRs need the `/claude-review` comment: the action refuses
+  label runs whose PR author lacks write access, and no bots are allow-listed.
+- Fork PRs are skipped. Commenters need write access; the workflow also pre-filters
+  on `OWNER`, `MEMBER` or `COLLABORATOR` so unrelated comments start no runner.
+- Both jobs are read-only. The app token is requested with `contents: read`, the
+  session uses `--permission-mode default` with an explicit allowlist (read tools,
+  inline comments, `gh pr diff/view`, `git diff/log/show`), and edit and git write
+  tools are denied. `workflow-policy.test.mjs` enforces these settings.
 
 ## Repository settings and rollout
 

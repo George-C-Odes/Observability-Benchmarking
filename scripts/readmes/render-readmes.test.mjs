@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { deriveOutputPath, loadManifestTemplatePaths, parseColonEnv, realignMarkdownTables, renderTemplate, renderTemplates, resolveTemplatePaths } from './render-readmes.mjs';
 import { workflowActionTemplateVariables } from '../ci/workflow-action-versions.mjs';
+import { dockerCliDockerfile, dockerCliTemplateVariables, dockerCliVersionKey, validateDockerCliChange } from '../versions/docker-cli-version.mjs';
 
 test('workflow action template variables require consistent, annotated SHA pins', () => {
   const workflow = '.github/workflows/pages.yml';
@@ -29,6 +30,34 @@ test('workflow action template variables require consistent, annotated SHA pins'
   assert.throws(load, /Conflicting download-artifact pins for \.github\/workflows\/pages\.yml/);
   sources.set(workflow, '# uses: ./.github/actions/download-artifact\n');
   assert.throws(load, /Missing download-artifact in \.github\/workflows\/pages\.yml/);
+});
+
+test('Docker CLI version is read only from the orchestrator image pin', () => {
+  const sha = 'a'.repeat(64);
+  let dockerfile = `ARG IMAGE_BUILDER=maven:3\r\nARG IMAGE_DOCKER_CLI=docker:29.10.0-cli-alpine3.24@sha256:${sha}\r\n`;
+  const load = (keys = new Set([dockerCliVersionKey])) => dockerCliTemplateVariables(keys, (file) => {
+    assert.equal(file, dockerCliDockerfile);
+    return dockerfile;
+  });
+  assert.deepEqual(load(new Set(['GO_VERSION'])), {});
+  assert.deepEqual(load(), { DOCKER_CLI_VERSION: '29.10.0' });
+  dockerfile = `ARG IMAGE_DOCKER_CLI=docker:30.0.1-cli@sha256:${sha}\n`;
+  assert.deepEqual(load(), { DOCKER_CLI_VERSION: '30.0.1' });
+  for (const invalid of ['ARG IMAGE_DOCKER_CLI=docker:30.0.1-cli\n', `ARG IMAGE_DOCKER_CLI=docker:latest@sha256:${sha}\n`,
+    `${dockerfile}${dockerfile}`, '']) {
+    dockerfile = invalid;
+    assert.throws(load, /Expected one digest-pinned stable docker/);
+  }
+  const base = `FROM x\nARG IMAGE_DOCKER_CLI=docker:29.10.0-cli@sha256:${sha}\nRUN true\n`;
+  assert.equal(validateDockerCliChange(base, base.replace(sha, 'b'.repeat(64))), false);
+  assert.equal(validateDockerCliChange(base, base.replace('29.10.0', '29.11.0').replace(sha, 'b'.repeat(64))), true);
+  assert.throws(() => validateDockerCliChange(base, base.replace('29.10.0', '29.11.0').replace('true', 'false')), /only the Docker CLI image/);
+
+  const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+  for (const file of loadManifestTemplatePaths('scripts/readmes/render-readmes.manifest.json')) {
+    const content = readFileSync(path.join(repoRoot, file), 'utf8');
+    assert.doesNotMatch(content, /Docker CLI[^\r\n]*\|\s*\d+\.\d+\.\d+\s*\|/, file);
+  }
 });
 
 test('README workflow badges link to current workflows with matching names', () => {

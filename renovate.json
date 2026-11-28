@@ -261,6 +261,15 @@
       "rebaseWhen": "behind-base-branch"
     },
     {
+      "description": "Relay the orchestrator's Docker CLI image version into documentation using trusted base scripts.",
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["utils/orchestrator/Dockerfile"],
+      "matchPackageNames": ["docker"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "addLabels": ["docker-cli-version"],
+      "rebaseWhen": "behind-base-branch"
+    },
+    {
       "description": "Node Docker tag versions follow the paired env pin; retain digest refreshes.",
       "matchManagers": [
         "dockerfile"
