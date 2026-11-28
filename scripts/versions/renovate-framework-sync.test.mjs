@@ -1163,8 +1163,28 @@ test('Docker CLI relay rejects edits outside the image version and digest before
 
 const [wsgiLock, asgiLock] = pythonRuntimeLocks;
 const readLocks = () => Object.fromEntries(pythonRuntimeLocks.map((file) => [file, readFileSync(resolveRepoPath(file), 'utf8')]));
-const bumpPin = (content, name, version) => content.replace(new RegExp(`^(${name}==)\\S+`, 'm'), (_match, prefix) => `${prefix}${version}`);
-const lockedPin = (content, name) => new RegExp(`^${name}==(\\S+)`, 'm').exec(content)[1];
+const pinValuePattern = /^\S+/;
+const findPin = (content, name) => {
+  const prefix = `${name}==`;
+  let start = 0;
+  while (start <= content.length) {
+    const end = content.indexOf('\n', start);
+    const lineEnd = end === -1 ? content.length : end;
+    if (content.startsWith(prefix, start)) {
+      const valueStart = start + prefix.length;
+      const value = pinValuePattern.exec(content.slice(valueStart, lineEnd))[0];
+      return { valueStart, valueEnd: valueStart + value.length, value };
+    }
+    if (end === -1) break;
+    start = end + 1;
+  }
+  throw new Error(`Missing ${name} pin`);
+};
+const bumpPin = (content, name, version) => {
+  const { valueStart, valueEnd } = findPin(content, name);
+  return `${content.slice(0, valueStart)}${version}${content.slice(valueEnd)}`;
+};
+const lockedPin = (content, name) => findPin(content, name).value;
 
 test('Python lock relay accepts only released pin-version edits outside the env-managed packages', () => {
   const base = readLocks();
