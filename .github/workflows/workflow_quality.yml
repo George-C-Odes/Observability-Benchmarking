@@ -49,7 +49,7 @@ jobs:
       - name: Audit workflow security
         run: zizmor --offline --min-severity medium .github
       - name: Test workflow and publication contracts
-        run: node --test scripts/ci/github-actions.test.mjs scripts/ci/workflow-policy.test.mjs scripts/ci/dockerfile-policy.test.mjs scripts/ci/workflow-scope.test.mjs scripts/coverage/sonar-coverage.test.mjs scripts/scanners/qodana-project.test.mjs scripts/scanners/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/scanners/snyk-scan.test.mjs scripts/scanners/snyk-report.test.mjs
+        run: node --test scripts/ci/github-actions.test.mjs scripts/ci/workflow-policy.test.mjs scripts/ci/dockerfile-policy.test.mjs scripts/ci/workflow-scope.test.mjs scripts/coverage/sonar-coverage.test.mjs scripts/scanners/qodana-project.test.mjs scripts/scanners/qodana-scopes.test.mjs scripts/pages/*.test.mjs scripts/capture-check.test.mjs scripts/scanners/snyk-scan.test.mjs scripts/scanners/snyk-report.test.mjs scripts/scanners/semgrep-report.test.mjs
 
   apm:
     name: APM package

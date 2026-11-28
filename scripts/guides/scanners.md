@@ -22,6 +22,25 @@ GitHub Actions has no warning job conclusion, so findings-only runs have a succe
 The workflow normalizes only the findings exit code to avoid automatic nonzero-exit error annotations for findings;
 the standalone runner retains the original scan exit codes.
 
+## Semgrep
+
+Run the Semgrep findings gate regression tests without a token or scanner image:
+
+```powershell
+node --test scripts/scanners/semgrep-report.test.mjs
+```
+
+`semgrep-report.mjs` reads only the fixed `semgrep-results/semgrep.sarif` below the working directory and rejects
+a symlinked report directory or file (the symlink test is skipped where creating symlinks needs elevation). Every
+unsuppressed SARIF result is a finding, whatever the platform policy mode; results with accepted or in-source
+(`nosemgrep`) suppressions are counted but do not fail. On pull requests `semgrep ci` reports only findings new
+relative to the merge base, so the gate does too; full scans report all findings.
+
+The job summary lists counts by level and up to 25 findings with rule, location and message. Up to ten findings
+become error annotations on their file and line; paths that are not plain workspace-relative paths are not
+annotated as files. Exit code 0 is clean, 1 is findings, and 2 is an incomplete scan, failed invocation, or missing
+or malformed report, which is never displayed as zero findings.
+
 ## Qodana Python reports
 
 `qodana-python-report.py` accepts only `RUNNER_TEMP/qodana-python/results`; when `RUNNER_TEMP` is
